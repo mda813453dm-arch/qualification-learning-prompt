@@ -1,0 +1,6 @@
+SELF TEST - 2026-10-10
+Candidate: audits/master_prompt_candidate_v4_2026-10-10.txt
+Static section and gate checks: 19 of 19 passed.
+Isolated item-specific consecutive-error logic scenarios: 8 of 8 passed (earlier run).
+These are NOT end-to-end AI tests. PDF retrieval, question/answer original matching, exemptions, recovery and handoff are not yet verified.
+Release status: HOLD. Public master_prompt.txt unchanged. Restore from backups/master_prompt_pre_full_audit_2026-10-10.txt.
