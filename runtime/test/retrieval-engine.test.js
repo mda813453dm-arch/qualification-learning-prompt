@@ -90,7 +90,7 @@ test("refuses missing Takken choices and answer row", () => {
 });
 
 import { extractPdfPages } from "../src/retrieval-engine.js";
-test("live official RETIO 2025 PDF question 1 extraction and answer mapping", async () => {
+test("live official RETIO 2025 PDF extracts all 50 questions and maps each answer", async () => {
   const response = await fetch("https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
   assert.equal(response.status, 200, "official PDF must be reachable from this Actions runner");
   const type = response.headers.get("content-type") || "";
@@ -99,12 +99,19 @@ test("live official RETIO 2025 PDF question 1 extraction and answer mapping", as
   assert.ok(bytes.length > 100_000, "PDF must contain a non-trivial document");
   assert.deepEqual([...bytes.slice(0, 4)], [0x25,0x50,0x44,0x46], "PDF signature must be present");
   const pages = await extractPdfPages(bytes);
-  assert.ok(pages.length >= 30, "expected all official PDF pages to be readable");
-  const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber: 1, url: response.url });
-  assert.equal(result.question.choices.length, 4);
-  assert.ok(result.question.text.length > 10);
-  assert.equal(result.answer.number, 3);
-  assert.equal(result.question.page, 2);
-  assert.equal(result.answer.page, 30);
-  assert.equal(result.question.source.url, "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
+  assert.equal(pages.length, 30, "expected all official PDF pages to be readable");
+  const answers = [];
+  for (let questionNumber = 1; questionNumber <= 50; questionNumber++) {
+    const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber, url: response.url });
+    assert.equal(result.question.choices.length, 4, `Question ${questionNumber} must have all four choices`);
+    assert.ok(result.question.text.length > 10, `Question ${questionNumber} must have a non-empty stem`);
+    assert.ok(result.question.page >= 2 && result.question.page <= 28, `Question ${questionNumber} must have a source page`);
+    assert.equal(result.answer.page, 30, `Question ${questionNumber} must map to the official answer-table page`);
+    assert.equal(result.answer.questionId, result.question.id);
+    assert.ok(result.answer.number >= 1 && result.answer.number <= 4);
+    answers.push(result.answer.number);
+  }
+  assert.equal(answers[0], 3, "Question 1 official answer is 3");
+  assert.equal(answers.length, 50);
+  assert.equal(response.url, "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
 });
