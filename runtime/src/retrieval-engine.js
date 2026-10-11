@@ -180,7 +180,7 @@ export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questi
   const answerStart = joined.indexOf("試験問題の正解番号", current.index);
   if (answerStart < 0) throw new Error("ANSWER_TABLE_NOT_FOUND");
   const answerText = joined.slice(answerStart);
-  const answerLines = answerText.split(/\r?\n/).filter(Boolean);
+  const answerLines = answerText.split(/\r?\n/).map(line => line.normalize("NFKC")).filter(Boolean);
   let answer = null, answerPage = null;
   for (let i = 0; i < answerLines.length - 1; i++) {
     const headerNums = [...answerLines[i].matchAll(/問\s*(\d+)/g)].map(m => Number(m[1]));
