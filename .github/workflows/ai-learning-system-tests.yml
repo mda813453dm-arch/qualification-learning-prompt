@@ -1,0 +1,22 @@
+name: AI学習システム試作テスト
+on:
+  push:
+    branches:
+      - ai-learning-system
+    paths:
+      - '新システム開発/src/**'
+      - '新システム開発/tests/**'
+      - '新システム開発/package.json'
+      - '.github/workflows/ai-learning-system-tests.yml'
+  workflow_dispatch:
+jobs:
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: 対話意図の分類テスト
+        run: npm test
+        working-directory: 新システム開発
