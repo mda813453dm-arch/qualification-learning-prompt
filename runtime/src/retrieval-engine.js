@@ -143,7 +143,7 @@ export async function fetchQualificationIndex(url, { fetchImpl = fetch } = {}) {
   let parsed;
   try { parsed = new URL(url); } catch { throw new Error("INDEX_URL_INVALID"); }
   if (parsed.protocol !== "https:") throw new Error("INDEX_URL_MUST_USE_HTTPS");
-  const response = await fetchImpl(url, { redirect: "follow" });
+  const response = await fetchImpl(url, { redirect: "manual" });
   if (!response.ok) throw Object.assign(new Error("INDEX_HTTP_ERROR"), { code: "INDEX_HTTP_" + response.status });
   const finalUrl = response.url || url;
   if (new URL(finalUrl).protocol !== "https:") throw new Error("INDEX_REDIRECT_NOT_HTTPS");
