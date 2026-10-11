@@ -1,0 +1,7 @@
+# 53｜実PDF解析修正とJSON受渡し
+
+2025年度土地家屋調査士午後の部の実PDFで正答表抽出に失敗する不具合を発見。正規表現の「問」欠落を修正し、問題20問と正答20問を抽出できた。
+
+Pythonのexport_verified_spans.pyからJSONを出力し、JavaScriptのpython-pdf-handoff.jsで固定PDFハッシュ、20問の連番、原文ハッシュ、選択肢数、正答範囲を検証。実PDF由来JSONでローカルテスト5/5 PASS。GitHubへテスト5件追加。CIは未確認。
+
+図表完全性・正答表セルの独立検証・公開演習入口への自動接続・ChatGPTスマホ実接続は未完了。PDFと抽出JSONはGitHubへアップロードしていない。mainと既存マスタープロンプトは未変更。追加有料サービスなし。
