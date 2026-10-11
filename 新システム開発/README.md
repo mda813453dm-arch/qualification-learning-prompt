@@ -33,3 +33,8 @@
 - [意図分類補助コード](src/intent-router.js)
 - [意図分類テスト](tests/intent-router.test.js)
 コード保存済み。実行テストとChatGPT接続は未確認。
+
+## 会話切替の試作
+- [軽量セッション](src/study-session.js)
+- [軽量セッションのテスト](tests/study-session.test.js)
+- [実装範囲と安全な接続境界](08_実装範囲と安全な接続境界.md)
