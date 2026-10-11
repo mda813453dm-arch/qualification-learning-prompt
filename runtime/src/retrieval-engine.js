@@ -99,3 +99,41 @@ export async function retrieveAndVerify(candidate, adapters, { maxRoutes = 5, re
   }
   return { status: "exhausted", attempts, reason: "ROUTE_LIMIT_REACHED" };
 }
+
+export function createPdfFetchAdapter({ name = "official-pdf-fetch", officialHosts, fetchImpl = fetch, extractPdf, maxBytes = 25_000_000 }) {
+  if (!Array.isArray(officialHosts) || !officialHosts.length) throw new Error("OFFICIAL_HOSTS_REQUIRED");
+  if (typeof extractPdf !== "function") throw new Error("PDF_EXTRACTOR_REQUIRED");
+  const allowedHost = value => {
+    const u = new URL(value);
+    return ["https:", "http:"].includes(u.protocol) && officialHosts.some(host => u.hostname === host || u.hostname.endsWith("." + host));
+  };
+  return {
+    name,
+    async retrieve(candidate) {
+      const qUrl = candidate?.questionUrl;
+      const aUrl = candidate?.answerCandidates?.[0] || qUrl;
+      if (!allowedHost(qUrl) || !allowedHost(aUrl)) throw Object.assign(new Error("URL_NOT_FROM_CONFIGURED_OFFICIAL_HOST"), { code: "URL_NOT_OFFICIAL_HOST" });
+      async function get(url) {
+        const response = await fetchImpl(url, { redirect: "follow" });
+        if (!response.ok) return { httpStatus: response.status, contentType: response.headers.get("content-type") || "" };
+        const finalUrl = response.url || url;
+        if (!allowedHost(finalUrl)) throw Object.assign(new Error("REDIRECT_LEFT_OFFICIAL_HOST"), { code: "REDIRECT_NOT_OFFICIAL_HOST" });
+        const contentType = response.headers.get("content-type") || "";
+        const buffer = new Uint8Array(await response.arrayBuffer());
+        if (buffer.byteLength > maxBytes) throw Object.assign(new Error("PDF_TOO_LARGE"), { code: "RESPONSE_TOO_LARGE" });
+        if (buffer[0] !== 0x25 || buffer[1] !== 0x50 || buffer[2] !== 0x44 || buffer[3] !== 0x46) throw Object.assign(new Error("BODY_IS_NOT_PDF"), { code: "PDF_SIGNATURE_MISSING" });
+        return { httpStatus: response.status, contentType, buffer, url: finalUrl, bytes: buffer.byteLength };
+      }
+      const q = await get(qUrl);
+      if (q.httpStatus < 200 || q.httpStatus >= 300) return q;
+      const a = aUrl === qUrl ? q : await get(aUrl);
+      if (a.httpStatus < 200 || a.httpStatus >= 300) return a;
+      const extracted = await extractPdf({ questionPdf: q.buffer, answerPdf: a.buffer, candidate });
+      const stamp = new Date().toISOString();
+      for (const side of [extracted?.question, extracted?.answer]) {
+        if (side) side.source = { ...side.source, official: true, retrievedAt: stamp };
+      }
+      return { httpStatus: 200, contentType: "application/pdf", bytes: q.bytes + (aUrl === qUrl ? 0 : a.bytes), extracted };
+    }
+  };
+}
