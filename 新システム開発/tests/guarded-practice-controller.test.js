@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createGuardedPracticeController} from '../src/guarded-practice-controller.js';
-const evidence={status:'verified',key:{qualification:'宅建'},provenance:{sourceType:'official_pdf_pair'},question:{id:1,year:2025,section:'本試験',text:'問題文',choices:[{text:'1'},{text:'2'}],source:{official:true}},answer:{questionId:1,year:2025,section:'本試験',number:2,page:1,evidence:'問1=2',source:{official:true,url:'https://example.org/answer.pdf'}}};
+const evidence={status:'verified',key:{qualification:'宅建'},provenance:{sourceType:'official_pdf_pair',questionPdfUrl:'https://www.retio.or.jp/question.pdf',answerPdfUrl:'https://www.retio.or.jp/answer.pdf'},question:{id:1,year:2025,section:'本試験',text:'問題文',choices:[{text:'1'},{text:'2'}],source:{official:true,url:'https://www.retio.or.jp/question.pdf'}},answer:{questionId:1,year:2025,section:'本試験',number:2,page:1,evidence:'問1=2',source:{official:true,url:'https://www.retio.or.jp/answer.pdf'}}};
 const make=(verify,fetch=async()=>structuredClone(evidence))=>createGuardedPracticeController({retrieveAndVerify:fetch,adapters:[],verifyOfficialSource:verify});
 test('独立公式性確認が否認なら出題拒否',async()=>{
  const c=make(async()=>false);
