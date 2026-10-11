@@ -166,13 +166,13 @@ export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questi
   const block = joined.slice(current.index + current[0].length, end < 0 ? joined.length : end);
   const pageMatch = joined.slice(0, current.index).match(/\[PAGE (\d+)\]/g);
   const questionPage = pageMatch?.length ? Number(pageMatch.at(-1).match(/\d+/)[0]) : null;
-  const lines = block.split(/\r?\n/).map(s => s.replace(/\[PAGE \d+\]/g, "").trim()).filter(Boolean);
-  const choiceStart = /^([1-4])\s+(.+)$/;
+  const lines = block.split(/\r?\n/).map(s => s.replace(/\[PAGE \d+\]/g, "").normalize("NFKC").trim()).filter(Boolean);
+  const choiceStart = /^([1-4])(?:\s+(.*))?$/;
   let stem = [], choices = [], lastNumber = 0;
   for (const line of lines) {
     const m = line.match(choiceStart);
-    if (m && Number(m[1]) === lastNumber + 1) { lastNumber++; choices.push({ number: lastNumber, text: m[2].trim() }); }
-    else if (choices.length) choices.at(-1).text += " " + line;
+    if (m && Number(m[1]) === lastNumber + 1) { lastNumber++; choices.push({ number: lastNumber, text: (m[2] ?? "").trim() }); }
+    else if (choices.length) choices.at(-1).text = (choices.at(-1).text + " " + line).trim();
     else stem.push(line);
   }
   if (choices.length !== 4 || choices.some(c => !c.text.trim()) || !questionPage) throw new Error("QUESTION_OR_CHOICES_INCOMPLETE");
