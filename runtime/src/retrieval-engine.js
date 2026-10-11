@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 const INDEX_COLUMNS = ["資格名", "過去問一覧URL", "種別", "年度", "区分・状況", "URL"];
 
 export function parseCsv(text) {
@@ -210,7 +211,7 @@ export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questi
 
 export async function extractPdfPages(pdfBytes) {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const task = getDocument({ data: pdfBytes, useSystemFonts: true, cMapUrl: new URL("../node_modules/pdfjs-dist/cmaps/", import.meta.url).href, cMapPacked: true, standardFontDataUrl: new URL("../node_modules/pdfjs-dist/standard_fonts/", import.meta.url).href, isEvalSupported: false });
+  const task = getDocument({ data: pdfBytes, useSystemFonts: true, cMapUrl: fileURLToPath(new URL("../node_modules/pdfjs-dist/cmaps/", import.meta.url)), cMapPacked: true, standardFontDataUrl: fileURLToPath(new URL("../node_modules/pdfjs-dist/standard_fonts/", import.meta.url)), isEvalSupported: false });
   const document = await task.promise;
   const pages = [];
   for (let pageNo = 1; pageNo <= document.numPages; pageNo++) {
