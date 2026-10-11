@@ -43,3 +43,8 @@
 - [開発用セッション保存](src/session-store.js)
 - [保存・復帰のテスト](tests/session-store.test.js)
 - [本番化条件](09_保存インターフェースと本番化条件.md)
+
+## サービス層の試作
+- [学習サービスAPI](src/study-service.js)
+- [サービスAPIのテスト](tests/study-service.test.js)
+- [認証・接続境界の注意](10_外部呼出し境界と認証の注意.md)
