@@ -38,3 +38,8 @@
 - [軽量セッション](src/study-session.js)
 - [軽量セッションのテスト](tests/study-session.test.js)
 - [実装範囲と安全な接続境界](08_実装範囲と安全な接続境界.md)
+
+## 保存の試作
+- [開発用セッション保存](src/session-store.js)
+- [保存・復帰のテスト](tests/session-store.test.js)
+- [本番化条件](09_保存インターフェースと本番化条件.md)
