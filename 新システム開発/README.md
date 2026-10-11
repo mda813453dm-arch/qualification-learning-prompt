@@ -58,3 +58,9 @@
 - [公式採点の安全ゲート](src/verified-question-gate.js)
 - [安全ゲートのテスト](tests/verified-question-gate.test.js)
 - [公式採点ゲートの本番化条件](12_公式採点ゲートの試作.md)
+
+## 公式取得と採点の結合試作
+- [旧検証結果の変換](src/retrieval-evidence-adapter.js)
+- [取得・検証・採点パイプライン](src/official-retrieval-pipeline.js)
+- [パイプライン結合テスト](tests/official-retrieval-pipeline.test.js)
+- [結合試作の達成範囲](14_公式取得から採点までの結合試作.md)
