@@ -11,7 +11,7 @@ This directory is an independent, non-production implementation candidate. The e
 
 ## Implemented in this candidate
 - `src/state-machine.js`: initial learning workflow state machine.
-- `src/retrieval-engine.js`: quoted CSV parser, index candidate discovery, route/retry attempt log, and strict question/answer evidence gate.
+- `src/retrieval-engine.js`: HTTPS CSV index retrieval, quoted CSV parser, candidate discovery, official-host PDF byte retrieval, route/retry attempt log, and strict question/answer evidence gate. The PDF extractor is supplied through an adapter boundary.
 - Tests include 403 retry behavior, missing extraction, incomplete choices, key mismatch, answer mapping mismatch, untrusted URL rejection, route fallback, and not-attempted versus exhausted.
 - Existing workflow runs Node's built-in test runner on GitHub Actions.
 
