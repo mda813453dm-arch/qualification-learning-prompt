@@ -89,7 +89,7 @@ test("refuses missing Takken choices and answer row", () => {
   assert.throws(() => parseTakkenQuestionAndAnswer(["【問 1 】 stem\n1 A\n2 B\n3 C\n4 D\n試験問題の正解番号\n問 2\n1"], { year: 2025, section: "x", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" }), /ANSWER_MAPPING_NOT_VERIFIED/);
 });
 
-import { extractPdfPages, parseTakkenQuestionAndAnswer } from "../src/retrieval-engine.js";
+import { extractPdfPages } from "../src/retrieval-engine.js";
 test("live official RETIO 2025 PDF question 1 extraction and answer mapping", async () => {
   const response = await fetch("https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
   assert.equal(response.status, 200, "official PDF must be reachable from this Actions runner");
