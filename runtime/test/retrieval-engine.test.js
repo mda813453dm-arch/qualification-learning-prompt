@@ -53,3 +53,18 @@ test("moves to next route after failed first route and retains attempt log", asy
 test("no routes means not attempted, not exhausted", async () => {
   assert.equal((await retrieveAndVerify(candidate, [])).status, "not_attempted");
 });
+
+
+import { fetchQualificationIndex } from "../src/retrieval-engine.js";
+test("index fetch parses only successful HTTPS CSV response", async () => {
+  const result = await fetchQualificationIndex("https://index.example/official.csv", { fetchImpl: async url => ({
+    ok: true, status: 200, url, headers: { get: () => "text/csv" }, text: async () => csv
+  }) });
+  assert.equal(result.records[0].資格名, "宅地建物取引士");
+  assert.ok(result.retrievedAt);
+});
+test("index fetch distinguishes HTTP failure from empty/not attempted", async () => {
+  await assert.rejects(() => fetchQualificationIndex("https://index.example/official.csv", { fetchImpl: async url => ({
+    ok: false, status: 403, url, headers: { get: () => "text/html" }
+  }) }), error => error.code === "INDEX_HTTP_403");
+});
