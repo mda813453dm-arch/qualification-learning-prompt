@@ -114,7 +114,7 @@ export function createPdfFetchAdapter({ name = "official-pdf-fetch", officialHos
       const aUrl = candidate?.answerCandidates?.[0] || qUrl;
       if (!allowedHost(qUrl) || !allowedHost(aUrl)) throw Object.assign(new Error("URL_NOT_FROM_CONFIGURED_OFFICIAL_HOST"), { code: "URL_NOT_OFFICIAL_HOST" });
       async function get(url) {
-        const response = await fetchImpl(url, { redirect: "follow" });
+        const response = await fetchImpl(url, { redirect: "manual" });
         if (!response.ok) return { httpStatus: response.status, contentType: response.headers.get("content-type") || "" };
         const finalUrl = response.url || url;
         if (!allowedHost(finalUrl)) throw Object.assign(new Error("REDIRECT_LEFT_OFFICIAL_HOST"), { code: "REDIRECT_NOT_OFFICIAL_HOST" });
@@ -152,4 +152,80 @@ export async function fetchQualificationIndex(url, { fetchImpl = fetch } = {}) {
   const body = await response.text();
   const records = parseQualificationIndex(body);
   return { sourceUrl: url, finalUrl, retrievedAt: new Date().toISOString(), records };
+}
+
+export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questionNumber, url }) {
+  const joined = textByPage.map((text, index) => `\n[PAGE ${index + 1}]\n${text}`).join("\n");
+  const marker = /【\s*問\s*(\d+)\s*】/g;
+  const matches = [...joined.matchAll(marker)];
+  const currentIndex = matches.findIndex(m => Number(m[1]) === Number(questionNumber));
+  if (currentIndex < 0) throw new Error("QUESTION_MARKER_NOT_FOUND");
+  const current = matches[currentIndex];
+  const end = matches[currentIndex + 1]?.index ?? joined.indexOf("試験問題の正解番号", current.index);
+  const block = joined.slice(current.index + current[0].length, end < 0 ? joined.length : end);
+  const pageMatch = joined.slice(0, current.index).match(/\[PAGE (\d+)\]/g);
+  const questionPage = pageMatch?.length ? Number(pageMatch.at(-1).match(/\d+/)[0]) : null;
+  const lines = block.split(/\r?\n/).map(s => s.replace(/\[PAGE \d+\]/g, "").trim()).filter(Boolean);
+  const choiceStart = /^([1-4])\s+(.+)$/;
+  let stem = [], choices = [], lastNumber = 0;
+  for (const line of lines) {
+    const m = line.match(choiceStart);
+    if (m && Number(m[1]) === lastNumber + 1) { lastNumber++; choices.push({ number: lastNumber, text: m[2].trim() }); }
+    else if (choices.length) choices.at(-1).text += " " + line;
+    else stem.push(line);
+  }
+  if (choices.length !== 4 || choices.some(c => !c.text.trim()) || !questionPage) throw new Error("QUESTION_OR_CHOICES_INCOMPLETE");
+
+  const answerStart = joined.indexOf("試験問題の正解番号", current.index);
+  if (answerStart < 0) throw new Error("ANSWER_TABLE_NOT_FOUND");
+  const answerText = joined.slice(answerStart);
+  const answerLines = answerText.split(/\r?\n/).filter(Boolean);
+  let answer = null, answerPage = null;
+  for (let i = 0; i < answerLines.length - 1; i++) {
+    const headerNums = [...answerLines[i].matchAll(/問\s*(\d+)/g)].map(m => Number(m[1]));
+    if (!headerNums.includes(Number(questionNumber))) continue;
+    const values = [...answerLines[i + 1].matchAll(/[1-4]/g)].map(m => Number(m[0]));
+    if (values.length !== headerNums.length) continue;
+    const idx = headerNums.indexOf(Number(questionNumber));
+    answer = values[idx];
+    const p = answerLines.slice(0, i).join("\n").match(/\[PAGE (\d+)\][\s\S]*$/);
+    answerPage = p ? Number(p[1]) : null;
+    break;
+  }
+  if (!answer || !answerPage) throw new Error("ANSWER_MAPPING_NOT_VERIFIED");
+  const id = `${year}|${section}|問${questionNumber}`;
+  return {
+    question: {
+      id, year: String(year), section, page: questionPage, text: stem.join(" ").trim(),
+      choices, source: { url }
+    },
+    answer: {
+      questionId: id, year: String(year), section, page: answerPage,
+      number: answer, numberOfChoices: choices.length,
+      evidence: `公式正解番号表の問${questionNumber}セル=${answer}（ページ${answerPage}）`,
+      source: { url }
+    }
+  };
+}
+
+export async function extractPdfPages(pdfBytes) {
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const task = getDocument({ data: pdfBytes, useSystemFonts: true, isEvalSupported: false });
+  const document = await task.promise;
+  const pages = [];
+  for (let pageNo = 1; pageNo <= document.numPages; pageNo++) {
+    const page = await document.getPage(pageNo);
+    const content = await page.getTextContent();
+    const rows = new Map();
+    for (const item of content.items) {
+      if (!("str" in item) || !item.str) continue;
+      const y = Math.round(item.transform[5] * 2) / 2;
+      const x = item.transform[4];
+      if (!rows.has(y)) rows.set(y, []);
+      rows.get(y).push({ x, text: item.str });
+    }
+    pages.push([...rows.entries()].sort((a,b) => b[0]-a[0]).map(([,items]) => items.sort((a,b) => a.x-b.x).map(i => i.text).join(" ")).join("\n"));
+  }
+  await document.destroy();
+  return pages;
 }
