@@ -102,7 +102,7 @@ test("live official RETIO 2025 PDF extracts all 50 questions and maps each answe
   assert.equal(pages.length, 30, "expected all official PDF pages to be readable");
   const answers = [];
   for (let questionNumber = 1; questionNumber <= 50; questionNumber++) {
-    const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber, url: response.url });
+    let result; try { result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber, url: response.url }); } catch (error) { throw new Error(`Question ${questionNumber}: ${error.message}`); }
     assert.equal(result.question.choices.length, 4, `Question ${questionNumber} must have all four choices`);
     assert.ok(result.question.text.length > 10, `Question ${questionNumber} must have a non-empty stem`);
     assert.ok(result.question.page >= 2 && result.question.page <= 28, `Question ${questionNumber} must have a source page`);
