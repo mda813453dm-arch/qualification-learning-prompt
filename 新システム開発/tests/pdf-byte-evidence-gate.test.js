@@ -1,0 +1,16 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {createPdfByteEvidenceGate} from '../src/pdf-byte-evidence-gate.js';
+const q=Buffer.from('%PDF- question sample'),a=Buffer.from('%PDF- answer sample');
+const h=x=>createHash('sha256').update(x).digest('hex');
+const pins={sample:{questionSha256:h(q),answerSha256:h(a)}};
+const create=()=>createPdfByteEvidenceGate({pins,extractText:async(_,kind)=>kind==='question'?'問1 本文 ア イ ウ エ オ 1 アウ 2 アエ':'正答表 問1=2'});
+const evidence={registryKey:'sample',questionPdfBytes:q,answerPdfBytes:a,rawSpan:'問1 本文 ア イ ウ エ オ',answerEvidence:'問1=2'};
+test('固定PDFバイトに由来する本文と正答は通過',async()=>assert.equal((await create()(evidence)).ok,true));
+test('問題PDFバイト改ざんを拒否',async()=>assert.equal((await create()({...evidence,questionPdfBytes:Buffer.from('%PDF- altered')})).reason,'PINNED_PDF_HASH_MISMATCH'));
+test('正答PDFバイト改ざんを拒否',async()=>assert.equal((await create()({...evidence,answerPdfBytes:Buffer.from('%PDF- altered')})).reason,'PINNED_PDF_HASH_MISMATCH'));
+test('原文がPDF抽出文字列に存在しない場合拒否',async()=>assert.equal((await create()({...evidence,rawSpan:'存在しない設問'})).reason,'SPAN_NOT_IN_PINNED_PDF'));
+test('正答証拠がPDF抽出文字列に存在しない場合拒否',async()=>assert.equal((await create()({...evidence,answerEvidence:'問1=4'})).reason,'ANSWER_NOT_IN_PINNED_PDF'));
+test('未知の資格年度区分を拒否',async()=>assert.equal((await create()({...evidence,registryKey:'other'})).reason,'UNKNOWN_OFFICIAL_PDF_PAIR'));
+test('信頼できるPDFパーサ未指定は起動拒否',()=>assert.throws(()=>createPdfByteEvidenceGate({pins}),/TRUSTED_PDF_PARSER_REQUIRED/));
