@@ -157,7 +157,7 @@ export async function fetchQualificationIndex(url, { fetchImpl = fetch } = {}) {
 
 export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questionNumber, url }) {
   const joined = textByPage.map((text, index) => `\n[PAGE ${index + 1}]\n${text}`).join("\n");
-  const marker = /【\s*問\s*(\d+)\s*】/g;
+  const marker = /(?:^|\n)\s*【\s*問\s*(\d+)\s*】/gm;
   const matches = [...joined.matchAll(marker)];
   const currentIndex = matches.findIndex(m => Number(m[1]) === Number(questionNumber));
   if (currentIndex < 0) throw new Error("QUESTION_MARKER_NOT_FOUND");
