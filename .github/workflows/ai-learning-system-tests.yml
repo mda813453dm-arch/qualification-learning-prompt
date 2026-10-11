@@ -17,6 +17,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: 対話意図の分類テスト
+      - name: PDF解析依存の導入
+        run: npm install --no-audit --no-fund
+        working-directory: 新システム開発
+      - name: 学習システムの単体・結合テスト
         run: npm test
         working-directory: 新システム開発
