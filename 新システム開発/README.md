@@ -53,3 +53,8 @@
 - [検証済み主体の受け渡し](src/verified-context.js)
 - [接続境界のテスト](tests/verified-context.test.js)
 - [接続境界の制限と検証](11_接続境界の実装と検証.md)
+
+## 公式採点ゲートの試作
+- [公式採点の安全ゲート](src/verified-question-gate.js)
+- [安全ゲートのテスト](tests/verified-question-gate.test.js)
+- [公式採点ゲートの本番化条件](12_公式採点ゲートの試作.md)
