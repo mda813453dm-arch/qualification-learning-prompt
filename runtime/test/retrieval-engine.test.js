@@ -68,3 +68,23 @@ test("index fetch distinguishes HTTP failure from empty/not attempted", async ()
     ok: false, status: 403, url, headers: { get: () => "text/html" }
   }) }), error => error.code === "INDEX_HTTP_403");
 });
+
+import { parseTakkenQuestionAndAnswer } from "../src/retrieval-engine.js";
+test("extracts a Takken question and maps its answer by explicit question header", () => {
+  const pages = [
+    "令和7年度 問題\n【問 1 】 次の記述のうち正しいものはどれか。\n1 選択肢A\n2 選択肢B\n3 選択肢C\n4 選択肢D\n【問 2 】 次の問題",
+    "中間ページ",
+    "試験問題の正解番号\n問 1 問 2\n2 1"
+  ];
+  const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" });
+  assert.equal(result.question.page, 1);
+  assert.equal(result.question.choices.length, 4);
+  assert.equal(result.question.text, "次の記述のうち正しいものはどれか。");
+  assert.equal(result.answer.number, 2);
+  assert.equal(result.answer.page, 3);
+  assert.equal(result.answer.questionId, result.question.id);
+});
+test("refuses missing Takken choices and answer row", () => {
+  assert.throws(() => parseTakkenQuestionAndAnswer(["【問 1 】 stem\n1 A\n2 B\n3 C\n【問 2 】"], { year: 2025, section: "x", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" }), /QUESTION_OR_CHOICES_INCOMPLETE/);
+  assert.throws(() => parseTakkenQuestionAndAnswer(["【問 1 】 stem\n1 A\n2 B\n3 C\n4 D\n試験問題の正解番号\n問 2\n1"], { year: 2025, section: "x", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" }), /ANSWER_MAPPING_NOT_VERIFIED/);
+});
