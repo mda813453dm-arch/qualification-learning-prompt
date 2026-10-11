@@ -1,34 +1,36 @@
 # Qualification Learning Runtime (candidate)
 
-This directory is an independent, non-production implementation candidate. The existing tutor remains available from `master_prompt.txt` on `main`; this branch does not replace it.
+This is an independent, non-production candidate. The current tutor remains available from `master_prompt.txt` on `main`; this branch does not replace it.
 
 ## Design
 - The program owns workflow state, required-field gates, evidence validation, and deterministic transitions.
-- The AI may explain, summarize, and propose learning support, but cannot bypass a rejected transition.
-- Official-question presentation requires the question text, every choice, the exact question key, a mapped answer, and evidence from URLs present in the indexed candidate set.
-- Retrieval exhaustion is based on recorded attempts and explicit configured route/retry limits, never a single failure.
+- The AI may explain and support learning, but cannot bypass a rejected program transition.
+- A question is eligible only when its text, all choices, exact question key, mapped answer, and source evidence are validated.
+- Retrieval exhaustion depends on recorded attempts and configured limits, not one failure.
 - GitHub Actions runs tests. It is not an interactive API server and does not automatically connect a chat model.
 
-## Implemented in this candidate
+## Implemented
 - `src/state-machine.js`: initial learning workflow state machine.
-- `src/retrieval-engine.js`: HTTPS CSV index retrieval, quoted CSV parser, candidate discovery, configured official-host PDF download, PDF.js text extraction (including Japanese CMaps), a Takken question/answer-table parser, route/retry log, and strict evidence gate.
-- Tests include 403 retry behavior, missing extraction, incomplete choices, key mismatch, answer mapping mismatch, untrusted URL rejection, route fallback, and not-attempted versus exhausted.
-- GitHub Actions installs PDF.js and runs the regression suite. The live integration test downloads RETIO's official 2025 Takken PDF and verifies Question 1's four choices, answer 3, question page 2, and answer-table page 30.
+- `src/retrieval-engine.js`: HTTPS CSV retrieval, quoted CSV parsing, candidate discovery, allowlisted official-host PDF download, PDF.js text extraction with Japanese CMaps, Takken question/answer table parsing, route/retry logging, and a strict evidence gate.
+- Regression tests cover 403 retries, missing extraction, incomplete choices, key/answer mismatch, untrusted URLs, fallback routes, and the difference between unattempted and exhausted.
+- Live GitHub Actions integration downloads RETIO's official 2025 Takken PDF and checks all 50 questions: four choices per question, question-key mapping, answer-table mapping, question pages 2–28, answer-table page 30, and Question 1 answer 3. Verified run: https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/38129887710
 
-## Retrieval engine contract and limits
-The engine accepts retrieval adapters. An adapter must report the HTTP response and provide extracted structured evidence. The engine does not guess URLs, does not treat a reachable PDF as readable, and does not infer an answer mapping. Each question and answer source must be an indexed URL marked official by the adapter, with retrieval time and page evidence.
-The integration currently covers one known-format PDF from RETIO. It does not yet parse exam-body HTML pages, support arbitrary PDF layouts or all qualifications, or provide page-image/OCR review. A passing Takken integration test establishes that this PDF and parser worked from the GitHub Actions runner at that run; it does not establish that every source or retrieval environment will behave the same. HTTP 403 and other failure routes are verified with controlled tests, not actual 403 conditions from every exam site.
+## Retrieval limits
+The integration covers one known-format PDF from RETIO. It does not parse exam-body HTML pages, handle arbitrary PDF layouts or all qualifications, or provide page-image/OCR review. The integration proves this PDF/parser worked from the GitHub Actions runner in that run; it does not prove every source or retrieval environment will behave the same. 403 and other failure routes use controlled tests, not live failures from every exam site.
 
-## Running tests
+The engine does not guess URLs, treat a reachable PDF as readable, or infer an answer mapping. Retrieval adapters must report the HTTP result and structured evidence, with source URL, retrieval time, and page evidence.
+
+## Run tests
 Requires Node.js 20 or later:
 ```sh
 cd runtime
 npm test
 ```
 
-## Runtime / AI integration
-GitHub-hosted source code does not execute merely because a model can read the repository. A real integration needs a running backend (for example, a small serverless function or hosted Node service), a chat UI/tool that can call it, and durable storage for session state. If using a hosted model API, the backend also needs an API key stored as a secret and API usage may incur charges. GitHub Actions can run scheduled or triggered jobs, but is not a suitable interactive session store/server.
-Possible first deployment path: GitHub Actions for CI plus a free-tier serverless Node endpoint and a small database. Provider, free quotas, persistence, and API costs must be checked before selecting a production host. No paid service is required for the current deterministic code and tests.
+## Runtime and AI integration
+GitHub-hosted source code does not execute just because an AI can read the repository. Use requires a running backend, a chat UI/tool that can call it, and durable session storage. A hosted model API would require a secret API key and may charge for usage. GitHub Actions is for CI or triggered jobs, not interactive sessions.
+
+The current deterministic code and tests need no paid service. A free-tier serverless host may be an option later, but its quotas and storage must be checked before choosing. No hosting or AI provider has been selected.
 
 ## Release gate
-Do not replace or remove the existing master prompt until real official sources, extraction routes (including visual review fallback), persistence, AI integration, and end-to-end tests have passed.
+Keep the existing master prompt until official-source coverage, extraction fallbacks (including visual review), persistence, AI integration, and end-to-end tests pass.
