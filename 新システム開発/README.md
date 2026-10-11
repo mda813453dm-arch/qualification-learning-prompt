@@ -64,3 +64,9 @@
 - [取得・検証・採点パイプライン](src/official-retrieval-pipeline.js)
 - [パイプライン結合テスト](tests/official-retrieval-pipeline.test.js)
 - [結合試作の達成範囲](14_公式取得から採点までの結合試作.md)
+
+## 旧PDF照合エンジン直接接続
+- [旧エンジン全文コピー](src/legacy-retrieval-engine.js)
+- [新採点パイプラインへの接続](src/legacy-pipeline-factory.js)
+- [旧照合関数の実呼出しテスト](tests/legacy-pipeline-factory.test.js)
+- [直接接続の検証範囲](15_旧エンジン直接接続.md)
