@@ -31,3 +31,10 @@ test('取得失敗時は拒否',async()=>{
  const verifier=createOfficialPdfSourceVerifier({fetchImpl:async()=>{throw Error('network');}});
  assert.equal(await verifier(proof),false);
 });
+
+test('ストリームで上限を超えた場合は途中で拒否',async()=>{
+ let chunks=0;
+ const verifier=createOfficialPdfSourceVerifier({maxBytes:10,fetchImpl:async()=>({ok:true,status:200,redirected:false,headers:{get:()=>null},body:{getReader:()=>({read:async()=>{chunks++;return {done:false,value:Buffer.alloc(6)}},releaseLock:()=>{}})}})});
+ assert.equal(await verifier(proof),false);
+ assert.equal(chunks,2);
+});
