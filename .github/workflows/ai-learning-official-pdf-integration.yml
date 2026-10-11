@@ -1,0 +1,24 @@
+name: 公式PDF実取得・照合テスト
+on:
+  push:
+    branches:
+      - ai-learning-system
+    paths:
+      - '新システム開発/integration/**'
+      - '.github/workflows/ai-learning-official-pdf-integration.yml'
+  workflow_dispatch:
+jobs:
+  official-pdf-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: PDF解析依存をインストール
+        run: npm install --no-audit --no-fund
+        working-directory: 新システム開発
+      - name: 公式PDF実取得・50問照合・採点テスト
+        run: node --test integration/*.test.js
+        working-directory: 新システム開発
