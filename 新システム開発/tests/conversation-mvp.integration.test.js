@@ -21,8 +21,11 @@ test('対話→過去問要求→詳しい解説→復習→中断→別チャ�
  assert.equal(restored.qualification,'土地家屋調査士');
  assert.equal(restored.mode,'paused');
  assert.equal(restored.pendingQuestion,null);
- const another=createStudyService(createMemorySessionStore());
- await another.start('test-user',restored.qualification);
+ const resumedStore=createMemorySessionStore();
+ await resumedStore.save('test-user',restored);
+ const another=createStudyService(resumedStore);
+ assert.equal((await another.get('test-user')).mode,'paused');
+ assert.deepEqual((await another.get('test-user')).weakTopics,['不動産登記法']);
  const next=await another.message('test-user','弱点を復習したい');
  assert.equal(next.action,'review');
 });
