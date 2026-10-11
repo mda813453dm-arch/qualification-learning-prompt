@@ -16,12 +16,16 @@ export async function verifyParsedEvidence({ candidate, questionPdf, answerPdf, 
   if (q && (q.qualification !== candidate.key.qualification || String(q.year) !== String(candidate.key.year) || q.section !== candidate.key.section)) failures.push("QUESTION_IDENTITY_MISMATCH");
   if (a && (a.qualification !== candidate.key.qualification || String(a.year) !== String(candidate.key.year) || a.section !== candidate.key.section)) failures.push("ANSWER_IDENTITY_MISMATCH");
   if (q && (!nonEmpty(q.stem) || !Array.isArray(q.choices) || q.choices.length < 2)) failures.push("QUESTION_OR_CHOICES_INCOMPLETE");
+  if (q && !nonEmpty(q.sourceText)) failures.push("QUESTION_TEXT_EXTRACTION_MISSING");
+  if (a && !nonEmpty(a.sourceText)) failures.push("ANSWER_TEXT_EXTRACTION_MISSING");
   if (q && Array.isArray(q.choices)) {
     const ids = q.choices.map(choice => choice?.id);
     if (ids.some(id => typeof id !== "string" || !id.trim()) || new Set(ids).size !== ids.length || q.choices.some(choice => !nonEmpty(choice?.text))) failures.push("CHOICE_SET_INVALID");
+    if (nonEmpty(q.sourceText) && [q.stem, ...q.choices.map(choice => choice.text)].some(text => !q.sourceText.includes(text))) failures.push("QUESTION_CONTENT_NOT_FOUND_IN_PDF_TEXT");
   }
   if (q && a && q.questionId !== a.questionId) failures.push("QUESTION_ANSWER_ID_MISMATCH");
   if (a && (typeof a.correctChoiceId !== "string" || !a.answerLocation || !nonEmpty(a.answerEvidence))) failures.push("ANSWER_CELL_NOT_EVIDENCED");
+  if (a && nonEmpty(a.sourceText) && (!a.sourceText.includes(a.answerEvidence) || !a.answerEvidence.includes(a.questionId) || !a.answerEvidence.includes(a.correctChoiceId))) failures.push("ANSWER_CELL_NOT_FOUND_IN_PDF_TEXT");
   if (q && a && Array.isArray(q.choices) && !q.choices.some(choice => choice.id === a.correctChoiceId)) failures.push("ANSWER_NOT_IN_CHOICE_SET");
 
   const passed = failures.length === 0;

@@ -4,8 +4,8 @@ import { verifyParsedEvidence } from "../worker/evidence-contract.js";
 
 const pdf = new TextEncoder().encode("%PDF-1.7\nfixture");
 const candidate = { key: { qualification: "資格A", year: "2025", section: "午前" }, questionUrl: "https://exam.example/q.pdf", answerCandidates: ["https://exam.example/a.pdf"] };
-const question = { qualification: "資格A", year: "2025", section: "午前", questionId: "Q-01", stem: "設問本文", choices: [{ id: "A", text: "選択肢A" }, { id: "B", text: "選択肢B" }] };
-const answer = { qualification: "資格A", year: "2025", section: "午前", questionId: "Q-01", correctChoiceId: "B", answerLocation: "p.12 row 4", answerEvidence: "Q-01 B" };
+const question = { qualification: "資格A", year: "2025", section: "午前", questionId: "Q-01", stem: "設問本文", choices: [{ id: "A", text: "選択肢A" }, { id: "B", text: "選択肢B" }], sourceText: "Q-01 設問本文 選択肢A 選択肢B" };
+const answer = { qualification: "資格A", year: "2025", section: "午前", questionId: "Q-01", correctChoiceId: "B", answerLocation: "p.12 row 4", answerEvidence: "Q-01 B", sourceText: "正答一覧 Q-01 B" };
 const input = () => ({ candidate, questionPdf: { url: candidate.questionUrl, bytes: pdf }, answerPdf: { url: candidate.answerCandidates[0], bytes: pdf }, parsedQuestion: structuredClone(question), parsedAnswer: structuredClone(answer) });
 
 test("accepts only a complete, same-key, indexed PDF question and answer record", async () => {
@@ -43,6 +43,15 @@ test("rejects duplicate options and answers without an inspected answer location
   const result = await verifyParsedEvidence(data);
   assert.ok(result.failures.includes("CHOICE_SET_INVALID"));
   assert.ok(result.failures.includes("ANSWER_CELL_NOT_EVIDENCED"));
+});
+
+test("requires the entire question and exact answer cell to occur in extracted PDF text", async () => {
+  const data = input();
+  data.parsedQuestion.sourceText = "Q-01 設問本文 選択肢A";
+  data.parsedAnswer.sourceText = "正答一覧 Q-01 A";
+  const result = await verifyParsedEvidence(data);
+  assert.ok(result.failures.includes("QUESTION_CONTENT_NOT_FOUND_IN_PDF_TEXT"));
+  assert.ok(result.failures.includes("ANSWER_CELL_NOT_FOUND_IN_PDF_TEXT"));
 });
 
 test("rejects qualification, year, section, and answer-choice mismatches", async () => {
