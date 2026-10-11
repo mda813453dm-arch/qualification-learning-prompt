@@ -48,3 +48,8 @@
 - [学習サービスAPI](src/study-service.js)
 - [サービスAPIのテスト](tests/study-service.test.js)
 - [認証・接続境界の注意](10_外部呼出し境界と認証の注意.md)
+
+## 接続境界の試作
+- [検証済み主体の受け渡し](src/verified-context.js)
+- [接続境界のテスト](tests/verified-context.test.js)
+- [接続境界の制限と検証](11_接続境界の実装と検証.md)
