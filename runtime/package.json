@@ -6,6 +6,9 @@
   "scripts": {
     "test": "node --test"
   },
+  "dependencies": {
+    "pdfjs-dist": "4.10.38"
+  },
   "engines": {
     "node": ">=20"
   }
