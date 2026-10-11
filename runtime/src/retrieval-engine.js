@@ -188,8 +188,8 @@ export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questi
     if (values.length !== headerNums.length) continue;
     const idx = headerNums.indexOf(Number(questionNumber));
     answer = values[idx];
-    const p = joined.slice(0, answerStart).match(/\\[PAGE (\\d+)\\]/g);
-    answerPage = p?.length ? Number(p.at(-1).match(/\\d+/)[0]) : null;
+    const p = joined.slice(0, answerStart).match(/\[PAGE (\d+)\]/g);
+    answerPage = p?.length ? Number(p.at(-1).match(/\d+/)[0]) : null;
     break;
   }
   if (!answer || !answerPage) throw new Error("ANSWER_MAPPING_NOT_VERIFIED");
