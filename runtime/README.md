@@ -11,13 +11,13 @@ This directory is an independent, non-production implementation candidate. The e
 
 ## Implemented in this candidate
 - `src/state-machine.js`: initial learning workflow state machine.
-- `src/retrieval-engine.js`: HTTPS CSV index retrieval, quoted CSV parser, candidate discovery, official-host PDF byte retrieval, route/retry attempt log, and strict question/answer evidence gate. The PDF extractor is supplied through an adapter boundary.
+- `src/retrieval-engine.js`: HTTPS CSV index retrieval, quoted CSV parser, candidate discovery, configured official-host PDF download, PDF.js text extraction (including Japanese CMaps), a Takken question/answer-table parser, route/retry log, and strict evidence gate.
 - Tests include 403 retry behavior, missing extraction, incomplete choices, key mismatch, answer mapping mismatch, untrusted URL rejection, route fallback, and not-attempted versus exhausted.
-- Existing workflow runs Node's built-in test runner on GitHub Actions.
+- GitHub Actions installs PDF.js and runs the regression suite. The live integration test downloads RETIO's official 2025 Takken PDF and verifies Question 1's four choices, answer 3, question page 2, and answer-table page 30.
 
 ## Retrieval engine contract and limits
 The engine accepts retrieval adapters. An adapter must report the HTTP response and provide extracted structured evidence. The engine does not guess URLs, does not treat a reachable PDF as readable, and does not infer an answer mapping. Each question and answer source must be an indexed URL marked official by the adapter, with retrieval time and page evidence.
-The engine currently does **not** implement adapters for the qualification CSV host, exam-body HTML pages, PDF text extraction, or page-image/OCR review. Those are the next work items. No real Takken PDF has passed through this engine yet. The tests use controlled fixtures; they verify the gates, not external connectivity or the correctness of an extractor.
+The integration currently covers one known-format PDF from RETIO. It does not yet parse exam-body HTML pages, support arbitrary PDF layouts or all qualifications, or provide page-image/OCR review. A passing Takken integration test establishes that this PDF and parser worked from the GitHub Actions runner at that run; it does not establish that every source or retrieval environment will behave the same. HTTP 403 and other failure routes are verified with controlled tests, not actual 403 conditions from every exam site.
 
 ## Running tests
 Requires Node.js 20 or later:
