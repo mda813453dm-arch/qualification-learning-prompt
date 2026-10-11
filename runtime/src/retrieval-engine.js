@@ -210,7 +210,7 @@ export function parseTakkenQuestionAndAnswer(textByPage, { year, section, questi
 
 export async function extractPdfPages(pdfBytes) {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const task = getDocument({ data: pdfBytes, useSystemFonts: true, isEvalSupported: false });
+  const task = getDocument({ data: pdfBytes, useSystemFonts: true, cMapUrl: new URL("../node_modules/pdfjs-dist/cmaps/", import.meta.url).href, cMapPacked: true, standardFontDataUrl: new URL("../node_modules/pdfjs-dist/standard_fonts/", import.meta.url).href, isEvalSupported: false });
   const document = await task.promise;
   const pages = [];
   for (let pageNo = 1; pageNo <= document.numPages; pageNo++) {
