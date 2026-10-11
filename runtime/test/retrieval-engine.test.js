@@ -100,7 +100,7 @@ test("live official RETIO 2025 PDF question 1 extraction and answer mapping", as
   assert.deepEqual([...bytes.slice(0, 4)], [0x25,0x50,0x44,0x46], "PDF signature must be present");
   const pages = await extractPdfPages(bytes);
   assert.ok(pages.length >= 30, "expected all official PDF pages to be readable");
-  const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber: 1, url: response.url });
+  let result; try { result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber: 1, url: response.url }); } catch (error) { console.log("ANSWER_PAGE_LINES", JSON.stringify(pages.slice(-1)[0])); throw error; }
   assert.equal(result.question.choices.length, 4);
   assert.ok(result.question.text.length > 10);
   assert.equal(result.answer.number, 3);
