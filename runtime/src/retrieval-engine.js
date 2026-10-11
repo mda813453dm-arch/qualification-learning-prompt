@@ -137,3 +137,19 @@ export function createPdfFetchAdapter({ name = "official-pdf-fetch", officialHos
     }
   };
 }
+
+
+export async function fetchQualificationIndex(url, { fetchImpl = fetch } = {}) {
+  let parsed;
+  try { parsed = new URL(url); } catch { throw new Error("INDEX_URL_INVALID"); }
+  if (parsed.protocol !== "https:") throw new Error("INDEX_URL_MUST_USE_HTTPS");
+  const response = await fetchImpl(url, { redirect: "follow" });
+  if (!response.ok) throw Object.assign(new Error("INDEX_HTTP_ERROR"), { code: "INDEX_HTTP_" + response.status });
+  const finalUrl = response.url || url;
+  if (new URL(finalUrl).protocol !== "https:") throw new Error("INDEX_REDIRECT_NOT_HTTPS");
+  const type = response.headers.get("content-type") || "";
+  if (!/(csv|text|octet-stream)/i.test(type)) throw new Error("INDEX_CONTENT_TYPE_INVALID");
+  const body = await response.text();
+  const records = parseQualificationIndex(body);
+  return { sourceUrl: url, finalUrl, retrievedAt: new Date().toISOString(), records };
+}
