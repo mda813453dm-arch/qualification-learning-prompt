@@ -88,3 +88,23 @@ test("refuses missing Takken choices and answer row", () => {
   assert.throws(() => parseTakkenQuestionAndAnswer(["【問 1 】 stem\n1 A\n2 B\n3 C\n【問 2 】"], { year: 2025, section: "x", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" }), /QUESTION_OR_CHOICES_INCOMPLETE/);
   assert.throws(() => parseTakkenQuestionAndAnswer(["【問 1 】 stem\n1 A\n2 B\n3 C\n4 D\n試験問題の正解番号\n問 2\n1"], { year: 2025, section: "x", questionNumber: 1, url: "https://www.retio.or.jp/test.pdf" }), /ANSWER_MAPPING_NOT_VERIFIED/);
 });
+
+import { extractPdfPages, parseTakkenQuestionAndAnswer } from "../src/retrieval-engine.js";
+test("live official RETIO 2025 PDF question 1 extraction and answer mapping", async () => {
+  const response = await fetch("https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
+  assert.equal(response.status, 200, "official PDF must be reachable from this Actions runner");
+  const type = response.headers.get("content-type") || "";
+  assert.match(type, /pdf/i, "response must be a PDF, not an HTML denial page");
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  assert.ok(bytes.length > 100_000, "PDF must contain a non-trivial document");
+  assert.deepEqual([...bytes.slice(0, 4)], [0x25,0x50,0x44,0x46], "PDF signature must be present");
+  const pages = await extractPdfPages(bytes);
+  assert.ok(pages.length >= 30, "expected all official PDF pages to be readable");
+  const result = parseTakkenQuestionAndAnswer(pages, { year: 2025, section: "2025年度", questionNumber: 1, url: response.url });
+  assert.equal(result.question.choices.length, 4);
+  assert.ok(result.question.text.length > 10);
+  assert.equal(result.answer.number, 3);
+  assert.equal(result.question.page, 2);
+  assert.equal(result.answer.page, 30);
+  assert.equal(result.question.source.url, "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf");
+});
