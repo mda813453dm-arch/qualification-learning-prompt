@@ -6,7 +6,7 @@ from pathlib import Path
 
 HEADER = re.compile(r'^\s*第\s*(\d{1,2})\s*問(?=\s|$)', re.M)
 CHOICE_LINE = re.compile(r'^\s*1\s+([アイウエオ]{2})\s+2\s+([アイウエオ]{2})\s+3\s+([アイウエオ]{2})\s+4\s+([アイウエオ]{2})\s+5\s+([アイウエオ]{2})\s*$', re.M)
-ANSWER_ROW = re.compile(r'^([ \t]*)第[ \t]*(\d+)[ \t]+([1-5])(?:[ \t]+第[ \t]*(\d+)[ \t]+([1-5]))?[ \t]*$', re.M)
+ANSWER_ROW = re.compile(r'^([ \t]*)第[ \t]*(\d+)問[ \t]+([1-5])(?:[ \t]+第[ \t]*(\d+)問[ \t]+([1-5]))?[ \t]*$', re.M)
 
 def pages_from_pdf(path):
     data = Path(path).read_bytes()
