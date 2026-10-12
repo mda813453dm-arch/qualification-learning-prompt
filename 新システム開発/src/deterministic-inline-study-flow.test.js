@@ -10,14 +10,14 @@ const currentPacket={status:'ready',id:'q2',number:2,studyUnitId:'control-points
  {order:0,type:'question_number',value:'Q2'},{order:1,type:'text',value:'stem'},
  {order:2,type:'figure',assetId:'f2'},{order:3,type:'choices',value:['1','2','3','4','5']},
  {order:4,type:'instruction',value:'番号で答えてください。'}]};
-const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'inline-f2',sha256:'fig'}:
- id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'inline-f3',sha256:'fig3'}:null};
+const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/f2.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'fig'}:
+ id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/f3.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'fig3'}:null};
 function answerWait(){
  const flow=createInlineStudyFlow(registry,{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
  const payload=flow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},
   question:{status:'ready',id:'q2',number:2,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind:'official_practice',origin:'official',verifiedBundle:true},assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet:currentPacket});
  throws(()=>flow.answer(4),'ANSWER_NOT_ALLOWED','render前の回答');
- flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length});
+ flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length,markdown:payload.markdown});
  ok(flow.state().phase==='ANSWER_WAIT','完全表示後に回答待ち');
  return flow;
 }
@@ -84,12 +84,12 @@ const next=flow.commitPrefetchedNext();
 ok(next.state.phase==='PACKET_VALIDATED'&&next.state.question.id==='q3','準備済み次問packetを状態機械へ登録');
 ok(next.state.packet.answer.value===2,'prefetch時の正答を固定保持');
 ok(next.payload.status==='ready'&&next.payload.questionId==='q3'&&next.payload.packetHash==='p3','次問payload完全');
-ok(next.payload.nodes.some(n=>n.role==='official_figure'&&n.value==='inline-f3'),'公式図を保持');
+ok(next.payload.nodes.some(n=>n.role==='official_figure'&&n.value==='sandbox:/mnt/data/f3.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34'),'公式図を保持');
 ok(next.payload.nodes.at(-1).role==='instruction'&&next.payload.nodes.at(-1).value==='番号で答えてください。',
  '次問末尾に回答要求');
 ok(next.payload.nodes.some(n=>n.role==='choices'&&n.value.length===5),'次問選択肢を保持');
 const answerWaitAfterNext=flow.rendered({complete:true,questionId:'q3',packetHash:'p3',
- signature:next.payload.signature,nodeCount:next.payload.nodes.length});
+ signature:next.payload.signature,nodeCount:next.payload.nodes.length,markdown:next.payload.markdown});
 ok(answerWaitAfterNext.phase==='ANSWER_WAIT','次問完全表示後に回答受付へ遷移');
 const followup=flow.clarifyDuringExplanation('先ほどの解説をもう一度確認したいです。');
 throws(()=>flow.answer(2),'EXPLANATION_QUESTION_UNRESOLVED','説明の質問を先に処理する');
@@ -110,7 +110,7 @@ function minimalQuestion(id,number,kind='official_practice',studyUnitId='control
 const escalationFlow=createInlineStudyFlow({resolve:()=>null},{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
 const first=minimalQuestion('q1',1);
 let rendered=escalationFlow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},...first});
-escalationFlow.rendered({complete:true,questionId:'q1',packetHash:'packet-q1',signature:rendered.signature,nodeCount:rendered.nodes.length});
+escalationFlow.rendered({complete:true,questionId:'q1',packetHash:'packet-q1',signature:rendered.signature,nodeCount:rendered.nodes.length,markdown:rendered.markdown});
 const advance=async(nextId,nextNo,nextKind,answer)=>{
  const candidate=minimalQuestion(nextId,nextNo,nextKind);
  escalationFlow.prefetchNext(nextNo,candidate);
@@ -122,7 +122,7 @@ const advance=async(nextId,nextNo,nextKind,answer)=>{
  }
  const committed=escalationFlow.commitPrefetchedNext();
  if(committed.payload){
-  escalationFlow.rendered({complete:true,questionId:nextId,packetHash:'packet-'+nextId,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length});
+  escalationFlow.rendered({complete:true,questionId:nextId,packetHash:'packet-'+nextId,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length,markdown:committed.payload.markdown});
  }
  return committed;
 };
@@ -134,7 +134,7 @@ escalationFlow.prefetchNext(5,c3);
 escalationFlow.answer(1);
 escalationFlow.skipExplanation();
 const c3Ready=escalationFlow.commitPrefetchedNext();
-escalationFlow.rendered({complete:true,questionId:'c3',packetHash:'packet-c3',signature:c3Ready.payload.signature,nodeCount:c3Ready.payload.nodes.length});
+escalationFlow.rendered({complete:true,questionId:'c3',packetHash:'packet-c3',signature:c3Ready.payload.signature,nodeCount:c3Ready.payload.nodes.length,markdown:c3Ready.payload.markdown});
 escalationFlow.answer(1);
 ok(escalationFlow.learningState().phase==='CONFIRMATION_CHOICE_REQUIRED','third confirmation miss grades without requiring an unrelated next packet');
 escalationFlow.skipExplanation();
@@ -151,7 +151,7 @@ ok(escalationFlow.commitPrefetchedNext().payload.status==='ready','next confirma
 const perfectFlow=createInlineStudyFlow({resolve:()=>null},{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
 const perfectOne=minimalQuestion('perfect-1',1);
 let perfectPayload=perfectFlow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},...perfectOne});
-perfectFlow.rendered({complete:true,questionId:'perfect-1',packetHash:'packet-perfect-1',signature:perfectPayload.signature,nodeCount:perfectPayload.nodes.length});
+perfectFlow.rendered({complete:true,questionId:'perfect-1',packetHash:'packet-perfect-1',signature:perfectPayload.signature,nodeCount:perfectPayload.nodes.length,markdown:perfectPayload.markdown});
 for(const [id,n,routeList] of [
  ['perfect-2',2,[minimalQuestion('perfect-2',2)]],
  ['perfect-3',3,[minimalQuestion('perfect-3',3)]]
@@ -159,7 +159,7 @@ for(const [id,n,routeList] of [
  perfectFlow.prefetchNext(routeList.map(input=>({number:n,input})));
  perfectFlow.answer(4);perfectFlow.decideExplanation('skip');perfectFlow.skipExplanation();
  const committed=perfectFlow.commitPrefetchedNext();
- perfectFlow.rendered({complete:true,questionId:id,packetHash:'packet-'+id,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length});
+ perfectFlow.rendered({complete:true,questionId:id,packetHash:'packet-'+id,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length,markdown:committed.payload.markdown});
 }
 const sameUnitCandidate=minimalQuestion('same-unit-next',4);
 const nextUnitCandidate=minimalQuestion('next-unit-first',5,'official_practice','traverse');

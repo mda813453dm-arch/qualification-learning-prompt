@@ -7,7 +7,7 @@ const assets=[{id:'fig6',kind:'figure',page:4,sha256:'a'.repeat(64),crop:{x0:1,y
 const studyUnitId='surveying:control-points',studyPlanSha256='c'.repeat(64);
 const bundle={schema:'official-question-bundle-v1',key,studyUnitId,studyPlanSha256,displayNumber:'■2025年度 午後の部 問6',source:{questionPdfSha256:'qsha',answerPdfSha256:'asha',pages:[4]},body,choices,answer:{number:4,evidenceSha256:h('answer-cell')},assets,layout:['body','fig6','tab6','choices','answer-control'],packetHash:'packet6'};
 const manifest={key,studyUnitId,studyPlanSha256,questionPdfSha256:'qsha',answerPdfSha256:'asha',pages:[4],bodySha256:h(body),choiceSha256:choices.map(h),answerNumber:4,answerEvidenceSha256:h('answer-cell'),assets,reviewStatus:'approved',allVisualsAccountedFor:true,answerCellChecked:true,textChecked:true,displayChecked:true};
-const reg={resolve:id=>({questionId:key,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:assets.find(x=>x.id===id)?.sha256})};
+const reg={resolve:id=>({questionId:key,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/'+id+'.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:assets.find(x=>x.id===id)?.sha256})};
 const p=bridgeOfficialBundleToInline(bundle,manifest,reg);
 ok(p.status==='ready','bridge ready');ok(p.signature==='question_number>body>official_figure>official_table>choices>instruction','order');ok(p.packetHash==='packet6','packet binding');
 ok(p.question.id===key&&p.question.number===6&&p.packet.id===key,'canonical question and packet returned');
@@ -44,7 +44,7 @@ const orderedManifest={...manifest,bodySha256:h(orderedBody),assets:structuredCl
  contentBlockSha256:orderedBlocks.map(blockHash)};
 const orderedRegistry={resolve:id=>{
  const item=orderedAssets.find(x=>x.id===id);
- return item?{questionId:key,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:item.sha256}:null;
+ return item?{questionId:key,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/'+id+'.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:item.sha256}:null;
 }};
 const ordered=bridgeOfficialBundleToInline(orderedBundle,orderedManifest,orderedRegistry);
 ok(ordered.status==='ready','interleaved content block bundle accepted');
@@ -92,7 +92,7 @@ ok(Object.isFrozen(built.bundle.contentBlocks)&&Object.isFrozen(built.manifest.a
  'bundle and manifest are deeply immutable');
 const builtRegistry={resolve:id=>{
  const a=builderAssets.find(x=>x.id===id);
- return a?{questionId:extraction.key,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:a.sha256}:null;
+ return a?{questionId:extraction.key,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/'+id+'.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:a.sha256}:null;
 }};
 const builtInline=bridgeOfficialBundleToInline(built.bundle,built.manifest,builtRegistry);
 ok(builtInline.status==='ready','built bundle enters inline rendering gate');

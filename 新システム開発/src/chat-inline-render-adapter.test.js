@@ -1,6 +1,6 @@
 import {compileChatInlinePayload,verifyChatInlineReceipt,renderChatInlineMarkdown} from './chat-inline-render-adapter.js';
 const ok=(v,m)=>{if(!v)throw new Error(m)};
-const asset=(id,q='q')=>({questionId:q,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:'sha-'+id});
+const asset=(id,q='q')=>({questionId:q,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/'+id+'.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'sha-'+id});
 const registry={resolve:id=>asset(id)};
 const packet=(id,blocks)=>({status:'ready',id,packetHash:'hash-'+id,contentBlocks:blocks.map((b,i)=>({order:i,...b}))});
 const end=[{type:'choices',value:['1','2','3','4','5']},{type:'instruction',value:'番号で答えてください。'}];
@@ -22,7 +22,9 @@ ok(compileChatInlinePayload(missing,{resolve:()=>null}).status==='blocked','miss
 const wrong=packet('right',[{type:'question_number',value:'Q'},{type:'figure',assetId:'f1'},...end]);
 ok(compileChatInlinePayload(wrong,{resolve:()=>asset('f1','other')}).status==='blocked','wrong binding');n++;
 const p=compileChatInlinePayload(packet('receipt',[{type:'question_number',value:'Q'},...end]),registry);
-ok(!verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:'wrong',nodeCount:p.nodes.length}).ok,'wrong receipt order');n++;
+ok(!verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:'wrong',nodeCount:p.nodes.length,markdown:p.markdown}).ok,'wrong receipt order');n++;
+ok(verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:p.signature,nodeCount:p.nodes.length}).reason==='RENDER_MARKDOWN_MISMATCH','receipt cannot omit the rendered message body');
+ok(verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:p.signature,nodeCount:p.nodes.length,markdown:p.markdown}).ok,'exact markdown receipt is accepted');n+=2;
 console.log('PASS chat-inline-render-adapter '+n+' checks');
 
 const iosFigure='sandbox:/mnt/data/official-q3.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34';
@@ -36,6 +38,7 @@ const markdownPayload={status:'ready',questionId:'q3',packetHash:'q3hash',nodes:
 ]};
 const markdownResult=renderChatInlineMarkdown(markdownPayload);
 ok(markdownResult.status==='ready','inline markdown payload ready');
+ok(p.markdown.includes('![公式図]('),'compiled payload directly carries the message-ready Markdown');
 const imageMarkdown='![公式図]('+iosFigure+')';
 ok(markdownResult.markdown.includes(imageMarkdown),'figure is emitted as an actual Markdown image link');
 ok(markdownResult.markdown.includes(String.fromCharCode(10)+String.fromCharCode(10)+imageMarkdown),'Markdown blocks are separated with real line breaks');

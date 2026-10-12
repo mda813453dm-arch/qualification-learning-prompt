@@ -26,14 +26,14 @@ ok(resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law',explanati
 ok(resolveExplanationPolicy('surveying-engineer',{id:'q2'},{id:'q2'})==='general','測量一般問題');
 
 const studyPlan={status:'approved',qualificationId:'land-surveyor',sha256:'a'.repeat(64),itemIds:['property-rights']};
-const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'inline-f2',sha256:'fig'}:id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'inline-f3',sha256:'fig3'}:null};
+const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/f2.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'fig'}:id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/f3.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'fig3'}:null};
 const flow=createInlineStudyFlow(registry,{verifyOfficialSource:trustedVerifier,studyPlan});
 const question={status:'ready',id:'q2',number:2,subjectArea:'law',explanationPolicy:'legal_basis_required',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,kind:'official_practice',origin:'official',verifiedBundle:true};
 const packet={status:'ready',id:'q2',number:2,packetHash:'p2',explanationPolicy:'legal_basis_required',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,answer:{value:4},contentBlocks:[
  {order:0,type:'question_number',value:'Q2'},{order:1,type:'text',value:'stem'},{order:2,type:'figure',assetId:'f2'},
  {order:3,type:'choices',value:['1','2','3','4','5']},{order:4,type:'instruction',value:'番号で答えてください。'}]};
 const payload=flow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},question,assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet});
-flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length});
+flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length,markdown:payload.markdown});
 const nextPacket={status:'ready',id:'q3',number:3,packetHash:'p3',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,answer:{value:2},contentBlocks:[
  {order:0,type:'question_number',value:'Q3'},{order:1,type:'text',value:'stem3'},{order:2,type:'figure',assetId:'f3'},
  {order:3,type:'choices',value:['1','2','3','4','5']},{order:4,type:'instruction',value:'番号で答えてください。'}]};

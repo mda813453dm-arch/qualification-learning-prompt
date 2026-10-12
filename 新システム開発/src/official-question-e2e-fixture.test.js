@@ -14,7 +14,7 @@ const q2=makeOrderedQuestion({
 });
 ok(q2.status==='ready','official q2 packet');
 const audit=validateDisplayArray(q2);ok(audit.ok,'display audit');
-const reg={resolve:id=>id==='q2-official-figure'?{questionId:q2.id,verified:true,mime:'image/png',inlineRef:'official-q2-inline',sha256:'verified-crop-sha'}:null};
+const reg={resolve:id=>id==='q2-official-figure'?{questionId:q2.id,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/official-q2.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'verified-crop-sha'}:null};
 const p=compileChatInlinePayload({...q2,packetHash:'official-q2-packet'},reg);
 ok(p.status==='ready','inline payload');
 ok(p.signature==='question_number>body>official_figure>body>choices>instruction','official order');

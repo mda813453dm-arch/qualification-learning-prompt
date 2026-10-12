@@ -41,7 +41,10 @@ export function compileChatInlinePayload(question, assetRegistry){
  const sig=out.map(x=>x.role).join('>');
  if(out[0]?.role!=='question_number'||out.at(-1)?.role!=='instruction'||!out.some(x=>x.role==='choices'))
    return fail('PAYLOAD_INCOMPLETE',sig);
- return Object.freeze({status:'ready',questionId:question.id,packetHash:question.packetHash,signature:sig,nodes:Object.freeze(out.map(Object.freeze))});
+ const payload={status:'ready',questionId:question.id,packetHash:question.packetHash,signature:sig,nodes:Object.freeze(out.map(Object.freeze))};
+ const rendered=renderChatInlineMarkdown(payload);
+ if(rendered.status!=='ready')return fail(rendered.reason);
+ return Object.freeze({...payload,markdown:rendered.markdown});
 }
 
 /**
@@ -52,6 +55,8 @@ export function verifyChatInlineReceipt(payload,receipt){
  if(!receipt||receipt.complete!==true)return Object.freeze({ok:false,reason:'RENDER_NOT_CONFIRMED'});
  if(receipt.questionId!==payload.questionId||receipt.packetHash!==payload.packetHash)
    return Object.freeze({ok:false,reason:'RENDER_BINDING_MISMATCH'});
+ if(typeof payload.markdown!=='string'||receipt.markdown!==payload.markdown)
+   return Object.freeze({ok:false,reason:'RENDER_MARKDOWN_MISMATCH'});
  if(receipt.signature!==payload.signature||receipt.nodeCount!==payload.nodes.length)
    return Object.freeze({ok:false,reason:'RENDER_ORDER_MISMATCH'});
  return Object.freeze({ok:true,packetHash:payload.packetHash,complete:true});
@@ -71,7 +76,13 @@ export function renderChatInlineMarkdown(payload){
   if(['question_number','body','formula','instruction'].includes(node.role)){
    if(typeof node.value!=='string'||!node.value.trim())return fail('RENDER_TEXT_MISSING');
    parts.push(node.value);
-  }else if(node.role==='official_figure'||node.role==='official_table'){
+  }else if(node.role==='official_table'&&node.type==='table'){
+   if(!Array.isArray(node.value)||!node.value.length||node.value.some(r=>!Array.isArray(r)||!r.length)||
+      new Set(node.value.map(r=>r.length)).size!==1||node.value.some(r=>r.some(c=>!['string','number','boolean'].includes(typeof c))))
+    return fail('RENDER_TABLE_INVALID');
+   const esc=x=>String(x).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
+   parts.push('<table><tbody>'+node.value.map(row=>'<tr>'+row.map(cell=>'<td>'+esc(cell)+'</td>').join('')+'</tr>').join('')+'</tbody></table>');
+  }else if(node.role==='official_figure'||(node.role==='official_table'&&node.type==='image')){
    if(typeof node.value!=='string')return fail('INLINE_IMAGE_REFERENCE_MISSING');
    const queryAt=node.value.indexOf('?');
    const imagePath=queryAt<0?node.value:node.value.slice(0,queryAt);

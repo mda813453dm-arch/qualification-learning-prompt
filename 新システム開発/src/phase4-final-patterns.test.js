@@ -1,7 +1,7 @@
 import {compileChatInlinePayload} from './chat-inline-render-adapter.js';
 const ok=(v,m)=>{if(!v)throw new Error(m)};
 const mk=(id,blocks)=>({status:'ready',id,packetHash:'h-'+id,contentBlocks:blocks.map((b,i)=>({order:i,...b}))});
-const asset=(id,q)=>({questionId:q,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:'sha-'+id});
+const asset=(id,q)=>({questionId:q,verified:true,mime:'image/png',inlineRef:'sandbox:/mnt/data/'+id+'.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34',sha256:'sha-'+id});
 const tail=[{type:'choices',value:['1','2','3','4','5']},{type:'instruction',value:'番号で答えてください。'}];
 const cases=[
  ['q6',[{type:'question_number',value:'■2025年度 午前の部 問6'},{type:'text',value:'本文'},{type:'figure',assetId:'fig6'},{type:'table',value:[['1','110.40','170.72']]},...tail]],
