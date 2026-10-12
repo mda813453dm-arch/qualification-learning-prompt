@@ -1,5 +1,6 @@
 import {createDeterministicSession} from './deterministic-session-machine.js';
 import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
+import {compileLegalBasisExplanation,resolveExplanationPolicy} from './legal-basis-explanation.js';
 
 function immutableJson(value){
  const copy=JSON.parse(JSON.stringify(value));
@@ -16,10 +17,12 @@ export function createInlineStudyFlow(assetRegistry){
  const machine=createDeterministicSession();
  let payload=null;
  let prefetchedNext=null;
+ let currentExplanationPolicy='general';
  const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r};
  return Object.freeze({
   state(){return machine.state()},
   prepare(x){
+   const policy=resolveExplanationPolicy(x.qualificationId,x.question,x.packet);
    must(machine.dispatch({type:'SET_QUALIFICATION',qualificationId:x.qualificationId}));
    must(machine.dispatch({type:'PIN_SOURCE',source:x.source}));
    must(machine.dispatch({type:'PIN_QUESTION',question:x.question}));
@@ -27,6 +30,7 @@ export function createInlineStudyFlow(assetRegistry){
    must(machine.dispatch({type:'VALIDATE_PACKET',packet:x.packet}));
    payload=compileChatInlinePayload(x.packet,assetRegistry);
    if(payload.status!=='ready')throw new Error(payload.reason);
+   currentExplanationPolicy=policy;
    return payload;
   },
   rendered(receipt){
@@ -45,6 +49,7 @@ export function createInlineStudyFlow(assetRegistry){
    if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
    if(packet.number!==number)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
    if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
+   const policy=resolveExplanationPolicy(machine.state().qualification,question,packet);
    if(!packet.packetHash||!Number.isInteger(Number(packet.answer?.value))||Number(packet.answer.value)<1)
     throw new Error('NEXT_OFFICIAL_ANSWER_REQUIRED');
    if(!Array.isArray(nextInput.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
@@ -71,7 +76,7 @@ export function createInlineStudyFlow(assetRegistry){
     throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
    if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))
     throw new Error('NEXT_CHOICES_INCOMPLETE');
-   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload});
+   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload,policy});
    return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash});
   },
   answer(value){
@@ -82,7 +87,14 @@ export function createInlineStudyFlow(assetRegistry){
   explain(text){
    const s=machine.state();
    if(s.phase!=='GRADED')throw new Error('EXPLANATION_NOT_ALLOWED');
-   must(machine.dispatch({type:'COMMIT_EXPLANATION',explanation:text,packetHash:s.packet.packetHash}));
+   let display=text;
+   if(currentExplanationPolicy==='legal_basis_required'){
+    const result=compileLegalBasisExplanation(text,{questionId:s.question?.id,packetHash:s.packet.packetHash});
+    if(!result.ok)throw new Error(result.reason);
+    display=result.displayText;
+   }
+   if(typeof display!=='string'||!display.trim())throw new Error('EXPLANATION_TEXT_MISSING');
+   must(machine.dispatch({type:'COMMIT_EXPLANATION',explanation:display,packetHash:s.packet.packetHash}));
    return machine.state();
   },
   next(number){
@@ -91,12 +103,12 @@ export function createInlineStudyFlow(assetRegistry){
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   const {number,input,payload:nextPayload}=prefetchedNext;
+   const {number,input,payload:nextPayload,policy}=prefetchedNext;
    must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
    must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
    must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
    must(machine.dispatch({type:'VALIDATE_PACKET',packet:input.packet}));
-   payload=nextPayload; prefetchedNext=null;
+   payload=nextPayload; currentExplanationPolicy=policy; prefetchedNext=null;
    return Object.freeze({state:machine.state(),payload:nextPayload});
   },
   nextReady(number,nextInput){
