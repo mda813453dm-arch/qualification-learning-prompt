@@ -105,7 +105,7 @@ const verifiedResult={
   choices:extraction.choices.map(text=>({text})),
   source:{official:true,questionPdfSha256:extraction.questionPdfSha256}},
  answer:{questionId:extraction.key,year:extraction.year,section:extraction.section,
-  number:extraction.answerNumber,evidence:'公式正答行',
+  number:extraction.answerNumber,page:1,evidence:'公式正答行',
   source:{official:true,url:'https://official.example/answer.pdf',answerPdfSha256:extraction.answerPdfSha256}},
  bundleExtraction:extraction,layoutReview
 };
