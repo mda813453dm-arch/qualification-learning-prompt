@@ -105,3 +105,37 @@ export function createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayo
   return deepFreeze({status:'ready',bundle,manifest,packetHash});
  };
 }
+
+/**
+ * Official retrieval pipeline用の、本番用Bundle→インラインpayload合成器。
+ * PDF抽出結果、公式取得結果、レビュー配置の三者が同一の問題・出典に
+ * 結び付かない場合は表示データを返さない。
+ */
+export function createOfficialBundleInlineCompiler({
+ verifyExtraction,verifyLayoutReview,assetRegistry
+}={}){
+ const build=createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayoutReview});
+ if(!assetRegistry||typeof assetRegistry.resolve!=='function')
+  throw new Error('ASSET_REGISTRY_REQUIRED');
+ return async function compile({candidate,verifiedResult,studyUnitId,studyPlanSha256}={}){
+  const extraction=verifiedResult?.bundleExtraction;
+  const q=verifiedResult?.question,a=verifiedResult?.answer;
+  if(!candidate||!extraction||!q||!a)return buildFail('VERIFIED_BUNDLE_INPUTS_REQUIRED');
+  const choiceText=Array.isArray(q.choices)?q.choices.map(c=>c?.text):[];
+  if(extraction.key!==candidate.questionId||q.id!==candidate.questionId||
+     a.questionId!==candidate.questionId||extraction.qualification!==candidate.qualificationId||
+     String(extraction.year)!==String(candidate.year)||extraction.section!==candidate.section||
+     q.section!==candidate.section||a.section!==candidate.section||
+     String(q.year)!==String(candidate.year)||String(a.year)!==String(candidate.year)||
+     extraction.studyUnitId!==studyUnitId||extraction.studyPlanSha256!==studyPlanSha256||
+     q.source?.questionPdfSha256!==extraction.questionPdfSha256||
+     a.source?.answerPdfSha256!==extraction.answerPdfSha256||
+     typeof q.text!=='string'||sha(q.text)!==extraction.stemSha256||
+     !sameArray(choiceText,extraction.choices)||a.number!==extraction.answerNumber||
+     typeof a.evidence!=='string'||sha(a.evidence)!==extraction.answerEvidenceSha256)
+   return buildFail('VERIFIED_EXTRACTION_BINDING_MISMATCH');
+  const built=await build({extraction,layoutReview:verifiedResult.layoutReview});
+  if(built.status!=='ready')return built;
+  return bridgeOfficialBundleToInline(built.bundle,built.manifest,assetRegistry);
+}
+}
