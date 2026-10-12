@@ -122,7 +122,8 @@ export function createOfficialBundleInlineCompiler({
   const q=verifiedResult?.question,a=verifiedResult?.answer;
   if(!candidate||!extraction||!q||!a)return buildFail('VERIFIED_BUNDLE_INPUTS_REQUIRED');
   const choiceText=Array.isArray(q.choices)?q.choices.map(c=>c?.text):[];
-  if(extraction.key!==candidate.questionId||q.id!==candidate.questionId||
+  if(verifiedResult.status!=='verified'||q.source?.official!==true||a.source?.official!==true||
+     extraction.key!==candidate.questionId||q.id!==candidate.questionId||
      a.questionId!==candidate.questionId||extraction.qualification!==candidate.qualificationId||
      String(extraction.year)!==String(candidate.year)||extraction.section!==candidate.section||
      q.section!==candidate.section||a.section!==candidate.section||
