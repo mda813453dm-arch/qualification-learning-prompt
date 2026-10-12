@@ -130,7 +130,11 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   },
   answer(value){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
-   const proposedCorrect=Number(String(value).trim())===Number(machine.state().packet?.answer?.value);
+   const parsedAnswer=Number(String(value).trim());
+   const choiceBlock=machine.state().packet?.contentBlocks?.find(b=>b.type==='choices');
+   if(!Number.isInteger(parsedAnswer)||parsedAnswer<1||parsedAnswer>(choiceBlock?.value?.length||0))
+    throw new Error('ANSWER_VALUE_INVALID');
+   const proposedCorrect=parsedAnswer===Number(machine.state().packet?.answer?.value);
    const prediction=learningSequence.predictNextKind(proposedCorrect);
    if(prediction.ok!==true)throw new Error(prediction.reason);
    const menuOnly=prediction.kind==='confirmation_menu';
@@ -142,10 +146,10 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     return c.kind===prediction.kind;
    });
    if(!selected&&!menuOnly)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
-   prefetchedNext=menuOnly?null:selected;
-   const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
+   const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value:parsedAnswer})).state.grade;
    const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
    if(result.ok!==true)throw new Error(result.reason);
+   prefetchedNext=menuOnly?null:selected;
    const preference=explanationPreference(currentLearningContext.itemId);
    explanationDecision=currentLearningContext.kind==='ai_confirmation'?'skip':(preference==='ask_each'?null:preference);
    return Object.freeze({...grade,learning:result.outcome,explanationChoiceRequired:explanationDecision===null,explanationChoices:explanationDecision===null?Object.freeze(['detailed','skip']):Object.freeze([])});
