@@ -28,7 +28,7 @@ class Tests(unittest.TestCase):
    report=export(doc.tobytes(),d)
    self.assertEqual([q['pdfPage'] for q in report['questions']],[9,29])
    self.assertEqual([q['questionNumber'] for q in report['questions']],[7,27])
-   self.assertTrue(all((Path(d)/q['imageFile']).read_bytes().startswith(b'\\x89PNG') for q in report['questions']))
+   self.assertTrue(all((Path(d)/q['imageFile']).read_bytes().startswith(bytes([137,80,78,71,13,10,26,10])) for q in report['questions']))
    self.assertFalse(report['publishable'])
  def test_empty_question_page_rejected(self):
   import fitz
