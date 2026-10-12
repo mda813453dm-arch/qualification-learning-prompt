@@ -210,3 +210,41 @@ const wrongSurveyRegistry=adaptSurveyorExportedQuestion({...surveyExport,registr
  {number:2,studyUnitId,studyPlanSha256});
 ok(wrongSurveyRegistry.reason==='SURVEYOR_EXPORT_IDENTITY_INVALID',
  'wrong exam registry is rejected');
+
+const surveyExtraction=adaptedSurvey.extraction;
+const surveyReview={
+ status:'approved',key:surveyExtraction.key,questionPdfSha256:surveyExtraction.questionPdfSha256,
+ answerPdfSha256:surveyExtraction.answerPdfSha256,stemSha256:surveyExtraction.stemSha256,
+ pages:[...surveyExtraction.pages],answerEvidenceSha256:surveyExtraction.answerEvidenceSha256,
+ assets:[],contentOrder:[{type:'text',startOffset:0,endOffset:surveyExtraction.stemText.length}],
+ allVisualsAccountedFor:true,textChecked:true,displayChecked:true,answerCellChecked:true
+};
+const surveyVerified={
+ status:'verified',key:{qualification:surveyExtraction.qualification},
+ question:{
+  id:surveyExtraction.key,year:surveyExtraction.year,section:surveyExtraction.section,
+  text:surveyExtraction.stemText,choices:surveyExtraction.choices.map(text=>({text})),
+  source:{official:true,questionPdfSha256:surveyExtraction.questionPdfSha256}
+ },
+ answer:{
+  questionId:surveyExtraction.key,year:surveyExtraction.year,section:surveyExtraction.section,
+  number:surveyExtraction.answerNumber,evidence:surveyExtraction.answerEvidence,
+  source:{official:true,answerPdfSha256:surveyExtraction.answerPdfSha256}
+ },
+ bundleExtraction:surveyExtraction,layoutReview:surveyReview
+};
+const surveyCompiler=createOfficialBundleInlineCompiler({
+ verifyExtraction:value=>value===surveyExtraction,
+ verifyLayoutReview:value=>value===surveyReview,
+ assetRegistry:{resolve:()=>null}
+});
+const surveyInline=await surveyCompiler({
+ candidate:{questionId:surveyExtraction.key,qualificationId:'土地家屋調査士',
+  year:2025,section:'午後'},
+ verifiedResult:surveyVerified,studyUnitId,studyPlanSha256
+});
+ok(surveyInline.status==='ready'&&surveyInline.question.id===surveyExtraction.key,
+ 'verified PDF export compiles to the canonical official inline question');
+ok(surveyInline.signature.endsWith('>choices>instruction')&&
+ surveyInline.nodes.at(-1).value==='番号で答えてください。',
+ 'compiled exported question is fully renderable through its answer instruction');
