@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {bridgeOfficialBundleToInline,createOfficialQuestionBundleBuilder,createOfficialBundleInlineCompiler} from './official-bundle-inline-bridge.js';
+import {createOfficialRetrievalPipeline} from './official-retrieval-pipeline.js';
 const h=s=>createHash('sha256').update(s).digest('hex'), ok=(v,m)=>{if(!v)throw new Error(m)};
 const key='土地家屋調査士:2025:午後:6',body='公式PDFから確定した問題本文',choices=['1','2','3','4','5'];
 const assets=[{id:'fig6',kind:'figure',page:4,sha256:'a'.repeat(64),crop:{x0:1,y0:2,x1:3,y1:4}},{id:'tab6',kind:'table',page:4,sha256:'b'.repeat(64),crop:{x0:5,y0:6,x1:7,y1:8}}];
@@ -131,6 +132,22 @@ const mismatchedCompilerResult=await compiler({
 });
 ok(mismatchedCompilerResult.reason==='VERIFIED_EXTRACTION_BINDING_MISMATCH',
  'different answer PDF evidence cannot be mixed into the compiled question packet');
+
+const studyPlan={status:'approved',qualificationId:extraction.qualification,
+ sha256:studyPlanSha256,itemIds:[studyUnitId]};
+const integratedPipeline=createOfficialRetrievalPipeline({
+ adapters:[],resolveCandidates:async()=>({status:'approved',candidates:[{
+  qualificationId:extraction.qualification,studyUnitId,studyPlanSha256,
+  year:extraction.year,section:extraction.section,questionId:extraction.key
+ }]}),
+ retrieveAndVerify:async()=>verifiedResult,
+ buildInlinePayload:compiler
+});
+const integrated=await integratedPipeline({studyPlan,studyUnitId});
+ok(integrated.status==='ready'&&integrated.verifiedQuestion.inlinePayload.questionId===extraction.key,
+ 'approved official retrieval reaches inline rendering only through the verified bundle compiler');
+ok(integrated.verifiedQuestion.inlinePayload.signature.endsWith('>choices>instruction'),
+ 'integrated retrieval returns the complete ordered question and response instruction');
 const deniedBuilder=createOfficialQuestionBundleBuilder({verifyExtraction:()=>false,verifyLayoutReview:()=>true});
 ok((await deniedBuilder({extraction,layoutReview})).reason==='PINNED_EXTRACTION_NOT_VERIFIED',
  'unverified PDF extraction is blocked before bundle assembly');
