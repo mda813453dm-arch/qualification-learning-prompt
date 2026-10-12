@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {validateQuestionBundle} from './question-bundle-gate.js';
 import {compileChatInlinePayload} from './chat-inline-render-adapter.js';
 
@@ -26,4 +27,80 @@ export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  const payload=compileChatInlinePayload(packet,assetRegistry);
  if(payload.status!=='ready')return payload;
  return Object.freeze({...payload,question,packet:Object.freeze({...packet,contentBlocks:Object.freeze(blocks.map(Object.freeze)),answer:Object.freeze({...packet.answer})})});
+}
+
+const sha=value=>createHash('sha256').update(value).digest('hex');
+const isSha=value=>/^[a-f0-9]{64}$/.test(value||'');
+const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>x===b[i]);
+const buildFail=reason=>Object.freeze({status:'blocked',reason});
+
+/** Server-owned verifiers bind PDF extraction and reviewed visual placement. */
+export function createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayoutReview}={}){
+ if(typeof verifyExtraction!=='function'||typeof verifyLayoutReview!=='function')throw new Error('TRUSTED_BUNDLE_VERIFIERS_REQUIRED');
+ return async function build({extraction,layoutReview}={}){
+  if(!extraction||!layoutReview)return buildFail('EXTRACTION_AND_LAYOUT_REQUIRED');
+  let sourceOk=false,reviewOk=false;
+  try{sourceOk=await verifyExtraction(extraction)===true;}catch{}
+  if(!sourceOk)return buildFail('PINNED_EXTRACTION_NOT_VERIFIED');
+  try{reviewOk=await verifyLayoutReview(layoutReview)===true;}catch{}
+  if(!reviewOk)return buildFail('LAYOUT_REVIEW_NOT_VERIFIED');
+  const {key,number,year}=extraction;
+  if(typeof key!=='string'||!/^.+:\\d{4}:.+:\\d+$/.test(key)||!Number.isInteger(year)||!Number.isInteger(number)||number<1||
+     String(year)!==key.split(':')[1]||String(number)!==key.split(':').at(-1)||
+     !extraction.qualification||!extraction.section||!extraction.studyUnitId||!isSha(extraction.studyPlanSha256))
+   return buildFail('QUESTION_IDENTITY_INVALID');
+  if(!isSha(extraction.questionPdfSha256)||!isSha(extraction.answerPdfSha256)||!Array.isArray(extraction.pages)||!extraction.pages.length||
+     extraction.pages.some((p,i)=>!Number.isInteger(p)||p<1||(i>0&&p<=extraction.pages[i-1])))return buildFail('SOURCE_PAGES_INVALID');
+  if(typeof extraction.stemText!=='string'||!extraction.stemText.trim()||!isSha(extraction.stemSha256)||sha(extraction.stemText)!==extraction.stemSha256)
+   return buildFail('EXTRACTED_STEM_HASH_MISMATCH');
+  if(!Array.isArray(extraction.choices)||extraction.choices.length<2||extraction.choices.some(c=>typeof c!=='string'||!c.trim())||
+     !Number.isInteger(extraction.answerNumber)||extraction.answerNumber<1||extraction.answerNumber>extraction.choices.length||
+     !isSha(extraction.answerEvidenceSha256))return buildFail('EXTRACTED_ANSWER_INCOMPLETE');
+  if(layoutReview.status!=='approved'||layoutReview.key!==key||
+     layoutReview.questionPdfSha256!==extraction.questionPdfSha256||layoutReview.answerPdfSha256!==extraction.answerPdfSha256||
+     layoutReview.stemSha256!==extraction.stemSha256||!sameArray(layoutReview.pages,extraction.pages)||
+     layoutReview.answerEvidenceSha256!==extraction.answerEvidenceSha256||
+     !Array.isArray(layoutReview.contentOrder)||!Array.isArray(layoutReview.assets)||
+     layoutReview.allVisualsAccountedFor!==true||layoutReview.textChecked!==true||
+     layoutReview.displayChecked!==true||layoutReview.answerCellChecked!==true)return buildFail('LAYOUT_REVIEW_BINDING_INVALID');
+  const assetById=new Map();
+  for(const a of layoutReview.assets){
+   if(!a||typeof a.id!=='string'||assetById.has(a.id)||!['figure','table','formula','other'].includes(a.kind)||
+      !Number.isInteger(a.page)||!extraction.pages.includes(a.page)||!isSha(a.sha256)||!a.crop||
+      !['x0','y0','x1','y1'].every(k=>Number.isFinite(a.crop[k]))||a.crop.x0>=a.crop.x1||a.crop.y0>=a.crop.y1)
+    return buildFail('REVIEW_ASSET_INVALID');
+   assetById.set(a.id,a);
+  }
+  const used=new Set(),contentBlocks=[],layout=[],contentBlockSha256=[];let cursor=0,textIndex=0;
+  for(const item of layoutReview.contentOrder){
+   if(item?.type==='text'){
+    if(item.startOffset!==cursor||!Number.isInteger(item.endOffset)||item.endOffset<=item.startOffset||item.endOffset>extraction.stemText.length)
+     return buildFail('TEXT_SEGMENT_OFFSETS_INVALID');
+    const value=extraction.stemText.slice(item.startOffset,item.endOffset);if(!value.trim())return buildFail('TEXT_SEGMENT_EMPTY');
+    contentBlocks.push({type:'text',value});layout.push('text:'+textIndex++);contentBlockSha256.push(sha(value));cursor=item.endOffset;
+   }else if(['figure','table','formula','other'].includes(item?.type)){
+    const a=assetById.get(item.assetId);
+    if(!a||a.kind!==item.type||item.atOffset!==cursor||used.has(item.assetId))return buildFail('VISUAL_POSITION_OR_ASSET_INVALID');
+    used.add(item.assetId);contentBlocks.push({type:item.type,assetId:item.assetId});
+    layout.push(item.type+':'+item.assetId);contentBlockSha256.push(sha(item.type+':'+item.assetId));
+   }else return buildFail('CONTENT_ORDER_ITEM_INVALID');
+  }
+  if(cursor!==extraction.stemText.length||used.size!==assetById.size)return buildFail('CONTENT_ORDER_INCOMPLETE');
+  const pages=[...extraction.pages],assets=layoutReview.assets.map(a=>({...a,crop:{...a.crop}})),choiceSha256=extraction.choices.map(sha);
+  const packetHash=sha(JSON.stringify({key,questionPdfSha256:extraction.questionPdfSha256,answerPdfSha256:extraction.answerPdfSha256,pages,
+   stemSha256:extraction.stemSha256,choiceSha256,answerNumber:extraction.answerNumber,answerEvidenceSha256:extraction.answerEvidenceSha256,
+   contentBlockSha256,assets}));
+  const bundle={schema:'official-question-bundle-v1',key,qualification:extraction.qualification,subjectArea:extraction.subjectArea||'general',
+   explanationPolicy:extraction.explanationPolicy||'general',studyUnitId:extraction.studyUnitId,studyPlanSha256:extraction.studyPlanSha256,
+   displayNumber:extraction.displayNumber,source:{questionPdfSha256:extraction.questionPdfSha256,answerPdfSha256:extraction.answerPdfSha256,pages},
+   body:extraction.stemText,contentBlocks,contentBlockSha256,choices:[...extraction.choices],
+   answer:{number:extraction.answerNumber,evidenceSha256:extraction.answerEvidenceSha256},assets,layout:[...layout,'choices','answer-control'],packetHash};
+  const manifest={key,studyUnitId:extraction.studyUnitId,studyPlanSha256:extraction.studyPlanSha256,
+   questionPdfSha256:extraction.questionPdfSha256,answerPdfSha256:extraction.answerPdfSha256,pages,bodySha256:extraction.stemSha256,
+   choiceSha256,answerNumber:extraction.answerNumber,answerEvidenceSha256:extraction.answerEvidenceSha256,
+   assets:assets.map(a=>({...a,crop:{...a.crop}})),contentBlockSha256:[...contentBlockSha256],packetHash,reviewStatus:'approved',
+   allVisualsAccountedFor:true,answerCellChecked:true,textChecked:true,displayChecked:true,explanationPolicy:bundle.explanationPolicy};
+  const checked=validateQuestionBundle(bundle,manifest);if(!checked.ok)return buildFail('BUILT_BUNDLE_REJECTED:'+checked.reason);
+  return Object.freeze({status:'ready',bundle:Object.freeze(bundle),manifest:Object.freeze(manifest),packetHash});
+ };
 }
