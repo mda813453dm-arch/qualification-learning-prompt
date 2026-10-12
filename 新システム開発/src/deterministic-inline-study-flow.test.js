@@ -76,6 +76,7 @@ throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
 const explanationQuestion=flow.clarifyDuringExplanation('この解説の理由を確認したいです。');
 throws(()=>flow.commitPrefetchedNext(),'EXPLANATION_QUESTION_UNRESOLVED','説明質問の回答前進行を禁止');
 throws(()=>flow.answer(1),'EXPLANATION_QUESTION_UNRESOLVED','説明質問待ちで次問回答を禁止');
+throws(()=>flow.chooseLearningPath('continue_same_unit'),'EXPLANATION_QUESTION_UNRESOLVED','説明質問待ちで単元選択を禁止');
 const clarificationResolved=flow.resolveExplanationQuestion('根拠と要件を補足しました。');
 ok(clarificationResolved.continueAfterExplanation&&clarificationResolved.question===explanationQuestion.question,
  '解説質問に答えた後で同じ進行状態へ戻る');
