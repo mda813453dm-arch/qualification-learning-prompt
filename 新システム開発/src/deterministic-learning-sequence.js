@@ -51,7 +51,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
  }
  function predictNextKind(correct){
   if(!pendingQuestion||typeof correct!=='boolean')return reject('PENDING_QUESTION_REQUIRED');
-  if(pendingQuestion.kind==='ai_confirmation')return Object.freeze({ok:true,kind:correct?'official_practice':'ai_confirmation'});
+  if(pendingQuestion.kind==='ai_confirmation')return Object.freeze({ok:true,kind:correct?'official_practice':confirmationMisses+1>=3?'confirmation_menu':'ai_confirmation'});
   if(!correct&&consecutivePracticeMisses+1>=2)return Object.freeze({ok:true,kind:'ai_confirmation'});
   if(correct&&batchCount===2&&batchAllCorrect)return Object.freeze({ok:true,kind:'unit_choice'});
   return Object.freeze({ok:true,kind:'official_practice'});
