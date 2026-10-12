@@ -189,6 +189,10 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    prefetchedNext=null;
    return Object.freeze({...result,ready:false});
   },
+  completeConfirmationBriefExplanation(text){
+   if(machine.state().phase!=='EXPLAINED')throw new Error('BRIEF_EXPLANATION_NOT_ALLOWED');
+   return must(learningSequence.completeBriefExplanation(text)).state;
+  },
   chooseLearningPath(choice){
    if(machine.state().phase!=='EXPLAINED')throw new Error('UNIT_CHOICE_NOT_ALLOWED');
    const result=must(learningSequence.chooseAfterPerfectRun(choice));
