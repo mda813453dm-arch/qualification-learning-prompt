@@ -85,12 +85,12 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    return must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
   },
-  explain(text){
+  async explain(text){
    const s=machine.state();
    if(s.phase!=='GRADED')throw new Error('EXPLANATION_NOT_ALLOWED');
    let display=text;
    if(currentExplanationPolicy==='legal_basis_required'){
-    const result=compileLegalBasisExplanation(text,{questionId:s.question?.id,packetHash:s.packet.packetHash,verifyOfficialSource});
+    const result=await compileLegalBasisExplanation(text,{questionId:s.question?.id,packetHash:s.packet.packetHash,verifyOfficialSource});
     if(!result.ok)throw new Error(result.reason);
     display=result.displayText;
    }
