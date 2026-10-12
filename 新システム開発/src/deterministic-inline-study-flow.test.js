@@ -85,11 +85,11 @@ const answerWaitAfterNext=flow.rendered({complete:true,questionId:'q3',packetHas
  signature:next.payload.signature,nodeCount:next.payload.nodes.length});
 ok(answerWaitAfterNext.phase==='ANSWER_WAIT','次問完全表示後に回答受付へ遷移');
 
-function minimalQuestion(id,number,kind='official_practice'){
+function minimalQuestion(id,number,kind='official_practice',studyUnitId='control-points'){
  const origin=kind==='ai_confirmation'?'ai':'official';
- const question={status:'ready',id,number,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind,origin,verifiedBundle:kind==='official_practice'};
+ const question={status:'ready',id,number,studyUnitId,studyPlanSha256:'c'.repeat(64),kind,origin,verifiedBundle:kind==='official_practice'};
  if(kind==='ai_confirmation')question.parentQuestionId='q2';
- const packet={status:'ready',id,number,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),packetHash:'packet-'+id,answer:{value:4},contentBlocks:[
+ const packet={status:'ready',id,number,studyUnitId,studyPlanSha256:'c'.repeat(64),packetHash:'packet-'+id,answer:{value:4},contentBlocks:[
   {order:0,type:'question_number',value:'Q'+number},{order:1,type:'text',value:'stem '+id},
   {order:2,type:'choices',value:['1','2','3','4','5']},
   {order:3,type:'instruction',value:'番号で答えてください。'}]};
@@ -134,5 +134,34 @@ throws(()=>escalationFlow.prefetchNext(6,minimalQuestion('c4',6,'ai_confirmation
 escalationFlow.completeConfirmationBriefExplanation('誤りの要点を短く説明します。');
 escalationFlow.prefetchNext(6,minimalQuestion('c4',6,'ai_confirmation'));
 ok(escalationFlow.commitPrefetchedNext().payload.status==='ready','next confirmation is available after short explanation');
+
+
+const perfectFlow=createInlineStudyFlow({resolve:()=>null},{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
+const perfectOne=minimalQuestion('perfect-1',1);
+let perfectPayload=perfectFlow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},...perfectOne});
+perfectFlow.rendered({complete:true,questionId:'perfect-1',packetHash:'packet-perfect-1',signature:perfectPayload.signature,nodeCount:perfectPayload.nodes.length});
+for(const [id,n,routeList] of [
+ ['perfect-2',2,[minimalQuestion('perfect-2',2)]],
+ ['perfect-3',3,[minimalQuestion('perfect-3',3)]]
+]){
+ perfectFlow.prefetchNext(routeList.map(input=>({number:n,input})));
+ perfectFlow.answer(4);perfectFlow.decideExplanation('skip');perfectFlow.skipExplanation();
+ const committed=perfectFlow.commitPrefetchedNext();
+ perfectFlow.rendered({complete:true,questionId:id,packetHash:'packet-'+id,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length});
+}
+const sameUnitCandidate=minimalQuestion('same-unit-next',4);
+const nextUnitCandidate=minimalQuestion('next-unit-first',5,'official_practice','traverse');
+throws(()=>perfectFlow.prefetchNext(4,sameUnitCandidate),'NEXT_STUDY_UNIT_MISMATCH','same-unit-only prefetch fixture sanity');
+perfectFlow.prefetchNext([
+ {number:4,input:sameUnitCandidate},
+ {number:5,input:nextUnitCandidate}
+]);
+const perfectGrade=perfectFlow.answer(4);
+ok(perfectGrade.correct&&perfectGrade.learning.directive==='PERFECT_RUN_CHOICE','third correct practice grades into fixed choice state');
+perfectFlow.decideExplanation('skip');perfectFlow.skipExplanation();
+const perfectMenu=perfectFlow.commitPrefetchedNext();
+ok(perfectMenu.choiceRequired&&perfectMenu.choices.join(',')==='continue_same_unit,next_unit','three correct questions expose the two fixed choices');
+const moved=perfectFlow.chooseLearningPath('next_unit');
+ok(moved.state.question.id==='next-unit-first'&&moved.learning.itemId==='traverse','next-unit choice commits the preverified next-unit packet');
 
 console.log('PASS deterministic inline flow mandatory prefetch, immutable commit, and next render');
