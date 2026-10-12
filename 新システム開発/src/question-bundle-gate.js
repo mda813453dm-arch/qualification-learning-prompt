@@ -4,7 +4,7 @@ const sha=s=>createHash('sha256').update(s).digest('hex');
 const fail=reason=>({ok:false,reason});
 export function validateQuestionBundle(b,m){
  if(!b||!m||b.schema!=='official-question-bundle-v1')return fail('SCHEMA_INVALID');
- if(b.key!==m.key||!/^.+:\\d{4}:.+:\\d+$/.test(b.key??''))return fail('QUESTION_ID_MISMATCH');
+ if(b.key!==m.key||!/^.+:\d{4}:.+:\d+$/.test(b.key??''))return fail('QUESTION_ID_MISMATCH');
  if(b.source?.questionPdfSha256!==m.questionPdfSha256||b.source?.answerPdfSha256!==m.answerPdfSha256)return fail('SOURCE_MISMATCH');
  if(!Array.isArray(b.source.pages)||b.source.pages.join(',')!==m.pages?.join(','))return fail('PAGE_BOUNDARY_MISMATCH');
  if(typeof b.body!=='string'||sha(b.body)!==m.bodySha256)return fail('BODY_MISMATCH');
