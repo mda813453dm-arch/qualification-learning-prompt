@@ -34,6 +34,6 @@ export function compileLegalBasisExplanation(explanation,{questionId,packetHash}
   if(item.sourceSha256!==sourceSha256)return fail('LEGAL_SOURCE_HASH_MISMATCH');
   citations.push(Object.freeze({lawName:item.lawName.trim(),provision:item.provision.trim(),effectiveDate:item.effectiveDate,officialUrl:item.officialUrl,excerpt:item.excerpt.trim(),sourceSha256}));
  }
- const basis=citations.map(c=>'・'+c.lawName+' '+c.provision+'\n  '+c.excerpt+'\n  '+c.officialUrl).join('\n');
+ const basis=citations.map(c=>'・'+c.lawName+' '+c.provision+'（適用時点：'+c.effectiveDate+'）\n  '+c.excerpt+'\n  '+c.officialUrl).join('\n');
  return Object.freeze({ok:true,displayText:explanation.text.trim()+'\n\n■法的根拠\n'+basis,legalBasis:Object.freeze(citations)});
 }
