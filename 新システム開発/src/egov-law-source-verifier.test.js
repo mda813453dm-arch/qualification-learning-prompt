@@ -1,0 +1,30 @@
+import {createHash} from 'node:crypto';
+import {createEgovLawSourceVerifier} from './egov-law-source-verifier.js';
+const ok=(v,m)=>{if(!v)throw new Error(m);};
+const rejects=async(fn,expected,m)=>{let e;try{await fn();}catch(x){e=x;}ok(e?.message===expected,m+': '+e?.message);};
+const lawId='405AC0000000088';
+const effectiveDate='2025-04-01';
+const officialUrl='https://laws.e-gov.go.jp/law/405AC0000000088?occasion_date=20250401';
+const sourceText='行政運営における公正の確保と透明性';
+const sourceSha256=createHash('sha256').update(sourceText,'utf8').digest('hex');
+const item={lawId,lawName:'行政手続法',provision:'第一条',articleTitle:'第一条',effectiveDate,officialUrl,
+ sourceText,excerpt:sourceText,sourceSha256};
+const context={questionId:'takken:2025:1',packetHash:'packet-hash',sourceSha256};
+const html='<html><body><h1>行政手続法</h1><p>Law RevisionID:405AC0000000088_20240401_504AC0100000052</p><h2>第一条（目的等）</h2><p>行政運営における公正の確保と透明性</p></body></html>';
+let requested='';
+const verifier=createEgovLawSourceVerifier({fetchImpl:async(url,options)=>{
+ requested=url;ok(options.redirect==='manual','redirect must be rejected');
+ return {status:200,url,headers:{get:()=> 'text/html; charset=utf-8'},text:async()=>html};
+}});
+const receipt=await verifier(item,context);
+ok(requested===officialUrl,'URL is constructed from fixed e-Gov origin and date');
+ok(receipt.verified&&receipt.questionId===context.questionId&&receipt.packetHash===context.packetHash,'source receipt bound to question packet');
+ok(receipt.revisionId==='405AC0000000088_20240401_504AC0100000052','official revision ID pinned');
+ok(receipt.sourceSha256===sourceSha256,'source hash pinned');
+const redirectVerifier=createEgovLawSourceVerifier({fetchImpl:async url=>({status:200,url:'https://evil.example/law',headers:{get:()=> 'text/html'},text:async()=>html})});
+await rejects(()=>redirectVerifier(item,context),'EGOV_RESPONSE_NOT_CANONICAL','redirect rejected');
+const invalidDateVerifier=createEgovLawSourceVerifier({fetchImpl:async()=>{throw new Error('should not fetch');}});
+await rejects(()=>invalidDateVerifier({...item,effectiveDate:'2025-02-30'},context),'EGOV_EFFECTIVE_DATE_INVALID','invalid date rejected before fetch');
+const wrongArticleVerifier=createEgovLawSourceVerifier({fetchImpl:async url=>({status:200,url,headers:{get:()=> 'text/html'},text:async()=>html.replace('第一条（目的等）','第二条（定義）')})});
+await rejects(()=>wrongArticleVerifier(item,context),'EGOV_CITATION_TEXT_NOT_IN_OFFICIAL_ARTICLE','article mismatch rejected');
+console.log('PASS e-Gov law source verifier: 5 checks');
