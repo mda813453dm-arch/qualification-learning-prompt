@@ -1,50 +1,33 @@
 import {createDeterministicLearningSequence} from './deterministic-learning-sequence.js';
 const ok=(v,m)=>{if(!v)throw new Error(m)};
-const throws=(fn,expected,m)=>{
- let error=null; try{const r=fn();if(r?.ok===false)error=new Error(r.reason)}catch(e){error=e}
- ok(error!==null,m+': did not block');
- if(expected)ok(error.message===expected,m+': expected '+expected+', got '+error.message);
-};
-const meta=(questionId,kind='official_practice',origin=kind==='ai_confirmation'?'ai':'official',itemId='guarantee')=>({
- questionId,qualificationId:'real-estate-agent',itemId,kind,origin
-});
-const seq=createDeterministicLearningSequence({qualificationId:'real-estate-agent',itemId:'guarantee'});
-ok(seq.validateQuestion(meta('p1')).ok,'accept official practice for same item');
-ok(seq.recordAnswer('p1',false).outcome.directive==='PRACTICE_READY','first miss continues same-unit practice');
-throws(()=>seq.validateQuestion(meta('other','official_practice','official','declarations')),
- 'STUDY_UNIT_MISMATCH','different unit cannot be mixed');
-ok(seq.validateQuestion(meta('p2')).ok,'second official same-unit practice');
-ok(seq.recordAnswer('p2',false).outcome.directive==='CONFIRMATION_REQUIRED','second consecutive miss forces confirmation');
-throws(()=>seq.validateQuestion(meta('p3')),'AI_CONFIRMATION_REQUIRED','official practice blocked until confirmation');
-throws(()=>seq.validateQuestion(meta('c1','ai_confirmation','official')),
- 'AI_CONFIRMATION_REQUIRED','confirmation must be AI-created');
-ok(seq.validateQuestion(meta('c1','ai_confirmation','ai')).ok,'AI confirmation accepted');
-const checkMiss=seq.recordAnswer('c1',false);
-ok(checkMiss.state.officialPracticeCount===2,'confirmation excluded from practice count');
-ok(checkMiss.state.phase==='CONFIRMATION_REQUIRED','failed confirmation keeps check route active');
-ok(seq.validateQuestion(meta('c2','ai_confirmation','ai')).ok,'retry uses a fresh confirmation problem');
-const checkPass=seq.recordAnswer('c2',true);
-ok(checkPass.state.officialPracticeCount===2,'confirmation success still excluded from practice count');
-ok(checkPass.state.consecutivePracticeMisses===0&&checkPass.state.phase==='PRACTICE_READY',
- 'confirmation success clears same-item practice miss streak');
-ok(seq.validateQuestion(meta('p3')).ok,'resume official practice in same item');
-ok(seq.recordAnswer('p3',true).state.correctRun===1,'practice streak resumes');
-ok(seq.validateQuestion(meta('p4')).ok,'different official year/problem can continue same item');
-ok(seq.recordAnswer('p4',true).state.correctRun===2,'official same-item count advances');
-ok(seq.validateQuestion(meta('p5')).ok,'third consecutive official practice accepted');
-const perfect=seq.recordAnswer('p5',true);
-ok(perfect.state.phase==='PERFECT_RUN_CHOICE'&&perfect.state.correctRun===3,'three correct same-item practices ask user choice');
-throws(()=>seq.validateQuestion(meta('p6')),'UNIT_CHOICE_REQUIRED','no question before user chooses');
-ok(seq.chooseAfterPerfectRun('continue_same_unit').state.itemId==='guarantee','continue same unit');
-ok(seq.state().correctRun===0,'new same-unit run starts after choice');
-ok(seq.validateQuestion(meta('p6')).ok,'same-unit practice continues after choice');
-const seq2=createDeterministicLearningSequence({qualificationId:'real-estate-agent',itemId:'guarantee'});
-ok(seq2.validateQuestion(meta('w1')).ok,'wrong-run setup');
-seq2.recordAnswer('w1',false);
-ok(seq2.validateQuestion(meta('w2')).ok,'wrong-run second question');
-seq2.recordAnswer('w2',false);
-ok(seq2.validateQuestion(meta('c3','ai_confirmation','ai')).ok,'AI check after two misses');
-seq2.recordAnswer('c3',true);
-ok(seq2.chooseAfterPerfectRun('next_unit','declarations').reason==='PERFECT_RUN_CHOICE_NOT_PENDING',
- 'next unit choice cannot be fabricated');
-console.log('PASS deterministic learning sequence: same-unit practice, two-miss confirmation, and perfect-run choice');
+const throws=(fn,expected,m)=>{let e=null;try{const r=fn();if(r?.ok===false)e=new Error(r.reason)}catch(x){e=x}ok(e!==null,m+': did not block');if(expected)ok(e.message===expected,m+': expected '+expected+', got '+e.message)};
+const plan={status:'approved',qualificationId:'real-estate-agent',sha256:'a'.repeat(64),itemIds:['guarantee','declarations']};
+const meta=(questionId,kind='official_practice',origin=kind==='ai_confirmation'?'ai':'official',itemId='guarantee',extra={})=>({questionId,qualificationId:plan.qualificationId,itemId,kind,origin,verifiedBundle:kind==='official_practice',...extra});
+const seq=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
+throws(()=>createDeterministicLearningSequence({itemId:'guarantee'}),'APPROVED_STUDY_PLAN_REQUIRED','unapproved plan');
+ok(seq.validateQuestion(meta('p1')).ok,'same-unit official question');
+ok(seq.recordAnswer('p1',false).state.phase==='PRACTICE_READY','first miss continues official practice');
+throws(()=>seq.validateQuestion(meta('other','official_practice','official','declarations')),'STUDY_UNIT_MISMATCH','different unit cannot mix');
+ok(seq.validateQuestion(meta('p2')).ok,'second official practice');
+ok(seq.recordAnswer('p2',false).state.phase==='CONFIRMATION_REQUIRED','second same-unit miss forces AI check');
+throws(()=>seq.validateQuestion(meta('p3')),'AI_CONFIRMATION_REQUIRED','official practice blocked after two misses');
+throws(()=>seq.validateQuestion(meta('c1','ai_confirmation','official','guarantee',{parentQuestionId:'p2'})),'AI_CONFIRMATION_REQUIRED','AI check origin required');
+ok(seq.validateQuestion(meta('c1','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})).ok,'AI confirmation accepted');
+const missed=seq.recordAnswer('c1',false);
+ok(missed.state.officialPracticeCount===2&&missed.state.phase==='CONFIRMATION_REQUIRED','AI confirmation excluded and retry stays active');
+ok(seq.validateQuestion(meta('c2','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})).ok,'fresh confirmation retry');
+const passed=seq.recordAnswer('c2',true);
+ok(passed.state.officialPracticeCount===2&&passed.state.consecutivePracticeMisses===0,'AI confirmation excluded and clears miss streak');
+for(const id of ['p3','p4','p5']){ok(seq.validateQuestion(meta(id)).ok,'resume practice '+id);seq.recordAnswer(id,true);}
+ok(seq.state().phase==='PERFECT_RUN_CHOICE'&&seq.state().batchCount===3,'three same-unit correct official questions prompt a choice');
+throws(()=>seq.validateQuestion(meta('p6')),'UNIT_CHOICE_REQUIRED','no question before user choice');
+const next=seq.chooseAfterPerfectRun('next_unit');
+ok(next.ok&&next.nextItemId==='declarations'&&next.state.itemId==='declarations','next unit comes from approved plan order');
+throws(()=>seq.validateQuestion(meta('bad','official_practice','official','guarantee')),'STUDY_UNIT_MISMATCH','old unit blocked after move');
+const same=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
+for(const id of ['a','b','c']){same.validateQuestion(meta(id));same.recordAnswer(id,true);}
+ok(same.chooseAfterPerfectRun('continue_same_unit').state.itemId==='guarantee','same-unit choice resets trio');
+const imperfect=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
+for(const [id,right] of [['x1',false],['x2',true],['x3',true]]){imperfect.validateQuestion(meta(id));imperfect.recordAnswer(id,right);}
+ok(imperfect.state().phase==='PRACTICE_READY'&&imperfect.state().batchCount===0,'imperfect trio continues same unit');
+console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, two-miss AI confirmation, and perfect-run choice');
