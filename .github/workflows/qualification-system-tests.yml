@@ -4,6 +4,7 @@ on:
     branches: [ai-learning-system]
     paths:
       - '新システム開発/src/**'
+      - '新システム開発/integration/**'
       - '.github/workflows/qualification-system-tests.yml'
   workflow_dispatch:
 jobs:
@@ -14,6 +15,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
       - name: Run every qualification system test
         shell: bash
         run: |
@@ -26,4 +30,6 @@ jobs:
             count=$((count+1))
           done < <(find "新システム開発/src" -maxdepth 1 -name '*.test.js' -print0 | sort -z)
           test "$count" -gt 0
-          echo "Executed $count test files."
+          echo "Executed $count JavaScript test files."
+      - name: Run every integration Python test
+        run: python -m unittest discover -s "新システム開発/integration" -p 'test_*.py' -v
