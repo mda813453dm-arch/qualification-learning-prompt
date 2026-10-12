@@ -6,11 +6,11 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
  if(!itemId||!studyPlan.itemIds.includes(itemId))throw new Error('STUDY_UNIT_NOT_IN_PLAN');
  const qualificationId=studyPlan.qualificationId;
  let currentItemId=itemId,phase='PRACTICE_READY',batchCount=0,batchAllCorrect=true;
- let consecutivePracticeMisses=0,officialPracticeCount=0,confirmationMisses=0;
+ let consecutivePracticeMisses=0,officialPracticeCount=0,confirmationMisses=0,confirmationParentQuestionId=null;
  let pendingQuestion=null,pendingOutcome=null;
  const seenQuestionIds=new Set();
  const snapshot=()=>{const currentIndex=studyPlan.itemIds.indexOf(currentItemId);return Object.freeze({qualificationId,itemId:currentItemId,phase,batchCount,batchAllCorrect,hasNextUnit:currentIndex>=0&&currentIndex+1<studyPlan.itemIds.length,nextItemId:studyPlan.itemIds[currentIndex+1]||null,
-  consecutivePracticeMisses,officialPracticeCount,confirmationMisses,
+  consecutivePracticeMisses,officialPracticeCount,confirmationMisses,confirmationParentQuestionId,
   pendingQuestion:pendingQuestion?Object.freeze({...pendingQuestion}):null,
   pendingOutcome:pendingOutcome?Object.freeze({...pendingOutcome}):null,
   seenQuestionIds:Object.freeze([...seenQuestionIds])});};
@@ -25,7 +25,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(phase==='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED')return reject('CONFIRMATION_BRIEF_EXPLANATION_REQUIRED');
   if(phase==='SESSION_END_REQUIRED')return reject('SESSION_END_REQUIRED');
   if(phase==='CONFIRMATION_REQUIRED'){
-   if(meta.kind!=='ai_confirmation'||meta.origin!=='ai'||!meta.parentQuestionId)return reject('AI_CONFIRMATION_REQUIRED');
+   if(meta.kind!=='ai_confirmation'||meta.origin!=='ai'||!meta.parentQuestionId||meta.parentQuestionId!==confirmationParentQuestionId)return reject('AI_CONFIRMATION_REQUIRED');
   }else if(meta.kind!=='official_practice'||meta.origin!=='official'||meta.verifiedBundle!==true)
    return reject('OFFICIAL_SAME_UNIT_PRACTICE_REQUIRED');
   if(seenQuestionIds.has(meta.questionId))return reject('QUESTION_ALREADY_USED');
@@ -39,14 +39,14 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(q.kind==='official_practice'){
    officialPracticeCount++;batchCount++;batchAllCorrect=batchAllCorrect&&correct;
    consecutivePracticeMisses=correct?0:consecutivePracticeMisses+1;
-   if(consecutivePracticeMisses>=2)phase='CONFIRMATION_REQUIRED';
+   if(consecutivePracticeMisses>=2){phase='CONFIRMATION_REQUIRED';confirmationParentQuestionId=q.questionId;}
    else if(batchCount===3&&batchAllCorrect)phase='PERFECT_RUN_CHOICE';
    else if(batchCount===3){batchCount=0;batchAllCorrect=true;phase='PRACTICE_READY';}
    else phase='PRACTICE_READY';
    pendingOutcome=Object.freeze({questionId,itemId:currentItemId,kind:q.kind,correct,officialPracticeCount,batchCount,batchAllCorrect,consecutivePracticeMisses,directive:phase});
   }else if(q.kind==='ai_confirmation'&&q.origin==='ai'){
    confirmationMisses=correct?0:confirmationMisses+1;
-   if(correct){consecutivePracticeMisses=0;phase='PRACTICE_READY';}else phase=confirmationMisses>=3?'CONFIRMATION_CHOICE_REQUIRED':'CONFIRMATION_REQUIRED';
+   if(correct){consecutivePracticeMisses=0;confirmationParentQuestionId=null;phase='PRACTICE_READY';}else phase=confirmationMisses>=3?'CONFIRMATION_CHOICE_REQUIRED':'CONFIRMATION_REQUIRED';
    pendingOutcome=Object.freeze({questionId,itemId:currentItemId,kind:q.kind,correct,officialPracticeCount,confirmationMisses,directive:phase});
   }else return reject('QUESTION_KIND_INVALID');
   return Object.freeze({ok:true,state:snapshot(),outcome:pendingOutcome});
@@ -70,7 +70,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
    if(choice==='end_session'&&nextItemId)return reject('CONFIRMED_NEXT_UNIT_AVAILABLE');
    if(!nextItemId){if(choice!=='end_session')return reject('NEXT_STUDY_UNIT_NOT_IN_PLAN');phase='SESSION_END_REQUIRED';pendingOutcome=null;return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});}
    currentItemId=nextItemId;batchCount=0;batchAllCorrect=true;consecutivePracticeMisses=0;
-   officialPracticeCount=0;confirmationMisses=0;phase='PRACTICE_READY';pendingOutcome=null;
+   officialPracticeCount=0;confirmationMisses=0;confirmationParentQuestionId=null;phase='PRACTICE_READY';pendingOutcome=null;
    return Object.freeze({ok:true,state:snapshot(),nextItemId,heldItemId:studyPlan.itemIds[currentIndex]});
   }
   return reject('CONFIRMATION_CHOICE_INVALID');
