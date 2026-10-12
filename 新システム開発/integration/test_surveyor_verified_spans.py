@@ -41,7 +41,7 @@ class VerifiedSpanTests(unittest.TestCase):
         self.assertEqual(extracted[10]['pages'],[1,2])
         self.assertEqual(extracted[11]['pages'],[2])
         self.assertEqual(extracted[20]['pages'],[2])
-        self.assertEqual(extracted[1]['stem_text'],'第1問 問題本文これは検証用の十分な長さの文章です。')
+        self.assertEqual(extracted[1]['stem_text'],'第1問 問題本文これは検証用の文章で、抽出テスト用に十分な長さを確保しています。')
         self.assertEqual(len(extracted[1]['stem_sha256']),64)
         self.assertEqual(len(extracted[1]['span_sha256']),64)
 
