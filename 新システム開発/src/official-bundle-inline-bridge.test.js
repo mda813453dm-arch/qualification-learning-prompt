@@ -86,7 +86,7 @@ const bundleBuilder=createOfficialQuestionBundleBuilder({
  verifyLayoutReview:value=>value===layoutReview
 });
 const built=await bundleBuilder({extraction,layoutReview});
-ok(built.status==='ready','verified extraction and reviewed layout create a bundle');
+ok(built.status==='ready','verified extraction and reviewed layout create a bundle: '+built.reason);
 ok(Object.isFrozen(built.bundle.contentBlocks)&&Object.isFrozen(built.manifest.assets[0].crop),
  'bundle and manifest are deeply immutable');
 const builtRegistry={resolve:id=>{
