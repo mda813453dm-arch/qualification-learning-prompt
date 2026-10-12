@@ -25,18 +25,19 @@ await throws(()=>resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'
 ok(resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law',explanationPolicy:'legal_basis_required'},{id:'q2',explanationPolicy:'legal_basis_required'})==='legal_basis_required','法令問題で根拠必須');
 ok(resolveExplanationPolicy('surveying-engineer',{id:'q2'},{id:'q2'})==='general','測量一般問題');
 
+const studyPlan={status:'approved',qualificationId:'land-surveyor',sha256:'a'.repeat(64),itemIds:['property-rights']};
 const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'inline-f2',sha256:'fig'}:id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'inline-f3',sha256:'fig3'}:null};
-const flow=createInlineStudyFlow(registry,{verifyOfficialSource:trustedVerifier});
-const question={status:'ready',id:'q2',number:2,subjectArea:'law',explanationPolicy:'legal_basis_required'};
-const packet={status:'ready',id:'q2',number:2,packetHash:'p2',explanationPolicy:'legal_basis_required',answer:{value:4},contentBlocks:[
+const flow=createInlineStudyFlow(registry,{verifyOfficialSource:trustedVerifier,studyPlan});
+const question={status:'ready',id:'q2',number:2,subjectArea:'law',explanationPolicy:'legal_basis_required',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256};
+const packet={status:'ready',id:'q2',number:2,packetHash:'p2',explanationPolicy:'legal_basis_required',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,answer:{value:4},contentBlocks:[
  {order:0,type:'question_number',value:'Q2'},{order:1,type:'text',value:'stem'},{order:2,type:'figure',assetId:'f2'},
  {order:3,type:'choices',value:['1','2','3','4','5']},{order:4,type:'instruction',value:'番号で答えてください。'}]};
 const payload=flow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},question,assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet});
 flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length});
-const nextPacket={status:'ready',id:'q3',number:3,packetHash:'p3',answer:{value:2},contentBlocks:[
+const nextPacket={status:'ready',id:'q3',number:3,packetHash:'p3',studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,answer:{value:2},contentBlocks:[
  {order:0,type:'question_number',value:'Q3'},{order:1,type:'text',value:'stem3'},{order:2,type:'figure',assetId:'f3'},
  {order:3,type:'choices',value:['1','2','3','4','5']},{order:4,type:'instruction',value:'番号で答えてください。'}]};
-flow.prefetchNext(3,{question:{status:'ready',id:'q3',number:3},packet:nextPacket,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]});
+flow.prefetchNext(3,{question:{status:'ready',id:'q3',number:3,studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256},packet:nextPacket,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]});
 flow.answer(4);
 await throws(()=>flow.explain('根拠なし解説'),'LEGAL_EXPLANATION_REQUIRED','法律解説は根拠必須');
 const graded=await flow.explain(explanation);
