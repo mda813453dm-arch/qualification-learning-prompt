@@ -5,6 +5,8 @@ const fail=reason=>({ok:false,reason});
 export function validateQuestionBundle(b,m){
  if(!b||!m||b.schema!=='official-question-bundle-v1')return fail('SCHEMA_INVALID');
  if(b.key!==m.key||!/^.+:\d{4}:.+:\d+$/.test(b.key??''))return fail('QUESTION_ID_MISMATCH');
+ if(typeof b.studyUnitId!=='string'||!b.studyUnitId||b.studyUnitId!==m.studyUnitId)return fail('STUDY_UNIT_MISMATCH');
+ if(!/^[a-f0-9]{64}$/.test(b.studyPlanSha256||'')||b.studyPlanSha256!==m.studyPlanSha256)return fail('STUDY_PLAN_BINDING_MISMATCH');
  if(b.source?.questionPdfSha256!==m.questionPdfSha256||b.source?.answerPdfSha256!==m.answerPdfSha256)return fail('SOURCE_MISMATCH');
  if(!Array.isArray(b.source.pages)||b.source.pages.join(',')!==m.pages?.join(','))return fail('PAGE_BOUNDARY_MISMATCH');
  if(typeof b.body!=='string'||sha(b.body)!==m.bodySha256)return fail('BODY_MISMATCH');
@@ -29,5 +31,5 @@ export function validateQuestionBundle(b,m){
  if(legal){
   if(subjectArea!=='law'||bp!=='legal_basis_required'||mp!=='legal_basis_required')return fail('LEGAL_BASIS_POLICY_UNBOUND');
  }else if(bp!==mp||(bp!==null&&bp!=='general')||(mp!==null&&mp!=='general'))return fail('EXPLANATION_POLICY_MISMATCH');
- return {ok:true,key:b.key,qualification,subjectArea,explanationPolicy:legal?'legal_basis_required':(bp||'general'),layout:[...expected],assets:b.assets.map(a=>({...a})),body:b.body,choices:[...b.choices]};
+ return {ok:true,key:b.key,qualification,subjectArea,studyUnitId:b.studyUnitId,studyPlanSha256:b.studyPlanSha256,explanationPolicy:legal?'legal_basis_required':(bp||'general'),layout:[...expected],assets:b.assets.map(a=>({...a})),body:b.body,choices:[...b.choices]};
 }
