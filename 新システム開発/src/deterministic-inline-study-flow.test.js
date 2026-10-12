@@ -6,23 +6,23 @@ const throws=(fn,expected,m)=>{
  ok(error!==null,m+': did not block');
  if(expected)ok(error.message===expected,m+': expected '+expected+', got '+error.message);
 };
-const currentPacket={status:'ready',id:'q2',number:2,packetHash:'p2',answer:{value:4},contentBlocks:[
+const currentPacket={status:'ready',id:'q2',number:2,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),packetHash:'p2',answer:{value:4},contentBlocks:[
  {order:0,type:'question_number',value:'Q2'},{order:1,type:'text',value:'stem'},
  {order:2,type:'figure',assetId:'f2'},{order:3,type:'choices',value:['1','2','3','4','5']},
  {order:4,type:'instruction',value:'番号で答えてください。'}]};
 const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'inline-f2',sha256:'fig'}:
  id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'inline-f3',sha256:'fig3'}:null};
 function answerWait(){
- const flow=createInlineStudyFlow(registry);
+ const flow=createInlineStudyFlow(registry,{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
  const payload=flow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},
-  question:{status:'ready',id:'q2',number:2},assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet:currentPacket});
+  question:{status:'ready',id:'q2',number:2,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind:'official_practice',origin:'official',verifiedBundle:true},assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet:currentPacket});
  throws(()=>flow.answer(4),'ANSWER_NOT_ALLOWED','render前の回答');
  flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length});
  ok(flow.state().phase==='ANSWER_WAIT','完全表示後に回答待ち');
  return flow;
 }
 function q3Packet(){
- return {status:'ready',id:'q3',number:3,packetHash:'p3',answer:{value:2},contentBlocks:[
+ return {status:'ready',id:'q3',number:3,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),packetHash:'p3',answer:{value:2},contentBlocks:[
   {order:0,type:'question_number',value:'Q3'},
   {order:1,type:'text',value:'stem3'},
   {order:2,type:'figure',assetId:'f3'},
