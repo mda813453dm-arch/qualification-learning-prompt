@@ -27,9 +27,26 @@ jobs:
           python -m unittest discover -s 新システム開発/integration -p 'test_gsi_ci_visual_pipeline.py' -v
           python -m unittest discover -s 新システム開発/integration -p 'test_offline_survey_visual.py' -v
       - name: 公式PDFを取得して第7問・第27問を画像化
-        run: python 新システム開発/integration/gsi_ci_visual_pipeline.py visual-evidence
+        id: official_pdf
+        continue-on-error: true
+        shell: bash
+        run: |
+          mkdir -p visual-evidence
+          set -o pipefail
+          python 新システム開発/integration/gsi_ci_visual_pipeline.py visual-evidence 2>&1 | tee visual-evidence/fetch-log.txt
+      - name: 取得結果の記録
+        if: always()
+        shell: bash
+        env:
+          FETCH_OUTCOME: ${{ steps.official_pdf.outcome }}
+        run: |
+          mkdir -p visual-evidence
+          printf 'official_pdf_step=%s\n' "$FETCH_OUTCOME" > visual-evidence/status.txt
+      - name: 公式PDF取得に失敗した場合はジョブを失敗扱い
+        if: steps.official_pdf.outcome == 'failure'
+        run: exit 1
       - name: 検証用画像とハッシュ記録を保存
-        if: success()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: survey-assistant-2026-visual-evidence
