@@ -77,7 +77,7 @@ class VerifiedSpanTests(unittest.TestCase):
         self.assertEqual(q['answerPage'],2)
         self.assertEqual(q['answerNumber'],evidence[11]['answer'])
         self.assertEqual(q['answerEvidenceSha256'],evidence[11]['evidence_sha256'])
-        self.assertTrue(q['stemText'].endswith('文章です。'))
+        self.assertTrue(q['stemText'].endswith('十分な長さを確保しています。'))
 
     @unittest.skipUnless(os.getenv('SURVEYOR_QUESTION_PDF') and os.getenv('SURVEYOR_ANSWER_PDF'),'private PDF paths not configured')
     def test_real_pdf(self):
