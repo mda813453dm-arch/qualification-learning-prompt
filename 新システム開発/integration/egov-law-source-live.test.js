@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {createEgovLawSourceVerifier} from '../src/egov-law-source-verifier.js';
 
-test('live e-Gov date-specific statute retrieval verifies citation', async () => {
+test('live e-Gov API v2 verifies the requested article at a historical date', async () => {
   const lawId='405AC0000000088';
   const effectiveDate='2025-04-01';
   const officialUrl='https://laws.e-gov.go.jp/law/405AC0000000088?occasion_date=20250401';
