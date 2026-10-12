@@ -19,7 +19,7 @@ export function resolveExplanationPolicy(qualificationId,question,packet){
  if(qp!==null&&qp!=='general')throw new Error('EXPLANATION_POLICY_INVALID');
  return 'general';
 }
-export function compileLegalBasisExplanation(explanation,{questionId,packetHash}){
+export function compileLegalBasisExplanation(explanation,{questionId,packetHash,verifyOfficialSource}){
  const fail=reason=>Object.freeze({ok:false,reason});
  if(!explanation||typeof explanation!=='object'||Array.isArray(explanation))return fail('LEGAL_EXPLANATION_REQUIRED');
  if(explanation.questionId!==questionId||explanation.packetHash!==packetHash)return fail('LEGAL_EXPLANATION_BINDING_MISMATCH');
@@ -32,6 +32,7 @@ export function compileLegalBasisExplanation(explanation,{questionId,packetHash}
   if(typeof item.sourceText!=='string'||!item.sourceText.trim()||typeof item.excerpt!=='string'||!item.excerpt.trim()||!item.sourceText.includes(item.excerpt))return fail('LEGAL_EXCERPT_NOT_VERIFIED');
   const sourceSha256=digest(item.sourceText);
   if(item.sourceSha256!==sourceSha256)return fail('LEGAL_SOURCE_HASH_MISMATCH');
+  if(typeof verifyOfficialSource!=='function'||verifyOfficialSource(item,{questionId,packetHash,sourceSha256})!==true)return fail('LEGAL_SOURCE_NOT_VERIFIED');
   citations.push(Object.freeze({lawName:item.lawName.trim(),provision:item.provision.trim(),effectiveDate:item.effectiveDate,officialUrl:item.officialUrl,excerpt:item.excerpt.trim(),sourceSha256}));
  }
  const basis=citations.map(c=>'・'+c.lawName+' '+c.provision+'（適用時点：'+c.effectiveDate+'）\n  '+c.excerpt+'\n  '+c.officialUrl).join('\n');
