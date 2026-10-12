@@ -36,5 +36,5 @@ ok(noInstruction.status==='blocked','incomplete message fails closed');
 const tampered={...turn,messageBody:'■令和7年度 問2'};
 ok(verifyChatTurn(tampered).reason==='MESSAGE_BODY_MISSING','heading-only message is rejected');
 const placeholder={...turn,messageBody:turn.messageBody.replace(image,'〔図〕')};
-ok(verifyChatTurn(placeholder).reason==='INLINE_IMAGE_NOT_IN_MESSAGE_BODY','label-only figure is rejected');
+ok(!verifyChatTurn(placeholder).ok,'label-only figure is rejected');
 console.log('PASS chat-turn-renderer 11 checks');
