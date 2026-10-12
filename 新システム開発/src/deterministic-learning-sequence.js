@@ -59,18 +59,24 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
  function chooseAfterConfirmationMisses(choice){
   if(phase!=='CONFIRMATION_CHOICE_REQUIRED')return reject('CONFIRMATION_CHOICE_NOT_PENDING');
   if(choice==='continue_confirmation'){
-   phase='CONFIRMATION_REQUIRED';pendingOutcome=null;
+   phase='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED';pendingOutcome=null;
    return Object.freeze({ok:true,state:snapshot(),nextKind:'ai_confirmation',requiresBriefExplanation:true});
   }
   if(choice==='hold_and_move'){
    const currentIndex=studyPlan.itemIds.indexOf(currentItemId);
    const nextItemId=studyPlan.itemIds[currentIndex+1]||null;
-   if(!nextItemId)return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});
+   if(!nextItemId){phase='SESSION_END_REQUIRED';pendingOutcome=null;return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});}
    currentItemId=nextItemId;batchCount=0;batchAllCorrect=true;consecutivePracticeMisses=0;
    officialPracticeCount=0;confirmationMisses=0;phase='PRACTICE_READY';pendingOutcome=null;
    return Object.freeze({ok:true,state:snapshot(),nextItemId,heldItemId:studyPlan.itemIds[currentIndex]});
   }
   return reject('CONFIRMATION_CHOICE_INVALID');
+ }
+ function completeBriefExplanation(text){
+  if(phase!=='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED')return reject('BRIEF_EXPLANATION_NOT_PENDING');
+  if(typeof text!=='string'||!text.trim())return reject('BRIEF_EXPLANATION_REQUIRED');
+  phase='CONFIRMATION_REQUIRED';
+  return Object.freeze({ok:true,state:snapshot()});
  }
  function chooseAfterPerfectRun(choice){
   if(phase!=='PERFECT_RUN_CHOICE')return reject('PERFECT_RUN_CHOICE_NOT_PENDING');
@@ -88,5 +94,5 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   }
   return reject('UNIT_CHOICE_INVALID');
  }
- return Object.freeze({state:snapshot,validateQuestion,recordAnswer,predictNextKind,chooseAfterConfirmationMisses,chooseAfterPerfectRun});
+ return Object.freeze({state:snapshot,validateQuestion,recordAnswer,predictNextKind,chooseAfterConfirmationMisses,completeBriefExplanation,chooseAfterPerfectRun});
 }
