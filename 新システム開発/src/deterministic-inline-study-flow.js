@@ -219,6 +219,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    return commitPinnedNext();
   },
   chooseConfirmationPath(choice){
+   if(pendingClarification)throw new Error('EXPLANATION_QUESTION_UNRESOLVED');
    if(machine.state().phase!=='EXPLAINED')throw new Error('CONFIRMATION_CHOICE_NOT_ALLOWED');
    const result=must(learningSequence.chooseAfterConfirmationMisses(choice));
    prefetchedNext=null;
@@ -229,6 +230,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    return must(learningSequence.completeBriefExplanation(text)).state;
   },
   chooseLearningPath(choice){
+   if(pendingClarification)throw new Error('EXPLANATION_QUESTION_UNRESOLVED');
    if(machine.state().phase!=='EXPLAINED')throw new Error('UNIT_CHOICE_NOT_ALLOWED');
    const result=must(learningSequence.chooseAfterPerfectRun(choice));
    if(prefetchedNext){pinPrefetchedRoute('official_practice',result.nextItemId);return commitPinnedNext();}
