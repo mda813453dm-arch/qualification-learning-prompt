@@ -13,15 +13,15 @@ ok((await compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'
 ok((await compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:()=>false})).reason==='LEGAL_SOURCE_NOT_VERIFIED','failed official retrieval verification blocks');
 ok(c.ok&&c.displayText.includes('■法的根拠')&&c.displayText.includes('仮想法 第1条')&&c.displayText.includes(basis.excerpt)&&c.displayText.includes(basis.officialUrl),'根拠欄と引用を表示');
 ok((await compileLegalBasisExplanation('本文だけ',{questionId:'q2',packetHash:'p2'})).reason===LEGAL_EXPLANATION_REQUIRED','平文拒否');
-ok(compileLegalBasisExplanation({...explanation,legalBasis:[]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_BASIS_MISSING','根拠なし拒否');
-ok(compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,effectiveDate:undefined}]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_CITATION_INCOMPLETE','適用時点なし拒否');
+ok((await compileLegalBasisExplanation({...explanation,legalBasis:[]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_BASIS_MISSING','根拠なし拒否');
+ok((await compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,effectiveDate:undefined}]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_CITATION_INCOMPLETE','適用時点なし拒否');
 ok(c.displayText.includes('適用時点：2025-04-01'),'適用時点を表示');
-ok(compileLegalBasisExplanation({...explanation,packetHash:'other'},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_EXPLANATION_BINDING_MISMATCH','別問根拠拒否');
-ok(compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,officialUrl:'https://example.com'}]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_SOURCE_NOT_OFFICIAL','非公式URL拒否');
-ok(compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,excerpt:'ない条文'}]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_EXCERPT_NOT_VERIFIED','原文にない引用拒否');
-ok(compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,sourceSha256:'0'.repeat(64)}]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_SOURCE_HASH_MISMATCH','hash不一致拒否');
+ok((await compileLegalBasisExplanation({...explanation,packetHash:'other'},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_EXPLANATION_BINDING_MISMATCH','別問根拠拒否');
+ok((await compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,officialUrl:'https://example.com'}]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_SOURCE_NOT_OFFICIAL','非公式URL拒否');
+ok((await compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,excerpt:'ない条文'}]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_EXCERPT_NOT_VERIFIED','原文にない引用拒否');
+ok((await compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,sourceSha256:'0'.repeat(64)}]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_SOURCE_HASH_MISMATCH','hash不一致拒否');
 await throws(()=>resolveExplanationPolicy('takken',{status:'ready',id:'q2',number:2},{status:'ready',id:'q2',number:2,packetHash:'p2'}),'LEGAL_BASIS_POLICY_UNBOUND','宅建の方針未固定');
-throws(()=>resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law'},{id:'q2'}),'LEGAL_BASIS_POLICY_UNBOUND','土地家屋調査士の法令問題の方針未固定');
+await throws(()=>resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law'},{id:'q2'}),'LEGAL_BASIS_POLICY_UNBOUND','土地家屋調査士の法令問題の方針未固定');
 ok(resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law',explanationPolicy:'legal_basis_required'},{id:'q2',explanationPolicy:'legal_basis_required'})==='legal_basis_required','法令問題で根拠必須');
 ok(resolveExplanationPolicy('surveying-engineer',{id:'q2'},{id:'q2'})==='general','測量一般問題');
 
