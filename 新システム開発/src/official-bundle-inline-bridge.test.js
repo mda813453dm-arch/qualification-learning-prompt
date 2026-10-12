@@ -106,7 +106,7 @@ const verifiedResult={
   source:{official:true,questionPdfSha256:extraction.questionPdfSha256}},
  answer:{questionId:extraction.key,year:extraction.year,section:extraction.section,
   number:extraction.answerNumber,evidence:'公式正答行',
-  source:{official:true,answerPdfSha256:extraction.answerPdfSha256}},
+  source:{official:true,url:'https://official.example/answer.pdf',answerPdfSha256:extraction.answerPdfSha256}},
  bundleExtraction:extraction,layoutReview
 };
 const compiler=createOfficialBundleInlineCompiler({
