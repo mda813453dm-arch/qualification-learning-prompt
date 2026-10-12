@@ -184,7 +184,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(learningSequence.state().phase==='CONFIRMATION_CHOICE_REQUIRED')
-    return Object.freeze({state:machine.state(),confirmationChoiceRequired:true,choices:Object.freeze(['continue_confirmation','hold_and_move']),learning:learningSequence.state()});
+    return Object.freeze({state:machine.state(),confirmationChoiceRequired:true,choices:Object.freeze(learningSequence.state().hasNextUnit?['continue_confirmation','hold_and_move']:['continue_confirmation','end_session']),learning:learningSequence.state()});
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    const learning=learningSequence.state();
    if(learning.phase==='PERFECT_RUN_CHOICE')
