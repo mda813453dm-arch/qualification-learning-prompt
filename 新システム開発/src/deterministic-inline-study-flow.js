@@ -13,8 +13,9 @@ function immutableJson(value){
  };
  return freeze(copy);
 }
-export function createInlineStudyFlow(assetRegistry){
+export function createInlineStudyFlow(assetRegistry,options={}){
  const machine=createDeterministicSession();
+ const verifyOfficialSource=options.verifyOfficialSource;
  let payload=null;
  let prefetchedNext=null;
  let currentExplanationPolicy='general';
@@ -89,7 +90,7 @@ export function createInlineStudyFlow(assetRegistry){
    if(s.phase!=='GRADED')throw new Error('EXPLANATION_NOT_ALLOWED');
    let display=text;
    if(currentExplanationPolicy==='legal_basis_required'){
-    const result=compileLegalBasisExplanation(text,{questionId:s.question?.id,packetHash:s.packet.packetHash});
+    const result=compileLegalBasisExplanation(text,{questionId:s.question?.id,packetHash:s.packet.packetHash,verifyOfficialSource});
     if(!result.ok)throw new Error(result.reason);
     display=result.displayText;
    }
