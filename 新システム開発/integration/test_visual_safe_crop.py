@@ -1,9 +1,9 @@
-import hashlib,tempfile,unittest
+import hashlib,tempfile,unittest,os
 from pathlib import Path
 from visual_safe_crop import render_pair
-PDF='/mnt/data/001450011.pdf'
+PDF=os.environ.get('SURVEYOR_QUESTION_PDF','')
 class Tests(unittest.TestCase):
- @unittest.skipUnless(Path(PDF).exists(),'uploaded PDF unavailable')
+ @unittest.skipUnless(bool(PDF) and Path(PDF).exists(),'uploaded PDF unavailable')
  def test_real_page(self):
   with tempfile.TemporaryDirectory() as d:
    sha=hashlib.sha256(Path(PDF).read_bytes()).hexdigest()
