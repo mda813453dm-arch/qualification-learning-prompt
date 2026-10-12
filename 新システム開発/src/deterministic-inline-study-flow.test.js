@@ -11,6 +11,9 @@ let blocked=false;try{flow.answer(4)}catch{blocked=true}ok(blocked,'answer befor
 flow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:payload.signature,nodeCount:payload.nodes.length});
 ok(flow.answer(4).correct===true,'pinned grade');
 flow.explain('explanation');
-flow.next(3);
-ok(flow.load({status:'ready',number:3}).phase==='QUESTION_FIXED','next load');
+let nextBlocked=false;try{flow.next(3)}catch(e){nextBlocked=e.message==='NEXT_REQUIRES_READY_PACKET'}ok(nextBlocked,'header-only next must block');
+let incompleteBlocked=false;try{flow.nextReady(3,{question:{status:'ready',number:3},packet:{status:'ready',id:'q3',packetHash:'p3',contentBlocks:[{order:0,type:'question_number',value:'Q3'}]}})}catch{incompleteBlocked=true}ok(incompleteBlocked,'incomplete next packet must block');
+const q3={status:'ready',id:'q3',number:3,packetHash:'p3',answer:{value:2},contentBlocks:[{order:0,type:'question_number',value:'Q3'},{order:1,type:'text',value:'stem3'},{order:2,type:'choices',value:['1','2','3','4','5']},{order:3,type:'instruction',value:'番号で答えてください。'}]};
+const n=flow.nextReady(3,{question:{status:'ready',number:3},packet:q3});
+ok(n.state.phase==='QUESTION_FIXED','ready next load');ok(n.payload.status==='ready'&&n.payload.nodes.at(-1).role==='instruction','next is complete before announcement');
 console.log('PASS deterministic inline flow');
