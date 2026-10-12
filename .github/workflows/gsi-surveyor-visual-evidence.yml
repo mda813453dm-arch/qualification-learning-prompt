@@ -20,6 +20,8 @@ jobs:
           python-version: '3.11'
       - name: PDF画像化ライブラリ
         run: python -m pip install --disable-pip-version-check pymupdf==1.26.7
+      - name: 取得・検証処理の単体テスト
+        run: python -m unittest discover -s 新システム開発/integration -p 'test_gsi_ci_visual_pipeline.py' -v
       - name: 公式PDFを取得して第7問・第27問を画像化
         run: python 新システム開発/integration/gsi_ci_visual_pipeline.py visual-evidence
       - name: 検証用画像とハッシュ記録を保存
