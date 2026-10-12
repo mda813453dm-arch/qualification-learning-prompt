@@ -23,4 +23,5 @@ ok(s.dispatch({type:'FIX_NEXT',nextQuestionNumber:3}).ok,'next fixed');
 ok(!s.dispatch({type:'LOAD_NEXT',question:q1}).ok,'wrong next');
 ok(s.dispatch({type:'LOAD_NEXT',question:q2}).ok,'load next');
 let blocked=false;try{rejectDirectMutation('set_grade')}catch{blocked=true}ok(blocked,'direct mutation');
-console.log('PASS deterministic-session-machine 14 guards');
+ok(s.dispatch({type:'SKIP_EXPLANATION',packetHash:'p2'}).ok,'skip explanation remains a valid post-grade route');
+console.log('PASS deterministic-session-machine 15 guards');
