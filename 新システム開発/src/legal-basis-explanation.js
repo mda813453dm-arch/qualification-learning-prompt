@@ -1,11 +1,15 @@
 import {createHash} from 'node:crypto';
 const digest=value=>createHash('sha256').update(value,'utf8').digest('hex');
 const LEGAL_QUALIFICATIONS=new Set(['宅建','宅建士','宅地建物取引士','takken','real-estate-transaction-agent','司法書士','行政書士','社会保険労務士','弁護士','司法試験','shihoshoshi','gyoseishoshi']);
+export function isLegalQualification(value){
+ const normalized=String(value??'').trim().toLowerCase();
+ return LEGAL_QUALIFICATIONS.has(normalized);
+}
 function officialUrl(value){try{const u=new URL(value);return u.protocol==='https:'&&!u.username&&!u.password&&(u.hostname==='go.jp'||u.hostname.endsWith('.go.jp'));}catch{return false;}}
 export function resolveExplanationPolicy(qualificationId,question,packet){
  const id=String(qualificationId??question?.qualification??'').trim().toLowerCase();
  const name=String(question?.qualification??qualificationId??'').trim();
- const legalExam=LEGAL_QUALIFICATIONS.has(id)||LEGAL_QUALIFICATIONS.has(name);
+ const legalExam=isLegalQualification(id)||isLegalQualification(name);
  const legalTopic=question?.subjectArea==='law'||packet?.subjectArea==='law';
  const requested=question?.explanationPolicy==='legal_basis_required'||packet?.explanationPolicy==='legal_basis_required';
  const isLaw=legalExam||legalTopic||requested;
