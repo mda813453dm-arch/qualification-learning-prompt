@@ -8,7 +8,7 @@ class Tests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    sha=hashlib.sha256(Path(PDF).read_bytes()).hexdigest()
    r=render_pair(PDF,sha,4,d)
-   self.assertTrue(Path(r['fullPng']).read_bytes().startswith(b'\\x89PNG'))
+   self.assertTrue(Path(r['fullPng']).read_bytes().startswith(b'\x89PNG'))
    self.assertFalse(r['publishable'])
  @unittest.skipUnless(bool(PDF) and Path(PDF).exists(),'uploaded PDF unavailable')
  def test_wrong_hash(self):
