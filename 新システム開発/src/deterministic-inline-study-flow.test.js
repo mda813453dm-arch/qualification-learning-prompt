@@ -55,7 +55,8 @@ const nextInput=q3Input();
 const ready=flow.prefetchNext(3,nextInput);
 nextInput.packet.answer.value=5;
 ok(ready.ready===true&&ready.number===3&&ready.packetHash==='p3','次問prefetch成功');
-const graded=flow.answer(4);\nok(graded.correct===true&&graded.learning.officialPracticeCount===1&&graded.learning.itemId==='control-points','固定済み公式正答・同単元カウンタで採点');
+const graded=flow.answer(4);
+ok(graded.correct===true&&graded.learning.officialPracticeCount===1&&graded.learning.itemId==='control-points','固定済み公式正答・同単元カウンタで採点');
 await flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
 throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
