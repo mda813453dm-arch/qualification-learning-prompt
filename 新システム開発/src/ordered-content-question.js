@@ -24,3 +24,32 @@ export function gradeOrdered(q,input){
  if(!Number.isInteger(n))return {status:'invalid'};
  return Object.freeze({status:'graded',correct:n===q.answer.value,selected:n,correctAnswer:q.answer.value});
 }
+
+
+/**
+ * 表示前の完全性ゲート。
+ * 配列長だけでなく、必須要素の存在・個数・順序・問ID一致を検証する。
+ * 1項目でも欠ければ renderer に渡さない。
+ */
+export function validateDisplayArray(q){
+ if(!q||q.status!=='ready')return Object.freeze({ok:false,reason:'QUESTION_NOT_READY'});
+ const b=q.contentBlocks, types=b.map(x=>x.type);
+ const counts=Object.freeze(Object.fromEntries([...new Set(types)].map(t=>[t,types.filter(x=>x===t).length])));
+ const required=['question_number','text','choices','instruction'];
+ for(const t of required) if(!types.includes(t)) return Object.freeze({ok:false,reason:'REQUIRED_BLOCK_MISSING',missing:t,length:b.length,counts});
+ if(types[0]!=='question_number')return Object.freeze({ok:false,reason:'QUESTION_NUMBER_NOT_FIRST',length:b.length,counts});
+ if(types.at(-1)!=='instruction')return Object.freeze({ok:false,reason:'INSTRUCTION_NOT_LAST',length:b.length,counts});
+ if(counts.question_number!==1||counts.choices!==1||counts.instruction!==1)return Object.freeze({ok:false,reason:'BLOCK_CARDINALITY_INVALID',length:b.length,counts});
+ for(let i=0;i<b.length;i++){
+   if(b[i].order!==i)return Object.freeze({ok:false,reason:'ORDER_INDEX_MISMATCH',index:i,length:b.length,counts});
+   if(b[i].questionId && b[i].questionId!==q.id)return Object.freeze({ok:false,reason:'QUESTION_ID_MISMATCH',index:i,length:b.length,counts});
+ }
+ const firstText=types.indexOf('text'), firstVisual=Math.min(...['figure','table'].map(t=>{const i=types.indexOf(t);return i<0?Infinity:i}));
+ if(firstText<0||firstText>firstVisual)return Object.freeze({ok:false,reason:'QUESTION_TEXT_POSITION_INVALID',length:b.length,counts});
+ return Object.freeze({ok:true,length:b.length,counts,signature:types.join('>')});
+}
+export function getVerifiedDisplayArray(q){
+ const audit=validateDisplayArray(q);
+ if(!audit.ok)throw new Error('DISPLAY_ARRAY_REJECTED:'+audit.reason);
+ return Object.freeze({audit,blocks:q.contentBlocks});
+}
