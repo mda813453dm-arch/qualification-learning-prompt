@@ -9,11 +9,11 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
  let consecutivePracticeMisses=0,officialPracticeCount=0,confirmationMisses=0;
  let pendingQuestion=null,pendingOutcome=null;
  const seenQuestionIds=new Set();
- const snapshot=()=>Object.freeze({qualificationId,itemId:currentItemId,phase,batchCount,batchAllCorrect,
+ const snapshot=()=>{const currentIndex=studyPlan.itemIds.indexOf(currentItemId);return Object.freeze({qualificationId,itemId:currentItemId,phase,batchCount,batchAllCorrect,hasNextUnit:currentIndex>=0&&currentIndex+1<studyPlan.itemIds.length,nextItemId:studyPlan.itemIds[currentIndex+1]||null,
   consecutivePracticeMisses,officialPracticeCount,confirmationMisses,
   pendingQuestion:pendingQuestion?Object.freeze({...pendingQuestion}):null,
   pendingOutcome:pendingOutcome?Object.freeze({...pendingOutcome}):null,
-  seenQuestionIds:Object.freeze([...seenQuestionIds])});
+  seenQuestionIds:Object.freeze([...seenQuestionIds])});};
  const reject=reason=>Object.freeze({ok:false,reason,state:snapshot()});
  function validateQuestion(meta){
   if(!meta||!meta.questionId||!meta.qualificationId||!meta.itemId)return reject('QUESTION_BINDING_REQUIRED');
