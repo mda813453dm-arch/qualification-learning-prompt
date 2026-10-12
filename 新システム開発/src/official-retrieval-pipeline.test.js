@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {createOfficialRetrievalPipeline} from './official-retrieval-pipeline.js';
 const ok=(v,m)=>{if(!v)throw new Error(m)};
 const plan={status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']};
