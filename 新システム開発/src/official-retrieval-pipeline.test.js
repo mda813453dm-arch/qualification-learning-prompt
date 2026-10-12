@@ -56,7 +56,7 @@ try{createOfficialRetrievalPipeline({retrieveAndVerify,adapters:[],resolveCandid
 catch(error){configurationBlocked=error.message==='PIPELINE_CONFIGURATION_REQUIRED';}
 ok(configurationBlocked,'a retrieval pipeline without a deterministic inline payload builder cannot start');
 const incomplete=createOfficialRetrievalPipeline({
- retrieveAndVerify,adapters:[],resolveCandidates:async()=>queue,
+ retrieveAndVerify,adapters:[],buildInlinePayload:async()=>({status:'blocked'}),resolveCandidates:async()=>queue,
  buildInlinePayload:async()=>({status:'ready',questionId:'q-2024',packetHash:'not-a-sha',question:{id:'q-2024'},packet:{id:'q-2024',packetHash:'not-a-sha'},signature:'question_number>body',nodes:[{role:'question_number'},{role:'body'}]})
 });
 const incompleteResult=await incomplete({studyPlan:plan,studyUnitId:'control-points'});
