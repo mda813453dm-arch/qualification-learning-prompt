@@ -1,0 +1,13 @@
+import {createHash} from 'node:crypto';
+import {bridgeOfficialBundleToInline} from './official-bundle-inline-bridge.js';
+const h=s=>createHash('sha256').update(s).digest('hex'), ok=(v,m)=>{if(!v)throw new Error(m)};
+const key='土地家屋調査士:2025:午後:6',body='公式PDFから確定した問題本文',choices=['1','2','3','4','5'];
+const assets=[{id:'fig6',kind:'figure',page:4,sha256:'a'.repeat(64),crop:{x0:1,y0:2,x1:3,y1:4}},{id:'tab6',kind:'table',page:4,sha256:'b'.repeat(64),crop:{x0:5,y0:6,x1:7,y1:8}}];
+const bundle={schema:'official-question-bundle-v1',key,displayNumber:'■2025年度 午後の部 問6',source:{questionPdfSha256:'qsha',answerPdfSha256:'asha',pages:[4]},body,choices,answer:{number:4,evidenceSha256:h('answer-cell')},assets,layout:['body','fig6','tab6','choices','answer-control'],packetHash:'packet6'};
+const manifest={key,questionPdfSha256:'qsha',answerPdfSha256:'asha',pages:[4],bodySha256:h(body),choiceSha256:choices.map(h),answerNumber:4,answerEvidenceSha256:h('answer-cell'),assets,reviewStatus:'approved',allVisualsAccountedFor:true,answerCellChecked:true,textChecked:true,displayChecked:true};
+const reg={resolve:id=>({questionId:key,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:assets.find(x=>x.id===id)?.sha256})};
+const p=bridgeOfficialBundleToInline(bundle,manifest,reg);
+ok(p.status==='ready','bridge ready');ok(p.signature==='question_number>body>official_figure>official_table>choices>instruction','order');ok(p.packetHash==='packet6','packet binding');
+const bad={...manifest,textChecked:false};ok(bridgeOfficialBundleToInline(bundle,bad,reg).status==='blocked','unreviewed blocked');
+const miss={resolve:id=>id==='fig6'?reg.resolve(id):null};ok(bridgeOfficialBundleToInline(bundle,manifest,miss).status==='blocked','missing visual blocked');
+console.log('PASS official bundle inline bridge: 5 checks');
