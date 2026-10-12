@@ -9,7 +9,7 @@ const basis={lawName:'仮想法',provision:'第1条',effectiveDate:'2025-04-01',
 const explanation={questionId:'q2',packetHash:'p2',text:'この選択肢は条文の要件を満たします。',legalBasis:[basis]};
 const trustedVerifier=()=>true;
 const c=compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:trustedVerifier});
-ok(compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:trustedVerifier}).reason==='LEGAL_SOURCE_NOT_VERIFIED','trusted source retrieval evidence required');
+ok(compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_SOURCE_NOT_VERIFIED','trusted source retrieval evidence required');
 ok(c.ok&&c.displayText.includes('■法的根拠')&&c.displayText.includes('仮想法 第1条')&&c.displayText.includes(basis.excerpt)&&c.displayText.includes(basis.officialUrl),'根拠欄と引用を表示');
 ok(compileLegalBasisExplanation('本文だけ',{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_EXPLANATION_REQUIRED','平文拒否');
 ok(compileLegalBasisExplanation({...explanation,legalBasis:[]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_BASIS_MISSING','根拠なし拒否');
