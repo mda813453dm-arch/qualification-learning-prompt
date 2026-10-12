@@ -62,10 +62,11 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
    phase='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED';pendingOutcome=null;
    return Object.freeze({ok:true,state:snapshot(),nextKind:'ai_confirmation',requiresBriefExplanation:true});
   }
-  if(choice==='hold_and_move'){
+  if(choice==='hold_and_move'||choice==='end_session'){
    const currentIndex=studyPlan.itemIds.indexOf(currentItemId);
    const nextItemId=studyPlan.itemIds[currentIndex+1]||null;
-   if(!nextItemId){phase='SESSION_END_REQUIRED';pendingOutcome=null;return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});}
+   if(choice==='end_session'&&nextItemId)return reject('CONFIRMED_NEXT_UNIT_AVAILABLE');
+   if(!nextItemId){if(choice!=='end_session')return reject('NEXT_STUDY_UNIT_NOT_IN_PLAN');phase='SESSION_END_REQUIRED';pendingOutcome=null;return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});}
    currentItemId=nextItemId;batchCount=0;batchAllCorrect=true;consecutivePracticeMisses=0;
    officialPracticeCount=0;confirmationMisses=0;phase='PRACTICE_READY';pendingOutcome=null;
    return Object.freeze({ok:true,state:snapshot(),nextItemId,heldItemId:studyPlan.itemIds[currentIndex]});
