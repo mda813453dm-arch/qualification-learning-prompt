@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - name: Run every qualification system test
+      - name: Install integration test dependency\n        run: python -m pip install PyMuPDF\n      - name: Run every qualification system test
         shell: bash
         run: |
           set -euo pipefail
