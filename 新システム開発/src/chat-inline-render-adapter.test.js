@@ -1,19 +1,26 @@
 import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
-function ok(v,m){if(!v)throw new Error(m)}
-const q={status:'ready',id:'q2',packetHash:'hash-q2',contentBlocks:[
- {order:0,type:'question_number',value:'Q2'},
- {order:1,type:'text',value:'stem'},
- {order:2,type:'figure',assetId:'fig2'},
- {order:3,type:'text',value:'statements'},
- {order:4,type:'choices',value:['1','2','3','4','5']},
- {order:5,type:'instruction',value:'番号で答えてください。'}
-]};
-const registry={resolve:id=>id==='fig2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'verified-inline-ref',sha256:'figsha'}:null};
-const p=compileChatInlinePayload(q,registry);
-ok(p.status==='ready','payload');
-ok(p.signature==='question_number>body>official_figure>body>choices>instruction','order');
-ok(verifyChatInlineReceipt(p,{complete:true,questionId:'q2',packetHash:'hash-q2',signature:p.signature,nodeCount:6}).ok,'receipt');
-const bad={...q,contentBlocks:q.contentBlocks.map(x=>x.type==='figure'?{...x,assetId:'missing'}:x)};
-ok(compileChatInlinePayload(bad,registry).status==='blocked','missing asset');
-ok(!verifyChatInlineReceipt(p,{complete:true,questionId:'q2',packetHash:'hash-q2',signature:'wrong',nodeCount:6}).ok,'wrong order');
-console.log('PASS chat-inline-render-adapter 5 checks');
+const ok=(v,m)=>{if(!v)throw new Error(m)};
+const asset=(id,q='q')=>({questionId:q,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:'sha-'+id});
+const registry={resolve:id=>asset(id)};
+const packet=(id,blocks)=>({status:'ready',id,packetHash:'hash-'+id,contentBlocks:blocks.map((b,i)=>({order:i,...b}))});
+const end=[{type:'choices',value:['1','2','3','4','5']},{type:'instruction',value:'番号で答えてください。'}];
+const cases=[
+ ['no-figure',[{type:'question_number',value:'Q'},{type:'text',value:'stem'},...end],'question_number>body>choices>instruction'],
+ ['one-figure',[{type:'question_number',value:'Q'},{type:'text',value:'stem'},{type:'figure',assetId:'f1'},...end],'question_number>body>official_figure>choices>instruction'],
+ ['two-figures',[{type:'question_number',value:'Q'},{type:'figure',assetId:'f1'},{type:'figure',assetId:'f2'},...end],'question_number>official_figure>official_figure>choices>instruction'],
+ ['figure-text-figure',[{type:'question_number',value:'Q'},{type:'figure',assetId:'f1'},{type:'text',value:'middle'},{type:'figure',assetId:'f2'},...end],'question_number>official_figure>body>official_figure>choices>instruction'],
+ ['table-only',[{type:'question_number',value:'Q'},{type:'text',value:'stem'},{type:'table',value:[['A','B'],['1','2']]},...end],'question_number>body>official_table>choices>instruction'],
+ ['figure-table',[{type:'question_number',value:'Q'},{type:'figure',assetId:'f1'},{type:'table',value:[['A','B']]},...end],'question_number>official_figure>official_table>choices>instruction']
+];
+let n=0;
+for(const [id,blocks,sig] of cases){
+ const p=compileChatInlinePayload(packet(id,blocks),{resolve:x=>asset(x,id)});
+ ok(p.status==='ready',id+' ready'); ok(p.signature===sig,id+' order'); n+=2;
+}
+const missing=packet('missing',[{type:'question_number',value:'Q'},{type:'figure',assetId:'none'},...end]);
+ok(compileChatInlinePayload(missing,{resolve:()=>null}).status==='blocked','missing asset');n++;
+const wrong=packet('right',[{type:'question_number',value:'Q'},{type:'figure',assetId:'f1'},...end]);
+ok(compileChatInlinePayload(wrong,{resolve:()=>asset('f1','other')}).status==='blocked','wrong binding');n++;
+const p=compileChatInlinePayload(packet('receipt',[{type:'question_number',value:'Q'},...end]),registry);
+ok(!verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:'wrong',nodeCount:p.nodes.length}).ok,'wrong receipt order');n++;
+console.log('PASS chat-inline-render-adapter '+n+' checks');
