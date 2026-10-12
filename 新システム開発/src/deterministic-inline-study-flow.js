@@ -125,14 +125,20 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    return machine.state();
   },
   skipExplanation(){
-   throw new Error('EXPLANATION_SKIP_NOT_IMPLEMENTED');
+   const s=machine.state();if(s.phase!=='GRADED')throw new Error('EXPLANATION_SKIP_NOT_ALLOWED');
+   must(machine.dispatch({type:'SKIP_EXPLANATION',packetHash:s.packet.packetHash}));return machine.state();
+  },
+  clarifyDuringExplanation(question){
+   if(!['EXPLAINED','ANSWER_WAIT'].includes(machine.state().phase))throw new Error('EXPLANATION_QUESTION_NOT_ALLOWED');
+   if(typeof question!=='string'||!question.trim())throw new Error('EXPLANATION_QUESTION_REQUIRED');
+   return Object.freeze({state:machine.state(),question:question.trim(),progression:learningSequence?.state()||null});
   },
   next(number){throw new Error('NEXT_REQUIRES_READY_PACKET');},
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    if(learningSequence.state().phase==='PERFECT_RUN_CHOICE')
-    return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(['continue_same_unit','next_unit']),learning:learningSequence.state()});
+    return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(learningSequence.state().hasNextUnit?['continue_same_unit','next_unit']:['continue_same_unit']),learning:learningSequence.state()});
    return commitPinnedNext();
   },
   chooseLearningPath(choice){
@@ -140,6 +146,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    const result=must(learningSequence.chooseAfterPerfectRun(choice));
    if(prefetchedNext&&prefetchedNext.input.learningContext.itemId===result.nextItemId)
     return commitPinnedNext();
+   prefetchedNext=null;
    return Object.freeze({state:machine.state(),ready:false,nextItemId:result.nextItemId,learning:result.state});
   },
   nextReady(number,nextInput){throw new Error('NEXT_REQUIRES_PREFETCHED_PACKET');},
