@@ -145,7 +145,7 @@ const integratedPipeline=createOfficialRetrievalPipeline({
 });
 const integrated=await integratedPipeline({studyPlan,studyUnitId});
 ok(integrated.status==='ready'&&integrated.verifiedQuestion.inlinePayload.questionId===extraction.key,
- 'approved official retrieval reaches inline rendering only through the verified bundle compiler');
+ 'approved official retrieval reaches inline rendering only through the verified bundle compiler: '+JSON.stringify(integrated));
 ok(integrated.verifiedQuestion.inlinePayload.signature.endsWith('>choices>instruction'),
  'integrated retrieval returns the complete ordered question and response instruction');
 const deniedBuilder=createOfficialQuestionBundleBuilder({verifyExtraction:()=>false,verifyLayoutReview:()=>true});
