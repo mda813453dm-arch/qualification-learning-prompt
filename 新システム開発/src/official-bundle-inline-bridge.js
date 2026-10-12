@@ -33,6 +33,7 @@ const sha=value=>createHash('sha256').update(value).digest('hex');
 const isSha=value=>/^[a-f0-9]{64}$/.test(value||'');
 const sameArray=(a,b)=>Array.isArray(a)&&Array.isArray(b)&&a.length===b.length&&a.every((x,i)=>x===b[i]);
 const buildFail=reason=>Object.freeze({status:'blocked',reason});
+const deepFreeze=value=>{if(value&&typeof value==='object'&&!Object.isFrozen(value)){for(const child of Object.values(value))deepFreeze(child);Object.freeze(value);}return value;};
 
 /** Server-owned verifiers bind PDF extraction and reviewed visual placement. */
 export function createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayoutReview}={}){
@@ -101,6 +102,6 @@ export function createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayo
    assets:assets.map(a=>({...a,crop:{...a.crop}})),contentBlockSha256:[...contentBlockSha256],packetHash,reviewStatus:'approved',
    allVisualsAccountedFor:true,answerCellChecked:true,textChecked:true,displayChecked:true,explanationPolicy:bundle.explanationPolicy};
   const checked=validateQuestionBundle(bundle,manifest);if(!checked.ok)return buildFail('BUILT_BUNDLE_REJECTED:'+checked.reason);
-  return Object.freeze({status:'ready',bundle:Object.freeze(bundle),manifest:Object.freeze(manifest),packetHash});
+  return deepFreeze({status:'ready',bundle,manifest,packetHash});
  };
 }
