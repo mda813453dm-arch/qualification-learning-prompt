@@ -29,7 +29,7 @@ function q3Packet(){
   {order:3,type:'choices',value:['1','2','3','4','5']},
   {order:4,type:'instruction',value:'番号で答えてください。'}]};
 }
-function q3Input(packet=q3Packet(),question={status:'ready',id:'q3',number:3}){
+function q3Input(packet=q3Packet(),question={status:'ready',id:'q3',number:3,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind:'official_practice',origin:'official',verifiedBundle:true}){
  return {question,packet,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]};
 }
 const noPrefetch=answerWait();
@@ -55,7 +55,7 @@ const nextInput=q3Input();
 const ready=flow.prefetchNext(3,nextInput);
 nextInput.packet.answer.value=5;
 ok(ready.ready===true&&ready.number===3&&ready.packetHash==='p3','次問prefetch成功');
-ok(flow.answer(4).correct===true,'固定済み公式正答で採点');
+const graded=flow.answer(4);\nok(graded.correct===true&&graded.learning.officialPracticeCount===1&&graded.learning.itemId==='control-points','固定済み公式正答・同単元カウンタで採点');
 await flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
 throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
