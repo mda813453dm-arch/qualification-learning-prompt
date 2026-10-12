@@ -39,6 +39,7 @@ const nextPacket={status:'ready',id:'q3',number:3,packetHash:'p3',studyUnitId:'p
  {order:3,type:'choices',value:['1','2','3','4','5']},{order:4,type:'instruction',value:'番号で答えてください。'}]};
 flow.prefetchNext(3,{question:{status:'ready',id:'q3',number:3,studyUnitId:'property-rights',studyPlanSha256:studyPlan.sha256,kind:'official_practice',origin:'official',verifiedBundle:true},packet:nextPacket,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]});
 flow.answer(4);
+flow.decideExplanation('detailed');
 await throws(()=>flow.explain('根拠なし解説'),'LEGAL_EXPLANATION_REQUIRED','法律解説は根拠必須');
 const graded=await flow.explain(explanation);
 ok(graded.phase==='EXPLAINED'&&graded.explanation.includes('■法的根拠')&&graded.explanation.includes(basis.officialUrl),'根拠付きで解説確定');
