@@ -140,3 +140,48 @@ export function createOfficialBundleInlineCompiler({
   return bridgeOfficialBundleToInline(built.bundle,built.manifest,assetRegistry);
 }
 }
+
+
+/**
+ * Python extractor exportを、Bundle compilerが受け取る厳密な抽出証拠へ変換する。
+ * PDF export自体は公式取得パイプラインのサーバー検証後にのみ信頼する。
+ */
+export function adaptSurveyorExportedQuestion(exported,{number,studyUnitId,studyPlanSha256}={}){
+ const blocked=reason=>Object.freeze({status:'blocked',reason});
+ if(!exported||exported.schema!=='surveyor_2025_afternoon_v1'||
+    exported.registryKey!=='土地家屋調査士:2025:午後'||
+    exported.qualification!=='土地家屋調査士'||exported.year!==2025||
+    exported.section!=='午後'||!Array.isArray(exported.questions)||
+    !Number.isInteger(number)||number<1||number>20)
+  return blocked('SURVEYOR_EXPORT_IDENTITY_INVALID');
+ if(!isSha(exported.questionPdfSha256)||!isSha(exported.answerPdfSha256)||
+    typeof studyUnitId!=='string'||!studyUnitId||!isSha(studyPlanSha256))
+  return blocked('SURVEYOR_EXPORT_SOURCE_OR_STUDY_BINDING_INVALID');
+ const matches=exported.questions.filter(q=>q?.number===number);
+ if(matches.length!==1)return blocked('SURVEYOR_EXPORT_QUESTION_NOT_UNIQUE');
+ const q=matches[0],key='土地家屋調査士:2025:午後:'+number;
+ if(q.key!==key||q.displayNumber!=='■2025年度 午後の部 問'+number||
+    !Number.isInteger(q.page)||q.page<1||!Array.isArray(q.pages)||q.pages.length<1||
+    q.pages[0]!==q.page||q.pages.some((p,i)=>!Number.isInteger(p)||p<1||(i>0&&p<=q.pages[i-1])))
+  return blocked('SURVEYOR_EXPORT_QUESTION_IDENTITY_INVALID');
+ if(typeof q.rawSpan!=='string'||!q.rawSpan||!isSha(q.spanSha256)||sha(q.rawSpan)!==q.spanSha256||
+    typeof q.stemText!=='string'||!q.stemText.trim()||!q.rawSpan.includes(q.stemText)||
+    !isSha(q.stemSha256)||sha(q.stemText)!==q.stemSha256)
+  return blocked('SURVEYOR_EXPORT_QUESTION_EVIDENCE_INVALID');
+ if(!Array.isArray(q.choices)||q.choices.length!==5||q.choices.some(c=>typeof c!=='string'||!c.trim())||
+    !Number.isInteger(q.answerNumber)||q.answerNumber<1||q.answerNumber>q.choices.length||
+    typeof q.answerEvidence!=='string'||!q.answerEvidence.trim()||
+    !isSha(q.answerEvidenceSha256)||sha(q.answerEvidence)!==q.answerEvidenceSha256||
+    !Number.isInteger(q.answerPage)||q.answerPage<1)
+  return blocked('SURVEYOR_EXPORT_ANSWER_EVIDENCE_INVALID');
+ const extraction=Object.freeze({
+  key,qualification:exported.qualification,year:exported.year,section:exported.section,number,
+  studyUnitId,studyPlanSha256,displayNumber:q.displayNumber,
+  questionPdfSha256:exported.questionPdfSha256,answerPdfSha256:exported.answerPdfSha256,
+  pages:Object.freeze([...q.pages]),rawSpan:q.rawSpan,spanSha256:q.spanSha256,
+  stemText:q.stemText,stemSha256:q.stemSha256,choices:Object.freeze([...q.choices]),
+  answerNumber:q.answerNumber,answerEvidence:q.answerEvidence,
+  answerEvidenceSha256:q.answerEvidenceSha256,answerPage:q.answerPage
+ });
+ return Object.freeze({status:'ready',extraction});
+}
