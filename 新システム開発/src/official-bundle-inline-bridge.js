@@ -9,11 +9,12 @@ export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  const gate=validateQuestionBundle(bundle,manifest);
  if(!gate.ok)return Object.freeze({status:'blocked',reason:gate.reason});
  const blocks=[{order:0,type:'question_number',value:bundle.displayNumber||bundle.key,questionId:bundle.key}];
- blocks.push({order:1,type:'text',value:gate.body,questionId:bundle.key});
- for(const token of gate.layout.slice(1,-2)){
-  const a=gate.assets.find(x=>x.id===token);
-  if(!a)return Object.freeze({status:'blocked',reason:'LAYOUT_ASSET_NOT_FOUND'});
-  blocks.push({order:blocks.length,type:a.kind==='table'?'table':'figure',assetId:a.id,questionId:bundle.key});
+ for(const item of gate.contentBlocks){
+  if(item.type==='text')blocks.push({order:blocks.length,type:'text',value:item.value,questionId:bundle.key});
+  else if(item.type==='table')blocks.push({order:blocks.length,type:'table',assetId:item.assetId,questionId:bundle.key});
+  else if(item.type==='formula')blocks.push({order:blocks.length,type:'formula',value:item.value||item.assetId,questionId:bundle.key});
+  else if(item.type==='figure'||item.type==='other')blocks.push({order:blocks.length,type:'figure',assetId:item.assetId,questionId:bundle.key});
+  else return Object.freeze({status:'blocked',reason:'CONTENT_BLOCK_TYPE_UNSUPPORTED'});
  }
  blocks.push({order:blocks.length,type:'choices',value:gate.choices,questionId:bundle.key});
  blocks.push({order:blocks.length,type:'instruction',value:'番号で答えてください。',questionId:bundle.key});
