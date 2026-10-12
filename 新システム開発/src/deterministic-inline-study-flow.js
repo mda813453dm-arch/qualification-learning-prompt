@@ -95,7 +95,10 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     if(packet.number!==n)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
     if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
     const context=makeLearningContext(question,studyPlan.qualificationId);
-    if(context.itemId!==learningSequence.state().itemId)throw new Error('NEXT_STUDY_UNIT_MISMATCH');
+    const sequence=learningSequence.state();
+    const allowedUnitIds=new Set([sequence.itemId]);
+    if(sequence.batchCount===2&&sequence.batchAllCorrect&&sequence.hasNextUnit)allowedUnitIds.add(sequence.nextItemId);
+    if(!allowedUnitIds.has(context.itemId))throw new Error('NEXT_STUDY_UNIT_MISMATCH');
     if(!Array.isArray(input.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
     const assetsById=new Map();
     for(const asset of input.assets){
@@ -140,16 +143,22 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    const menuOnly=prediction.kind==='confirmation_menu';
    if(!prefetchedNext&&!menuOnly)throw new Error('NEXT_NOT_PREFETCHED');
    const candidates=Array.isArray(prefetchedNext)?prefetchedNext:(prefetchedNext?[prefetchedNext]:[]);
-   const selected=candidates.find(x=>{
-    const c=x.input.learningContext;
-    if(prediction.kind==='unit_choice')return c.kind==='official_practice'&&c.itemId===learningSequence.state().itemId;
-    return c.kind===prediction.kind;
-   });
-   if(!selected&&!menuOnly)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
+   let selected=null;
+   if(prediction.kind==='unit_choice'){
+    const sequence=learningSequence.state();
+    const requiredItems=[sequence.itemId,...(sequence.hasNextUnit?[sequence.nextItemId]:[])];
+    for(const itemId of requiredItems){
+     if(!candidates.some(x=>x.input.learningContext.kind==='official_practice'&&x.input.learningContext.itemId===itemId))
+      throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:unit_choice:'+itemId);
+    }
+   }else{
+    selected=candidates.find(x=>x.input.learningContext.kind===prediction.kind);
+    if(!selected&&!menuOnly)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
+   }
    const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value:parsedAnswer})).state.grade;
    const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
    if(result.ok!==true)throw new Error(result.reason);
-   prefetchedNext=menuOnly?null:selected;
+   prefetchedNext=menuOnly?null:(prediction.kind==='unit_choice'?Object.freeze(candidates):selected);
    const preference=explanationPreference(currentLearningContext.itemId);
    explanationDecision=currentLearningContext.kind==='ai_confirmation'?'skip':(preference==='ask_each'?null:preference);
    return Object.freeze({...grade,learning:result.outcome,explanationChoiceRequired:explanationDecision===null,explanationChoices:explanationDecision===null?Object.freeze(['detailed','skip']):Object.freeze([])});
