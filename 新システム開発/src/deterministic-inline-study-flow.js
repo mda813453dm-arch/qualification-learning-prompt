@@ -16,7 +16,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     !/^[a-f0-9]{64}$/.test(studyPlan.sha256||'')||!Array.isArray(studyPlan.itemIds)||studyPlan.itemIds.length===0)
   throw new Error('APPROVED_STUDY_PLAN_REQUIRED');
  let payload=null,prefetchedNext=null,currentExplanationPolicy='general';
- let learningSequence=null,currentLearningContext=null,explanationDecision=null;
+ let learningSequence=null,currentLearningContext=null,explanationDecision=null,pendingClarification=null;
  const explanationPreferences=options.explanationPreferences||{};
  const explanationPreference=itemId=>explanationPreferences[itemId]||options.explanationPreference||'ask_each';
  if(!['ask_each','detailed','skip'].includes(options.explanationPreference||'ask_each'))throw new Error('EXPLANATION_PREFERENCE_INVALID');
@@ -132,6 +132,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     questionId:x.input.learningContext.questionId,packetHash:x.payload.packetHash})))});
   },
   answer(value){
+   if(pendingClarification)throw new Error('EXPLANATION_QUESTION_UNRESOLVED');
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
    const parsedAnswer=Number(String(value).trim());
    const choiceBlock=machine.state().packet?.contentBlocks?.find(b=>b.type==='choices');
@@ -191,11 +192,23 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   clarifyDuringExplanation(question){
    if(!['EXPLAINED','ANSWER_WAIT'].includes(machine.state().phase))throw new Error('EXPLANATION_QUESTION_NOT_ALLOWED');
    if(typeof question!=='string'||!question.trim())throw new Error('EXPLANATION_QUESTION_REQUIRED');
-   return Object.freeze({state:machine.state(),question:question.trim(),progression:learningSequence?.state()||null});
+   if(pendingClarification)throw new Error('EXPLANATION_QUESTION_ALREADY_PENDING');
+   pendingClarification=question.trim();
+   return Object.freeze({state:machine.state(),question:pendingClarification,progression:learningSequence?.state()||null});
+  },
+  resolveExplanationQuestion(answer){
+   if(!pendingClarification)throw new Error('EXPLANATION_QUESTION_NOT_PENDING');
+   if(typeof answer!=='string'||!answer.trim())throw new Error('EXPLANATION_ANSWER_REQUIRED');
+   const question=pendingClarification;pendingClarification=null;
+   const inAnswerWait=machine.state().phase==='ANSWER_WAIT';
+   return Object.freeze({question,answer:answer.trim(),state:machine.state(),
+    progression:learningSequence?.state()||null,resumePayload:inAnswerWait?payload:null,
+    continueAfterExplanation:machine.state().phase==='EXPLAINED'});
   },
   next(number){throw new Error('NEXT_REQUIRES_READY_PACKET');},
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
+   if(pendingClarification)throw new Error('EXPLANATION_QUESTION_UNRESOLVED');
    if(learningSequence.state().phase==='CONFIRMATION_CHOICE_REQUIRED')
     return Object.freeze({state:machine.state(),confirmationChoiceRequired:true,choices:Object.freeze(learningSequence.state().hasNextUnit?['continue_confirmation','hold_and_move']:['continue_confirmation','end_session']),learning:learningSequence.state()});
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
