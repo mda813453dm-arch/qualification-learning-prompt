@@ -48,6 +48,13 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   }else return reject('QUESTION_KIND_INVALID');
   return Object.freeze({ok:true,state:snapshot(),outcome:pendingOutcome});
  }
+ function predictNextKind(correct){
+  if(!pendingQuestion||typeof correct!=='boolean')return reject('PENDING_QUESTION_REQUIRED');
+  if(pendingQuestion.kind==='ai_confirmation')return Object.freeze({ok:true,kind:correct?'official_practice':'ai_confirmation'});
+  if(!correct&&consecutivePracticeMisses+1>=2)return Object.freeze({ok:true,kind:'ai_confirmation'});
+  if(correct&&batchCount===2&&batchAllCorrect)return Object.freeze({ok:true,kind:'unit_choice'});
+  return Object.freeze({ok:true,kind:'official_practice'});
+ }
  function chooseAfterPerfectRun(choice){
   if(phase!=='PERFECT_RUN_CHOICE')return reject('PERFECT_RUN_CHOICE_NOT_PENDING');
   const currentIndex=studyPlan.itemIds.indexOf(currentItemId);
@@ -64,5 +71,5 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   }
   return reject('UNIT_CHOICE_INVALID');
  }
- return Object.freeze({state:snapshot,validateQuestion,recordAnswer,chooseAfterPerfectRun});
+ return Object.freeze({state:snapshot,validateQuestion,recordAnswer,predictNextKind,chooseAfterPerfectRun});
 }
