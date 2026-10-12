@@ -26,5 +26,5 @@ await rejects(()=>redirectVerifier(item,context),'EGOV_RESPONSE_NOT_CANONICAL','
 const invalidDateVerifier=createEgovLawSourceVerifier({fetchImpl:async()=>{throw new Error('should not fetch');}});
 await rejects(()=>invalidDateVerifier({...item,effectiveDate:'2025-02-30'},context),'EGOV_EFFECTIVE_DATE_INVALID','invalid date rejected before fetch');
 const wrongArticleVerifier=createEgovLawSourceVerifier({fetchImpl:async url=>({status:200,url,headers:{get:()=> 'text/html'},text:async()=>html.replace('第一条（目的等）','第二条（定義）')})});
-await rejects(()=>wrongArticleVerifier(item,context),'EGOV_CITATION_TEXT_NOT_IN_OFFICIAL_ARTICLE','article mismatch rejected');
+await rejects(()=>wrongArticleVerifier(item,context),'EGOV_PROVISION_NOT_FOUND','provision mismatch rejected');
 console.log('PASS e-Gov law source verifier: 5 checks');
