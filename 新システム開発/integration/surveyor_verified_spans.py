@@ -4,9 +4,9 @@ import subprocess
 import unicodedata
 from pathlib import Path
 
-HEADER = re.compile(r'^\\s*第\\s*(\\d{1,2})\\s*問(?=\\s|$)', re.M)
-CHOICE_LINE = re.compile(r'^\\s*1\\s+([アイウエオ]{2})\\s+2\\s+([アイウエオ]{2})\\s+3\\s+([アイウエオ]{2})\\s+4\\s+([アイウエオ]{2})\\s+5\\s+([アイウエオ]{2})\\s*$', re.M)
-ANSWER_ROW = re.compile(r'^([ \\t]*)第[ \\t]*(\\d+)問[ \\t]+([1-5])(?:[ \\t]+第[ \\t]*(\\d+)問[ \\t]+([1-5]))?[ \\t]*$', re.M)
+HEADER = re.compile(r'^\s*第\s*(\d{1,2})\s*問(?=\s|$)', re.M)
+CHOICE_LINE = re.compile(r'^\s*1\s+([アイウエオ]{2})\s+2\s+([アイウエオ]{2})\s+3\s+([アイウエオ]{2})\s+4\s+([アイウエオ]{2})\s+5\s+([アイウエオ]{2})\s*$', re.M)
+ANSWER_ROW = re.compile(r'^([ \t]*)第[ \t]*(\d+)問[ \t]+([1-5])(?:[ \t]+第[ \t]*(\d+)問[ \t]+([1-5]))?[ \t]*$', re.M)
 
 def _sha256(text):
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
@@ -16,7 +16,7 @@ def pages_from_pdf(path):
     if not data.startswith(b'%PDF-'):
         raise ValueError('NOT_PDF')
     raw = subprocess.check_output(['pdftotext', '-layout', str(path), '-'])
-    return raw.decode('utf-8').split('\\f'), hashlib.sha256(data).hexdigest()
+    return raw.decode('utf-8').split('\f'), hashlib.sha256(data).hexdigest()
 
 def extract_questions(pages):
     occurrences=[]
@@ -36,7 +36,7 @@ def extract_questions(pages):
     for i in range(20):
         number,page_idx,start=occurrences[i]
         _,end_page,end_offset=occurrences[i+1]
-        span='\\n'.join(
+        span='\n'.join(
             pages[k][start if k==page_idx else 0:end_offset if k==end_page else None]
             for k in range(page_idx,end_page+1)
         ) if page_idx!=end_page else pages[page_idx][start:end_offset]
@@ -68,7 +68,7 @@ def _select_afternoon_answer(m):
 
 def extract_answers(text):
     t=unicodedata.normalize('NFKC',text)
-    if not re.search(r'午前の部\\s+午後の部',t):
+    if not re.search(r'午前の部\s+午後の部',t):
         raise ValueError('ANSWER_HEADER_UNVERIFIED')
     morning,afternoon={},{}
     for m in ANSWER_ROW.finditer(t):
@@ -91,8 +91,8 @@ def extract_answers(text):
 
 def extract_answer_evidence(pages):
     normalized_pages=[unicodedata.normalize('NFKC',page) for page in pages]
-    joined='\\n'.join(normalized_pages)
-    if not re.search(r'午前の部\\s+午後の部',joined):
+    joined='\n'.join(normalized_pages)
+    if not re.search(r'午前の部\s+午後の部',joined):
         raise ValueError('ANSWER_HEADER_UNVERIFIED')
     evidence={}
     morning_seen=set()
@@ -128,7 +128,7 @@ def verify_files(question_path,answer_path):
     pages,qhash=pages_from_pdf(question_path)
     apages,ahash=pages_from_pdf(answer_path)
     questions=extract_questions(pages)
-    answers=extract_answers('\\n'.join(apages))
+    answers=extract_answers('\n'.join(apages))
     answer_evidence=extract_answer_evidence(apages)
     if {n:item['answer'] for n,item in answer_evidence.items()}!=answers:
         raise ValueError('ANSWER_EVIDENCE_MISMATCH')
