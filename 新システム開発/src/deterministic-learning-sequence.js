@@ -22,6 +22,8 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(pendingQuestion){if(pendingQuestion.questionId===meta.questionId)return Object.freeze({ok:true,state:snapshot()});return reject('QUESTION_ALREADY_PENDING');}
   if(phase==='PERFECT_RUN_CHOICE')return reject('UNIT_CHOICE_REQUIRED');
   if(phase==='CONFIRMATION_CHOICE_REQUIRED')return reject('CONFIRMATION_CHOICE_REQUIRED');
+  if(phase==='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED')return reject('CONFIRMATION_BRIEF_EXPLANATION_REQUIRED');
+  if(phase==='SESSION_END_REQUIRED')return reject('SESSION_END_REQUIRED');
   if(phase==='CONFIRMATION_REQUIRED'){
    if(meta.kind!=='ai_confirmation'||meta.origin!=='ai'||!meta.parentQuestionId)return reject('AI_CONFIRMATION_REQUIRED');
   }else if(meta.kind!=='official_practice'||meta.origin!=='official'||meta.verifiedBundle!==true)
