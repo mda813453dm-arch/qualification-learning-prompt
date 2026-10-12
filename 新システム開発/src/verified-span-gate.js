@@ -9,6 +9,6 @@ export function verifyQuestionSpan({rawSpan,expectedSpanSha256,questionText,choi
  const line=rawSpan.match(/^\s*1\s+([アイウエオ]{2})\s+2\s+([アイウエオ]{2})\s+3\s+([イウエオア]{2})\s+4\s+([アイウエオ]{2})\s+5\s+([アイウエオ]{2})\s*$/m);
  if(!line||choices.some((x,i)=>x!==line[i+1]))return fail('CHOICES_NOT_MATCHED');
  if(!Number.isInteger(expectedAnswer)||correctChoice!==expectedAnswer)return fail('ANSWER_MISMATCH');
- if(/(?:図|表|下図|下表|別紙|次の図)/.test(rawSpan))return fail('VISUAL_EVIDENCE_REQUIRED');
+ if(/(?:図\s*[0-9０-９]+|図\s*[Ａ-ＺA-Z]|下図|下表|別紙|次の図|次の表|表\s*[0-9０-９]+)/.test(rawSpan))return fail('VISUAL_EVIDENCE_REQUIRED');
  return {ok:true,level:'TEXT_ONLY_MATCH',visualCompletenessVerified:false};
 }
