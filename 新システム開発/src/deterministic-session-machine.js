@@ -33,6 +33,10 @@ export function createDeterministicSession(initial={}){
   state:snapshot,
   dispatch(event){
    if(!event||typeof event.type!=='string')return reject('EVENT_REQUIRED');
+   if(event.type==='SKIP_EXPLANATION'){
+    if(state.phase!=='GRADED'||event.packetHash!==state.packet?.packetHash)return reject('EXPLANATION_BINDING_INVALID');
+    return commit('EXPLAINED',{explanation:null,explanationSkipped:true});
+   }
    const rule=NEXT[state.phase];
    if(!rule||event.type!==rule[0])return reject('TRANSITION_FORBIDDEN');
 
@@ -67,12 +71,6 @@ export function createDeterministicSession(initial={}){
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
       return commit(rule[1],{explanation:event.explanation,explanationSkipped:false});
-    case 'SKIP_EXPLANATION':
-      if(state.phase!=='GRADED'||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-      return commit('EXPLAINED',{explanation:null,explanationSkipped:true});
-    case 'SKIP_EXPLANATION':
-      if(state.phase!=='GRADED'||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-      return commit('EXPLAINED',{explanation:null,explanationSkipped:true});
     case 'FIX_NEXT':
       if(event.nextQuestionNumber===undefined)return reject('NEXT_REQUIRED');
       return commit(rule[1],{nextQuestionNumber:event.nextQuestionNumber});
