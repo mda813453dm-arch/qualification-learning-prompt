@@ -38,6 +38,7 @@ const markdownResult=renderChatInlineMarkdown(markdownPayload);
 ok(markdownResult.status==='ready','inline markdown payload ready');
 const imageMarkdown='![公式図]('+iosFigure+')';
 ok(markdownResult.markdown.includes(imageMarkdown),'figure is emitted as an actual Markdown image link');
+ok(markdownResult.markdown.includes(String.fromCharCode(10)+String.fromCharCode(10)+imageMarkdown),'Markdown blocks are separated with real line breaks');
 ok(markdownResult.markdown.indexOf('問題文の前半')<markdownResult.markdown.indexOf(imageMarkdown)&&
  markdownResult.markdown.indexOf(imageMarkdown)<markdownResult.markdown.indexOf('問題文の後半')&&
  markdownResult.markdown.indexOf('問題文の後半')<markdownResult.markdown.indexOf('選択肢A'),

@@ -74,7 +74,7 @@ export function renderChatInlineMarkdown(payload){
   }else if(node.role==='official_figure'||node.role==='official_table'){
    if(typeof node.value!=='string')return fail('INLINE_IMAGE_REFERENCE_MISSING');
    const split=node.value.split('?');
-   if(split.length!==2||!/^sandbox:\/mnt\/data\/[^\\s?#]+\\.png$/i.test(split[0]))
+   if(split.length!==2||!split[0].startsWith('sandbox:/mnt/data/')||!split[0].toLowerCase().endsWith('.png'))
     return fail('INLINE_IMAGE_REFERENCE_INVALID');
    const params=new URLSearchParams(split[1]);
    if(!params.get('_chatgptios_conversationID')||!params.get('_chatgptios_messageID'))
@@ -84,7 +84,7 @@ export function renderChatInlineMarkdown(payload){
   }else if(node.role==='choices'){
    if(!Array.isArray(node.value)||node.value.length<2||node.value.some(x=>typeof x!=='string'||!x.trim()))
     return fail('RENDER_CHOICES_INVALID');
-   parts.push('選択肢\\n'+node.value.map((x,i)=>`${i+1}. ${x}`).join('\\n'));
+   parts.push('選択肢\n'+node.value.map((x,i)=>(i+1)+'. '+x).join('\n'));
   }else if(node.role==='official_table_data'){
    if(typeof node.value!=='string'||!node.value.trim())return fail('RENDER_TABLE_INVALID');
    parts.push(node.value);
@@ -94,5 +94,5 @@ export function renderChatInlineMarkdown(payload){
     payload.nodes.at(-1)?.role!=='instruction'||!parts.at(-1)?.endsWith('番号で答えてください。'))
   return fail('RENDER_PAYLOAD_INCOMPLETE');
  return Object.freeze({status:'ready',questionId:payload.questionId,packetHash:payload.packetHash,
-  markdown:parts.join('\\n\\n')});
+  markdown:parts.join('\n\n')});
 }
