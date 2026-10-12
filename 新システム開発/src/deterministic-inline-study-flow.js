@@ -1,6 +1,17 @@
 import {createDeterministicSession} from './deterministic-session-machine.js';
 import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
 
+function immutableJson(value){
+ const copy=JSON.parse(JSON.stringify(value));
+ const freeze=x=>{
+  if(x&&typeof x==='object'){
+   for(const v of Object.values(x))freeze(v);
+   Object.freeze(x);
+  }
+  return x;
+ };
+ return freeze(copy);
+}
 export function createInlineStudyFlow(assetRegistry){
  const machine=createDeterministicSession();
  let payload=null;
@@ -34,11 +45,33 @@ export function createInlineStudyFlow(assetRegistry){
    if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
    if(packet.number!==number)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
    if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
-   if(!packet.packetHash||!Number.isInteger(Number(packet.answer?.value)))throw new Error('NEXT_OFFICIAL_ANSWER_REQUIRED');
-   const nextPayload=compileChatInlinePayload(packet,assetRegistry);
+   if(!packet.packetHash||!Number.isInteger(Number(packet.answer?.value))||Number(packet.answer.value)<1)
+    throw new Error('NEXT_OFFICIAL_ANSWER_REQUIRED');
+   if(!Array.isArray(nextInput.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
+   const assetsById=new Map();
+   for(const asset of nextInput.assets){
+    if(!asset?.assetId||!asset.sha256||!Number.isInteger(asset.sourcePage)||asset.sourcePage<1||assetsById.has(asset.assetId))
+     throw new Error('NEXT_ASSET_EVIDENCE_INVALID');
+    assetsById.set(asset.assetId,asset);
+   }
+   const visualIds=new Set(packet.contentBlocks.filter(b=>(b.type==='figure'||b.type==='table')&&b.assetId).map(b=>b.assetId));
+   for(const id of visualIds){
+    const evidence=assetsById.get(id), registered=assetRegistry?.resolve?.(id);
+    if(!evidence||!registered||registered.questionId!==packet.id||registered.verified!==true||
+       !registered.sha256||evidence.sha256!==registered.sha256)
+     throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
+   }
+   const pinnedInput=immutableJson({question,packet,assets:nextInput.assets});
+   const nextPayload=compileChatInlinePayload(pinnedInput.packet,assetRegistry);
    if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
-   if(nextPayload.questionId!==question.id||nextPayload.packetHash!==packet.packetHash)throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
-   prefetchedNext=Object.freeze({number,nextInput,nextPayload});
+   if(nextPayload.questionId!==pinnedInput.question.id||nextPayload.packetHash!==pinnedInput.packet.packetHash)
+    throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
+   const tail=nextPayload.nodes.at(-1);
+   if(tail?.role!=='instruction'||tail.value!=='番号で答えてください。')
+    throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
+   if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))
+    throw new Error('NEXT_CHOICES_INCOMPLETE');
+   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload});
    return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash});
   },
   answer(value){
@@ -58,20 +91,16 @@ export function createInlineStudyFlow(assetRegistry){
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   const {number,nextInput,nextPayload}=prefetchedNext;
+   const {number,input,nextPayload}=prefetchedNext;
    must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
-   must(machine.dispatch({type:'LOAD_NEXT',question:nextInput.question}));
+   must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
+   must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
+   must(machine.dispatch({type:'VALIDATE_PACKET',packet:input.packet}));
    payload=nextPayload; prefetchedNext=null;
    return Object.freeze({state:machine.state(),payload:nextPayload});
   },
   nextReady(number,nextInput){
-   if(!nextInput?.packet||nextInput.packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
-   const nextPayload=compileChatInlinePayload(nextInput.packet,assetRegistry);
-   if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
-   must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
-   must(machine.dispatch({type:'LOAD_NEXT',question:nextInput.question}));
-   payload=nextPayload;
-   return Object.freeze({state:machine.state(),payload:nextPayload});
+   throw new Error('NEXT_REQUIRES_PREFETCHED_PACKET');
   },
   load(question){
    must(machine.dispatch({type:'LOAD_NEXT',question}));

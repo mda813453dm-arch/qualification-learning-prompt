@@ -30,42 +30,45 @@ function q3Packet(){
   {order:4,type:'instruction',value:'番号で答えてください。'}]};
 }
 function q3Input(packet=q3Packet(),question={status:'ready',id:'q3',number:3}){
- return {question,packet};
+ return {question,packet,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]};
 }
-// 描画済みでも次問prefetch前は採点禁止。
 const noPrefetch=answerWait();
 throws(()=>noPrefetch.answer(4),'NEXT_NOT_PREFETCHED','prefetch前の採点');
 ok(noPrefetch.state().phase==='ANSWER_WAIT','prefetch前は回答待ち状態を保持');
-// 不完全な次問packetは拒否し、採点可能にしない。
 const incomplete=answerWait();
 throws(()=>incomplete.prefetchNext(3,q3Input({status:'ready',id:'q3',number:3,packetHash:'p3',answer:{value:2},
  contentBlocks:[{order:0,type:'question_number',value:'Q3'}]})),'PAYLOAD_INCOMPLETE','不完全packet');
 throws(()=>incomplete.answer(4),'NEXT_NOT_PREFETCHED','不完全packet後の採点');
-// 次問番号およびpacket番号不一致を拒否。
 const wrongQuestionNumber=answerWait();
 throws(()=>wrongQuestionNumber.prefetchNext(3,q3Input(q3Packet(),{status:'ready',id:'q3',number:4})),
  'NEXT_NUMBER_MISMATCH','次問question番号不一致');
 const wrongPacketNumber=answerWait();
 throws(()=>wrongPacketNumber.prefetchNext(3,q3Input({...q3Packet(),number:4})),
  'NEXT_PACKET_NUMBER_MISMATCH','次問packet番号不一致');
-// 図表必須問題で公式assetがない場合は拒否。
 const missingAsset=answerWait();
 const missingFigure=q3Packet();
 missingFigure.contentBlocks[2]={order:2,type:'figure',assetId:'missing-f3'};
-throws(()=>missingAsset.prefetchNext(3,q3Input(missingFigure)),'INLINE_FIGURE_UNAVAILABLE','公式図asset欠落');
+throws(()=>missingAsset.prefetchNext(3,q3Input(missingFigure)),'NEXT_ASSET_EVIDENCE_MISMATCH','公式図asset欠落');
 throws(()=>missingAsset.answer(4),'NEXT_NOT_PREFETCHED','図asset欠落後の採点');
-// 次問本文・図・選択肢・回答要求を完全検証してから採点可能。
 const flow=answerWait();
-const ready=flow.prefetchNext(3,q3Input());
+const nextInput=q3Input();
+const ready=flow.prefetchNext(3,nextInput);
+nextInput.packet.answer.value=5;
 ok(ready.ready===true&&ready.number===3&&ready.packetHash==='p3','次問prefetch成功');
 ok(flow.answer(4).correct===true,'固定済み公式正答で採点');
 flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
+throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
+ 'NEXT_REQUIRES_PREFETCHED_PACKET','未prefetch packetでの差し替え遷移');
 const next=flow.commitPrefetchedNext();
-ok(next.state.phase==='QUESTION_FIXED'&&next.state.question.id==='q3','準備済み次問へ遷移');
+ok(next.state.phase==='PACKET_VALIDATED'&&next.state.question.id==='q3','準備済み次問packetを状態機械へ登録');
+ok(next.state.packet.answer.value===2,'prefetch時の正答を固定保持');
 ok(next.payload.status==='ready'&&next.payload.questionId==='q3'&&next.payload.packetHash==='p3','次問payload完全');
 ok(next.payload.nodes.some(n=>n.role==='official_figure'&&n.value==='inline-f3'),'公式図を保持');
 ok(next.payload.nodes.at(-1).role==='instruction'&&next.payload.nodes.at(-1).value==='番号で答えてください。',
  '次問末尾に回答要求');
-ok(next.payload.nodes.some(n=>n.role==='choices'),'次問選択肢を保持');
-console.log('PASS deterministic inline flow mandatory prefetch and fail-closed cases');
+ok(next.payload.nodes.some(n=>n.role==='choices'&&n.value.length===5),'次問選択肢を保持');
+const answerWaitAfterNext=flow.rendered({complete:true,questionId:'q3',packetHash:'p3',
+ signature:next.payload.signature,nodeCount:next.payload.nodes.length});
+ok(answerWaitAfterNext.phase==='ANSWER_WAIT','次問完全表示後に回答受付へ遷移');
+console.log('PASS deterministic inline flow mandatory prefetch, immutable commit, and next render');
