@@ -19,8 +19,8 @@ export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  blocks.push({order:blocks.length,type:'instruction',value:'番号で答えてください。',questionId:bundle.key});
  const number=Number(bundle.key.split(':').at(-1));
  if(!Number.isInteger(number)||number<1)return Object.freeze({status:'blocked',reason:'QUESTION_NUMBER_INVALID'});
- const question=Object.freeze({status:'ready',id:bundle.key,number,qualification:gate.qualification,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy});
- const packet={status:'ready',id:bundle.key,number,packetHash:bundle.packetHash||manifest.packetHash,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy,contentBlocks:blocks,answer:{value:bundle.answer.number,sourceSha256:bundle.source.answerPdfSha256}};
+ const question=Object.freeze({status:'ready',id:bundle.key,number,qualification:gate.qualification,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy,studyUnitId:gate.studyUnitId,studyPlanSha256:gate.studyPlanSha256,kind:'official_practice',origin:'official',verifiedBundle:true});
+ const packet={status:'ready',id:bundle.key,number,packetHash:bundle.packetHash||manifest.packetHash,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy,studyUnitId:gate.studyUnitId,studyPlanSha256:gate.studyPlanSha256,contentBlocks:blocks,answer:{value:bundle.answer.number,sourceSha256:bundle.source.answerPdfSha256}};
  if(!packet.packetHash)return Object.freeze({status:'blocked',reason:'PACKET_HASH_REQUIRED'});
  const payload=compileChatInlinePayload(packet,assetRegistry);
  if(payload.status!=='ready')return payload;
