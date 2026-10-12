@@ -19,6 +19,8 @@ ok(seq.validateQuestion(meta('c2','ai_confirmation','ai','guarantee',{parentQues
 const passed=seq.recordAnswer('c2',true);
 ok(passed.state.officialPracticeCount===2&&passed.state.consecutivePracticeMisses===0,'AI confirmation excluded and clears miss streak');
 for(const id of ['p3','p4','p5']){ok(seq.validateQuestion(meta(id)).ok,'resume practice '+id);seq.recordAnswer(id,true);}
+ok(seq.state().phase==='PRACTICE_READY'&&seq.state().batchCount===2,'the interrupted non-perfect trio does not trigger a choice');
+for(const id of ['p6','p7','p8']){ok(seq.validateQuestion(meta(id)).ok,'continue same item '+id);seq.recordAnswer(id,true);}
 ok(seq.state().phase==='PERFECT_RUN_CHOICE'&&seq.state().batchCount===3,'three same-unit correct official questions prompt a choice');
 throws(()=>seq.validateQuestion(meta('p6')),'UNIT_CHOICE_REQUIRED','no question before user choice');
 const next=seq.chooseAfterPerfectRun('next_unit');
