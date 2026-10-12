@@ -19,6 +19,11 @@ export function resolveExplanationPolicy(qualificationId,question,packet){
  if(qp!==null&&qp!=='general')throw new Error('EXPLANATION_POLICY_INVALID');
  return 'general';
 }
+/**
+ * verifyOfficialSource must be a server-owned verifier that fetches the cited official source
+ * at the cited effective date and checks the exact law/article, source text, excerpt and hash.
+ * Caller/model supplied booleans or URL-only checks are not sufficient.
+ */
 export function compileLegalBasisExplanation(explanation,{questionId,packetHash,verifyOfficialSource}){
  const fail=reason=>Object.freeze({ok:false,reason});
  if(!explanation||typeof explanation!=='object'||Array.isArray(explanation))return fail('LEGAL_EXPLANATION_REQUIRED');
