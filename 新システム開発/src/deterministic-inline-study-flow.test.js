@@ -76,4 +76,50 @@ ok(next.payload.nodes.some(n=>n.role==='choices'&&n.value.length===5),'次問選
 const answerWaitAfterNext=flow.rendered({complete:true,questionId:'q3',packetHash:'p3',
  signature:next.payload.signature,nodeCount:next.payload.nodes.length});
 ok(answerWaitAfterNext.phase==='ANSWER_WAIT','次問完全表示後に回答受付へ遷移');
+
+function minimalQuestion(id,number,kind='official_practice'){
+ const origin=kind==='ai_confirmation'?'ai':'official';
+ const question={status:'ready',id,number,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind,origin,verifiedBundle:kind==='official_practice'};
+ if(kind==='ai_confirmation')question.parentQuestionId='q2';
+ const packet={status:'ready',id,number,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),packetHash:'packet-'+id,answer:{value:4},contentBlocks:[
+  {order:0,type:'question_number',value:'Q'+number},{order:1,type:'text',value:'stem '+id},
+  {order:2,type:'choices',value:['1','2','3','4','5']},
+  {order:3,type:'instruction',value:'番号で答えてください。'}]};
+ return {question,packet,assets:[]};
+}
+const escalationFlow=createInlineStudyFlow({resolve:()=>null},{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
+const first=minimalQuestion('q1',1);
+let rendered=escalationFlow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},...first});
+escalationFlow.rendered({complete:true,questionId:'q1',packetHash:'packet-q1',signature:rendered.signature,nodeCount:rendered.nodes.length});
+const advance=async(nextId,nextNo,nextKind,answer)=>{
+ const candidate=minimalQuestion(nextId,nextNo,nextKind);
+ escalationFlow.prefetchNext(nextNo,candidate);
+ escalationFlow.answer(answer);
+ if(escalationFlow.state().phase==='GRADED'){
+  const decision=escalationFlow.state();
+  if(escalationFlow.learningState().pendingOutcome?.kind==='official_practice')escalationFlow.decideExplanation('skip');
+  escalationFlow.skipExplanation();
+ }
+ const committed=escalationFlow.commitPrefetchedNext();
+ if(committed.payload){
+  escalationFlow.rendered({complete:true,questionId:nextId,packetHash:'packet-'+nextId,signature:committed.payload.signature,nodeCount:committed.payload.nodes.length});
+ }
+ return committed;
+};
+await advance('q2',2,'official_practice',1);
+await advance('c1',3,'ai_confirmation',1);
+await advance('c2',4,'ai_confirmation',1);
+const c3=minimalQuestion('c3',5,'ai_confirmation');
+escalationFlow.answer(1);
+ok(escalationFlow.learningState().phase==='CONFIRMATION_CHOICE_REQUIRED','third confirmation miss grades without requiring an unrelated next packet');
+escalationFlow.skipExplanation();
+const menu=escalationFlow.commitPrefetchedNext();
+ok(menu.confirmationChoiceRequired&&menu.choices.join(',')==='continue_confirmation,hold_and_move','flow emits fixed U21 choices');
+const continueChoice=escalationFlow.chooseConfirmationPath('continue_confirmation');
+ok(continueChoice.requiresBriefExplanation,'flow requires short explanation before next confirmation');
+throws(()=>escalationFlow.prefetchNext(6,minimalQuestion('c4',6,'ai_confirmation')),'NEXT_PREFETCH_NOT_ALLOWED','cannot prefetch before short explanation');
+escalationFlow.completeConfirmationBriefExplanation('誤りの要点を短く説明します。');
+escalationFlow.prefetchNext(6,minimalQuestion('c4',6,'ai_confirmation'));
+ok(escalationFlow.commitPrefetchedNext().payload.status==='ready','next confirmation is available after short explanation');
+
 console.log('PASS deterministic inline flow mandatory prefetch, immutable commit, and next render');
