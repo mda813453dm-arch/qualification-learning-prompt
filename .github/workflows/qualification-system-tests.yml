@@ -14,9 +14,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run state machine tests
-        run: node "新システム開発/src/deterministic-session-machine.test.js"
-      - name: Run inline adapter tests
-        run: node "新システム開発/src/chat-inline-render-adapter.test.js"
-      - name: Run integrated flow tests
-        run: node "新システム開発/src/deterministic-inline-study-flow.test.js"
+      - name: Run every qualification system test
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS= read -r -d '' testfile; do
+            echo "::group::$testfile"
+            node "$testfile"
+            echo "::endgroup::"
+            count=$((count+1))
+          done < <(find "新システム開発/src" -maxdepth 1 -name '*.test.js' -print0 | sort -z)
+          test "$count" -gt 0
+          echo "Executed $count test files."
