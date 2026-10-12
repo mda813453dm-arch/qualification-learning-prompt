@@ -16,7 +16,10 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     !/^[a-f0-9]{64}$/.test(studyPlan.sha256||'')||!Array.isArray(studyPlan.itemIds)||studyPlan.itemIds.length===0)
   throw new Error('APPROVED_STUDY_PLAN_REQUIRED');
  let payload=null,prefetchedNext=null,currentExplanationPolicy='general';
- let learningSequence=null,currentLearningContext=null;
+ let learningSequence=null,currentLearningContext=null,explanationDecision=null;
+ const explanationPreferences=options.explanationPreferences||{};
+ const explanationPreference=itemId=>explanationPreferences[itemId]||options.explanationPreference||'ask_each';
+ if(!['ask_each','detailed','skip'].includes(options.explanationPreference||'ask_each'))throw new Error('EXPLANATION_PREFERENCE_INVALID');
  const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r;};
  const makeLearningContext=(question,qualificationId)=>{
   if(!question?.id||!question.studyUnitId||question.studyPlanSha256!==studyPlan.sha256)
@@ -36,7 +39,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
   must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
   must(machine.dispatch({type:'VALIDATE_PACKET',packet:input.packet}));
-  payload=nextPayload;currentExplanationPolicy=policy;currentLearningContext=input.learningContext;prefetchedNext=null;
+  payload=nextPayload;currentExplanationPolicy=policy;currentLearningContext=input.learningContext;explanationDecision=null;prefetchedNext=null;
   return Object.freeze({state:machine.state(),payload:nextPayload,learning:learningSequence.state()});
  };
  return Object.freeze({
@@ -134,10 +137,19 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
    const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
    if(result.ok!==true)throw new Error(result.reason);
-   return Object.freeze({...grade,learning:result.outcome});
+   const preference=explanationPreference(currentLearningContext.itemId);
+   explanationDecision=currentLearningContext.kind==='ai_confirmation'?'skip':(preference==='ask_each'?null:preference);
+   return Object.freeze({...grade,learning:result.outcome,explanationChoiceRequired:explanationDecision===null,explanationChoices:explanationDecision===null?Object.freeze(['detailed','skip']):Object.freeze([])});
+  },
+  decideExplanation(choice){
+   if(machine.state().phase!=='GRADED'||explanationPreference(currentLearningContext.itemId)!=='ask_each'||currentLearningContext.kind==='ai_confirmation')
+    throw new Error('EXPLANATION_CHOICE_NOT_ALLOWED');
+   if(!['detailed','skip'].includes(choice))throw new Error('EXPLANATION_CHOICE_INVALID');
+   explanationDecision=choice;return Object.freeze({choice,packetHash:machine.state().packet.packetHash});
   },
   async explain(text){
    const s=machine.state();
+   if(explanationDecision!=='detailed')throw new Error('EXPLANATION_DECISION_REQUIRED');
    if(s.phase!=='GRADED')throw new Error('EXPLANATION_NOT_ALLOWED');
    let display=text;
    if(currentExplanationPolicy==='legal_basis_required'){
@@ -151,6 +163,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   },
   skipExplanation(){
    const s=machine.state();if(s.phase!=='GRADED')throw new Error('EXPLANATION_SKIP_NOT_ALLOWED');
+   if(explanationDecision!=='skip')throw new Error('EXPLANATION_DECISION_REQUIRED');
    must(machine.dispatch({type:'SKIP_EXPLANATION',packetHash:s.packet.packetHash}));return machine.state();
   },
   clarifyDuringExplanation(question){
