@@ -58,7 +58,8 @@ ok(ready.ready===true&&ready.routes[0].number===3&&ready.routes[0].packetHash===
 const graded=flow.answer(4);
 ok(graded.correct===true&&graded.learning.officialPracticeCount===1&&graded.learning.itemId==='control-points','固定済み公式正答・同単元カウンタで採点');
 ok(graded.explanationChoiceRequired&&graded.explanationChoices.join(',')==='detailed,skip','採点後に詳しい解説の要否を確認');
-throws(()=>flow.explain('explanation'),'EXPLANATION_DECISION_REQUIRED','解説選択前の説明を禁止');
+let decisionBlocked=false;try{await flow.explain('explanation')}catch(e){decisionBlocked=e.message==='EXPLANATION_DECISION_REQUIRED'}
+ok(decisionBlocked,'解説選択前の説明を禁止');
 flow.decideExplanation('detailed');
 await flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
