@@ -28,10 +28,16 @@ export function createInlineStudyFlow(assetRegistry){
   },
   prefetchNext(number,nextInput){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
-   if(!nextInput?.packet||nextInput.packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
-   const nextPayload=compileChatInlinePayload(nextInput.packet,assetRegistry);
+   const question=nextInput?.question;
+   const packet=nextInput?.packet;
+   if(!question||question.status!=='ready'||question.number!==number)throw new Error('NEXT_NUMBER_MISMATCH');
+   if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
+   if(packet.number!==number)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
+   if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
+   if(!packet.packetHash||!Number.isInteger(Number(packet.answer?.value)))throw new Error('NEXT_OFFICIAL_ANSWER_REQUIRED');
+   const nextPayload=compileChatInlinePayload(packet,assetRegistry);
    if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
-   if(nextInput.question?.number!==number)throw new Error('NEXT_NUMBER_MISMATCH');
+   if(nextPayload.questionId!==question.id||nextPayload.packetHash!==packet.packetHash)throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
    prefetchedNext=Object.freeze({number,nextInput,nextPayload});
    return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash});
   },
