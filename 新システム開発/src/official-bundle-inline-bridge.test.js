@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {bridgeOfficialBundleToInline,createOfficialQuestionBundleBuilder,createOfficialBundleInlineCompiler} from './official-bundle-inline-bridge.js';
+import {bridgeOfficialBundleToInline,createOfficialQuestionBundleBuilder,createOfficialBundleInlineCompiler,adaptSurveyorExportedQuestion} from './official-bundle-inline-bridge.js';
 import {createOfficialRetrievalPipeline} from './official-retrieval-pipeline.js';
 const h=s=>createHash('sha256').update(s).digest('hex'), ok=(v,m)=>{if(!v)throw new Error(m)};
 const key='土地家屋調査士:2025:午後:6',body='公式PDFから確定した問題本文',choices=['1','2','3','4','5'];
@@ -171,3 +171,42 @@ ok((await structuralBuilder({extraction,layoutReview:missingAssetReview})).reaso
  'unplaced official visual asset blocks bundle readiness');
 console.log('PASS official bundle inline bridge: ordered interleaved text, multiple figures, and tables');
 
+
+const surveyStem='第2問 土地の境界に関する公式問題本文で検証する。';
+const surveyRaw=surveyStem+'\\n1 アア 2 イイ 3 ウウ 4 エエ 5 オオ';
+const surveyAnswerEvidence='第2問 5 第2問 4';
+const surveyExport={
+ schema:'surveyor_2025_afternoon_v1',registryKey:'土地家屋調査士:2025:午後',
+ qualification:'土地家屋調査士',year:2025,section:'午後',
+ questionPdfSha256:'1'.repeat(64),answerPdfSha256:'2'.repeat(64),
+ questions:[{
+  key:'土地家屋調査士:2025:午後:2',number:2,page:1,pages:[1],
+  rawSpan:surveyRaw,spanSha256:h(surveyRaw),stemText:surveyStem,stemSha256:h(surveyStem),
+  choices:['アア','イイ','ウウ','エエ','オオ'],answerNumber:4,
+  answerEvidence:surveyAnswerEvidence,answerEvidenceSha256:h(surveyAnswerEvidence),
+  answerPage:3,displayNumber:'■2025年度 午後の部 問2'
+ }]
+};
+const adaptedSurvey=adaptSurveyorExportedQuestion(surveyExport,{number:2,studyUnitId,studyPlanSha256});
+ok(adaptedSurvey.status==='ready'&&adaptedSurvey.extraction.key==='土地家屋調査士:2025:午後:2',
+ 'verified surveyor export maps to canonical extraction identity');
+ok(adaptedSurvey.extraction.pages[0]===1&&adaptedSurvey.extraction.answerNumber===4&&
+ adaptedSurvey.extraction.answerEvidenceSha256===h(surveyAnswerEvidence),
+ 'export page range and exact official answer evidence are retained');
+const badSurveyHash=adaptSurveyorExportedQuestion({...surveyExport,questions:[{
+ ...surveyExport.questions[0],answerEvidenceSha256:'0'.repeat(64)
+ }]},{number:2,studyUnitId,studyPlanSha256});
+ok(badSurveyHash.reason==='SURVEYOR_EXPORT_ANSWER_EVIDENCE_INVALID',
+ 'tampered official answer evidence hash is rejected');
+const missingSurveyPage=adaptSurveyorExportedQuestion({...surveyExport,questions:[{
+ ...surveyExport.questions[0],pages:[]
+ }]},{number:2,studyUnitId,studyPlanSha256});
+ok(missingSurveyPage.reason==='SURVEYOR_EXPORT_QUESTION_IDENTITY_INVALID',
+ 'missing source question page is rejected');
+const wrongSurveyNumber=adaptSurveyorExportedQuestion(surveyExport,{number:3,studyUnitId,studyPlanSha256});
+ok(wrongSurveyNumber.reason==='SURVEYOR_EXPORT_QUESTION_NOT_UNIQUE',
+ 'question number mismatch is rejected');
+const wrongSurveyRegistry=adaptSurveyorExportedQuestion({...surveyExport,registryKey:'土地家屋調査士:2024:午後'},
+ {number:2,studyUnitId,studyPlanSha256});
+ok(wrongSurveyRegistry.reason==='SURVEYOR_EXPORT_IDENTITY_INVALID',
+ 'wrong exam registry is rejected');
