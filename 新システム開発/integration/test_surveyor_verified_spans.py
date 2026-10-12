@@ -12,7 +12,7 @@ def answer_pages():
     return ['\n'.join(first),'\n'.join(second)]
 
 def question_pages():
-    first='\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\n{CHOICES}' for i in range(1,11))
+    first='\n'.join(f'第{i}問 問題本文これは検証用の文章で、抽出テスト用に十分な長さを確保しています。\n{CHOICES}' for i in range(1,11))
     second='\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\n{CHOICES}' for i in range(11,22))
     return [first,second]
 
