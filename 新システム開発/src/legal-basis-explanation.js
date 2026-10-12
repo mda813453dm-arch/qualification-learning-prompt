@@ -27,12 +27,12 @@ export function compileLegalBasisExplanation(explanation,{questionId,packetHash}
  if(!Array.isArray(explanation.legalBasis)||explanation.legalBasis.length===0)return fail('LEGAL_BASIS_MISSING');
  const citations=[];
  for(const item of explanation.legalBasis){
-  if(!item||typeof item.lawName!=='string'||!item.lawName.trim()||typeof item.provision!=='string'||!item.provision.trim())return fail('LEGAL_CITATION_INCOMPLETE');
+  if(!item||typeof item.lawName!=='string'||!item.lawName.trim()||typeof item.provision!=='string'||!item.provision.trim()||typeof item.effectiveDate!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(item.effectiveDate))return fail('LEGAL_CITATION_INCOMPLETE');
   if(!officialUrl(item.officialUrl))return fail('LEGAL_SOURCE_NOT_OFFICIAL');
   if(typeof item.sourceText!=='string'||!item.sourceText.trim()||typeof item.excerpt!=='string'||!item.excerpt.trim()||!item.sourceText.includes(item.excerpt))return fail('LEGAL_EXCERPT_NOT_VERIFIED');
   const sourceSha256=digest(item.sourceText);
   if(item.sourceSha256!==sourceSha256)return fail('LEGAL_SOURCE_HASH_MISMATCH');
-  citations.push(Object.freeze({lawName:item.lawName.trim(),provision:item.provision.trim(),officialUrl:item.officialUrl,excerpt:item.excerpt.trim(),sourceSha256}));
+  citations.push(Object.freeze({lawName:item.lawName.trim(),provision:item.provision.trim(),effectiveDate:item.effectiveDate,officialUrl:item.officialUrl,excerpt:item.excerpt.trim(),sourceSha256}));
  }
  const basis=citations.map(c=>'・'+c.lawName+' '+c.provision+'\n  '+c.excerpt+'\n  '+c.officialUrl).join('\n');
  return Object.freeze({ok:true,displayText:explanation.text.trim()+'\n\n■法的根拠\n'+basis,legalBasis:Object.freeze(citations)});
