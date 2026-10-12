@@ -24,4 +24,37 @@ const topicalLaw={...bundle,subjectArea:'law',explanationPolicy:'legal_basis_req
 ok(bridgeOfficialBundleToInline(topicalLaw,lawManifest,reg).status==='ready','law topic requires explicit basis policy');
 const bad={...manifest,textChecked:false};ok(bridgeOfficialBundleToInline(bundle,bad,reg).status==='blocked','unreviewed blocked');
 const miss={resolve:id=>id==='fig6'?reg.resolve(id):null};ok(bridgeOfficialBundleToInline(bundle,manifest,miss).status==='blocked','missing visual blocked');
-console.log('PASS official bundle inline bridge: 11 checks');
+
+const fig7={id:'fig7',kind:'figure',page:4,sha256:'d'.repeat(64),crop:{x0:8,y0:9,x1:10,y1:11}};
+const orderedAssets=[...assets,fig7];
+const orderedBody='前半本文中間本文後半';
+const orderedBlocks=[
+ {type:'text',value:'前半本文'},
+ {type:'figure',assetId:'fig6'},
+ {type:'text',value:'中間本文'},
+ {type:'figure',assetId:'fig7'},
+ {type:'table',assetId:'tab6'},
+ {type:'text',value:'後半'}
+];
+const blockHash=block=>h(block.type==='text'?block.value:block.type+':'+block.assetId);
+const orderedLayout=['text:0','figure:fig6','text:1','figure:fig7','table:tab6','text:2','choices','answer-control'];
+const orderedBundle={...bundle,body:orderedBody,assets:orderedAssets,contentBlocks:orderedBlocks,layout:orderedLayout};
+const orderedManifest={...manifest,bodySha256:h(orderedBody),assets:structuredClone(orderedAssets),
+ contentBlockSha256:orderedBlocks.map(blockHash)};
+const orderedRegistry={resolve:id=>{
+ const item=orderedAssets.find(x=>x.id===id);
+ return item?{questionId:key,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:item.sha256}:null;
+}};
+const ordered=bridgeOfficialBundleToInline(orderedBundle,orderedManifest,orderedRegistry);
+ok(ordered.status==='ready','interleaved content block bundle accepted');
+ok(ordered.packet.contentBlocks.map(x=>x.type+(x.assetId?':'+x.assetId:'')).join('|')===
+ 'question_number|text|figure:fig6|text|figure:fig7|table:tab6|text|choices|instruction',
+ 'text, multiple figures, and table retain exact source order');
+ok(ordered.signature==='question_number>body>official_figure>body>official_figure>official_table>body>choices>instruction',
+ 'render signature preserves interleaved positions');
+ok(bridgeOfficialBundleToInline(orderedBundle,{...orderedManifest,contentBlockSha256:[...orderedManifest.contentBlockSha256].reverse()},orderedRegistry).reason==='CONTENT_BLOCK_HASH_MISMATCH',
+ 'changed/reordered content block evidence is rejected');
+ok(bridgeOfficialBundleToInline({...orderedBundle,contentBlocks:orderedBlocks.slice(0,-2)},orderedManifest,orderedRegistry).reason==='CONTENT_BLOCK_SEQUENCE_INCOMPLETE',
+ 'missing asset or text block is rejected');
+console.log('PASS official bundle inline bridge: ordered interleaved text, multiple figures, and tables');
+
