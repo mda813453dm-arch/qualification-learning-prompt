@@ -12,7 +12,7 @@ const c=await compileLegalBasisExplanation(explanation,{questionId:'q2',packetHa
 ok((await compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_SOURCE_NOT_VERIFIED','trusted source retrieval evidence required');
 ok((await compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:()=>false})).reason==='LEGAL_SOURCE_NOT_VERIFIED','failed official retrieval verification blocks');
 ok(c.ok&&c.displayText.includes('■法的根拠')&&c.displayText.includes('仮想法 第1条')&&c.displayText.includes(basis.excerpt)&&c.displayText.includes(basis.officialUrl),'根拠欄と引用を表示');
-ok((await compileLegalBasisExplanation('本文だけ',{questionId:'q2',packetHash:'p2'})).reason===LEGAL_EXPLANATION_REQUIRED','平文拒否');
+ok((await compileLegalBasisExplanation('本文だけ',{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_EXPLANATION_REQUIRED','平文拒否');
 ok((await compileLegalBasisExplanation({...explanation,legalBasis:[]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_BASIS_MISSING','根拠なし拒否');
 ok((await compileLegalBasisExplanation({...explanation,legalBasis:[{...basis,effectiveDate:undefined}]},{questionId:'q2',packetHash:'p2'})).reason==='LEGAL_CITATION_INCOMPLETE','適用時点なし拒否');
 ok(c.displayText.includes('適用時点：2025-04-01'),'適用時点を表示');
