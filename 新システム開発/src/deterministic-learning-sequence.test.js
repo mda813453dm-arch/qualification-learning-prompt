@@ -11,6 +11,7 @@ throws(()=>seq.validateQuestion(meta('other','official_practice','official','dec
 ok(seq.validateQuestion(meta('p2')).ok,'second official practice');
 ok(seq.recordAnswer('p2',false).state.phase==='CONFIRMATION_REQUIRED','second same-unit miss forces AI check');
 throws(()=>seq.validateQuestion(meta('p3')),'AI_CONFIRMATION_REQUIRED','official practice blocked after two misses');
+throws(()=>seq.validateQuestion(meta('wrong-parent','ai_confirmation','ai','guarantee',{parentQuestionId:'p1'})),'AI_CONFIRMATION_REQUIRED','confirmation cannot switch to another parent question');
 throws(()=>seq.validateQuestion(meta('c1','ai_confirmation','official','guarantee',{parentQuestionId:'p2'})),'AI_CONFIRMATION_REQUIRED','AI check origin required');
 ok(seq.validateQuestion(meta('c1','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})).ok,'AI confirmation accepted');
 const missed=seq.recordAnswer('c1',false);
