@@ -18,4 +18,24 @@ class Tests(unittest.TestCase):
   doc=fitz.open();doc.new_page()
   with tempfile.TemporaryDirectory() as d:
    with self.assertRaisesRegex(ValueError,'PDF_PAGE_COUNT_INVALID'):export(doc.tobytes(),d)
+ def test_29_pages_generate_two_pngs(self):
+  import fitz,json
+  doc=fitz.open()
+  for i in range(29):
+   page=doc.new_page()
+   page.insert_text((50,50),f'Question page {i+1}')
+  with tempfile.TemporaryDirectory() as d:
+   report=export(doc.tobytes(),d)
+   self.assertEqual([q['pdfPage'] for q in report['questions']],[9,29])
+   self.assertEqual([q['questionNumber'] for q in report['questions']],[7,27])
+   self.assertTrue(all((Path(d)/q['imageFile']).read_bytes().startswith(b'\\x89PNG') for q in report['questions']))
+   self.assertFalse(report['publishable'])
+ def test_empty_question_page_rejected(self):
+  import fitz
+  doc=fitz.open()
+  for i in range(29):
+   page=doc.new_page()
+   if i!=8:page.insert_text((50,50),'test')
+  with tempfile.TemporaryDirectory() as d:
+   with self.assertRaisesRegex(ValueError,'QUESTION_PAGE_TEXT_EMPTY'):export(doc.tobytes(),d)
 if __name__=='__main__':unittest.main()
