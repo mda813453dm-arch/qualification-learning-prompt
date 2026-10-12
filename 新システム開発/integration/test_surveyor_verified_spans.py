@@ -9,28 +9,28 @@ def answer_pages():
     first=['午前の部                    午後の部']
     first += [f'第{i}問 5 第{i}問 {i % 5 + 1}' for i in range(1,11)]
     second=[f'              第{i}問 {i % 5 + 1}' for i in range(11,21)]
-    return ['\\n'.join(first),'\\n'.join(second)]
+    return ['\n'.join(first),'\n'.join(second)]
 
 def question_pages():
-    first='\\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\\n{CHOICES}' for i in range(1,11))
-    second='\\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\\n{CHOICES}' for i in range(11,22))
+    first='\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\n{CHOICES}' for i in range(1,11))
+    second='\n'.join(f'第{i}問 問題本文これは検証用の十分な長さの文章です。\n{CHOICES}' for i in range(11,22))
     return [first,second]
 
 class VerifiedSpanTests(unittest.TestCase):
     def test_missing_answer_rejected(self):
         with self.assertRaisesRegex(ValueError,'ANSWER_COVERAGE_INVALID'):
-            extract_answers('午前の部   午後の部\\n第1問 5 第1問 1')
+            extract_answers('午前の部   午後の部\n第1問 5 第1問 1')
 
     def test_multiline_row_not_merged(self):
         with self.assertRaises(ValueError):
-            extract_answers('午前の部   午後の部\\n第1問 5\\n第1問 1')
+            extract_answers('午前の部   午後の部\n第1問 5\n第1問 1')
 
     def test_duplicate_question_rejected(self):
         with self.assertRaisesRegex(ValueError,'QUESTION_HEADERS_NOT_UNIQUE'):
-            extract_questions(['第1問 test\\n第1問 duplicated'])
+            extract_questions(['第1問 test\n第1問 duplicated'])
 
     def test_missing_choice_rejected(self):
-        pages=[f'第{i}問 '+('x'*50)+'\\n' for i in range(1,22)]
+        pages=[f'第{i}問 '+('x'*50)+'\n' for i in range(1,22)]
         with self.assertRaisesRegex(ValueError,'CHOICE_LINE_UNVERIFIED'):
             extract_questions(pages)
 
@@ -48,7 +48,7 @@ class VerifiedSpanTests(unittest.TestCase):
     def test_afternoon_answer_evidence_has_exact_row_page_and_hash(self):
         pages=answer_pages()
         evidence=extract_answer_evidence(pages)
-        answers=extract_answers('\\n'.join(pages))
+        answers=extract_answers('\n'.join(pages))
         self.assertEqual(len(evidence),20)
         self.assertEqual(evidence[1]['answer'],answers[1])
         self.assertEqual(evidence[1]['page'],1)
