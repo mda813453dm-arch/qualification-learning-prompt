@@ -14,7 +14,7 @@ test('live e-Gov date-specific statute retrieval verifies citation', async () =>
     lawId,
     lawName:'行政手続法',
     provision:'第一条',
-    articleTitle:'目的等',
+    articleTitle:'目的等',\n    articleElement:'MainProvision-Article_1',
     effectiveDate,
     officialUrl,
     sourceText,
