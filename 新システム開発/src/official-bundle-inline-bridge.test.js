@@ -54,7 +54,7 @@ ok(ordered.signature==='question_number>body>official_figure>body>official_figur
  'render signature preserves interleaved positions');
 ok(bridgeOfficialBundleToInline(orderedBundle,{...orderedManifest,contentBlockSha256:[...orderedManifest.contentBlockSha256].reverse()},orderedRegistry).reason==='CONTENT_BLOCK_HASH_MISMATCH',
  'changed/reordered content block evidence is rejected');
-ok(bridgeOfficialBundleToInline({...orderedBundle,contentBlocks:orderedBlocks.slice(0,-2)},orderedManifest,orderedRegistry).reason==='CONTENT_BLOCK_SEQUENCE_INCOMPLETE',
+ok(bridgeOfficialBundleToInline({...orderedBundle,contentBlocks:orderedBlocks.slice(0,-2)},{...orderedManifest,contentBlockSha256:orderedManifest.contentBlockSha256.slice(0,-2)},orderedRegistry).reason==='CONTENT_BLOCK_SEQUENCE_INCOMPLETE',
  'missing asset or text block is rejected');
 console.log('PASS official bundle inline bridge: ordered interleaved text, multiple figures, and tables');
 
