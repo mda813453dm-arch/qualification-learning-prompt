@@ -72,40 +72,65 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    const phase=machine.state().phase;
    const afterChoice=phase==='EXPLAINED'&&learningSequence?.state().phase==='PRACTICE_READY';
    if(phase!=='ANSWER_WAIT'&&!afterChoice)throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
-   if(prefetchedNext)throw new Error('NEXT_ALREADY_PREFETCHED');
-   const question=nextInput?.question,packet=nextInput?.packet;
-   if(!question||question.status!=='ready'||question.number!==number)throw new Error('NEXT_NUMBER_MISMATCH');
-   if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
-   if(packet.number!==number)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
-   if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
-   const context=makeLearningContext(question,studyPlan.qualificationId);
-   if(!Array.isArray(nextInput.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
-   const assetsById=new Map();
-   for(const asset of nextInput.assets){
-    if(!asset?.assetId||!asset.sha256||!Number.isInteger(asset.sourcePage)||asset.sourcePage<1||assetsById.has(asset.assetId))
-     throw new Error('NEXT_ASSET_EVIDENCE_INVALID');
-    assetsById.set(asset.assetId,asset);
+   const requests=Array.isArray(number)?number:[{number,input:nextInput}];
+   if(!requests.length)throw new Error('NEXT_PREFETCH_INPUT_REQUIRED');
+   const existing=Array.isArray(prefetchedNext)?prefetchedNext:(prefetchedNext?[prefetchedNext]:[]);
+   const compiled=[];
+   for(const request of requests){
+    const n=request.number,input=request.input;
+    const question=input?.question,packet=input?.packet;
+    if(!question||question.status!=='ready'||question.number!==n)throw new Error('NEXT_NUMBER_MISMATCH');
+    if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
+    if(packet.number!==n)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
+    if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
+    const context=makeLearningContext(question,studyPlan.qualificationId);
+    if(context.itemId!==learningSequence.state().itemId)throw new Error('NEXT_STUDY_UNIT_MISMATCH');
+    if(!Array.isArray(input.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
+    const assetsById=new Map();
+    for(const asset of input.assets){
+     if(!asset?.assetId||!asset.sha256||!Number.isInteger(asset.sourcePage)||asset.sourcePage<1||assetsById.has(asset.assetId))
+      throw new Error('NEXT_ASSET_EVIDENCE_INVALID');
+     assetsById.set(asset.assetId,asset);
+    }
+    const visualIds=new Set(packet.contentBlocks.filter(b=>(b.type==='figure'||b.type==='table')&&b.assetId).map(b=>b.assetId));
+    for(const id of visualIds){
+     const evidence=assetsById.get(id),registered=assetRegistry?.resolve?.(id);
+     if(!evidence||!registered||registered.questionId!==packet.id||registered.verified!==true||
+        !registered.sha256||evidence.sha256!==registered.sha256)throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
+    }
+    const pinnedInput=immutableJson({...input,learningContext:context});
+    const nextPayload=compileChatInlinePayload(pinnedInput.packet,assetRegistry);
+    if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
+    if(nextPayload.questionId!==pinnedInput.question.id||nextPayload.packetHash!==pinnedInput.packet.packetHash)
+     throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
+    const tail=nextPayload.nodes.at(-1);
+    if(tail?.role!=='instruction'||tail.value!=='番号で答えてください。')throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
+    if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))throw new Error('NEXT_CHOICES_INCOMPLETE');
+    const route=Object.freeze({number:n,input:pinnedInput,payload:nextPayload,
+     policy:resolveExplanationPolicy(studyPlan.qualificationId,question,packet)});
+    if([...existing,...compiled].some(x=>x.input.learningContext.questionId===context.questionId))
+     throw new Error('NEXT_QUESTION_ALREADY_PREFETCHED');
+    compiled.push(route);
    }
-   const visualIds=new Set(packet.contentBlocks.filter(b=>(b.type==='figure'||b.type==='table')&&b.assetId).map(b=>b.assetId));
-   for(const id of visualIds){
-    const evidence=assetsById.get(id),registered=assetRegistry?.resolve?.(id);
-    if(!evidence||!registered||registered.questionId!==packet.id||registered.verified!==true||
-       !registered.sha256||evidence.sha256!==registered.sha256)throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
-   }
-   const pinnedInput=immutableJson({question,packet,assets:nextInput.assets,learningContext:context});
-   const nextPayload=compileChatInlinePayload(pinnedInput.packet,assetRegistry);
-   if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
-   if(nextPayload.questionId!==pinnedInput.question.id||nextPayload.packetHash!==pinnedInput.packet.packetHash)
-    throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
-   const tail=nextPayload.nodes.at(-1);
-   if(tail?.role!=='instruction'||tail.value!=='番号で答えてください。')throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
-   if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))throw new Error('NEXT_CHOICES_INCOMPLETE');
-   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload,policy:resolveExplanationPolicy(studyPlan.qualificationId,question,packet)});
-   return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash,studyUnitId:context.itemId,kind:context.kind});
+   prefetchedNext=Object.freeze([...existing,...compiled]);
+   return Object.freeze({ready:true,routes:Object.freeze(compiled.map(x=>Object.freeze({
+    number:x.number,studyUnitId:x.input.learningContext.itemId,kind:x.input.learningContext.kind,
+    questionId:x.input.learningContext.questionId,packetHash:x.payload.packetHash})))});
   },
   answer(value){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
+   const proposedCorrect=Number(String(value).trim())===Number(machine.state().packet?.answer?.value);
+   const prediction=learningSequence.predictNextKind(proposedCorrect);
+   if(prediction.ok!==true)throw new Error(prediction.reason);
+   const candidates=Array.isArray(prefetchedNext)?prefetchedNext:(prefetchedNext?[prefetchedNext]:[]);
+   const selected=candidates.find(x=>{
+    const c=x.input.learningContext;
+    if(prediction.kind==='unit_choice')return c.kind==='official_practice'&&c.itemId===learningSequence.state().itemId;
+    return c.kind===prediction.kind;
+   });
+   if(!selected)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
+   prefetchedNext=selected;
    const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
    const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
    if(result.ok!==true)throw new Error(result.reason);
