@@ -73,10 +73,12 @@ export function renderChatInlineMarkdown(payload){
    parts.push(node.value);
   }else if(node.role==='official_figure'||node.role==='official_table'){
    if(typeof node.value!=='string')return fail('INLINE_IMAGE_REFERENCE_MISSING');
-   const split=node.value.split('?');
-   if(split.length!==2||!split[0].startsWith('sandbox:/mnt/data/')||!split[0].toLowerCase().endsWith('.png'))
+   const queryAt=node.value.indexOf('?');
+   const imagePath=queryAt<0?node.value:node.value.slice(0,queryAt);
+   if(!imagePath.startsWith('sandbox:/mnt/data/')||!imagePath.toLowerCase().endsWith('.png'))
     return fail('INLINE_IMAGE_REFERENCE_INVALID');
-   const params=new URLSearchParams(split[1]);
+   if(queryAt<0)return fail('INLINE_IMAGE_CONTEXT_MISSING');
+   const params=new URLSearchParams(node.value.slice(queryAt+1));
    if(!params.get('_chatgptios_conversationID')||!params.get('_chatgptios_messageID'))
     return fail('INLINE_IMAGE_CONTEXT_MISSING');
    const alt=node.role==='official_figure'?'公式図':'公式表';
