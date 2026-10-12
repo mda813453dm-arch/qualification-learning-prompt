@@ -1,9 +1,10 @@
 import {createHash} from 'node:crypto';
+import {isLegalQualification} from './legal-basis-explanation.js';
 const sha=s=>createHash('sha256').update(s).digest('hex');
 const fail=reason=>({ok:false,reason});
 export function validateQuestionBundle(b,m){
  if(!b||!m||b.schema!=='official-question-bundle-v1')return fail('SCHEMA_INVALID');
- if(b.key!==m.key||!/^.+:\d{4}:.+:\d+$/.test(b.key??''))return fail('QUESTION_ID_MISMATCH');
+ if(b.key!==m.key||!/^.+:\\d{4}:.+:\\d+$/.test(b.key??''))return fail('QUESTION_ID_MISMATCH');
  if(b.source?.questionPdfSha256!==m.questionPdfSha256||b.source?.answerPdfSha256!==m.answerPdfSha256)return fail('SOURCE_MISMATCH');
  if(!Array.isArray(b.source.pages)||b.source.pages.join(',')!==m.pages?.join(','))return fail('PAGE_BOUNDARY_MISMATCH');
  if(typeof b.body!=='string'||sha(b.body)!==m.bodySha256)return fail('BODY_MISMATCH');
@@ -21,5 +22,12 @@ export function validateQuestionBundle(b,m){
  const expected=['body',...b.assets.map(a=>a.id),'choices','answer-control'];
  if(!Array.isArray(b.layout)||b.layout.join('|')!==expected.join('|'))return fail('LAYOUT_MISMATCH');
  if(m.reviewStatus!=='approved'||m.allVisualsAccountedFor!==true||m.answerCellChecked!==true||m.textChecked!==true||m.displayChecked!==true)return fail('REVIEW_INCOMPLETE');
- return {ok:true,key:b.key,layout:[...expected],assets:b.assets.map(a=>({...a})),body:b.body,choices:[...b.choices]};
+ const qualification=String(b.qualification||b.key.split(':')[0]).trim();
+ const subjectArea=b.subjectArea||'general';
+ const bp=b.explanationPolicy??null, mp=m.explanationPolicy??null;
+ const legal=isLegalQualification(qualification)||subjectArea==='law'||bp==='legal_basis_required'||mp==='legal_basis_required';
+ if(legal){
+  if(subjectArea!=='law'||bp!=='legal_basis_required'||mp!=='legal_basis_required')return fail('LEGAL_BASIS_POLICY_UNBOUND');
+ }else if(bp!==mp||(bp!==null&&bp!=='general')||(mp!==null&&mp!=='general'))return fail('EXPLANATION_POLICY_MISMATCH');
+ return {ok:true,key:b.key,qualification,subjectArea,explanationPolicy:legal?'legal_basis_required':(bp||'general'),layout:[...expected],assets:b.assets.map(a=>({...a})),body:b.body,choices:[...b.choices]};
 }
