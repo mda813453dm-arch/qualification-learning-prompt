@@ -21,6 +21,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(meta.itemId!==currentItemId)return reject('STUDY_UNIT_MISMATCH');
   if(pendingQuestion){if(pendingQuestion.questionId===meta.questionId)return Object.freeze({ok:true,state:snapshot()});return reject('QUESTION_ALREADY_PENDING');}
   if(phase==='PERFECT_RUN_CHOICE')return reject('UNIT_CHOICE_REQUIRED');
+  if(phase==='CONFIRMATION_CHOICE_REQUIRED')return reject('CONFIRMATION_CHOICE_REQUIRED');
   if(phase==='CONFIRMATION_REQUIRED'){
    if(meta.kind!=='ai_confirmation'||meta.origin!=='ai'||!meta.parentQuestionId)return reject('AI_CONFIRMATION_REQUIRED');
   }else if(meta.kind!=='official_practice'||meta.origin!=='official'||meta.verifiedBundle!==true)
@@ -43,7 +44,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
    pendingOutcome=Object.freeze({questionId,itemId:currentItemId,kind:q.kind,correct,officialPracticeCount,batchCount,batchAllCorrect,consecutivePracticeMisses,directive:phase});
   }else if(q.kind==='ai_confirmation'&&q.origin==='ai'){
    confirmationMisses=correct?0:confirmationMisses+1;
-   if(correct){consecutivePracticeMisses=0;phase='PRACTICE_READY';}else phase='CONFIRMATION_REQUIRED';
+   if(correct){consecutivePracticeMisses=0;phase='PRACTICE_READY';}else phase=confirmationMisses>=3?'CONFIRMATION_CHOICE_REQUIRED':'CONFIRMATION_REQUIRED';
    pendingOutcome=Object.freeze({questionId,itemId:currentItemId,kind:q.kind,correct,officialPracticeCount,confirmationMisses,directive:phase});
   }else return reject('QUESTION_KIND_INVALID');
   return Object.freeze({ok:true,state:snapshot(),outcome:pendingOutcome});
@@ -54,6 +55,22 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(!correct&&consecutivePracticeMisses+1>=2)return Object.freeze({ok:true,kind:'ai_confirmation'});
   if(correct&&batchCount===2&&batchAllCorrect)return Object.freeze({ok:true,kind:'unit_choice'});
   return Object.freeze({ok:true,kind:'official_practice'});
+ }
+ function chooseAfterConfirmationMisses(choice){
+  if(phase!=='CONFIRMATION_CHOICE_REQUIRED')return reject('CONFIRMATION_CHOICE_NOT_PENDING');
+  if(choice==='continue_confirmation'){
+   phase='CONFIRMATION_REQUIRED';pendingOutcome=null;
+   return Object.freeze({ok:true,state:snapshot(),nextKind:'ai_confirmation',requiresBriefExplanation:true});
+  }
+  if(choice==='hold_and_move'){
+   const currentIndex=studyPlan.itemIds.indexOf(currentItemId);
+   const nextItemId=studyPlan.itemIds[currentIndex+1]||null;
+   if(!nextItemId)return Object.freeze({ok:true,state:snapshot(),sessionEndRequired:true,heldItemId:currentItemId});
+   currentItemId=nextItemId;batchCount=0;batchAllCorrect=true;consecutivePracticeMisses=0;
+   officialPracticeCount=0;confirmationMisses=0;phase='PRACTICE_READY';pendingOutcome=null;
+   return Object.freeze({ok:true,state:snapshot(),nextItemId,heldItemId:studyPlan.itemIds[currentIndex]});
+  }
+  return reject('CONFIRMATION_CHOICE_INVALID');
  }
  function chooseAfterPerfectRun(choice){
   if(phase!=='PERFECT_RUN_CHOICE')return reject('PERFECT_RUN_CHOICE_NOT_PENDING');
@@ -71,5 +88,5 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   }
   return reject('UNIT_CHOICE_INVALID');
  }
- return Object.freeze({state:snapshot,validateQuestion,recordAnswer,predictNextKind,chooseAfterPerfectRun});
+ return Object.freeze({state:snapshot,validateQuestion,recordAnswer,predictNextKind,chooseAfterConfirmationMisses,chooseAfterPerfectRun});
 }
