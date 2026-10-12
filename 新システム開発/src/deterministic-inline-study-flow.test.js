@@ -56,7 +56,7 @@ const ready=flow.prefetchNext(3,nextInput);
 nextInput.packet.answer.value=5;
 ok(ready.ready===true&&ready.number===3&&ready.packetHash==='p3','次問prefetch成功');
 ok(flow.answer(4).correct===true,'固定済み公式正答で採点');
-flow.explain('explanation');
+await flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
 throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
  'NEXT_REQUIRES_PREFETCHED_PACKET','未prefetch packetでの差し替え遷移');
