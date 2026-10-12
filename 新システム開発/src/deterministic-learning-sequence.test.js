@@ -30,4 +30,9 @@ ok(same.chooseAfterPerfectRun('continue_same_unit').state.itemId==='guarantee','
 const imperfect=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
 for(const [id,right] of [['x1',false],['x2',true],['x3',true]]){imperfect.validateQuestion(meta(id));imperfect.recordAnswer(id,right);}
 ok(imperfect.state().phase==='PRACTICE_READY'&&imperfect.state().batchCount===0,'imperfect trio continues same unit');
+const prediction=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
+prediction.validateQuestion(meta('r1'));ok(prediction.predictNextKind(false).kind==='official_practice','first miss route remains same-unit official');
+prediction.recordAnswer('r1',false);prediction.validateQuestion(meta('r2'));
+ok(prediction.predictNextKind(false).kind==='ai_confirmation','second miss route is AI confirmation before grading');
+ok(prediction.predictNextKind(true).kind==='official_practice','answer correction/reset route is official practice');
 console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, two-miss AI confirmation, and perfect-run choice');
