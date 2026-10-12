@@ -23,7 +23,7 @@ const pipeline=createOfficialRetrievalPipeline({retrieveAndVerify,adapters:[],re
 }});
 const result=await pipeline({studyPlan:plan,studyUnitId:'control-points'});
 ok(result.status==='ready','retrieval falls back to a verified candidate');
-ok(result.verifiedQuestion.key.year===2024&&result.verifiedQuestion.key.questionNumber==='q-2024','selected candidate year and ID stay bound');
+ok(result.verifiedQuestion.question.key.year===2024&&result.verifiedQuestion.question.key.questionNumber==='q-2024','selected candidate year and ID stay bound');
 ok(result.verifiedQuestion.studyUnitId==='control-points'&&result.verifiedQuestion.studyPlanSha256===plan.sha256,'verified result carries approved unit binding');
 ok(calls.length===2&&calls[0].year===2025&&calls[1].year===2024,'same-unit candidates are tried in approved descending-year order');
 ok(result.attempts[0].status==='unverified'&&result.attempts[1].status==='ready','attempt evidence distinguishes fallback');
