@@ -1,4 +1,4 @@
-import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
+import {compileChatInlinePayload,verifyChatInlineReceipt,renderChatInlineMarkdown} from './chat-inline-render-adapter.js';
 const ok=(v,m)=>{if(!v)throw new Error(m)};
 const asset=(id,q='q')=>({questionId:q,verified:true,mime:'image/png',inlineRef:'inline-'+id,sha256:'sha-'+id});
 const registry={resolve:id=>asset(id)};
@@ -24,3 +24,27 @@ ok(compileChatInlinePayload(wrong,{resolve:()=>asset('f1','other')}).status==='b
 const p=compileChatInlinePayload(packet('receipt',[{type:'question_number',value:'Q'},...end]),registry);
 ok(!verifyChatInlineReceipt(p,{complete:true,questionId:'receipt',packetHash:'hash-receipt',signature:'wrong',nodeCount:p.nodes.length}).ok,'wrong receipt order');n++;
 console.log('PASS chat-inline-render-adapter '+n+' checks');
+
+const iosFigure='sandbox:/mnt/data/official-q3.png?_chatgptios_conversationID=6acb6ae2-3a40-83ee-9d31-fe1181310e46&_chatgptios_messageID=dcd9c58a-39fa-4f0e-a3ee-b2cd9e558b34';
+const markdownPayload={status:'ready',questionId:'q3',packetHash:'q3hash',nodes:[
+ {role:'question_number',value:'■2025年度 問3'},
+ {role:'body',value:'問題文の前半'},
+ {role:'official_figure',value:iosFigure},
+ {role:'body',value:'問題文の後半'},
+ {role:'choices',value:['選択肢A','選択肢B']},
+ {role:'instruction',value:'番号で答えてください。'}
+]};
+const markdownResult=renderChatInlineMarkdown(markdownPayload);
+ok(markdownResult.status==='ready','inline markdown payload ready');
+const imageMarkdown='![公式図]('+iosFigure+')';
+ok(markdownResult.markdown.includes(imageMarkdown),'figure is emitted as an actual Markdown image link');
+ok(markdownResult.markdown.indexOf('問題文の前半')<markdownResult.markdown.indexOf(imageMarkdown)&&
+ markdownResult.markdown.indexOf(imageMarkdown)<markdownResult.markdown.indexOf('問題文の後半')&&
+ markdownResult.markdown.indexOf('問題文の後半')<markdownResult.markdown.indexOf('選択肢A'),
+ 'image stays between its adjacent stem segments and before choices');
+ok(markdownResult.markdown.endsWith('番号で答えてください。'),'complete message ends with answer instruction');
+ok(renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:'inline-not-a-url'}:n)}).reason==='INLINE_IMAGE_REFERENCE_INVALID',
+ 'placeholder text is rejected instead of silently replacing the figure');
+ok(renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:'sandbox:/mnt/data/no-context.png'}:n)}).reason==='INLINE_IMAGE_CONTEXT_MISSING',
+ 'iOS image reference without required source message context is rejected');
+console.log('PASS chat-inline-render-adapter markdown serialization and iOS figure embedding');
