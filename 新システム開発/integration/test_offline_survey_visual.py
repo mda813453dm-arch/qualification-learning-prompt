@@ -14,7 +14,7 @@ class Tests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'input.pdf';p.write_bytes(self.create_pdf());r=prepare(p,Path(d)/'out')
    self.assertEqual([(x['questionNumber'],x['pdfPage']) for x in r['questions']],[(7,9),(27,29)])
-   self.assertTrue(all((Path(d)/'out'/x['imageFile']).read_bytes().startswith(b'\x89PNG') for x in r['questions']))
+   self.assertTrue(all((Path(d)/'out'/x['imageFile']).read_bytes().startswith(bytes([137,80,78,71,13,10,26,10])) for x in r['questions']))
    self.assertEqual(r['sourceProvenance'],'USER_OR_EXTERNAL_FILE_UNVERIFIED')
    self.assertFalse(r['publishable'])
  def test_short_pdf_refused(self):
