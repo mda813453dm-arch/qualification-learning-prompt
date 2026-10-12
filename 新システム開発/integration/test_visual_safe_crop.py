@@ -10,7 +10,7 @@ class Tests(unittest.TestCase):
    r=render_pair(PDF,sha,4,d)
    self.assertTrue(Path(r['fullPng']).read_bytes().startswith(b'\\x89PNG'))
    self.assertFalse(r['publishable'])
- @unittest.skipUnless(Path(PDF).exists(),'uploaded PDF unavailable')
+ @unittest.skipUnless(bool(PDF) and Path(PDF).exists(),'uploaded PDF unavailable')
  def test_wrong_hash(self):
   with tempfile.TemporaryDirectory() as d:
    with self.assertRaisesRegex(ValueError,'PDF_HASH_MISMATCH'):render_pair(PDF,'0'*64,4,d)
