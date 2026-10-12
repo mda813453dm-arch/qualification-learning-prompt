@@ -4,6 +4,7 @@ import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-re
 export function createInlineStudyFlow(assetRegistry){
  const machine=createDeterministicSession();
  let payload=null;
+ let prefetchedNext=null;
  const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r};
  return Object.freeze({
   state(){return machine.state()},
@@ -25,8 +26,18 @@ export function createInlineStudyFlow(assetRegistry){
    must(machine.dispatch({type:'OPEN_ANSWER'}));
    return machine.state();
   },
+  prefetchNext(number,nextInput){
+   if(machine.state().phase!=='ANSWER_WAIT')throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
+   if(!nextInput?.packet||nextInput.packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
+   const nextPayload=compileChatInlinePayload(nextInput.packet,assetRegistry);
+   if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
+   if(nextInput.question?.number!==number)throw new Error('NEXT_NUMBER_MISMATCH');
+   prefetchedNext=Object.freeze({number,nextInput,nextPayload});
+   return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash});
+  },
   answer(value){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
+   if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    return must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
   },
   explain(text){
@@ -37,6 +48,15 @@ export function createInlineStudyFlow(assetRegistry){
   },
   next(number){
    throw new Error('NEXT_REQUIRES_READY_PACKET');
+  },
+  commitPrefetchedNext(){
+   if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
+   if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
+   const {number,nextInput,nextPayload}=prefetchedNext;
+   must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
+   must(machine.dispatch({type:'LOAD_NEXT',question:nextInput.question}));
+   payload=nextPayload; prefetchedNext=null;
+   return Object.freeze({state:machine.state(),payload:nextPayload});
   },
   nextReady(number,nextInput){
    if(!nextInput?.packet||nextInput.packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
