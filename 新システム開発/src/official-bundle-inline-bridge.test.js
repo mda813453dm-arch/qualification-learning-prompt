@@ -10,7 +10,8 @@ const reg={resolve:id=>({questionId:key,verified:true,mime:'image/png',inlineRef
 const p=bridgeOfficialBundleToInline(bundle,manifest,reg);
 ok(p.status==='ready','bridge ready');ok(p.signature==='question_number>body>official_figure>official_table>choices>instruction','order');ok(p.packetHash==='packet6','packet binding');
 ok(p.question.id===key&&p.question.number===6&&p.packet.id===key,'canonical question and packet returned');
-ok(p.question.explanationPolicy==='general'&&p.packet.explanationPolicy==='general','ordinary surveying policy retained');\nok(p.question.studyUnitId===studyUnitId&&p.packet.studyPlanSha256===studyPlanSha256&&p.question.verifiedBundle===true,'approved unit and plan binding reaches flow');
+ok(p.question.explanationPolicy==='general'&&p.packet.explanationPolicy==='general','ordinary surveying policy retained');
+ok(p.question.studyUnitId===studyUnitId&&p.packet.studyPlanSha256===studyPlanSha256&&p.question.verifiedBundle===true,'approved unit and plan binding reaches flow');
 const takken={...bundle,qualification:'宅建'};
 const takkenManifest={...manifest};
 ok(bridgeOfficialBundleToInline(takken,takkenManifest,reg).reason==='LEGAL_BASIS_POLICY_UNBOUND','legal qualification without policy blocked');
