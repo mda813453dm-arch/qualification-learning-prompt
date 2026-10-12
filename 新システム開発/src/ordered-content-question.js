@@ -53,3 +53,20 @@ export function getVerifiedDisplayArray(q){
  if(!audit.ok)throw new Error('DISPLAY_ARRAY_REJECTED:'+audit.reason);
  return Object.freeze({audit,blocks:q.contentBlocks});
 }
+
+
+/**
+ * 重要: モデルが複数メッセージ/ツール呼出でblockを順次表示する方式は禁止。
+ * それでは送信済みblockを後から検証できず、実機で先頭欠落を防げない。
+ * rendererは全blockを単一payloadとしてcommitし、受領証明が一致した時だけ成功。
+ */
+export async function renderVerifiedQuestion(q, renderer){
+ const verified=getVerifiedDisplayArray(q);
+ if(!renderer||renderer.supportsSinglePayload!==true||typeof renderer.commitAll!=='function')
+   return Object.freeze({ok:false,reason:'SINGLE_PAYLOAD_RENDERER_REQUIRED',audit:verified.audit});
+ const expected=verified.audit.signature;
+ const receipt=await renderer.commitAll(verified.blocks);
+ if(!receipt||receipt.complete!==true||receipt.blockCount!==verified.audit.length||receipt.signature!==expected)
+   return Object.freeze({ok:false,reason:'RENDER_RECEIPT_MISMATCH',audit:verified.audit});
+ return Object.freeze({ok:true,audit:verified.audit,receipt});
+}
