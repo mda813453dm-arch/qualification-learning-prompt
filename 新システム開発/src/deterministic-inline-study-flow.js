@@ -31,6 +31,13 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    parentQuestionId:question.parentQuestionId||null
   });
  };
+ const pinPrefetchedRoute=(kind,itemId)=>{
+  const routes=Array.isArray(prefetchedNext)?prefetchedNext:(prefetchedNext?[prefetchedNext]:[]);
+  const selected=routes.find(x=>x.input.learningContext.kind===kind&&x.input.learningContext.itemId===itemId);
+  if(!selected)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+kind);
+  prefetchedNext=selected;
+  return selected;
+ };
  const commitPinnedNext=()=>{
   if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
   const {number,input,payload:nextPayload,policy}=prefetchedNext;
@@ -179,8 +186,10 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    if(learningSequence.state().phase==='CONFIRMATION_CHOICE_REQUIRED')
     return Object.freeze({state:machine.state(),confirmationChoiceRequired:true,choices:Object.freeze(['continue_confirmation','hold_and_move']),learning:learningSequence.state()});
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   if(learningSequence.state().phase==='PERFECT_RUN_CHOICE')
-    return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(learningSequence.state().hasNextUnit?['continue_same_unit','next_unit']:['continue_same_unit']),learning:learningSequence.state()});
+   const learning=learningSequence.state();
+   if(learning.phase==='PERFECT_RUN_CHOICE')
+    return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(learning.hasNextUnit?['continue_same_unit','next_unit']:['continue_same_unit']),learning});
+   pinPrefetchedRoute(learning.phase==='CONFIRMATION_REQUIRED'?'ai_confirmation':'official_practice',learning.itemId);
    return commitPinnedNext();
   },
   chooseConfirmationPath(choice){
@@ -196,8 +205,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   chooseLearningPath(choice){
    if(machine.state().phase!=='EXPLAINED')throw new Error('UNIT_CHOICE_NOT_ALLOWED');
    const result=must(learningSequence.chooseAfterPerfectRun(choice));
-   if(prefetchedNext&&prefetchedNext.input.learningContext.itemId===result.nextItemId)
-    return commitPinnedNext();
+   if(prefetchedNext){pinPrefetchedRoute('official_practice',result.nextItemId);return commitPinnedNext();}
    prefetchedNext=null;
    return Object.freeze({state:machine.state(),ready:false,nextItemId:result.nextItemId,learning:result.state});
   },
