@@ -29,4 +29,4 @@ const invalidDateVerifier=createEgovLawSourceVerifier({fetchImpl:async()=>{throw
 await rejects(()=>invalidDateVerifier({...item,effectiveDate:'2025-02-30'},context),'EGOV_EFFECTIVE_DATE_INVALID','invalid date rejected before fetch');
 const wrongArticleVerifier=createEgovLawSourceVerifier({fetchImpl:async url=>({status:200,url,headers:{get:()=> 'application/json'},text:async()=>JSON.stringify({...apiResponse,law_full_text:{Article:{ArticleTitle:'第二条',ArticleCaption:'定義'}}})})});
 await rejects(()=>wrongArticleVerifier(item,context),'EGOV_PROVISION_NOT_FOUND','article mismatch rejected');
-console.log('PASS e-Gov law source verifier: 5 checks');
+console.log('PASS e-Gov API v2 source verifier: 5 checks');
