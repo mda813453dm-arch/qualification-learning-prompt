@@ -91,7 +91,7 @@ export function createInlineStudyFlow(assetRegistry){
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   const {number,input,nextPayload}=prefetchedNext;
+   const {number,input,payload:nextPayload}=prefetchedNext;
    must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
    must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
    must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
