@@ -73,7 +73,8 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   },
   prefetchNext(number,nextInput){
    const phase=machine.state().phase;
-   const afterChoice=phase==='EXPLAINED'&&learningSequence?.state().phase==='PRACTICE_READY';
+   const sequencePhase=learningSequence?.state().phase;
+   const afterChoice=phase==='EXPLAINED'&&['PRACTICE_READY','CONFIRMATION_REQUIRED'].includes(sequencePhase);
    if(phase!=='ANSWER_WAIT'&&!afterChoice)throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
    const requests=Array.isArray(number)?number:[{number,input:nextInput}];
    if(!requests.length)throw new Error('NEXT_PREFETCH_INPUT_REQUIRED');
@@ -122,18 +123,19 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   },
   answer(value){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
-   if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    const proposedCorrect=Number(String(value).trim())===Number(machine.state().packet?.answer?.value);
    const prediction=learningSequence.predictNextKind(proposedCorrect);
    if(prediction.ok!==true)throw new Error(prediction.reason);
+   const menuOnly=prediction.kind==='confirmation_menu';
+   if(!prefetchedNext&&!menuOnly)throw new Error('NEXT_NOT_PREFETCHED');
    const candidates=Array.isArray(prefetchedNext)?prefetchedNext:(prefetchedNext?[prefetchedNext]:[]);
    const selected=candidates.find(x=>{
     const c=x.input.learningContext;
     if(prediction.kind==='unit_choice')return c.kind==='official_practice'&&c.itemId===learningSequence.state().itemId;
     return c.kind===prediction.kind;
    });
-   if(!selected)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
-   prefetchedNext=selected;
+   if(!selected&&!menuOnly)throw new Error('NEXT_BRANCH_PACKET_NOT_PREFETCHED:'+prediction.kind);
+   prefetchedNext=menuOnly?null:selected;
    const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
    const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
    if(result.ok!==true)throw new Error(result.reason);
@@ -174,10 +176,18 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   next(number){throw new Error('NEXT_REQUIRES_READY_PACKET');},
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
+   if(learningSequence.state().phase==='CONFIRMATION_CHOICE_REQUIRED')
+    return Object.freeze({state:machine.state(),confirmationChoiceRequired:true,choices:Object.freeze(['continue_confirmation','hold_and_move']),learning:learningSequence.state()});
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
    if(learningSequence.state().phase==='PERFECT_RUN_CHOICE')
     return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(learningSequence.state().hasNextUnit?['continue_same_unit','next_unit']:['continue_same_unit']),learning:learningSequence.state()});
    return commitPinnedNext();
+  },
+  chooseConfirmationPath(choice){
+   if(machine.state().phase!=='EXPLAINED')throw new Error('CONFIRMATION_CHOICE_NOT_ALLOWED');
+   const result=must(learningSequence.chooseAfterConfirmationMisses(choice));
+   prefetchedNext=null;
+   return Object.freeze({...result,ready:false});
   },
   chooseLearningPath(choice){
    if(machine.state().phase!=='EXPLAINED')throw new Error('UNIT_CHOICE_NOT_ALLOWED');
