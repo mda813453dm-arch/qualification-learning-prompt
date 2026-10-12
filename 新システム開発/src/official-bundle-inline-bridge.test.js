@@ -1,5 +1,5 @@
 import {createHash} from 'node:crypto';
-import {bridgeOfficialBundleToInline,createOfficialQuestionBundleBuilder} from './official-bundle-inline-bridge.js';
+import {bridgeOfficialBundleToInline,createOfficialQuestionBundleBuilder,createOfficialBundleInlineCompiler} from './official-bundle-inline-bridge.js';
 const h=s=>createHash('sha256').update(s).digest('hex'), ok=(v,m)=>{if(!v)throw new Error(m)};
 const key='土地家屋調査士:2025:午後:6',body='公式PDFから確定した問題本文',choices=['1','2','3','4','5'];
 const assets=[{id:'fig6',kind:'figure',page:4,sha256:'a'.repeat(64),crop:{x0:1,y0:2,x1:3,y1:4}},{id:'tab6',kind:'table',page:4,sha256:'b'.repeat(64),crop:{x0:5,y0:6,x1:7,y1:8}}];
@@ -97,6 +97,40 @@ const builtInline=bridgeOfficialBundleToInline(built.bundle,built.manifest,built
 ok(builtInline.status==='ready','built bundle enters inline rendering gate');
 ok(builtInline.signature==='question_number>body>official_figure>body>official_table>body>choices>instruction',
  'PDF text offsets and reviewed figure/table placements reach inline payload in order');
+
+const verifiedResult={
+ status:'verified',key:{qualification:extraction.qualification},
+ question:{id:extraction.key,year:extraction.year,section:extraction.section,text:extraction.stemText,
+  choices:extraction.choices.map(text=>({text})),
+  source:{official:true,questionPdfSha256:extraction.questionPdfSha256}},
+ answer:{questionId:extraction.key,year:extraction.year,section:extraction.section,
+  number:extraction.answerNumber,evidence:'公式正答行',
+  source:{official:true,answerPdfSha256:extraction.answerPdfSha256}},
+ bundleExtraction:extraction,layoutReview
+};
+const compiler=createOfficialBundleInlineCompiler({
+ verifyExtraction:value=>value===extraction,
+ verifyLayoutReview:value=>value===layoutReview,
+ assetRegistry:builtRegistry
+});
+const compiled=await compiler({
+ candidate:{questionId:extraction.key,qualificationId:extraction.qualification,
+  year:extraction.year,section:extraction.section},
+ verifiedResult,studyUnitId,studyPlanSha256
+});
+ok(compiled.status==='ready'&&compiled.question.id===extraction.key&&
+ compiled.packet.id===extraction.key&&compiled.packet.packetHash===compiled.packetHash,
+ 'official retrieval evidence, PDF extraction, reviewed layout, and inline bridge compose into one bound payload');
+ok(compiled.signature.endsWith('>choices>instruction')&&compiled.nodes.at(-1).value==='番号で答えてください。',
+ 'composed official payload is complete through the answer request');
+const mismatchedCompilerResult=await compiler({
+ candidate:{questionId:extraction.key,qualificationId:extraction.qualification,
+  year:extraction.year,section:extraction.section},
+ verifiedResult:{...verifiedResult,answer:{...verifiedResult.answer,source:{official:true,answerPdfSha256:'0'.repeat(64)}}},
+ studyUnitId,studyPlanSha256
+});
+ok(mismatchedCompilerResult.reason==='VERIFIED_EXTRACTION_BINDING_MISMATCH',
+ 'different answer PDF evidence cannot be mixed into the compiled question packet');
 const deniedBuilder=createOfficialQuestionBundleBuilder({verifyExtraction:()=>false,verifyLayoutReview:()=>true});
 ok((await deniedBuilder({extraction,layoutReview})).reason==='PINNED_EXTRACTION_NOT_VERIFIED',
  'unverified PDF extraction is blocked before bundle assembly');
