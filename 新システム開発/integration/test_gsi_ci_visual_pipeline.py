@@ -9,6 +9,7 @@ class FakeResponse:
  def read(self,limit):return self.data[:limit]
 class Tests(unittest.TestCase):
  def test_valid_header(self):self.assertEqual(fetch_bytes(lambda req,timeout:FakeResponse(b'%PDF-test')),b'%PDF-test')
+ def test_official_published_mirror(self):self.assertEqual(URL,'https://web2.gsi.go.jp/common/000278974.pdf')
  def test_html_rejected(self):
   with self.assertRaisesRegex(ValueError,'NOT_PDF'):fetch_bytes(lambda req,timeout:FakeResponse(b'<html>'))
  def test_redirect_rejected(self):

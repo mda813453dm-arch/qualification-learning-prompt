@@ -1,7 +1,8 @@
 """Download fixed official GSI PDF and render two full-page PNGs in CI only."""
 import hashlib,json,sys,urllib.request
 from pathlib import Path
-URL='https://www.gsi.go.jp/common/000278974.pdf'
+URL='https://web2.gsi.go.jp/common/000278974.pdf'
+SOURCE_PAGE_URL='https://web2.gsi.go.jp/LAW/SHIKEN/past.html'
 PAGES={7:9,27:29}
 MAX_BYTES=20_000_000
 def fetch_bytes(opener=urllib.request.urlopen):
@@ -27,7 +28,7 @@ def export(data,directory):
   filename=f'question_{question}_page_{page_number}.png'
   (root/filename).write_bytes(png)
   reports.append({'questionNumber':question,'pdfPage':page_number,'imageFile':filename,'imageSha256':hashlib.sha256(png).hexdigest(),'textChars':len(page.get_text()),'pageReview':'PENDING','mobileRenderingVerified':False,'publishable':False})
- report={'sourceUrl':URL,'pdfSha256':digest,'pdfBytes':len(data),'pageCount':len(doc),'questions':reports,'publishable':False}
+ report={'sourceUrl':URL,'publishedSourceUrl':SOURCE_PAGE_URL,'pdfSha256':digest,'pdfBytes':len(data),'pageCount':len(doc),'questions':reports,'publishable':False}
  (root/'evidence.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
  return report
 if __name__=='__main__':
