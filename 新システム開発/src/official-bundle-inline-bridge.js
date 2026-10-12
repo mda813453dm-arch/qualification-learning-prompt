@@ -12,7 +12,7 @@ export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  for(const item of gate.contentBlocks){
   if(item.type==='text')blocks.push({order:blocks.length,type:'text',value:item.value,questionId:bundle.key});
   else if(item.type==='table')blocks.push({order:blocks.length,type:'table',assetId:item.assetId,questionId:bundle.key});
-  else if(item.type==='formula')blocks.push({order:blocks.length,type:'formula',value:item.value||item.assetId,questionId:bundle.key});
+  else if(item.type==='formula')blocks.push(item.assetId?{order:blocks.length,type:'figure',assetId:item.assetId,questionId:bundle.key}:{order:blocks.length,type:'formula',value:item.value,questionId:bundle.key});
   else if(item.type==='figure'||item.type==='other')blocks.push({order:blocks.length,type:'figure',assetId:item.assetId,questionId:bundle.key});
   else return Object.freeze({status:'blocked',reason:'CONTENT_BLOCK_TYPE_UNSUPPORTED'});
  }
