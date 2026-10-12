@@ -73,6 +73,12 @@ await flow.explain('explanation');
 throws(()=>flow.next(3),'NEXT_REQUIRES_READY_PACKET','見出しだけの次問遷移');
 throws(()=>flow.nextReady(3,q3Input({...q3Packet(),id:'q4',number:3})),
  'NEXT_REQUIRES_PREFETCHED_PACKET','未prefetch packetでの差し替え遷移');
+const explanationQuestion=flow.clarifyDuringExplanation('この解説の理由を確認したいです。');
+throws(()=>flow.commitPrefetchedNext(),'EXPLANATION_QUESTION_UNRESOLVED','説明質問の回答前進行を禁止');
+throws(()=>flow.answer(1),'EXPLANATION_QUESTION_UNRESOLVED','説明質問待ちで次問回答を禁止');
+const clarificationResolved=flow.resolveExplanationQuestion('根拠と要件を補足しました。');
+ok(clarificationResolved.continueAfterExplanation&&clarificationResolved.question===explanationQuestion.question,
+ '解説質問に答えた後で同じ進行状態へ戻る');
 const next=flow.commitPrefetchedNext();
 ok(next.state.phase==='PACKET_VALIDATED'&&next.state.question.id==='q3','準備済み次問packetを状態機械へ登録');
 ok(next.state.packet.answer.value===2,'prefetch時の正答を固定保持');
@@ -84,6 +90,11 @@ ok(next.payload.nodes.some(n=>n.role==='choices'&&n.value.length===5),'次問選
 const answerWaitAfterNext=flow.rendered({complete:true,questionId:'q3',packetHash:'p3',
  signature:next.payload.signature,nodeCount:next.payload.nodes.length});
 ok(answerWaitAfterNext.phase==='ANSWER_WAIT','次問完全表示後に回答受付へ遷移');
+const followup=flow.clarifyDuringExplanation('先ほどの解説をもう一度確認したいです。');
+throws(()=>flow.answer(2),'EXPLANATION_QUESTION_UNRESOLVED','説明の質問を先に処理する');
+const followupResolved=flow.resolveExplanationQuestion('補足説明です。');
+ok(followupResolved.resumePayload.questionId==='q3'&&followupResolved.resumePayload.packetHash==='p3',
+ '質問解決後も同じ未回答次問packetを保持');
 
 function minimalQuestion(id,number,kind='official_practice',studyUnitId='control-points'){
  const origin=kind==='ai_confirmation'?'ai':'official';
