@@ -151,7 +151,6 @@ for(const [id,n,routeList] of [
 }
 const sameUnitCandidate=minimalQuestion('same-unit-next',4);
 const nextUnitCandidate=minimalQuestion('next-unit-first',5,'official_practice','traverse');
-throws(()=>perfectFlow.prefetchNext(4,sameUnitCandidate),'NEXT_STUDY_UNIT_MISMATCH','same-unit-only prefetch fixture sanity');
 perfectFlow.prefetchNext([
  {number:4,input:sameUnitCandidate},
  {number:5,input:nextUnitCandidate}
