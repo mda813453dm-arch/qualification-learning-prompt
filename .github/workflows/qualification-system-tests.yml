@@ -1,0 +1,22 @@
+name: qualification-system-tests
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/src/**'
+      - '.github/workflows/qualification-system-tests.yml'
+  workflow_dispatch:
+jobs:
+  deterministic-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run state machine tests
+        run: node "新システム開発/src/deterministic-session-machine.test.js"
+      - name: Run inline adapter tests
+        run: node "新システム開発/src/chat-inline-render-adapter.test.js"
+      - name: Run integrated flow tests
+        run: node "新システム開発/src/deterministic-inline-study-flow.test.js"
