@@ -36,8 +36,16 @@ export function createInlineStudyFlow(assetRegistry){
    return machine.state();
   },
   next(number){
+   throw new Error('NEXT_REQUIRES_READY_PACKET');
+  },
+  nextReady(number,nextInput){
+   if(!nextInput?.packet||nextInput.packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
+   const nextPayload=compileChatInlinePayload(nextInput.packet,assetRegistry);
+   if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
    must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
-   return machine.state();
+   must(machine.dispatch({type:'LOAD_NEXT',question:nextInput.question}));
+   payload=nextPayload;
+   return Object.freeze({state:machine.state(),payload:nextPayload});
   },
   load(question){
    must(machine.dispatch({type:'LOAD_NEXT',question}));
