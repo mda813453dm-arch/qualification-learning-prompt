@@ -8,7 +8,7 @@ import {compileChatInlinePayload} from './chat-inline-render-adapter.js';
 export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  const gate=validateQuestionBundle(bundle,manifest);
  if(!gate.ok)return Object.freeze({status:'blocked',reason:gate.reason});
- const blocks=[{order:0,type:'question_number',value:bundle.displayNumber||bundle.key}];
+ const blocks=[{order:0,type:'question_number',value:bundle.displayNumber||bundle.key,questionId:bundle.key}];
  blocks.push({order:1,type:'text',value:gate.body,questionId:bundle.key});
  for(const token of gate.layout.slice(1,-2)){
   const a=gate.assets.find(x=>x.id===token);
@@ -17,7 +17,12 @@ export function bridgeOfficialBundleToInline(bundle,manifest,assetRegistry){
  }
  blocks.push({order:blocks.length,type:'choices',value:gate.choices,questionId:bundle.key});
  blocks.push({order:blocks.length,type:'instruction',value:'番号で答えてください。',questionId:bundle.key});
- const packet={status:'ready',id:bundle.key,packetHash:bundle.packetHash||manifest.packetHash,contentBlocks:blocks,answer:{value:bundle.answer.number,sourceSha256:bundle.source.answerPdfSha256}};
+ const number=Number(bundle.key.split(':').at(-1));
+ if(!Number.isInteger(number)||number<1)return Object.freeze({status:'blocked',reason:'QUESTION_NUMBER_INVALID'});
+ const question=Object.freeze({status:'ready',id:bundle.key,number,qualification:gate.qualification,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy});
+ const packet={status:'ready',id:bundle.key,number,packetHash:bundle.packetHash||manifest.packetHash,subjectArea:gate.subjectArea,explanationPolicy:gate.explanationPolicy,contentBlocks:blocks,answer:{value:bundle.answer.number,sourceSha256:bundle.source.answerPdfSha256}};
  if(!packet.packetHash)return Object.freeze({status:'blocked',reason:'PACKET_HASH_REQUIRED'});
- return compileChatInlinePayload(packet,assetRegistry);
+ const payload=compileChatInlinePayload(packet,assetRegistry);
+ if(payload.status!=='ready')return payload;
+ return Object.freeze({...payload,question,packet:Object.freeze({...packet,contentBlocks:Object.freeze(blocks.map(Object.freeze)),answer:Object.freeze({...packet.answer})})});
 }
