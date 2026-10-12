@@ -1,37 +1,63 @@
 import {createDeterministicSession} from './deterministic-session-machine.js';
 import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
 import {compileLegalBasisExplanation,resolveExplanationPolicy} from './legal-basis-explanation.js';
+import {createDeterministicLearningSequence} from './deterministic-learning-sequence.js';
 
 function immutableJson(value){
  const copy=JSON.parse(JSON.stringify(value));
- const freeze=x=>{
-  if(x&&typeof x==='object'){
-   for(const v of Object.values(x))freeze(v);
-   Object.freeze(x);
-  }
-  return x;
- };
+ const freeze=x=>{if(x&&typeof x==='object'){for(const v of Object.values(x))freeze(v);Object.freeze(x);}return x;};
  return freeze(copy);
 }
 export function createInlineStudyFlow(assetRegistry,options={}){
  const machine=createDeterministicSession();
  const verifyOfficialSource=options.verifyOfficialSource;
- let payload=null;
- let prefetchedNext=null;
- let currentExplanationPolicy='general';
- const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r};
+ const studyPlan=options.studyPlan;
+ if(!studyPlan||studyPlan.status!=='approved'||!studyPlan.qualificationId||
+    !/^[a-f0-9]{64}$/.test(studyPlan.sha256||'')||!Array.isArray(studyPlan.itemIds)||studyPlan.itemIds.length===0)
+  throw new Error('APPROVED_STUDY_PLAN_REQUIRED');
+ let payload=null,prefetchedNext=null,currentExplanationPolicy='general';
+ let learningSequence=null,currentLearningContext=null;
+ const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r;};
+ const makeLearningContext=(question,qualificationId)=>{
+  if(!question?.id||!question.studyUnitId||question.studyPlanSha256!==studyPlan.sha256)
+   throw new Error('STUDY_PLAN_BINDING_REQUIRED');
+  if(!studyPlan.itemIds.includes(question.studyUnitId))throw new Error('STUDY_UNIT_NOT_IN_PLAN');
+  return immutableJson({
+   questionId:question.id,qualificationId,itemId:question.studyUnitId,
+   kind:question.kind,origin:question.origin,verifiedBundle:question.verifiedBundle===true,
+   parentQuestionId:question.parentQuestionId||null
+  });
+ };
+ const commitPinnedNext=()=>{
+  if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
+  const {number,input,payload:nextPayload,policy}=prefetchedNext;
+  must(learningSequence.validateQuestion(input.learningContext));
+  must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
+  must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
+  must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
+  must(machine.dispatch({type:'VALIDATE_PACKET',packet:input.packet}));
+  payload=nextPayload;currentExplanationPolicy=policy;currentLearningContext=input.learningContext;prefetchedNext=null;
+  return Object.freeze({state:machine.state(),payload:nextPayload,learning:learningSequence.state()});
+ };
  return Object.freeze({
-  state(){return machine.state()},
+  state(){return machine.state();},
+  learningState(){return learningSequence?.state()||null;},
   prepare(x){
+   if(x.qualificationId!==studyPlan.qualificationId)throw new Error('STUDY_PLAN_QUALIFICATION_MISMATCH');
+   const context=makeLearningContext(x.question,x.qualificationId);
+   if(x.question.id!==x.packet?.id||x.question.studyUnitId!==x.packet?.studyUnitId||
+      x.packet.studyPlanSha256!==studyPlan.sha256)throw new Error('QUESTION_PACKET_BINDING_MISMATCH');
    const policy=resolveExplanationPolicy(x.qualificationId,x.question,x.packet);
+   const candidatePayload=compileChatInlinePayload(x.packet,assetRegistry);
+   if(candidatePayload.status!=='ready')throw new Error(candidatePayload.reason);
+   if(!learningSequence)learningSequence=createDeterministicLearningSequence({studyPlan,itemId:context.itemId});
+   must(learningSequence.validateQuestion(context));
    must(machine.dispatch({type:'SET_QUALIFICATION',qualificationId:x.qualificationId}));
    must(machine.dispatch({type:'PIN_SOURCE',source:x.source}));
    must(machine.dispatch({type:'PIN_QUESTION',question:x.question}));
    must(machine.dispatch({type:'PIN_ASSETS',assets:x.assets}));
    must(machine.dispatch({type:'VALIDATE_PACKET',packet:x.packet}));
-   payload=compileChatInlinePayload(x.packet,assetRegistry);
-   if(payload.status!=='ready')throw new Error(payload.reason);
-   currentExplanationPolicy=policy;
+   payload=candidatePayload;currentExplanationPolicy=policy;currentLearningContext=context;
    return payload;
   },
   rendered(receipt){
@@ -43,16 +69,16 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    return machine.state();
   },
   prefetchNext(number,nextInput){
-   if(machine.state().phase!=='ANSWER_WAIT')throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
-   const question=nextInput?.question;
-   const packet=nextInput?.packet;
+   const phase=machine.state().phase;
+   const afterChoice=phase==='EXPLAINED'&&learningSequence?.state().phase==='PRACTICE_READY';
+   if(phase!=='ANSWER_WAIT'&&!afterChoice)throw new Error('NEXT_PREFETCH_NOT_ALLOWED');
+   if(prefetchedNext)throw new Error('NEXT_ALREADY_PREFETCHED');
+   const question=nextInput?.question,packet=nextInput?.packet;
    if(!question||question.status!=='ready'||question.number!==number)throw new Error('NEXT_NUMBER_MISMATCH');
    if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
    if(packet.number!==number)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
    if(!question.id||packet.id!==question.id)throw new Error('NEXT_QUESTION_ID_MISMATCH');
-   const policy=resolveExplanationPolicy(machine.state().qualification,question,packet);
-   if(!packet.packetHash||!Number.isInteger(Number(packet.answer?.value))||Number(packet.answer.value)<1)
-    throw new Error('NEXT_OFFICIAL_ANSWER_REQUIRED');
+   const context=makeLearningContext(question,studyPlan.qualificationId);
    if(!Array.isArray(nextInput.assets))throw new Error('NEXT_ASSET_EVIDENCE_REQUIRED');
    const assetsById=new Map();
    for(const asset of nextInput.assets){
@@ -62,28 +88,28 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    }
    const visualIds=new Set(packet.contentBlocks.filter(b=>(b.type==='figure'||b.type==='table')&&b.assetId).map(b=>b.assetId));
    for(const id of visualIds){
-    const evidence=assetsById.get(id), registered=assetRegistry?.resolve?.(id);
+    const evidence=assetsById.get(id),registered=assetRegistry?.resolve?.(id);
     if(!evidence||!registered||registered.questionId!==packet.id||registered.verified!==true||
-       !registered.sha256||evidence.sha256!==registered.sha256)
-     throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
+       !registered.sha256||evidence.sha256!==registered.sha256)throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
    }
-   const pinnedInput=immutableJson({question,packet,assets:nextInput.assets});
+   const pinnedInput=immutableJson({question,packet,assets:nextInput.assets,learningContext:context});
    const nextPayload=compileChatInlinePayload(pinnedInput.packet,assetRegistry);
    if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
    if(nextPayload.questionId!==pinnedInput.question.id||nextPayload.packetHash!==pinnedInput.packet.packetHash)
     throw new Error('NEXT_PAYLOAD_BINDING_MISMATCH');
    const tail=nextPayload.nodes.at(-1);
-   if(tail?.role!=='instruction'||tail.value!=='番号で答えてください。')
-    throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
-   if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))
-    throw new Error('NEXT_CHOICES_INCOMPLETE');
-   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload,policy});
-   return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash});
+   if(tail?.role!=='instruction'||tail.value!=='番号で答えてください。')throw new Error('NEXT_INSTRUCTION_INCOMPLETE');
+   if(!nextPayload.nodes.some(n=>n.role==='choices'&&Array.isArray(n.value)&&n.value.length>0))throw new Error('NEXT_CHOICES_INCOMPLETE');
+   prefetchedNext=Object.freeze({number,input:pinnedInput,payload:nextPayload,policy:resolveExplanationPolicy(studyPlan.qualificationId,question,packet)});
+   return Object.freeze({ready:true,number,packetHash:nextPayload.packetHash,studyUnitId:context.itemId,kind:context.kind});
   },
   answer(value){
    if(machine.state().phase!=='ANSWER_WAIT')throw new Error('ANSWER_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   return must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
+   const grade=must(machine.dispatch({type:'SUBMIT_ANSWER',value})).state.grade;
+   const result=learningSequence.recordAnswer(currentLearningContext.questionId,grade.correct);
+   if(result.ok!==true)throw new Error(result.reason);
+   return Object.freeze({...grade,learning:result.outcome});
   },
   async explain(text){
    const s=machine.state();
@@ -98,27 +124,25 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    must(machine.dispatch({type:'COMMIT_EXPLANATION',explanation:display,packetHash:s.packet.packetHash}));
    return machine.state();
   },
-  next(number){
-   throw new Error('NEXT_REQUIRES_READY_PACKET');
+  skipExplanation(){
+   throw new Error('EXPLANATION_SKIP_NOT_IMPLEMENTED');
   },
+  next(number){throw new Error('NEXT_REQUIRES_READY_PACKET');},
   commitPrefetchedNext(){
    if(machine.state().phase!=='EXPLAINED')throw new Error('NEXT_COMMIT_NOT_ALLOWED');
    if(!prefetchedNext)throw new Error('NEXT_NOT_PREFETCHED');
-   const {number,input,payload:nextPayload,policy}=prefetchedNext;
-   must(machine.dispatch({type:'FIX_NEXT',nextQuestionNumber:number}));
-   must(machine.dispatch({type:'LOAD_NEXT',question:input.question}));
-   must(machine.dispatch({type:'PIN_ASSETS',assets:input.assets}));
-   must(machine.dispatch({type:'VALIDATE_PACKET',packet:input.packet}));
-   payload=nextPayload; currentExplanationPolicy=policy; prefetchedNext=null;
-   return Object.freeze({state:machine.state(),payload:nextPayload});
+   if(learningSequence.state().phase==='PERFECT_RUN_CHOICE')
+    return Object.freeze({state:machine.state(),choiceRequired:true,choices:Object.freeze(['continue_same_unit','next_unit']),learning:learningSequence.state()});
+   return commitPinnedNext();
   },
-  nextReady(number,nextInput){
-   throw new Error('NEXT_REQUIRES_PREFETCHED_PACKET');
+  chooseLearningPath(choice){
+   if(machine.state().phase!=='EXPLAINED')throw new Error('UNIT_CHOICE_NOT_ALLOWED');
+   const result=must(learningSequence.chooseAfterPerfectRun(choice));
+   if(prefetchedNext&&prefetchedNext.input.learningContext.itemId===result.nextItemId)
+    return commitPinnedNext();
+   return Object.freeze({state:machine.state(),ready:false,nextItemId:result.nextItemId,learning:result.state});
   },
-  load(question){
-   must(machine.dispatch({type:'LOAD_NEXT',question}));
-   payload=null;
-   return machine.state();
-  }
+  nextReady(number,nextInput){throw new Error('NEXT_REQUIRES_PREFETCHED_PACKET');},
+  load(question){must(machine.dispatch({type:'LOAD_NEXT',question}));payload=null;return machine.state();}
  });
 }
