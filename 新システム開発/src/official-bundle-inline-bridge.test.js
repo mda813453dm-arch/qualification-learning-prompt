@@ -132,6 +132,14 @@ const mismatchedCompilerResult=await compiler({
 });
 ok(mismatchedCompilerResult.reason==='VERIFIED_EXTRACTION_BINDING_MISMATCH',
  'different answer PDF evidence cannot be mixed into the compiled question packet');
+const unverifiedCompilerResult=await compiler({
+ candidate:{questionId:extraction.key,qualificationId:extraction.qualification,
+  year:extraction.year,section:extraction.section},
+ verifiedResult:{...verifiedResult,status:'unverified'},
+ studyUnitId,studyPlanSha256
+});
+ok(unverifiedCompilerResult.reason==='VERIFIED_EXTRACTION_BINDING_MISMATCH',
+ 'unverified retrieval records cannot enter official inline compilation');
 
 const studyPlan={status:'approved',qualificationId:extraction.qualification,
  sha256:studyPlanSha256,itemIds:[studyUnitId]};
