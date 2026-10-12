@@ -7,7 +7,9 @@ const hash=s=>createHash('sha256').update(s,'utf8').digest('hex');
 const sourceText='仮想法第1条 仮想的な条文本文';
 const basis={lawName:'仮想法',provision:'第1条',effectiveDate:'2025-04-01',officialUrl:'https://elaws.e-gov.go.jp/document?lawid=0000000000000',sourceText,excerpt:'仮想的な条文本文',sourceSha256:hash(sourceText)};
 const explanation={questionId:'q2',packetHash:'p2',text:'この選択肢は条文の要件を満たします。',legalBasis:[basis]};
-const c=compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2'});
+const trustedVerifier=()=>true;
+const c=compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:trustedVerifier});
+ok(compileLegalBasisExplanation(explanation,{questionId:'q2',packetHash:'p2',verifyOfficialSource:trustedVerifier}).reason==='LEGAL_SOURCE_NOT_VERIFIED','trusted source retrieval evidence required');
 ok(c.ok&&c.displayText.includes('■法的根拠')&&c.displayText.includes('仮想法 第1条')&&c.displayText.includes(basis.excerpt)&&c.displayText.includes(basis.officialUrl),'根拠欄と引用を表示');
 ok(compileLegalBasisExplanation('本文だけ',{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_EXPLANATION_REQUIRED','平文拒否');
 ok(compileLegalBasisExplanation({...explanation,legalBasis:[]},{questionId:'q2',packetHash:'p2'}).reason==='LEGAL_BASIS_MISSING','根拠なし拒否');
@@ -23,7 +25,7 @@ ok(resolveExplanationPolicy('land-surveyor',{id:'q2',subjectArea:'law',explanati
 ok(resolveExplanationPolicy('surveying-engineer',{id:'q2'},{id:'q2'})==='general','測量一般問題');
 
 const registry={resolve:id=>id==='f2'?{questionId:'q2',verified:true,mime:'image/png',inlineRef:'inline-f2',sha256:'fig'}:id==='f3'?{questionId:'q3',verified:true,mime:'image/png',inlineRef:'inline-f3',sha256:'fig3'}:null};
-const flow=createInlineStudyFlow(registry);
+const flow=createInlineStudyFlow(registry,{verifyOfficialSource:trustedVerifier});
 const question={status:'ready',id:'q2',number:2,subjectArea:'law',explanationPolicy:'legal_basis_required'};
 const packet={status:'ready',id:'q2',number:2,packetHash:'p2',explanationPolicy:'legal_basis_required',answer:{value:4},contentBlocks:[
  {order:0,type:'question_number',value:'Q2'},{order:1,type:'text',value:'stem'},{order:2,type:'figure',assetId:'f2'},
