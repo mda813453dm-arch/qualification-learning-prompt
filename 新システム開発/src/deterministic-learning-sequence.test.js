@@ -58,4 +58,14 @@ ok(escalation.completeBriefExplanation('誤りの要点を短く整理します�
 escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
 escalation.recordAnswer('ec4',true);
 ok(escalation.state().confirmationMisses===0&&escalation.state().phase==='PRACTICE_READY','confirmation success closes escalation chain');
+
+const terminalPlan={...plan,itemIds:['guarantee']};
+const terminal=createDeterministicLearningSequence({studyPlan:terminalPlan,itemId:'guarantee'});
+for(const [id,kind,origin,parent] of [['t1','official_practice','official'],['t2','official_practice','official'],['tc1','ai_confirmation','ai','t2'],['tc2','ai_confirmation','ai','t2'],['tc3','ai_confirmation','ai','t2']]){
+ terminal.validateQuestion(meta(id,kind,origin,'guarantee',parent?{parentQuestionId:parent}:{}));
+ terminal.recordAnswer(id,false);
+}
+ok(!terminal.state().hasNextUnit&&terminal.state().phase==='CONFIRMATION_CHOICE_REQUIRED','last item opens a menu without a nonexistent destination');
+throws(()=>terminal.chooseAfterConfirmationMisses('hold_and_move'),'NEXT_STUDY_UNIT_NOT_IN_PLAN','holding requires an actual destination');
+ok(terminal.chooseAfterConfirmationMisses('end_session').sessionEndRequired===true,'menu substitutes explicit end when no destination exists');
 console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, two-miss AI confirmation, and perfect-run choice');
