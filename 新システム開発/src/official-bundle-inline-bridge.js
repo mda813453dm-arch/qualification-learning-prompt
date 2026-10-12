@@ -46,7 +46,7 @@ export function createOfficialQuestionBundleBuilder({verifyExtraction,verifyLayo
   try{reviewOk=await verifyLayoutReview(layoutReview)===true;}catch{}
   if(!reviewOk)return buildFail('LAYOUT_REVIEW_NOT_VERIFIED');
   const {key,number,year}=extraction;
-  if(typeof key!=='string'||!/^.+:\\d{4}:.+:\\d+$/.test(key)||!Number.isInteger(year)||!Number.isInteger(number)||number<1||
+  if(typeof key!=='string'||!/^.+:\d{4}:.+:\d+$/.test(key)||!Number.isInteger(year)||!Number.isInteger(number)||number<1||
      String(year)!==key.split(':')[1]||String(number)!==key.split(':').at(-1)||
      !extraction.qualification||!extraction.section||!extraction.studyUnitId||!isSha(extraction.studyPlanSha256))
    return buildFail('QUESTION_IDENTITY_INVALID');
