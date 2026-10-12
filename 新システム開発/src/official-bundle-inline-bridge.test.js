@@ -60,7 +60,7 @@ ok(bridgeOfficialBundleToInline({...orderedBundle,contentBlocks:orderedBlocks.sl
 const extraction={
  key:'測量士補:2025:午前:7',qualification:'測量士補',year:2025,section:'午前',number:7,
  studyUnitId:'surveying:control-points',studyPlanSha256:'c'.repeat(64),displayNumber:'■2025年度 午前の部 問7',
- questionPdfSha256:'q'.repeat(64),answerPdfSha256:'a'.repeat(64),pages:[4],
+ questionPdfSha256:'9'.repeat(64),answerPdfSha256:'a'.repeat(64),pages:[4],
  stemText:'ABCD1234WXYZ',stemSha256:h('ABCD1234WXYZ'),
  choices:['選択肢1','選択肢2','選択肢3','選択肢4','選択肢5'],answerNumber:3,answerEvidenceSha256:h('公式正答行')
 };
