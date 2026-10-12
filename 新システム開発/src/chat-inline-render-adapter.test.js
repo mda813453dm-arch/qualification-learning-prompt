@@ -38,7 +38,8 @@ const markdownPayload={status:'ready',questionId:'q3',packetHash:'q3hash',nodes:
 ]};
 const markdownResult=renderChatInlineMarkdown(markdownPayload);
 ok(markdownResult.status==='ready','inline markdown payload ready');
-ok(p.markdown.includes('![公式図]('),'compiled payload directly carries the message-ready Markdown');
+const figureCompiled=compileChatInlinePayload(packet('compiled-figure',[{type:'question_number',value:'Q3'},{type:'figure',assetId:'f1'},...end]),{resolve:id=>asset(id,'compiled-figure')});
+ok(figureCompiled.status==='ready'&&figureCompiled.markdown.includes('![公式図]('),'compiled figure packet directly carries the message-ready Markdown');
 const imageMarkdown='![公式図]('+iosFigure+')';
 ok(markdownResult.markdown.includes(imageMarkdown),'figure is emitted as an actual Markdown image link');
 ok(markdownResult.markdown.includes(String.fromCharCode(10)+String.fromCharCode(10)+imageMarkdown),'Markdown blocks are separated with real line breaks');
