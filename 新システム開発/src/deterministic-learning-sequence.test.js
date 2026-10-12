@@ -37,4 +37,22 @@ prediction.validateQuestion(meta('r1'));ok(prediction.predictNextKind(false).kin
 prediction.recordAnswer('r1',false);prediction.validateQuestion(meta('r2'));
 ok(prediction.predictNextKind(false).kind==='ai_confirmation','second miss route is AI confirmation before grading');
 ok(prediction.predictNextKind(true).kind==='official_practice','answer correction/reset route is official practice');
+
+const escalation=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
+escalation.validateQuestion(meta('e1'));escalation.recordAnswer('e1',false);
+escalation.validateQuestion(meta('e2'));escalation.recordAnswer('e2',false);
+for(const id of ['ec1','ec2']){
+ escalation.validateQuestion(meta(id,'ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+ escalation.recordAnswer(id,false);
+}
+escalation.validateQuestion(meta('ec3','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+ok(escalation.predictNextKind(false).kind==='confirmation_menu','third confirmation miss routes to fixed menu before another question');
+const thirdMiss=escalation.recordAnswer('ec3',false);
+ok(thirdMiss.state.phase==='CONFIRMATION_CHOICE_REQUIRED'&&thirdMiss.state.confirmationMisses===3,'three consecutive confirmation misses open the menu');
+throws(()=>escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'})),'CONFIRMATION_CHOICE_REQUIRED','menu must be answered before another confirmation');
+const continueEscalation=escalation.chooseAfterConfirmationMisses('continue_confirmation');
+ok(continueEscalation.ok&&continueEscalation.requiresBriefExplanation&&continueEscalation.nextKind==='ai_confirmation','menu choice 1 requires short explanation and another confirmation');
+escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+escalation.recordAnswer('ec4',true);
+ok(escalation.state().confirmationMisses===0&&escalation.state().phase==='PRACTICE_READY','confirmation success closes escalation chain');
 console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, two-miss AI confirmation, and perfect-run choice');
