@@ -26,21 +26,8 @@ jobs:
         working-directory: 新システム開発
       - name: Install integration test dependency
         run: python -m pip install PyMuPDF
-      - name: Run every qualification system source test
-        shell: bash
-        run: |
-          set -euo pipefail
-          count=0
-          while IFS= read -r -d '' testfile; do
-            echo "::group::$testfile"
-            node "$testfile"
-            echo "::endgroup::"
-            count=$((count+1))
-          done < <(find "新システム開発/src" -maxdepth 1 -name '*.test.js' -print0 | sort -z)
-          test "$count" -gt 0
-          echo "Executed $count source JavaScript test files."
-      - name: Run npm test suite
-        run: npm test
-        working-directory: 新システム開発
       - name: Run every integration Python test
         run: python -m unittest discover -s "新システム開発/integration" -p 'test_*.py' -v
+      - name: Run all JavaScript tests with unified TAP accounting
+        run: npm test
+        working-directory: 新システム開発
