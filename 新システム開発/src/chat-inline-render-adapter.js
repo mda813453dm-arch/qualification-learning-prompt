@@ -3,12 +3,27 @@
  * ordered contentBlocks を決定論的に変換する。
  * AIによる並べ替え・補完・代替は禁止。
  */
-// Only the host chat's proven /mnt/data sandbox is eligible for inline display.
-// Work Mode scratch paths are not addressable by the iOS conversation renderer.
+// Local sandbox refs work only in the originating ChatGPT conversation.
+// Cross-chat / cross-provider MCP images must use an absolute HTTPS PNG URL.
 const isSandboxPng=ref=>{
  const path=String(ref||'').split('?')[0].toLowerCase();
  return path.startsWith('sandbox:/mnt/data/')&&path.endsWith('.png');
 };
+const isRemotePng=ref=>{
+ try{
+  const u=new URL(String(ref||''));
+  if(u.protocol!=='https:'||u.username||u.password||u.port&&u.port!=='443'||u.hash||!u.pathname.toLowerCase().endsWith('.png'))return false;
+  const h=u.hostname.toLowerCase();
+  if(h==='localhost'||h.endsWith('.localhost')||h.endsWith('.local')||h.endsWith('.internal'))return false;
+  if(/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(h)){
+   const p=h.split('.').map(Number);
+   if(p.some(x=>x>255)||p[0]===0||p[0]===10||p[0]===127||p[0]>=224||p[0]===169&&p[1]===254||p[0]===172&&p[1]>=16&&p[1]<=31||p[0]===192&&p[1]===168)return false;
+  }
+  if(h==='::1'||h==='[::1]'||h.startsWith('fc')||h.startsWith('fd')||h.startsWith('fe80:'))return false;
+  return true;
+ }catch{return false;}
+};
+const isUsablePng=ref=>isSandboxPng(ref)||isRemotePng(ref);
 
 export function compileChatInlinePayload(question, assetRegistry){
  const fail=(reason,detail=null)=>Object.freeze({status:'blocked',reason,detail});
@@ -72,7 +87,7 @@ export function verifyChatInlineReceipt(payload,receipt){
 /**
  * 完成済みpayloadを、通常のChatGPTメッセージ本文へ直列化する。
  * 図表assetはテキストラベルへ置換せず、検証済みsandbox PNGの
- * Markdown image linkをcontentBlocksと同じ順序で埋め込む。
+ * Markdown image linkをcontentBlocksと同じ順序で埋め込む。\n * 他AI・別チャットから利用するMCP画像はHTTPS PNG参照を保持する。
  */
 export function renderChatInlineMarkdown(payload){
  const fail=reason=>Object.freeze({status:'blocked',reason});
@@ -93,7 +108,7 @@ export function renderChatInlineMarkdown(payload){
    if(typeof node.value!=='string')return fail('INLINE_IMAGE_REFERENCE_MISSING');
    const queryAt=node.value.indexOf('?');
    const imagePath=queryAt<0?node.value:node.value.slice(0,queryAt);
-   if(!isSandboxPng(node.value))
+   if(!isUsablePng(node.value))
     return fail('INLINE_IMAGE_REFERENCE_INVALID');
    // Conversation/message IDs are assigned by the host chat UI and cannot be
    // known by the assistant before it emits this answer. Plain sandbox PNG
