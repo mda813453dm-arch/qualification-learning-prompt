@@ -69,7 +69,7 @@ export function createDeterministicSession(initial={}){
       if(!Number.isInteger(n)||!Number.isInteger(a))return reject('ANSWER_BINDING_INVALID');
       const eligible=state.question?.kind!=='review'&&state.question?.topicId&&state.question.topicId===state.currentTopicId;
       const streak=eligible?(n===a?0:state.consecutiveWrong+1):0;
-      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:streak,reviewRequired:eligible&&n!==a&&streak>=2});
+      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:streak,reviewRequired:eligible&&n!==a&&streak>=3});
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
