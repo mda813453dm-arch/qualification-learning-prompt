@@ -119,4 +119,4 @@
   いずれの形式でも最低限、`qualificationId, studyUnitId, studyPlanSha256, year, section, questionId, registryKey, questionPdfUrl, answerPdfUrl, questionPdfSha256, answerPdfSha256` を扱い、公式pin照合と承認済み計画照合を省略しない。形式は未選択のため候補台帳ファイルを新設していない。
 - **既存35件の結果**：最新に記録済みのRun [38370990863](https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/38370990863) はhead `059d1794406ba81f12c6e7b27e43ddbf66aad5be`、JS 224件（184 PASS／35 FAIL／5 SKIP）、35件すべて `PIPELINE_CONFIGURATION_REQUIRED`。現在のbranchは当該headより監査記録1ファイルだけaheadであることをGitHub compareで確認した。最新run後に本番コード・テストは変わっていないため、これは同一コードのテスト結果だが、監査記録だけの新headに対応する新runではない。35件は本番同等データ依存を供給して実行した結果ではなく、依存未設定による失敗。期待値変更・安全ゲート緩和・スタブ化は行っていない。
 - **宅建実データ追加後のCI**：宅建PDF pin/hashと単元別候補行が未確定のため、本番候補sourceへの追加は未実施。したがって今回、新しいCI実行は発生していない。Run 38370990863を現在headのrunとして扱わない。
-- **記録更新によるhead**：この追記を含むコミット後のheadおよびCI runの有無は、書込結果を確認して追記する。総合判定は引き続き **未合格**。実ChatGPTでの反復試験は0回。
+- **記録更新によるhead**：この追記を含む監査記録コミットは `3414672acc97450ba76a8ce19bec34f2c2b22ecf`。比較上、`059d1794406ba81f12c6e7b27e43ddbf66aad5be` から監査記録1ファイルのみ追加変更。workflowのコードpath filter対象外なので新規CI runなし。総合判定は引き続き **未合格**。実ChatGPTでの反復試験は0回。
