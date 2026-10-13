@@ -7,7 +7,9 @@ const blocked = reason => Object.freeze({ status: "unavailable", reason });
 
 /**
  * Resolve only candidate rows supplied by the already-approved official
- * candidate source. Shared official source rows may omit per-user plan hashes;\n * the approved study plan is checked separately at selection time.\n * This module does not create or extend a candidate ledger.
+ * candidate source. Shared official source rows may omit per-user plan hashes;
+ * the approved study plan is checked separately at selection time.
+ * This module does not create or extend a candidate ledger.
  */
 export function createResolveCandidates({
   loadApprovedStudyPlan,
