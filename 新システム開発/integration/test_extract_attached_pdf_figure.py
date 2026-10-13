@@ -23,8 +23,6 @@ class AttachedPdfFigureTests(unittest.TestCase):
         self.sha = hashlib.sha256(self.pdf.read_bytes()).hexdigest()
         self.kwargs = dict(
             expected_pdf_sha256=self.sha,
-            attachment_id="attachment-from-this-chat",
-            chat_id="chat-current",
             question_id="land-surveyor:2025:morning:2",
             page_number=1,
             crop={"x0": 80, "y0": 140, "x1": 470, "y1": 560},
@@ -34,17 +32,19 @@ class AttachedPdfFigureTests(unittest.TestCase):
     def tearDown(self):
         self.temp.cleanup()
 
-    def test_fresh_png_is_cropped_from_current_attached_pdf(self):
+    def test_real_pdf_bytes_produce_fresh_png_and_execution_receipt_without_chat_ids(self):
         first = extract_attached_pdf_figure(self.pdf, **self.kwargs)
         second = extract_attached_pdf_figure(self.pdf, **self.kwargs)
         self.assertEqual(first["status"], "ready")
         self.assertEqual(first["mediaType"], "image/png")
         self.assertTrue(Path(first["imagePath"]).read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
         self.assertNotEqual(first["imagePath"], second["imagePath"])
-        self.assertEqual(first["generatedInChatId"], "chat-current")
-        self.assertEqual(first["derivedFromPdf"]["fileId"], "attachment-from-this-chat")
+        self.assertNotEqual(first["operationId"], second["operationId"])
+        self.assertEqual(first["sourcePdf"], {"mediaType": "application/pdf", "sha256": self.sha})
         self.assertEqual(first["derivedFromPdf"]["pdfSha256"], self.sha)
         self.assertEqual(first["derivedFromPdf"]["page"], 1)
+        self.assertEqual(first["derivedFromPdf"]["operationId"], first["operationId"])
+        self.assertEqual(first["derivedFromPdf"]["imageSha256"], first["imageSha256"])
         self.assertTrue(first["derivedFromPdf"]["extractionVerified"])
         self.assertRegex(first["imageSha256"], r"^[a-f0-9]{64}$")
 
@@ -52,9 +52,9 @@ class AttachedPdfFigureTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ATTACHED_PDF_HASH_MISMATCH"):
             extract_attached_pdf_figure(self.pdf, **{**self.kwargs, "expected_pdf_sha256": "0" * 64})
 
-    def test_missing_current_chat_attachment_binding_fails_closed(self):
-        with self.assertRaisesRegex(ValueError, "CURRENT_CHAT_ATTACHMENT_BINDING_REQUIRED"):
-            extract_attached_pdf_figure(self.pdf, **{**self.kwargs, "chat_id": ""})
+    def test_question_id_required(self):
+        with self.assertRaisesRegex(ValueError, "QUESTION_ID_REQUIRED"):
+            extract_attached_pdf_figure(self.pdf, **{**self.kwargs, "question_id": ""})
 
     def test_crop_outside_page_fails_closed(self):
         with self.assertRaisesRegex(ValueError, "CROP_OUTSIDE_PAGE_OR_EMPTY"):
