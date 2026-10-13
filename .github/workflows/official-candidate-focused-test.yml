@@ -38,6 +38,7 @@ jobs:
         run: |
           node src/deterministic-session-machine.test.js
           node src/master-policy-engine.test.js
+          node src/review-scheduler.test.js
       - name: Run six official candidate dependency tests
         working-directory: 新システム開発
         run: node --test src/official-runtime-dependencies.test.js src/pinned-on-demand-candidates.test.js
