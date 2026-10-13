@@ -54,13 +54,15 @@ def main():
     choices = [chunk[m.end():markers[i+1].start() if i+1 < 4 else len(chunk)].strip()
                for i,m in enumerate(markers)] if choices_ok else []
     # Page-level drawings are not proof that this question contains a figure.
+    # Never mark a packet ready without question-level visual and answer-key verification.
     print(json.dumps({
       "status": "text_extracted_visuals_unverified" if choices_ok else "needs_manual_review",
       "questionNumber": number, "pdfPage": index+1, "pdfSha256": digest,
-      "stem": stem, "choices": choices, "answerNumber": ANSWERS[number-1],
+      "stem": stem, "choices": choices, "answerNumber": None, "unverifiedAnswerHint": ANSWERS[number-1],
       "answerEvidencePdfPage": 30, "rasterImagesOnPage": images,
       "vectorDrawingsOnPage": drawings, "choicesParsed": choices_ok,
-      "note": "Page-level drawings do not establish question-level figures. Figure absence/presence and answer-key source cell remain unverified; do not mark display-ready."
+      "answerVerified": False, "displayReady": False,
+      "note": "Answer hint is not grading authority. Source-cell verification and question-level visual review required before display."
     }, ensure_ascii=False, indent=2))
 if __name__ == "__main__":
     main()
