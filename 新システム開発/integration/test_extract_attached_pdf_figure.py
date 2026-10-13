@@ -40,7 +40,7 @@ class AttachedPdfFigureTests(unittest.TestCase):
         self.assertTrue(Path(first["imagePath"]).read_bytes().startswith(b"\x89PNG\r\n\x1a\n"))
         self.assertNotEqual(first["imagePath"], second["imagePath"])
         self.assertNotEqual(first["operationId"], second["operationId"])
-        self.assertEqual(first["sourcePdf"], {"mediaType": "application/pdf", "sha256": self.sha, "operationId": first["operationId"]})
+        self.assertEqual(first["sourcePdf"], {"status": "ready", "mediaType": "application/pdf", "sha256": self.sha, "operationId": first["operationId"]})
         self.assertEqual(first["derivedFromPdf"]["pdfSha256"], self.sha)
         self.assertEqual(first["derivedFromPdf"]["page"], 1)
         self.assertEqual(first["derivedFromPdf"]["operationId"], first["operationId"])
