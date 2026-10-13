@@ -59,3 +59,9 @@ ok(partialContext.reason==='INLINE_IMAGE_CONTEXT_INVALID','incomplete optional h
 const placeholderContext=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:plainRef+'?_chatgptios_conversationID=この会話のID&_chatgptios_messageID=この回答のID'}:n)});
 ok(placeholderContext.reason==='INLINE_IMAGE_CONTEXT_INVALID','invented context placeholders are rejected');
 console.log('PASS chat-inline-render-adapter markdown serialization and iOS figure embedding');
+
+const workspaceRef='sandbox:/workspace/scratch/171c6a61e484/uploaded-q2.png';
+const workspaceResult=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:workspaceRef}:n)});
+ok(workspaceResult.status==='ready'&&workspaceResult.markdown.includes(workspaceRef),
+ 'a PNG generated in the current Work-mode sandbox can be embedded using its real path');
+console.log('PASS current-workspace sandbox PNG path');
