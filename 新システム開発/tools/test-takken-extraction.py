@@ -40,10 +40,10 @@ print("tampered_pdf_rejected: PASS")
 import fitz, re
 with fitz.open(pdf) as official:
     answer_page = official[29].get_text(sort=True)
-    normalized = re.sub(r"\\s+", " ", answer_page)
+    normalized = re.sub(r"\s+", " ", answer_page)
     for q, expected in ((29, 2), (30, 3)):
         # Both entries are adjacent in the official answer row, following questions 21-30.
-        row = re.search(r"問\\s*２１.*?問\\s*３０\\s+([1-4](?:\\s+[1-4]){9})", normalized)
+        row = re.search(r"問\s*２１.*?問\s*３０\s+([1-4](?:\s+[1-4]){9})", normalized)
         if not row:
             raise AssertionError("OFFICIAL_ANSWER_ROW_NOT_FOUND")
         cells = [int(x) for x in row.group(1).split()]
