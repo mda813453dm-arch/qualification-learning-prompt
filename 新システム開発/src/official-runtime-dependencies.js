@@ -19,12 +19,12 @@ export function createResolveCandidates({
   if (typeof loadApprovedStudyPlan !== "function" || typeof loadOfficialCandidateRecords !== "function")
     throw new Error("OFFICIAL_CANDIDATE_SOURCE_REQUIRED");
 
-  return async function resolveCandidates({ qualificationId, studyUnitId, studyPlanSha256, yearFixed = null } = {}) {
+  return async function resolveCandidates({ qualificationId, studyUnitId, studyPlanSha256, yearFixed = null, questionNumber = null } = {}) {
     if (!qualificationId || !studyUnitId || !HASH.test(studyPlanSha256 || "")) return blocked("STUDY_PLAN_BINDING_REQUIRED");
     let plan, records;
     try {
       plan = await loadApprovedStudyPlan({ qualificationId, studyUnitId, studyPlanSha256 });
-      records = await loadOfficialCandidateRecords({ qualificationId, studyUnitId });
+      records = await loadOfficialCandidateRecords({ qualificationId, studyUnitId, questionNumber, year: yearFixed ?? 2025 });
     } catch {
       return blocked("OFFICIAL_CANDIDATE_SOURCE_UNAVAILABLE");
     }
