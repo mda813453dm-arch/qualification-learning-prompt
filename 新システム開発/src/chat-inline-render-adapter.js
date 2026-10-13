@@ -88,10 +88,18 @@ export function renderChatInlineMarkdown(payload){
    const imagePath=queryAt<0?node.value:node.value.slice(0,queryAt);
    if(!imagePath.startsWith('sandbox:/mnt/data/')||!imagePath.toLowerCase().endsWith('.png'))
     return fail('INLINE_IMAGE_REFERENCE_INVALID');
-   if(queryAt<0)return fail('INLINE_IMAGE_CONTEXT_MISSING');
-   const params=new URLSearchParams(node.value.slice(queryAt+1));
-   if(!params.get('_chatgptios_conversationID')||!params.get('_chatgptios_messageID'))
-    return fail('INLINE_IMAGE_CONTEXT_MISSING');
+   // Conversation/message IDs are assigned by the host chat UI and cannot be
+   // known by the assistant before it emits this answer. Plain sandbox PNG
+   // references are valid; if either optional context parameter is supplied,
+   // require the complete pair and reject templates/placeholders.
+   if(queryAt>=0){
+    const params=new URLSearchParams(node.value.slice(queryAt+1));
+    const conversationId=params.get('_chatgptios_conversationID');
+    const messageId=params.get('_chatgptios_messageID');
+    if(Boolean(conversationId)!==Boolean(messageId)||
+       [conversationId,messageId].some(v=>v&&/(この会話|この回答|実際の|placeholder|undefined)/i.test(v)))
+     return fail('INLINE_IMAGE_CONTEXT_INVALID');
+   }
    const alt=node.role==='official_figure'?'公式図':'公式表';
    parts.push(`![${alt}](${node.value})`);
   }else if(node.role==='choices'){
