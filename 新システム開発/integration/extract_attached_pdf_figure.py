@@ -77,7 +77,7 @@ def extract_attached_pdf_figure(
         "imageSha256": image_sha256,
         "width": pix.width,
         "height": pix.height,
-        "sourcePdf": {"mediaType": "application/pdf", "sha256": digest, "operationId": operation_id},
+        "sourcePdf": {"status": "ready", "mediaType": "application/pdf", "sha256": digest, "operationId": operation_id},
         "derivedFromPdf": {
             "pdfSha256": digest,
             "page": page_number,
