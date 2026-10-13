@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto';
 import {createDeterministicSession} from './deterministic-session-machine.js';
 import {compileChatInlinePayload,verifyChatInlineReceipt} from './chat-inline-render-adapter.js';
 import {compileLegalBasisExplanation,resolveExplanationPolicy} from './legal-basis-explanation.js';
@@ -16,6 +17,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
     !/^[a-f0-9]{64}$/.test(studyPlan.sha256||'')||!Array.isArray(studyPlan.itemIds)||studyPlan.itemIds.length===0)
   throw new Error('APPROVED_STUDY_PLAN_REQUIRED');
  let payload=null,prefetchedNext=null,currentExplanationPolicy='general';
+ const displayChecks=[];
  let learningSequence=null,currentLearningContext=null,explanationDecision=null,pendingClarification=null;
  const explanationPreferences=options.explanationPreferences||{};
  const explanationPreference=itemId=>explanationPreferences[itemId]||options.explanationPreference||'ask_each';
@@ -70,9 +72,17 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    payload=candidatePayload;currentExplanationPolicy=policy;currentLearningContext=context;
    return payload;
   },
+  displayAudit(){return Object.freeze(displayChecks.slice());},
   rendered(receipt){
    if(!payload)throw new Error('PAYLOAD_NOT_PREPARED');
    const v=verifyChatInlineReceipt(payload,receipt);
+   displayChecks.push(Object.freeze({
+    questionId:payload.questionId,packetHash:payload.packetHash,status:v.ok?'PASS':'FAIL',reason:v.ok?null:v.reason,
+    expectedMarkdownSha256:createHash('sha256').update(payload.markdown,'utf8').digest('hex'),
+    observedMarkdownSha256:typeof receipt?.markdown==='string'?createHash('sha256').update(receipt.markdown,'utf8').digest('hex'):null,
+    expectedSignature:payload.signature,observedSignature:receipt?.signature??null,
+    expectedNodeCount:payload.nodes.length,observedNodeCount:receipt?.nodeCount??null
+   }));
    if(!v.ok)throw new Error(v.reason);
    must(machine.dispatch({type:'COMMIT_RENDER',receipt}));
    must(machine.dispatch({type:'OPEN_ANSWER'}));
