@@ -3,7 +3,7 @@
  * ordered contentBlocks を決定論的に変換する。
  * AIによる並べ替え・補完・代替は禁止。
  */
-export function compileChatInlinePayload(question, assetRegistry){
+const isSandboxPng=ref=>/^sandbox:(?:\\/mnt\\/data|\\/workspace\\/scratch)\\/.+\\.png$/i.test(String(ref||'').split('?')[0]);\n\nexport function compileChatInlinePayload(question, assetRegistry){
  const fail=(reason,detail=null)=>Object.freeze({status:'blocked',reason,detail});
  if(!question||question.status!=='ready'||!Array.isArray(question.contentBlocks))return fail('QUESTION_NOT_READY');
  if(!assetRegistry||typeof assetRegistry.resolve!=='function')return fail('ASSET_REGISTRY_REQUIRED');
@@ -86,7 +86,7 @@ export function renderChatInlineMarkdown(payload){
    if(typeof node.value!=='string')return fail('INLINE_IMAGE_REFERENCE_MISSING');
    const queryAt=node.value.indexOf('?');
    const imagePath=queryAt<0?node.value:node.value.slice(0,queryAt);
-   if(!imagePath.startsWith('sandbox:/mnt/data/')||!imagePath.toLowerCase().endsWith('.png'))
+   if(!isSandboxPng(node.value))
     return fail('INLINE_IMAGE_REFERENCE_INVALID');
    // Conversation/message IDs are assigned by the host chat UI and cannot be
    // known by the assistant before it emits this answer. Plain sandbox PNG
