@@ -22,7 +22,7 @@
 - APIテストはテスト専用fake flow・session adapterを用いたAPI境界検査であり、本番依存の実装やChatGPT/Claude実接続の証拠ではない。
 
 - 35件は9ファイル（guarded-practice-controller、legacy-pipeline-factory、official-entry-span-integration、official-practice-controller、official-practice-entry、official-registry-identity、official-retrieval-pipeline、pdf-bound-practice-entry、provenance-checked-pipeline）にあり、全て `PIPELINE_CONFIGURATION_REQUIRED`。
-- `resolveCandidates` と `buildInlinePayload` は本番実装が未存在。`src/official-retrieval-pipeline.js` 26–43行でサーバー所有の関数依存として受け取り、未供給なら設定エラーにする。公開入口群からこれらの依存を転送する配線は追加済みだが、それ自体は関数本体・候補台帳・payload builderの実装ではない。テスト内のスタブは `src/official-retrieval-pipeline.test.js` 11行・34行等だけで、本番依存として数えない。35件は未解消であり、期待値変更・安全ゲート緩和でPASSにしていない。
+- `resolveCandidates` と `buildInlinePayload` の本番境界を `src/official-runtime-dependencies.js` に追加した。候補解決は注入された承認済み計画と既存公式候補ソースを照合し、現行 `official-pdf-pins.js` のPDF URL・SHA-256一致を必須にする。表示payloadは既存Bundle compilerを呼び、完全なordered payloadとHTTPS PNG参照を検査し、PNG実体を再取得してMIME・PNG signature・SHA-256を照合する。候補ソースとcompilerの運用実体はまだ設定されておらず、現行固定台帳にも単元別候補対応行がないため、この関数群だけでは候補を返さずfail closedとなる。
 - question-bundle-gateの異常系9件は、fixtureに必須の `studyUnitId` と承認済み計画hashがなかったため、先行して `STUDY_UNIT_MISMATCH` になっていた。fixtureに正しいbindingを追加し、それぞれの検査まで到達するよう修正済み。
 - 以前のローカル報告は209件、168 PASS／36 FAIL／5 SKIPで、失敗の1件はpdfjs-dist不足という報告だった。今回のCIはAPIテスト7件を含め216件。現時点でこの環境では、最新ブランチ全体のローカル一括実行はできていない。
 - 過去のCI198件と209件の差は、source test 11件を統合した実行範囲の差として整理済み。現行CI件数はAPI test追加後の216件。
@@ -60,3 +60,35 @@
 3. 本番ランタイムを接続し、プログラム未呼出しでは採点・解説・次問へ進めないことをエンドツーエンドで確認する。
 3. 接続とデータ準備後に、問29回答→公式採点→解説→問30完全表示をChatGPTで複数回実行する。各回の日時、呼出ログ、プログラム出力、AI表示本文、差分、PASS/FAILを記録する。
 4. 実機反復完了まで総合合格・フェーズ完了にしない。
+
+
+## 2026-10-13 承認作業の実装差分
+- 対象ブランチの作業開始時HEAD：`920dd4b30352a4624592dfcd46cf2ca3910bface`。変更先は `ai-learning-system` のみ。
+- 本番コード `src/official-runtime-dependencies.js`：候補を承認済み計画hash・資格・単元・既存PDF pinへ結び付け、順序・重複・固定年度を検証する `createResolveCandidates` を追加。該当する公式候補データがない場合は `SAME_UNIT_OFFICIAL_CANDIDATES_NOT_FOUND` で停止する。表示は既存Bundle compilerの出力を完全表示payloadとして検証し、HTTPS PNG実体を取得してMIME・PNG signature・SHA-256を照合する `createBuildInlinePayload` を追加した。
+- 本番コード `src/learning-runtime-server.js` と `package.json`：環境変数 `LEARNING_RUNTIME_ADAPTER_MODULE`、`LEARNING_RUNTIME_HOST`、`PORT` から認証・セッション保存・初問生成・次問取得を提供する外部adapter moduleをロードするcomposition rootと起動scriptを追加。必須設定またはadapterが欠けると起動を拒否する。認証provider、host、session backend、PDF取込adapterの実配備設定は未提供のため、本番URLはまだない。
+- テスト専用 `src/official-runtime-dependencies.test.js`：pin一致、候補なし、hash差し替え、PNG実体hash不一致、未完payloadを確認。 `src/learning-runtime-server.test.js`：未設定時停止と外部adapter読込を確認。 `src/cross-ai-learning-api-boundary.test.js`：状態機械が回答・解説・次問を許可しないAPI要求がすべて拒否されることを確認。
+- ローカルで実行した4テストファイルはPASS（4 file-level pass、0 fail）。これは既存全件CIや本番候補台帳の実装確認を代替しない。既存35件は期待値変更やtest stub化をしていない。
+- 実装時に現行 `official-pdf-pins.js` と候補関連ファイル一覧を再確認した。pinは土地家屋調査士2025午後の問題・正答PDF URL/hashだけを持ち、同一単元の問題ID候補台帳は存在しない。したがって候補ソースを外部adapterで設定し、既存の承認済み公式データを入力するまで、35件は本番と同じ依存でPASSと確認できない。これは記録・期待値変更・ゲート緩和では解決しない。
+- 81番記録更新を含む新HEADへpush後、workflow run ID・件数・失敗内訳を追記する。実ChatGPT反復試験は0回のままとし、総合未合格を維持する。
+
+## 水野さん決定待ち事項（選択肢・特徴のみ。推奨なし）
+### A. 公開hostと認証
+1. 既に保有するサーバー／ドメインに配置し、購入者ごとのBearer tokenで認証する。新規サービス費用を避けられる可能性がある一方、購入者へのtoken配布・失効管理が必要で、既存hostの保守責任を負う。
+2. 無料枠のあるhostに配置し、購入者別tokenで認証する。初期費用なしで試せる場合がある一方、無料枠上限・休止・仕様変更・可用性制約があり、利用規約や最新条件の確認が必要。
+3. 既存記事の購入者共有リンクを共通Bearer secretとして使う。購入者ごとの管理を省きやすい一方、リンク転送で第三者も使える可能性があり、流出時は全購入者に影響する。
+4. OAuth/OIDCで利用者を認証する。個人単位の認証・失効がしやすい一方、認証provider設定、client登録、アカウント連携が必要。
+### B. セッション保存
+1. プロセスメモリ（無料・追加DB不要）。実装が簡単な一方、再起動で消え、複数server instance間で共有できない。
+2. host上のSQLiteファイル（追加DB料金なし）。再起動後も保持できる一方、backup・ディスク永続化・同時書込・複数instance運用を管理する必要がある。
+3. 既存の無料枠付きDBを利用する。host外へのbackupや複数instance共有が可能な場合がある一方、quota・free tier条件・vendor依存・将来の課金条件がある。
+### C. AIクライアントから現会話PDFを渡す方法
+1. AI clientのAPI toolからPDF multipart uploadを直接送る。会話内の添付を一段で渡せる一方、各clientのtool仕様・file size・binary forwarding対応が異なる。
+2. 購入者が共通uploadページへPDFをアップロードし、返されたfile IDをAI clientからAPIへ渡す。client差を減らせる一方、会話から別ページへ移動する操作とfile ID管理が増える。
+3. serverが公式公開URLからPDFを直接取得する。利用者のuploadが不要な一方、公式サイトの403・network制限・URL変更で停止し、会話に添付されたPDFを使わない。
+4. AI clientがPDF bytesをbase64化しAPIへ送る。binary tool非対応のclientでも実装できる場合がある一方、payloadが大きくなり、転送量・request limit・変換処理の負荷が増える。
+### D. 問29・問30の固定試験データ
+1. 宅地建物取引士の同一単元から選ぶ。資格・単元・年度・問番号、公式問題PDF・正答資料の入力元を指定する必要がある。法律問題の根拠付き解説フローを試せる一方、今回の既存pinはこの対象の取得情報を含まない。
+2. 測量士または測量士補の同一単元から選ぶ。資格・単元・年度・問番号、公式問題PDF・正答資料を指定する必要がある。図表を含む実問題で確認できる一方、図表assetの公開・hash登録と選択肢・正答の個別照合が必要。
+3. 土地家屋調査士の同一単元から選ぶ。資格・単元・年度・午前午後・問番号と公式問題・正答の入力元を指定する必要がある。既存の実機確認経緯に続けられる一方、現行pinは2025午後のみで、指定する問29・30との一致を別途確認する必要がある。
+4. 別の資格・単元を指定する。公式資料の取得可能性・同一単元候補・表示素材が揃うかを確認する必要がある。
+いずれの案でも、問29・30の回答値、各回答後の解説要否選択、解説中の質問を入れるか、次問出題までの固定手順を水野さんが指定する。未指定の部分は試験手順に組み込まない。

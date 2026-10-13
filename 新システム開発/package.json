@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test src/*.test.js tests/*.test.js"
+    "test": "node --test src/*.test.js tests/*.test.js",
+    "start": "node src/learning-runtime-server.js"
   },
   "engines": {
     "node": ">=20"
