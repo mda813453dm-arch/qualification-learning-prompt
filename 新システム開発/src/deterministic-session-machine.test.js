@@ -1,8 +1,8 @@
 import {createDeterministicSession,rejectDirectMutation} from './deterministic-session-machine.js';
 
 function ok(x,m){if(!x)throw new Error(m)}
-const q1=Object.freeze({status:'ready',number:2});
-const q2=Object.freeze({status:'ready',number:3});
+const q1=Object.freeze({status:'ready',number:2,topicId:'topic-a'});
+const q2=Object.freeze({status:'ready',number:3,topicId:'topic-a'});
 const packet=Object.freeze({status:'ready',packetHash:'p2',answer:Object.freeze({value:4})});
 const s=createDeterministicSession();
 
@@ -57,5 +57,18 @@ for(const [i,n] of [29,30,31].entries()){
 }
 ok(review.state().phase==='REVIEW_REQUIRED','three same-topic wrongs trigger review');
 ok(!review.dispatch({type:'FIX_NEXT',nextQuestionNumber:32}).ok,'normal next blocked');
-ok(review.dispatch({type:'PIN_REVIEW_QUESTION',question:{status:'ready',kind:'review',number:900,topicId:topic}}).ok,'review accepted');
+ok(review.dispatch({type:'PIN_REVIEW_QUESTION',question:{status:'ready',kind:'review',number:900,topicId:topic,reviewChainId:'chain-1'}}).ok,'review accepted');
 console.log('PASS 3 consecutive wrong same-topic review gate');
+
+const reviewPacket={status:'ready',packetHash:'review900',answer:{value:2}};
+ok(review.dispatch({type:'PIN_ASSETS',assets:[]}).ok,'review assets');
+ok(review.dispatch({type:'VALIDATE_PACKET',packet:reviewPacket}).ok,'review packet');
+ok(review.dispatch({type:'COMMIT_RENDER',receipt:{complete:true,packetHash:'review900'}}).ok,'review render');
+ok(review.dispatch({type:'OPEN_ANSWER'}).ok,'review wait');
+ok(review.dispatch({type:'SUBMIT_ANSWER',value:1}).ok,'review wrong');
+ok(review.state().consecutiveWrong===3,'review wrong does not increment practice');
+ok(review.state().reviewWrong===1,'review wrong increments review only');
+ok(review.dispatch({type:'COMMIT_EXPLANATION',packetHash:'review900',explanation:'解説'}).ok,'review explanation');
+ok(review.state().phase==='REVIEW_REQUIRED','another review required');
+ok(!review.dispatch({type:'FIX_NEXT',nextQuestionNumber:32}).ok,'cannot bypass review');
+console.log('PASS independent practice/review counters');
