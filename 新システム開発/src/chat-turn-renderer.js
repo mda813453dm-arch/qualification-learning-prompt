@@ -1,6 +1,6 @@
 /**
  * ChatGPT通常会話へ渡す唯一の回答本文を構築する。
- * 図は当該チャットに添付された公式PDFから抽出したPNGのみを使う。
+ * 図はこの処理実行へ渡された公式PDFから抽出したPNGのみを使う。
  */
 import {compileChatInlinePayload,renderChatInlineMarkdown} from './chat-inline-render-adapter.js';
 import {verifyAttachedPdfFigureSource} from './attached-pdf-figure-gate.js';
@@ -17,10 +17,10 @@ export function buildChatTurn(question,assetRegistry,{sourcePdfAttachment}={}){
 
 export function buildChatTurnFromPayload(payload,{sourcePdfAttachment=null,source=null}={}){
  const hasFigure=(payload?.nodes||[]).some(n=>n.role==='official_figure');
- if(hasFigure&&(!source?.ok||!sourcePdfAttachment))return blocked('CURRENT_CHAT_OFFICIAL_PDF_REQUIRED');
+ if(hasFigure&&(!source?.ok||!sourcePdfAttachment))return blocked('PDF_EXECUTION_RECEIPT_REQUIRED');
  const rendered=renderChatInlineMarkdown(payload);
  if(rendered.status!=='ready')return rendered;
- // messageBody is the literal content for one ordinary ChatGPT assistant response.
+ // This exact string is the complete assistant response body to send/render.
  return Object.freeze({
   status:'ready',
   singleTurn:true,
@@ -29,12 +29,15 @@ export function buildChatTurnFromPayload(payload,{sourcePdfAttachment=null,sourc
   messageBody:rendered.markdown,
   markdown:rendered.markdown,
   nodes:payload.nodes,
-  figureSource:hasFigure?Object.freeze({fileId:sourcePdfAttachment.fileId,pdfSha256:sourcePdfAttachment.sha256,
-   chatId:sourcePdfAttachment.chatId,figureCount:source.figureCount}):null
+  figureSource:hasFigure?Object.freeze({
+   pdfSha256:sourcePdfAttachment.sha256,
+   operationId:sourcePdfAttachment.operationId,
+   figureCount:source.figureCount
+  }):null
  });
 }
 
-/** Prevent callers from treating a heading, placeholder, cached image, or file-generation event as display. */
+/** Prevent a placeholder, heading-only answer, or omitted image from counting as rendered. */
 export function verifyChatTurn(turn){
  if(!turn||turn.status!=='ready'||turn.singleTurn!==true)return {ok:false,reason:'NOT_SINGLE_TURN'};
  if(typeof turn.messageBody!=='string'||!turn.messageBody.trim()||turn.messageBody!==turn.markdown)
@@ -47,10 +50,9 @@ export function verifyChatTurn(turn){
    return {ok:false,reason:'INLINE_IMAGE_NOT_IN_MESSAGE_BODY'};
  }
  if(imageNodes.some(n=>n.role==='official_figure')&&
-    (!turn.figureSource||typeof turn.figureSource.fileId!=='string'||
-     !/^[a-f0-9]{64}$/.test(turn.figureSource.pdfSha256||'')||
-     typeof turn.figureSource.chatId!=='string'||turn.figureSource.figureCount<1))
-  return {ok:false,reason:'CURRENT_CHAT_PDF_FIGURE_PROVENANCE_MISSING'};
+    (!turn.figureSource||!/^[a-f0-9]{64}$/.test(turn.figureSource.pdfSha256||'')||
+     typeof turn.figureSource.operationId!=='string'||turn.figureSource.figureCount<1))
+  return {ok:false,reason:'PDF_FIGURE_PROVENANCE_MISSING'};
  if((turn.nodes||[]).some(n=>n.type==='native_image'))return {ok:false,reason:'ALTERNATE_IMAGE_PATH_FORBIDDEN'};
  if(!(turn.nodes||[]).some(n=>n.role==='choices'))return {ok:false,reason:'CHOICES_MISSING'};
  return {ok:true,questionId:turn.questionId,packetHash:turn.packetHash,messageBody:turn.messageBody};
