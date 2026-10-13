@@ -1,39 +1,31 @@
 #!/usr/bin/env python3
-"""Build a standalone mobile HTML test from verified, on-demand extracted questions.
-This is a UI prototype, not a ChatGPT-native rendering integration.
-"""
-import hashlib, html, json, os, subprocess, sys
+"""Build static-first mobile screen test; works even in iOS HTML previews without JS."""
+import html, json, os, subprocess, sys
 from pathlib import Path
-pdf = Path(os.environ["RUNNER_TEMP"]) / "takken-2025-verified.pdf"
-out = Path(os.environ["RUNNER_TEMP"]) / "takken-screen-test.html"
-records = []
-for n in (29, 30):
-    p = subprocess.run([sys.executable, "tools/extract-takken-on-demand.py", str(pdf), str(n)], text=True, capture_output=True, check=True)
-    d = json.loads(p.stdout)
-    if not(d["questionNumber"] == n and d["choicesParsed"] is True and len(d["choices"]) == 4 and d["stem"]):
+pdf=Path(os.environ["RUNNER_TEMP"])/"takken-2025-verified.pdf"
+out=Path(os.environ["RUNNER_TEMP"])/"takken-screen-test.html"
+records=[]
+for n in (29,30):
+    p=subprocess.run([sys.executable,"tools/extract-takken-on-demand.py",str(pdf),str(n)],capture_output=True,text=True,check=True)
+    d=json.loads(p.stdout)
+    if not (d["questionNumber"]==n and d["choicesParsed"] is True and len(d["choices"])==4 and d["stem"] and all(d["choices"])):
         raise SystemExit("QUESTION_EXTRACTION_INCOMPLETE")
-    records.append({"number":n, "stem":d["stem"], "choices":d["choices"], "page":d["pdfPage"]})
-payload = json.dumps(records, ensure_ascii=False).replace("<", "\\u003c")
-page = """<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>宅建2025 画面試験（抽出表示のみ）</title>
-<style>body{font-family:system-ui,sans-serif;line-height:1.75;max-width:760px;margin:auto;padding:20px;background:#fafafa;color:#161616}main{background:white;padding:18px;border-radius:14px}button{display:block;width:100%;padding:14px;margin:12px 0;border:1px solid #aaa;border-radius:10px;background:#fff;text-align:left;font-size:16px}button:focus{outline:3px solid #3865a8}.muted{color:#666}#stem{white-space:pre-wrap}</style>
-<main><h2>宅建2025年度・公式問題表示テスト</h2><p class="muted">公式PDF SHA-256照合済み。図表の有無・正答欄の照合は未完了。これは出題画面の表示・選択・次問遷移のみのテストです。採点機能は有効化していません。</p><h3 id="title"></h3><div id="stem"></div><div id="choices"></div><p id="selection" aria-live="polite"></p><button id="next" disabled>次の問題へ</button><p id="status" class="muted"></p></main>
-<script>
-const questions=__PAYLOAD__;
-let index=0,selected=null;
-const el=id=>document.getElementById(id);
-function render(){
- const q=questions[index];selected=null;
- el('title').textContent='■2025年度 問'+q.number;
- el('stem').textContent=q.stem;
- el('choices').replaceChildren();
- q.choices.forEach((choice,i)=>{const b=document.createElement('button');b.textContent=(i+1)+'. '+choice;b.onclick=()=>{selected=i+1;el('selection').textContent='選択：'+selected+'（採点は未実装）';el('next').disabled=false};el('choices').append(b)});
- el('selection').textContent='番号を選んでください。';el('next').disabled=true;
- el('next').textContent=index+1<questions.length?'次の問題へ':'終了';
- el('status').textContent='公式PDF '+q.page+'ページ／'+(index+1)+' / '+questions.length;
-}
-el('next').onclick=()=>{if(selected===null)return;if(index+1<questions.length){index++;render()}else{el('status').textContent='表示・選択・次問遷移の画面テスト終了';el('next').disabled=true}};
-render();
-</script></html>""".replace("__PAYLOAD__",payload)
-out.write_text(page,encoding="utf-8")
-print(json.dumps({"status":"screen_test_built","path":str(out),"questions":[r["number"] for r in records],"bytes":out.stat().st_size},ensure_ascii=False))
+    records.append(d)
+esc=html.escape
+parts=['<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
+'<title>宅建2025 公式問題表示テスト</title>',
+'<style>body{font-family:system-ui,sans-serif;line-height:1.8;max-width:760px;margin:auto;padding:16px;background:#fafafa;color:#161616}section{background:white;padding:18px;margin:20px 0;border-radius:12px}p.stem{white-space:pre-wrap}label{display:block;border:1px solid #aaa;padding:12px;margin:10px 0;border-radius:8px}input{margin-right:10px}a{display:block;padding:14px;background:#e5ecf9;border-radius:8px;text-align:center}small{color:#555}</style>',
+'<h1>宅建2025年度・公式問題表示テスト</h1>',
+'<p>公式PDFのSHA-256照合済み。原文の完全照合、図表の有無、正答表照合は未完了。採点は無効です。</p>']
+for i,d in enumerate(records):
+    n=d["questionNumber"]
+    parts.append(f'<section id="q{n}"><h2>■2025年度 問{n}</h2><small>公式PDF {d["pdfPage"]}ページ</small><p class="stem">{esc(d["stem"])}</p><fieldset><legend>番号を選んでください。</legend>')
+    for j,choice in enumerate(d["choices"],1):
+        parts.append(f'<label><input type="radio" name="q{n}" value="{j}">{j}. {esc(choice)}</label>')
+    parts.append('</fieldset><p>※選択状態は確認できますが、採点は行いません。</p>')
+    if i+1<len(records):parts.append(f'<a href="#q{records[i+1]["questionNumber"]}">次の問題へ ↓</a>')
+    else:parts.append('<p>表示確認はここまでです。</p>')
+    parts.append('</section>')
+parts.append('</html>')
+out.write_text("".join(parts),encoding="utf-8")
+print(json.dumps({"status":"static_screen_test_built","path":str(out),"questions":[d["questionNumber"] for d in records],"bytes":out.stat().st_size},ensure_ascii=False))
