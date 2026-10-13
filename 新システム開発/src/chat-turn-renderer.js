@@ -57,3 +57,27 @@ export function verifyChatTurn(turn){
  if(!(turn.nodes||[]).some(n=>n.role==='choices'))return {ok:false,reason:'CHOICES_MISSING'};
  return {ok:true,questionId:turn.questionId,packetHash:turn.packetHash,messageBody:turn.messageBody};
 }
+
+
+/**
+ * Verify the actual final assistant body against the deterministic turn.
+ * A ready PNG and a prepared messageBody do not count as displayed if the
+ * ordinary chat response omitted or rewrote the Markdown image reference.
+ */
+export function verifyFinalResponseBody(turn, finalResponseBody){
+ const prepared=verifyChatTurn(turn);
+ if(!prepared.ok)return {ok:false,reason:'PREPARED_TURN_INVALID:'+prepared.reason};
+ if(typeof finalResponseBody!=='string'||!finalResponseBody.trim())
+  return {ok:false,reason:'FINAL_RESPONSE_BODY_MISSING'};
+ if(finalResponseBody!==turn.messageBody)
+  return {ok:false,reason:'FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN'};
+ const images=(turn.nodes||[]).filter(n=>n.role==='official_figure'||(n.role==='official_table'&&n.type==='image'));
+ if(images.some(n=>finalResponseBody.includes('〔図〕')||finalResponseBody.includes('[図]')))
+  return {ok:false,reason:'FIGURE_PLACEHOLDER_IN_FINAL_RESPONSE'};
+ for(const node of images){
+  const alt=node.role==='official_figure'?'公式図':'公式表';
+  if(!finalResponseBody.includes(`![${alt}](${node.value})`))
+   return {ok:false,reason:'INLINE_IMAGE_MISSING_FROM_FINAL_RESPONSE'};
+ }
+ return {ok:true,questionId:turn.questionId,packetHash:turn.packetHash,finalResponseVerified:true};
+}
