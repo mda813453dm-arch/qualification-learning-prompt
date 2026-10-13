@@ -1,0 +1,18 @@
+import {strict as assert} from 'node:assert';
+import {prepareInChatTurn,gradeInChatAnswer,checkpointInChatSession,restoreCheckpoint} from './in-chat-test-bridge.js';
+const base={qualificationId:'takken',topicId:'37',section:'general',session:'regular',pointId:'37',status:'ready',officialVerified:true,answerVerified:true,displayReady:true,currentLawCompatible:true,stem:'Verified text',choices:['A','B','C','D'],correctAnswer:2,problemUrl:'https://example.invalid/official.pdf',answerEvidence:{page:1},packetHash:'p',hasVisuals:false};
+const session={qualificationId:'takken',topicId:'37',ledger:[],reviewItems:[],usedOfficialKeys:[]};
+const q=(year,number,patch={})=>({...base,year,number,...patch});
+const first=q(2025,29),other=q(2025,30,{topicId:'other'}),previous=q(2024,27);
+let r=prepareInChatTurn({session,candidates:[first,other,previous],nowMs:1,today:'2026-10-14'});
+assert.equal(r.status,'ready');assert.equal(r.packet.year,2025);
+assert.equal(gradeInChatAnswer(r.packet,'2').correct,true);
+assert.equal(gradeInChatAnswer(r.packet,'5').status,'invalid_answer');
+r=prepareInChatTurn({session:{...session,usedOfficialKeys:['takken:2025:regular:general:29']},candidates:[first,other,previous],nowMs:1,today:'2026-10-14'});
+assert.equal(r.packet.year,2024,'must cross years within topic');
+assert.equal(prepareInChatTurn({session,candidates:[q(2025,29,{hasVisuals:true})],nowMs:1,today:'2026-10-14'}).status,'blocked');
+assert.equal(prepareInChatTurn({session,candidates:[q(2025,29,{answerEvidence:null})],nowMs:1,today:'2026-10-14'}).status,'blocked');
+assert.equal(prepareInChatTurn({session,candidates:[q(2025,29,{officialVerified:false})],nowMs:1,today:'2026-10-14'}).status,'needs_verified_official');
+const saved=checkpointInChatSession(session,'2026-10-14T00:00:00Z');
+assert.equal(restoreCheckpoint(saved).topicId,'37');
+console.log('PASS in-chat bridge: verified packet, multi-year, fail closed, grading, resume');
