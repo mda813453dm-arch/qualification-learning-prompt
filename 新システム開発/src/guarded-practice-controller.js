@@ -1,8 +1,12 @@
 import {createProvenanceCheckedPipeline} from './provenance-checked-pipeline.js';
 import {gradeVerifiedAnswer} from './verified-question-gate.js';
-/** Public-safe controller: the legacy controller is development-only. */
-export function createGuardedPracticeController({retrieveAndVerify,adapters,verifyOfficialSource}) {
- const retrieve=createProvenanceCheckedPipeline({retrieveAndVerify,adapters,verifyOfficialSource});
+/** Public-safe controller: all retrieval, candidate and payload dependencies are server-owned. */
+export function createGuardedPracticeController({
+ retrieveAndVerify,adapters,verifyOfficialSource,resolveCandidates,buildInlinePayload
+}) {
+ const retrieve=createProvenanceCheckedPipeline({
+  retrieveAndVerify,adapters,verifyOfficialSource,resolveCandidates,buildInlinePayload
+ });
  const active=new Map();
  const generations=new Map();
  return {
