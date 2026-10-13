@@ -1,0 +1,417 @@
+{
+  "schema": "official-exam-source-index-v1",
+  "qualificationId": "宅地建物取引士",
+  "year": 2025,
+  "section": "年度共通",
+  "registryKey": "宅地建物取引士:2025:年度共通",
+  "source": {
+    "url": "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf",
+    "sha256": "829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed",
+    "pages": 30,
+    "answerKeyPdfPage": 30,
+    "legalReferenceDate": "2025-04-01"
+  },
+  "scope": "shared-official-question-data-not-user-study-plan",
+  "questions": [
+    {
+      "number": 1,
+      "questionId": "宅地建物取引士:2025:年度共通:1",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 2,
+      "questionId": "宅地建物取引士:2025:年度共通:2",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 3,
+      "questionId": "宅地建物取引士:2025:年度共通:3",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 4,
+      "questionId": "宅地建物取引士:2025:年度共通:4",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 5,
+      "questionId": "宅地建物取引士:2025:年度共通:5",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 6,
+      "questionId": "宅地建物取引士:2025:年度共通:6",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 7,
+      "questionId": "宅地建物取引士:2025:年度共通:7",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 8,
+      "questionId": "宅地建物取引士:2025:年度共通:8",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 9,
+      "questionId": "宅地建物取引士:2025:年度共通:9",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 10,
+      "questionId": "宅地建物取引士:2025:年度共通:10",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 11,
+      "questionId": "宅地建物取引士:2025:年度共通:11",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 12,
+      "questionId": "宅地建物取引士:2025:年度共通:12",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 13,
+      "questionId": "宅地建物取引士:2025:年度共通:13",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 14,
+      "questionId": "宅地建物取引士:2025:年度共通:14",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 15,
+      "questionId": "宅地建物取引士:2025:年度共通:15",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 16,
+      "questionId": "宅地建物取引士:2025:年度共通:16",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 17,
+      "questionId": "宅地建物取引士:2025:年度共通:17",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 18,
+      "questionId": "宅地建物取引士:2025:年度共通:18",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 19,
+      "questionId": "宅地建物取引士:2025:年度共通:19",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 20,
+      "questionId": "宅地建物取引士:2025:年度共通:20",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 21,
+      "questionId": "宅地建物取引士:2025:年度共通:21",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 22,
+      "questionId": "宅地建物取引士:2025:年度共通:22",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 23,
+      "questionId": "宅地建物取引士:2025:年度共通:23",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 24,
+      "questionId": "宅地建物取引士:2025:年度共通:24",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 25,
+      "questionId": "宅地建物取引士:2025:年度共通:25",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 26,
+      "questionId": "宅地建物取引士:2025:年度共通:26",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 27,
+      "questionId": "宅地建物取引士:2025:年度共通:27",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 28,
+      "questionId": "宅地建物取引士:2025:年度共通:28",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 29,
+      "questionId": "宅地建物取引士:2025:年度共通:29",
+      "answerNumber": 2,
+      "studyUnitId": "takken-u8",
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 30,
+      "questionId": "宅地建物取引士:2025:年度共通:30",
+      "answerNumber": 3,
+      "studyUnitId": "takken-u7",
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 31,
+      "questionId": "宅地建物取引士:2025:年度共通:31",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 32,
+      "questionId": "宅地建物取引士:2025:年度共通:32",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 33,
+      "questionId": "宅地建物取引士:2025:年度共通:33",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 34,
+      "questionId": "宅地建物取引士:2025:年度共通:34",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 35,
+      "questionId": "宅地建物取引士:2025:年度共通:35",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 36,
+      "questionId": "宅地建物取引士:2025:年度共通:36",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 37,
+      "questionId": "宅地建物取引士:2025:年度共通:37",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 38,
+      "questionId": "宅地建物取引士:2025:年度共通:38",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 39,
+      "questionId": "宅地建物取引士:2025:年度共通:39",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 40,
+      "questionId": "宅地建物取引士:2025:年度共通:40",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 41,
+      "questionId": "宅地建物取引士:2025:年度共通:41",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 42,
+      "questionId": "宅地建物取引士:2025:年度共通:42",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 43,
+      "questionId": "宅地建物取引士:2025:年度共通:43",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 44,
+      "questionId": "宅地建物取引士:2025:年度共通:44",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 45,
+      "questionId": "宅地建物取引士:2025:年度共通:45",
+      "answerNumber": 4,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 46,
+      "questionId": "宅地建物取引士:2025:年度共通:46",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 47,
+      "questionId": "宅地建物取引士:2025:年度共通:47",
+      "answerNumber": 3,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 48,
+      "questionId": "宅地建物取引士:2025:年度共通:48",
+      "answerNumber": 2,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 49,
+      "questionId": "宅地建物取引士:2025:年度共通:49",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    },
+    {
+      "number": 50,
+      "questionId": "宅地建物取引士:2025:年度共通:50",
+      "answerNumber": 1,
+      "studyUnitId": null,
+      "fullTextVerified": false,
+      "visualLayoutVerified": false
+    }
+  ]
+}
