@@ -3,7 +3,12 @@
  * ordered contentBlocks を決定論的に変換する。
  * AIによる並べ替え・補完・代替は禁止。
  */
-const isSandboxPng=ref=>/^sandbox:(?:\\/mnt\\/data|\\/workspace\\/scratch)\\/.+\\.png$/i.test(String(ref||'').split('?')[0]);\n\nexport function compileChatInlinePayload(question, assetRegistry){
+const isSandboxPng=ref=>{
+ const path=String(ref||'').split('?')[0].toLowerCase();
+ return (path.startsWith('sandbox:/mnt/data/')||path.startsWith('sandbox:/workspace/scratch/'))&&path.endsWith('.png');
+};
+
+export function compileChatInlinePayload(question, assetRegistry){
  const fail=(reason,detail=null)=>Object.freeze({status:'blocked',reason,detail});
  if(!question||question.status!=='ready'||!Array.isArray(question.contentBlocks))return fail('QUESTION_NOT_READY');
  if(!assetRegistry||typeof assetRegistry.resolve!=='function')return fail('ASSET_REGISTRY_REQUIRED');
