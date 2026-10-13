@@ -39,7 +39,7 @@ const topic='37-article';
 const review=createDeterministicSession();
 ok(review.dispatch({type:'SET_QUALIFICATION',qualificationId:'takken'}).ok,'qualification');
 ok(review.dispatch({type:'PIN_SOURCE',source:{problemSha256:'p',answerSha256:'a'}}).ok,'source');
-for(const [i,n] of [29,30].entries()){
+for(const [i,n] of [29,30,31].entries()){
  const q={status:'ready',number:n,kind:'practice',topicId:topic};
  if(i===0)ok(review.dispatch({type:'PIN_QUESTION',question:q}).ok,'first question');
  else ok(review.dispatch({type:'LOAD_NEXT',question:q}).ok,'next question');
@@ -50,12 +50,12 @@ for(const [i,n] of [29,30].entries()){
  ok(review.dispatch({type:'OPEN_ANSWER'}).ok,'wait');
  ok(review.dispatch({type:'SUBMIT_ANSWER',value:1}).ok,'wrong answer');
  ok(review.dispatch({type:'COMMIT_EXPLANATION',packetHash:packet.packetHash,explanation:'説明'}).ok,'explain');
- if(i===0){
-  ok(review.state().consecutiveWrong===1,'first wrong streak');
-  ok(review.dispatch({type:'FIX_NEXT',nextQuestionNumber:30}).ok,'fix next');
+ if(i<2){
+  ok(review.state().consecutiveWrong===i+1,'wrong streak before threshold');
+  ok(review.dispatch({type:'FIX_NEXT',nextQuestionNumber:n+1}).ok,'fix next');
  }
 }
-ok(review.state().phase==='REVIEW_REQUIRED','two same-topic wrongs trigger review');
-ok(!review.dispatch({type:'FIX_NEXT',nextQuestionNumber:31}).ok,'normal next blocked');
+ok(review.state().phase==='REVIEW_REQUIRED','three same-topic wrongs trigger review');
+ok(!review.dispatch({type:'FIX_NEXT',nextQuestionNumber:32}).ok,'normal next blocked');
 ok(review.dispatch({type:'PIN_REVIEW_QUESTION',question:{status:'ready',kind:'review',number:900,topicId:topic}}).ok,'review accepted');
-console.log('PASS 2 consecutive wrong same-topic review gate');
+console.log('PASS 3 consecutive wrong same-topic review gate');
