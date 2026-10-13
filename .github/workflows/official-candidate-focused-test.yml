@@ -11,6 +11,7 @@ on:
       - '新システム開発/src/pinned-on-demand-candidates.test.js'
       - '新システム開発/tools/verify-pinned-takken-pdf.mjs'
       - '新システム開発/tools/extract-takken-on-demand.py'
+      - '新システム開発/tools/test-takken-extraction.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
@@ -58,3 +59,7 @@ jobs:
               sys.exit(1)
           print("EXTRACTION_VALIDATION_PASSED")
           PY
+
+      - name: Run batched real PDF extraction and safety integration tests
+        working-directory: 新システム開発
+        run: python tools/test-takken-extraction.py
