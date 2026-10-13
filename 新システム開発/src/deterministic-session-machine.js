@@ -19,11 +19,12 @@ const NEXT=Object.freeze({
  GRADED:['COMMIT_EXPLANATION','EXPLAINED'],
  EXPLAINED:['FIX_NEXT','NEXT_FIXED'],
  REVIEW_REQUIRED:['PIN_REVIEW_QUESTION','QUESTION_FIXED'],
+ REVIEW_CONTINUE_REQUIRED:['PIN_REVIEW_QUESTION','QUESTION_FIXED'],
  NEXT_FIXED:['LOAD_NEXT','QUESTION_FIXED']
 });
 
 export function createDeterministicSession(initial={}){
- let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,consecutiveWrong:0,reviewRequired:false,currentTopicId:null,...initial});
+ let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,consecutiveWrong:0,reviewRequired:false,currentTopicId:null,reviewWrong:0,reviewChainId:null,reviewKind:null,reviewContinueRequired:false,...initial});
  const snapshot=()=>state;
  const reject=(reason)=>Object.freeze({ok:false,reason,state:snapshot()});
  const commit=(phase,patch={})=>{
@@ -36,7 +37,7 @@ export function createDeterministicSession(initial={}){
    if(!event||typeof event.type!=='string')return reject('EVENT_REQUIRED');
    if(event.type==='SKIP_EXPLANATION'){
     if(state.phase!=='GRADED'||event.packetHash!==state.packet?.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-    return commit(state.reviewRequired?'REVIEW_REQUIRED':'EXPLAINED',{explanation:null,explanationSkipped:true});
+    return commit(state.reviewContinueRequired?'REVIEW_CONTINUE_REQUIRED':state.reviewRequired?'REVIEW_REQUIRED':'EXPLAINED',{explanation:null,explanationSkipped:true});
    }
    const rule=NEXT[state.phase];
    if(!rule||event.type!==rule[0])return reject('TRANSITION_FORBIDDEN');
@@ -50,7 +51,8 @@ export function createDeterministicSession(initial={}){
       return commit(rule[1],{source:Object.freeze({...event.source})});
     case 'PIN_QUESTION':
       if(!event.question||event.question.status!=='ready')return reject('READY_QUESTION_REQUIRED');
-      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId??null});
+      if(!event.question.topicId)return reject('TOPIC_ID_REQUIRED');
+      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId});
     case 'PIN_ASSETS':
       if(!Array.isArray(event.assets))return reject('ASSET_ARRAY_REQUIRED');
       if(event.assets.some(a=>!a.assetId||!a.sha256||!a.sourcePage))return reject('ASSET_EVIDENCE_REQUIRED');
@@ -67,22 +69,29 @@ export function createDeterministicSession(initial={}){
       const n=Number(String(event.value).trim());
       const a=Number(state.packet?.answer?.value);
       if(!Number.isInteger(n)||!Number.isInteger(a))return reject('ANSWER_BINDING_INVALID');
-      const eligible=state.question?.kind!=='review'&&state.question?.topicId&&state.question.topicId===state.currentTopicId;
-      const streak=eligible?(n===a?0:state.consecutiveWrong+1):0;
-      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:streak,reviewRequired:eligible&&n!==a&&streak>=3});
+      const isReview=state.question?.kind==='review';
+      const eligible=!isReview&&!!state.question?.topicId&&state.question.topicId===state.currentTopicId;
+      const streak=eligible?(n===a?0:state.consecutiveWrong+1):state.consecutiveWrong;
+      const reviewWrong=isReview?(n===a?0:state.reviewWrong+1):state.reviewWrong;
+      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:isReview&&n===a&&state.reviewKind==='reinforcement'?0:streak,reviewWrong,reviewRequired:(eligible&&n!==a&&streak>=3)||(isReview&&n!==a&&reviewWrong<3),reviewContinueRequired:isReview&&n!==a&&reviewWrong>=3});
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
       return commit(state.reviewRequired?'REVIEW_REQUIRED':rule[1],{explanation:event.explanation,explanationSkipped:false});
     case 'PIN_REVIEW_QUESTION':
-      if(!event.question||event.question.status!=='ready'||event.question.kind!=='review')return reject('REVIEW_QUESTION_REQUIRED');
-      return commit(rule[1],{question:event.question,reviewRequired:false,consecutiveWrong:0,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null});
+      if(!event.question||event.question.status!=='ready'||event.question.kind!=='review'||!event.question.topicId||event.question.topicId!==state.currentTopicId)return reject('REVIEW_QUESTION_REQUIRED');
+      if(state.phase==='REVIEW_CONTINUE_REQUIRED'&&event.continueConfirmed!==true)return reject('REVIEW_CONTINUATION_CONFIRMATION_REQUIRED');
+      const chain=event.question.reviewChainId;
+      if(!chain)return reject('REVIEW_CHAIN_REQUIRED');
+      if(state.reviewChainId&&chain!==state.reviewChainId)return reject('REVIEW_CHAIN_MISMATCH');
+      return commit(rule[1],{question:event.question,reviewChainId:chain,reviewKind:state.reviewKind??'reinforcement',reviewRequired:false,reviewContinueRequired:false,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null});
     case 'FIX_NEXT':
       if(event.nextQuestionNumber===undefined)return reject('NEXT_REQUIRED');
       return commit(rule[1],{nextQuestionNumber:event.nextQuestionNumber});
     case 'LOAD_NEXT':
       if(!event.question||event.question.status!=='ready'||event.question.number!==state.nextQuestionNumber)return reject('NEXT_QUESTION_MISMATCH');
-      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId??null,consecutiveWrong:event.question.topicId===state.currentTopicId?state.consecutiveWrong:0,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null,nextQuestionNumber:null});
+      if(!event.question.topicId)return reject('TOPIC_ID_REQUIRED');
+      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId,consecutiveWrong:event.question.topicId===state.currentTopicId?state.consecutiveWrong:0,reviewWrong:0,reviewChainId:null,reviewKind:null,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null,nextQuestionNumber:null});
     default:return reject('UNKNOWN_EVENT');
    }
   }
