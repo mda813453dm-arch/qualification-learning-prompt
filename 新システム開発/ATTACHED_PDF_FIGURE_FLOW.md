@@ -13,7 +13,8 @@
 5. PNGの実在を確認し、実行環境のsandboxパスへ変換したPNG参照をAsset Registryに登録する。抽出結果のoperationIdとPDF/PNGハッシュをそのまま紐付ける。
 6. `buildChatTurn(question, assetRegistry, {sourcePdfAttachment: extraction.sourcePdf})` を実行する。
 7. ready時は、返された `messageBody` 全体を、その回答の本文としてそのまま送信する。本文の一部をAIが書き直したり、図参照を `〔図〕` に置き換えたりしない。
-8. 同じ会話の画面で本文中の画像表示を確認する。画像が見えない、または画像参照を最終回答へ入れられない場合はFAILとし、回答待ち状態へ進めない。
+8. 最終回答本文を確定後、`verifyFinalResponseBody(turn, finalResponseBody)` へ実際の全文を渡す。完全一致しない場合、またはMarkdown画像が欠けた場合はFAILとする。PNG抽出・Asset Registry登録・`messageBody`準備だけを表示PASSとして報告してはならない。
+9. 同じ会話の画面で本文中の画像表示を確認する。画像が見えない、または画像参照を最終回答へ入れられない場合はFAILとし、回答待ち状態へ進めない。
 
 ## 停止条件
 
@@ -22,3 +23,8 @@ PDFハッシュ、確認済み切抜範囲、実際に生成したPNG、PNGハ�
 ## テスト判定
 
 合成データ上のテストは、関数の契約検証に限る。PDF→PNG→`messageBody` の統合テストは別途必要であり、iPhone実機での表示確認はその上に追加する。運用チャットから処理を呼べる接続が未設定なら、フェーズ4は未完了とする。
+
+
+## 最終回答の受入条件
+
+最終回答本文に `messageBody` 全体をそのまま使い、公式図のMarkdown画像参照が本文の正しい位置に含まれていることを `verifyFinalResponseBody` で検査する。結果画面に `〔図〕` のみが残る、画像が別メッセージやリンクだけになる、または準備完了の報告に画像が伴わない場合はFAILである。通常のChatGPT会話はこのリポジトリのJavaScriptを自動実行しないため、運用環境から本ゲートを呼び出せる接続を設定するまでは、コード上の検証を実運用で強制できたとは扱わない。
