@@ -12,55 +12,53 @@ const q={
   {order:5,type:'instruction',value:'番号で答えてください。'}
  ]
 };
-const pdf={serverReceived:true,receivedInCurrentChat:true,mediaType:'application/pdf',
- fileId:'attached-pdf-q2',sha256:'a'.repeat(64),chatId:'current-chat'};
-const ref='sandbox:/mnt/data/official-q2.png';
+const pdf={status:'ready',mediaType:'application/pdf',sha256:'a'.repeat(64),operationId:'run-001'};
+const ref='sandbox:/mnt/data/official-q2-run-001.png';
+const pngSha='b'.repeat(64);
 const makeRegistry=(origin={})=>({resolve:id=>id==='official-q2'?{
- questionId:q.id,verified:true,mime:'image/png',inlineRef:ref,sha256:'b'.repeat(64),
- generatedInChatId:pdf.chatId,derivedFromPdf:{fileId:pdf.fileId,pdfSha256:pdf.sha256,page:5,
-  crop:{x0:0.1,y0:0.2,x1:0.8,y1:0.9},extractionVerified:true,...origin}
+ questionId:q.id,verified:true,mime:'image/png',inlineRef:ref,sha256:pngSha,
+ derivedFromPdf:{pdfSha256:pdf.sha256,page:5,crop:{x0:50,y0:80,x1:450,y1:600},
+  operationId:pdf.operationId,imageSha256:pngSha,extractionVerified:true,...origin}
  }:null});
 const registry=makeRegistry();
 const turn=buildChatTurn(q,registry,{sourcePdfAttachment:pdf});
-ok(turn.status==='ready','complete turn is ready when figure was cut from current attached PDF');
+ok(turn.status==='ready','complete turn is ready from an extraction receipt tied to actual PDF bytes');
 ok(verifyChatTurn(turn).ok,'turn passes output boundary');
 const image='![公式図]('+ref+')';
-ok(turn.messageBody.includes(image),'literal assistant message body contains actual inline Markdown image syntax');
+ok(turn.messageBody.includes(image),'literal assistant response body contains inline Markdown image syntax');
 ok(turn.messageBody.indexOf('問題文の前半')<turn.messageBody.indexOf(image)&&
  turn.messageBody.indexOf(image)<turn.messageBody.indexOf('問題文の後半')&&
  turn.messageBody.indexOf('問題文の後半')<turn.messageBody.indexOf('選択肢1'),
  'image appears at exact ordered content position');
 ok(turn.messageBody.endsWith('番号で答えてください。'),'full problem ends with answer instruction');
 ok(!turn.nodes.some(n=>n.type==='native_image'),'no competing native image path is emitted');
-ok(turn.figureSource.fileId===pdf.fileId&&turn.figureSource.pdfSha256===pdf.sha256,
- 'rendered figure carries the current PDF source identity');
+ok(turn.figureSource.pdfSha256===pdf.sha256&&turn.figureSource.operationId===pdf.operationId,
+ 'response carries the PDF digest and extraction operation identity');
 
 const noAsset=buildChatTurn(q,{resolve:()=>null},{sourcePdfAttachment:pdf});
 ok(noAsset.status==='blocked'&&noAsset.reason==='PDF_FIGURE_ASSET_UNAVAILABLE','missing extracted figure fails closed');
 const noPdf=buildChatTurn(q,registry);
-ok(noPdf.status==='blocked'&&noPdf.reason==='CURRENT_CHAT_OFFICIAL_PDF_REQUIRED',
- 'a saved PNG or inline reference alone cannot make a new chat ready');
-const previousChatPdf={...pdf,receivedInCurrentChat:false,chatId:'previous-chat'};
-ok(buildChatTurn(q,registry,{sourcePdfAttachment:previousChatPdf}).reason==='CURRENT_CHAT_OFFICIAL_PDF_REQUIRED',
- 'a PDF from another conversation is rejected');
-ok(buildChatTurn(q,makeRegistry({fileId:'other-pdf'}),{sourcePdfAttachment:pdf}).reason==='FIGURE_NOT_EXTRACTED_FROM_CURRENT_CHAT_PDF',
- 'a figure from another PDF is rejected');
-ok(buildChatTurn(q,makeRegistry({pdfSha256:'c'.repeat(64)}),{sourcePdfAttachment:pdf}).reason==='FIGURE_NOT_EXTRACTED_FROM_CURRENT_CHAT_PDF',
- 'a PDF hash mismatch is rejected');
-ok(buildChatTurn(q,makeRegistry({extractionVerified:false}),{sourcePdfAttachment:pdf}).reason==='FIGURE_NOT_EXTRACTED_FROM_CURRENT_CHAT_PDF',
- 'an unverified or cached crop is rejected');
+ok(noPdf.status==='blocked'&&noPdf.reason==='PDF_EXECUTION_RECEIPT_REQUIRED',
+ 'a saved PNG reference alone cannot make a question ready');
+const mismatchedPdf={...pdf,sha256:'c'.repeat(64)};
+ok(buildChatTurn(q,registry,{sourcePdfAttachment:mismatchedPdf}).reason==='FIGURE_NOT_EXTRACTED_FROM_THIS_PDF_RUN',
+ 'figure from another PDF is rejected');
+const wrongOperation=buildChatTurn(q,makeRegistry({operationId:'prior-run'}),{sourcePdfAttachment:pdf});
+ok(wrongOperation.reason==='FIGURE_NOT_EXTRACTED_FROM_THIS_PDF_RUN','figure from a prior processing run is rejected');
+const wrongImageHash=buildChatTurn(q,makeRegistry({imageSha256:'d'.repeat(64)}),{sourcePdfAttachment:pdf});
+ok(wrongImageHash.reason==='FIGURE_NOT_EXTRACTED_FROM_THIS_PDF_RUN','PNG bytes must match extraction receipt');
 const incompleteExtraction=buildChatTurn(q,makeRegistry({crop:null}),{sourcePdfAttachment:pdf});
-ok(incompleteExtraction.reason==='FIGURE_NOT_EXTRACTED_FROM_CURRENT_CHAT_PDF','missing crop coordinates are rejected');
+ok(incompleteExtraction.reason==='FIGURE_NOT_EXTRACTED_FROM_THIS_PDF_RUN','missing crop coordinates are rejected');
 
 const payload=buildChatTurn(q,registry,{sourcePdfAttachment:pdf});
 const noInstruction=buildChatTurnFromPayload({...payload,nodes:payload.nodes.slice(0,-1)},
  {sourcePdfAttachment:pdf,source:{ok:true,figureCount:1}});
 ok(noInstruction.status==='blocked','incomplete message fails closed');
-const tampered={...turn,messageBody:'■令和7年度 問2'};
-ok(verifyChatTurn(tampered).reason==='MESSAGE_BODY_MISSING','heading-only message is rejected');
+const placeholder={...turn,messageBody:turn.messageBody.replace(image,'〔図〕'),markdown:turn.messageBody.replace(image,'〔図〕')};
+ok(verifyChatTurn(placeholder).reason==='INLINE_IMAGE_NOT_IN_MESSAGE_BODY','label-only figure is rejected');
+const omitted={...turn,messageBody:turn.messageBody.replace(image,''),markdown:turn.messageBody.replace(image,'')};
+ok(verifyChatTurn(omitted).reason==='INLINE_IMAGE_NOT_IN_MESSAGE_BODY','response cannot omit the inline figure');
 const noProvenance={...turn,figureSource:null};
-ok(verifyChatTurn(noProvenance).reason==='CURRENT_CHAT_PDF_FIGURE_PROVENANCE_MISSING',
- 'render receipt without PDF provenance is rejected');
-const placeholder={...turn,messageBody:turn.messageBody.replace(image,'〔図〕')};
-ok(!verifyChatTurn(placeholder).ok,'label-only figure is rejected');
-console.log('PASS chat-turn-renderer: current-chat PDF extraction, exact placement, and fail-closed portable-image checks');
+ok(verifyChatTurn(noProvenance).reason==='PDF_FIGURE_PROVENANCE_MISSING',
+ 'renderer output without PDF extraction receipt is rejected');
+console.log('PASS chat-turn-renderer: PDF-byte/run provenance and actual answer-body embedding');
