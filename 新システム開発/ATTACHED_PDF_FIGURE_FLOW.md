@@ -1,18 +1,24 @@
-# 添付PDFからの図表抽出・表示契約
+# 添付PDFからの図表抽出・回答本文生成契約
 
-## 目的
-図表付き問題では、利用者がそのチャットに添付した公式問題PDFを唯一の画像元にする。過去チャットのPNG、保存済みPNG、別サイト画像、画像リンクのみの提示では出題可能にしない。
+## 実運用の前提
+
+このリポジトリのJavaScriptは、通常のChatGPT会話から自動実行されるものではない。通常チャットで実行する場合、PDFを添付した会話で利用可能なファイル処理ツールが、この処理を呼び出し、返された `messageBody` を同じ回答本文に使う必要がある。単体テストの成功だけで、ChatGPT画面への表示成功とは判定しない。
 
 ## 実行順
-1. 現在のチャットに添付されたPDFを受領する。接続層が serverReceived、receivedInCurrentChat、fileId、chatId、PDF SHA-256 を設定する。値をユーザー文やファイル名から推測しない。
-2. 公式PDF検証と問題ID照合を行い、問題本文・全選択肢・正答資料との組合せを確定する。
-3. 検証済みBundleの図表ページとcrop座標を使い、integration/extract_attached_pdf_figure.py の extract_attached_pdf_figure を今回添付のPDFパスで呼び出す。毎回、新しい出力先を生成する。
-4. 戻り値の derivedFromPdf、PNGの imagePath と imageSha256 を接続層で確認する。imagePath は当該チャットの sandbox 画像参照に変換する。
-5. Asset Registryには、少なくとも questionId、verified: true、mime: image/png、inlineRef、PNG sha256、generatedInChatId、derivedFromPdf を渡す。
-6. buildChatTurn(question, assetRegistry, {sourcePdfAttachment}) が ready を返し、完成した一つの messageBody を送信する。
-7. 本文中の画像表示が確認された後に限り、表示受領証を作成して ANSWER_WAIT に進む。
+
+1. 利用者が現在の会話に添付した公式問題PDFを、利用可能なファイル処理環境から読み込む。過去会話のファイルパスは使わない。
+2. 公式PDFと問題IDを照合し、問題本文・全選択肢・正答資料を確定する。
+3. 確認済みBundleのページ番号・切抜座標と、公式PDFの期待SHA-256を用いて `integration/extract_attached_pdf_figure.py` を実行する。毎回新しいPNGを生成する。
+4. 抽出結果のPDF SHA-256、PNG SHA-256、ページ、切抜座標、operationIdを一つの実行記録として保持する。チャットID・添付IDを推測したり、テスト用の値を本番値として渡したりしない。
+5. PNGの実在を確認し、実行環境のsandboxパスへ変換したPNG参照をAsset Registryに登録する。抽出結果のoperationIdとPDF/PNGハッシュをそのまま紐付ける。
+6. `buildChatTurn(question, assetRegistry, {sourcePdfAttachment: extraction.sourcePdf})` を実行する。
+7. ready時は、返された `messageBody` 全体を、その回答の本文としてそのまま送信する。本文の一部をAIが書き直したり、図参照を `〔図〕` に置き換えたりしない。
+8. 同じ会話の画面で本文中の画像表示を確認する。画像が見えない、または画像参照を最終回答へ入れられない場合はFAILとし、回答待ち状態へ進めない。
 
 ## 停止条件
-現在チャットのPDF受領証、公式PDFハッシュ、確認済みcrop範囲、今回生成したPNG、PDFとの出典一致のいずれかを確認できなければ blocked とする。図の代替、〔図〕という文字だけの表示、他会話のsandboxパス再利用を禁止する。
 
-このリポジトリの単体テストは、データ契約とfail-closed動作を検証する。実機で本文中に画像が見えるかどうかは、別チャットにPDFを添付した状態で行うiPhone表示確認が必要である。
+PDFハッシュ、確認済み切抜範囲、実際に生成したPNG、PNGハッシュ、最終回答本文中のMarkdown画像参照のいずれかが欠けた場合は出題を停止する。画像の代替作成、`〔図〕`だけの表示、別会話のsandboxパス再利用は禁止する。
+
+## テスト判定
+
+合成データ上のテストは、関数の契約検証に限る。PDF→PNG→`messageBody` の統合テストは別途必要であり、iPhone実機での表示確認はその上に追加する。運用チャットから処理を呼べる接続が未設定なら、フェーズ4は未完了とする。
