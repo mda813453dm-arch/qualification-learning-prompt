@@ -62,6 +62,6 @@ console.log('PASS chat-inline-render-adapter markdown serialization and iOS figu
 
 const workspaceRef='sandbox:/workspace/scratch/171c6a61e484/uploaded-q2.png';
 const workspaceResult=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:workspaceRef}:n)});
-ok(workspaceResult.status==='ready'&&workspaceResult.markdown.includes(workspaceRef),
- 'a PNG generated in the current Work-mode sandbox can be embedded using its real path');
-console.log('PASS current-workspace sandbox PNG path');
+ok(workspaceResult.status==='blocked'&&workspaceResult.reason==='INLINE_IMAGE_REFERENCE_INVALID',
+ 'Work-mode workspace paths are rejected because the iOS conversation renderer cannot resolve them');
+console.log('PASS rejects non-chat workspace PNG paths');
