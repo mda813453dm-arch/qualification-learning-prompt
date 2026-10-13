@@ -12,6 +12,7 @@ on:
       - '新システム開発/tools/verify-pinned-takken-pdf.mjs'
       - '新システム開発/tools/extract-takken-on-demand.py'
       - '新システム開発/tools/test-takken-extraction.py'
+      - '新システム開発/tools/build-takken-screen-test.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
@@ -63,3 +64,13 @@ jobs:
       - name: Run batched real PDF extraction and safety integration tests
         working-directory: 新システム開発
         run: python tools/test-takken-extraction.py
+
+      - name: Build mobile screen test from verified official PDF
+        working-directory: 新システム開発
+        run: python tools/build-takken-screen-test.py
+      - name: Upload mobile screen test HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: takken-2025-mobile-screen-test
+          path: ${{ runner.temp }}/takken-screen-test.html
+          if-no-files-found: error
