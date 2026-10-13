@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "questions": {
+    "land-surveyor:2025:morning:6": {
+      "questionId": "land-surveyor:2025:morning:6",
+      "pdfSha256": "4a90ae3875c14c1eeda4b3ac9a32c6387b69b5cc15d0f5b62a99514af78267d0",
+      "pageNumber": 9,
+      "crop": {
+        "x0": 82,
+        "y0": 245,
+        "x1": 520,
+        "y1": 592
+      },
+      "dpi": 180
+    }
+  }
+}

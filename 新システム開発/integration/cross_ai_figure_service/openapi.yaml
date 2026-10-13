@@ -1,0 +1,153 @@
+openapi: 3.1.0
+info:
+  title: Cross-AI Official PDF Figure API
+  version: 0.1.0
+  description: >-
+    Extracts a reviewed official figure from the PDF attached to the active
+    conversation. Returns a short-lived HTTPS image URL and Markdown image
+    reference. Never returns a local sandbox path.
+servers:
+  - url: https://YOUR-DEPLOYED-HOST
+security:
+  - bearerAuth: []
+paths:
+  /v1/figures/extract:
+    post:
+      operationId: extractOfficialFigureFromAttachedPdf
+      summary: Crop a reviewed official figure from the PDF attached to this chat
+      description: >-
+        Use this from an AI client that can send the current chat's attached
+        PDF as multipart/form-data. The questionId must be the exact supported
+        qualification/year/session/question ID. Never substitute another PDF,
+        ask the model to guess crop coordinates, or retry with a saved image.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [question_id, file]
+              properties:
+                question_id:
+                  type: string
+                  example: land-surveyor:2025:morning:6
+                file:
+                  type: string
+                  format: binary
+                  description: The official PDF attached in the current conversation.
+      responses:
+        '200':
+          description: A fresh, verified PNG was created and is addressable by HTTPS.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResult'
+        '401':
+          description: Missing or invalid API key.
+        '404':
+          description: No reviewed layout exists for this question ID.
+        '413':
+          description: PDF exceeds the configured size limit.
+        '422':
+          description: PDF bytes do not match the reviewed official PDF.
+  /v1/integrations/openai/figures/extract:
+    post:
+      operationId: extractOfficialFigureFromCurrentChatGPTPdf
+      summary: Crop from a PDF attached to this ChatGPT conversation
+      description: >-
+        GPT Actions adapter. ChatGPT injects the current conversation's files
+        into openaiFileIdRefs. Send exactly one attached PDF and questionId.
+        The API downloads the temporary file URL immediately, validates the
+        official PDF hash, and returns an HTTPS image URL for Markdown inline
+        display. Do not use a sandbox path from another chat.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionId, openaiFileIdRefs]
+              properties:
+                questionId:
+                  type: string
+                  example: land-surveyor:2025:morning:6
+                openaiFileIdRefs:
+                  type: array
+                  minItems: 1
+                  maxItems: 1
+                  description: >-
+                    GPT Actions fills this special property with the current
+                    conversation's file objects (name, id, mime_type,
+                    download_link). The schema uses string items per the
+                    Actions file-passing contract.
+                  items:
+                    type: string
+      responses:
+        '200':
+          description: A fresh image URL and Markdown image reference.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractionResult'
+        '400':
+          description: Missing or unsafe file reference.
+        '401':
+          description: Missing or invalid API key.
+        '415':
+          description: The attachment is not a PDF.
+        '422':
+          description: PDF could not be downloaded or failed official hash verification.
+  /v1/figures/{token}.png:
+    get:
+      operationId: getTemporaryOfficialFigure
+      summary: Retrieve the extracted PNG for Markdown image rendering
+      security: []
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The PNG bytes, served inline with image/png.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: Unknown image token.
+        '410':
+          description: Image expired or failed integrity verification.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ExtractionResult:
+      type: object
+      required: [status, questionId, sourcePdfSha256, imageSha256, page, imageUrl, markdownImage, expiresAt, delivery]
+      properties:
+        status:
+          const: ready
+        questionId:
+          type: string
+        sourcePdfSha256:
+          type: string
+        imageSha256:
+          type: string
+        page:
+          type: integer
+        imageUrl:
+          type: string
+          format: uri
+        markdownImage:
+          type: string
+          description: Insert verbatim at the figure's position in the answer body.
+        expiresAt:
+          type: integer
+          description: Unix timestamp after which the image URL is no longer served.
+        delivery:
+          const: https-url
