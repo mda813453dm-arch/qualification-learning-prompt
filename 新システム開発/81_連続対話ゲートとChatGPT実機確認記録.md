@@ -12,12 +12,19 @@
 - `.github/workflows/qualification-system-tests.yml` を更新し、`tests/**` とnpm設定ファイルをpush triggerに追加。Node依存（pdfjs-dist）を導入し、Python統合テストと全JavaScriptテストをCIで実行する。
 - `新システム開発/package.json` の `npm test` を `node --test src/*.test.js tests/*.test.js` に変更し、別実行されていたsource testも同じTAP集計へ含めた。
 - 統一後のRun [38365071560](https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/38365071560)（head `1a9f19d4ed4a0dfa69ebeac69b9a3932005999a1`）：209件、169 PASS、35 FAIL、5 SKIP。Python統合テストとpdfjs-distによるPDF本文抽出はPASS。Actions全体はFAIL。
+- 現在確認したブランチ先頭 `6737212589b6697cf2c4de40ab8e085128e57365`（`6737212`）に対応するActions runは0件（GitHub Actions APIの `head_sha` 検索結果）。このコミットは監査記録Markdownのみを変更しており、workflowのpush pathsには監査記録が含まれないため自動実行されていない。したがってRun 38365071560の結果を6737212のCI結果として扱わない。6737212以降の新しいCI結果は未取得。
 - 35件は9ファイル（guarded-practice-controller、legacy-pipeline-factory、official-entry-span-integration、official-practice-controller、official-practice-entry、official-registry-identity、official-retrieval-pipeline、pdf-bound-practice-entry、provenance-checked-pipeline）にあり、全て `PIPELINE_CONFIGURATION_REQUIRED`。
-- 以前の実装では各公開入口が `resolveCandidates` と `buildInlinePayload` を内部へ渡していなかったため、Provenance/Guarded/Official/PDF-bound入口およびlegacy factoryに依存の受け渡しを追加した。しかし、承認済み候補台帳・payload builderの実装と本番供給元は存在せず、テストもこれらの必須依存を渡していない。35件は未解消であり、テスト期待値変更・安全ゲート緩和で通していない。
+- `resolveCandidates` と `buildInlinePayload` は本番実装が未存在。`src/official-retrieval-pipeline.js` 26–43行でサーバー所有の関数依存として受け取り、未供給なら設定エラーにする。公開入口群からこれらの依存を転送する配線は追加済みだが、それ自体は関数本体・候補台帳・payload builderの実装ではない。テスト内のスタブは `src/official-retrieval-pipeline.test.js` 11行・34行等だけで、本番依存として数えない。35件は未解消であり、期待値変更・安全ゲート緩和でPASSにしていない。
 - question-bundle-gateの異常系9件は、fixtureに必須の `studyUnitId` と承認済み計画hashがなかったため、先行して `STUDY_UNIT_MISMATCH` になっていた。fixtureに正しいbindingを追加し、それぞれの検査まで到達するよう修正済み。
 - ローカル報告は209件、168 PASS／36 FAIL／5 SKIPで、失敗の1件はpdfjs-dist不足。CIの209件、169 PASS／35 FAIL／5 SKIPとの差は1件で、CIではpdfjs-dist抽出がPASSしたという報告と一致する。ローカルのcheckout内容そのものはこの環境から独立検証していない。
 - CI件数198とローカル209の差は、CIが別扱いだったsrcの11テストを統合集計へ含めなかった実行範囲の差だった。現在のCIは同じ209件を集計している。
-- リポジトリ内の `integration/cross_ai_figure_service` は添付PDFから図を抽出するAPIであり、学習セッション、候補解決、公式採点、解説、次問遷移を提供するランタイムではない。OpenAPI上のhostは未設定の `YOUR-DEPLOYED-HOST`。学習APIとの接続・配備は確認できていない。
+- `新システム開発/integration/cross_ai_figure_service/openapi.yaml` は `Cross-AI Official PDF Figure API`（添付PDFから図を抽出するAPI）のOpenAPIで、9–10行のserver URLは `https://YOUR-DEPLOYED-HOST` のまま。これは図表抽出APIの公開先記載であり、学習ランタイムのOpenAPIではない。学習セッション、候補解決、公式採点、解説、次問遷移を提供するランタイムの接続・配備は確認できていない。
+
+## 変更範囲の分類
+- 本番コード（依存の受け渡し配線のみ）：`src/provenance-checked-pipeline.js`、`src/guarded-practice-controller.js`、`src/official-practice-controller.js`、`src/official-practice-entry.js`、`src/pdf-bound-practice-entry.js`、`src/legacy-pipeline-factory.js`。候補解決関数・表示payload builder本体や稼働ランタイムは追加していない。
+- テスト専用：`src/question-bundle-gate.test.js` のfixtureへ必須bindingを追加。検査目的・期待値の緩和はしていない。
+- CI/テスト設定：`package.json` の全JSテスト統合実行、`.github/workflows/qualification-system-tests.yml` のCI実行範囲・依存導入。
+- 監査記録：本ファイル。結果と未達条件の記録のみ。
 
 ## Claude提示の4条件に対する現状
 | 条件 | 結果 | 根拠 |
