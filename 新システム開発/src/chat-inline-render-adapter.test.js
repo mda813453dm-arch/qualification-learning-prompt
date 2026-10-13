@@ -65,3 +65,20 @@ const workspaceResult=renderChatInlineMarkdown({...markdownPayload,nodes:markdow
 ok(workspaceResult.status==='blocked'&&workspaceResult.reason==='INLINE_IMAGE_REFERENCE_INVALID',
  'Work-mode workspace paths are rejected because the iOS conversation renderer cannot resolve them');
 console.log('PASS rejects non-chat workspace PNG paths');
+
+const remoteRef='https://images.example.org/v1/figures/signed-token.png?expires=2030';
+const remoteResult=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:remoteRef}:n)});
+ok(remoteResult.status==='ready'&&remoteResult.markdown.includes('![公式図]('+remoteRef+')'),
+ 'verified MCP HTTPS PNG refs survive serialization for another AI/chat');
+for(const bad of [
+ 'http://images.example.org/figure.png',
+ 'https://user:pass@images.example.org/figure.png',
+ 'https://127.0.0.1/figure.png',
+ 'https://images.example.org:8443/figure.png',
+ 'https://images.example.org/figure.png#fragment',
+ 'https://localhost/figure.png'
+]){
+ const r=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:bad}:n)});
+ ok(r.status==='blocked'&&r.reason==='INLINE_IMAGE_REFERENCE_INVALID','unsafe remote image ref rejected: '+bad);
+}
+console.log('PASS accepts HTTPS PNG and rejects unsafe remote image references');
