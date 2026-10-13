@@ -18,7 +18,10 @@ import urllib.error
 import urllib.request
 from email import policy
 from email.parser import BytesParser
-from .mcp_protocol import dispatch_mcp
+try:
+    from .mcp_protocol import dispatch_mcp
+except ImportError:  # Running server.py directly in the container.
+    from cross_ai_figure_service.mcp_protocol import dispatch_mcp
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
