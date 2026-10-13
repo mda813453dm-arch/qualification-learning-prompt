@@ -7,7 +7,7 @@ const blocked = reason => Object.freeze({ status: "unavailable", reason });
 
 /**
  * Resolve only candidate rows supplied by the already-approved official
- * candidate source. This module does not create or extend a candidate ledger.
+ * candidate source. Shared official source rows may omit per-user plan hashes;\n * the approved study plan is checked separately at selection time.\n * This module does not create or extend a candidate ledger.
  */
 export function createResolveCandidates({
   loadApprovedStudyPlan,
@@ -36,7 +36,7 @@ export function createResolveCandidates({
     let priorYear = Infinity;
     for (const row of records) {
       if (!row || row.qualificationId !== qualificationId || row.studyUnitId !== studyUnitId ||
-          row.studyPlanSha256 !== studyPlanSha256 || !Number.isInteger(row.year) ||
+          (row.studyPlanSha256 !== undefined && row.studyPlanSha256 !== studyPlanSha256) || !Number.isInteger(row.year) ||
           typeof row.questionId !== "string" || !row.questionId || typeof row.section !== "string" || !row.section)
         return blocked("OFFICIAL_CANDIDATE_BINDING_INVALID");
       if (yearFixed !== null && row.year !== yearFixed) continue;
