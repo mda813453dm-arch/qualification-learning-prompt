@@ -1,10 +1,7 @@
 /**
- * Require each inline figure to be freshly extracted from the official PDF
- * attached in the same chat. A cached PNG or a sandbox path copied from a
- * different conversation is not portable and must not make a question ready.
- *
- * sourcePdf and asset provenance are populated by the trusted attachment/PDF
- * extraction connector, not inferred from filenames or user-authored text.
+ * Verify that each displayed figure is a fresh crop of the PDF bytes supplied
+ * to this processing run. Chat/attachment IDs are intentionally not required:
+ * ordinary chat file-processing runtimes do not expose those identifiers.
  */
 export function verifyAttachedPdfFigureSource(question, assetRegistry, sourcePdf) {
  const fail=reason=>Object.freeze({ok:false,reason});
@@ -12,10 +9,10 @@ export function verifyAttachedPdfFigureSource(question, assetRegistry, sourcePdf
   return fail('QUESTION_NOT_READY');
  const figureBlocks=question.contentBlocks.filter(b=>b?.type==='figure');
  if(!figureBlocks.length)return Object.freeze({ok:true,figureCount:0});
- if(!sourcePdf||sourcePdf.serverReceived!==true||sourcePdf.receivedInCurrentChat!==true||
-    sourcePdf.mediaType!=='application/pdf'||typeof sourcePdf.fileId!=='string'||!sourcePdf.fileId||
-    !/^[a-f0-9]{64}$/.test(sourcePdf.sha256||'')||typeof sourcePdf.chatId!=='string'||!sourcePdf.chatId)
-  return fail('CURRENT_CHAT_OFFICIAL_PDF_REQUIRED');
+ if(!sourcePdf||sourcePdf.status!=='ready'||sourcePdf.mediaType!=='application/pdf'||
+    !/^[a-f0-9]{64}$/.test(sourcePdf.sha256||'')||
+    typeof sourcePdf.operationId!=='string'||!sourcePdf.operationId)
+  return fail('PDF_EXECUTION_RECEIPT_REQUIRED');
  if(typeof assetRegistry?.resolve!=='function')return fail('ASSET_REGISTRY_REQUIRED');
  const seen=new Set();
  for(const block of figureBlocks){
@@ -29,13 +26,13 @@ export function verifyAttachedPdfFigureSource(question, assetRegistry, sourcePdf
      !asset.inlineRef.toLowerCase().split('?')[0].endsWith('.png')||
      !/^[a-f0-9]{64}$/.test(asset.sha256||''))
    return fail('PDF_FIGURE_ASSET_UNAVAILABLE');
-  if(asset.generatedInChatId!==sourcePdf.chatId||!origin||
-     origin.fileId!==sourcePdf.fileId||origin.pdfSha256!==sourcePdf.sha256||
-     !Number.isInteger(origin.page)||origin.page<1||
+  if(!origin||origin.pdfSha256!==sourcePdf.sha256||origin.operationId!==sourcePdf.operationId||
+     origin.imageSha256!==asset.sha256||!Number.isInteger(origin.page)||origin.page<1||
      !origin.crop||!['x0','y0','x1','y1'].every(k=>Number.isFinite(origin.crop[k]))||
      origin.crop.x0>=origin.crop.x1||origin.crop.y0>=origin.crop.y1||
      origin.extractionVerified!==true)
-   return fail('FIGURE_NOT_EXTRACTED_FROM_CURRENT_CHAT_PDF');
+   return fail('FIGURE_NOT_EXTRACTED_FROM_THIS_PDF_RUN');
  }
- return Object.freeze({ok:true,figureCount:figureBlocks.length,pdfFileId:sourcePdf.fileId,pdfSha256:sourcePdf.sha256});
+ return Object.freeze({ok:true,figureCount:figureBlocks.length,
+  pdfSha256:sourcePdf.sha256,operationId:sourcePdf.operationId});
 }
