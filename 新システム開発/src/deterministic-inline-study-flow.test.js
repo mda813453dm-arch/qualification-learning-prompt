@@ -32,6 +32,23 @@ function q3Packet(){
 function q3Input(packet=q3Packet(),question={status:'ready',id:'q3',number:3,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind:'official_practice',origin:'official',verifiedBundle:true}){
  return {question,packet,assets:[{assetId:'f3',sha256:'fig3',sourcePage:3}]};
 }
+const mismatchFlow=createInlineStudyFlow(registry,{studyPlan:{status:'approved',qualificationId:'land-surveyor',sha256:'c'.repeat(64),itemIds:['control-points','traverse']}});
+const mismatchPayload=mismatchFlow.prepare({qualificationId:'land-surveyor',source:{problemSha256:'p',answerSha256:'a'},
+ question:{status:'ready',id:'q2',number:2,studyUnitId:'control-points',studyPlanSha256:'c'.repeat(64),kind:'official_practice',origin:'official',verifiedBundle:true},
+ assets:[{assetId:'f2',sha256:'fig',sourcePage:2}],packet:currentPacket});
+throws(()=>mismatchFlow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:mismatchPayload.signature,
+ nodeCount:mismatchPayload.nodes.length,markdown:mismatchPayload.markdown.replace('stem','AIが変更した本文')}),
+ 'RENDER_MARKDOWN_MISMATCH','AI表示本文の改変');
+ok(mismatchFlow.displayAudit().at(-1).status==='FAIL'&&mismatchFlow.displayAudit().at(-1).reason==='RENDER_MARKDOWN_MISMATCH',
+ '表示本文不一致をFAIL記録として残す');
+throws(()=>mismatchFlow.answer(4),'ANSWER_NOT_ALLOWED','表示FAIL後は回答・採点へ進まない');
+ok(mismatchFlow.state().phase==='PACKET_VALIDATED','表示FAIL時に回答待ちへ遷移しない');
+mismatchFlow.rendered({complete:true,questionId:'q2',packetHash:'p2',signature:mismatchPayload.signature,
+ nodeCount:mismatchPayload.nodes.length,markdown:mismatchPayload.markdown});
+ok(mismatchFlow.displayAudit().at(-1).status==='PASS'&&
+ mismatchFlow.displayAudit().at(-1).expectedMarkdownSha256===mismatchFlow.displayAudit().at(-1).observedMarkdownSha256,
+ '完全一致をPASS記録として残す');
+
 const noPrefetch=answerWait();
 throws(()=>noPrefetch.answer(4),'NEXT_NOT_PREFETCHED','prefetch前の採点');
 ok(noPrefetch.state().phase==='ANSWER_WAIT','prefetch前は回答待ち状態を保持');
