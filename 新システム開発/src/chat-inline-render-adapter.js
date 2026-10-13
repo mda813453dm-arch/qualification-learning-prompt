@@ -3,9 +3,11 @@
  * ordered contentBlocks を決定論的に変換する。
  * AIによる並べ替え・補完・代替は禁止。
  */
+// Only the host chat's proven /mnt/data sandbox is eligible for inline display.
+// Work Mode scratch paths are not addressable by the iOS conversation renderer.
 const isSandboxPng=ref=>{
  const path=String(ref||'').split('?')[0].toLowerCase();
- return (path.startsWith('sandbox:/mnt/data/')||path.startsWith('sandbox:/workspace/scratch/'))&&path.endsWith('.png');
+ return path.startsWith('sandbox:/mnt/data/')&&path.endsWith('.png');
 };
 
 export function compileChatInlinePayload(question, assetRegistry){
