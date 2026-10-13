@@ -70,3 +70,25 @@ test("inline payload rejects missing assets, hash mismatch, and incomplete displ
     fetchImpl: async () => new Response(png, { headers: { "content-type": "image/png" } }) });
   assert.equal((await incomplete(input)).reason, "COMPLETE_INLINE_PACKET_REQUIRED");
 });
+
+
+test("shared official candidate without a user-plan hash resolves for an approved plan", async () => {
+  const sharedRow = { ...row };
+  delete sharedRow.studyPlanSha256;
+  const resolve = createResolveCandidates({
+    loadApprovedStudyPlan: async () => plan,
+    loadOfficialCandidateRecords: async () => [sharedRow]
+  });
+  const result = await resolve({ qualificationId: plan.qualificationId, studyUnitId: "control-points", studyPlanSha256: PLAN_HASH });
+  assert.equal(result.status, "approved");
+  assert.equal(result.candidates[0].studyPlanSha256, PLAN_HASH);
+});
+
+test("shared candidate still rejects a mismatching explicit plan hash", async () => {
+  const resolve = createResolveCandidates({
+    loadApprovedStudyPlan: async () => plan,
+    loadOfficialCandidateRecords: async () => [{ ...row, studyPlanSha256: "b".repeat(64) }]
+  });
+  const result = await resolve({ qualificationId: plan.qualificationId, studyUnitId: "control-points", studyPlanSha256: PLAN_HASH });
+  assert.equal(result.reason, "OFFICIAL_CANDIDATE_BINDING_INVALID");
+});
