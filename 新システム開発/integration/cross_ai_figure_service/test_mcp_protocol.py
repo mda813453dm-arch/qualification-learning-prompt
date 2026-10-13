@@ -1,7 +1,10 @@
 import base64
 import json
 import unittest
+import io
+from email.message import Message
 
+from .server import Handler
 from .mcp_protocol import TOOL_NAME, dispatch_mcp
 
 
@@ -72,6 +75,57 @@ class McpProtocolTests(unittest.TestCase):
         self.assertIsNone(dispatch_mcp(self.service, {
             "jsonrpc": "2.0", "method": "notifications/initialized",
         }))
+
+
+class HttpMcpEndpointTests(unittest.TestCase):
+    def test_authenticated_http_endpoint_dispatches_mcp_tool(self):
+        service = FakeService()
+        pdf = b"%PDF-1.7 attached"
+        request = {
+            "jsonrpc": "2.0", "id": 7, "method": "tools/call",
+            "params": {"name": TOOL_NAME, "arguments": {
+                "questionId": "land-surveyor:2025:morning:6",
+                "pdfBase64": base64.b64encode(pdf).decode("ascii"),
+            }},
+        }
+        body = json.dumps(request).encode()
+        harness = type("Harness", (Handler,), {"service": service})()
+        harness.command = "POST"
+        harness.path = "/mcp"
+        harness.headers = Message()
+        harness.headers["Content-Length"] = str(len(body))
+        harness.headers["Content-Type"] = "application/json"
+        harness.headers["Authorization"] = "Bearer test-secret"
+        harness.rfile = io.BytesIO(body)
+        harness.wfile = io.BytesIO()
+        harness.status = None
+        harness.response_headers = {}
+        harness.send_response = lambda code, message=None: setattr(harness, "status", code)
+        harness.send_header = lambda key, value: harness.response_headers.__setitem__(key, value)
+        harness.end_headers = lambda: None
+        harness.do_POST()
+        self.assertEqual(harness.status, 200)
+        response = json.loads(harness.wfile.getvalue())
+        self.assertEqual(response["result"]["structuredContent"]["status"], "ready")
+        self.assertEqual(service.calls, [(pdf, "land-surveyor:2025:morning:6")])
+
+    def test_http_endpoint_requires_authentication(self):
+        body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}).encode()
+        harness = type("Harness", (Handler,), {"service": FakeService()})()
+        harness.command = "POST"
+        harness.path = "/mcp"
+        harness.headers = Message()
+        harness.headers["Content-Length"] = str(len(body))
+        harness.headers["Content-Type"] = "application/json"
+        harness.rfile = io.BytesIO(body)
+        harness.wfile = io.BytesIO()
+        harness.status = None
+        harness.response_headers = {}
+        harness.send_response = lambda code, message=None: setattr(harness, "status", code)
+        harness.send_header = lambda key, value: harness.response_headers.__setitem__(key, value)
+        harness.end_headers = lambda: None
+        harness.do_POST()
+        self.assertEqual(harness.status, 401)
 
 
 if __name__ == "__main__":
