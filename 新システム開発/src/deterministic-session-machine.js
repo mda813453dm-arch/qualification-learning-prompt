@@ -23,7 +23,7 @@ const NEXT=Object.freeze({
 });
 
 export function createDeterministicSession(initial={}){
- let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,consecutiveWrong:0,reviewRequired:false,...initial});
+ let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,consecutiveWrong:0,reviewRequired:false,currentTopicId:null,...initial});
  const snapshot=()=>state;
  const reject=(reason)=>Object.freeze({ok:false,reason,state:snapshot()});
  const commit=(phase,patch={})=>{
@@ -50,7 +50,7 @@ export function createDeterministicSession(initial={}){
       return commit(rule[1],{source:Object.freeze({...event.source})});
     case 'PIN_QUESTION':
       if(!event.question||event.question.status!=='ready')return reject('READY_QUESTION_REQUIRED');
-      return commit(rule[1],{question:event.question});
+      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId??null});
     case 'PIN_ASSETS':
       if(!Array.isArray(event.assets))return reject('ASSET_ARRAY_REQUIRED');
       if(event.assets.some(a=>!a.assetId||!a.sha256||!a.sourcePage))return reject('ASSET_EVIDENCE_REQUIRED');
@@ -67,7 +67,9 @@ export function createDeterministicSession(initial={}){
       const n=Number(String(event.value).trim());
       const a=Number(state.packet?.answer?.value);
       if(!Number.isInteger(n)||!Number.isInteger(a))return reject('ANSWER_BINDING_INVALID');
-      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:n===a?0:state.consecutiveWrong+1,reviewRequired:n!==a&&state.consecutiveWrong+1>=3});
+      const eligible=state.question?.kind!=='review'&&state.question?.topicId&&state.question.topicId===state.currentTopicId;
+      const streak=eligible?(n===a?0:state.consecutiveWrong+1):0;
+      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:streak,reviewRequired:eligible&&n!==a&&streak>=2});
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
@@ -80,7 +82,7 @@ export function createDeterministicSession(initial={}){
       return commit(rule[1],{nextQuestionNumber:event.nextQuestionNumber});
     case 'LOAD_NEXT':
       if(!event.question||event.question.status!=='ready'||event.question.number!==state.nextQuestionNumber)return reject('NEXT_QUESTION_MISMATCH');
-      return commit(rule[1],{question:event.question,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null,nextQuestionNumber:null});
+      return commit(rule[1],{question:event.question,currentTopicId:event.question.topicId??null,consecutiveWrong:event.question.topicId===state.currentTopicId?state.consecutiveWrong:0,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null,nextQuestionNumber:null});
     default:return reject('UNKNOWN_EVENT');
    }
   }
