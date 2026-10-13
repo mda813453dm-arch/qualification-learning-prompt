@@ -10,6 +10,7 @@ on:
       - '新システム開発/src/pinned-on-demand-candidates.js'
       - '新システム開発/src/pinned-on-demand-candidates.test.js'
       - '新システム開発/tools/verify-pinned-takken-pdf.mjs'
+      - '新システム開発/tools/extract-takken-on-demand.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
@@ -36,3 +37,9 @@ jobs:
       - name: Download and verify real official Takken 2025 PDF
         working-directory: 新システム開発
         run: node tools/verify-pinned-takken-pdf.mjs
+      - name: Extract real Takken question 29 from verified PDF
+        working-directory: 新システム開発
+        run: |
+          python -m pip install --quiet PyMuPDF==1.26.5
+          python tools/extract-takken-on-demand.py "$RUNNER_TEMP/takken-2025-verified.pdf" 29 > "$RUNNER_TEMP/takken-q29.json"
+          python -c 'import json,os; d=json.load(open(os.environ["RUNNER_TEMP"]+"/takken-q29.json")); assert d["questionNumber"]==29 and d["choicesParsed"] is True and len(d["choices"])==4 and d["stem"]; print(json.dumps({"questionNumber":29,"choicesParsed":True,"choiceCount":4,"status":d["status"],"pdfPage":d["pdfPage"]}))'
