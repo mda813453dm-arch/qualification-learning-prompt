@@ -18,6 +18,7 @@ import urllib.error
 import urllib.request
 from email import policy
 from email.parser import BytesParser
+from .mcp_protocol import dispatch_mcp
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
@@ -221,6 +222,18 @@ class Handler(BaseHTTPRequestHandler):
         try:
             service = self._service()
             service.authorize(self.headers.get("Authorization"))
+            if self.path == "/mcp":
+                try:
+                    request = json.loads(self._read_body(max_bytes=((MAX_PDF_BYTES + 2) // 3) * 4 + 65536))
+                except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+                    raise RequestError(400, "MCP_JSON_INVALID") from exc
+                response = dispatch_mcp(service, request)
+                if response is None:
+                    self.send_response(202)
+                    self.send_header("Content-Length", "0")
+                    self.end_headers()
+                    return
+                return self._json(200, response)
             if self.path == "/v1/figures/extract":
                 pdf, question_id = self._parse_multipart_pdf()
             elif self.path == "/v1/integrations/openai/figures/extract":
@@ -296,14 +309,14 @@ class Handler(BaseHTTPRequestHandler):
             raise RequestError(413, "PDF_TOO_LARGE")
         return pdf, question_id
 
-    def _read_body(self) -> bytes:
+    def _read_body(self, max_bytes: int = MAX_PDF_BYTES + 64 * 1024) -> bytes:
         try:
             size = int(self.headers.get("Content-Length", "-1"))
         except ValueError as exc:
             raise RequestError(400, "CONTENT_LENGTH_INVALID") from exc
         if size < 0:
             raise RequestError(411, "CONTENT_LENGTH_REQUIRED")
-        if size > MAX_PDF_BYTES + 64 * 1024:
+        if size > max_bytes:
             raise RequestError(413, "REQUEST_TOO_LARGE")
         body = self.rfile.read(size)
         if len(body) != size:

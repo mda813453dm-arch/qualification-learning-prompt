@@ -6,6 +6,10 @@ PDF bytes and a reviewed question layout, creates a new PNG crop from that PDF,
 and returns a short-lived public HTTPS image URL plus the exact Markdown image
 reference. It never returns `sandbox:` paths or asks the model to redraw a figure.
 
+## MCP client contract
+
+The same service exposes a stateless MCP Streamable HTTP endpoint at `/mcp`. A client that supports MCP can discover `extract_official_figure_from_attached_pdf` with `tools/list` and call it with the active attachment bytes encoded as base64 plus the exact supported `questionId`. The tool returns `structuredContent.markdownImage`, which must be inserted verbatim at the figure position. The MCP server does not claim that the AI client rendered that Markdown. The provider must be configured to forward its current PDF bytes to the MCP tool; this cannot be enabled by repository code alone.
+
 ## Client contract
 
 Any AI platform or agent runner that can call an authenticated HTTP API and pass

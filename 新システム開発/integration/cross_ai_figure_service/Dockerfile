@@ -6,6 +6,8 @@ COPY cross_ai_figure_service/requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY extract_attached_pdf_figure.py ./extract_attached_pdf_figure.py
 COPY cross_ai_figure_service/server.py ./server.py
+COPY cross_ai_figure_service/mcp_protocol.py ./cross_ai_figure_service/mcp_protocol.py
+COPY cross_ai_figure_service/__init__.py ./cross_ai_figure_service/__init__.py
 COPY cross_ai_figure_service/cross-ai-figure-manifest.json ./question-layouts.json
 RUN mkdir -p /data/figure-store && chown -R appuser:appuser /app /data
 USER appuser
