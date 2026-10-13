@@ -4,7 +4,7 @@
  */
 export const PHASES=Object.freeze([
  'IDLE','QUALIFICATION_FIXED','SOURCE_FIXED','QUESTION_FIXED','ASSETS_FIXED',
- 'PACKET_VALIDATED','RENDERED','ANSWER_WAIT','GRADED','EXPLAINED','REVIEW_REQUIRED','NEXT_FIXED','FINISHED'
+ 'PACKET_VALIDATED','RENDERED','ANSWER_WAIT','GRADED','EXPLAINED','REVIEW_REQUIRED','REVIEW_CONTINUE_REQUIRED','NEXT_FIXED','FINISHED'
 ]);
 
 const NEXT=Object.freeze({
@@ -77,7 +77,7 @@ export function createDeterministicSession(initial={}){
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-      return commit(state.reviewRequired?'REVIEW_REQUIRED':rule[1],{explanation:event.explanation,explanationSkipped:false});
+      return commit(state.reviewContinueRequired?'REVIEW_CONTINUE_REQUIRED':state.reviewRequired?'REVIEW_REQUIRED':rule[1],{explanation:event.explanation,explanationSkipped:false});
     case 'PIN_REVIEW_QUESTION':
       if(!event.question||event.question.status!=='ready'||event.question.kind!=='review'||!event.question.topicId||event.question.topicId!==state.currentTopicId)return reject('REVIEW_QUESTION_REQUIRED');
       if(state.phase==='REVIEW_CONTINUE_REQUIRED'&&event.continueConfirmed!==true)return reject('REVIEW_CONTINUATION_CONFIRMATION_REQUIRED');
