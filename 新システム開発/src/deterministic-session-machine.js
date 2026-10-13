@@ -4,7 +4,7 @@
  */
 export const PHASES=Object.freeze([
  'IDLE','QUALIFICATION_FIXED','SOURCE_FIXED','QUESTION_FIXED','ASSETS_FIXED',
- 'PACKET_VALIDATED','RENDERED','ANSWER_WAIT','GRADED','EXPLAINED','NEXT_FIXED','FINISHED'
+ 'PACKET_VALIDATED','RENDERED','ANSWER_WAIT','GRADED','EXPLAINED','REVIEW_REQUIRED','NEXT_FIXED','FINISHED'
 ]);
 
 const NEXT=Object.freeze({
@@ -18,11 +18,12 @@ const NEXT=Object.freeze({
  ANSWER_WAIT:['SUBMIT_ANSWER','GRADED'],
  GRADED:['COMMIT_EXPLANATION','EXPLAINED'],
  EXPLAINED:['FIX_NEXT','NEXT_FIXED'],
+ REVIEW_REQUIRED:['PIN_REVIEW_QUESTION','QUESTION_FIXED'],
  NEXT_FIXED:['LOAD_NEXT','QUESTION_FIXED']
 });
 
 export function createDeterministicSession(initial={}){
- let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,...initial});
+ let state=Object.freeze({phase:'IDLE',qualification:null,source:null,question:null,assets:null,packet:null,renderReceipt:null,grade:null,consecutiveWrong:0,reviewRequired:false,...initial});
  const snapshot=()=>state;
  const reject=(reason)=>Object.freeze({ok:false,reason,state:snapshot()});
  const commit=(phase,patch={})=>{
@@ -35,7 +36,7 @@ export function createDeterministicSession(initial={}){
    if(!event||typeof event.type!=='string')return reject('EVENT_REQUIRED');
    if(event.type==='SKIP_EXPLANATION'){
     if(state.phase!=='GRADED'||event.packetHash!==state.packet?.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-    return commit('EXPLAINED',{explanation:null,explanationSkipped:true});
+    return commit(state.reviewRequired?'REVIEW_REQUIRED':'EXPLAINED',{explanation:null,explanationSkipped:true});
    }
    const rule=NEXT[state.phase];
    if(!rule||event.type!==rule[0])return reject('TRANSITION_FORBIDDEN');
@@ -66,11 +67,14 @@ export function createDeterministicSession(initial={}){
       const n=Number(String(event.value).trim());
       const a=Number(state.packet?.answer?.value);
       if(!Number.isInteger(n)||!Number.isInteger(a))return reject('ANSWER_BINDING_INVALID');
-      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash})});
+      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:n===a?0:state.consecutiveWrong+1,reviewRequired:n!==a&&state.consecutiveWrong+1>=3});
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
-      return commit(rule[1],{explanation:event.explanation,explanationSkipped:false});
+      return commit(state.reviewRequired?'REVIEW_REQUIRED':rule[1],{explanation:event.explanation,explanationSkipped:false});
+    case 'PIN_REVIEW_QUESTION':
+      if(!event.question||event.question.status!=='ready'||event.question.kind!=='review')return reject('REVIEW_QUESTION_REQUIRED');
+      return commit(rule[1],{question:event.question,reviewRequired:false,consecutiveWrong:0,assets:null,packet:null,renderReceipt:null,grade:null,explanation:null});
     case 'FIX_NEXT':
       if(event.nextQuestionNumber===undefined)return reject('NEXT_REQUIRED');
       return commit(rule[1],{nextQuestionNumber:event.nextQuestionNumber});
