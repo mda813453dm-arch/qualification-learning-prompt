@@ -33,6 +33,9 @@ jobs:
           node-version: '22'
       - name: Show tested commit
         run: git rev-parse HEAD
+      - name: Run deterministic learning session and review transition tests
+        working-directory: 新システム開発
+        run: node src/deterministic-session-machine.test.js
       - name: Run six official candidate dependency tests
         working-directory: 新システム開発
         run: node --test src/official-runtime-dependencies.test.js src/pinned-on-demand-candidates.test.js
