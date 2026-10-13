@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { createCrossAiLearningHttpServer } from "./cross-ai-learning-api.js";
+import { createResolveCandidates, createBuildInlinePayload } from "./official-runtime-dependencies.js";
 
 const required = (env, key) => {
   const value = String(env[key] || "").trim();
@@ -27,7 +28,28 @@ export async function createConfiguredLearningRuntime({ env = process.env } = {}
       typeof dependencies.initializeSession !== "function" ||
       typeof dependencies.sessions?.put !== "function" || typeof dependencies.sessions?.get !== "function")
     throw new Error("LEARNING_RUNTIME_ADAPTERS_INCOMPLETE");
-  const server = createCrossAiLearningHttpServer(dependencies);
+  // The official candidate queue and verified inline payload are server-owned.
+  // Missing production sources must fail closed; never synthesize candidate rows.
+  if (typeof dependencies.loadApprovedStudyPlan !== "function" ||
+      typeof dependencies.loadOfficialCandidateRecords !== "function" ||
+      typeof dependencies.compileVerifiedBundle !== "function")
+    throw new Error("LEARNING_RUNTIME_OFFICIAL_DEPENDENCIES_REQUIRED");
+  const resolveCandidates = createResolveCandidates({
+    loadApprovedStudyPlan: dependencies.loadApprovedStudyPlan,
+    loadOfficialCandidateRecords: dependencies.loadOfficialCandidateRecords
+  });
+  const buildInlinePayload = createBuildInlinePayload({
+    compileVerifiedBundle: dependencies.compileVerifiedBundle,
+    ...(dependencies.fetchOfficialAsset ? { fetchImpl: dependencies.fetchOfficialAsset } : {})
+  });
+  const server = createCrossAiLearningHttpServer({
+    ...dependencies,
+    initializeSession: input => dependencies.initializeSession({
+      ...input,
+      resolveCandidates,
+      buildInlinePayload
+    })
+  });
   return Object.freeze({ server, host, port });
 }
 
