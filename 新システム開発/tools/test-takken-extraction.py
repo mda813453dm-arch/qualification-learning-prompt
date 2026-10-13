@@ -35,4 +35,19 @@ with tempfile.TemporaryDirectory() as directory:
     result = run(tampered, 29)
     assert result.returncode != 0 and "OFFICIAL_PDF_SHA256_MISMATCH" in result.stderr
 print("tampered_pdf_rejected: PASS")
+
+# Verify exact answer cells in the final official PDF page before enabling grading.
+import fitz, re
+with fitz.open(pdf) as official:
+    answer_page = official[29].get_text(sort=True)
+    normalized = re.sub(r"\\s+", " ", answer_page)
+    for q, expected in ((29, 2), (30, 3)):
+        # Both entries are adjacent in the official answer row, following questions 21-30.
+        row = re.search(r"問\\s*２１.*?問\\s*３０\\s+([1-4](?:\\s+[1-4]){9})", normalized)
+        if not row:
+            raise AssertionError("OFFICIAL_ANSWER_ROW_NOT_FOUND")
+        cells = [int(x) for x in row.group(1).split()]
+        assert cells[q-21] == expected, f"OFFICIAL_ANSWER_MISMATCH_Q{q}"
+        print(f"official_answer_q{q}: PASS", flush=True)
+
 print("INTEGRATION_TESTS_PASSED")
