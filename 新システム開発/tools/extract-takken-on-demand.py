@@ -13,7 +13,7 @@ from pathlib import Path
 
 EXPECTED_SHA = "829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed"
 HEADING = re.compile(r"【問[ 　]*(\d{1,2})】")
-CHOICE = re.compile(r"(?m)^\\s*([1-4])[ 　]+")
+CHOICE = re.compile(r"(?m)^[ \\t]*([1-4])[ 　]+")
 ANSWERS = [
   3,3,3,4,4,1,1,2,1,3, 3,3,3,1,4,4,2,2,2,4,
   4,4,1,2,1,4,1,2,2,3, 4,2,3,3,1,4,4,3,4,3,
