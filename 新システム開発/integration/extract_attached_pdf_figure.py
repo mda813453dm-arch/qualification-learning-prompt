@@ -1,8 +1,8 @@
-"""Render a reviewed figure crop from the PDF attached in the current chat.
+"""Freshly crop a reviewed official figure from the PDF supplied to this execution.
 
-The output is regenerated from the supplied PDF bytes on every invocation.
-Call this only with attachment/chat identifiers supplied by the trusted chat
-attachment connector and crop coordinates from the verified question bundle.
+The caller passes the PDF path made available by the active chat's file-processing
+runtime. Provenance is bound to the actual PDF bytes and this extraction run;
+the caller does not need fabricated chat IDs or attachment IDs.
 """
 from __future__ import annotations
 
@@ -18,15 +18,13 @@ def extract_attached_pdf_figure(
     pdf_path: str | Path,
     *,
     expected_pdf_sha256: str,
-    attachment_id: str,
-    chat_id: str,
     question_id: str,
     page_number: int,
     crop: dict[str, float],
     output_dir: str | Path,
     dpi: int = 180,
 ) -> dict:
-    """Create a fresh PNG crop and a source-bound receipt, or raise ValueError."""
+    """Create a fresh PNG crop and a PDF/run-bound receipt, or raise ValueError."""
     try:
         import fitz
     except ImportError as exc:  # pragma: no cover - environment-specific
@@ -39,15 +37,16 @@ def extract_attached_pdf_figure(
     digest = hashlib.sha256(raw).hexdigest()
     if not re.fullmatch(r"[a-f0-9]{64}", expected_pdf_sha256 or "") or digest != expected_pdf_sha256:
         raise ValueError("ATTACHED_PDF_HASH_MISMATCH")
-    if not attachment_id or not chat_id or not question_id:
-        raise ValueError("CURRENT_CHAT_ATTACHMENT_BINDING_REQUIRED")
+    if not question_id:
+        raise ValueError("QUESTION_ID_REQUIRED")
     if type(page_number) is not int or page_number < 1:
         raise ValueError("INVALID_PAGE")
     if type(dpi) is not int or not 100 <= dpi <= 300:
         raise ValueError("INVALID_DPI")
-    if not isinstance(crop, dict) or not all(k in crop for k in ("x0", "y0", "x1", "y1")):
+    keys = ("x0", "y0", "x1", "y1")
+    if not isinstance(crop, dict) or not all(k in crop for k in keys):
         raise ValueError("REVIEWED_CROP_REQUIRED")
-    if not all(isinstance(crop[k], (int, float)) and math.isfinite(crop[k]) for k in ("x0", "y0", "x1", "y1")):
+    if not all(isinstance(crop[k], (int, float)) and math.isfinite(crop[k]) for k in keys):
         raise ValueError("CROP_COORDINATES_INVALID")
 
     doc = fitz.open(stream=raw, filetype="pdf")
@@ -63,25 +62,28 @@ def extract_attached_pdf_figure(
     if not png.startswith(b"\x89PNG\r\n\x1a\n"):
         raise ValueError("PNG_RENDER_FAILED")
 
+    operation_id = uuid.uuid4().hex
     safe_question = re.sub(r"[^A-Za-z0-9_-]+", "_", question_id).strip("_") or "question"
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
-    # Unique path prevents a prior chat's generated crop from being reused.
-    image_path = out / f"{safe_question}-p{page_number}-{uuid.uuid4().hex}.png"
+    image_path = out / f"{safe_question}-p{page_number}-{operation_id}.png"
     image_path.write_bytes(png)
+    image_sha256 = hashlib.sha256(png).hexdigest()
     return {
         "status": "ready",
         "mediaType": "image/png",
+        "operationId": operation_id,
         "imagePath": str(image_path),
-        "imageSha256": hashlib.sha256(png).hexdigest(),
+        "imageSha256": image_sha256,
         "width": pix.width,
         "height": pix.height,
-        "generatedInChatId": chat_id,
+        "sourcePdf": {"mediaType": "application/pdf", "sha256": digest},
         "derivedFromPdf": {
-            "fileId": attachment_id,
             "pdfSha256": digest,
             "page": page_number,
-            "crop": {k: float(crop[k]) for k in ("x0", "y0", "x1", "y1")},
+            "crop": {k: float(crop[k]) for k in keys},
+            "operationId": operation_id,
+            "imageSha256": image_sha256,
             "extractionVerified": True,
         },
     }
