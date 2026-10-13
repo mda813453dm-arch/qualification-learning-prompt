@@ -5,10 +5,15 @@ import io
 from email.message import Message
 
 from .test_server import HandlerHarness
+from .server import RequestError
 from .mcp_protocol import TOOL_NAME, dispatch_mcp
 
 
 class FakeService:
+    def authorize(self, header):
+        if header != "Bearer test-secret":
+            raise RequestError(401, "UNAUTHORIZED")
+
     def __init__(self):
         self.calls = []
 
