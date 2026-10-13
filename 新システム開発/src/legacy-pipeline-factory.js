@@ -1,9 +1,11 @@
 import { retrieveAndVerify } from "./legacy-retrieval-engine.js";
 import { createOfficialRetrievalPipeline } from "./official-retrieval-pipeline.js";
 /**
- * 実際の旧検証関数を呼ぶ結合口。
- * adapters はサーバー側で設定したPDF取得・解析アダプターに限る。
+ * Legacy extractor adapter. The approved question queue and complete inline
+ * packet builder remain explicit server-owned dependencies.
  */
-export function createLegacyVerifiedPipeline(adapters) {
-  return createOfficialRetrievalPipeline({ retrieveAndVerify, adapters });
+export function createLegacyVerifiedPipeline({adapters,resolveCandidates,buildInlinePayload}={}) {
+  return createOfficialRetrievalPipeline({
+    retrieveAndVerify,adapters,resolveCandidates,buildInlinePayload
+  });
 }
