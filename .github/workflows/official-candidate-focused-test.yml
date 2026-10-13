@@ -9,6 +9,8 @@ on:
       - '新システム開発/src/official-runtime-dependencies.test.js'
       - '新システム開発/src/pinned-on-demand-candidates.js'
       - '新システム開発/src/pinned-on-demand-candidates.test.js'
+      - '新システム開発/tools/verify-pinned-takken-pdf.mjs'
+      - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
 
@@ -31,3 +33,6 @@ jobs:
       - name: Run six official candidate dependency tests
         working-directory: 新システム開発
         run: node --test src/official-runtime-dependencies.test.js src/pinned-on-demand-candidates.test.js
+      - name: Download and verify real official Takken 2025 PDF
+        working-directory: 新システム開発
+        run: node tools/verify-pinned-takken-pdf.mjs
