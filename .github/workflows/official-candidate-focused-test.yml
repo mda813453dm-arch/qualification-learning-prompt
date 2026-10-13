@@ -7,6 +7,8 @@ on:
     paths:
       - '新システム開発/src/official-runtime-dependencies.js'
       - '新システム開発/src/official-runtime-dependencies.test.js'
+      - '新システム開発/src/pinned-on-demand-candidates.js'
+      - '新システム開発/src/pinned-on-demand-candidates.test.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
 
@@ -28,4 +30,4 @@ jobs:
         run: git rev-parse HEAD
       - name: Run six official candidate dependency tests
         working-directory: 新システム開発
-        run: node --test src/official-runtime-dependencies.test.js
+        run: node --test src/official-runtime-dependencies.test.js src/pinned-on-demand-candidates.test.js
