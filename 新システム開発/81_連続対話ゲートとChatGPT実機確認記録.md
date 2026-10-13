@@ -120,3 +120,15 @@
 - **既存35件の結果**：最新に記録済みのRun [38370990863](https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/38370990863) はhead `059d1794406ba81f12c6e7b27e43ddbf66aad5be`、JS 224件（184 PASS／35 FAIL／5 SKIP）、35件すべて `PIPELINE_CONFIGURATION_REQUIRED`。現在のbranchは当該headより監査記録1ファイルだけaheadであることをGitHub compareで確認した。最新run後に本番コード・テストは変わっていないため、これは同一コードのテスト結果だが、監査記録だけの新headに対応する新runではない。35件は本番同等データ依存を供給して実行した結果ではなく、依存未設定による失敗。期待値変更・安全ゲート緩和・スタブ化は行っていない。
 - **宅建実データ追加後のCI**：宅建PDF pin/hashと単元別候補行が未確定のため、本番候補sourceへの追加は未実施。したがって今回、新しいCI実行は発生していない。Run 38370990863を現在headのrunとして扱わない。
 - **記録更新によるhead**：この追記を含む監査記録コミットは `3414672acc97450ba76a8ce19bec34f2c2b22ecf`。比較上、`059d1794406ba81f12c6e7b27e43ddbf66aad5be` から監査記録1ファイルのみ追加変更。workflowのコードpath filter対象外なので新規CI runなし。総合判定は引き続き **未合格**。実ChatGPTでの反復試験は0回。
+
+
+## 2026-10-13｜宅建2025公式PDF添付照合とSHA-256 pin
+- **台帳の正本確認**：`mda813453dm-arch/shikaku-kakomon-urls` の `main/shikaku_kakomon_urls.csv` を読み、blob SHA `413b13d2a2df37beee5f0354e5806b8266209e14` を確認した。宅地建物取引士・問題・2025年度のURL欄は `https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf`。正解行は問題と同一PDF内に正解番号表を含むと記載。URL文字列は変更・再構成していない。
+- **直接取得**：公式URLからPDF bytesを取得する直接アクセスは、先行の一回で実行環境のbrowser-proxy接続失敗となり、bytesは得られなかった。指示に従い直接取得を再試行していない。
+- **添付と識別**：水野さん添付 `R7_question_answer.pdf` を使用。ChatGPT scratch受領時のファイルmtimeは2026-10-13 18:00:20 JST。取得者は水野さん。元のWebサイトからのダウンロード時刻は未提供のため、添付受領時刻と区別して記録する。サイズ1,071,555 bytes、30 pages、SHA-256 `829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed`。PDF metadata title `AB.indd`。添付から `sha256sum` と `pdfinfo` で実測。
+- **公式資料との同一性確認**：公式CSV記載URLをPDF閲覧し、表示タイトル `AB.indd`・30 pagesを確認。添付PDFの印刷頁16（PDF index 16）を画像表示し、問29・問30の本文・各肢を確認した。添付30頁目の公式正答表で問29=2、問30=3を画像確認した。公式URL側のPDF抽出結果と添付PDFの問29・問30本文および正答番号は一致。CSVが同一PDF内に正答表を含むとする記載とも一致。したがって同じ公式文書として確認済み。なお直接取得bytesがないためURL配信物とのbyte-for-byte比較を行ったという意味ではない。
+- **pin登録**：`src/official-pdf-pins.js` に `宅地建物取引士:2025:年度共通` を追加。問題URLと正答URLはCSV由来の同じURL、問題SHAと正答SHAは同じ添付PDFから算出した値。`年度共通` はCSVに試験区分の分割がない2025年度一体資料を表すregistry section名。
+- **土地家屋調査士照合**：同CSVの土地家屋調査士2025年度「午後」問題URLは `https://www.moj.go.jp/content/001450011.pdf`、正解URLは `https://www.moj.go.jp/content/001450015.pdf`。`src/official-pdf-pins.js` の既存pinと両方とも文字列完全一致。
+- **回帰テスト**：`src/official-pdf-pins.test.js` を追加。CSV URLと既存pinの完全一致、宅建pin URL・hash、正しいpinの検証、URL/hash差替え拒否の4ケース。GitHubから再取得したソース内容でローカルNode実行し4/4 PASS。`node --test` によるこの追加テストのActions runは現時点で取得できていないため、CI PASSとは記録しない。
+- **変更範囲**：本番 `src/official-pdf-pins.js`、テスト専用 `src/official-pdf-pins.test.js`、本記録。`main` と既存 `master_prompt.txt` は変更対象外。公式取得pipelineの運用依存、同一単元の承認済み候補、ChatGPT実機反復試験は引き続き未完了。
+- **総合判定**：未合格。今回の作業は公式PDFのURL/hash pin固定であり、学習runtimeの稼働や実ChatGPTの連続対話を合格とするものではない。
