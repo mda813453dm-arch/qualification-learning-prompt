@@ -50,6 +50,12 @@ ok(markdownResult.markdown.indexOf('問題文の前半')<markdownResult.markdown
 ok(markdownResult.markdown.endsWith('番号で答えてください。'),'complete message ends with answer instruction');
 ok(renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:'inline-not-a-url'}:n)}).reason==='INLINE_IMAGE_REFERENCE_INVALID',
  'placeholder text is rejected instead of silently replacing the figure');
-ok(renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:'sandbox:/mnt/data/no-context.png'}:n)}).reason==='INLINE_IMAGE_CONTEXT_MISSING',
- 'iOS image reference without required source message context is rejected');
+const plainRef='sandbox:/mnt/data/official-q3.png';
+const plainResult=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:plainRef}:n)});
+ok(plainResult.status==='ready'&&plainResult.markdown.includes('![公式図]('+plainRef+')'),
+ 'plain sandbox PNG reference works without asking for IDs assigned by the host after sending');
+const partialContext=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:plainRef+'?_chatgptios_conversationID=conv-only'}:n)});
+ok(partialContext.reason==='INLINE_IMAGE_CONTEXT_INVALID','incomplete optional host context is rejected');
+const placeholderContext=renderChatInlineMarkdown({...markdownPayload,nodes:markdownPayload.nodes.map(n=>n.role==='official_figure'?{...n,value:plainRef+'?_chatgptios_conversationID=この会話のID&_chatgptios_messageID=この回答のID'}:n)});
+ok(placeholderContext.reason==='INLINE_IMAGE_CONTEXT_INVALID','invented context placeholders are rejected');
 console.log('PASS chat-inline-render-adapter markdown serialization and iOS figure embedding');
