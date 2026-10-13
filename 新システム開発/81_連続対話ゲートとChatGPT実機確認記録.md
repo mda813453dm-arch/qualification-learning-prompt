@@ -92,3 +92,11 @@
 3. 土地家屋調査士の同一単元から選ぶ。資格・単元・年度・午前午後・問番号と公式問題・正答の入力元を指定する必要がある。既存の実機確認経緯に続けられる一方、現行pinは2025午後のみで、指定する問29・30との一致を別途確認する必要がある。
 4. 別の資格・単元を指定する。公式資料の取得可能性・同一単元候補・表示素材が揃うかを確認する必要がある。
 いずれの案でも、問29・30の回答値、各回答後の解説要否選択、解説中の質問を入れるか、次問出題までの固定手順を水野さんが指定する。未指定の部分は試験手順に組み込まない。
+
+
+## 2026-10-13 CI確認（本番依存境界・composition root追加）
+- GitHub Actions Run [38370990863](https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/38370990863)（run number 199、head `059d1794406ba81f12c6e7b27e43ddbf66aad5be`）を確認。Python統合test stepはPASS。JavaScript全件は224件、184 PASS、35 FAIL、5 SKIP。Actions全体はFAIL。
+- 35 FAILはいずれも `PIPELINE_CONFIGURATION_REQUIRED`。既存テストの期待値変更やtest stubでのPASS化はしていない。追加した8件（resolver・payload・composition root・API境界）はPASS。
+- mainとai-learning-systemの `master_prompt.txt` blob SHAを再照合し、双方 `c627c91b78dcd739e5e2f78a726301fa7a0b380f` で一致。mainに変更なし。
+- Run #199はコードhead `059d179` を検証した。以後の本記録更新は記録ファイルのみで、CI path filter外の変更である。
+- 総合判定：**未合格**。実ChatGPT反復試験は0回。composition rootとAPI境界が追加されたが、候補データを返す既存の単元別公式候補ソース、運用adapter、host・認証・session・PDF受渡しの選択と配備がないため、既存35件は未解消。選択肢A〜Dは記録したが、水野さんの決定待ち。
