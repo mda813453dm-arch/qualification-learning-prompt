@@ -132,3 +132,16 @@
 - **回帰テスト**：`src/official-pdf-pins.test.js` を追加。CSV URLと既存pinの完全一致、宅建pin URL・hash、正しいpinの検証、URL/hash差替え拒否の4ケース。GitHubから再取得したソース内容でローカルNode実行し4/4 PASS。`node --test` によるこの追加テストのActions runは現時点で取得できていないため、CI PASSとは記録しない。
 - **変更範囲**：本番 `src/official-pdf-pins.js`、テスト専用 `src/official-pdf-pins.test.js`、本記録。`main` と既存 `master_prompt.txt` は変更対象外。公式取得pipelineの運用依存、同一単元の承認済み候補、ChatGPT実機反復試験は引き続き未完了。
 - **総合判定**：未合格。今回の作業は公式PDFのURL/hash pin固定であり、学習runtimeの稼働や実ChatGPTの連続対話を合格とするものではない。
+
+
+## 2026-10-13 18:12｜段階2：宅建の単元確認と候補台帳形式案
+- **対象・範囲**：水野さん承認後、段階2の確認のみを実施。作業対象は `ai-learning-system`。台帳ファイルは作成しない。変更するGitHubファイルは本記録のみ。
+- **宅建問29／問30の単元確認**：問29（37条書面）と問30（重要事項説明・クーリングオフ・手付金保全等の違反事項数）を同一の承認済み `studyUnitId` に割り当てた学習計画または単元定義資料は、確認した開発管理記録、現行GitHubブランチのファイル一覧、既存公式URL台帳から見つからなかった。問番号が連続することだけでは同単元と扱わない。単元IDと個別questionIdは**未確認**。推測で単元を作成していない。
+- **確認した宅建CSV**：`mda813453dm-arch/shikaku-kakomon-urls` の `qualifications/宅地建物取引士.csv`。列は分野グループ、資格種別、資格名、実施団体、過去問一覧URL、種別、年度、区分・状況、URL。年度・公式URLは記録できるが、`studyUnitId`、個別 `questionId`、PDF hash／pin参照の列はない。従って、現行ファイルをそのまま単元別候補台帳として使えるかは列要件を満たさず、現状のままでは不足。
+- **土地家屋調査士2025午後の確認**：`qualifications/土地家屋調査士.csv` の問題URL `https://www.moj.go.jp/content/001450011.pdf` と正答URL `https://www.moj.go.jp/content/001450015.pdf` は、`src/official-pdf-pins.js` のregistry key `土地家屋調査士:2025:午後` の既存pinと文字列完全一致。両資料は年度・午後区分のPDF対を特定するが、個別questionId、studyUnitId、単元別候補行の入力元は持たないため**未確認**。
+- **候補台帳の形式案（水野さん選択待ち、採否・推奨なし）**：
+  A. 単元ごとに問題IDを並べるJSON（`studyUnitId`、`questionId`、`year`、`section`、公式PDFのpin参照）。型と入れ子構造を明示できる。一方、表計算で一覧確認・直接編集しにくい場合がある。
+  B. CSV（1行1問、Aと同じ列構成）。表計算で一覧・編集しやすい。一方、型、必須項目、複数値の扱いを別途検証する必要がある。
+  C. 既存の `qualifications/宅地建物取引士.csv` をそのまま候補台帳として使う。既存の公式取得URL一覧を再利用できる。一方、現在の列に単元ID、個別問題ID、PDF hash／pin参照がなく、候補台帳要件への適合は未確認（今回の列確認では不足）。
+- **選択待ち**：水野さんがA〜Cから形式を選択するまで、候補台帳ファイル・候補データは作成しない。
+- **総合判定**：未合格を維持。候補台帳の選択・入力、同一単元判定、本番依存での35件の検証、実ChatGPT反復試験は未完了。
