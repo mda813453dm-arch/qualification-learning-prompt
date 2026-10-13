@@ -70,4 +70,5 @@ const finalPlaceholder=verifyFinalResponseBody(turn,turn.messageBody.replace(ima
 ok(finalPlaceholder.reason==='FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN','final response that substitutes a figure placeholder is blocked');
 const finalHeadingOnly=verifyFinalResponseBody(turn,'■令和7年度 問2\\n\\n番号で答えてください。');
 ok(finalHeadingOnly.reason==='FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN','heading-only final response is blocked');
-\nconsole.log('PASS chat-turn-renderer: PDF-byte/run provenance and actual answer-body embedding');
+
+console.log('PASS chat-turn-renderer: PDF-byte/run provenance and actual answer-body embedding');
