@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: Cross-AI Qualification Learning Runtime
+  version: 0.1.0
+  description: >-
+    Shared REST contract for AI clients. Official questions, answers, grading,
+    progression, and next-question packets are owned by the runtime. This
+    contract is not deployable yet: the host URL and authentication scheme
+    remain unselected. The server requires an authentication adapter and fails
+    closed when required production adapters are absent. Do not send question
+    text, choices, answer keys, or next-question packets from the AI client.
+servers:
+  - url: https://YOUR-DEPLOYED-LEARNING-RUNTIME-HOST
+    description: Replace only after the user selects a deployment host.
+x-runtime-requires-authentication: true
+x-authentication-scheme-pending-user-decision: true
+paths:
+  /v1/learning/sessions:
+    post:
+      operationId: startQualificationLearningSession
+      summary: Start from a server-verified official question packet
+      description: >-
+        The runtime resolves the approved study plan, source, question, answer,
+        assets, and complete display payload. The client may specify the
+        qualification and study unit, but cannot supply question content or
+        answers. Current-chat PDF attachment forwarding is not part of this
+        operation until that adapter is selected and implemented.
+      x-runtime-authentication-required: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartSessionRequest'
+      responses:
+        '200':
+          description: Complete first question packet ready to display.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionReady'
+        '400':
+          description: Invalid request or client-supplied authoritative content.
+        '401':
+          description: Authentication adapter rejected the client.
+        '422':
+          description: Official source, assets, or complete display packet unavailable.
+        '503':
+          description: A server-owned production dependency is not configured.
+  /v1/learning/sessions/{sessionId}/actions:
+    post:
+      operationId: performLearningSessionAction
+      summary: Advance one program-controlled learning action
+      description: >-
+        Each request performs exactly one action through the session flow.
+        Prefetch obtains complete next-question packets from the server-owned
+        provider; clients cannot submit next-question content. Answer grading
+        uses the pinned official answer. Every response contains only the
+        program result needed by the client.
+      x-runtime-authentication-required: true
+      parameters:
+        - in: path
+          name: sessionId
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/RenderedAction'
+                - $ref: '#/components/schemas/PrefetchAction'
+                - $ref: '#/components/schemas/SubmitAnswerAction'
+                - $ref: '#/components/schemas/ChooseExplanationAction'
+                - $ref: '#/components/schemas/SubmitExplanationAction'
+                - $ref: '#/components/schemas/SkipExplanationAction'
+                - $ref: '#/components/schemas/AskExplanationQuestionAction'
+                - $ref: '#/components/schemas/ResolveExplanationQuestionAction'
+                - $ref: '#/components/schemas/CommitNextAction'
+                - $ref: '#/components/schemas/ChooseLearningPathAction'
+                - $ref: '#/components/schemas/ChooseConfirmationPathAction'
+                - $ref: '#/components/schemas/CompleteConfirmationExplanationAction'
+                - $ref: '#/components/schemas/StatusAction'
+      responses:
+        '200':
+          description: One state-machine action completed or a program-owned choice is required.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionResult'
+        '400':
+          description: Unsupported action or AI-supplied authoritative content.
+        '401':
+          description: Authentication adapter rejected the client.
+        '404':
+          description: Session not found for this authenticated principal.
+        '409':
+          description: State transition is not currently allowed.
+        '422':
+          description: Validation or display-packet gate rejected the action.
+        '503':
+          description: Server-owned retrieval or prefetch dependency is unavailable.
+components:
+  schemas:
+    StartSessionRequest:
+      type: object
+      additionalProperties: false
+      required: [qualificationId, studyUnitId]
+      properties:
+        qualificationId:
+          type: string
+        studyUnitId:
+          type: string
+        year:
+          type: integer
+          minimum: 1900
+          maximum: 2200
+        section:
+          type: string
+          enum: [morning, afternoon]
+    DisplayNode:
+      type: object
+      required: [type, role, value]
+      properties:
+        type:
+          type: string
+          enum: [text, image, choices, table]
+        role:
+          type: string
+          enum: [question_number, body, formula, official_figure, official_table, choices, instruction]
+        value: {}
+        assetId:
+          type: string
+        sha256:
+          type: string
+    QuestionPayload:
+      type: object
+      additionalProperties: false
+      required: [status, questionId, packetHash, signature, nodes, markdown]
+      properties:
+        status:
+          const: ready
+        questionId:
+          type: string
+        packetHash:
+          type: string
+          pattern: '^[a-f0-9]{64}$'
+        signature:
+          type: string
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/DisplayNode'
+        markdown:
+          type: string
+          description: >-
+            Exact program-generated Markdown. AI clients should relay it
+            without reordering or rewriting; image references are HTTPS URLs.
+    SessionReady:
+      type: object
+      required: [status, sessionId, phase, question]
+      properties:
+        status:
+          const: ready
+        sessionId:
+          type: string
+        phase:
+          type: string
+        question:
+          $ref: '#/components/schemas/QuestionPayload'
+    RenderReceipt:
+      type: object
+      additionalProperties: false
+      required: [complete, questionId, packetHash, markdown, signature, nodeCount]
+      properties:
+        complete:
+          const: true
+        questionId:
+          type: string
+        packetHash:
+          type: string
+        markdown:
+          type: string
+        signature:
+          type: string
+        nodeCount:
+          type: integer
+          minimum: 1
+    RenderedAction:
+      type: object
+      additionalProperties: false
+      required: [action, receipt]
+      properties:
+        action:
+          const: rendered
+        receipt:
+          $ref: '#/components/schemas/RenderReceipt'
+    PrefetchAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          const: prefetch_next
+    SubmitAnswerAction:
+      type: object
+      additionalProperties: false
+      required: [action, answer]
+      properties:
+        action:
+          const: submit_answer
+        answer:
+          oneOf:
+            - type: string
+            - type: number
+    ChooseExplanationAction:
+      type: object
+      additionalProperties: false
+      required: [action, choice]
+      properties:
+        action:
+          const: choose_explanation
+        choice:
+          type: string
+          enum: [detailed, skip]
+    SubmitExplanationAction:
+      type: object
+      additionalProperties: false
+      required: [action, text]
+      properties:
+        action:
+          const: submit_explanation
+        text:
+          type: string
+    SkipExplanationAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          const: skip_explanation
+    AskExplanationQuestionAction:
+      type: object
+      additionalProperties: false
+      required: [action, question]
+      properties:
+        action:
+          const: ask_explanation_question
+        question:
+          type: string
+    ResolveExplanationQuestionAction:
+      type: object
+      additionalProperties: false
+      required: [action, answer]
+      properties:
+        action:
+          const: resolve_explanation_question
+        answer:
+          type: string
+    CommitNextAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          const: commit_next
+    ChooseLearningPathAction:
+      type: object
+      additionalProperties: false
+      required: [action, choice]
+      properties:
+        action:
+          const: choose_learning_path
+        choice:
+          type: string
+          enum: [continue_same_unit, next_unit]
+    ChooseConfirmationPathAction:
+      type: object
+      additionalProperties: false
+      required: [action, choice]
+      properties:
+        action:
+          const: choose_confirmation_path
+        choice:
+          type: string
+          enum: [continue_confirmation, hold_and_move, end_session]
+    CompleteConfirmationExplanationAction:
+      type: object
+      additionalProperties: false
+      required: [action, text]
+      properties:
+        action:
+          const: complete_confirmation_brief_explanation
+        text:
+          type: string
+    StatusAction:
+      type: object
+      additionalProperties: false
+      required: [action]
+      properties:
+        action:
+          const: status
+    ActionResult:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [ok, ready, graded, explained, clarification_pending, clarification_resolved, choice_required, not_ready, blocked]
+        phase:
+          type: string
+        question:
+          $ref: '#/components/schemas/QuestionPayload'
+        grade:
+          type: object
+          properties:
+            selected:
+              type: integer
+            correctAnswer:
+              type: integer
+            correct:
+              type: boolean
+            packetHash:
+              type: string
+        displayText:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+        error:
+          type: string
