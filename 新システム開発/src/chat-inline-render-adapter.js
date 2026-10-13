@@ -15,7 +15,7 @@ const isRemotePng=ref=>{
   if(u.protocol!=='https:'||u.username||u.password||u.port&&u.port!=='443'||u.hash||!u.pathname.toLowerCase().endsWith('.png'))return false;
   const h=u.hostname.toLowerCase();
   if(h==='localhost'||h.endsWith('.localhost')||h.endsWith('.local')||h.endsWith('.internal'))return false;
-  if(/^\\d{1,3}(?:\\.\\d{1,3}){3}$/.test(h)){
+  if(/^\d{1,3}(?:\.\d{1,3}){3}$/.test(h)){
    const p=h.split('.').map(Number);
    if(p.some(x=>x>255)||p[0]===0||p[0]===10||p[0]===127||p[0]>=224||p[0]===169&&p[1]===254||p[0]===172&&p[1]>=16&&p[1]<=31||p[0]===192&&p[1]===168)return false;
   }
