@@ -53,6 +53,9 @@ def main():
     stem = chunk[:markers[0].start()].strip() if choices_ok else None
     choices = [chunk[m.end():markers[i+1].start() if i+1 < 4 else len(chunk)].strip()
                for i,m in enumerate(markers)] if choices_ok else []
+    # A lone printed page number at the end is not part of choice 4.
+    if choices_ok:
+        choices[-1] = re.sub(r"\\s+[0-9]{1,2}\\s*$", "", choices[-1]).strip()
     # Page-level drawings are not proof that this question contains a figure.
     # Never mark a packet ready without question-level visual and answer-key verification.
     print(json.dumps({
