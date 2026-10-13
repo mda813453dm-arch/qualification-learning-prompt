@@ -22,7 +22,8 @@ export function verifyAttachedPdfFigureSource(question, assetRegistry, sourcePdf
   const asset=assetRegistry.resolve(block.assetId);
   const origin=asset?.derivedFromPdf;
   if(!asset||asset.questionId!==question.id||asset.verified!==true||asset.mime!=='image/png'||
-     typeof asset.inlineRef!=='string'||!asset.inlineRef.startsWith('sandbox:/mnt/data/')||
+     typeof asset.inlineRef!=='string'||!((asset.inlineRef.toLowerCase().split('?')[0].startsWith('sandbox:/mnt/data/'))||
+       (asset.inlineRef.toLowerCase().split('?')[0].startsWith('sandbox:/workspace/scratch/')))||
      !asset.inlineRef.toLowerCase().split('?')[0].endsWith('.png')||
      !/^[a-f0-9]{64}$/.test(asset.sha256||''))
    return fail('PDF_FIGURE_ASSET_UNAVAILABLE');
