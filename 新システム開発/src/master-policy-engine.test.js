@@ -21,7 +21,7 @@ assert.equal(chooseNextLearningAction({now:100,topicId:'37',events}).action,'rei
 const queue=[recordReviewDue({topicId:'other',pointId:'x',dueAt:90,reason:'recall-failure'})];
 assert.equal(chooseNextLearningAction({now:100,topicId:'37',events,reviewQueue:queue}).action,'due_review');
 assert.equal(chooseNextLearningAction({now:100,topicId:'37',events,reviewQueue:queue,explicitTopicId:'target'}).action,'start_topic');
-assert.equal(chooseNextLearningAction({now:100,topicId:'37',events:[...events,{topicId:'37',kind:'reinforcement',attemptId:'6',valid:true,correct:true}]}).action,'review_or_next_topic');
+assert.equal(chooseNextLearningAction({now:100,topicId:'37',events:[...events,{topicId:'37',kind:'reinforcement',attemptId:'6',valid:true,correct:true}],majorPointsComplete:true}).action,'review_or_next_topic');
 assert.equal(chooseNextLearningAction({now:100,topicId:'37',confirmationChain:{id:'c1',kind:'confirmation',status:'active'},events:[
  {topicId:'37',kind:'confirmation',chainId:'c1',attemptId:'c1',valid:true,correct:false},
  {topicId:'37',kind:'confirmation',chainId:'c1',attemptId:'c2',valid:true,correct:false},
