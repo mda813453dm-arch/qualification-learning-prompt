@@ -3,8 +3,8 @@ import {createOfficialPdfSourceVerifier} from './official-pdf-source-verifier.js
 import {createPinnedOfficialVerifier} from './official-pdf-pins.js';
 import {verifyQuestionSpan} from './verified-span-gate.js';
 
-/** Public entry. Internal extractor must provide evidence derived from the pinned PDFs. */
-export function createOfficialPracticeEntry({retrieveAndVerify,adapters}) {
+/** Public entry. Retrieval, approved queue and payload compilation are server-owned. */
+export function createOfficialPracticeEntry({retrieveAndVerify,adapters,resolveCandidates,buildInlinePayload}) {
  if(typeof retrieveAndVerify!=='function')throw new Error('INTERNAL_RETRIEVER_REQUIRED');
  const verifyOfficialSource=createPinnedOfficialVerifier({
   verifyOfficialSource:createOfficialPdfSourceVerifier()
@@ -25,5 +25,7 @@ export function createOfficialPracticeEntry({retrieveAndVerify,adapters}) {
   if(!checked.ok)return {status:'unavailable',reason:checked.reason};
   return result;
  };
- return createGuardedPracticeController({retrieveAndVerify:checkedRetrieve,adapters,verifyOfficialSource});
+ return createGuardedPracticeController({
+  retrieveAndVerify:checkedRetrieve,adapters,verifyOfficialSource,resolveCandidates,buildInlinePayload
+ });
 }
