@@ -1,4 +1,4 @@
-import {buildChatTurn,buildChatTurnFromPayload,verifyChatTurn} from './chat-turn-renderer.js';
+import {buildChatTurn,buildChatTurnFromPayload,verifyChatTurn,verifyFinalResponseBody} from './chat-turn-renderer.js';
 
 const ok=(x,m)=>{if(!x)throw new Error(m)};
 const q={
@@ -61,4 +61,13 @@ ok(verifyChatTurn(omitted).reason==='INLINE_IMAGE_NOT_IN_MESSAGE_BODY','response
 const noProvenance={...turn,figureSource:null};
 ok(verifyChatTurn(noProvenance).reason==='PDF_FIGURE_PROVENANCE_MISSING',
  'renderer output without PDF extraction receipt is rejected');
-console.log('PASS chat-turn-renderer: PDF-byte/run provenance and actual answer-body embedding');
+
+const finalOk=verifyFinalResponseBody(turn,turn.messageBody);
+ok(finalOk.ok&&finalOk.finalResponseVerified,'actual final response is accepted only when it exactly uses the prepared body');
+const finalOmitted=verifyFinalResponseBody(turn,turn.messageBody.replace(image,''));
+ok(finalOmitted.reason==='FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN','final response that omits the image is blocked');
+const finalPlaceholder=verifyFinalResponseBody(turn,turn.messageBody.replace(image,'〔図〕'));
+ok(finalPlaceholder.reason==='FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN','final response that substitutes a figure placeholder is blocked');
+const finalHeadingOnly=verifyFinalResponseBody(turn,'■令和7年度 問2\\n\\n番号で答えてください。');
+ok(finalHeadingOnly.reason==='FINAL_RESPONSE_BODY_DIFFERS_FROM_PREPARED_TURN','heading-only final response is blocked');
+\nconsole.log('PASS chat-turn-renderer: PDF-byte/run provenance and actual answer-body embedding');
