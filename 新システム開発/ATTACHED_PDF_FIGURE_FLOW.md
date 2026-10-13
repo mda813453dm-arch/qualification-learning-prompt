@@ -10,7 +10,7 @@
 2. 公式PDFと問題IDを照合し、問題本文・全選択肢・正答資料を確定する。
 3. 確認済みBundleのページ番号・切抜座標と、公式PDFの期待SHA-256を用いて `integration/extract_attached_pdf_figure.py` を実行する。毎回新しいPNGを生成する。
 4. 抽出結果のPDF SHA-256、PNG SHA-256、ページ、切抜座標、operationIdを一つの実行記録として保持する。チャットID・添付IDを推測したり、テスト用の値を本番値として渡したりしない。
-5. PNGの実在を確認し、実行環境のsandboxパスへ変換したPNG参照をAsset Registryに登録する。抽出結果のoperationIdとPDF/PNGハッシュをそのまま紐付ける。
+5. PNGの実在を確認し、**その回答を返すChatGPT会話が解決できる `/mnt/data` sandbox参照**をAsset Registryに登録する。`/workspace/scratch` の作業領域パス、別会話のsandboxパス、Library検索用のIDは回答内Markdown画像として通さない。抽出結果のoperationIdとPDF/PNGハッシュをそのまま紐付ける。
 6. `buildChatTurn(question, assetRegistry, {sourcePdfAttachment: extraction.sourcePdf})` を実行する。
 7. ready時は、返された `messageBody` 全体を、その回答の本文としてそのまま送信する。本文の一部をAIが書き直したり、図参照を `〔図〕` に置き換えたりしない。
 8. 最終回答本文を確定後、`verifyFinalResponseBody(turn, finalResponseBody)` へ実際の全文を渡す。完全一致しない場合、またはMarkdown画像が欠けた場合はFAILとする。PNG抽出・Asset Registry登録・`messageBody`準備だけを表示PASSとして報告してはならない。
