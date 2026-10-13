@@ -53,14 +53,14 @@ def main():
     stem = chunk[:markers[0].start()].strip() if choices_ok else None
     choices = [chunk[m.end():markers[i+1].start() if i+1 < 4 else len(chunk)].strip()
                for i,m in enumerate(markers)] if choices_ok else []
-    # Vector drawings can be borders or actual diagrams. Never infer absence of visuals.
+    # Page-level drawings are not proof that this question contains a figure.
     print(json.dumps({
-      "status": "needs_visual_review" if drawings or images else ("text_extracted_not_display_verified" if choices_ok else "needs_manual_review"),
+      "status": "text_extracted_visuals_unverified" if choices_ok else "needs_manual_review",
       "questionNumber": number, "pdfPage": index+1, "pdfSha256": digest,
       "stem": stem, "choices": choices, "answerNumber": ANSWERS[number-1],
       "answerEvidencePdfPage": 30, "rasterImagesOnPage": images,
       "vectorDrawingsOnPage": drawings, "choicesParsed": choices_ok,
-      "note": "Answer key requires source-cell verification; figures and page-spanning questions require visual review before display."
+      "note": "Page-level drawings do not establish question-level figures. Figure absence/presence and answer-key source cell remain unverified; do not mark display-ready."
     }, ensure_ascii=False, indent=2))
 if __name__ == "__main__":
     main()
