@@ -1,0 +1,31 @@
+name: Official candidate focused test
+
+on:
+  push:
+    branches:
+      - ai-learning-system
+    paths:
+      - '新システム開発/src/official-runtime-dependencies.js'
+      - '新システム開発/src/official-runtime-dependencies.test.js'
+      - '.github/workflows/official-candidate-focused-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact branch revision
+        uses: actions/checkout@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Show tested commit
+        run: git rev-parse HEAD
+      - name: Run six official candidate dependency tests
+        working-directory: 新システム開発
+        run: node --test src/official-runtime-dependencies.test.js
