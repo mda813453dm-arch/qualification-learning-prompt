@@ -42,4 +42,19 @@ jobs:
         run: |
           python -m pip install --quiet PyMuPDF==1.26.5
           python tools/extract-takken-on-demand.py "$RUNNER_TEMP/takken-2025-verified.pdf" 29 > "$RUNNER_TEMP/takken-q29.json"
-          python -c 'import json,os; d=json.load(open(os.environ["RUNNER_TEMP"]+"/takken-q29.json")); assert d["questionNumber"]==29 and d["choicesParsed"] is True and len(d["choices"])==4 and d["stem"]; print(json.dumps({"questionNumber":29,"choicesParsed":True,"choiceCount":4,"status":d["status"],"pdfPage":d["pdfPage"]}))'
+          python - <<'PY'
+          import json, os, sys
+          path = os.path.join(os.environ["RUNNER_TEMP"], "takken-q29.json")
+          with open(path, encoding="utf-8") as f:
+              d = json.load(f)
+          report = {k: d.get(k) for k in ("questionNumber", "choicesParsed", "status", "pdfPage", "rasterImagesOnPage", "vectorDrawingsOnPage")}
+          report["choiceCount"] = len(d.get("choices") or [])
+          report["stemPresent"] = bool(d.get("stem"))
+          print("EXTRACTION_DIAGNOSTICS=" + json.dumps(report, ensure_ascii=False), flush=True)
+          checks = {"questionNumber": d.get("questionNumber") == 29, "choicesParsed": d.get("choicesParsed") is True, "choiceCount": report["choiceCount"] == 4, "stemPresent": report["stemPresent"]}
+          failed = [name for name, ok in checks.items() if not ok]
+          if failed:
+              print("EXTRACTION_VALIDATION_FAILED=" + ",".join(failed), file=sys.stderr)
+              sys.exit(1)
+          print("EXTRACTION_VALIDATION_PASSED")
+          PY
