@@ -11,6 +11,11 @@ for i,p in enumerate(qd):
  nums=[int(x) for x in head.findall(text)]
  rows.append({"pdfPage":i+1,"questionHeadings":nums,"images":len(p.get_images(full=True)),"drawings":len(p.get_drawings()),"textChars":len(text)})
 print("QUESTION_PAGE_DIAGNOSTICS="+json.dumps(rows,ensure_ascii=False))
+for page_no in range(4,24):
+ p=qd[page_no-1]
+ rects=[list(map(lambda z:round(float(z),1),d["rect"])) for d in p.get_drawings()]
+ imgs=[{"xref":x[0]} for x in p.get_images(full=True)]
+ print("MCQ_VISUAL_DIAGNOSTIC="+json.dumps({"pdfPage":page_no,"pageRect":[p.rect.width,p.rect.height],"drawingRects":rects,"images":imgs},ensure_ascii=False))
 for page_no in list(range(4,8))+list(range(24,39)):
  p=qd[page_no-1]
  text=re.sub(r"\\s+"," ",p.get_text("text",sort=True)).strip()
