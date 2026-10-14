@@ -75,6 +75,10 @@ export function createSession({now=()=>Date.now()}={}) {
       return commit('VERIFYING_IMAGE',{packets:payload.packets,questionIndex:payload.index,questionId:payload.packets[payload.index].questionId,visual:null,selected:null,graded:null});
     if(action==='DISPLAY_VERIFIED' && s.phase==='VERIFYING_IMAGE' && payload.question?.questionId===s.questionId &&
       payload.question?.choices?.length===s.packets[s.questionIndex].choices.length &&
+      payload.question.choices.every((v,i)=>v===s.packets[s.questionIndex].choices[i]) &&
+      payload.question.year===s.packets[s.questionIndex].year &&
+      payload.question.number===s.packets[s.questionIndex].questionNumber &&
+      payload.question.images?.length===(s.packets[s.questionIndex].diagramAssets||[]).length &&
       payload.question.instruction==='番号で答えてください。')return commit('ANSWER_WAIT',{visual:payload.question});
     if(action==='ANSWER' && s.phase==='ANSWER_WAIT'){
       const n=Number(payload.value),p=s.packets[s.questionIndex];
