@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { QUALIFICATION_CATALOG } from "../src/qualification-catalog.js";
 const root=process.cwd();
 const catalogText=fs.readFileSync(path.join(root,"src","qualification-catalog.js"),"utf8");
 const ids=[...catalogText.matchAll(/id:\s*["'](q\d{3})["']/g)].map(x=>x[1]);
