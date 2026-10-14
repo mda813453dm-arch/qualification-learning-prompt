@@ -1,0 +1,27 @@
+name: Official runtime generic tests
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/src/official-source-resolver.js'
+      - '新システム開発/src/official-source-resolver.test.mjs'
+      - '新システム開発/src/verified-question-packet-store.js'
+      - '新システム開発/src/verified-question-packet-store.test.mjs'
+      - '新システム開発/src/official-pdf-runtime-ingestion.js'
+      - '新システム開発/data/verified-question-packets/**'
+      - '.github/workflows/official-runtime-generic-test.yml'
+  workflow_dispatch:
+jobs:
+  generic-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai-learning-system
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test all-catalog official source resolution
+        run: node "新システム開発/src/official-source-resolver.test.mjs"
+      - name: Test preverified packet runtime
+        run: node "新システム開発/src/verified-question-packet-store.test.mjs"
