@@ -40,13 +40,19 @@ def main():
   if len(sys.argv)!=3: raise SystemExit("usage: build... PDF OUT")
   pdf=Path(sys.argv[1]); out=Path(sys.argv[2]); raw=pdf.read_bytes()
   if raw[:5]!=b"%PDF-" or hashlib.sha256(raw).hexdigest()!=EXPECTED: raise SystemExit("OFFICIAL_PDF_VERIFICATION_FAILED")
+  visual_review=Path(str(pdf)+".visual-review.json")
+  if not visual_review.exists(): raise SystemExit("VISUAL_REVIEW_REQUIRED")
+  review=json.loads(visual_review.read_text(encoding="utf-8"))
   doc=fitz.open(pdf); packets=[]
-  for n,(field,label) in APPROVED.items():
-    page,stem,choices=extract(doc,n); ans=answer(doc,n)
+  for n,field in APPROVED.items():
+    page,stem,choices=extract(doc,n); ans=answer(doc,n); vr=review.get(str(n))
+    if not isinstance(vr,dict) or vr.get("status")!="verified" or not isinstance(vr.get("diagramRequired"),bool):
+      raise SystemExit(f"VISUAL_REVIEW_INVALID_Q{n}")
+    if vr["diagramRequired"]: raise SystemExit(f"DIAGRAM_ASSET_PIPELINE_REQUIRED_Q{n}")
     packets.append({"sourceMode":"static_verified_official_packet","questionId":f"q041:2025:年度共通:{n}","year":2025,"section":"年度共通","questionNumber":n,
-      "fieldId":field,"fieldName":label,"stem":stem,"choices":choices,"correctAnswer":ans,"diagramRequired":False,"diagramAssets":[],
+      "fieldId":field,"fieldName":None,"stem":stem,"choices":choices,"correctAnswer":ans,"diagramRequired":False,"diagramAssets":[],
       "packetStatus":"verified_official","questionPdfUrl":URL,"answerPdfUrl":URL,"questionPdfSha256":EXPECTED,"answerPdfSha256":EXPECTED,
-      "evidence":{"questionPdfPage":page,"answerPdfPage":30},
+      "evidence":{"questionPdfPage":page,"answerPdfPage":30,"visual":vr,"field":{"method":"code_owned_approved_unit_map"}},
       "verification":{"questionText":"official_pdf_checked","choices":"official_pdf_checked","visual":"question_level_review_checked","answer":"same_year_official_answer_checked","field":"verified"}})
   data={"schemaVersion":1,"qualificationId":"q041","fieldId":"takken-u8","year":2025,"verificationStatus":"verified_official","sourceAuthority":"一般財団法人 不動産適正取引推進機構","packets":packets}
   out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
