@@ -117,7 +117,7 @@ ok(followupResolved.resumePayload.questionId==='q3'&&followupResolved.resumePayl
 function minimalQuestion(id,number,kind='official_practice',studyUnitId='control-points'){
  const origin=kind==='ai_confirmation'?'ai':'official';
  const question={status:'ready',id,number,studyUnitId,studyPlanSha256:'c'.repeat(64),kind,origin,verifiedBundle:kind==='official_practice'};
- if(kind==='ai_confirmation')question.parentQuestionId='q2';
+ if(kind==='ai_confirmation')question.parentQuestionId='q3-miss';
  const packet={status:'ready',id,number,studyUnitId,studyPlanSha256:'c'.repeat(64),packetHash:'packet-'+id,answer:{value:4},contentBlocks:[
   {order:0,type:'question_number',value:'Q'+number},{order:1,type:'text',value:'stem '+id},
   {order:2,type:'choices',value:['1','2','3','4','5']},
