@@ -19,7 +19,7 @@ test("composition root loads injected server-owned adapters and keeps server uns
         return {
           authenticate: async () => ({ id: "deployment-user" }),
           sessions: { put: async () => {}, get: async () => null },
-          initializeSession: async () => ({})
+          initializeSession: async () => ({}),\n          loadApprovedStudyPlan: async () => null,\n          loadOfficialCandidateRecords: async () => [],\n          compileVerifiedBundle: async () => ({ status: "blocked" })
         };
       }
     `);
