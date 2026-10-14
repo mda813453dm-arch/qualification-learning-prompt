@@ -11,7 +11,7 @@
 
 【確認問題】AI作成の理解確認であることを明示する。完全な問題文・全選択肢・番号回答指示を表示する。採点・解説後、正解した場合は毎回「1 確認問題を続ける／2 実践問題へ進む」を尋ねる。不正解なら「誤った判断点を1つ特定→正しい規則を1～3文→元の選択肢との違い」の順で補強する。判断点を特定できない場合は断定せず、正しい規則と選択肢差だけを示す。
 
-【実践問題】該当分野の公式過去問は、まず後記「事前検証済み公式問題パケット」を使用する。パケットが有効なら学習時に元PDFを再取得・再抽出せず、保存済みの問題番号・公式原文・全選択肢・図表要否・同年度公式正答を固定して出題・採点する。該当分野の検証済みパケットが必要数ない場合だけ、後記「公式資料取得のサイレント再試行」で公式PDFから追加候補を取得する。回答待ち前に一問の内容と正答を固定し、採点時に別問題の答えを参照しない。AI作成を公式過去問と呼ばない。同一学習項目の実践問題で3問連続不正解なら確認問題へ戻す。別項目の誤答は合算しない。
+【実践問題】該当分野の公式過去問は、AIがその時点で必要な公式問題PDF・公式正答PDFを取得し、後記「公式PDFランタイム分解」に渡して問題単位へ構造化する。システムから返された runtime_official_pdf パケットだけを出題・採点に使用する。過去問本文を資格・年度横断で事前保存した問題集を前提にしない。回答待ち前に一問の内容と正答を固定し、採点時に別問題の答えを参照しない。AI作成を公式過去問と呼ばない。同一学習項目の実践問題で3問連続不正解なら確認問題へ戻す。別項目の誤答は合算しない。
 
 【復習】分野・論点ごとに回答結果と復習対象を管理。誤答・自己申告の迷い・ヒント依存などで登録し、標準復習間隔は1/3/7/14/30日とする。各復習で正解かつヒントなしなら次の間隔へ進め、誤答またはヒント依存なら1日後へ戻す。30日後の復習で正解かつヒントなしなら復習対象から卒業し、卒業後に再誤答した場合は1日後から再登録する。復習割込み後は元の学習へ戻る。期限や保存の正確性を保証できない場合は学習ログをユーザーに示し、次チャットへの貼付で引き継げるようにする。
 
@@ -239,8 +239,8 @@
 
 ## 公式過去問への共通取得ゲート（2026-10-14 ChatGPT実機FAIL修正）
 - 公式過去問による学習へ遷移するすべての経路を OFFICIAL_QUESTION_ACQUISITION に一本化する。新規開始、引継ぎ/STATE再開、復習終了後、確認/補強問題終了後、自由質問復帰、次問、分野変更後を含み、取得ゲートを迂回して直接回答待ち・AI作成問題へ遷移しない。
-- ゲート開始時に qualificationId と practiceSetFieldId を確定し、最初に verified-question-packets/index.json を確認する。該当qualificationId・fieldId/fieldAliasesに必要数の verified_official パケットがあれば、それを第1経路として使用し、元PDFを学習時に再取得しない。
-- 事前検証パケットが不足・取得不能・検証失敗の場合だけ、資格マスタ/カタログの pastQuestionsUrl、登録済み個別公式PDF/pin、同一公式機関の代替経路をサイレントに探索する。AIの記憶だけで取得不能と判定せず、1回の失敗だけでAI作成へ切り替えない。
+- ゲート開始時に qualificationId と practiceSetFieldId を確定し、資格マスタ/カタログの pastQuestionsUrl、年度別公式PDF候補、登録済み個別公式PDF/pinから、その時点で必要な公式問題PDFと同年度公式正答PDFを選ぶ。
+- AI側で取得したPDF本体を公式PDFランタイム分解へ渡し、システムが本文・全選択肢・図表要否・問番号・同年度正答を分解・照合した runtime_official_pdf パケットを返した場合だけ出題可能とする。AIの記憶だけで問題文や正答を補完しない。
 - 引継ぎSTATEの mode、next、自然文サマリーに「AI作成確認問題」等があっても、公式過去問取得ゲートを省略する権限ではない。再開位置が公式過去問への復帰なら必ず本ゲートを通る。
 - ただし3連続不正解等で REMEDIATION_REQUIRED / CONFIRMATION_QUESTION を正当に保持している場合はAI作成確認問題を先に完了する。それを公式過去問と表示せず、理解確認後に公式実践へ戻る瞬間に本ゲートを通す。
 - 開始表示の開始内容は単一の現在モードとする。「公式過去問（AI作成確認問題から再開）」のような混在表記を禁止する。補強確認なら「AI作成確認問題」、公式実践なら「公式過去問」と表示する。
@@ -250,7 +250,7 @@
 
 
 ## 測量士補の年度別公式PDF候補と自動フォールバック（2026-10-14）
-- 測量士補の資格IDは q063。通常学習では先に verified-question-packets/index.json を確認する。q063.surveying_law の verified_official パケットが必要数ある場合はそれを使う。公式入口 https://www.gsi.go.jp/LAW/SHIKEN/past.html と年度別候補台帳「新システム開発/data/official-pdf-candidates/assistant-surveyor.json」は、事前検証パケットが不足した場合のフォールバック/保守用とする。測量士試験の列を混同しない。
+- 測量士補の資格IDは q063。公式入口 https://www.gsi.go.jp/LAW/SHIKEN/past.html と年度別候補台帳「新システム開発/data/official-pdf-candidates/assistant-surveyor.json」から、その時点で必要な問題PDF・正答PDFを選択してランタイム分解へ渡す。問題本文をGitHubへ事前保存した問題集は使用しない。測量士試験の列を混同しない。
 - 台帳の年別候補（令和8年・7年・6年・5年・4年）は同一資格の代替探索対象であり、最初のPDFがタイムアウト/閲覧不能/抽出不能なら次の公式問題PDF候補へサイレントに進む。令和7年は問題1・問題2の分割PDFを両方探索対象とし、片方の取得失敗だけで年度全体を失敗にしない。
 - 年度をまたいで代替探索する場合、当初選択したpracticeSetFieldIdと候補問題のfieldIdが一致することを出題前に検証する。問題番号だけで分野を推定しない。fieldId検証ができない問題は候補止まりで出題しない。別年度の問題に別年度の正答を流用しない。
 - 候補PDFリンクを取得できたことと、本文・全選択肢・図表・同年度公式正答を完全照合できたことを区別する。PDFが画像主体/文字化けの場合は画像ページ確認・必要図表切出し等の利用可能な手段を試すが、読めない箇所を推測復元しない。
@@ -266,18 +266,14 @@
 - 説明文の自然さ、励まし、文章量など学習制御に影響しない表現上の裁量には曖昧語を許容する。ただしその裁量で固定UI、問題原文、正答、状態、問題数、復習期限を変更しない。
 
 
-## 事前検証済み公式問題パケット（2026-10-14・3回連続実機FAIL後の方式変更）
-- 通常の実践学習で、AIアプリが毎回公式PDF本文を抽出できることを前提にしない。公式PDFは**問題パケット登録・更新時の検証元**とし、学習実行時は検証済み問題パケットを第1取得経路とする。
-- 正本索引は次のRaw JSON：
-  https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/verified-question-packets/index.json
-- OFFICIAL_QUESTION_ACQUISITION 開始時は必ず、①上記索引を取得、②qualificationIdを一致、③現在のpracticeSetFieldIdまたはfieldAliasesを一致、④minimumSetSize以上のverifiedPacketCountがあるか確認、⑤entry.rawUrlのパケットJSONを取得、の順に実行する。
-- パケットJSONは schemaVersion=1、qualificationId一致、fieldId一致、各問題の packetStatus=verified_official、verification.questionText=official_pdf_checked、verification.choices=official_pdf_checked、verification.answer=same_year_official_answer_checked、questionId一意、本文非空、選択肢全件、correctAnswerが選択肢範囲内、diagramRequired=falseまたは検証済み図表資産あり、をすべて満たした場合だけ使用する。1項目でも不一致ならそのパケットストアを正常経路として使用しない。
-- 有効なパケットがセット必要数以上あれば、**元の公式PDFを学習時に再取得・再抽出してはならない**。パケット内の公式原文・選択肢・correctAnswer・questionSourceUrl・answerSourceUrlを使用して出題・採点する。これを sourceMode=preverified_official_packet とする。
-- 検証済みパケットが不足・取得不能・検証失敗の場合だけ、従来の登録済み公式PDF/pin/公式一覧からのライブ取得へフォールバックする。ライブPDF取得失敗を、既に有効な事前検証パケットがある分野へ適用してはならない。
-- 測量士補 q063 の「測量に関する法規」「法規」は fieldId=q063.surveying_law に解決する。現在の正本パケットは
-  https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/verified-question-packets/q063/surveying-law-r4.json
-  で、3問を登録済み。したがってこの分野で3問セットを開始するとき、国土地理院PDFのライブ抽出失敗を理由に「公式問題を取得できませんでした」と表示してはならない。
-- 事前検証パケットの問題文・選択肢・正答をAIが言い換えたり補完したりしない。出題本文はパケット値をそのまま使用する。
-- 採点は回答待ち前に保持した同一questionIdの correctAnswer で行う。回答後のPDF再検索・別問題検索を採点根拠にしない。
-- 将来の新年度追加は、公式PDFからパケットを生成→本文/選択肢/図表/同年度正答を検証→verified_officialへ昇格→索引更新、の順で行う。未検証候補をverified_officialにしない。
-- 実機受入条件：q063・q063.surveying_lawで実践問題を選ぶと、PDF添付要求を挟まず、登録済み3問のうち第1問を完全表示して回答待ちになること。公式問題本文なしで選択だけ求める、ライブPDF取得失敗を表示する、AI作成へ切り替える、はFAIL。
+## 公式PDFランタイム分解（2026-10-14・3回連続実機FAIL後の方式変更）
+- 全資格・全年度の過去問本文をシステムへ事前保存しない。GitHubに保持するのは、資格マスタ、公式掲載先/公式PDF候補、ハッシュ等の検証情報、分解・検証ロジック、状態遷移仕様である。
+- 実践問題が必要になった時点で、AI/AI連携層が対象資格・年度の**公式問題PDF本体**と**同年度・同区分の公式正答PDF本体**を取得する。URLだけ取得できてPDF本体を読めていない状態は入力成功とみなさない。
+- 取得したPDF本体をランタイム分解処理へ渡す。実装正本は「新システム開発/src/official-pdf-runtime-ingestion.js」。処理は questionPdfs[] と answerPdf を受け取り、PDF形式確認→SHA-256確認（pinがある場合）→問題PDF解析→正答PDF解析→問番号対応→fieldId分類→完全性検証の順に行う。
+- ランタイム分解が返す出題可能パケットは sourceMode=runtime_official_pdf とし、qualificationId、fieldId、year、section、questionId、questionNumber、stem、choices、correctAnswer、diagramRequired/diagramAssets、questionPdfUrl、answerPdfUrl、各PDF SHA-256、verification を含む。
+- verification は少なくとも questionText=runtime_pdf_checked、choices=runtime_pdf_checked、answer=same_year_official_answer_checked を満たす。本文空、選択肢欠落、正答範囲外、同年度正答未照合、必要図表欠落、fieldId不一致の問題は返さない。
+- AIはシステムから返されたパケットの stem/choices をそのまま表示し、出題時にはcorrectAnswerを隠す。回答後は回答待ち前に保持した**同一questionIdのcorrectAnswer**で採点する。採点のためにPDFを再検索しない。
+- 1つのPDFから同一fieldIdの問題が必要数取れなければ、年度別候補台帳の次の公式PDFを取得して同じランタイム分解へ渡す。最大3系統・各系統再試行1回の取得規則は「PDF本体をランタイムへ渡せる状態にするまで」に適用する。
+- 分解結果は会話中の出題・採点に必要な間だけ保持する。実装上キャッシュを設ける場合も、PDF SHA-256をキーとする短期キャッシュに限定し、全資格・全年度の問題本文を恒久的な問題DBとして事前構築しない。公式PDFが正本である。
+- この方式を通常のChatGPT/Claude/Perplexity実機で成立させるには、AIアプリからPDF本体を渡せる外部ランタイム/API/コネクタが必要である。GitHub上のJavaScriptが存在するだけではAIアプリ内で自動実行されたことにならない。外部ランタイム未接続の状態で「システムがPDFを分解した」と称してはならない。
+- 測量士補q063での受入条件：国土地理院の問題PDF・同年度正答PDFを取得→ランタイム分解→q063の現在fieldIdに一致する完全な問題パケットを受領→本文・全選択肢を表示、までを1経路として成功させる。公式掲載ページまで確認しただけで取得成功としない。
