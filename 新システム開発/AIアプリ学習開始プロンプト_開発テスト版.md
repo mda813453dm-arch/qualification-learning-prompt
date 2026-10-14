@@ -302,3 +302,10 @@
 - 静的問題パケット生成時は、公式PDF本体の取得、PDF署名、登録pinがある場合のSHA-256、本文、全選択肢、必要図表、同年度正答、fieldIdを検証し、すべて成功した問題だけverified_officialへ昇格する。生成スクリプトが失敗した場合は既存verified成果物を書き換えない。
 - PDF直リンク失効時はofficial-source-resolverの規則でpastQuestionsUrlへ戻り、新しい同年度question/answerペアを再発見してから再生成する。AIアプリ自身がURLを推測しない。
 - GitHub Actionsのartifactだけに存在する成果物は通常AIアプリからの実践学習には使用しない。学習用manifestから参照できるRaw GitHub上のverified成果物だけを利用可能とする。
+
+
+## 資格非依存source adapterと実行能力判定（2026-10-14）
+- 公式PDFの取得・分解実装は資格ごとに会話ロジックへ埋め込まず、src/official-source-adapter-contract.js の共通契約へ接続する。各adapterは①公式資料発見②PDF取得・真正性検証③問単位抽出④fieldId検証⑤同年度正答検証を実装し、共通のverified_official packetだけを返す。
+- 実機では data/runtime-packets/capabilities.json を取得し、選択資格の officialPracticeRuntime を確認する。static_verified_packets_available の場合のみmanifest→packetUrlへ進む。not_yet_availableを成功扱いしない。
+- capabilityは103資格すべてを列挙し、対応状況を明示する。資格が選択されるまで特定資格を前提にしない。
+- source adapterが存在しても、verified packetが生成・manifest登録されるまでは実機利用可能と判定しない。コード実装済みと実機利用可能を分離する。
