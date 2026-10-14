@@ -46,50 +46,42 @@ export function resolveOfficialSourceEntry({qualificationId=null, qualificationN
  * evidence and prevents silent promotion of unrelated/non-official URLs.
  */
 export async function rediscoverOfficialDocuments({
-  entry,
-  discoverFromEntry,
-  expectedYear=null,
-  expectedQualificationName=null
+  entry, discoverFromEntry, expectedYear=null, expectedQualificationName=null, expectedSection=null
 }={}) {
   if(!entry || entry.status!=="ready" || typeof discoverFromEntry!=="function")
     return unavailable("REDISCOVERY_INPUT_INVALID");
   let result;
   try {
     result=await discoverFromEntry({
-      url:entry.officialEntryUrl,
-      qualificationId:entry.qualificationId,
-      qualificationName:entry.qualificationName,
-      authority:entry.authority,
-      expectedYear
+      url:entry.officialEntryUrl, qualificationId:entry.qualificationId,
+      qualificationName:entry.qualificationName, authority:entry.authority,
+      expectedYear, expectedSection
     });
-  } catch {
-    return unavailable("OFFICIAL_ENTRY_FETCH_FAILED");
-  }
+  } catch { return unavailable("OFFICIAL_ENTRY_FETCH_FAILED"); }
   if(!result || result.status!=="ready" || !Array.isArray(result.documents))
     return unavailable("OFFICIAL_DOCUMENT_DISCOVERY_FAILED");
 
   const qName=normalizeName(expectedQualificationName||entry.qualificationName);
+  const allowedHosts=allowedOfficialHosts(entry);
   const docs=result.documents.filter(d =>
     d && HTTPS.test(d.url||"") &&
     ["question","answer"].includes(d.kind) &&
     (!expectedYear || d.year===expectedYear) &&
     normalizeName(d.qualificationName||entry.qualificationName)===qName &&
-    d.authorityConfirmed===true &&
-    d.officialHostConfirmed===true
+    sectionMatches(d,expectedSection) &&
+    allowedHosts.some(h=>sameOrSubdomain(hostOf(d.url),h))
   );
   const years=[...new Set(docs.map(d=>d.year).filter(Number.isInteger))].sort((a,b)=>b-a);
   const completeYears=years.filter(y =>
-    docs.some(d=>d.year===y&&d.kind==="question") &&
-    docs.some(d=>d.year===y&&d.kind==="answer")
+    docs.some(d=>d.year===y&&d.kind==="question"&&sectionMatches(d,expectedSection)) &&
+    docs.some(d=>d.year===y&&d.kind==="answer"&&sectionMatches(d,expectedSection))
   );
   if(!completeYears.length)
     return unavailable("QUESTION_ANSWER_PAIR_NOT_FOUND",{documents:Object.freeze(docs)});
   return Object.freeze({
-    status:"ready",
-    qualificationId:entry.qualificationId,
+    status:"ready", qualificationId:entry.qualificationId,
     officialEntryUrl:entry.officialEntryUrl,
-    completeYears:Object.freeze(completeYears),
-    documents:Object.freeze(docs)
+    completeYears:Object.freeze(completeYears), documents:Object.freeze(docs)
   });
 }
 
