@@ -22,15 +22,23 @@ def answer_map(doc):
    out[n]=vals[0]
  return out
 def split_choices(text,n):
- s=norm(text)
- h=re.search(rf"第\s*{n}\s*問\s*",s)
+ raw=text.translate(FW)
+ h=re.search(rf"第\s*{n}\s*問\s*",raw)
  if not h: raise SystemExit(f"QUESTION_HEADING_MISSING_Q{n}")
- body=s[h.end():]
- # Five-choice answer row is at the tail of each multiple-choice question.
- ms=list(re.finditer(r"(?:^|\s)1\s+(.+?)\s+2\s+(.+?)\s+3\s+(.+?)\s+4\s+(.+?)\s+5\s+([^\n]+?)(?=\s*─|$)",body))
- if not ms: raise SystemExit(f"CHOICE_ROW_MISSING_Q{n}")
- m=ms[-1];choices=[x.strip() for x in m.groups()]
- stem=body[:m.start()].strip()
+ body=raw[h.end():]
+ # A valid answer row must start a physical text line with choice 1 and contain
+ # all five numbered choices in order. This prevents phrases such as
+ # "後記1から5まで" inside the stem from being mistaken for the answer row.
+ row_re=re.compile(r"^\s*1\s+(.+?)\s+2\s+(.+?)\s+3\s+(.+?)\s+4\s+(.+?)\s+5\s+(.+?)\s*$")
+ rows=[]
+ offset=0
+ for line in body.splitlines(True):
+  m=row_re.match(line.rstrip("\r\n"))
+  if m: rows.append((offset,m))
+  offset+=len(line)
+ if not rows: raise SystemExit(f"CHOICE_ROW_MISSING_Q{n}")
+ start,m=rows[-1];choices=[norm(x) for x in m.groups()]
+ stem=norm(body[:start])
  if not stem or len(choices)!=5 or any(not x for x in choices): raise SystemExit(f"QUESTION_INCOMPLETE_Q{n}")
  return stem,choices
 def main():
