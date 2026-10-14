@@ -5,6 +5,7 @@ on:
     paths:
       - '新システム開発/integration/gsi_ci_visual_pipeline.py'
       - '.github/workflows/gsi-surveyor-visual-evidence.yml'
+      - '新システム開発/data/official-pdf-candidates/assistant-surveyor.json'
   workflow_dispatch:
 jobs:
   render-official-pages:
