@@ -2,6 +2,14 @@ import { QUALIFICATION_CATALOG } from "./qualification-catalog.js";
 
 const HTTPS = /^https:\/\//i;
 const unavailable = (reason, extra={}) => Object.freeze({status:"unavailable",reason,...extra});
+function hostOf(url){try{return new URL(url).hostname.toLowerCase();}catch{return null;}}
+function sameOrSubdomain(host,allowed){return host===allowed||host?.endsWith("."+allowed);}
+function allowedOfficialHosts(entry){
+ const h=hostOf(entry?.officialEntryUrl); return h?[h]:[];
+}
+function sectionMatches(d,expectedSection){
+ return !expectedSection || d.section===expectedSection;
+}
 
 function normalizeName(v="") {
   return String(v).normalize("NFKC").replace(/\s+/g,"").trim().toLowerCase();
