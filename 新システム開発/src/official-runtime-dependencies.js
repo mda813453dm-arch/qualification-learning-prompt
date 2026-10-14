@@ -149,3 +149,5 @@ export { validateOfficialSourceAdapter, buildVerifiedPacketWithAdapter, acquireP
 export { validateSourceCopyRecord, loadVerifiedSourceCopy, findSourceCopy } from "./verified-source-copy-store.js";
 
 export { evaluateExtractedQuestion, promoteExtractedQuestion } from "./question-extraction-gate.js";
+
+export { segmentQuestionCandidates, assessSegmentationCandidate } from "./generic-pdf-question-segmenter.js";
