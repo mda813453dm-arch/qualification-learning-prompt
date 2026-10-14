@@ -309,3 +309,10 @@
 - 実機では data/runtime-packets/capabilities.json を取得し、選択資格の officialPracticeRuntime を確認する。static_verified_packets_available の場合のみmanifest→packetUrlへ進む。not_yet_availableを成功扱いしない。
 - capabilityは103資格すべてを列挙し、対応状況を明示する。資格が選択されるまで特定資格を前提にしない。
 - source adapterが存在しても、verified packetが生成・manifest登録されるまでは実機利用可能と判定しない。コード実装済みと実機利用可能を分離する。
+
+
+## 公式サイトが自動取得を拒否する場合（2026-10-14）
+- 公式機関サイトへのHTTPアクセス成功を、公式問題利用の必須条件にしない。アクセス拒否・bot制限・一時障害の場合は取得経路の失敗として扱い、資料そのものの不存在とは判定しない。
+- コード所有の公式PDF pin（URL+SHA-256）がある場合、取得順は①公式直取得→②リポジトリ/管理ストレージに保持した同一PDF→③ユーザー/Library等から提供されたPDFとする。②③はSHA-256がpinと完全一致した場合だけ公式原本の同一コピーとして利用する。不一致ファイル、第三者ミラーのURLだけを根拠にしたファイルは利用しない。
+- 法務省等の直取得拒否時に、非公式サイトを「公式」として代替しない。SHA一致コピーが無ければ当該PDFの処理はPINNED_OFFICIAL_DOCUMENT_UNAVAILABLEで停止する。
+- 公式直取得が失敗しても、同一SHAコピーから本文・選択肢・図表・同年度正答を検証できればverified_officialへ昇格可能とする。取得経路(route)を証跡に残す。
