@@ -11,6 +11,7 @@
       "imageFile": "question_7_page_9.png",
       "imageSha256": "1bd26fa1a5ceb18afdffe9d9a05b5826b7772d96e3d4a864441b012335ca86b9",
       "textChars": 129,
+      "pageText": "7\nA\nB\nC\nTS\n7\n7\nBC\n1\n5\nAC\n7\nTS\n7\n7\nm\nAB\n290.560\nAC\n966.744\nBC\n676.144\n1\n676.104 m\n2\n676.154 m\n3\n676.164 m\n4\n676.184 m\n5\n676.224 m\n",
       "pageReview": "PENDING",
       "mobileRenderingVerified": false,
       "publishable": false
@@ -21,6 +22,7 @@
       "imageFile": "question_27_page_29.png",
       "imageSha256": "3f51012d46103290e1aadb674b4d1254eccbbd7966ce8cab34639624f8843553",
       "textChars": 196,
+      "pageText": "27\nA\nD\nA\nB\n14\n9\n27\nPQ\nAB\nPQ\n3.000 m\nP\nQ\nC\nD\n1\n5\n27\nB\nA\nQ\nP\nC\nY\nX\nD\n3.000 m\n27\nm\nY\nm\nA\n25.000\n \n5.000\nB\n \n4.000\n \n5.000\nC\n21.000\n20.000\nD\n25.000\n19.000\n1\n328 m2\n2\n352 m2\n3\n386 m2\n4\n411 m2\n5\n432 m2\n",
       "pageReview": "PENDING",
       "mobileRenderingVerified": false,
       "publishable": false
@@ -28,5 +30,6 @@
   ],
   "publishable": false,
   "answerUrl": "https://web2.gsi.go.jp/common/000278975.pdf",
-  "answerPdfSha256": "b513b25773b4e3e085169bd1500807eb7663b64e9853e7eb2b49fe72f8b134ef"
+  "answerPdfSha256": "b513b25773b4e3e085169bd1500807eb7663b64e9853e7eb2b49fe72f8b134ef",
+  "answerText": "問題\n正解\nNo.１\n３\nNo.２\n４\nNo.３\n１\nNo.４\n２\nNo.５\n２\nNo.６\n１\nNo.７\n４\nNo.８\n４\nNo.９\n３\nNo.１０\n５\nNo.１１\n３\nNo.１２\n３\nNo.１３\n４\nNo.１４\n４\nNo.１５\n３\nNo.１６\n１\nNo.１７\n５\nNo.１８\n５\nNo.１９\n５\nNo.２０\n２\nNo.２１\n４\nNo.２２\n２\nNo.２３\n５\nNo.２４\n１\nNo.２５\n３\nNo.２６\n４\nNo.２７\n１\nNo.２８\n３\n令和８年測量士補試験解答\n"
 }
