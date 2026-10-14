@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "storeId": "verified-official-question-packets",
+  "entries": [
+    {
+      "qualificationId": "q063",
+      "qualificationName": "測量士補",
+      "fieldId": "q063.surveying_law",
+      "fieldName": "測量に関する法規",
+      "packetPath": "新システム開発/data/verified-question-packets/q063/surveying-law-r4.json",
+      "rawUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/verified-question-packets/q063/surveying-law-r4.json",
+      "verifiedPacketCount": 3,
+      "runtimePolicy": "prefer_preverified_packet_before_live_pdf"
+    }
+  ]
+}
