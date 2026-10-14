@@ -5,3 +5,7 @@ const x=segmentQuestionCandidates(pages);assert.equal(x.length,3);assert.equal(x
 assert.equal(assessSegmentationCandidate(x[0],{expectedChoiceCount:4}).status,"candidate_ready");
 const bad=segmentQuestionCandidates([{page:1,text:"【問 1】本文\n2．B\n3．C"}])[0];assert.equal(assessSegmentationCandidate(bad,{expectedChoiceCount:4}).status,"needs_adapter_verification");
 console.log("generic-pdf-question-segmenter: PASS");
+
+const jp=segmentQuestionCandidates([{page:1,text:"第１問　本文\n１．甲\n２．乙\n３．丙\n４．丁\n第２問　次問\n１．A\n２．B\n３．C\n４．D"}]);
+assert.equal(jp.length,2);assert.equal(jp[0].questionNumber,1);assert.equal(jp[0].choices.length,4);
+console.log("full-width Japanese numbering: PASS");
