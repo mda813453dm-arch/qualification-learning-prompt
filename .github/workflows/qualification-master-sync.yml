@@ -12,6 +12,8 @@ on:
       - '新システム開発/資格マスタ閲覧表_103資格.md'
       - '新システム開発/src/past-question-retention.js'
       - '新システム開発/src/past-question-retention.test.js'
+      - '新システム開発/tools/run-annual-update-check.mjs'
+      - '新システム開発/tools/annual-update-check.test.mjs'
       - '.github/workflows/qualification-master-sync.yml'
   # GitHub cron is UTC. 15:15 UTC on Mar 31 = 00:15 JST on Apr 1.
   # Scheduled runs may start a little later than the nominal time.
@@ -37,6 +39,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Check annual update runner coverage
+        working-directory: 新システム開発
+        run: node --test tools/annual-update-check.test.mjs
+      - name: Check all registered official source pages
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        working-directory: 新システム開発
+        run: node tools/run-annual-update-check.mjs
       - name: Generate human-readable master table
         working-directory: 新システム開発
         run: node tools/generate-qualification-master-view.mjs
@@ -51,12 +60,13 @@ jobs:
         run: node tools/check-qualification-master-sync.mjs --check
       - name: Commit regenerated view when needed
         run: |
-          if git diff --quiet -- '新システム開発/資格マスタ閲覧表_103資格.md'; then
+          git add '新システム開発/資格マスタ閲覧表_103資格.md'
+          if [ -f '新システム開発/年度更新チェック結果.md' ]; then git add '新システム開発/年度更新チェック結果.md'; fi
+          if git diff --cached --quiet; then
             echo "View already synchronized."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add '新システム開発/資格マスタ閲覧表_103資格.md'
           git commit -m "Sync qualification master view"
           git push
