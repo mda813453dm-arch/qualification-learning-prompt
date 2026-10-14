@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { OFFICIAL_PDF_PINS } from "../src/official-pdf-pins.js";
 
-const pin = OFFICIAL_PDF_PINS["宅地建物取引士:2025:年度共通"];
+const pin = OFFICIAL_PDF_PINS["q041:2025:年度共通"];
 const MAX_BYTES = 25_000_000;
 const timeoutMs = 25_000;
 
