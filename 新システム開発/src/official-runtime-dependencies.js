@@ -147,3 +147,5 @@ export { createOfficialPdfRuntimeIngestion } from "./official-pdf-runtime-ingest
 
 export { validateOfficialSourceAdapter, buildVerifiedPacketWithAdapter, acquirePinnedOfficialDocument } from "./official-source-adapter-contract.js";
 export { validateSourceCopyRecord, loadVerifiedSourceCopy, findSourceCopy } from "./verified-source-copy-store.js";
+
+export { evaluateExtractedQuestion, promoteExtractedQuestion } from "./question-extraction-gate.js";
