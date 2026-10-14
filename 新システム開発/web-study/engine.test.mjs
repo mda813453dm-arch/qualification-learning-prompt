@@ -46,6 +46,7 @@ test('invalid transitions and unverified render never become answer waiting',()=
   assert.equal(s.dispatch('ANSWER',{value:4}).ok,false);
   assert.equal(s.dispatch('DISPLAY_VERIFIED',{question:{questionId:'WRONG',choices:p.choices,instruction:'番号で答えてください。'}}).ok,false);
   const visible=buildVisibleQuestion(p,['blob:verified/png']);
+  assert.equal(s.dispatch('DISPLAY_VERIFIED',{question:{...visible,choices:['altered',...visible.choices.slice(1)]}}).ok,false);
   assert.equal(s.dispatch('DISPLAY_VERIFIED',{question:visible}).ok,true);
   assert.equal(s.dispatch('ANSWER',{value:6}).ok,false);
   assert.equal(s.dispatch('ANSWER',{value:4}).state.graded.correct,true);
