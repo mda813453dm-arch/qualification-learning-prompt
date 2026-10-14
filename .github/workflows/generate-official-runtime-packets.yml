@@ -7,6 +7,9 @@ on:
       - '新システム開発/tools/verify-pinned-land-surveyor-pdfs.mjs'
       - '新システム開発/tools/diagnose-land-surveyor-2025.py'
       - '新システム開発/tools/extract-land-surveyor-afternoon-mcq.py'
+      - '新システム開発/tools/build-land-surveyor-verified-runtime-packets.py'
+      - '新システム開発/tools/build-runtime-packet-manifest.mjs'
+      - '新システム開発/tools/build-runtime-capabilities.mjs'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/generate-official-runtime-packets.yml'
 permissions:
@@ -52,6 +55,26 @@ jobs:
           name: q038-2025-afternoon-mcq-candidates
           path: ${{ runner.temp }}/q038-2025-afternoon-mcq-candidates.json
           if-no-files-found: error
+      - name: Build verified Land Surveyor static packets
+        if: steps.moj.outcome == 'success'
+        working-directory: 新システム開発
+        run: python tools/build-land-surveyor-verified-runtime-packets.py
+      - name: Rebuild static packet manifest and capabilities
+        if: steps.moj.outcome == 'success'
+        working-directory: 新システム開発
+        run: |
+          node tools/build-runtime-packet-manifest.mjs
+          cp data/runtime-packets/manifest.generated.json data/runtime-packets/manifest.json
+          node tools/build-runtime-capabilities.mjs
+      - name: Commit verified Land Surveyor runtime outputs
+        if: steps.moj.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "新システム開発/data/runtime-packets/verified/q038-2025-"*.json "新システム開発/data/runtime-packets/manifest.json" "新システム開発/data/runtime-packets/capabilities.json"
+          git diff --cached --quiet && exit 0
+          git commit -m "Generate verified q038 official runtime packets"
+          git push origin HEAD:ai-learning-system
       - name: State packet-generation boundary
         run: echo "q038 PDF source verification/diagnostics only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
