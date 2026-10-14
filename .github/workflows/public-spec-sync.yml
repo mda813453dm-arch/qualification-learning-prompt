@@ -1,0 +1,30 @@
+name: Public spec sync
+
+on:
+  pull_request:
+    branches: [ai-learning-system]
+  push:
+    branches: [ai-learning-system]
+
+jobs:
+  public-spec-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check public specification synchronization
+        shell: bash
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+              BASE="$(git rev-parse HEAD^)"
+            fi
+          fi
+          SPEC_SYNC_BASE="$BASE" SPEC_SYNC_HEAD="${{ github.sha }}" node "新システム開発/tools/check-public-spec-sync.mjs"
