@@ -3,7 +3,7 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 e=json.loads((ROOT/"data/runtime-packets/assets/q063/2026/evidence.json").read_text(encoding="utf-8"))
 fw=str.maketrans("０１２３４５６７８９","0123456789")
-answers={int(q.translate(fw)):int(a.translate(fw)) for q,a in re.findall(r"No．([０-９]+)\n([１-５])",e["answerText"])}
+answers={int(q.translate(fw)):int(a.translate(fw)) for q,a in re.findall(r"No[.．]([０-９]+)\n([１-５])",e["answerText"])}
 if answers.get(7)!=4 or answers.get(27)!=1: raise SystemExit("OFFICIAL_ANSWER_BINDING_FAILED")
 packets=[]
 for q in e["questions"]:
