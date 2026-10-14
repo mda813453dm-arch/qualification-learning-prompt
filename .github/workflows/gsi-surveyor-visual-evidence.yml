@@ -7,6 +7,7 @@ on:
       - '新システム開発/integration/test_gsi_ci_visual_pipeline.py'
       - '.github/workflows/gsi-surveyor-visual-evidence.yml'
       - '新システム開発/data/runtime-packets/**'
+      - '新システム開発/tools/build-q063-verified-runtime-packet.py'
       - '新システム開発/data/official-pdf-candidates/assistant-surveyor.json'
   workflow_dispatch:
 jobs:
@@ -58,6 +59,23 @@ jobs:
           git add "新システム開発/data/runtime-packets/assets/q063/2026"
           git diff --cached --quiet && exit 0
           git commit -m "Promote verified q063 visual evidence assets"
+          git push origin HEAD:ai-learning-system
+      - name: Build and promote q063 verified runtime packet
+        if: steps.official_pdf.outcome == 'success'
+        shell: bash
+        run: |
+          python "新システム開発/tools/build-q063-verified-runtime-packet.py"
+          cd "新システム開発"
+          node tools/build-runtime-packet-manifest.mjs
+          cp data/runtime-packets/manifest.generated.json data/runtime-packets/manifest.json
+          node tools/build-runtime-capabilities.mjs
+          cd ..
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "新システム開発/data/runtime-packets/verified/q063-2026-visual.json" "新システム開発/data/runtime-packets/manifest.json" "新システム開発/data/runtime-packets/capabilities.json"
+          git diff --cached --quiet && exit 0
+          git commit -m "Promote verified q063 runtime packets"
+          git pull --rebase origin ai-learning-system
           git push origin HEAD:ai-learning-system
       - name: 検証用画像とハッシュ記録を保存
         if: always()
