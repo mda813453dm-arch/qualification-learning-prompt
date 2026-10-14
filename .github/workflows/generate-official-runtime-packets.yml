@@ -31,6 +31,9 @@ jobs:
       - name: Promote generated manifest
         working-directory: 新システム開発
         run: cp data/runtime-packets/manifest.generated.json data/runtime-packets/manifest.json
+      - name: Build qualification capability manifest
+        working-directory: 新システム開発
+        run: node tools/build-runtime-capabilities.mjs
       - name: Verify generated files
         run: |
           test -s "新システム開発/data/runtime-packets/verified/takken-2025-u8.json"
@@ -40,7 +43,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "新システム開発/data/runtime-packets/verified/takken-2025-u8.json" "新システム開発/data/runtime-packets/manifest.json"
+          git add "新システム開発/data/runtime-packets/verified/takken-2025-u8.json" "新システム開発/data/runtime-packets/manifest.json" "新システム開発/data/runtime-packets/capabilities.json"
           git diff --cached --quiet && exit 0
           git commit -m "Generate verified official runtime packets"
           git push origin HEAD:ai-learning-system
