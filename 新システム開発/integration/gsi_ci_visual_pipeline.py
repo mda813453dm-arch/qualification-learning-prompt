@@ -36,7 +36,15 @@ def export(data,directory):
  return report
 if __name__=='__main__':
  try:
-  root=sys.argv[1] if len(sys.argv)>1 else 'visual-evidence'\n  q=fetch_url(QUESTION_URL);a=fetch_url(ANSWER_URL)\n  result=export(q,root)\n  Path(root,'official-question.pdf').write_bytes(q);Path(root,'official-answer.pdf').write_bytes(a)\n  result['answerUrl']=ANSWER_URL;result['answerPdfSha256']=hashlib.sha256(a).hexdigest()\n  Path(root,'evidence.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+  root=sys.argv[1] if len(sys.argv)>1 else 'visual-evidence'
+  q=fetch_url(QUESTION_URL)
+  a=fetch_url(ANSWER_URL)
+  result=export(q,root)
+  Path(root,'official-question.pdf').write_bytes(q)
+  Path(root,'official-answer.pdf').write_bytes(a)
+  result['answerUrl']=ANSWER_URL
+  result['answerPdfSha256']=hashlib.sha256(a).hexdigest()
+  Path(root,'evidence.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
   print(json.dumps(result,ensure_ascii=False))
  except Exception as exc:
   print(f'OFFICIAL_PDF_PIPELINE_FAILED:{type(exc).__name__}:{exc}',file=sys.stderr)
