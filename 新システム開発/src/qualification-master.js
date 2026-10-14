@@ -1,8 +1,10 @@
+import { QUALIFICATION_CATALOG } from "./qualification-catalog.js";
+
 /**
  * Official-source qualification registry. Unverified fields never become facts.
  * Data discovery is external; only validated official evidence can be promoted.
  */
-export const QUALIFICATION_MASTER = Object.freeze({
+const VERIFIED_OVERRIDES = Object.freeze({
   land_surveyor: Object.freeze({
     id: "land_surveyor", name: "土地家屋調査士", aliases: ["土地家屋調査士", "調査士"],
     year: 2026, authority: "法務省・法務局",
@@ -50,19 +52,43 @@ export const QUALIFICATION_MASTER = Object.freeze({
   })
 });
 
+const mergedByName = new Map(QUALIFICATION_CATALOG.map(row => [row.name, row]));
+for (const override of Object.values(VERIFIED_OVERRIDES)) {
+  const base = mergedByName.get(override.name) ?? {};
+  mergedByName.set(override.name, Object.freeze({
+    ...base,
+    ...override,
+    aliases: Object.freeze([...new Set([...(base.aliases ?? []), ...(override.aliases ?? [])])]),
+    exemption: override.exemption
+  }));
+}
+export const QUALIFICATION_MASTER = Object.freeze(Object.fromEntries(
+  [...mergedByName.values()].map(record => [record.id, record])
+));
+if (Object.keys(QUALIFICATION_MASTER).length !== 103) {
+  throw new Error(`QUALIFICATION_MASTER_COUNT_MISMATCH:${Object.keys(QUALIFICATION_MASTER).length}`);
+}
+
 export function resolveQualification(name, registry = QUALIFICATION_MASTER) {
   const normalized = String(name ?? "").normalize("NFKC").trim().replace(/\s+/g, "");
   return Object.values(registry).find(q => q.aliases.some(a => a.normalize("NFKC") === normalized)) ?? null;
 }
 
-const isOfficial = url => {
+const normalizedHost = value => {
   try {
-    const u = new URL(url);
-    return u.protocol === "https:" && !u.username && !u.password &&
-      (u.hostname === "retio.or.jp" || u.hostname.endsWith(".retio.or.jp") ||
-       u.hostname === "mlit.go.jp" || u.hostname.endsWith(".mlit.go.jp") ||
-       u.hostname === "moj.go.jp" || u.hostname.endsWith(".moj.go.jp"));
-  } catch { return false; }
+    const u = new URL(value);
+    if (u.protocol !== "https:" || u.username || u.password) return null;
+    return u.hostname.toLowerCase().replace(/^www\./, "");
+  } catch { return null; }
+};
+
+const isOfficialForRecord = (record, url) => {
+  const evidenceHost = normalizedHost(url);
+  const sourceHost = normalizedHost(record?.pastQuestionsUrl);
+  if (!evidenceHost || !sourceHost) return false;
+  return evidenceHost === sourceHost ||
+    evidenceHost.endsWith(`.${sourceHost}`) ||
+    sourceHost.endsWith(`.${evidenceHost}`);
 };
 
 export function validateQualificationRecord(record, year) {
@@ -70,7 +96,7 @@ export function validateQualificationRecord(record, year) {
   const e = record.exemption;
   if (!e || !["verified_present", "verified_absent", "unverified"].includes(e.status)) return { status: "rejected", reason: "EXEMPTION_STATUS_INVALID" };
   if (e.status === "unverified") return { status: "pending", reason: "OFFICIAL_VERIFICATION_REQUIRED" };
-  if (!Array.isArray(e.evidence) || !e.evidence.length || e.evidence.some(s => !isOfficial(s.url) || s.year !== year || !s.claim))
+  if (!Array.isArray(e.evidence) || !e.evidence.length || e.evidence.some(s => !isOfficialForRecord(record, s.url) || s.year !== year || !s.claim))
     return { status: "rejected", reason: "OFFICIAL_EVIDENCE_REQUIRED" };
   if (e.status === "verified_present" && (e.scopeStatus !== "verified" ||
       !Array.isArray(e.excludedQuestionNumbers) || !e.excludedQuestionNumbers.length ||
