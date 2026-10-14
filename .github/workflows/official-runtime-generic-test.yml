@@ -35,7 +35,7 @@ jobs:
           node-version: '22'
       - name: Install runtime dependencies
         working-directory: 新システム開発
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Test all-catalog official source resolution
         run: node "新システム開発/src/official-source-resolver.test.mjs"
       - name: Test qualification-neutral source adapter contract
