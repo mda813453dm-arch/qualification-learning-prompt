@@ -9,9 +9,9 @@ if len(q29)!=1 or len(q30)!=1:raise SystemExit("Q29_BOUNDARY_NOT_FOUND")
 top=q29[0][1];bottom=q30[0][1];content=fitz.Rect(45,top-5,page.rect.width-45,bottom-5)
 if page.get_images(full=True):raise SystemExit("Q29_RASTER_IMAGE_REVIEW_REQUIRED")
 relevant=[]
-page_area=page.rect.get_area()
+page_area=page.rect.width*page.rect.height
 for d in page.get_drawings():
- r=d["rect"];area=max(0,r.get_area())
+ r=d["rect"];area=max(0,r.width*r.height)
  if area>=page_area*.8:continue
  if r.intersects(content):relevant.append([round(float(x),1) for x in r])
 if relevant:raise SystemExit("Q29_VECTOR_VISUAL_REVIEW_REQUIRED:"+json.dumps(relevant))
