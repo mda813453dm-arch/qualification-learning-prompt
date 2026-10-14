@@ -380,3 +380,15 @@ release gateのJavaScriptテストはsrc/*.test.jsおよびsrc/*.test.mjsの現�
 - 公式過去問開始時は、公式PDFのライブ探索より先に、Raw GitHubの `data/runtime-packets/capabilities.json` を確認する。選択資格が `static_verified_packets_available` なら `data/runtime-packets/manifest.json` から該当verified_official entryを取得し、そのpacketUrlの問題を最優先で使用する。静的verified packetが存在するのに、ライブPDF取得失敗を理由として「公式過去問を取得できない」と判定してはならない。
 - diagramRequired=true のpacketはdiagramAssetsを問題の一部として本文中に表示する。公式ページ画像が問題本文・図表を一体で保持する場合は、その画像を問題本体として表示し、全選択肢と「番号で答えてください。」まで揃ってから回答待ちにする。画像を表示できなければ回答待ちへ進まない。
 - q063測量士補は2026年のverified_official図表付きpacketがmanifest登録済みであり、実践学習ではこの静的packetを先に解決する。q063を「利用可能状態を確認できない」と扱う前にcapabilities/manifest/packetの3段階を実際に確認する。
+
+
+## 実機呼出時の強制実行順（2026-10-14）
+この節は通常AIアプリでの実行規則であり、説明用ではない。
+1. 資格名入力後、ユーザーに選択を求めるときは必ず本文へ番号付き選択肢を出す。学習段階は「1 未着手／2 基礎／3 応用／4 過去問」。計画承認後の学習モードは「1 解説から／2 確認問題から／3 公式過去問による実践学習」。
+2. 実践学習が選ばれたら、ライブPDF探索を開始する前に必ず次のRaw URLを取得する。
+   - capabilities: https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/capabilities.json
+   - manifest: https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/manifest.json
+3. capabilitiesで選択資格がstatic_verified_packets_availableなら、manifestのqualificationId一致entryを読み、そのpacketUrlを取得する。利用可能なverified packetがある限り、公式サイトのライブPDF取得へフォールバックしてはならない。
+4. packetのdiagramRequired=trueならdiagramAssetsのURLを通常回答本文の問題位置へ画像として埋め込む。画像・全選択肢・回答指示のすべてを表示できた場合だけ回答待ちへ進む。
+5. 通常画面では、この取得手順、GitHub、qualificationId、packet、manifest、capabilities、SHA-256等を説明しない。ユーザーには学習に必要な内容だけを表示する。
+6. q063の2026年図表付きverified packetはmanifest登録済みである。測量士補で実践学習が選ばれた場合、manifest上のq063 entryを確認せずに「公式過去問を取得できない」と回答することを禁止する。
