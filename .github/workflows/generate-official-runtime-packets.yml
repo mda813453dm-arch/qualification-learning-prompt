@@ -5,6 +5,7 @@ on:
     branches: [ai-learning-system]
     paths:
       - '新システム開発/tools/verify-pinned-land-surveyor-pdfs.mjs'
+      - '新システム開発/tools/diagnose-land-surveyor-2025.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/generate-official-runtime-packets.yml'
 permissions:
@@ -28,8 +29,19 @@ jobs:
       - name: Record blocked-authority outcome
         if: steps.moj.outcome != 'success'
         run: echo "MOJ_DIRECT_ACCESS_UNAVAILABLE; do not fail the qualification globally. A SHA-256-identical verified copy is required before extraction can continue."
+      - uses: actions/setup-python@v5
+        if: steps.moj.outcome == 'success'
+        with:
+          python-version: '3.12'
+      - name: Install deterministic PDF diagnostics
+        if: steps.moj.outcome == 'success'
+        run: python -m pip install --quiet PyMuPDF==1.26.5
+      - name: Diagnose real Land Surveyor PDF structure
+        if: steps.moj.outcome == 'success'
+        working-directory: 新システム開発
+        run: python tools/diagnose-land-surveyor-2025.py
       - name: State packet-generation boundary
-        run: echo "q038 PDF source verification only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
+        run: echo "q038 PDF source verification/diagnostics only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
