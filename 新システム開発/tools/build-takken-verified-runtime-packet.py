@@ -9,7 +9,8 @@ import fitz
 EXPECTED="829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed"
 URL="https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf"
 # Existing approved mapping in the repository: Q29 -> takken-u8.
-# Only the code-owned unit ID is established by existing repository tests. Do not invent a display label.\nAPPROVED={29:"takken-u8"}
+# Only the code-owned unit ID is established by existing repository tests. Do not invent a display label.
+APPROVED={29:"takken-u8"}
 HEADING=re.compile(r"【問[ 　]*(\d{1,2})】")
 CHOICE=re.compile(r"(?m)^[ \t]*([1-4])[ 　]+")
 def extract(doc,n):
