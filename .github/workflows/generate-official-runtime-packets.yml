@@ -10,6 +10,9 @@ on:
       - '新システム開発/tools/build-land-surveyor-verified-runtime-packets.py'
       - '新システム開発/tools/build-runtime-packet-manifest.mjs'
       - '新システム開発/tools/build-runtime-capabilities.mjs'
+      - '新システム開発/tools/verify-pinned-takken-pdf.mjs'
+      - '新システム開発/tools/build-takken-q29-visual-review.py'
+      - '新システム開発/tools/build-takken-verified-runtime-packet.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/generate-official-runtime-packets.yml'
 permissions:
@@ -78,7 +81,6 @@ jobs:
       - name: State packet-generation boundary
         run: echo "q038 PDF source verification/diagnostics only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
-    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -96,6 +98,9 @@ jobs:
         run: node tools/verify-pinned-takken-pdf.mjs
       - name: Install deterministic PDF parser
         run: python -m pip install --quiet PyMuPDF==1.26.5
+      - name: Verify Takken Q29 question-region visuals
+        working-directory: 新システム開発
+        run: python tools/build-takken-q29-visual-review.py
       - name: Build verified official packet
         working-directory: 新システム開発
         run: python tools/build-takken-verified-runtime-packet.py "$RUNNER_TEMP/takken-2025-verified.pdf" "data/runtime-packets/verified/takken-2025-u8.json"
