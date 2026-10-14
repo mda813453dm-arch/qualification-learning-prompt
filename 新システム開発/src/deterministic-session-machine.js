@@ -73,7 +73,7 @@ export function createDeterministicSession(initial={}){
       const eligible=!isReview&&!!state.question?.topicId&&state.question.topicId===state.currentTopicId;
       const streak=eligible?(n===a?0:state.consecutiveWrong+1):state.consecutiveWrong;
       const reviewWrong=isReview?(n===a?0:state.reviewWrong+1):state.reviewWrong;
-      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:isReview&&n===a&&state.reviewKind==='reinforcement'?0:streak,reviewWrong,reviewRequired:(eligible&&n!==a&&streak>=3)||(isReview&&n!==a&&reviewWrong<3),reviewContinueRequired:isReview&&n!==a&&reviewWrong>=3});
+      return commit(rule[1],{grade:Object.freeze({selected:n,correctAnswer:a,correct:n===a,packetHash:state.packet.packetHash}),consecutiveWrong:isReview&&n===a&&state.reviewKind==='reinforcement'?0:streak,reviewWrong,reviewRequired:(isReview&&n!==a&&reviewWrong<3),reviewContinueRequired:isReview&&n!==a&&reviewWrong>=3});
     }
     case 'COMMIT_EXPLANATION':
       if(!event.explanation||event.packetHash!==state.packet.packetHash)return reject('EXPLANATION_BINDING_INVALID');
