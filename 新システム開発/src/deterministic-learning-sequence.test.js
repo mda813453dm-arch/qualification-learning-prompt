@@ -9,16 +9,18 @@ ok(seq.validateQuestion(meta('p1')).ok,'same-unit official question');
 ok(seq.recordAnswer('p1',false).state.phase==='PRACTICE_READY','first miss continues official practice');
 throws(()=>seq.validateQuestion(meta('other','official_practice','official','declarations')),'STUDY_UNIT_MISMATCH','different unit cannot mix');
 ok(seq.validateQuestion(meta('p2')).ok,'second official practice');
-ok(seq.recordAnswer('p2',false).state.phase==='CONFIRMATION_REQUIRED','second same-unit miss forces AI check');
-throws(()=>seq.validateQuestion(meta('p3')),'AI_CONFIRMATION_REQUIRED','official practice blocked after two misses');
-throws(()=>seq.validateQuestion(meta('wrong-parent','ai_confirmation','ai','guarantee',{parentQuestionId:'p1'})),'AI_CONFIRMATION_REQUIRED','confirmation cannot switch to another parent question');
-throws(()=>seq.validateQuestion(meta('c1','ai_confirmation','official','guarantee',{parentQuestionId:'p2'})),'AI_CONFIRMATION_REQUIRED','AI check origin required');
-ok(seq.validateQuestion(meta('c1','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})).ok,'AI confirmation accepted');
+ok(seq.recordAnswer('p2',false).state.phase==='PRACTICE_READY','second same-unit miss still continues official practice');
+ok(seq.validateQuestion(meta('p3miss')).ok,'third official practice');
+ok(seq.recordAnswer('p3miss',false).state.phase==='CONFIRMATION_REQUIRED','third same-unit miss forces AI check');
+throws(()=>seq.validateQuestion(meta('p4blocked')),'AI_CONFIRMATION_REQUIRED','official practice blocked after three misses');
+throws(()=>seq.validateQuestion(meta('wrong-parent','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})),'AI_CONFIRMATION_REQUIRED','confirmation cannot switch to another parent question');
+throws(()=>seq.validateQuestion(meta('c1','ai_confirmation','official','guarantee',{parentQuestionId:'p3miss'})),'AI_CONFIRMATION_REQUIRED','AI check origin required');
+ok(seq.validateQuestion(meta('c1','ai_confirmation','ai','guarantee',{parentQuestionId:'p3miss'})).ok,'AI confirmation accepted');
 const missed=seq.recordAnswer('c1',false);
-ok(missed.state.officialPracticeCount===2&&missed.state.phase==='CONFIRMATION_REQUIRED','AI confirmation excluded and retry stays active');
-ok(seq.validateQuestion(meta('c2','ai_confirmation','ai','guarantee',{parentQuestionId:'p2'})).ok,'fresh confirmation retry');
+ok(missed.state.officialPracticeCount===3&&missed.state.phase==='CONFIRMATION_REQUIRED','AI confirmation excluded and retry stays active');
+ok(seq.validateQuestion(meta('c2','ai_confirmation','ai','guarantee',{parentQuestionId:'p3miss'})).ok,'fresh confirmation retry');
 const passed=seq.recordAnswer('c2',true);
-ok(passed.state.officialPracticeCount===2&&passed.state.consecutivePracticeMisses===0,'AI confirmation excluded and clears miss streak');
+ok(passed.state.officialPracticeCount===3&&passed.state.consecutivePracticeMisses===0,'AI confirmation excluded and clears miss streak');
 for(const id of ['p3','p4','p5']){ok(seq.validateQuestion(meta(id)).ok,'resume practice '+id);seq.recordAnswer(id,true);}
 ok(seq.state().phase==='PRACTICE_READY'&&seq.state().batchCount===2,'the interrupted non-perfect trio does not trigger a choice');
 ok(seq.validateQuestion(meta('p6')).ok,'third consecutive correct practice after imperfect trio');seq.recordAnswer('p6',true);
@@ -36,37 +38,40 @@ ok(imperfect.state().phase==='PRACTICE_READY'&&imperfect.state().batchCount===0,
 const prediction=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
 prediction.validateQuestion(meta('r1'));ok(prediction.predictNextKind(false).kind==='official_practice','first miss route remains same-unit official');
 prediction.recordAnswer('r1',false);prediction.validateQuestion(meta('r2'));
-ok(prediction.predictNextKind(false).kind==='ai_confirmation','second miss route is AI confirmation before grading');
+ok(prediction.predictNextKind(false).kind==='official_practice','second miss route remains same-unit official');
+prediction.recordAnswer('r2',false);prediction.validateQuestion(meta('r3'));
+ok(prediction.predictNextKind(false).kind==='ai_confirmation','third miss route is AI confirmation before grading');
 ok(prediction.predictNextKind(true).kind==='official_practice','answer correction/reset route is official practice');
 
 const escalation=createDeterministicLearningSequence({studyPlan:plan,itemId:'guarantee'});
 escalation.validateQuestion(meta('e1'));escalation.recordAnswer('e1',false);
 escalation.validateQuestion(meta('e2'));escalation.recordAnswer('e2',false);
+escalation.validateQuestion(meta('e3'));escalation.recordAnswer('e3',false);
 for(const id of ['ec1','ec2']){
- escalation.validateQuestion(meta(id,'ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+ escalation.validateQuestion(meta(id,'ai_confirmation','ai','guarantee',{parentQuestionId:'e3'}));
  escalation.recordAnswer(id,false);
 }
-escalation.validateQuestion(meta('ec3','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+escalation.validateQuestion(meta('ec3','ai_confirmation','ai','guarantee',{parentQuestionId:'e3'}));
 ok(escalation.predictNextKind(false).kind==='confirmation_menu','third confirmation miss routes to fixed menu before another question');
 const thirdMiss=escalation.recordAnswer('ec3',false);
 ok(thirdMiss.state.phase==='CONFIRMATION_CHOICE_REQUIRED'&&thirdMiss.state.confirmationMisses===3,'three consecutive confirmation misses open the menu');
-throws(()=>escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'})),'CONFIRMATION_CHOICE_REQUIRED','menu must be answered before another confirmation');
+throws(()=>escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e3'})),'CONFIRMATION_CHOICE_REQUIRED','menu must be answered before another confirmation');
 const continueEscalation=escalation.chooseAfterConfirmationMisses('continue_confirmation');
 ok(continueEscalation.ok&&continueEscalation.requiresBriefExplanation&&continueEscalation.nextKind==='ai_confirmation'&&continueEscalation.state.phase==='CONFIRMATION_BRIEF_EXPLANATION_REQUIRED','menu choice 1 requires short explanation and another confirmation');
-throws(()=>escalation.validateQuestion(meta('blocked-confirm','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'})),'CONFIRMATION_BRIEF_EXPLANATION_REQUIRED','cannot continue before short explanation');
+throws(()=>escalation.validateQuestion(meta('blocked-confirm','ai_confirmation','ai','guarantee',{parentQuestionId:'e3'})),'CONFIRMATION_BRIEF_EXPLANATION_REQUIRED','cannot continue before short explanation');
 throws(()=>escalation.completeBriefExplanation(''),'BRIEF_EXPLANATION_REQUIRED','empty short explanation blocks');
 ok(escalation.completeBriefExplanation('誤りの要点を短く整理します。').state.phase==='CONFIRMATION_REQUIRED','short explanation releases confirmation gate');
-escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e2'}));
+escalation.validateQuestion(meta('ec4','ai_confirmation','ai','guarantee',{parentQuestionId:'e3'}));
 escalation.recordAnswer('ec4',true);
 ok(escalation.state().confirmationMisses===0&&escalation.state().phase==='PRACTICE_READY','confirmation success closes escalation chain');
 
 const terminalPlan={...plan,itemIds:['guarantee']};
 const terminal=createDeterministicLearningSequence({studyPlan:terminalPlan,itemId:'guarantee'});
-for(const [id,kind,origin,parent] of [['t1','official_practice','official'],['t2','official_practice','official'],['tc1','ai_confirmation','ai','t2'],['tc2','ai_confirmation','ai','t2'],['tc3','ai_confirmation','ai','t2']]){
+for(const [id,kind,origin,parent] of [['t1','official_practice','official'],['t2','official_practice','official'],['t3','official_practice','official'],['tc1','ai_confirmation','ai','t3'],['tc2','ai_confirmation','ai','t3'],['tc3','ai_confirmation','ai','t3']]){
  terminal.validateQuestion(meta(id,kind,origin,'guarantee',parent?{parentQuestionId:parent}:{}));
  terminal.recordAnswer(id,false);
 }
 ok(!terminal.state().hasNextUnit&&terminal.state().phase==='CONFIRMATION_CHOICE_REQUIRED','last item opens a menu without a nonexistent destination');
 throws(()=>terminal.chooseAfterConfirmationMisses('hold_and_move'),'NEXT_STUDY_UNIT_NOT_IN_PLAN','holding requires an actual destination');
 ok(terminal.chooseAfterConfirmationMisses('end_session').sessionEndRequired===true,'menu substitutes explicit end when no destination exists');
-console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, two-miss AI confirmation, and perfect-run choice');
+console.log('PASS deterministic learning sequence: approved plan binding, same-unit three-question group, three-miss AI confirmation, and perfect-run choice');
