@@ -6,6 +6,7 @@ on:
     paths:
       - '新システム開発/tools/verify-pinned-land-surveyor-pdfs.mjs'
       - '新システム開発/tools/diagnose-land-surveyor-2025.py'
+      - '新システム開発/tools/extract-land-surveyor-afternoon-mcq.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/generate-official-runtime-packets.yml'
 permissions:
@@ -40,6 +41,17 @@ jobs:
         if: steps.moj.outcome == 'success'
         working-directory: 新システム開発
         run: python tools/diagnose-land-surveyor-2025.py
+      - name: Extract Land Surveyor afternoon MCQ candidates
+        if: steps.moj.outcome == 'success'
+        working-directory: 新システム開発
+        run: python tools/extract-land-surveyor-afternoon-mcq.py
+      - name: Upload quarantined Land Surveyor candidates
+        if: steps.moj.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: q038-2025-afternoon-mcq-candidates
+          path: ${{ runner.temp }}/q038-2025-afternoon-mcq-candidates.json
+          if-no-files-found: error
       - name: State packet-generation boundary
         run: echo "q038 PDF source verification/diagnostics only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
