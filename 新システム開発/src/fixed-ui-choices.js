@@ -1,9 +1,14 @@
-// Fixed UI choice contract shared by ChatGPT/Claude.
+// Fixed UI choice contract shared by ChatGPT/Claude/Perplexity.
 // AI clients must render these labels, order and counts verbatim.
 export const FIXED_UI_CHOICES = Object.freeze({
+  EXEMPTION_USE_CONFIRM: Object.freeze({
+    prompt: "免除制度を利用しますか？",
+    choices: Object.freeze(["免除を利用する", "免除を利用しない"]),
+    answerInstruction: "番号で答えてください。"
+  }),
   PLAN_START_CONFIRM: Object.freeze({
-    prompt: "この学習計画で開始しますか？",
-    choices: Object.freeze(["この計画で開始する", "学習計画を見直す"]),
+    prompt: "この学習計画で学習を開始しますか？",
+    choices: Object.freeze(["学習を開始する", "今は学習しない"]),
     answerInstruction: "番号で答えてください。"
   }),
   PLAN_EDIT_MENU: Object.freeze({
