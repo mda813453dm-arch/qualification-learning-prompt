@@ -13,7 +13,7 @@ jobs:
   render-official-pages:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +45,20 @@ jobs:
       - name: 公式PDF取得に失敗した場合はジョブを失敗扱い
         if: steps.official_pdf.outcome == 'failure'
         run: exit 1
+      - name: Promote stable q063 visual assets
+        if: steps.official_pdf.outcome == 'success'
+        shell: bash
+        run: |
+          mkdir -p "新システム開発/data/runtime-packets/assets/q063/2026"
+          cp visual-evidence/question_7_page_9.png "新システム開発/data/runtime-packets/assets/q063/2026/question-7-page-9.png"
+          cp visual-evidence/question_27_page_29.png "新システム開発/data/runtime-packets/assets/q063/2026/question-27-page-29.png"
+          cp visual-evidence/evidence.json "新システム開発/data/runtime-packets/assets/q063/2026/evidence.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "新システム開発/data/runtime-packets/assets/q063/2026"
+          git diff --cached --quiet && exit 0
+          git commit -m "Promote verified q063 visual evidence assets"
+          git push origin HEAD:ai-learning-system
       - name: 検証用画像とハッシュ記録を保存
         if: always()
         uses: actions/upload-artifact@v4
