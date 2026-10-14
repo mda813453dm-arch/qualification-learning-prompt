@@ -9,7 +9,7 @@ export function validateOfficialSourceAdapter(adapter){
      typeof adapter.officialEntryUrl!=="string"||!HTTPS.test(adapter.officialEntryUrl)||
      !Array.isArray(adapter.supportedYears)||!adapter.supportedYears.every(Number.isInteger)||
      typeof adapter.discoverDocuments!=="function"||
-     typeof adapter.downloadAndVerify!=="function"||
+     typeof adapter.acquireAndVerify!=="function"||
      typeof adapter.extractQuestion!=="function"||
      typeof adapter.verifyAnswer!=="function"||
      typeof adapter.classifyField!=="function")
@@ -26,8 +26,8 @@ export async function buildVerifiedPacketWithAdapter(adapter,{year,questionNumbe
   const docs=await adapter.discoverDocuments({year});
   if(!docs||docs.status!=="ready"||!docs.question||!docs.answer) return fail("OFFICIAL_DOCUMENT_PAIR_NOT_FOUND");
   const [questionFile,answerFile]=await Promise.all([
-    adapter.downloadAndVerify({kind:"question",document:docs.question,year}),
-    adapter.downloadAndVerify({kind:"answer",document:docs.answer,year})
+    adapter.acquireAndVerify({kind:"question",document:docs.question,year}),
+    adapter.acquireAndVerify({kind:"answer",document:docs.answer,year})
   ]);
   if(questionFile?.status!=="verified"||answerFile?.status!=="verified") return fail("OFFICIAL_DOCUMENT_VERIFICATION_FAILED");
   if(!HASH.test(questionFile.sha256||"")||!HASH.test(answerFile.sha256||"")) return fail("OFFICIAL_DOCUMENT_HASH_INVALID");
@@ -57,4 +57,35 @@ export async function buildVerifiedPacketWithAdapter(adapter,{year,questionNumbe
     evidence:Object.freeze({question:q.evidence??null,answer:ans.evidence??null,field:cls.evidence??null}),
     verification:Object.freeze({questionText:"official_pdf_checked",choices:"official_pdf_checked",answer:"same_year_official_answer_checked",field:"verified"})
   })});
+}
+
+
+/**
+ * Try official bytes without making network reachability a truth condition.
+ * Every fallback must match the code-owned expected SHA-256.
+ */
+export async function acquirePinnedOfficialDocument({
+  document, expectedSha256, fetchOfficial, loadRepositoryCopy, loadProvidedCopy, sha256
+}={}){
+  if(!document?.url || !HASH.test(expectedSha256||"") || typeof sha256!=="function")
+    return fail("ACQUISITION_INPUT_INVALID");
+  const routes=[
+    ["official_direct",fetchOfficial],
+    ["repository_verified_copy",loadRepositoryCopy],
+    ["provided_verified_copy",loadProvidedCopy]
+  ];
+  const attempts=[];
+  for(const [route,loader] of routes){
+    if(typeof loader!=="function") continue;
+    try{
+      const bytes=await loader(document);
+      if(!bytes){attempts.push({route,status:"empty"});continue;}
+      const actual=await sha256(bytes);
+      if(actual!==expectedSha256){attempts.push({route,status:"hash_mismatch"});continue;}
+      return Object.freeze({status:"verified",route,sha256:actual,bytes});
+    }catch(error){
+      attempts.push({route,status:"failed",code:error?.code??error?.name??"ERROR"});
+    }
+  }
+  return fail("PINNED_OFFICIAL_DOCUMENT_UNAVAILABLE",{attempts:Object.freeze(attempts)});
 }
