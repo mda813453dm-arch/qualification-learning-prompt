@@ -1,0 +1,33 @@
+name: Build static official packet manifest
+on:
+  workflow_dispatch:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/data/runtime-packets/verified/**'
+      - '新システム開発/tools/build-runtime-packet-manifest.mjs'
+      - '新システム開発/src/static-official-packet-manifest.js'
+      - '.github/workflows/build-static-official-packets.yml'
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate and build manifest
+        working-directory: 新システム開発
+        run: node tools/build-runtime-packet-manifest.mjs
+      - name: Show generated manifest
+        working-directory: 新システム開発
+        run: cat data/runtime-packets/manifest.generated.json
+      - name: Upload generated manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-official-packet-manifest
+          path: 新システム開発/data/runtime-packets/manifest.generated.json
+          if-no-files-found: error
