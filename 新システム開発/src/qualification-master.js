@@ -69,9 +69,14 @@ if (Object.keys(QUALIFICATION_MASTER).length !== 103) {
   throw new Error(`QUALIFICATION_MASTER_COUNT_MISMATCH:${Object.keys(QUALIFICATION_MASTER).length}`);
 }
 
+const normalizeQualificationName = value =>
+  String(value ?? "").normalize("NFKC").trim().replace(/\s+/g, "");
+
 export function resolveQualification(name, registry = QUALIFICATION_MASTER) {
-  const normalized = String(name ?? "").normalize("NFKC").trim().replace(/\s+/g, "");
-  return Object.values(registry).find(q => q.aliases.some(a => a.normalize("NFKC") === normalized)) ?? null;
+  const normalized = normalizeQualificationName(name);
+  return Object.values(registry).find(q =>
+    q.aliases.some(a => normalizeQualificationName(a) === normalized)
+  ) ?? null;
 }
 
 const normalizedHost = value => {
