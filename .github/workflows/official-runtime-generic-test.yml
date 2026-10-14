@@ -11,6 +11,8 @@ on:
       - '新システム開発/src/verified-source-copy-store.test.mjs'
       - '新システム開発/src/question-extraction-gate.js'
       - '新システム開発/src/question-extraction-gate.test.mjs'
+      - '新システム開発/src/generic-pdf-question-segmenter.js'
+      - '新システム開発/src/generic-pdf-question-segmenter.test.mjs'
       - '新システム開発/src/official-pdf-runtime-ingestion.js'
       - '新システム開発/data/official-source-copies/**'
       - '.github/workflows/official-runtime-generic-test.yml'
@@ -34,5 +36,7 @@ jobs:
         run: node "新システム開発/src/official-source-adapter-contract.test.mjs"
       - name: Test hash-verified source-copy fallback
         run: node "新システム開発/src/verified-source-copy-store.test.mjs"
+      - name: Test generic PDF question segmentation
+        run: node "新システム開発/src/generic-pdf-question-segmenter.test.mjs"
       - name: Test question extraction promotion gate
         run: node "新システム開発/src/question-extraction-gate.test.mjs"
