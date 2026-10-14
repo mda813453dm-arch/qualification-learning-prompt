@@ -33,7 +33,7 @@ jobs:
           node-version: '22'
       - name: Install Node runtime dependencies
         working-directory: 新システム開発
-        run: npm ci
+        run: npm install --no-audit --no-fund
       - name: Show tested commit
         run: git rev-parse HEAD
       - name: Run deterministic learning session and review transition tests
