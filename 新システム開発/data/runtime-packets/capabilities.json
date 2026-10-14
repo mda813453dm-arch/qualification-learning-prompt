@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "qualificationCount": 103,
-  "availableQualificationCount": 1,
+  "availableQualificationCount": 2,
   "qualifications": [
     {
       "qualificationId": "q001",
@@ -260,8 +260,15 @@
     },
     {
       "qualificationId": "q041",
-      "officialPracticeRuntime": "not_yet_available",
-      "verifiedPacketSets": []
+      "officialPracticeRuntime": "static_verified_packets_available",
+      "verifiedPacketSets": [
+        {
+          "fieldId": "takken-u8",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/takken-2025-u8.json"
+        }
+      ]
     },
     {
       "qualificationId": "q042",

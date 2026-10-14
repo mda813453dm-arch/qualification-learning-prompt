@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q041",
+  "fieldId": "takken-u8",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "一般財団法人 不動産適正取引推進機構",
+  "packets": [
+    {
+      "sourceMode": "static_verified_official_packet",
+      "questionId": "q041:2025:年度共通:29",
+      "year": 2025,
+      "section": "年度共通",
+      "questionNumber": 29,
+      "fieldId": "takken-u8",
+      "fieldName": null,
+      "stem": "宅地建物取引業者Ａが宅地建物取引業法第37 条の規定により交付すべき書面\n（以下この問において「37 条書面」という。）に関する次の記述のうち、正しいものはどれか。",
+      "choices": [
+        "Ａが媒介により事業用宅地の賃貸借契約を成立させた場合、37 条書面を交付しなければ\n ならないが、契約の当事者Ｂが宅地建物取引業者であるときは、交付する必要はない。",
+        "Ａが自ら売主としてＣと既存の建物の売買契約を締結した場合、建物の構造耐力上主要な\n  部分等の状況について当事者の双方が確認した事項を37 条書面に記載しなければならない。",
+        "ＡがＤを売主としＥを買主とする宅地の売買契約を媒介した場合、天災その他不可抗力に\n  よる損害の負担に関する定めがないときは、定めがない旨を37 条書面に記載しなければな\n らない。",
+        "Ａが自ら売主としてＦと建物の売買契約を締結した場合、代金についての金銭の貸借の\n あっせんに関する定めがある場合における当該あっせんに係る金銭の貸借が成立しないとき\n  の措置については、37 条書面に記載する必要はない。"
+      ],
+      "correctAnswer": 2,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf",
+      "answerPdfUrl": "https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf",
+      "questionPdfSha256": "829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed",
+      "answerPdfSha256": "829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed",
+      "evidence": {
+        "questionPdfPage": 17,
+        "answerPdfPage": 30,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "question_bbox_graphics_scan",
+          "pdfPage": 17,
+          "questionRect": [
+            45.0,
+            55.7,
+            550.3,
+            341.3
+          ]
+        },
+        "field": {
+          "method": "code_owned_approved_unit_map"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_review_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}
