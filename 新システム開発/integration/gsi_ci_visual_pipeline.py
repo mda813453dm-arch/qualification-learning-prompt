@@ -30,7 +30,7 @@ def export(data,directory):
   png=page.get_pixmap(matrix=fitz.Matrix(2.5,2.5),alpha=False).tobytes('png')
   filename=f'question_{question}_page_{page_number}.png'
   (root/filename).write_bytes(png)
-  reports.append({'questionNumber':question,'pdfPage':page_number,'imageFile':filename,'imageSha256':hashlib.sha256(png).hexdigest(),'textChars':len(page.get_text()),'pageReview':'PENDING','mobileRenderingVerified':False,'publishable':False})
+  reports.append({'questionNumber':question,'pdfPage':page_number,'imageFile':filename,'imageSha256':hashlib.sha256(png).hexdigest(),'textChars':len(page.get_text()),'pageText':page.get_text(),'pageReview':'PENDING','mobileRenderingVerified':False,'publishable':False})
  report={'sourceUrl':QUESTION_URL,'publishedSourceUrl':SOURCE_PAGE_URL,'pdfSha256':digest,'pdfBytes':len(data),'pageCount':len(doc),'questions':reports,'publishable':False}
  (root/'evidence.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8')
  return report
@@ -44,6 +44,8 @@ if __name__=='__main__':
   Path(root,'official-answer.pdf').write_bytes(a)
   result['answerUrl']=ANSWER_URL
   result['answerPdfSha256']=hashlib.sha256(a).hexdigest()
+  answer_doc=fitz.open(stream=a,filetype='pdf')
+  result['answerText']='\n'.join(page.get_text() for page in answer_doc)
   Path(root,'evidence.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
   print(json.dumps(result,ensure_ascii=False))
  except Exception as exc:
