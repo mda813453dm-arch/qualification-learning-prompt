@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "records": [],
+  "note": "Fail-closed. Add only copies whose bytes are retained in an approved storage location and whose SHA-256 equals the code-owned official PDF pin."
+}
