@@ -44,6 +44,7 @@ if __name__=='__main__':
   Path(root,'official-answer.pdf').write_bytes(a)
   result['answerUrl']=ANSWER_URL
   result['answerPdfSha256']=hashlib.sha256(a).hexdigest()
+  import fitz
   answer_doc=fitz.open(stream=a,filetype='pdf')
   result['answerText']='\n'.join(page.get_text() for page in answer_doc)
   Path(root,'evidence.json').write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
