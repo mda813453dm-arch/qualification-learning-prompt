@@ -144,10 +144,11 @@ const advance=async(nextId,nextNo,nextKind,answer)=>{
  return committed;
 };
 await advance('q2',2,'official_practice',1);
-await advance('c1',3,'ai_confirmation',1);
-await advance('c2',4,'ai_confirmation',1);
-const c3=minimalQuestion('c3',5,'ai_confirmation');
-escalationFlow.prefetchNext(5,c3);
+await advance('q3-miss',3,'official_practice',1);
+await advance('c1',4,'ai_confirmation',1);
+await advance('c2',5,'ai_confirmation',1);
+const c3=minimalQuestion('c3',6,'ai_confirmation');
+escalationFlow.prefetchNext(6,c3);
 escalationFlow.answer(1);
 escalationFlow.skipExplanation();
 const c3Ready=escalationFlow.commitPrefetchedNext();
