@@ -23,7 +23,8 @@ export function createInlineStudyFlow(assetRegistry,options={}){
  const explanationPreference=itemId=>explanationPreferences[itemId]||options.explanationPreference||'ask_each';
  if(!['ask_each','detailed','skip'].includes(options.explanationPreference||'ask_each'))throw new Error('EXPLANATION_PREFERENCE_INVALID');
  const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r;};
- const normalizedQuestion=question=>question?.topicId?question:Object.freeze({...question,topicId:question?.studyUnitId});\n const makeLearningContext=(question,qualificationId)=>{
+ const normalizedQuestion=question=>question?.topicId?question:Object.freeze({...question,topicId:question?.studyUnitId});
+ const makeLearningContext=(question,qualificationId)=>{
   if(!question?.id||!question.studyUnitId||question.studyPlanSha256!==studyPlan.sha256)
    throw new Error('STUDY_PLAN_BINDING_REQUIRED');
   if(!studyPlan.itemIds.includes(question.studyUnitId))throw new Error('STUDY_UNIT_NOT_IN_PLAN');
