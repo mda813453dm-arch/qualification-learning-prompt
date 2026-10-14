@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test src/*.test.js tests/*.test.js",
-    "start": "node src/learning-runtime-server.js"
+    "test": "node --test src/*.test.js src/*.test.mjs",
+    "start": "node src/learning-runtime-server.js",
+    "test:legacy": "node --test tests/*.test.js"
   },
   "engines": {
     "node": ">=20"
