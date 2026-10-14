@@ -39,7 +39,7 @@ export function createDeterministicLearningSequence({studyPlan,itemId}={}){
   if(q.kind==='official_practice'){
    officialPracticeCount++;batchCount++;batchAllCorrect=batchAllCorrect&&correct;
    consecutivePracticeMisses=correct?0:consecutivePracticeMisses+1;
-   if(consecutivePracticeMisses>=3){phase='CONFIRMATION_REQUIRED';confirmationParentQuestionId=q.questionId;}
+   if(consecutivePracticeMisses>=3){phase='CONFIRMATION_REQUIRED';confirmationParentQuestionId=q.questionId;batchCount=0;batchAllCorrect=true;}
    else if(batchCount===3&&batchAllCorrect)phase='PERFECT_RUN_CHOICE';
    else if(batchCount===3){batchCount=0;batchAllCorrect=true;phase='PRACTICE_READY';}
    else phase='PRACTICE_READY';
