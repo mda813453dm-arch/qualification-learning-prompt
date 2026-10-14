@@ -13,6 +13,7 @@ on:
       - '新システム開発/tools/extract-takken-on-demand.py'
       - '新システム開発/tools/test-takken-extraction.py'
       - '新システム開発/tools/build-takken-screen-test.py'
+      - '新システム開発/tools/diagnose-takken-q29-visual.py'
       - '新システム開発/src/official-pdf-pins.js'
       - '.github/workflows/official-candidate-focused-test.yml'
   workflow_dispatch:
@@ -70,6 +71,10 @@ jobs:
               sys.exit(1)
           print("EXTRACTION_VALIDATION_PASSED")
           PY
+
+      - name: Diagnose Takken Q29 visual objects
+        working-directory: 新システム開発
+        run: python tools/diagnose-takken-q29-visual.py
 
       - name: Run batched real PDF extraction and safety integration tests
         working-directory: 新システム開発
