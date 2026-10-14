@@ -29,6 +29,13 @@ jobs:
       - name: Download official image copies and verify SHA-256
         working-directory: 新システム開発
         run: node web-study/verify-live-assets.mjs
+      - name: Install browser test dependencies
+        run: |
+          python -m pip install --quiet Pillow playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise mobile-sized browser UI with mocked verified fixture
+        working-directory: 新システム開発
+        run: python web-study/browser-offline-test.py
   deploy:
     needs: verify
     runs-on: ubuntu-latest
