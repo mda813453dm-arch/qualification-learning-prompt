@@ -45,5 +45,5 @@ def main():
     "promotionStatus":"blocked_field_and_visual_verification" if diagram else "blocked_field_verification"})
  out=Path(os.environ["RUNNER_TEMP"])/"q038-2025-afternoon-mcq-candidates.json"
  out.write_text(json.dumps({"schemaVersion":1,"qualificationId":"q038","year":2025,"section":"午後","items":items},ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
- print(json.dumps({"status":"candidate_extraction_complete","count":len(items),"diagramCandidates":[x["questionNumber"] for x in items if x["diagramReferenceCandidate"]],"answers":answers,"output":str(out)},ensure_ascii=False))
+ print(json.dumps({"status":"candidate_extraction_complete","count":len(items),"diagramCandidates":[x["questionNumber"] for x in items if x["diagramReferenceCandidate"]],"answers":answers,"topics":{str(x["questionNumber"]):x["stem"][:120] for x in items},"output":str(out)},ensure_ascii=False))
 if __name__=="__main__":main()
