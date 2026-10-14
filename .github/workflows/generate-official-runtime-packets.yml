@@ -4,6 +4,21 @@ on:
 permissions:
   contents: write
 jobs:
+  land-surveyor-source-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai-learning-system
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Land Surveyor 2025 official question and answer PDFs
+        working-directory: 新システム開発
+        run: node tools/verify-pinned-land-surveyor-pdfs.mjs
+      - name: State packet-generation boundary
+        run: echo "q038 PDF source verification only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
     runs-on: ubuntu-latest
     timeout-minutes: 10
