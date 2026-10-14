@@ -1,0 +1,521 @@
+{
+  "schemaVersion": 1,
+  "qualificationCount": 103,
+  "qualifications": [
+    {
+      "qualificationId": "q001",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q002",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q003",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q004",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q005",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q006",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q007",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q008",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q009",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q010",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q011",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q012",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q013",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q014",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q015",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q016",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q017",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q018",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q019",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q020",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q021",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q022",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q023",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q024",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q025",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q026",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q027",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q028",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q029",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q030",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q031",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q032",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q033",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q034",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q035",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q036",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q037",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q038",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q039",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q040",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q041",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q042",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q043",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q044",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q045",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q046",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q047",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q048",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q049",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q050",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q051",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q052",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q053",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q054",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q055",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q056",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q057",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q058",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q059",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q060",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q061",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q062",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q063",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q064",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q065",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q066",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q067",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q068",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q069",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q070",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q071",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q072",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q073",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q074",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q075",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q076",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q077",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q078",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q079",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q080",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q081",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q082",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q083",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q084",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q085",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q086",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q087",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q088",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q089",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q090",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q091",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q092",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q093",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q094",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q095",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q096",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q097",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q098",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q099",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q100",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q101",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q102",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    },
+    {
+      "qualificationId": "q103",
+      "officialPracticeRuntime": "not_yet_available",
+      "verifiedPacketSets": []
+    }
+  ]
+}
