@@ -1,9 +1,10 @@
-const norm=s=>String(s??"").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
+const norm=s=>String(s??"").normalize("NFKC").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
+const num=s=>Number(String(s).normalize("NFKC"));
 const defaultQuestionPatterns=[
- /(?:^|\n)\s*[【［\[]?\s*問\s*(\d+)\s*[】］\]]?/g,
- /(?:^|\n)\s*(\d+)\s*[\.．、]\s+/g
+ /(?:^|\n)\s*[【［\[]?\s*(?:第\s*)?問\s*([0-9０-９]+)\s*[】］\]]?/g,
+ /(?:^|\n)\s*([0-9０-９]+)\s*[\.．、]\s+/g
 ];
-const defaultChoicePattern=/(?:^|\n)\s*([1-9]\d*)\s*[\.．、\)）]\s*/g;
+const defaultChoicePattern=/(?:^|\n)\s*([1-9１-９][0-9０-９]*)\s*[\.．、\)）]\s*/g;
 const diagramPattern=/(?:〔\s*図\s*〕|\[\s*図\s*\]|次の図|下図|図に示|図のよう|別図|図表)/;
 
 export function segmentQuestionCandidates(pages,{questionPatterns=defaultQuestionPatterns,choicePattern=defaultChoicePattern}={}){
