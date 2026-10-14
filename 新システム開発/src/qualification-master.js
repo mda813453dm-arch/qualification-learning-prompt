@@ -5,6 +5,37 @@ import { QUALIFICATION_CATALOG } from "./qualification-catalog.js";
  * Data discovery is external; only validated official evidence can be promoted.
  */
 const VERIFIED_OVERRIDES = Object.freeze({
+  fp_1: Object.freeze({
+    id: "q001", name: "FP技能検定1級", aliases: ["FP技能検定1級", "FP1級", "FP 1級"],
+    year: 2026, subjects: ["学科試験（きんざい）", "実技試験（実施団体・科目によって異なる）"],
+    exemption: Object.freeze({ status: "unverified", scopeStatus: "unverified",
+      officialEvidenceOfScheme: "学科試験の一部合格等による免除制度がある。条件・実施団体別適用を要確認",
+      evidence: [
+        {url:"https://www.jafp.or.jp/exam/outline/1fp/",authority:"日本FP協会",year:2026,claim:"1級実技試験における学科試験免除申請条件"},
+        {url:"https://www.kinzai.or.jp/fp",authority:"金融財政事情研究会",year:2026,claim:"一部合格による免除制度"}
+      ] })
+  }),
+  fp_2: Object.freeze({
+    id: "q002", name: "FP技能検定2級", aliases: ["FP技能検定2級", "FP2級", "FP 2級"],
+    year: 2026, subjects: ["学科試験", "実技試験（資産設計提案業務など実施団体別）"],
+    exemption: Object.freeze({ status: "unverified", scopeStatus: "unverified",
+      officialEvidenceOfScheme: "学科・実技の一部合格者等に試験免除制度あり。免除期限・実技科目・実施団体を確認する必要あり",
+      evidence: [
+        {url:"https://www.jafp.or.jp/exam/outline/",authority:"日本FP協会",year:2026,claim:"学科・実技試験の一部合格による免除"},
+        {url:"https://www.kinzai.or.jp/fp",authority:"金融財政事情研究会",year:2026,claim:"学科・実技試験の一部合格による免除"}
+      ] })
+  }),
+  fp_3: Object.freeze({
+    id: "q003", name: "FP技能検定3級", aliases: ["FP技能検定3級", "FP3級", "FP 3級"],
+    year: 2026, subjects: ["学科試験", "実技試験（資産設計提案業務など実施団体別）"],
+    exemption: Object.freeze({ status: "unverified", scopeStatus: "unverified",
+      officialEvidenceOfScheme: "学科・実技の一部合格者等に試験免除制度あり。免除期限・実技科目・実施団体を確認する必要あり",
+      evidence: [
+        {url:"https://www.jafp.or.jp/exam/outline/",authority:"日本FP協会",year:2026,claim:"学科・実技試験の一部合格による免除"},
+        {url:"https://www.kinzai.or.jp/fp",authority:"金融財政事情研究会",year:2026,claim:"学科・実技試験の一部合格による免除"}
+      ] })
+  }),
+
   land_surveyor: Object.freeze({
     id: "land_surveyor", name: "土地家屋調査士", aliases: ["土地家屋調査士", "調査士"],
     year: 2026, authority: "法務省・法務局",
