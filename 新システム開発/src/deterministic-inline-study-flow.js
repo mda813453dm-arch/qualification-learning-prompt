@@ -122,7 +122,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
      if(!evidence||!registered||registered.questionId!==packet.id||registered.verified!==true||
         !registered.sha256||evidence.sha256!==registered.sha256)throw new Error('NEXT_ASSET_EVIDENCE_MISMATCH');
     }
-    const pinnedInput=immutableJson({...input,learningContext:context});
+    const pinnedInput=immutableJson({...input,question,learningContext:context});
     const nextPayload=compileChatInlinePayload(pinnedInput.packet,assetRegistry);
     if(nextPayload.status!=='ready')throw new Error(nextPayload.reason||'NEXT_RENDER_NOT_READY');
     if(nextPayload.questionId!==pinnedInput.question.id||nextPayload.packetHash!==pinnedInput.packet.packetHash)
