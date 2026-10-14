@@ -21,7 +21,7 @@ test("review menu wording/order/count is fixed", () => {
 
 test("start confirmation wording/order/count is fixed", () => {
   assert.deepEqual([...FIXED_UI_CHOICES.PLAN_START_CONFIRM.choices], [
-    "この計画で開始する","学習計画を見直す"
+    "学習を開始する","今は学習しない"
   ]);
   assert.equal(FIXED_UI_CHOICES.PLAN_START_CONFIRM.choices.length, 2);
 });
