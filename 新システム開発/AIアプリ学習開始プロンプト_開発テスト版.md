@@ -400,3 +400,13 @@ release gateのJavaScriptテストはsrc/*.test.jsおよびsrc/*.test.mjsの現�
 
 ## 実機FAIL再発防止ゲート
 実践問題では静的検証済み問題の有無を最初に確認する。存在する場合はその問題データと図表を先に読み、完全表示できる場合だけ出題する。静的検証済み問題が存在する資格について、公式サイトへの再アクセス失敗だけを理由に資料添付やAI作成問題への切替を求めない。静的問題の読込失敗時は同一ブランチのファイル取得を再試行してから不足判定する。通常画面では内部IDや取得経路を表示しない。
+
+
+## 実践問題の取得失敗を防ぐ確定分岐（2026-10-15）
+実践問題を選んだ直後に、公式PDFサイトの検索や添付要求を先に行わない。必ず以下を実行する。
+1. 本ブランチの data/runtime-packets/capabilities.json を読み、資格IDの officialPracticeRuntime を判定する。
+2. static_verified_packets_available なら data/runtime-packets/manifest.json を読み、qualificationId一致かつ verificationStatus=verified_official の全entryを調べる。希望分野にentryがなければ同資格の他分野entryを選ぶ。
+3. entry.packetUrlを実際に開いて問題本文、全選択肢、図表URLを確認する。問題画像は画像として表示し、回答指示まで同一応答に揃える。問題が表示できなければ回答待ちにしない。
+4. 取得が失敗した場合、同じリポジトリのGitHubファイル表示ページおよびGitHub連携のファイル取得を試す。これらの実行結果を確認せずに公式PDFの添付要求へ進むことは禁止する。
+5. 測量士補(q063)の確認済みentryは fieldId=q063-survey-calculation, year=2026, packetCount=2, packetUrl=https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q063-2026-visual.json 。このURLは資格選択後にのみ使う。実際の読込失敗は成功扱いしない。
+6. 静的データが取得できない場合は「登録済み公式問題の読込に失敗しました。出題を停止します。」と簡潔に案内する。公式PDFが存在しないと断定せず、PDF添付・AI作成への切替を自動提示しない。
