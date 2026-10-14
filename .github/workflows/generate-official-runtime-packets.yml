@@ -81,6 +81,7 @@ jobs:
       - name: State packet-generation boundary
         run: echo "q038 PDF source verification/diagnostics only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
+    needs: land-surveyor-source-verification
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
