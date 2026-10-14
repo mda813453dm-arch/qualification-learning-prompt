@@ -42,7 +42,7 @@ def main():
  qd,ad=fitz.open(q),fitz.open(a);ans=answers(ad);groups={}
  for n in range(1,21):
   page_no=n+3;page=qd[page_no-1];stem,choices=question(page,n);vr=visual(page,n);field=FIELDS[n]
-  packet={"questionId":f"q038:2025:午後:{n}","year":2025,"section":"午後","questionNumber":n,"fieldId":field,
+  packet={"sourceMode":"static_verified_official_packet","questionId":f"q038:2025:午後:{n}","year":2025,"section":"午後","questionNumber":n,"fieldId":field,
    "stem":stem,"choices":choices,"correctAnswer":ans[n],"diagramRequired":False,"diagramAssets":[],
    "packetStatus":"verified_official","questionPdfUrl":QURL,"answerPdfUrl":AURL,"questionPdfSha256":QSHA,"answerPdfSha256":ASHA,
    "evidence":{"questionPdfPage":page_no,"answerPdfPage":1,"visual":vr,"field":{"method":"code_owned_learning_unit_map","questionTopic":stem[:80]}},
