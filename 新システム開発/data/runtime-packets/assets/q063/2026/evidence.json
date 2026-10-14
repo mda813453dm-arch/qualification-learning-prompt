@@ -1,0 +1,32 @@
+{
+  "sourceUrl": "https://web2.gsi.go.jp/common/000278974.pdf",
+  "publishedSourceUrl": "https://web2.gsi.go.jp/LAW/SHIKEN/past.html",
+  "pdfSha256": "3b797566e6fbcfbf0fedc5a88e5983b82ac7b6676eceb2240043e43b283a60ac",
+  "pdfBytes": 3905952,
+  "pageCount": 31,
+  "questions": [
+    {
+      "questionNumber": 7,
+      "pdfPage": 9,
+      "imageFile": "question_7_page_9.png",
+      "imageSha256": "1bd26fa1a5ceb18afdffe9d9a05b5826b7772d96e3d4a864441b012335ca86b9",
+      "textChars": 129,
+      "pageReview": "PENDING",
+      "mobileRenderingVerified": false,
+      "publishable": false
+    },
+    {
+      "questionNumber": 27,
+      "pdfPage": 29,
+      "imageFile": "question_27_page_29.png",
+      "imageSha256": "3f51012d46103290e1aadb674b4d1254eccbbd7966ce8cab34639624f8843553",
+      "textChars": 196,
+      "pageReview": "PENDING",
+      "mobileRenderingVerified": false,
+      "publishable": false
+    }
+  ],
+  "publishable": false,
+  "answerUrl": "https://web2.gsi.go.jp/common/000278975.pdf",
+  "answerPdfSha256": "b513b25773b4e3e085169bd1500807eb7663b64e9853e7eb2b49fe72f8b134ef"
+}
