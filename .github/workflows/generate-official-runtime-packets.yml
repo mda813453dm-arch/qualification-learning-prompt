@@ -1,6 +1,12 @@
 name: Generate official runtime packets
 on:
   workflow_dispatch:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/tools/verify-pinned-land-surveyor-pdfs.mjs'
+      - '新システム開発/src/official-pdf-pins.js'
+      - '.github/workflows/generate-official-runtime-packets.yml'
 permissions:
   contents: write
 jobs:
@@ -25,6 +31,7 @@ jobs:
       - name: State packet-generation boundary
         run: echo "q038 PDF source verification only; no learner packet is promoted until question extraction, visual verification, field classification and answer-cell verification all pass."
   takken-2025:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
