@@ -23,7 +23,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
  const explanationPreference=itemId=>explanationPreferences[itemId]||options.explanationPreference||'ask_each';
  if(!['ask_each','detailed','skip'].includes(options.explanationPreference||'ask_each'))throw new Error('EXPLANATION_PREFERENCE_INVALID');
  const must=r=>{if(!r||r.ok!==true)throw new Error(r?.reason||'FLOW_REJECTED');return r;};
- const makeLearningContext=(question,qualificationId)=>{
+ const normalizedQuestion=question=>question?.topicId?question:Object.freeze({...question,topicId:question?.studyUnitId});\n const makeLearningContext=(question,qualificationId)=>{
   if(!question?.id||!question.studyUnitId||question.studyPlanSha256!==studyPlan.sha256)
    throw new Error('STUDY_PLAN_BINDING_REQUIRED');
   if(!studyPlan.itemIds.includes(question.studyUnitId))throw new Error('STUDY_UNIT_NOT_IN_PLAN');
@@ -56,17 +56,17 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   learningState(){return learningSequence?.state()||null;},
   prepare(x){
    if(x.qualificationId!==studyPlan.qualificationId)throw new Error('STUDY_PLAN_QUALIFICATION_MISMATCH');
-   const context=makeLearningContext(x.question,x.qualificationId);
-   if(x.question.id!==x.packet?.id||x.question.studyUnitId!==x.packet?.studyUnitId||
+   const q=normalizedQuestion(x.question);\n   const context=makeLearningContext(q,x.qualificationId);
+   if(q.id!==x.packet?.id||q.studyUnitId!==x.packet?.studyUnitId||
       x.packet.studyPlanSha256!==studyPlan.sha256)throw new Error('QUESTION_PACKET_BINDING_MISMATCH');
-   const policy=resolveExplanationPolicy(x.qualificationId,x.question,x.packet);
+   const policy=resolveExplanationPolicy(x.qualificationId,q,x.packet);
    const candidatePayload=compileChatInlinePayload(x.packet,assetRegistry);
    if(candidatePayload.status!=='ready')throw new Error(candidatePayload.reason);
    if(!learningSequence)learningSequence=createDeterministicLearningSequence({studyPlan,itemId:context.itemId});
    must(learningSequence.validateQuestion(context));
    must(machine.dispatch({type:'SET_QUALIFICATION',qualificationId:x.qualificationId}));
    must(machine.dispatch({type:'PIN_SOURCE',source:x.source}));
-   must(machine.dispatch({type:'PIN_QUESTION',question:x.question}));
+   must(machine.dispatch({type:'PIN_QUESTION',question:q}));
    must(machine.dispatch({type:'PIN_ASSETS',assets:x.assets}));
    must(machine.dispatch({type:'VALIDATE_PACKET',packet:x.packet}));
    payload=candidatePayload;currentExplanationPolicy=policy;currentLearningContext=context;
@@ -99,7 +99,7 @@ export function createInlineStudyFlow(assetRegistry,options={}){
    const compiled=[];
    for(const request of requests){
     const n=request.number,input=request.input;
-    const question=input?.question,packet=input?.packet;
+    const question=normalizedQuestion(input?.question),packet=input?.packet;
     if(!question||question.status!=='ready'||question.number!==n)throw new Error('NEXT_NUMBER_MISMATCH');
     if(!packet||packet.status!=='ready')throw new Error('NEXT_PACKET_NOT_READY');
     if(packet.number!==n)throw new Error('NEXT_PACKET_NUMBER_MISMATCH');
