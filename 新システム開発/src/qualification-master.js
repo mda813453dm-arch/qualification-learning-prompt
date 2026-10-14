@@ -3,6 +3,36 @@
  * Data discovery is external; only validated official evidence can be promoted.
  */
 export const QUALIFICATION_MASTER = Object.freeze({
+  land_surveyor: Object.freeze({
+    id: "land_surveyor", name: "土地家屋調査士", aliases: ["土地家屋調査士", "調査士"],
+    year: 2026, authority: "法務省・法務局",
+    subjects: ["午前の部", "午後の部（択一式）", "午後の部（記述式）"],
+    exemption: Object.freeze({ status: "unverified", scopeStatus: "unverified",
+      officialEvidenceOfScheme: "午前の部の免除制度あり（公式受験案内で確認）",
+      evidence: [{url:"https://houmukyoku.moj.go.jp/tokyo/page000001_01085.html",authority:"法務局",year:2026,claim:"午前の部免除制度の案内"}] })
+  }),
+  surveyor: Object.freeze({
+    id: "surveyor", name: "測量士", aliases: ["測量士"],
+    year: 2026, authority: "国土地理院",
+    subjects: ["測量に関する法規", "測地測量", "測図測量・GIS", "三次元点群測量", "応用測量"],
+    exemption: Object.freeze({status:"unverified",scopeStatus:"unverified",
+      evidence:[{url:"https://www.gsi.go.jp/LAW/R8shiken_00001.html",authority:"国土地理院",year:2026,claim:"試験概要と科目を確認、免除制度は未確定"}]})
+  }),
+  assistant_surveyor: Object.freeze({
+    id: "assistant_surveyor", name: "測量士補", aliases: ["測量士補"],
+    year: 2026, authority: "国土地理院",
+    subjects: ["測量に関する法規", "測地測量", "測図測量", "応用測量"],
+    exemption: Object.freeze({status:"unverified",scopeStatus:"unverified",
+      evidence:[{url:"https://www.gsi.go.jp/LAW/R8shiken_00001.html",authority:"国土地理院",year:2026,claim:"試験概要と科目を確認、免除制度は未確定"}]})
+  }),
+  customs_broker: Object.freeze({
+    id: "customs_broker", name: "通関士", aliases: ["通関士"],
+    year: 2026, authority: "税関",
+    subjects: ["通関業法", "関税法等", "通関実務"],
+    exemption: Object.freeze({status:"unverified",scopeStatus:"unverified",
+      officialEvidenceOfScheme:"試験科目の一部免除制度あり（公式案内で確認）",
+      evidence:[{url:"https://www.customs.go.jp/tsukanshi/60_shiken.htm",authority:"税関",year:2026,claim:"試験科目一部免除申請の案内"}]})
+  }),
   takken: Object.freeze({
     id: "takken", name: "宅地建物取引士", aliases: ["宅建", "宅建士", "宅地建物取引士"],
     year: 2026,
