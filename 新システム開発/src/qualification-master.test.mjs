@@ -23,3 +23,11 @@ test("免除範囲が欠けたレコードは学習計画へ反映しない", ()
   const bad={...QUALIFICATION_MASTER.takken,exemption:{...QUALIFICATION_MASTER.takken.exemption,excludedQuestionNumbers:[]}};
   assert.equal(validateQualificationRecord(bad,2026).status,"pending");
 });
+
+test("追加4資格は名称解決でき、未検証の免除範囲を確定扱いしない", () => {
+  for (const name of ["土地家屋調査士","測量士","測量士補","通関士"]) {
+    assert.ok(resolveQualification(name), name);
+    assert.equal(planExemption({qualificationName:name}).status, "blocked", name);
+    assert.equal(planExemption({qualificationName:name}).reason, "OFFICIAL_VERIFICATION_REQUIRED", name);
+  }
+});
