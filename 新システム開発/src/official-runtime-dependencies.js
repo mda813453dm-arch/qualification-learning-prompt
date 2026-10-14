@@ -135,3 +135,7 @@ export function createBuildInlinePayload({ compileVerifiedBundle, fetchImpl = fe
     return Object.freeze(payload);
   };
 }
+
+// Verified qualification master: deterministic exemption decision for AI clients.
+export { QUALIFICATION_MASTER, resolveQualification, validateQualificationRecord,
+  planExemption, createPendingQualification } from "./qualification-master.js";
