@@ -1,7 +1,8 @@
 const norm=s=>String(s??"").normalize("NFKC").replace(/\r/g,"").replace(/[ \t]+/g," ").trim();
 const num=s=>Number(String(s).normalize("NFKC"));
 const defaultQuestionPatterns=[
- /(?:^|\n)\s*[【［\[]?\s*(?:第\s*)?問\s*([0-9０-９]+)\s*[】］\]]?/g,
+ /(?:^|\n)\s*[【［\[]?\s*問\s*([0-9０-９]+)\s*[】］\]]?/g,
+ /(?:^|\n)\s*第\s*([0-9０-９]+)\s*問/g,
  /(?:^|\n)\s*([0-9０-９]+)\s*[\.．、]\s+/g
 ];
 const defaultChoicePattern=/(?:^|\n)\s*([1-9１-９][0-9０-９]*)\s*[\.．、\)）]\s*/g;
