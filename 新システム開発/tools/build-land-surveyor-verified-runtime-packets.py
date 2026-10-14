@@ -14,12 +14,21 @@ def answers(doc):
  for n,a in re.findall(r"第\s*(\d+)\s*問\s*([1-5])",t):by.setdefault(int(n),[]).append(int(a))
  return {n:(by[n][1] if n<=10 else by[n][0]) for n in range(1,21)}
 def question(page,n):
- raw=norm(page.get_text("text",sort=True));h=re.search(rf"第\s*{n}\s*問\s*",raw)
+ raw=page.get_text("text",sort=True).translate(FW);h=re.search(rf"第\s*{n}\s*問\s*",raw)
  if not h:raise SystemExit(f"HEADING_MISSING_Q{n}")
- body=raw[h.end():];ms=list(re.finditer(r"(?:^|\s)1\s+(.+?)\s+2\s+(.+?)\s+3\s+(.+?)\s+4\s+(.+?)\s+5\s+(.+?)(?=\s*─|$)",body))
- if not ms:raise SystemExit(f"CHOICES_MISSING_Q{n}")
- m=ms[-1];stem=body[:m.start()].strip();choices=[x.strip() for x in m.groups()]
- if not stem or any(not x for x in choices):raise SystemExit(f"TEXT_INCOMPLETE_Q{n}")
+ body=raw[h.end():]
+ row_re=re.compile(r"^\s*1\s+(.+?)\s+2\s+(.+?)\s+3\s+(.+?)\s+4\s+(.+?)\s+5\s+(.+?)\s*$")
+ rows=[];offset=0
+ for line in body.splitlines(True):
+  m=row_re.match(line.rstrip("\r\n"))
+  if m:rows.append((offset,m))
+  offset+=len(line)
+ if not rows:raise SystemExit(f"CHOICES_MISSING_Q{n}")
+ start,m=rows[-1];stem=norm(body[:start]);choices=[norm(x) for x in m.groups()]
+ if not stem or len(choices)!=5 or any(not x for x in choices):raise SystemExit(f"TEXT_INCOMPLETE_Q{n}")
+ # Combination-choice rows in this exam are compact. A long choice means the
+ # parser consumed stem text and must never be promoted.
+ if any(len(x)>20 for x in choices):raise SystemExit(f"CHOICE_BOUNDARY_INVALID_Q{n}")
  return stem,choices
 def visual(page,n):
  if page.get_images(full=True):raise SystemExit(f"RASTER_VISUAL_REVIEW_REQUIRED_Q{n}")
