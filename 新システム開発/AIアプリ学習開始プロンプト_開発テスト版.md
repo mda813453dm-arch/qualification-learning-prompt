@@ -293,3 +293,12 @@
 - 事前検証済み問題パケットを使う場合、GitHubの実在ファイルをその場で開き、各問題の出典ページ、本文・全選択肢の照合証跡、同年度公式正答の照合証跡、fieldIdの根拠を確認する。ファイル不在、証跡欠落、状態pending/quarantinedの問題は出題しない。
 - GitHubのコード・台帳に「verified」と書かれているだけでは公式照合済みと判定しない。照合証跡が不足する場合はruntime_official_pdfへ進む。外部ランタイム未接続なら「公式問題を取得できない」と正しく扱う。
 - ChatGPT/ClaudeがGitHub Actionsを実行・外部APIを呼べるとは限らない。実際に実行結果を受信した場合のみ完了と報告する。
+
+
+## 通常AIアプリ向け静的公式問題ランタイム（2026-10-14）
+- 外部常駐APIがない環境では、GitHub Actionsで公式PDFを検証・分解した成果物だけを data/runtime-packets/verified/ に配置し、data/runtime-packets/manifest.json に verificationStatus=verified_official として登録された問題パケットをAIアプリがRaw URLから直接取得する方式を使用する。
+- AIアプリは実践問題開始時にまず data/runtime-packets/manifest.json を取得する。qualificationId+fieldIdで必要問題数を満たす verified_official エントリがある場合、そのpacketUrlを取得し、PDFをその場で再解析せず出題する。
+- manifestにエントリがない資格/fieldIdを「対応済み」とみなさない。空manifestは正常なfail-closed状態であり、公式問題を捏造しない。
+- 静的問題パケット生成時は、公式PDF本体の取得、PDF署名、登録pinがある場合のSHA-256、本文、全選択肢、必要図表、同年度正答、fieldIdを検証し、すべて成功した問題だけverified_officialへ昇格する。生成スクリプトが失敗した場合は既存verified成果物を書き換えない。
+- PDF直リンク失効時はofficial-source-resolverの規則でpastQuestionsUrlへ戻り、新しい同年度question/answerペアを再発見してから再生成する。AIアプリ自身がURLを推測しない。
+- GitHub Actionsのartifactだけに存在する成果物は通常AIアプリからの実践学習には使用しない。学習用manifestから参照できるRaw GitHub上のverified成果物だけを利用可能とする。
