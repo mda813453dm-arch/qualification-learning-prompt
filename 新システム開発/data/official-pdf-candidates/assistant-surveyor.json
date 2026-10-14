@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q063",
+  "name": "測量士補",
+  "authority": "国土地理院",
+  "listingUrl": "https://www.gsi.go.jp/LAW/SHIKEN/past.html",
+  "sourceCheckedOn": "2026-10-14",
+  "years": [
+    {
+      "year": 2026,
+      "questionPdfs": [
+        "https://www.gsi.go.jp/common/000278974.pdf"
+      ],
+      "answerPdf": "https://www.gsi.go.jp/common/000278975.pdf"
+    },
+    {
+      "year": 2025,
+      "questionPdfs": [
+        "https://www.gsi.go.jp/common/000270177.pdf",
+        "https://www.gsi.go.jp/common/000270178.pdf"
+      ],
+      "answerPdf": "https://www.gsi.go.jp/common/000270180.pdf"
+    },
+    {
+      "year": 2024,
+      "questionPdfs": [
+        "https://www.gsi.go.jp/common/000257605.pdf"
+      ],
+      "answerPdf": "https://www.gsi.go.jp/common/000258686.pdf"
+    },
+    {
+      "year": 2023,
+      "questionPdfs": [
+        "https://www.gsi.go.jp/common/000249818.pdf"
+      ],
+      "answerPdf": "https://www.gsi.go.jp/common/000250866.pdf"
+    },
+    {
+      "year": 2022,
+      "questionPdfs": [
+        "https://www.gsi.go.jp/common/000240138.pdf"
+      ],
+      "answerPdf": "https://www.gsi.go.jp/common/000241388.pdf"
+    }
+  ],
+  "rules": {
+    "questionPdfPartsAreSameYearNotSeparateExams": true,
+    "yearFallbackRequiresSameFieldVerification": true,
+    "neverInferQuestionFieldFromQuestionNumber": true,
+    "neverGradeAcrossYears": true,
+    "availabilityIsNotExtractionSuccess": true
+  }
+}
