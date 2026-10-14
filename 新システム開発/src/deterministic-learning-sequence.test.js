@@ -21,9 +21,9 @@ ok(missed.state.officialPracticeCount===3&&missed.state.phase==='CONFIRMATION_RE
 ok(seq.validateQuestion(meta('c2','ai_confirmation','ai','guarantee',{parentQuestionId:'p3miss'})).ok,'fresh confirmation retry');
 const passed=seq.recordAnswer('c2',true);
 ok(passed.state.officialPracticeCount===3&&passed.state.consecutivePracticeMisses===0,'AI confirmation excluded and clears miss streak');
-for(const id of ['p3','p4','p5']){ok(seq.validateQuestion(meta(id)).ok,'resume practice '+id);seq.recordAnswer(id,true);}
+for(const id of ['p3','p4']){ok(seq.validateQuestion(meta(id)).ok,'resume practice '+id);seq.recordAnswer(id,true);}
 ok(seq.state().phase==='PRACTICE_READY'&&seq.state().batchCount===2,'the interrupted non-perfect trio does not trigger a choice');
-ok(seq.validateQuestion(meta('p6')).ok,'third consecutive correct practice after imperfect trio');seq.recordAnswer('p6',true);
+ok(seq.validateQuestion(meta('p5')).ok,'third consecutive correct practice after confirmation');seq.recordAnswer('p5',true);
 ok(seq.state().phase==='PERFECT_RUN_CHOICE'&&seq.state().batchCount===3,'three same-unit correct official questions prompt a choice');
 throws(()=>seq.validateQuestion(meta('p7')),'UNIT_CHOICE_REQUIRED','no question before user choice');
 const next=seq.chooseAfterPerfectRun('next_unit');
