@@ -144,3 +144,6 @@ export { validateRuntimePacket, buildRuntimeLearnerQuestion, gradeRuntimeQuestio
 
 export { resolveOfficialSourceEntry, rediscoverOfficialDocuments, chooseOfficialQuestionPath } from "./official-source-resolver.js";
 export { createOfficialPdfRuntimeIngestion } from "./official-pdf-runtime-ingestion.js";
+
+export { validateOfficialSourceAdapter, buildVerifiedPacketWithAdapter, acquirePinnedOfficialDocument } from "./official-source-adapter-contract.js";
+export { validateSourceCopyRecord, loadVerifiedSourceCopy, findSourceCopy } from "./verified-source-copy-store.js";
