@@ -10,6 +10,8 @@ on:
       - '新システム開発/tools/generate-qualification-master-view.mjs'
       - '新システム開発/tools/check-qualification-master-sync.mjs'
       - '新システム開発/資格マスタ閲覧表_103資格.md'
+      - '新システム開発/src/past-question-retention.js'
+      - '新システム開発/src/past-question-retention.test.js'
       - '.github/workflows/qualification-master-sync.yml'
   workflow_dispatch:
 
@@ -32,6 +34,9 @@ jobs:
       - name: Run qualification master tests
         working-directory: 新システム開発
         run: node --test src/qualification-master.test.mjs
+      - name: Test rolling ten-year official question retention
+        working-directory: 新システム開発
+        run: node --test src/past-question-retention.test.js
       - name: Verify generated table is reproducible
         working-directory: 新システム開発
         run: node tools/check-qualification-master-sync.mjs --check
