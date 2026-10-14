@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-10-14T07:12:20.729Z",
+  "generatedAt": "2026-10-14T07:12:50.734Z",
   "entries": [
     {
       "qualificationId": "q038",
@@ -8,7 +8,7 @@
       "year": 2025,
       "packetCount": 1,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "2a828985083ad46631f1a0e0754a2d4492d422297c7b88f071206c6f6a7c850f",
+      "generatedFromSha256": "2369b124a8efbd863529845accdfeb178c9d4c51c631fb6eb3b17947b8fbedac",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-appeal.json"
     },
     {
@@ -17,7 +17,7 @@
       "year": 2025,
       "packetCount": 1,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "0d00b6ea4dcc2a7a5da3a332e37960799cd3d71fbd9423f1b1b8be61fb6b6f9a",
+      "generatedFromSha256": "dea57b37849eb22dccd20d575d5dfa5ab1db5f9c1d51cbcdd29df43f46e2528f",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-boundary-determination.json"
     },
     {
@@ -26,7 +26,7 @@
       "year": 2025,
       "packetCount": 4,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "656c6b14ab6a46c8ba18e0748d7737a0c6c085758fd35558f571e12fc21d887a",
+      "generatedFromSha256": "80f9f36d740cb08007134947814cab5bc30e89dde925f910c01b861898c7a7a8",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-building-registration.json"
     },
     {
@@ -35,7 +35,7 @@
       "year": 2025,
       "packetCount": 3,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "920bcb06eb77272106210fc4ef6322e8ed99e59d0b707bd581aa75a05048db67",
+      "generatedFromSha256": "fe9c5ea51ca24bea12ecd966f1f41bd8e081d9f53eba650ef7446f97b9928c93",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-civil-law.json"
     },
     {
@@ -44,7 +44,7 @@
       "year": 2025,
       "packetCount": 1,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "5f8bbf765619b282d7e806b5c8b287d65fdc81f1bcb7e87eb9cf8ff863f9e4dd",
+      "generatedFromSha256": "442668d142e7b5234a31b9649a3475f04fb133c043ae6aeba63106f500a7178d",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-inheritance-information.json"
     },
     {
@@ -53,7 +53,7 @@
       "year": 2025,
       "packetCount": 3,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "a7b8300899d194e2290f9a5eedcd9e81033c4d76831a1fb85dda8595e10b8132",
+      "generatedFromSha256": "7d212bbfb0707dd18b3588560f53b3c241a373503d9efe98c71d1e4572854fbd",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-land-registration.json"
     },
     {
@@ -62,7 +62,7 @@
       "year": 2025,
       "packetCount": 5,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "db52ae9fd2ee59d6c54783aaf602c620e868a42d50eace205e832f3448c3fe1d",
+      "generatedFromSha256": "c1fe55eb55c89e3c805e3d602dee0441dbbf888aa0826d4bbd9783637bb8dd7a",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-registration-general.json"
     },
     {
@@ -71,7 +71,7 @@
       "year": 2025,
       "packetCount": 1,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "6129771928c6168bbda71707d7d29160c33909ed2bc368955c8668c70f4eacae",
+      "generatedFromSha256": "b9358d90190139107130a3acfa929eb9a7576826a61cfb7c30047449cb70e19c",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-registration-tax.json"
     },
     {
@@ -80,7 +80,7 @@
       "year": 2025,
       "packetCount": 1,
       "verificationStatus": "verified_official",
-      "generatedFromSha256": "81a7d89505a720127a95e02600a4d397fc97cc9b7558113156adf3d03c003450",
+      "generatedFromSha256": "e72ccabd76df38ccc860a5dca18eec05f9c68c9852f615221c3f9eee74578104",
       "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-surveyor-law.json"
     }
   ]

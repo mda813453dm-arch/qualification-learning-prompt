@@ -7,6 +7,7 @@
   "sourceAuthority": "法務省",
   "packets": [
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:4",
       "year": 2025,
       "section": "午後",
@@ -51,6 +52,7 @@
       }
     },
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:5",
       "year": 2025,
       "section": "午後",
@@ -95,6 +97,7 @@
       }
     },
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:6",
       "year": 2025,
       "section": "午後",
@@ -139,6 +142,7 @@
       }
     },
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:7",
       "year": 2025,
       "section": "午後",
@@ -183,6 +187,7 @@
       }
     },
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:8",
       "year": 2025,
       "section": "午後",

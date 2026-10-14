@@ -7,6 +7,7 @@
   "sourceAuthority": "法務省",
   "packets": [
     {
+      "sourceMode": "static_verified_official_packet",
       "questionId": "q038:2025:午後:16",
       "year": 2025,
       "section": "午後",
