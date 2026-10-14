@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-appeal",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:17",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 17,
+      "fieldId": "q038-appeal",
+      "stem": "登記官の処分又は不作為についての審査請求に関する次のアからオまでの記述のう ち、判例の趣旨に照らし正しいものの組合せは、後記1 から5 までのうち、どれか。 ア 登記官の処分に不服がある場合であっても、当該処分があったことを知った日の翌 日から起算して1 月を経過したときは、審査請求をすることができない。 イ 法務局又は地方法務局の長が審査請求につき裁決したときは、裁決書の謄本を審査 請求人及び登記官に交付する。 ウ 筆界特定登記官による筆界特定がされた場合には、申請人は、筆界特定の結果に不 服があることを理由とする審査請求をすることができる。 エ 甲土地について土地の地積の更正の登記がされた場合において、甲土地と隣接する 乙土地の所有者は、筆界に異議があることを理由として、甲土地の地積の更正の登記 の取消しを求める審査請求をすることができる。 オ Ａが所有権の登記名義人である土地の分筆の登記の申請が却下された場合におい て、Ａがその却下処分につき審査請求をしたときは、当該土地の抵当権の登記名義人 であるＢは、参加人として当該審査請求に参加することができない。",
+      "choices": [
+        "アイ",
+        "アウ",
+        "イオ",
+        "ウエ",
+        "エオ"
+      ],
+      "correctAnswer": 3,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 20,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "登記官の処分又は不作為についての審査請求に関する次のアからオまでの記述のう ち、判例の趣旨に照らし正しいものの組合せは、後記1 から5 までのうち、どれか。 ア"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}

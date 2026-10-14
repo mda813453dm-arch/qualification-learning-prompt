@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-boundary-determination",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:16",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 16,
+      "fieldId": "q038-boundary-determination",
+      "stem": "筆界特定に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記",
+      "choices": [
+        "から5 までのうち、どれか。 ア 対象土地の共有者の一人が筆界特定の申請人である場合には、申請人でない対象土 地の他の共有者は、筆界特定登記官に対し、対象土地の筆界について意見又は資料を 提出することができる。 イ 甲土地を所有するＡが、隣接する乙土地を所有するＢに対し、Ａが所有する範囲に ついて所有権の確認の訴えを提起し、その判決が確定した場合には、Ａは、甲土地及 び乙土地を対象土地として筆界特定の申請をすることができない。 ウ 筆界特定の関係人は、筆界が特定されるまでの間は、当該筆界特定の手続において 作成された調書及び提出された資料の閲覧を請求することができない。 エ 筆界特定の申請人は、書面申請の方法により筆界特定の申請をする際に対象土地の 所有権を有することを証する書面として売買契約書の原本を添付したときは、当該売 買契約書の原本の還付を請求することができる。 オ 甲土地と乙土地の筆界について既に甲土地の所有者を申請人とする筆界特定登記官 による筆界特定がされていた場合であっても、当該筆界特定登記官が当該申請人の叔 父であったという事情が判明したときは、乙土地の所有者は、改めて甲土地を対象土 地として筆界特定の申請をすることができる。 1 アウ",
+        "アエ",
+        "イウ",
+        "イオ",
+        "エオ"
+      ],
+      "correctAnswer": 3,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 19,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "筆界特定に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}

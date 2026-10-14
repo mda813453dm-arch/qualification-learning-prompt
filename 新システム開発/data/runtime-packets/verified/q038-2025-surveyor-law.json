@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-surveyor-law",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:20",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 20,
+      "fieldId": "q038-surveyor-law",
+      "stem": "土地家屋調査士又は土地家屋調査士法人に関する次のアからオまでの記述のうち、正 しいものの組合せは、後記1 から5 までのうち、どれか。 ア 土地家屋調査士法人は、定款を変更したときは、法定の期間内に、変更に係る事項を、 主たる事務所の所在地を管轄する法務局又は地方法務局に届け出なければならない。 イ 土地家屋調査士は、置いていた補助者を置かなくなったときは、遅滞なく、その旨 を所属の土地家屋調査士会に届け出なければならない。 ウ 土地家屋調査士は、日本土地家屋調査士会連合会に届け出ることにより、複数の都 道府県に事務所を設置することができる。 エ 土地家屋調査士法人の社員である土地家屋調査士は、その登録を取り消された場合 には、当該法人を当然に脱退する。 オ 土地家屋調査士が心身の故障により業務を行うことができないときは、日本土地家 屋調査士会連合会は、その登録を取り消さなければならない。",
+      "choices": [
+        "アエ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "ウオ"
+      ],
+      "correctAnswer": 4,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 23,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "土地家屋調査士又は土地家屋調査士法人に関する次のアからオまでの記述のうち、正 しいものの組合せは、後記1 から5 までのうち、どれか。 ア 土地家屋調査士法人は"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}

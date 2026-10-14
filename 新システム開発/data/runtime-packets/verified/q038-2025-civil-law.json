@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-civil-law",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:1",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 1,
+      "fieldId": "q038-civil-law",
+      "stem": "意思表示に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの 組合せは、後記1 から5 までのうち、どれか。 ア 錯誤による意思表示は、その錯誤が表意者の重大な過失によるものであった場合で あっても、相手方が表意者に錯誤があることを重大な過失により知らなかったときは、 取り消すことができる。 イ 第三者の強迫によって不動産を売却した者は、買主が強迫の事実を知らなかった場 合には、当該不動産の売買の意思表示を取り消すことができない。 ウ 買主の詐欺によって不動産を売却した者は、当該不動産の売買の意思表示を取り消 す前に当該買主が詐欺の事実につき善意無過失の第三者に当該不動産を転売していた 場合には、当該第三者への所有権の移転の登記がされていないときであっても、その 取消しを当該第三者に対抗することができない。 エ 相手方が正当な理由なく意思表示の通知が到達することを妨げたときは、その通知 は、表意者が通知を発した時に相手方に到達したものとみなされる。 オ 表意者がその真意ではないことを知って意思表示をした場合において、当該意思表 示の相手方がその旨を知っていたときは、当該意思表示の無効は、善意有過失の第三 者に対抗することができる。",
+      "choices": [
+        "アウ",
+        "アエ",
+        "イエ",
+        "イオ",
+        "ウオ"
+      ],
+      "correctAnswer": 1,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 4,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "意思表示に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの 組合せは、後記1 から5 までのうち、どれか。 ア 錯誤による意思表示は、その錯誤"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:2",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 2,
+      "fieldId": "q038-civil-law",
+      "stem": "占有権に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの組 合せは、後記1 から5 までのうち、どれか。 ア 甲土地を占有しているＡが死亡し、ＢがＡを相続した場合には、Ｂが甲土地の取得 時効を主張するためには、自己の占有にＡの占有を併せて主張しなければならず、自 己の占有のみを主張することはできない。 イ Ａが所有する甲建物を無権原のＢから賃借して占有していたＣは、その占有期間中 Ｂが甲建物の所有者であると過失なく信じていたとしても、Ａに対し、その使用利益 を返還する義務を負う。 ウ Ａが所有する甲建物を無権原のＢから賃借して占有しているＣは、Ａに甲建物を明 け渡す場合には、その占有期間中に落雷によって生じた甲建物の損傷を修復するため に修繕費を支出していたとしても、Ａに対し、当該修繕費の償還を請求することはで きない。 エ Ａが自己の所有する甲建物をＢに占有させている場合において、Ａが甲建物をＣに 売却した後、ＡがＢに対して以後Ｃのために甲建物を占有することを命じ、Ｃがこれ を承諾したときは、Ｃは、甲建物の占有権を取得する。 オ 甲建物の賃借人であるＡから甲建物を転借して占有しているＢが、Ｃによりその占 有を奪われたときは、Ａは、Ｃに対し、占有回収の訴えを提起することができる。",
+      "choices": [
+        "アウ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "エオ"
+      ],
+      "correctAnswer": 5,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 5,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "占有権に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの組 合せは、後記1 から5 までのうち、どれか。 ア 甲土地を占有しているＡが死亡し、"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:3",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 3,
+      "fieldId": "q038-civil-law",
+      "stem": "相続の承認及び放棄に関する次のアからオまでの記述のうち、誤っているものの組合 せは、後記1 から5 までのうち、どれか。 ア 相続の放棄をしようとする者は、相続の承認又は放棄をすべき期間内に、その旨を 法務局又は地方法務局に申述しなければならない。 イ 相続人は、相続の承認又は放棄をするまでの期間中、その固有財産におけるのと同 一の注意をもって、相続財産を管理しなければならない。 ウ 限定承認者は、民法の規定に従って各相続債権者に弁済をした後でなければ、受遺 者に弁済をすることができない。 エ 相続人が、自己のために相続が開始した事実を知りながら、相続財産の全部又は一 部について保存行為をしたときは、単純承認をしたものとみなされる。 オ 共同相続人のうちの一人について相続の放棄又は承認をすべき期間が経過した場合 であっても、他の相続人について相続の放棄又は承認をすべき期間が経過していない ときは、当該共同相続人の全員が共同して限定承認をすることができる。",
+      "choices": [
+        "アウ",
+        "アエ",
+        "イエ",
+        "イオ",
+        "ウオ"
+      ],
+      "correctAnswer": 2,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 6,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "相続の承認及び放棄に関する次のアからオまでの記述のうち、誤っているものの組合 せは、後記1 から5 までのうち、どれか。 ア 相続の放棄をしようとする者は、相続"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}

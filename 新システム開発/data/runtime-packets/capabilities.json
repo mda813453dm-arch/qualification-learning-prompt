@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "qualificationCount": 103,
+  "availableQualificationCount": 1,
   "qualifications": [
     {
       "qualificationId": "q001",
@@ -189,8 +190,63 @@
     },
     {
       "qualificationId": "q038",
-      "officialPracticeRuntime": "not_yet_available",
-      "verifiedPacketSets": []
+      "officialPracticeRuntime": "static_verified_packets_available",
+      "verifiedPacketSets": [
+        {
+          "fieldId": "q038-appeal",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-appeal.json"
+        },
+        {
+          "fieldId": "q038-boundary-determination",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-boundary-determination.json"
+        },
+        {
+          "fieldId": "q038-building-registration",
+          "year": 2025,
+          "packetCount": 4,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-building-registration.json"
+        },
+        {
+          "fieldId": "q038-civil-law",
+          "year": 2025,
+          "packetCount": 3,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-civil-law.json"
+        },
+        {
+          "fieldId": "q038-inheritance-information",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-inheritance-information.json"
+        },
+        {
+          "fieldId": "q038-land-registration",
+          "year": 2025,
+          "packetCount": 3,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-land-registration.json"
+        },
+        {
+          "fieldId": "q038-registration-general",
+          "year": 2025,
+          "packetCount": 5,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-registration-general.json"
+        },
+        {
+          "fieldId": "q038-registration-tax",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-registration-tax.json"
+        },
+        {
+          "fieldId": "q038-surveyor-law",
+          "year": 2025,
+          "packetCount": 1,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q038-2025-surveyor-law.json"
+        }
+      ]
     },
     {
       "qualificationId": "q039",

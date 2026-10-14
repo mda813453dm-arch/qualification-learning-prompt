@@ -1,0 +1,230 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-registration-general",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:4",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 4,
+      "fieldId": "q038-registration-general",
+      "stem": "地図の訂正に関する次のアからオまでの記述のうち、誤っているものの組合せは、後 記1 から5 までのうち、どれか。 ア 土地の表題部所有者又は所有権の登記名義人は、地図に表示された当該土地の区画 に誤りがあることを発見した場合には、その誤りを発見した日から1 月以内に地図訂 正の申出をしなければならない。 イ 地図に表示された土地の区画に誤りがある場合には、登記官は、当該土地の表題部 所有者又は所有権の登記名義人からの地図訂正の申出がなくても、職権でその訂正を することができる。 ウ 地図に表示された土地の区画に誤りがあるが当該土地の登記記録の地積に錯誤がな い場合には、地図訂正の申出をすることはできない。 エ 地図の訂正をすることによって、申出に係る土地以外の土地の区画又は位置若しく は形状を訂正すべきこととなるときには、登記官は、申出に基づき地図の訂正をする ことはできない。 オ 地図に表示された土地の区画に誤りがある場合において、当該土地の所有権の登記 名義人が二人であるときは、地図訂正の申出は、そのうちの一人からすることができ る。",
+      "choices": [
+        "アウ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "エオ"
+      ],
+      "correctAnswer": 1,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 7,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "地図の訂正に関する次のアからオまでの記述のうち、誤っているものの組合せは、後 記1 から5 までのうち、どれか。 ア 土地の表題部所有者又は所有権の登記名義人は"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:5",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 5,
+      "fieldId": "q038-registration-general",
+      "stem": "次のアからオまでの登記記録等の情報のうち、保存期間が永久と定められているもの の組合せは、後記1 から5 までのうち、どれか。 ア 土地に関する閉鎖登記記録 イ 閉鎖した建物所在図 ウ 建物の合併の登記の申請情報 エ 筆界特定書に記載された情報 オ 閉鎖した地積測量図",
+      "choices": [
+        "アウ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "エオ"
+      ],
+      "correctAnswer": 4,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 8,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "次のアからオまでの登記記録等の情報のうち、保存期間が永久と定められているもの の組合せは、後記1 から5 までのうち、どれか。 ア 土地に関する閉鎖登記記録 イ"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:6",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 6,
+      "fieldId": "q038-registration-general",
+      "stem": "嘱託登記に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記",
+      "choices": [
+        "から5 までのうち、どれか。 ア 私人が所有する土地について、市町村が代位による土地の表題登記を嘱託する場合 には、当該土地についての被代位者が所有権を有することを証する情報を提供するこ とを要する。 イ 市町村から登記の嘱託の委任を受けた代理人が当該登記の嘱託をする場合には、嘱 託情報と併せて提供すべき市町村長が作成した委任状は、作成後3 月以内のものであ ることを要しない。 ウ 市町村がその所有する建物の表題登記の嘱託をする場合には、当該建物の所有権を 有することを証する情報を提供することを要する。 エ 私人が所有権の登記名義人である土地の一部が河川法の定める河川区域内の土地と なった場合において、河川管理者がその旨の登記を登記所に嘱託するときは、河川管 理者は、当該土地の所有権の登記名義人に代わって、当該土地の分筆の登記を登記所 に嘱託することができる。 オ 市町村が、当該市町村を所有権の登記名義人とする土地についての合筆の登記の嘱 託をする場合には、その嘱託情報に登記識別情報の通知を希望する旨の情報が含まれ ていたとしても、登記識別情報は通知されない。 1 アエ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "ウオ"
+      ],
+      "correctAnswer": 5,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 9,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "嘱託登記に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:7",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 7,
+      "fieldId": "q038-registration-general",
+      "stem": "株式会社Ａは、令和7 年3 月20日に委任事項に「甲土地の分合筆の登記申請に関する 一切の件」とのみ記載された委任状（以下「本件委任状」という。）を作成して、土地家屋調 査士Ｂに土地の分合筆の登記の申請（以下「本件登記申請」という。）を委任した。この事 例に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1 から5 まで のうち、どれか。 ア Ｂが、株式会社Ａから登記識別情報の提供を受けて、登記識別情報提供様式を作成 して電子申請の方法により本件登記申請をする場合には、登記識別情報の暗号化につ いての特別の授権は不要である。 イ 株式会社Ａの代表取締役が令和7 年4 月1 日に替わったときであっても、Ｂは、同 月2 日に株式会社Ａを代理して本件登記申請をすることができる。 ウ Ｂが株式会社Ａの許諾を得て復代理人を選任したときであっても、Ｂは、株式会社 Ａを代理して本件登記申請をすることができる。 エ Ｂが令和7 年4 月1 日に死亡した場合には、Ｂの相続人である土地家屋調査士Ｃは、 Ｂの地位を承継したものとして、株式会社Ａを代理して本件登記申請をすることがで きる。 オ 本件登記申請の際に納付した登録免許税に過誤納があった場合には、Ｂは、本件委 任状に基づいて、株式会社Ａを代理してその還付金を受領することができる。",
+      "choices": [
+        "アエ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "ウオ"
+      ],
+      "correctAnswer": 3,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 10,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "株式会社Ａは、令和7 年3 月20日に委任事項に「甲土地の分合筆の登記申請に関する 一切の件」とのみ記載された委任状（以下「本件委任状」という。）を作成して、土"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:8",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 8,
+      "fieldId": "q038-registration-general",
+      "stem": "表題部所有者に関する次のアからオまでの記述のうち、誤っているものの組合せは、 後記1 から5 までのうち、どれか。 ア 表題部所有者である株式会社Ａを株式会社Ｂが吸収合併した場合には、株式会社Ｂ は、表題部所有者の名称についての変更の登記の申請をすることができる。 イ 表題部所有者である特例有限会社Ａが株式会社Ａに商号変更をした場合には、株式 会社Ａは、表題部所有者の名称についての変更の登記の申請をすることができる。 ウ 表題部所有者として登記されているＡの住所についての更正の登記と、Ａの氏につ いての変更の登記とは、一の申請情報によって申請をすることができない。 エ 表題部所有者であるＡ及びＢの持分が誤って登記されている場合において、当該持 分についての更正の登記の申請をするときは、Ａは、Ｂの承諾を証する情報を提供し て、単独で当該申請をすることができる。 オ 表題部所有者の住所が登記記録上の住所から数回にわたって変更している場合に は、表題部所有者は直ちに現在の住所に変更する旨の表題部所有者の住所についての 変更の登記の申請をすることができる。",
+      "choices": [
+        "アウ",
+        "アエ",
+        "イウ",
+        "イオ",
+        "エオ"
+      ],
+      "correctAnswer": 1,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 11,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "表題部所有者に関する次のアからオまでの記述のうち、誤っているものの組合せは、 後記1 から5 までのうち、どれか。 ア 表題部所有者である株式会社Ａを株式会社Ｂ"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}

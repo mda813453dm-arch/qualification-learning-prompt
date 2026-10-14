@@ -1,0 +1,142 @@
+{
+  "schemaVersion": 1,
+  "qualificationId": "q038",
+  "fieldId": "q038-land-registration",
+  "year": 2025,
+  "verificationStatus": "verified_official",
+  "sourceAuthority": "法務省",
+  "packets": [
+    {
+      "questionId": "q038:2025:午後:9",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 9,
+      "fieldId": "q038-land-registration",
+      "stem": "地積測量図に関する次のアからオまでの記述のうち、誤っているものの組合せは、後 記1 から5 までのうち、どれか。 ア 土地の所有権の登記名義人の氏名が登記記録上の氏名と異なる場合であっても、当 該氏名についての変更があったことを証する市町村長が職務上作成した情報を提供す ることにより、当該土地に係る地積測量図の訂正の申出をすることができる。 イ 書面を提出する方法により地積に関する更正の登記を申請した場合に、作成者が署 名した地積測量図には、その作成者の押印は要しない。 ウ 筆界点に永続性のある石杭又は金属標があるときは、地積測量図にその表示を記録 しなければならない。 エ 分筆の登記を申請する際に添付する地積測量図には、分筆前の土地が広大であって、 分筆後の土地の一方がわずかであるときは、地積の記録を便宜省略することができる。 オ 地積測量図の縮尺がその土地について作成すべき土地所在図の縮尺と同一であっ て、当該地積測量図によって土地の所在を明確に表示することができるときであって も、当該地積測量図をもって土地所在図を兼ねることはできない。",
+      "choices": [
+        "アウ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "エオ"
+      ],
+      "correctAnswer": 5,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 12,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "地積測量図に関する次のアからオまでの記述のうち、誤っているものの組合せは、後 記1 から5 までのうち、どれか。 ア 土地の所有権の登記名義人の氏名が登記記録上"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:10",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 10,
+      "fieldId": "q038-land-registration",
+      "stem": "建物図面及び各階平面図に関する次のアからオまでの記述のうち、正しいものの組合 せは、後記1 から5 までのうち、どれか。 ア 建物の所在の変更の登記を申請する場合には、建物図面及び各階平面図を提供しな ければならない。 イ 甲土地上にのみ存する区分建物について、当該区分建物の存しない乙土地を当該区 分建物の規約敷地とする新たな規約を設定したことによる表題部の変更の登記を申請 する場合には、建物図面を提供しなければならない。 ウ 仮換地上に建築された建物の表題登記を申請する場合に添付する建物図面には、敷 地の形状として、当該建物の存する仮換地の形状を実線で図示しなければならない。 エ 一棟の建物の1 階に存する1 階建ての甲区分建物と、甲区分建物の真上の階に存し 甲区分建物と上下に接する1 階建ての乙区分建物とを合併して、1 個の区分建物とす る合併の登記を申請する場合には、各階平面図を提供することを要しない。 オ 共用部分である旨の登記がある建物について共用部分である旨を定めた規約を廃止 したことによる当該建物の表題登記を申請する場合には、建物図面及び各階平面図を 提供することを要しない。",
+      "choices": [
+        "アイ",
+        "アウ",
+        "イエ",
+        "ウオ",
+        "エオ"
+      ],
+      "correctAnswer": 4,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 13,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 0
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "建物図面及び各階平面図に関する次のアからオまでの記述のうち、正しいものの組合 せは、後記1 から5 までのうち、どれか。 ア 建物の所在の変更の登記を申請する場"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    },
+    {
+      "questionId": "q038:2025:午後:11",
+      "year": 2025,
+      "section": "午後",
+      "questionNumber": 11,
+      "fieldId": "q038-land-registration",
+      "stem": "分筆の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1 から5 までのうち、どれか。 ア Ａ及びＢが所有権の登記名義人である甲土地から乙土地を分筆する分筆の登記の申 請がされた場合において、分筆後の甲土地をＡが単独で所有し、乙土地をＢが単独で 所有する旨の共有物分割の判決があったことを証する情報が提供されたときは、甲土 地の登記記録にはＡが単独所有者として登記され、乙土地の登記記録にはＢが単独所 有者として登記される。 イ 甲土地に地上権の設定の登記がされており、かつ、当該地上権を目的とする抵当権 の設定の登記がされている場合において、甲土地から乙土地を分筆する分筆の登記を するときに、登記官が当該地上権を分筆後の甲土地について消滅させる旨の登記をす るためには、当該地上権の登記名義人が当該地上権を分筆後の甲土地について消滅さ せることを承諾したことを証する情報に加えて、当該抵当権の登記名義人が承諾した ことを証する情報が提供されることが必要である。 ウ 所有権移転請求権保全の仮登記がされている甲土地から乙土地を分筆する分筆の登 記をする場合において、分筆後の乙土地について当該仮登記の登記名義人が権利の消 滅を承諾したことを証する情報が提供されたときは、分筆後の乙土地の登記記録には 当該仮登記は転写されない。 エ 抵当権の設定の登記がされている甲土地から乙土地を分筆する分筆の登記の申請を 書面を提出する方法によりする場合において、当該抵当権を分筆後の乙土地について 消滅させることを当該抵当権の登記名義人が承諾したことを証する情報を提供すると きは、当該情報に添付すべき当該登記名義人の印鑑に関する証明書は、作成後3 月以 内のものでなければならない。 オ 地上権の設定の登記がされている甲土地から乙土地を分筆する分筆の登記を申請す る場合において、当該地上権の存続期間が満了しているときは、乙土地の登記記録に は地上権の設定の登記は転写されない。",
+      "choices": [
+        "アエ",
+        "アオ",
+        "イウ",
+        "イエ",
+        "ウオ"
+      ],
+      "correctAnswer": 3,
+      "diagramRequired": false,
+      "diagramAssets": [],
+      "packetStatus": "verified_official",
+      "questionPdfUrl": "https://www.moj.go.jp/content/001450011.pdf",
+      "answerPdfUrl": "https://www.moj.go.jp/content/001450015.pdf",
+      "questionPdfSha256": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
+      "answerPdfSha256": "3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad",
+      "evidence": {
+        "questionPdfPage": 14,
+        "answerPdfPage": 1,
+        "visual": {
+          "status": "verified",
+          "diagramRequired": false,
+          "method": "no_raster_and_vectors_confined_to_page_furniture",
+          "drawingCount": 2
+        },
+        "field": {
+          "method": "code_owned_learning_unit_map",
+          "questionTopic": "分筆の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1 から5 までのうち、どれか。 ア Ａ及びＢが所有権の登記名義人である甲土地から乙土"
+        }
+      },
+      "verification": {
+        "questionText": "official_pdf_checked",
+        "choices": "official_pdf_checked",
+        "visual": "question_level_pdf_graphics_checked",
+        "answer": "same_year_official_answer_checked",
+        "field": "verified"
+      }
+    }
+  ]
+}
