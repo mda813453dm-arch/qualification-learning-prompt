@@ -12,14 +12,14 @@ export function segmentQuestionCandidates(pages,{questionPatterns=defaultQuestio
  const offsets=[];let cursor=0;for(const p of joined){offsets.push({start:cursor,end:cursor+p.text.length,page:p.page});cursor+=p.text.length+1;}
  const all=joined.map(x=>x.text).join("\n");
  const marks=[];
- for(const re0 of questionPatterns){const re=new RegExp(re0.source,re0.flags.includes("g")?re0.flags:re0.flags+"g");let m;while((m=re.exec(all)))marks.push({index:m.index,bodyStart:re.lastIndex,questionNumber:Number(m[1]),heading:m[0]});}
+ for(const re0 of questionPatterns){const re=new RegExp(re0.source,re0.flags.includes("g")?re0.flags:re0.flags+"g");let m;while((m=re.exec(all)))marks.push({index:m.index,bodyStart:re.lastIndex,questionNumber:num(m[1]),heading:m[0]});}
  marks.sort((a,b)=>a.index-b.index);
  const unique=marks.filter((m,i,a)=>i===0||m.index!==a[i-1].index);
  const out=[];
  for(let i=0;i<unique.length;i++){
   const m=unique[i],end=i+1<unique.length?unique[i+1].index:all.length;
   const raw=all.slice(m.bodyStart,end).trim();const cms=[];let cm;const cre=new RegExp(choicePattern.source,choicePattern.flags.includes("g")?choicePattern.flags:choicePattern.flags+"g");
-  while((cm=cre.exec(raw)))cms.push({n:Number(cm[1]),index:cm.index,start:cre.lastIndex});
+  while((cm=cre.exec(raw)))cms.push({n:num(cm[1]),index:cm.index,start:cre.lastIndex});
   let stem=raw,choices=[];
   if(cms.length){stem=raw.slice(0,cms[0].index).trim();choices=cms.map((x,j)=>norm(raw.slice(x.start,j+1<cms.length?cms[j+1].index:raw.length)));}
   const absEnd=end;const sourcePages=offsets.filter(o=>o.end>=m.index&&o.start<=absEnd).map(o=>o.page);
