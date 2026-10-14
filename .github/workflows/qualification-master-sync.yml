@@ -1,0 +1,48 @@
+name: Qualification master sync
+
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/src/qualification-master.js'
+      - '新システム開発/src/qualification-catalog.js'
+      - '新システム開発/src/qualification-catalog/**'
+      - '新システム開発/tools/generate-qualification-master-view.mjs'
+      - '新システム開発/tools/check-qualification-master-sync.mjs'
+      - '新システム開発/資格マスタ閲覧表_103資格.md'
+      - '.github/workflows/qualification-master-sync.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai-learning-system
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate human-readable master table
+        working-directory: 新システム開発
+        run: node tools/generate-qualification-master-view.mjs
+      - name: Run qualification master tests
+        working-directory: 新システム開発
+        run: node --test src/qualification-master.test.mjs
+      - name: Verify generated table is reproducible
+        working-directory: 新システム開発
+        run: node tools/check-qualification-master-sync.mjs --check
+      - name: Commit regenerated view when needed
+        run: |
+          if git diff --quiet -- '新システム開発/資格マスタ閲覧表_103資格.md'; then
+            echo "View already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add '新システム開発/資格マスタ閲覧表_103資格.md'
+          git commit -m "Sync qualification master view"
+          git push
