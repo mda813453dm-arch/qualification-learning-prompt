@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": null,
+  "entries": [],
+  "note": "Fail-closed manifest. Entries are added only by a successful official PDF verification/extraction pipeline."
+}
