@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "qualificationCount": 103,
-  "availableQualificationCount": 2,
+  "availableQualificationCount": 3,
   "qualifications": [
     {
       "qualificationId": "q001",
@@ -377,8 +377,15 @@
     },
     {
       "qualificationId": "q063",
-      "officialPracticeRuntime": "not_yet_available",
-      "verifiedPacketSets": []
+      "officialPracticeRuntime": "static_verified_packets_available",
+      "verifiedPacketSets": [
+        {
+          "fieldId": "q063-survey-calculation",
+          "year": 2026,
+          "packetCount": 2,
+          "packetUrl": "https://raw.githubusercontent.com/mda813453dm-arch/qualification-learning-prompt/ai-learning-system/新システム開発/data/runtime-packets/verified/q063-2026-visual.json"
+        }
+      ]
     },
     {
       "qualificationId": "q064",
