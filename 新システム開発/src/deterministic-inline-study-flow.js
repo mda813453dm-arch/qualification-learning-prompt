@@ -57,7 +57,8 @@ export function createInlineStudyFlow(assetRegistry,options={}){
   learningState(){return learningSequence?.state()||null;},
   prepare(x){
    if(x.qualificationId!==studyPlan.qualificationId)throw new Error('STUDY_PLAN_QUALIFICATION_MISMATCH');
-   const q=normalizedQuestion(x.question);\n   const context=makeLearningContext(q,x.qualificationId);
+   const q=normalizedQuestion(x.question);
+   const context=makeLearningContext(q,x.qualificationId);
    if(q.id!==x.packet?.id||q.studyUnitId!==x.packet?.studyUnitId||
       x.packet.studyPlanSha256!==studyPlan.sha256)throw new Error('QUESTION_PACKET_BINDING_MISMATCH');
    const policy=resolveExplanationPolicy(x.qualificationId,q,x.packet);
