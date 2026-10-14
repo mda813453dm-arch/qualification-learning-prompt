@@ -42,12 +42,12 @@ def main():
   doc=fitz.open(pdf); packets=[]
   for n,(field,label) in APPROVED.items():
     page,stem,choices=extract(doc,n); ans=answer(doc,n)
-    packets.append({"questionId":f"宅地建物取引士:2025:年度共通:{n}","year":2025,"section":"年度共通","questionNumber":n,
+    packets.append({"questionId":f"q041:2025:年度共通:{n}","year":2025,"section":"年度共通","questionNumber":n,
       "fieldId":field,"fieldName":label,"stem":stem,"choices":choices,"correctAnswer":ans,"diagramRequired":False,"diagramAssets":[],
       "packetStatus":"verified_official","questionPdfUrl":URL,"answerPdfUrl":URL,"questionPdfSha256":EXPECTED,"answerPdfSha256":EXPECTED,
       "evidence":{"questionPdfPage":page,"answerPdfPage":30},
       "verification":{"questionText":"official_pdf_checked","choices":"official_pdf_checked","answer":"same_year_official_answer_checked"}})
-  data={"schemaVersion":1,"qualificationId":"宅地建物取引士","fieldId":"takken-u8","year":2025,"verificationStatus":"verified_official","sourceAuthority":"一般財団法人 不動産適正取引推進機構","packets":packets}
+  data={"schemaVersion":1,"qualificationId":"q041","fieldId":"takken-u8","year":2025,"verificationStatus":"verified_official","sourceAuthority":"一般財団法人 不動産適正取引推進機構","packets":packets}
   out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
   print(json.dumps({"status":"verified_official","packets":len(packets),"out":str(out)},ensure_ascii=False))
 if __name__=="__main__": main()
