@@ -5,15 +5,20 @@ on:
     paths:
       - '新システム開発/src/official-source-resolver.js'
       - '新システム開発/src/official-source-resolver.test.mjs'
-      - '新システム開発/src/verified-question-packet-store.js'
-      - '新システム開発/src/verified-question-packet-store.test.mjs'
+      - '新システム開発/src/official-source-adapter-contract.js'
+      - '新システム開発/src/official-source-adapter-contract.test.mjs'
+      - '新システム開発/src/verified-source-copy-store.js'
+      - '新システム開発/src/verified-source-copy-store.test.mjs'
       - '新システム開発/src/official-pdf-runtime-ingestion.js'
-      - '新システム開発/data/verified-question-packets/**'
+      - '新システム開発/data/official-source-copies/**'
       - '.github/workflows/official-runtime-generic-test.yml'
   workflow_dispatch:
+permissions:
+  contents: read
 jobs:
   generic-runtime:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,5 +28,7 @@ jobs:
           node-version: '22'
       - name: Test all-catalog official source resolution
         run: node "新システム開発/src/official-source-resolver.test.mjs"
-      - name: Test preverified packet runtime
-        run: node "新システム開発/src/verified-question-packet-store.test.mjs"
+      - name: Test qualification-neutral source adapter contract
+        run: node "新システム開発/src/official-source-adapter-contract.test.mjs"
+      - name: Test hash-verified source-copy fallback
+        run: node "新システム開発/src/verified-source-copy-store.test.mjs"
