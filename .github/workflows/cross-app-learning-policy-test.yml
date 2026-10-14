@@ -1,0 +1,20 @@
+name: Cross-app learning policy focused test
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/src/cross-app-study-policy.js'
+      - '新システム開発/src/cross-app-study-policy.test.js'
+      - '.github/workflows/cross-app-learning-policy-test.yml'
+  workflow_dispatch:
+jobs:
+  focused-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Run focused state and review tests
+        run: node --test src/cross-app-study-policy.test.js
+        working-directory: 新システム開発
