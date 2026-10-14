@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createPinnedOnDemandCandidateLoader } from "./pinned-on-demand-candidates.js";
 import { createResolveCandidates } from "./official-runtime-dependencies.js";
 
-const qualificationId = "宅地建物取引士";
+const qualificationId = "q041";
 const studyUnitId = "takken-u8";
 const hash = "a".repeat(64);
 const plan = { status: "approved", qualificationId, sha256: hash, itemIds: [studyUnitId] };
@@ -18,7 +18,7 @@ test("approved question 29 generates one pinned candidate and resolves without r
   const result = await resolve({ qualificationId, studyUnitId, studyPlanSha256: hash, yearFixed: 2025, questionNumber: 29 });
   assert.equal(result.status, "approved");
   assert.equal(result.candidates.length, 1);
-  assert.equal(result.candidates[0].questionId, "宅地建物取引士:2025:年度共通:29");
+  assert.equal(result.candidates[0].questionId, "q041:2025:年度共通:29");
   assert.equal(result.candidates[0].studyPlanSha256, hash);
 });
 
