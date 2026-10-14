@@ -141,3 +141,6 @@ export { QUALIFICATION_MASTER, resolveQualification, validateQualificationRecord
   planExemption, createPendingQualification } from "./qualification-master.js";
 
 export { validateRuntimePacket, buildRuntimeLearnerQuestion, gradeRuntimeQuestion } from "./runtime-official-question-packet.js";
+
+export { resolveOfficialSourceEntry, rediscoverOfficialDocuments, chooseOfficialQuestionPath } from "./official-source-resolver.js";
+export { createOfficialPdfRuntimeIngestion } from "./official-pdf-runtime-ingestion.js";
