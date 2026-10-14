@@ -13,7 +13,16 @@ on:
       - '新システム開発/src/past-question-retention.js'
       - '新システム開発/src/past-question-retention.test.js'
       - '.github/workflows/qualification-master-sync.yml'
+  # GitHub cron is UTC. 15:15 UTC on Mar 31 = 00:15 JST on Apr 1.
+  # Scheduled runs may start a little later than the nominal time.
+  schedule:
+    - cron: '15 15 31 3 *'
   workflow_dispatch:
+    inputs:
+      update_reason:
+        description: 'Optional note for this manual annual-update check'
+        required: false
+        type: string
 
 permissions:
   contents: write
