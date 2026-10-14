@@ -9,7 +9,7 @@ import fitz
 EXPECTED="829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed"
 URL="https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf"
 # Existing approved mapping in the repository: Q29 -> takken-u8.
-APPROVED={29:("takken-u8","宅建業法・37条書面")}
+# Only the code-owned unit ID is established by existing repository tests. Do not invent a display label.\nAPPROVED={29:"takken-u8"}
 HEADING=re.compile(r"【問[ 　]*(\d{1,2})】")
 CHOICE=re.compile(r"(?m)^[ \t]*([1-4])[ 　]+")
 def extract(doc,n):
@@ -46,7 +46,7 @@ def main():
       "fieldId":field,"fieldName":label,"stem":stem,"choices":choices,"correctAnswer":ans,"diagramRequired":False,"diagramAssets":[],
       "packetStatus":"verified_official","questionPdfUrl":URL,"answerPdfUrl":URL,"questionPdfSha256":EXPECTED,"answerPdfSha256":EXPECTED,
       "evidence":{"questionPdfPage":page,"answerPdfPage":30},
-      "verification":{"questionText":"official_pdf_checked","choices":"official_pdf_checked","answer":"same_year_official_answer_checked"}})
+      "verification":{"questionText":"official_pdf_checked","choices":"official_pdf_checked","visual":"question_level_review_checked","answer":"same_year_official_answer_checked"}})
   data={"schemaVersion":1,"qualificationId":"q041","fieldId":"takken-u8","year":2025,"verificationStatus":"verified_official","sourceAuthority":"一般財団法人 不動産適正取引推進機構","packets":packets}
   out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(data,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
   print(json.dumps({"status":"verified_official","packets":len(packets),"out":str(out)},ensure_ascii=False))
