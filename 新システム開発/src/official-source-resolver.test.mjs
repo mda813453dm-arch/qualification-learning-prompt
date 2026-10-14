@@ -34,3 +34,16 @@ assert.equal(chooseOfficialQuestionPath({preverifiedPacketCount:3,requestedSetSi
 assert.equal(chooseOfficialQuestionPath({preverifiedPacketCount:0,officialEntryAvailable:true,runtimePdfAdapterAvailable:true}).path,"runtime_official_pdf");
 assert.equal(chooseOfficialQuestionPath({preverifiedPacketCount:0,officialEntryAvailable:true,runtimePdfAdapterAvailable:false}).status,"unavailable");
 console.log("official-source-resolver: PASS");
+
+const secureEntry=resolveOfficialSourceEntry({qualificationId:"q038"});
+const malicious=await rediscoverOfficialDocuments({entry:secureEntry,expectedYear:2025,expectedSection:"午後",discoverFromEntry:async()=>({status:"ready",documents:[
+ {url:"https://evil.example/q.pdf",kind:"question",year:2025,section:"午後",qualificationName:"土地家屋調査士",authorityConfirmed:true,officialHostConfirmed:true},
+ {url:"https://evil.example/a.pdf",kind:"answer",year:2025,section:"午後",qualificationName:"土地家屋調査士",authorityConfirmed:true,officialHostConfirmed:true}
+]})});
+if(malicious.status!=="unavailable")throw new Error("NON_OFFICIAL_HOST_ACCEPTED");
+const wrongSection=await rediscoverOfficialDocuments({entry:secureEntry,expectedYear:2025,expectedSection:"午後",discoverFromEntry:async()=>({status:"ready",documents:[
+ {url:"https://www.moj.go.jp/q.pdf",kind:"question",year:2025,section:"午前",qualificationName:"土地家屋調査士"},
+ {url:"https://www.moj.go.jp/a.pdf",kind:"answer",year:2025,section:"午前",qualificationName:"土地家屋調査士"}
+]})});
+if(wrongSection.status!=="unavailable")throw new Error("WRONG_SECTION_ACCEPTED");
+console.log("official host/section validation: PASS");
