@@ -151,3 +151,6 @@ export { validateSourceCopyRecord, loadVerifiedSourceCopy, findSourceCopy } from
 export { evaluateExtractedQuestion, promoteExtractedQuestion } from "./question-extraction-gate.js";
 
 export { segmentQuestionCandidates, assessSegmentationCandidate } from "./generic-pdf-question-segmenter.js";
+
+export { extractPdfPageText } from "./pdfjs-page-text-extractor.js";
+export { extractQuestionCandidatesFromPdf } from "./pdf-question-candidate-pipeline.js";
