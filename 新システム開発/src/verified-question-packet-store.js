@@ -1,82 +1,41 @@
-const VERIFIED_STATUS = "verified_official";
-
-function invalid(reason) {
-  return Object.freeze({ status: "unavailable", reason, packets: Object.freeze([]) });
-}
-
-export function validateVerifiedQuestionPacketStore(store) {
-  if (!store || store.schemaVersion !== 1 || typeof store.qualificationId !== "string" ||
-      typeof store.fieldId !== "string" || !Array.isArray(store.packets))
-    return invalid("STORE_SCHEMA_INVALID");
-
-  const seen = new Set();
-  for (const p of store.packets) {
-    if (!p || p.packetStatus !== VERIFIED_STATUS ||
-        p.verification?.questionText !== "official_pdf_checked" ||
-        p.verification?.choices !== "official_pdf_checked" ||
-        p.verification?.answer !== "same_year_official_answer_checked" ||
-        typeof p.questionId !== "string" || !p.questionId ||
-        !Number.isInteger(p.year) || !Number.isInteger(p.questionNumber) ||
-        typeof p.stem !== "string" || !p.stem.trim() ||
-        !Array.isArray(p.choices) || p.choices.length < 2 ||
-        p.choices.some(x => typeof x !== "string" || !x.trim()) ||
-        !Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > p.choices.length ||
-        typeof p.diagramRequired !== "boolean")
-      return invalid("PACKET_VALIDATION_FAILED");
-    if (seen.has(p.questionId)) return invalid("PACKET_DUPLICATE");
-    seen.add(p.questionId);
-    if (p.diagramRequired) return invalid("DIAGRAM_ASSET_NOT_PREVERIFIED");
-  }
-
-  return Object.freeze({ status: "ready", packetCount: store.packets.length });
-}
-
 /**
- * Runtime path for AI clients:
- * 1) use preverified packet store first;
- * 2) do not re-download/re-extract the source PDF when enough packets exist;
- * 3) return live_pdf_required only when the store is insufficient.
+ * Runtime-only official question packet validation.
+ * This module does NOT persist a corpus of past questions.
+ * Packets are created from an official PDF during the current ingestion run.
  */
-export function resolveVerifiedPracticeSet(store, {
-  qualificationId,
-  fieldId,
-  recentQuestionIds = [],
-  setSize = 3
-} = {}) {
-  const validation = validateVerifiedQuestionPacketStore(store);
-  if (validation.status !== "ready") return validation;
-  if (store.qualificationId !== qualificationId || store.fieldId !== fieldId)
-    return invalid("PACKET_SCOPE_MISMATCH");
-  if (!Number.isInteger(setSize) || setSize < 1) return invalid("SET_SIZE_INVALID");
 
-  const recent = new Set(Array.isArray(recentQuestionIds) ? recentQuestionIds : []);
-  const ordered = [...store.packets].sort((a,b) => {
-    const ar = recent.has(a.questionId) ? 1 : 0;
-    const br = recent.has(b.questionId) ? 1 : 0;
-    if (ar !== br) return ar - br;
-    if (a.year !== b.year) return b.year - a.year;
-    return a.questionNumber - b.questionNumber;
-  });
-
-  if (ordered.length < setSize) {
-    return Object.freeze({
-      status: "live_pdf_required",
-      reason: "PREVERIFIED_PACKETS_INSUFFICIENT",
-      availablePacketCount: ordered.length,
-      requestedSetSize: setSize,
-      packets: Object.freeze(ordered)
-    });
-  }
-
-  return Object.freeze({
-    status: "ready",
-    sourceMode: "preverified_official_packet",
-    packets: Object.freeze(ordered.slice(0,setSize))
-  });
+function unavailable(reason) {
+  return Object.freeze({ status: "unavailable", reason });
 }
 
-export function buildLearnerQuestion(packet) {
-  if (!packet || packet.packetStatus !== VERIFIED_STATUS) return invalid("PACKET_NOT_VERIFIED");
+export function validateRuntimePacket(packet) {
+  if (!packet || typeof packet !== "object") return unavailable("PACKET_REQUIRED");
+  if (packet.sourceMode !== "runtime_official_pdf") return unavailable("RUNTIME_SOURCE_REQUIRED");
+  if (typeof packet.qualificationId !== "string" || !packet.qualificationId) return unavailable("QUALIFICATION_REQUIRED");
+  if (typeof packet.fieldId !== "string" || !packet.fieldId) return unavailable("FIELD_REQUIRED");
+  if (!Number.isInteger(packet.year) || !Number.isInteger(packet.questionNumber)) return unavailable("QUESTION_IDENTITY_REQUIRED");
+  if (typeof packet.questionId !== "string" || !packet.questionId) return unavailable("QUESTION_ID_REQUIRED");
+  if (typeof packet.stem !== "string" || !packet.stem.trim()) return unavailable("QUESTION_TEXT_REQUIRED");
+  if (!Array.isArray(packet.choices) || packet.choices.length < 2 ||
+      packet.choices.some(v => typeof v !== "string" || !v.trim()))
+    return unavailable("COMPLETE_CHOICES_REQUIRED");
+  if (!Number.isInteger(packet.correctAnswer) ||
+      packet.correctAnswer < 1 || packet.correctAnswer > packet.choices.length)
+    return unavailable("OFFICIAL_ANSWER_REQUIRED");
+  if (typeof packet.questionPdfUrl !== "string" || !packet.questionPdfUrl.startsWith("https://"))
+    return unavailable("QUESTION_SOURCE_REQUIRED");
+  if (typeof packet.answerPdfUrl !== "string" || !packet.answerPdfUrl.startsWith("https://"))
+    return unavailable("ANSWER_SOURCE_REQUIRED");
+  if (packet.verification?.questionText !== "runtime_pdf_checked" ||
+      packet.verification?.choices !== "runtime_pdf_checked" ||
+      packet.verification?.answer !== "same_year_official_answer_checked")
+    return unavailable("RUNTIME_VERIFICATION_REQUIRED");
+  return Object.freeze({ status: "ready" });
+}
+
+export function buildRuntimeLearnerQuestion(packet) {
+  const check = validateRuntimePacket(packet);
+  if (check.status !== "ready") return check;
   return Object.freeze({
     status: "ready",
     questionId: packet.questionId,
@@ -88,18 +47,18 @@ export function buildLearnerQuestion(packet) {
   });
 }
 
-export function gradeVerifiedQuestion(packet, selectedNumber, source = {}) {
-  if (!packet || packet.packetStatus !== VERIFIED_STATUS) return invalid("PACKET_NOT_VERIFIED");
+export function gradeRuntimeQuestion(packet, selectedNumber) {
+  const check = validateRuntimePacket(packet);
+  if (check.status !== "ready") return check;
   if (!Number.isInteger(selectedNumber) || selectedNumber < 1 || selectedNumber > packet.choices.length)
-    return invalid("ANSWER_OUT_OF_RANGE");
-  if (typeof source.answerSourceUrl !== "string" || !source.answerSourceUrl.startsWith("https://www.gsi.go.jp/"))
-    return invalid("OFFICIAL_ANSWER_SOURCE_REQUIRED");
+    return unavailable("ANSWER_OUT_OF_RANGE");
   return Object.freeze({
     status: "graded",
     correct: selectedNumber === packet.correctAnswer,
     selectedNumber,
     correctAnswer: packet.correctAnswer,
-    answerSourceUrl: source.answerSourceUrl,
-    sourceMode: "preverified_official_packet"
+    answerPdfUrl: packet.answerPdfUrl,
+    questionPdfUrl: packet.questionPdfUrl,
+    sourceMode: "runtime_official_pdf"
   });
 }
