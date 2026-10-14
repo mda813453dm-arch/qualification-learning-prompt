@@ -9,6 +9,8 @@ on:
       - '新システム開発/src/official-source-adapter-contract.test.mjs'
       - '新システム開発/src/verified-source-copy-store.js'
       - '新システム開発/src/verified-source-copy-store.test.mjs'
+      - '新システム開発/src/runtime-official-question-packet.js'
+      - '新システム開発/src/runtime-official-question-packet.test.mjs'
       - '新システム開発/src/question-extraction-gate.js'
       - '新システム開発/src/question-extraction-gate.test.mjs'
       - '新システム開発/src/generic-pdf-question-segmenter.js'
@@ -46,5 +48,7 @@ jobs:
         run: node "新システム開発/src/pdfjs-page-text-extractor.test.mjs"
       - name: Test generic PDF question segmentation
         run: node "新システム開発/src/generic-pdf-question-segmenter.test.mjs"
+      - name: Test static packet learner display and grading
+        run: node "新システム開発/src/runtime-official-question-packet.test.mjs"
       - name: Test question extraction promotion gate
         run: node "新システム開発/src/question-extraction-gate.test.mjs"
