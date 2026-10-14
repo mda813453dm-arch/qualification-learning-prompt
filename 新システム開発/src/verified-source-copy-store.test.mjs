@@ -1,0 +1,12 @@
+import assert from "node:assert/strict";
+import {validateSourceCopyRecord,loadVerifiedSourceCopy,findSourceCopy} from "./verified-source-copy-store.js";
+const H="a".repeat(64);
+const r={schemaVersion:1,registryKey:"q038:2025:午後",kind:"question",officialUrl:"https://www.moj.go.jp/content/001450011.pdf",expectedSha256:H,copyLocation:"managed/q038-q.pdf"};
+assert.equal(validateSourceCopyRecord(r).status,"ready");
+assert.equal(findSourceCopy([r],{registryKey:r.registryKey,kind:"question"}).status,"ready");
+const ok=await loadVerifiedSourceCopy(r,{loadBytes:async()=>new Uint8Array([1]),sha256:async()=>H});
+assert.equal(ok.status,"verified");assert.equal(ok.sha256,H);
+const bad=await loadVerifiedSourceCopy(r,{loadBytes:async()=>new Uint8Array([1]),sha256:async()=>"b".repeat(64)});
+assert.equal(bad.reason,"SOURCE_COPY_HASH_MISMATCH");
+assert.equal(findSourceCopy([],{registryKey:r.registryKey,kind:"question"}).reason,"SOURCE_COPY_NOT_FOUND");
+console.log("verified-source-copy-store: PASS");
