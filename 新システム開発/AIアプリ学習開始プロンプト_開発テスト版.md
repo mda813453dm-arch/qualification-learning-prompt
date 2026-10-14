@@ -341,3 +341,8 @@ src/pdfjs-page-text-extractor.js はSHA等の取得検証を終えたPDF bytes�
 - qualification catalogのqIDを正規IDとするが、既存の資格名registryKeyは同一pinへの互換aliasとして保持し、旧セッション/既存テストを破壊しない。
 - 公式資料再発見ではadapterのauthorityConfirmed/officialHostConfirmed自己申告を信頼しない。resolver自身がcatalogの公式入口hostnameと同一/配下hostであること、年度、指定区分を検証してquestion/answerを対にする。外部hostや別区分は拒否する。
 - 宅建等のテキスト抽出で図表が見えなかったことを「図表不要」の証拠にしない。問単位visual review証跡が無ければverified_officialへ昇格しない。根拠未確認のfield表示名も生成しない。
+
+
+### 土地家屋調査士2025実PDF統合確認（2026-10-14）
+GitHub Actionsから法務省公式問題PDF 001450011.pdf と正答PDF 001450015.pdf の直接取得・PDF署名・登録済みSHA-256照合に成功した。問題PDF=928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c、正答PDF=3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad。AIアプリ側の法務省アクセス可否とは分離する。
+実PDFから午後多肢択一20問のcandidate抽出と同年度公式正答表の照合に成功した。正答は問1から順に 1,5,2,1,4,5,3,1,5,4,3,5,5,2,2,3,3,4,3,4。図表参照候補は問4・9・10・18。現段階ではfieldId未分類および図表候補未検証のためcandidateをquarantineし、学習用manifestへは昇格させない。
