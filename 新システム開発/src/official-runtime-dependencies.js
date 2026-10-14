@@ -140,4 +140,4 @@ export function createBuildInlinePayload({ compileVerifiedBundle, fetchImpl = fe
 export { QUALIFICATION_MASTER, resolveQualification, validateQualificationRecord,
   planExemption, createPendingQualification } from "./qualification-master.js";
 
-export { validateVerifiedQuestionPacketStore, resolveVerifiedPracticeSet, buildLearnerQuestion, gradeVerifiedQuestion } from "./verified-question-packet-store.js";
+export { validateRuntimePacket, buildRuntimeLearnerQuestion, gradeRuntimeQuestion } from "./verified-question-packet-store.js";
