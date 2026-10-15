@@ -112,16 +112,20 @@ def diagnose_ocr(qbytes, abytes, result):
     """OCRで読んだPDFの、読み落とした問の周りの行を書き出す（開発用）。"""
     from qlp_parser import ocr
     q = fitz.open(stream=qbytes, filetype="pdf")
-    if not any(ocr.needs_ocr(q[i]) for i in range(q.page_count)):
-        return
-    shown = 0
+    shown = Counter()
     for e in result.get("excluded", []):
-        if e["reason"] == "CHOICES_INCOMPLETE" and shown < 2:
-            shown += 1
+        if e["reason"] in ("CHOICES_INCOMPLETE", "FIELD_UNCLASSIFIED") and shown[e["reason"]] < 2:
+            shown[e["reason"]] += 1
             for p in e["pages"]:
                 print(f"  [ocr] 問{e['questionNumber']} {e['reason']} page{p}:")
-                for ln in ocr.page_ocr(q[p - 1]):
-                    print(f"    x={ln[3]:.0f} y={ln[0]:.0f} {ln[2]}")
+                if ocr.needs_ocr(q[p - 1]):
+                    for ln in ocr.page_ocr(q[p - 1]):
+                        print(f"    x={ln[3]:.0f} y={ln[0]:.0f} {ln[2]}")
+                else:
+                    for w in q[p - 1].get_text("words", sort=True)[:400]:
+                        print(f"    x={w[0]:.0f} y={w[1]:.0f} {w[4]}")
+    if not any(ocr.needs_ocr(q[i]) for i in range(q.page_count)):
+        return
     heads = []
     for i in range(q.page_count):
         for ln in ocr.page_ocr(q[i]):

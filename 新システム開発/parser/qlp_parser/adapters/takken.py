@@ -214,7 +214,7 @@ def _choice_starts(body, tol=3):
     return valid[-1], (["multiple_choice_starts"] if len(valid) > 1 else [])
 
 
-_MARKER_LIKE = re.compile(r"^([0-9０-９OoIlS]{1,2})(?:[ 　]+|[。．.、][ 　]*)")
+_MARKER_LIKE = re.compile(r"^([0-9０-９OoIlS\]|｜]{1,2})(?:[ 　]+|[。．.、][ 　]*)")
 
 
 def _ocr_choice_starts(body, tol):

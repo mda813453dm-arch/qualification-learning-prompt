@@ -169,7 +169,7 @@ def _choice_markers(pg):
     return found[-1] if found else None
 
 
-_MARKER_LIKE = re.compile(r"^[0-9OoIlS]{1,2}[.．。,]?$")
+_MARKER_LIKE = re.compile(r"^[0-9OoIlS\]|｜]{1,2}[.．。,]?$")
 
 
 def _ocr_choice_markers(pg):
