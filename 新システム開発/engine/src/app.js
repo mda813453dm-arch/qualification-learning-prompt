@@ -212,7 +212,7 @@ async function route(request, env, url, now) {
 
   // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
   if (method === 'GET' && url.pathname === '/robots.txt') {
-    return new Response('User-agent: *\nAllow: /p\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 
   // ChatGPT の挙動を確かめるための試験用ページ（学習には使わない）
