@@ -149,6 +149,10 @@ def render_crops(doc, raw_questions, file_prefix):
     return figures, assets
 
 
+# 公式の正答表の注記で「正解肢なし（全員正解）」「複数の選択肢を正解とする」とされた問の印（parse_answers が返す）
+ANSWER_SPECIAL = -1
+
+
 def build_result(*, qualification_id, year, section, question_source, question_sha,
                  answer_source, answer_sha, raw_questions, answers, choice_count,
                  classify, figures=None):
@@ -174,6 +178,9 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             reason = "CHOICES_INCOMPLETE"
         elif q.number not in answers:
             reason = "OFFICIAL_ANSWER_NOT_FOUND"
+        elif answers[q.number] == ANSWER_SPECIAL:
+            # 1つの正答で採点できないので出題しない（全員正解・複数解）
+            reason = "OFFICIAL_ANSWER_SPECIAL_CASE"
         elif not 1 <= answers[q.number] <= len(q.choices):
             reason = "OFFICIAL_ANSWER_OUT_OF_RANGE"
         elif q.needs_image and not figures.get(q.number):

@@ -7,7 +7,7 @@ import fitz
 from qlp_parser import ocr
 from qlp_parser.adapters import surveyor, takken
 from qlp_parser.cli import run
-from qlp_parser.core import PdfSource
+from qlp_parser.core import ANSWER_SPECIAL, PdfSource
 from tests.test_surveyor_synthetic import SurveyorTextPdf
 from tests.test_surveyor_synthetic import go as survey
 from tests.test_takken_synthetic import ANS, Q, URL, make_pdf
@@ -80,6 +80,54 @@ class Garbled(unittest.TestCase):
     def test_normal_text_and_answer_table_are_not_garbled(self):
         self.assertFalse(ocr.is_garbled(self.FakePage("次の文は，測量法に規定された事項について述べたものである。明らかに間違っているものはどれか。" * 2)))
         self.assertFalse(ocr.is_garbled(self.FakePage("令和５年測量士補試験解答 問題 正解 " + " ".join(f"No.{n} {n % 5 + 1}" for n in range(1, 29)))))
+
+
+def ruled_answer_table(answers):
+    """罫線で囲んだ正答表（「問n」の下の欄に正答）を画像にしたPDF。"""
+    doc = fitz.open()
+    p = doc.new_page()
+    p.insert_text((50, 60), "正解番号表", fontname="japan", fontsize=12)
+    y = 90
+    for r in range(5):
+        for c in range(10):
+            x = 50 + c * 48
+            p.draw_rect(fitz.Rect(x, y, x + 48, y + 20), width=0.8)
+            p.draw_rect(fitz.Rect(x, y + 20, x + 48, y + 40), width=0.8)
+            p.insert_text((x + 12, y + 14), f"問{r * 10 + c + 1}", fontname="japan", fontsize=9)
+            p.insert_text((x + 20, y + 34), str(answers[r * 10 + c]), fontname="japan", fontsize=10)
+        y += 50
+    p.insert_text((50, y + 20), "合否判定基準", fontname="japan", fontsize=12)
+    p.insert_text((50, y + 50), "※ 問42については、1又は4のいずれも正解として取り扱うことといたします。", fontname="japan", fontsize=10)
+    return rasterize(doc.tobytes())
+
+
+@unittest.skipUnless(ocr.available(), "Tesseract（jpn）が無い")
+class TakkenRuledAnswerTable(unittest.TestCase):
+    def test_ruled_table_is_read_by_position_and_never_wrong(self):
+        answers = [(i * 7 + 3) % 4 + 1 for i in range(50)]
+        doc = fitz.open(stream=ruled_answer_table(answers), filetype="pdf")
+        got = takken.parse_answers(doc)
+        normal = {n: c for n, c in got.items() if n != 42}
+        self.assertGreaterEqual(len(normal), 30, "読めた問が少なすぎる")
+        self.assertEqual({n: c for n, c in normal.items()}, {n: answers[n - 1] for n in normal}, "読めた正答は全て公式どおり")
+        self.assertEqual(got[42], ANSWER_SPECIAL, "複数解の問は印を付ける")
+
+
+class SpecialAnswers(unittest.TestCase):
+    def test_notes_on_answer_table(self):
+        self.assertEqual(takken.special_answers("問 4 8 は正解肢のない間題となっていることが判明しました。"), {48})
+        self.assertEqual(takken.special_answers("※ 間 42 については、1 又は 4 のいずれも正解として取り扱う"), {42})
+        self.assertEqual(takken.special_answers("問 44 の設問文アの記述中に誤植がありました。このため、選択肢 2 と選択肢 3 のいずれも正解とします。"), {44})
+        self.assertEqual(takken.special_answers("問 1 から問 50 までの 50 問です。"), set())
+
+    def test_special_question_is_excluded(self):
+        from qlp_parser.core import RawQuestion, build_result
+        q = RawQuestion(number=42, stem="民法の規定によれば", choices=["a", "b", "c", "d"], pages=[1])
+        src = PdfSource(b"", URL)
+        r = build_result(qualification_id="q041", year=2020, section="10月", question_source=src, question_sha="x",
+                         answer_source=src, answer_sha="x", raw_questions=[q], answers={42: ANSWER_SPECIAL},
+                         choice_count=4, classify=lambda q: {"fieldId": "t2", "verified": True})
+        self.assertEqual(r["excluded"][0]["reason"], "OFFICIAL_ANSWER_SPECIAL_CASE")
 
 
 class TakkenGridAnswers(unittest.TestCase):

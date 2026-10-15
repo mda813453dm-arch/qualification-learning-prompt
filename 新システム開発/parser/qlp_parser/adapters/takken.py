@@ -12,7 +12,7 @@ import unicodedata
 
 from .. import fields
 from .. import ocr
-from ..core import ParseError, RawQuestion, clean_text, is_page_number_line, to_int
+from ..core import ANSWER_SPECIAL, ParseError, RawQuestion, clean_text, is_page_number_line, to_int
 
 QUALIFICATION_ID = "q041"
 SECTION = "年度共通"
@@ -269,6 +269,71 @@ def _answer_rows(text):
             yield from zip(nums, cells)
 
 
+# 正答表の注記：「問48は正解肢のない問題」「1又は4のいずれも正解」「選択肢2と3のいずれも正解」など
+_SPECIAL = re.compile(r"[問間]\s*([0-9]{1,2})(?:(?![問間]\s*[0-9]).){0,80}?(いずれも正解|正解肢の?ない|全員を?正解|複数解)")
+
+
+def special_answers(text):
+    """注記で1つの正答で採点できないとされた問番号。"""
+    text = re.sub(r"\s+", "", unicodedata.normalize("NFKC", text))
+    return {int(m.group(1)) for m in _SPECIAL.finditer(text)}
+
+
+def _ocr_answer_grid(page):
+    """罫線のある正答表を、区切り方を変えて2回読み、食い違いのない問だけを返す。"""
+    out, doubtful = {}, set()
+    for psm in ("4", "11"):
+        for n, c in _ocr_answer_grid_once(page, psm).items():
+            if n in out and out[n] != c:
+                doubtful.add(n)
+            out.setdefault(n, c)
+    return {n: c for n, c in out.items() if n not in doubtful}
+
+
+def _ocr_answer_grid_once(page, psm):
+    """罫線のある正答表（スキャンした紙）を、数字だけに絞って読み、位置で問番号と正答を対応づける。
+
+    「問n」の見出しの真下（同じ列）にある1〜4の数字を、その問の正答とする。1つの見出しに2つの数字が
+    対応したときは、その問は確かめられないものとして外す。
+    """
+    import fitz
+
+    lines = ocr.page_ocr(page)
+    top = next((ln[1] for ln in lines if "正解番号" in ln[2]), page.rect.y0)
+    bottom = next((ln[0] for ln in lines if ln[0] > top and ("合否" in ln[2] or ln[2].startswith("※"))), page.rect.y1)
+    clip = fitz.Rect(page.rect.x0, top, page.rect.x1, bottom)
+    if clip.height < 20:
+        return {}
+    words = ocr.read_region(page, clip, psm=psm, whitelist="0123456789問")
+    labels, used = [], set()
+    for k, w in enumerate(words):
+        m = re.fullmatch(r"問([0-9]{1,2})", w[4])
+        if m:
+            labels.append((int(m.group(1)), (w[0] + w[2]) / 2, (w[1] + w[3]) / 2, w[2] - w[0]))
+            used.add(k)
+        elif w[4] == "問" and k + 1 < len(words) and re.fullmatch(r"[0-9]{1,2}", words[k + 1][4]) and words[k + 1][0] - w[2] < 12:
+            # 「問」と番号が別の語に分かれて読まれたとき
+            nx = words[k + 1]
+            labels.append((int(nx[4]), (w[0] + nx[2]) / 2, (w[1] + nx[3]) / 2, nx[2] - w[0]))
+            used.update({k, k + 1})
+    words = [w for k, w in enumerate(words) if k not in used]
+    if len(labels) < 10:
+        return {}
+    width = sorted(lb[3] for lb in labels)[len(labels) // 2]
+    found = {}
+    for w in words:
+        if not re.fullmatch(r"[1-4]", w[4]):
+            continue
+        cx, cy = (w[0] + w[2]) / 2, (w[1] + w[3]) / 2
+        above = [lb for lb in labels if lb[2] < cy and abs(lb[1] - cx) <= width]
+        if not above:
+            continue
+        row_y = max(lb[2] for lb in above)
+        lb = min((lb for lb in above if abs(lb[2] - row_y) < 5), key=lambda lb: abs(lb[1] - cx))
+        found.setdefault(lb[0], []).append(int(w[4]))
+    return {n: v[0] for n, v in found.items() if len(v) == 1}
+
+
 # 正答表の読み落としを補うときに、読み直す方式（Tesseract のページの区切り方）
 _ANSWER_RETRY_PSM = ("4", "11")
 
@@ -293,6 +358,13 @@ def parse_answers(doc):
             reads += ["\n".join(ln[2] for ln in ocr.page_ocr(page, psm)) for psm in _ANSWER_RETRY_PSM]
         elif "正解" in reads[0] and not dict(_answer_rows(reads[0])):
             reads += ["\n".join(ln[2] for ln in ocr.page_ocr(page, psm)) for psm in _ANSWER_RETRY_PSM]
+        if "正解" in reads[0] and len(answers) + len(dict(_answer_rows(reads[0]))) < QUESTION_COUNT:
+            grid = _ocr_answer_grid(page)
+            reads.append(" ".join(f"問{n}" for n in grid) + " " + " ".join(str(c) for c in grid.values()) if grid else "")
+            for n, c in grid.items():
+                if n in answers and answers[n] != c:
+                    doubtful.add(n)
+                answers.setdefault(n, c)
         for text in reads:
             for n, c in _answer_rows(text):
                 if n in answers and answers[n] != c:
@@ -300,6 +372,11 @@ def parse_answers(doc):
                 answers.setdefault(n, c)
     for n in doubtful:
         answers.pop(n, None)
+    specials = set()
+    for i in range(doc.page_count):
+        specials |= special_answers(_page_text(doc[i]))
+    for n in specials:
+        answers[n] = ANSWER_SPECIAL
     if not answers:
         answers = _grid_answers(doc)
     if not answers:

@@ -152,6 +152,7 @@ def _render(page, psm):
 
     zoom = PAGE_DPI / 72
     pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), alpha=False, colorspace=fitz.csGRAY)
+    pix.set_dpi(PAGE_DPI, PAGE_DPI)  # 解像度を画像に書いておく（無いと Tesseract が字の大きさを見誤る）
     # 同じページを何度も読まないよう、画像の中身で控える（問題の読み取りと正答表の読み取りで同じページを見るため）
     key = (hashlib.sha256(pix.samples).hexdigest(), psm, page.rect.x0, page.rect.y0)
     return key, pix.tobytes("png"), zoom, page.rect.x0, page.rect.y0
@@ -215,3 +216,23 @@ def prefetch(pages, workers=4, force=False):
         results = list(ex.map(lambda j: _recognize(*j[1:], "6"), jobs))
     for j, out in zip(jobs, results):
         _remember(j[0], out)
+
+
+def read_region(page, clip, psm="4", whitelist=None, dpi=400):
+    """ページの一部を読み、語のリスト [(x0, y0, x1, y1, 文字)]（PDFのpt）を返す。表（正答表）を読むときに使う。"""
+    import fitz
+
+    zoom = dpi / 72
+    pix = page.get_pixmap(matrix=fitz.Matrix(zoom, zoom), clip=clip, alpha=False, colorspace=fitz.csGRAY)
+    pix.set_dpi(dpi, dpi)  # 解像度を画像に書いておく（無いと Tesseract が字の大きさを見誤る）
+    args = ["tesseract", "stdin", "stdout", "-l", LANG, "--psm", psm]
+    if whitelist:
+        args += ["-c", f"tessedit_char_whitelist={whitelist}"]
+    env = dict(os.environ, OMP_THREAD_LIMIT="1")
+    r = subprocess.run(args + ["hocr"], input=pix.tobytes("png"), capture_output=True, timeout=180, env=env)
+    if r.returncode != 0:
+        return []
+    parser = _Hocr()
+    parser.feed(r.stdout.decode("utf-8", "replace"))
+    x0, y0 = clip.x0, clip.y0
+    return [(x0 + a / zoom, y0 + b / zoom, x0 + c / zoom, y0 + d / zoom, t) for _, ws in parser.lines for (a, b, c, d), t in ws]
