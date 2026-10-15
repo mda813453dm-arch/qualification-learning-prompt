@@ -149,6 +149,8 @@ test('初期診断：各分野2問を出し、公式の問題が足りない分�
   assert.match(t, /・測量に関する法規：回答2問／誤答2問／正答率0%/);
   assert.match(t, /・多角測量：回答2問／誤答0問／正答率100%/);
   assert.match(t, /学習の順番（誤答率の高い順）：\n　1\. 測量に関する法規/);
+  assert.match(t, /・GNSS測量：回答2問／誤答0問/);
+  assert.match(t, /　2\. 多角測量\n　3\. GNSS測量/, '同率（誤答0）は出題数の多い順（多角測量2問・GNSS測量1問）');
   assert.match(t, /1\. この診断結果で計画を作る\n2\. 追加診断\n3\. 分野順を自分で指定\n4\. 計画見直しへ戻る/);
   const r = await rec(env, o.lid);
   assert.equal(r.result.diag.answers.length, 16);

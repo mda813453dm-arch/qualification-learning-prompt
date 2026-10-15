@@ -418,12 +418,13 @@ function startDiagnosis(rec, extra = false) {
 async function diagParts(ctx) {
   const { rec } = ctx;
   const d = R(rec).diag;
+  // 結果画面の同率の順番も出題数で決めるため、先に取り込み済みの過去問を読む
+  const { job, items } = await loadItems(ctx);
   if (d.idx >= d.queue.length) {
     d.status = 'result';
     return diagResultParts(ctx);
   }
   const f = d.queue[d.idx];
-  const { job, items } = await loadItems(ctx);
   const cur = rec.engine.current;
   if (cur && !cur.grade && cur.kind === 'diag') {
     const same = items.find((x) => x.packet.questionId === cur.questionId);
