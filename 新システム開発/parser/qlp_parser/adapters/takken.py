@@ -259,21 +259,47 @@ def _grid_answers(doc):
     return {}
 
 
+def _answer_rows(text):
+    """「問 a … 問 b」の見出しと同数の正答番号が並ぶ行から (問番号, 正答) を返す。"""
+    text = re.sub(r"\s+", " ", unicodedata.normalize("NFKC", text))
+    for m in _ANSWER_ROW.finditer(text):
+        nums = [int(x) for x in re.findall(r"問\s*([0-9]{1,2})", m.group(1))]
+        cells = [int(x) for x in re.findall(r"[1-4]", m.group(2))]
+        if len(nums) == len(cells):
+            yield from zip(nums, cells)
+
+
+# 正答表の読み落としを補うときに、読み直す方式（Tesseract のページの区切り方）
+_ANSWER_RETRY_PSM = ("4", "11")
+
+
 def parse_answers(doc):
-    """正答表を読む。「問 a … 問 b」の見出しと同数の正答番号が並ぶ行だけを採用する。"""
-    answers = {}
+    """正答表を読む。「問 a … 問 b」の見出しと同数の正答番号が並ぶ行だけを採用する。
+
+    OCRで読む正答表（スキャンした紙）は、読み落としがあれば区切り方を変えて読み直し、足りない問だけを補う。
+    読み方によって正答が食い違った問は、正答が確かめられないものとして外す（出題しない）。
+    """
+    answers, doubtful = {}, set()
     for i in range(doc.page_count):
-        text = unicodedata.normalize("NFKC", _page_text(doc[i]))
-        text = re.sub(r"\s+", " ", text)
-        for m in _ANSWER_ROW.finditer(text):
-            nums = [int(x) for x in re.findall(r"問\s*([0-9]{1,2})", m.group(1))]
-            cells = [int(x) for x in re.findall(r"[1-4]", m.group(2))]
-            if len(nums) != len(cells):
-                continue
-            for n, c in zip(nums, cells):
+        page = doc[i]
+        if not ocr.needs_ocr(page):
+            for n, c in _answer_rows(page.get_text(sort=True)):
                 if n in answers and answers[n] != c:
                     raise ParseError("ANSWER_TABLE_CONFLICT", question=n)
                 answers[n] = c
+            continue
+        reads = [_page_text(page)]
+        if len(dict(_answer_rows(reads[0]))) and len(answers) + len(dict(_answer_rows(reads[0]))) < QUESTION_COUNT:
+            reads += ["\n".join(ln[2] for ln in ocr.page_ocr(page, psm)) for psm in _ANSWER_RETRY_PSM]
+        elif "正解" in reads[0] and not dict(_answer_rows(reads[0])):
+            reads += ["\n".join(ln[2] for ln in ocr.page_ocr(page, psm)) for psm in _ANSWER_RETRY_PSM]
+        for text in reads:
+            for n, c in _answer_rows(text):
+                if n in answers and answers[n] != c:
+                    doubtful.add(n)
+                answers.setdefault(n, c)
+    for n in doubtful:
+        answers.pop(n, None)
     if not answers:
         answers = _grid_answers(doc)
     if not answers:

@@ -83,7 +83,7 @@ class _Page:
             self.drawings, self.glyphs = [], []
             self.images = [tuple(page.rect)]  # 問題1問分を公式PDFの画像でも見せる
             return
-        self.words = [_with_superscript(w, page) for w in page.get_text("words", sort=True) if w[3] <= self.limit]
+        self.words = _split_markers([_with_superscript(w, page) for w in page.get_text("words", sort=True) if w[3] <= self.limit])
         # 細い線は高さ0の範囲になる（Rect.intersects では拾えない）ので、座標で比べる
         pr = page.rect
         self.drawings = [d for d in page.get_drawings() if d["rect"].y1 <= self.limit
@@ -111,6 +111,23 @@ class _Page:
         for b in self.images:
             r.include_rect(fitz.Rect(b))
         return r
+
+
+_GLUED_MARKER = re.compile(r"^([1-5１-５][.．])(\S+)$")
+
+
+def _split_markers(words):
+    """「1．地理学的経緯度は，…」のように番号と本文が1語になっている（令和4年）ときは、番号を別の語に分ける。"""
+    out = []
+    for w in words:
+        m = _GLUED_MARKER.match(w[4])
+        if m:
+            cut = w[0] + (w[2] - w[0]) * len(m.group(1)) / len(w[4])
+            out.append((w[0], w[1], cut, w[3], m.group(1)) + tuple(w[5:]))
+            out.append((cut, w[1], w[2], w[3], m.group(2)) + tuple(w[5:]))
+        else:
+            out.append(w)
+    return out
 
 
 _SUPERSCRIPT = str.maketrans("0123456789", "⁰¹²³⁴⁵⁶⁷⁸⁹")
@@ -402,7 +419,9 @@ def _question(number, no, pg, text_heading):
     stem_top = markers[0][1] - 3 if markers else pg.limit
     stem_words = [w for w in pg.words if w[1] < stem_top]
     stem_glyphs = [d for d in pg.glyphs if d["rect"].y0 < stem_top and not _covered(d["rect"], stem_words)]
-    if text_heading and not stem_glyphs:
+    # 本文が日本語の文字として取り出せていれば、残った小さな図形は図の一部（令和4年など）。本文は文字のまま使う
+    stem_has_kana = any(re.search(r"[\u3040-\u30ff]", w[4]) for w in stem_words)
+    if text_heading and (not stem_glyphs or stem_has_kana):
         stem_mode = "ocr" if pg.ocr else "text"
         rows = _lines(stem_words)
         lines = [_line_text(r) for r in rows]
@@ -411,7 +430,7 @@ def _question(number, no, pg, text_heading):
     else:
         stem_mode, stem = "official_image", ""
         notes.append("stem_text_outlined")
-    graphics = bool(pg.images) or any(not _is_glyph(d) for d in pg.drawings)
+    graphics = bool(pg.images) or any(not _is_glyph(d) for d in pg.drawings) or bool(stem_glyphs)
     body = pg.body_rect()
     crops = []
     if pg.ocr:

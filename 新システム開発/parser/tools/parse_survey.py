@@ -132,7 +132,7 @@ def diagnose_ocr(qbytes, abytes, result):
             if "問" in ln[2][:6] or "No" in ln[2][:6]:
                 heads.append(f"p{i + 1} x={ln[3]:.0f} {ln[2][:30]}")
     print("  [ocr] heading-like lines: " + " | ".join(heads[:80]))
-    if result.get("reason") == "ANSWER_TABLE_NOT_FOUND":
+    if result.get("reason") == "ANSWER_TABLE_NOT_FOUND" or any(e["reason"] == "OFFICIAL_ANSWER_NOT_FOUND" for e in result.get("excluded", [])):
         a = fitz.open(stream=abytes, filetype="pdf") if abytes else q
         for i in range(max(0, a.page_count - 2), a.page_count):
             print(f"  [ocr] answer page{i + 1}: " + " / ".join(ln[2] for ln in ocr.page_ocr(a[i])))
