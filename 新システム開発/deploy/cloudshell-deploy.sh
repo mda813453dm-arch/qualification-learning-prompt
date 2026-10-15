@@ -52,13 +52,13 @@ gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAc
 
 echo "== 6/7 分解サーバー（qlp-parser）を配置（初回は10分ほどかかります）"
 gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
-  --cpu 2 --memory 2Gi --timeout 300 --max-instances 2 --concurrency 4 \
+  --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
   --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
 
 echo "== 7/7 学習エンジン（qlp-engine）を配置"
 gcloud run deploy qlp-engine --source "$ROOT/engine" --region "$REGION" --allow-unauthenticated \
-  --cpu 1 --memory 512Mi --timeout 300 --max-instances 3 \
+  --cpu 1 --memory 512Mi --timeout 900 --max-instances 3 \
   --set-env-vars "FIGURE_BUCKET=$BUCKET,PARSER_URL=$PARSER_URL" \
   --set-secrets API_TOKEN=qlp-api-token:latest,PARSER_TOKEN=qlp-parser-token:latest --quiet
 ENGINE_URL="$(gcloud run services describe qlp-engine --region "$REGION" --format='value(status.url)')"

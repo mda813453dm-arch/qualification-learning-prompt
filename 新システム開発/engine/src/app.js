@@ -26,7 +26,8 @@ const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;
 const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
-const RUN_ALL_MS = 280000;
+// Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
+const RUN_ALL_MS = 540000;
 const ADAPTERS = new Set(['takken', 'surveyor']);
 
 class HttpError extends Error {
@@ -292,8 +293,11 @@ async function route(request, env, url, now) {
     if (!qidOk(qid)) throw new HttpError(404, 'JOB_NOT_FOUND');
     if (method === 'GET' && parts.length === 3) {
       // ?run=all：学習画面から裏で呼ぶとき（取り込みを最後まで進める）
-      const job = await advance(env, qid, now, url.searchParams.get('run') === 'all' ? RUN_ALL_MS : STEP_BUDGET_MS);
+      const runAll = url.searchParams.get('run') === 'all';
+      const job = await advance(env, qid, now, runAll ? RUN_ALL_MS : STEP_BUDGET_MS);
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
+      // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
+      if (runAll && job.state === 'running') await kickIngest(env, qid, now);
       return json(200, { job: jobView(job) });
     }
     // 経路A：POST /v1/jobs/:qid/sources/:index/result  {result, assets:{file: base64}}

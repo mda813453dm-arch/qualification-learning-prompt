@@ -1,3 +1,4 @@
 このファイルを更新して push すると、GitHub Actions が Google Cloud に配置します（.github/workflows/deploy-google-cloud.yml）。
 2026-10-15 19:45 配置（Manabu さんの指示「配置して」）
 2026-10-15 20:05 再配置（robots.txt の修正・資格名の自由入力。Manabu さんの依頼による修正の反映）
+2026-10-15 20:15 再配置（取り込みの時間切れ対策）

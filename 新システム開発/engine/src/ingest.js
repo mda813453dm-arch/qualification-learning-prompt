@@ -181,15 +181,14 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
   const job = await readJob(store, qualificationId);
   if (!job) throw new IngestError('JOB_NOT_FOUND');
   const begin = clock();
-  let changed = false;
   for (const s of job.sources) {
     if (s.status !== 'pending' || s.reason === 'AWAITING_UPLOAD') continue; // 経路Aの結果待ちは ingestOne で進める
     if (clock() - begin >= budgetMs) break;
     const code = await settle(s, deps, deps.now ?? clock());
-    changed = true;
+    // 1件ごとに保存する（呼び出しが時間切れで打ち切られても、終わった分は失わない）
+    await saveJob(store, job, clock());
     if (code === 'PDF_CHANGED_DURING_INGEST') break;
   }
-  if (changed) await saveJob(store, job, clock());
   return withNotice(job, clock());
 }
 
