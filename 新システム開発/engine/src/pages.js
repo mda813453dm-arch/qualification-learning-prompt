@@ -24,7 +24,7 @@ export const SYSTEM_ID = 'qlp';
 export const SCHEMA_VERSION = 1;
 const ALPHABET = 'abcdefghijkmnpqrstuvwxyz23456789';
 const LID = /^[a-z2-9]{10}$/;
-const PAGE_BUDGET_MS = 8000;
+const PAGE_BUDGET_MS = 0;
 const WRONG_STREAK = 3;
 const FIX_LIST = 10;
 
@@ -265,9 +265,12 @@ function applyFix(rec, op, arg) {
   return null;
 }
 
-async function questionPage(env, base, rec, now, advance) {
+async function questionPage(env, base, rec, now, advance, kick) {
   const c = CATALOG[rec.fixed.slug];
+  // 画面の表示では分解を待たない（1件に数分かかり、AIアプリのページ取得が時間切れになるため）。
+  // 取り込みは裏で進め、ここでは進み具合を読むだけにする
   const job = await advance(env, jobId(rec), now, PAGE_BUDGET_MS);
+  if (job?.state === 'running' && kick) await kick(jobId(rec));
   const skip = new Set(rec.result.exempt && c.exemption ? c.exemption.numbers : []);
   const items = (await availablePackets(env.STORE, job, now)).filter((x) => !skip.has(x.packet.questionNumber));
   const pick = pickNext(rec.engine, items, { today: jstToday(now), job });
@@ -496,9 +499,9 @@ async function route(env, base, parts, now, advance, kick) {
   if (action === 'm' && (a1 === 'explain' || a1 === 'check')) return { rec, res: modePage(base, rec, a1) };
   if (action === 'retry') {
     if (Number(a1) === rec.tick) await startIngest(env, rec, now, kick);
-    return { rec, res: await questionPage(env, base, rec, now, advance) };
+    return { rec, res: await questionPage(env, base, rec, now, advance, kick) };
   }
-  if (action === 'q') return { rec, res: await questionPage(env, base, rec, now, advance) };
+  if (action === 'q') return { rec, res: await questionPage(env, base, rec, now, advance, kick) };
   if (action === 'a' && parts.length >= 5) return { rec, res: answerPage(base, rec, Number(a1), a2, a3 === 'g', now) };
   return { rec, res: menu(base, rec, now) };
 }

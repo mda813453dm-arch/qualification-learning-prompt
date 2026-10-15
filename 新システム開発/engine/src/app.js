@@ -171,11 +171,11 @@ function jobView(job) {
   };
 }
 
-async function advance(env, qualificationId, now, budgetMs) {
+async function advance(env, qualificationId, now, budgetMs, leaseMs = 0) {
   const job = await readJob(env.STORE, qualificationId);
   if (!job) return null;
   if (job.state !== 'running') return withNotice(job, now);
-  return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now });
+  return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now, leaseMs });
 }
 
 /**
@@ -304,10 +304,10 @@ async function route(request, env, url, now) {
     if (method === 'GET' && parts.length === 3) {
       // ?run=all：学習画面から裏で呼ぶとき（取り込みを最後まで進める）
       const runAll = url.searchParams.get('run') === 'all';
-      const job = await advance(env, qid, now, runAll ? RUN_ALL_MS : STEP_BUDGET_MS);
+      const job = await advance(env, qid, now, runAll ? RUN_ALL_MS : STEP_BUDGET_MS, runAll ? RUN_ALL_MS + 300000 : 0);
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
-      if (runAll && job.state === 'running') await kickIngest(env, qid, now);
+      if (runAll && job.state === 'running' && !job.leaseUntil) await kickIngest(env, qid, now);
       return json(200, { job: jobView(job) });
     }
     // 経路A：POST /v1/jobs/:qid/sources/:index/result  {result, assets:{file: base64}}

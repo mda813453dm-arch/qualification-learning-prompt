@@ -177,10 +177,16 @@ export async function startJob(store, qualificationId, sources, now, { persisten
  * 取り込みを、時間の許す分だけ進める。budgetMs を過ぎたら残りは次回。
  * 返り値の job.notice は、AIが利用者へそのまま伝える文（時間がかかっているとき）。
  */
-export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, clock = () => Date.now() } = {}) {
+export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, clock = () => Date.now(), leaseMs = 0 } = {}) {
   const job = await readJob(store, qualificationId);
   if (!job) throw new IngestError('JOB_NOT_FOUND');
   const begin = clock();
+  // 裏の取り込み（leaseMs あり）は同時に1つだけ走らせる。走っている間に呼ばれたら何もしない
+  if (leaseMs) {
+    if (job.leaseUntil && job.leaseUntil > begin) return withNotice(job, begin);
+    job.leaseUntil = begin + leaseMs;
+    await saveJob(store, job, begin);
+  }
   for (const s of job.sources) {
     if (s.status !== 'pending' || s.reason === 'AWAITING_UPLOAD') continue; // 経路Aの結果待ちは ingestOne で進める
     if (clock() - begin >= budgetMs) break;
@@ -188,6 +194,10 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
     // 1件ごとに保存する（呼び出しが時間切れで打ち切られても、終わった分は失わない）
     await saveJob(store, job, clock());
     if (code === 'PDF_CHANGED_DURING_INGEST') break;
+  }
+  if (leaseMs) {
+    job.leaseUntil = null;
+    await saveJob(store, job, clock());
   }
   return withNotice(job, clock());
 }

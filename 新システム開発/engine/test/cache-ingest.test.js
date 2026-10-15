@@ -137,3 +137,23 @@ test('形の崩れた問はその問だけ外し、理由を残す', async () =>
   assert.equal(v.status, 'unavailable');
   await assert.rejects(validateResult(SRC, { question: 'c'.repeat(64), answer: result.answerPdfSha256 }, PV, result, assets), (e) => e.code === 'RESULT_SHA_MISMATCH');
 });
+
+test('裏の取り込みは同時に1つだけ走らせ、途中で打ち切られても終わった分は残る', async () => {
+  const { web, store, parse } = setup();
+  const second = { ...SRC, year: 2025 };
+  await startJob(store, 'surveyor', [SRC, second], T0);
+  let t = T0;
+  const clock = () => t;
+  let seen = null;
+  // 1件目の分解中に、別の呼び出しが来たことにする
+  const slowParse = async (i) => {
+    t += 1000;
+    if (!seen) seen = await stepJob(store, 'surveyor', { store, fetchPdf: web.fetchPdf, parse, parserVersion: PV, now: t }, { clock, leaseMs: 60000 });
+    return parse(i);
+  };
+  const job = await stepJob(store, 'surveyor', { store, fetchPdf: web.fetchPdf, parse: slowParse, parserVersion: PV, now: T0 }, { clock, leaseMs: 60000 });
+  assert.deepEqual(seen.sources.map((s) => s.status), ['pending', 'pending'], '走っている間の呼び出しは何もしない');
+  assert.equal(job.sources[0].status, 'done');
+  assert.ok(job.sources.every((s) => s.status !== 'pending'), '自分の呼び出しでは最後まで進める');
+  assert.equal(job.leaseUntil, null);
+});
