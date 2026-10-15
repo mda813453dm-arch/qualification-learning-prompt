@@ -29,7 +29,7 @@ export const SRC = {
 };
 
 /** 分解器の偽物：問題数・正答・図を指定して、パーサー出力と同じ形を作る。 */
-export async function fakeResult({ src = SRC, qBytes, aBytes, answers = [3, 1, 4], figureOn = [2] }) {
+export async function fakeResult({ src = SRC, qBytes, aBytes, answers = [3, 1, 4], figureOn = [2], fieldIds = null }) {
   const qsha = await sha256Hex(qBytes);
   const asha = await sha256Hex(aBytes);
   const pngSha = await sha256Hex(PNG);
@@ -41,6 +41,7 @@ export async function fakeResult({ src = SRC, qBytes, aBytes, answers = [3, 1, 4
       year: src.year,
       section: src.section,
       questionNumber: n,
+      fieldId: fieldIds ? fieldIds[i] : 'f1',
       stem: `問${n}の本文`,
       stemMode: 'text',
       choices: ['一', '二', '三', '四', '五'],

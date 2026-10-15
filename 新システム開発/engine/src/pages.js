@@ -15,7 +15,7 @@
  * - engine：エンジンの状態（回答の履歴・復習予定・出題中の問）。履歴と復習予定は、利用者の訂正で外せる。
  * 問題本文・会話・個人情報は保存しない。
  */
-import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
+import { availablePackets, grade, jstToday, newState, pickNext, pin, present, SET_SIZE } from './engine.js';
 import { startJob } from './ingest.js';
 import { discover } from './discover.js';
 import { CATALOG, LEVELS } from './catalog.js';
@@ -85,7 +85,7 @@ function newRecord(lid, slug, now) {
   const c = CATALOG[slug];
   return {
     fixed: { systemId: SYSTEM_ID, schemaVersion: SCHEMA_VERSION, lid, slug, qualificationId: c.qualificationId, createdAt: now },
-    result: { step: c.exemption ? 'exemption' : 'level', exempt: c.exemption ? null : false, level: null, wrongStreak: 0, excluded: [], updatedAt: now },
+    result: { step: c.exemption ? 'exemption' : 'level', exempt: c.exemption ? null : false, level: null, wrongStreaks: {}, excluded: [], updatedAt: now },
     engine: newState({ qualificationId: c.qualificationId, now }),
     tick: 0,
     qn: 0,
@@ -141,9 +141,9 @@ function planText(rec) {
   const lines = [
     `【学習計画】${c.name}`,
     start === 'explain' ? '1. まず解説で、出題分野ごとの基本を確かめます。' : '1. 公式の過去問を、新しい年度から順に解きます。',
-    '2. 公式の過去問を1問ずつ解き、エンジンが採点します。',
+    `2. 公式の過去問を、同じ分野から${SET_SIZE}問ずつ続けて解き、エンジンが採点します。苦手な分野ほど多く出題します。`,
     '3. 間違えた問題は、1日後・3日後・7日後・14日後・30日後に復習として出題します。',
-    `4. ${WRONG_STREAK}問続けて間違えたら、基本を確かめる確認問題に切り替えるかをお聞きします。`,
+    `4. 同じ分野で${WRONG_STREAK}問続けて間違えたら、基本を確かめる確認問題に切り替えるかをお聞きします。`,
   ];
   if (rec.result.exempt && c.exemption) lines.push(`※ ${c.exemption.label}を利用するため、該当する問題は出題しません。`);
   return lines;
@@ -326,9 +326,11 @@ function answerPage(base, rec, qn, value, guess, now) {
   const r = grade(rec.engine, { questionId: rec.engine.current.questionId, value, confidence: guess ? 'guess' : 'sure' }, { today: jstToday(now), now });
   if (!r.ok) return page({ show: ['答えの番号が選択肢にありません。もう一度番号で答えてください。'], links: back.slice(1) });
   const g = r.grade;
+  const fieldId = rec.engine.current.fieldId ?? 'unknown';
+  const streaks = (rec.result.wrongStreaks ??= {});
   if (!g.alreadyGraded) {
     rec.engine = r.state;
-    rec.result.wrongStreak = g.correct ? 0 : rec.result.wrongStreak + 1;
+    streaks[fieldId] = g.correct ? 0 : (streaks[fieldId] ?? 0) + 1;
   }
   const show = [
     g.correct ? (g.result === 'guess_correct' ? '正解です（勘で正解）。' : '正解です。') : '不正解です。',
@@ -336,8 +338,9 @@ function answerPage(base, rec, qn, value, guess, now) {
   ];
   if (g.answerPdfUrl) show.push(`公式の正答：${g.answerPdfUrl}`);
   const links = [...back];
-  if (!g.correct && rec.result.wrongStreak >= WRONG_STREAK) {
-    show.push('', `${rec.result.wrongStreak}問続けて間違えました。基本を確かめる確認問題に切り替えますか？`);
+  if (!g.correct && (streaks[fieldId] ?? 0) >= WRONG_STREAK) {
+    const fieldName = CATALOG[rec.fixed.slug].fields?.[fieldId];
+    show.push('', `${fieldName ? `「${fieldName}」の分野で` : '同じ分野で'}${streaks[fieldId]}問続けて間違えました。基本を確かめる確認問題に切り替えますか？`);
     links.unshift(['確認問題に切り替える', url(base, rec, 'm', 'check', t)]);
   }
   return page({

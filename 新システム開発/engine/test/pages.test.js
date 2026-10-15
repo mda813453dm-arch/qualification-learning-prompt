@@ -102,7 +102,7 @@ test('同じ回答のURLを2回開いても二重に数えない。古い問題�
   assert.match(again, /不正解です。/);
   const rec = await env.STORE.get(`lrn/${lid}`, 'json');
   assert.equal(Object.keys(rec.engine.history).length, 1);
-  assert.equal(rec.result.wrongStreak, 1);
+  assert.equal(rec.result.wrongStreaks.f1, 1);
   // 次の問題を出したあと、前の問題の回答URLを開く
   await get(env, link(again, '次の問題'));
   const stale = await get(env, link(q, '1と答えた'));
@@ -260,4 +260,19 @@ test('資格を選ぶと公式の掲載ページから過去問PDFを探し、�
     [2025, 'a7q1.pdf', 'a7a.pdf'],
     [2025, 'a7q2.pdf', 'a7a.pdf'],
   ]);
+});
+
+test('連続の誤答は分野ごとに数える（別の分野の誤答では確認問題を勧めない）', async () => {
+  const { env } = makeEnv();
+  const { menu, lid } = await onboard(env, 'surveyor');
+  const q = await get(env, link(menu, '3 実践問題'));
+  // 記録を書き換えて、別の分野で2問続けて間違えた状態にする
+  const rec = await env.STORE.get(`lrn/${lid}`, 'json');
+  rec.result.wrongStreaks = { other: 2 };
+  await env.STORE.put(`lrn/${lid}`, JSON.stringify(rec));
+  const r = await get(env, link(q, '2と答えた'));
+  assert.match(r, /不正解です。/);
+  assert.doesNotMatch(r, /続けて間違えました/);
+  const after = await env.STORE.get(`lrn/${lid}`, 'json');
+  assert.deepEqual(after.result.wrongStreaks, { other: 2, f1: 1 });
 });

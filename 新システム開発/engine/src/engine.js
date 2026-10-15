@@ -40,6 +40,9 @@ export async function availablePackets(store, job, now) {
   return out;
 }
 
+/** 同じ分野から続けて出す問の数（仕様：同分野の過去問を連続で3問）。 */
+export const SET_SIZE = 3;
+
 function weight(state, packet) {
   return Number(state.plan.fieldWeights?.[packet.fieldId] ?? 0);
 }
@@ -62,10 +65,24 @@ export function pickNext(state, items, { today, job }) {
     const hit = byId.get(r.unitId);
     if (hit) return { status: 'question', item: hit, kind: 'review' };
   }
-  // 2) まだ解いていない問（分野の重みが大きい順。重みが同じなら年度の新しい順・問番号順）
-  const fresh = usable.filter((x) => !state.history[x.packet.questionId]);
+  // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
+  //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
+  //    同じ重みならこれまでに解いた数が少ない分野）。分野の中では年度の新しい順・問番号順。
+  const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
   if (fresh.length) {
-    const best = fresh.reduce((a, b) => (weight(state, b.packet) > weight(state, a.packet) ? b : a));
+    const set = state.set;
+    if (set && set.count < SET_SIZE) {
+      const next = fresh.find((x) => x.packet.fieldId === set.fieldId);
+      if (next) return { status: 'question', item: next, kind: 'new' };
+    }
+    const solved = {};
+    for (const h of Object.values(state.history)) if (h.fieldId) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
+    const score = (x) => [weight(state, x.packet), -(solved[x.packet.fieldId] ?? 0)];
+    const best = fresh.reduce((a, b) => {
+      const [wa, sa] = score(a);
+      const [wb, sb] = score(b);
+      return wb > wa || (wb === wa && sb > sa) ? b : a;
+    });
     return { status: 'question', item: best, kind: 'new' };
   }
   if (job && job.state === 'running') return { status: 'waiting' };
@@ -103,8 +120,12 @@ export function present(item, kind, figureBase = '/v1/figure') {
 export function pin(state, item, kind, now) {
   const p = item.packet;
   if (state.current && !state.current.grade && state.current.questionId === p.questionId) return state;
+  // 新しい問は「同じ分野の3問」の何問目かを数える（復習の問は数えない）
+  let set = state.set ?? null;
+  if (kind === 'new') set = set && set.fieldId === p.fieldId && set.count < SET_SIZE ? { fieldId: p.fieldId, count: set.count + 1 } : { fieldId: p.fieldId, count: 1 };
   return {
     ...state,
+    set,
     current: {
       questionId: p.questionId,
       kind,
@@ -159,7 +180,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     state: {
       ...state,
       current: { ...cur, grade: g },
-      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source } },
+      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null } },
       review,
     },
   };
