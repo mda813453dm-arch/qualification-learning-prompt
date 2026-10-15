@@ -1,0 +1,32 @@
+name: Google Cloud に配置する（資格学習システム）
+# iPhone だけで運用するため、Cloud Shell の代わりに GitHub Actions から配置する。
+# 必要なもの：リポジトリの Secret「GCP_SA_KEY」（配置用サービスアカウントの鍵 JSON）。
+on:
+  workflow_dispatch:
+concurrency:
+  group: deploy-google-cloud
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: プロジェクトを選ぶ
+        run: |
+          gcloud config set project "$PROJECT"
+          # 外から呼ぶときに必要な機能（Cloud Shell では最初から使える）
+          gcloud services enable cloudresourcemanager.googleapis.com iam.googleapis.com serviceusage.googleapis.com
+      - name: 配置する（cloudshell-deploy.sh と同じ手順）
+        run: bash 新システム開発/deploy/cloudshell-deploy.sh
+      - name: 学習者が貼るプロンプトを表示する（トークンは入っていない）
+        run: |
+          echo "===== 学習者が貼るプロンプト ここから ====="
+          cat "$HOME/qlp-start-prompt.txt"
+          echo "===== ここまで ====="
