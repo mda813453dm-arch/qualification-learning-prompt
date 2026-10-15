@@ -14,7 +14,7 @@ import subprocess
 import sys
 import urllib.request
 from pathlib import Path
-from urllib.parse import urljoin
+from urllib.parse import quote, urljoin
 
 LISTINGS = {
     "takken": "https://www.retio.or.jp/exam/past_ques_ans/other/",
@@ -31,7 +31,8 @@ CTX.options |= getattr(ssl, "OP_LEGACY_SERVER_CONNECT", 0x4)
 
 
 def get(url, timeout=60):
-    req = urllib.request.Request(url, headers=UA)
+    # 令和5年度の宅建のURLには全角スペースが入っているため、URLとして送れる形にする
+    req = urllib.request.Request(quote(url, safe=":/?&=%#~+,;@!$'()*"), headers=UA)
     with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
         return r.read(), r.geturl()
 
@@ -51,6 +52,20 @@ def anchors(page_html, base):
     return out
 
 
+HINT = re.compile(r"過去|以前|平成|令和|年度|バックナンバー")
+
+
+def other_links(page_html, base):
+    """PDF以外のリンクのうち、古い年度の掲載ページらしいもの（掲載ページが年度で分かれているかを見るため）。"""
+    out = []
+    for m in ANCHOR.finditer(page_html):
+        href = urljoin(base, html.unescape(m.group(1)))
+        t = text(m.group(2))
+        if not re.search(r"\.pdf($|\?)", href, re.I) and HINT.search(t):
+            out.append({"href": href, "text": t})
+    return out
+
+
 def main(outdir):
     out = Path(outdir)
     out.mkdir(parents=True, exist_ok=True)
@@ -67,7 +82,10 @@ def main(outdir):
         page = raw.decode(enc, errors="replace")
         (out / f"{slug}-listing.html").write_text(page, encoding="utf-8")
         links = anchors(page, final)
-        report[slug] = {"listing": url, "final": final, "pdfLinks": links}
+        others = other_links(page, final)
+        report[slug] = {"listing": url, "final": final, "pdfLinks": links, "otherLinks": others}
+        for a in others:
+            print(f"  (page) {a['text']} | {a['href']}")
         print(f"\n===== {slug}: {len(links)} PDF links ({final})")
         for a in links:
             print(f"- {a['text']} | {a['href']} | before: {a['before'][-60:]}")

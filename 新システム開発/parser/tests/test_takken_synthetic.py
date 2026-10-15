@@ -78,7 +78,7 @@ class TakkenSynthetic(unittest.TestCase):
         self.assertEqual(p1["choices"][3], "丁は正しい。")
         self.assertEqual(p1["questionId"], "q041:2025:年度共通:1")
         self.assertEqual(p1["questionPdfSha256"], sha256(data))
-        self.assertEqual(p1["verification"]["field"], "unverified")
+        self.assertEqual(p1["verification"]["field"], "verified")
         # 箇条（ア・イ）の改行は残る
         self.assertIn("\nア 一つ目の記述\nイ 二つ目の記述", r["packets"][2]["stem"])
 
@@ -161,3 +161,13 @@ class CleanText(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def setUpModule():
+    from tests import _fields_stub
+    _fields_stub.start()
+
+
+def tearDownModule():
+    from tests import _fields_stub
+    _fields_stub.stop()

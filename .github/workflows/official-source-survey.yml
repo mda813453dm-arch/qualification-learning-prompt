@@ -4,19 +4,28 @@ on:
     branches: [ai-learning-system]
     paths:
       - '新システム開発/parser/tools/survey_sources.py'
+      - '新システム開発/parser/tools/parse_survey.py'
+      - '新システム開発/parser/qlp_parser/**'
       - '.github/workflows/official-source-survey.yml'
   workflow_dispatch:
 jobs:
   survey:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: 分解に必要なものを入れる（PyMuPDF・日本語OCR）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-jpn
+          pip install -r 新システム開発/parser/requirements.txt
       - name: 掲載ページを開いてPDFのリンクを一覧にする
         run: python 新システム開発/parser/tools/survey_sources.py survey-out
+      - name: 見つけたPDF（直近10年度分）を取得して分解する
+        run: python 新システム開発/parser/tools/parse_survey.py survey-out
       - uses: actions/upload-artifact@v4
         if: always()
         with:

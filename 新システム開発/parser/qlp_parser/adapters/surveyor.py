@@ -16,6 +16,7 @@ import re
 import unicodedata
 
 from .. import ocr
+from .. import fields
 from ..core import ParseError, RawQuestion, clean_text
 
 QUALIFICATION_ID = "q063"
@@ -57,8 +58,8 @@ def parse_answers(doc):
 
 
 def classify(question):
-    """分野判定は未実装。分野の対応表が承認されるまで fieldId は付けない。"""
-    return {"fieldId": None, "method": "not_classified", "verified": False}
+    """分野（fieldId）を内容から規則で分類する（qlp_parser/fields.py。分野の表は案・承認待ち）。"""
+    return fields.classify_surveyor(question)
 
 
 # ---- ページの読み取り ----

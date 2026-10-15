@@ -87,3 +87,13 @@ class ParserServer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def setUpModule():
+    from tests import _fields_stub
+    _fields_stub.start()
+
+
+def tearDownModule():
+    from tests import _fields_stub
+    _fields_stub.stop()

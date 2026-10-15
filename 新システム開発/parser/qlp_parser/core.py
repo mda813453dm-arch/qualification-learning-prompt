@@ -179,10 +179,13 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         elif q.needs_image and not figures.get(q.number):
             # 図が要るかもしれない問題・文字を画像で見せる問題は、画像を返せるまで出題しない（安全側）
             reason = "FIGURE_REQUIRED_NOT_AVAILABLE"
+        cls = None if reason else classify(q)
+        if not reason and not cls.get("fieldId"):
+            # 分野が決まらない問題は出題しない（仕様：fieldId未確定のまま実践問題を進めない）
+            reason = "FIELD_UNCLASSIFIED"
         if reason:
             excluded.append({"questionNumber": q.number, "reason": reason, "pages": q.pages})
             continue
-        cls = classify(q)
         packets.append({
             "sourceMode": "runtime_official_pdf",
             "qualificationId": qualification_id,
@@ -191,6 +194,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "questionId": f"{qualification_id}:{year}:{section}:{q.number}",
             "questionNumber": q.number,
             "fieldId": cls.get("fieldId"),
+            "unitId": cls.get("unitId"),
             "stem": q.stem,
             "stemMode": q.stem_mode,
             "choices": list(q.choices),
@@ -202,7 +206,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "answerPdfUrl": answer_source.url,
             "questionPdfSha256": question_sha,
             "answerPdfSha256": answer_sha,
-            "evidence": {"questionPdfPages": q.pages, "questionRect": q.rect, "field": cls.get("method"), "notes": list(q.notes)},
+            "evidence": {"questionPdfPages": q.pages, "questionRect": q.rect, "field": cls.get("method"), "fieldEvidence": cls.get("evidence"), "notes": list(q.notes)},
             "verification": {
                 "questionText": _TEXT_CHECK[q.stem_mode],
                 "choices": _TEXT_CHECK[q.choice_mode],
