@@ -1,0 +1,70 @@
+"""公式の過去問掲載ページを実際に開き、PDFへのリンクを一覧にし、各年度のPDFを分解してみる（開発用）。
+
+GitHub Actions で動かす（開発環境からは公式サイトへつながらないため）。
+目的：プログラムが公式PDFを探す仕組み（エンジンの発見処理）を、本物のページの形に合わせて作ること。
+
+使い方: python survey_sources.py <出力フォルダ>
+"""
+
+import html
+import json
+import re
+import subprocess
+import sys
+import urllib.request
+from pathlib import Path
+from urllib.parse import urljoin
+
+LISTINGS = {
+    "takken": "https://www.retio.or.jp/exam/past_ques_ans/other/",
+    "surveyor": "https://www.gsi.go.jp/LAW/SHIKEN/past.html",
+}
+UA = {"User-Agent": "Mozilla/5.0 (qualification-learning-system source survey)"}
+ANCHOR = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", re.S | re.I)
+TAG = re.compile(r"<[^>]+>")
+
+
+def get(url, timeout=60):
+    req = urllib.request.Request(url, headers=UA)
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return r.read(), r.geturl()
+
+
+def text(s):
+    return re.sub(r"\s+", " ", html.unescape(TAG.sub(" ", s))).strip()
+
+
+def anchors(page_html, base):
+    out = []
+    for m in ANCHOR.finditer(page_html):
+        href = urljoin(base, html.unescape(m.group(1)))
+        if not re.search(r"\.pdf($|\?)", href, re.I):
+            continue
+        start = max(0, m.start() - 300)
+        out.append({"href": href, "text": text(m.group(2)), "before": text(page_html[start:m.start()])[-120:]})
+    return out
+
+
+def main(outdir):
+    out = Path(outdir)
+    out.mkdir(parents=True, exist_ok=True)
+    report = {}
+    for slug, url in LISTINGS.items():
+        try:
+            raw, final = get(url)
+        except Exception as e:  # noqa: BLE001
+            report[slug] = {"listing": url, "error": str(e)}
+            print(f"[{slug}] listing error: {e}")
+            continue
+        page = raw.decode("utf-8", errors="replace")
+        (out / f"{slug}-listing.html").write_text(page, encoding="utf-8")
+        links = anchors(page, final)
+        report[slug] = {"listing": url, "final": final, "pdfLinks": links}
+        print(f"\n===== {slug}: {len(links)} PDF links ({final})")
+        for a in links:
+            print(f"- {a['text']} | {a['href']} | before: {a['before'][-60:]}")
+    (out / "links.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1] if len(sys.argv) > 1 else "survey-out")

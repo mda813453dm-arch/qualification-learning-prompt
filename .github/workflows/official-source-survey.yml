@@ -1,0 +1,24 @@
+name: 公式過去問掲載ページの調査（開発用）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/parser/tools/survey_sources.py'
+      - '.github/workflows/official-source-survey.yml'
+  workflow_dispatch:
+jobs:
+  survey:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 掲載ページを開いてPDFのリンクを一覧にする
+        run: python 新システム開発/parser/tools/survey_sources.py survey-out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-source-survey
+          path: survey-out
