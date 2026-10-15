@@ -18,7 +18,7 @@ import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
-import { pages } from './pages.js';
+import { newLearnerId, pages } from './pages.js';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
@@ -125,16 +125,23 @@ async function body(request) {
   }
 }
 
-function checkSources(sources, qualificationId) {
+function checkSources(sources, qualificationId, owner = null) {
   if (!Array.isArray(sources) || !sources.length || sources.length > MAX_SOURCES) throw new HttpError(400, 'SOURCES_INVALID');
   return sources.map((s) => {
     const ok = s && ADAPTERS.has(s.adapter) && Number.isInteger(s.year) && typeof s.section === 'string' && s.section && s.section.length <= 50
       && /^https:\/\/\S+$/.test(s.questionUrl ?? '') && s.questionUrl.length <= 500
       && (s.answerUrl == null || (/^https:\/\/\S+$/.test(s.answerUrl) && s.answerUrl.length <= 500));
     if (!ok) throw new HttpError(400, 'SOURCES_INVALID');
-    return { qualificationId, adapter: s.adapter, year: s.year, section: s.section, questionUrl: s.questionUrl, answerUrl: s.answerUrl ?? null };
+    const out = { qualificationId, adapter: s.adapter, year: s.year, section: s.section, questionUrl: s.questionUrl, answerUrl: s.answerUrl ?? null };
+    return owner ? { ...out, owner } : out;
   });
 }
+
+/**
+ * セッションの取り込みの名前。引継ぎIDがあれば学習者ごと（期限なし・問題の保存も学習者ごと）。
+ * 無い古い記録は資格ごとの共有の取り込み。
+ */
+const sessionJobId = (state) => (state.learnerId ? `${state.qualificationId}~${state.learnerId}` : state.qualificationId);
 
 const qidOk = (v) => typeof v === 'string' && v.length > 0 && v.length <= 100 && !/[/\s]/.test(v);
 const sesKey = (id) => `ses/${id}`;
@@ -244,17 +251,20 @@ async function route(request, env, url, now) {
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);
     if (!qidOk(b.qualificationId)) throw new HttpError(400, 'QUALIFICATION_INVALID');
-    const sources = checkSources(b.sources, b.qualificationId);
-    await startJob(env.STORE, b.qualificationId, sources, now);
-    const job = await advance(env, b.qualificationId, now, STEP_BUDGET_MS);
+    // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
+    const learnerId = newLearnerId();
+    const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
+    const sources = checkSources(b.sources, b.qualificationId, learnerId);
+    await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
+    const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
     const id = crypto.randomUUID();
-    await saveSession(env, id, newState({ qualificationId: b.qualificationId, plan: b.plan ?? {}, now }), now);
-    return json(201, { sessionId: id, job: jobView(job) });
+    await saveSession(env, id, state, now);
+    return json(201, { sessionId: id, learnerId, job: jobView(job) });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     let state = await loadSession(env, parts[2], now);
-    const job = await advance(env, state.qualificationId, now, STEP_BUDGET_MS);
+    const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
     const items = await availablePackets(env.STORE, job, now);
     const pick = pickNext(state, items, { today: jstToday(now), job });
     if (pick.status !== 'question') {
@@ -282,12 +292,13 @@ async function route(request, env, url, now) {
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
     const b = await body(request);
-    const state = await importHandoff(b.handoff, { store: env.STORE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, now });
+    const state = importHandoff(b.handoff, { now });
     let job = null;
     if (b.sources) {
-      await startJob(env.STORE, state.qualificationId, checkSources(b.sources, state.qualificationId), now);
-      job = await advance(env, state.qualificationId, now, STEP_BUDGET_MS);
+      const persistent = !!state.learnerId;
+      await startJob(env.STORE, sessionJobId(state), checkSources(b.sources, state.qualificationId, state.learnerId), now, { persistent });
     }
+    if (state.learnerId || b.sources) job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
     return json(201, {

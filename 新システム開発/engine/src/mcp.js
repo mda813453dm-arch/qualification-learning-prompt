@@ -66,7 +66,7 @@ export const TOOLS = [
   },
   {
     name: 'importHandoff',
-    description: '引継ぎデータから学習を再開する。公式PDFが差し替わった問題は出題しない。',
+    description: '引継ぎデータから学習を再開する。問題は引継ぎIDで保存してある分解結果から読み、公式PDFは取り直さない。',
     inputSchema: {
       type: 'object',
       required: ['handoff'],

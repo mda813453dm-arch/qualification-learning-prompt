@@ -13,11 +13,12 @@ import { selectDueReviews, updateReviewItem } from './review.js';
 export const STATE_VERSION = 1;
 const OCR_NOTICE = '問題文はOCRで読み取った文字のため、読み違いがある場合があります。原本は公式PDFで確認できます。';
 
-export function newState({ qualificationId, plan = {}, now }) {
+export function newState({ qualificationId, learnerId = null, plan = {}, now }) {
   if (!qualificationId) throw new Error('QUALIFICATION_REQUIRED');
   return {
     v: STATE_VERSION,
     qualificationId,
+    learnerId, // 引継ぎID：学習者ごとの取り込み・保存に使う（無い古い記録は共有の取り込みを使う）
     createdAt: now,
     plan: { examDate: plan.examDate ?? null, fieldWeights: plan.fieldWeights ?? {} },
     history: {}, // questionId -> {result, selected, answeredAt, source}

@@ -1,8 +1,7 @@
 /**
  * 引継ぎ（方針5・設計計画§5）：問題本文を含めず、問題の「住所」と軽い学習状況だけを渡す。
- * 再開時は公式PDFの SHA-256 を照合し、差し替え・削除されていた問は出題せず理由を返す。
+ * 再開時は、引継ぎIDで保存してある分解結果から問題を読む。公式PDFは取り直さない（2026-10-15 決定）。
  */
-import { IngestError, currentSha } from './ingest.js';
 import { STATE_VERSION } from './engine.js';
 
 export const SCHEMA = 'qlp-handoff-v1';
@@ -27,7 +26,7 @@ export function exportHandoff(state) {
     reviewDue: state.review[questionId]?.dueDate ?? null,
   }));
   questions.sort((a, b) => b.year - a.year || a.number - b.number);
-  const text = JSON.stringify({ schema: SCHEMA, qualificationId: state.qualificationId, questions, plan: state.plan });
+  const text = JSON.stringify({ schema: SCHEMA, qualificationId: state.qualificationId, learnerId: state.learnerId ?? null, questions, plan: state.plan });
   if (new TextEncoder().encode(text).length > MAX_BYTES) throw new Error('HANDOFF_TOO_LARGE');
   return text;
 }
@@ -49,7 +48,8 @@ function parse(text) {
     if (!ok) throw new Error('HANDOFF_INVALID');
   }
   const plan = v.plan && typeof v.plan === 'object' ? v.plan : {};
-  return { ...v, plan: { examDate: isDate(plan.examDate) ? plan.examDate : null, fieldWeights: sanitizeWeights(plan.fieldWeights) } };
+  const learnerId = typeof v.learnerId === 'string' && /^[A-Za-z0-9]{1,40}$/.test(v.learnerId) ? v.learnerId : null;
+  return { ...v, learnerId, plan: { examDate: isDate(plan.examDate) ? plan.examDate : null, fieldWeights: sanitizeWeights(plan.fieldWeights) } };
 }
 
 function sanitizeWeights(w) {
@@ -58,25 +58,15 @@ function sanitizeWeights(w) {
 }
 
 /**
- * 引継ぎデータから学習状況を戻す。公式PDFの現在の SHA-256 と照合し、合わない問は withheld に入れる。
- * deps: { store, fetchPdf, now }
+ * 引継ぎデータから学習状況を戻す。公式PDFは取り直さない（再確認しない）。
+ * 問題は引継ぎIDの保存（学習者ごとの取り込み）から読むので、ここでは学習状況だけを戻す。
  */
-export async function importHandoff(text, { store, fetchPdf, now }) {
+export function importHandoff(text, { now }) {
   const v = parse(text);
-  const shaOf = new Map();
-  const check = async (url) => {
-    if (!shaOf.has(url)) {
-      try {
-        shaOf.set(url, (await currentSha(store, fetchPdf, url, now)).sha256);
-      } catch (e) {
-        shaOf.set(url, e instanceof IngestError ? { error: e.code } : { error: 'PDF_FETCH_FAILED' });
-      }
-    }
-    return shaOf.get(url);
-  };
   const state = {
     v: STATE_VERSION,
     qualificationId: v.qualificationId,
+    learnerId: v.learnerId,
     createdAt: now,
     plan: v.plan,
     history: {},
@@ -86,17 +76,7 @@ export async function importHandoff(text, { store, fetchPdf, now }) {
   };
   for (const q of v.questions) {
     const questionId = `${v.qualificationId}:${q.year}:${q.section}:${q.number}`;
-    let reason = null;
-    for (const [url, sha] of [[q.questionPdfUrl, q.questionPdfSha256], [q.answerPdfUrl, q.answerPdfSha256]]) {
-      const got = await check(url);
-      if (typeof got === 'object') reason = reason ?? (got.error === 'PDF_FETCH_FAILED' ? 'OFFICIAL_PDF_UNAVAILABLE' : 'OFFICIAL_PDF_INVALID');
-      else if (got !== sha) reason = reason ?? 'OFFICIAL_PDF_REPLACED';
-    }
-    if (reason) {
-      state.withheld.push({ questionId, reason, year: q.year, section: q.section, number: q.number });
-      continue;
-    }
-    const source = { year: q.year, section: q.section, number: q.number, questionPdfUrl: q.questionPdfUrl, questionPdfSha256: q.questionPdfSha256, answerPdfUrl: q.answerPdfUrl, answerPdfSha256: q.answerPdfSha256 };
+    const source ={ year: q.year, section: q.section, number: q.number, questionPdfUrl: q.questionPdfUrl, questionPdfSha256: q.questionPdfSha256, answerPdfUrl: q.answerPdfUrl, answerPdfSha256: q.answerPdfSha256 };
     state.history[questionId] = { result: q.result, selected: null, answeredAt: q.answeredAt, source };
     if (q.reviewDue || q.result === 'wrong') {
       state.review[questionId] = {

@@ -140,18 +140,19 @@ test('間違えた問は翌日の復習で最初に出る', async () => {
 
 test('経路A：分解サーバーが無いときはアプリの分解結果を待ち、届いた結果を照合してから出題する', async () => {
   const { env } = makeEnv();
-  const { sessionId, job } = await startSession(env);
+  const { sessionId, job, learnerId } = await startSession(env);
+  const jobPath = `/v1/jobs/${SRC.qualificationId}~${learnerId}/sources/0/result`;
   assert.equal(job.sources[0].reason, 'AWAITING_UPLOAD');
   assert.equal((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'waiting');
 
   // 別のPDFで分解した結果（SHAが合わない）は受け取らない
   const forged = await fakeResult({ qBytes: pdf('fake'), aBytes: pdf('a-v1') });
-  const bad = await call(env, 'POST', '/v1/jobs/surveyor/sources/0/result', { result: forged.result, assets: assetsB64(forged.assets) });
+  const bad = await call(env, 'POST', jobPath, { result: forged.result, assets: assetsB64(forged.assets) });
   assert.equal(bad.status, 422);
   assert.equal(bad.body.reason, 'RESULT_SHA_MISMATCH');
 
   const real = await fakeResult({ qBytes: pdf('q-v1'), aBytes: pdf('a-v1') });
-  const ok = await call(env, 'POST', '/v1/jobs/surveyor/sources/0/result', { result: real.result, assets: assetsB64(real.assets) });
+  const ok = await call(env, 'POST', jobPath, { result: real.result, assets: assetsB64(real.assets) });
   assert.equal(ok.status, 200, JSON.stringify(ok.body));
   assert.equal(ok.body.job.state, 'done');
   const next = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;

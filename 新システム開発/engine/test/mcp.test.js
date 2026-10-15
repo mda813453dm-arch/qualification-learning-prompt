@@ -73,8 +73,9 @@ test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ ま�
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
   const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [source] });
   assert.equal(s.isError, false);
-  const { sessionId, job } = s.structuredContent;
+  const { sessionId, job, learnerId } = s.structuredContent;
   assert.equal(job.state, 'done');
+  assert.match(learnerId, /^[A-Za-z0-9]+$/);
   const q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
   assert.equal(q.questionNumber, 1);
   assert.ok(!JSON.stringify(q).includes('correctAnswer'));
@@ -86,7 +87,7 @@ test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ ま�
   const h = (await call(env, 'getHandoff', { sessionId })).structuredContent.handoff;
   const imp = (await call(env, 'importHandoff', { handoff: h })).structuredContent;
   assert.equal(imp.restored, 1);
-  assert.equal((await call(env, 'getJob', { qualificationId: SRC.qualificationId })).structuredContent.job.state, 'done');
+  assert.equal((await call(env, 'getJob', { qualificationId: `${SRC.qualificationId}~${learnerId}` })).structuredContent.job.state, 'done');
 });
 
 test('必須の引数が無い・知らないツール・知らないメソッドはエラーで返す', async () => {

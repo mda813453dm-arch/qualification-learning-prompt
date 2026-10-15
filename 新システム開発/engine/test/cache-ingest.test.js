@@ -46,10 +46,10 @@ test('期限後に公式PDFが差し替わっていたら、新しい版を別�
   assert.equal(v2.result.packets[0].questionPdfSha256, v2.keyParts.questionSha256);
 });
 
-test('引継ぎで再開したとき、公式PDFが差し替わっていた問は出題せず理由を返す', async () => {
+test('引継ぎで再開したとき、公式PDFは取り直さず、学習状況と引継ぎIDを戻す', async () => {
   const { web, store, deps } = setup();
   const r = await ingestSource(SRC, deps(T0));
-  let state = newState({ qualificationId: SRC.qualificationId, now: T0 });
+  let state = newState({ qualificationId: SRC.qualificationId, learnerId: 'abc123', now: T0 });
   const job = { sources: [{ status: 'done', keyParts: r.keyParts }] };
   const items = await availablePackets(store, job, T0);
   const pick = pickNext(state, items, { today: '2026-10-15', job });
@@ -57,21 +57,16 @@ test('引継ぎで再開したとき、公式PDFが差し替わっていた問�
   state = grade(state, { questionId: pick.item.packet.questionId, value: 2 }, { today: '2026-10-15', now: T0 }).state;
   const text = exportHandoff(state);
   assert.ok(!text.includes('本文'), '引継ぎに問題本文を入れない');
+  assert.equal(JSON.parse(text).learnerId, 'abc123');
 
+  // 公式PDFが差し替わっていても、再開では取り直さない（決定：定期的な再確認はしない）
   web.files[SRC.questionUrl] = pdf('q-v2');
-  const later = await importHandoff(text, { store, fetchPdf: web.fetchPdf, now: T0 + 2 * DAY });
-  assert.equal(Object.keys(later.history).length, 0);
-  assert.deepEqual(later.withheld.map((w) => w.reason), ['OFFICIAL_PDF_REPLACED']);
-
-  delete web.files[SRC.questionUrl];
-  const gone = await importHandoff(text, { store, fetchPdf: web.fetchPdf, now: T0 + 4 * DAY });
-  assert.deepEqual(gone.withheld.map((w) => w.reason), ['OFFICIAL_PDF_UNAVAILABLE']);
-
-  web.files[SRC.questionUrl] = pdf('q-v1');
-  const same = await importHandoff(text, { store, fetchPdf: web.fetchPdf, now: T0 + 6 * DAY });
-  assert.equal(same.withheld.length, 0);
-  assert.equal(same.history[pick.item.packet.questionId].result, 'wrong');
-  assert.equal(same.review[pick.item.packet.questionId].dueDate, '2026-10-16');
+  delete web.files[SRC.answerUrl];
+  const later = importHandoff(text, { now: T0 + 2 * DAY });
+  assert.equal(later.learnerId, 'abc123');
+  assert.equal(later.history[pick.item.packet.questionId].result, 'wrong');
+  assert.equal(later.review[pick.item.packet.questionId].dueDate, '2026-10-16');
+  assert.equal(later.withheld.length, 0);
 });
 
 test('24時間の控えの間に公式PDFが差し替わったら、その回は取り込まず次の回で新しい版を取り込む', async () => {
