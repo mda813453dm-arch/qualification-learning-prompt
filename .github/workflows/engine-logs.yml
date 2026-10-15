@@ -1,0 +1,27 @@
+name: 公開中の学習エンジンの記録を読む（読み取りのみ）
+# 合図：新システム開発/deploy/logs-request.txt を更新して push する。
+# 出すもの：直近の呼び出しの「日時・種類・結果の番号・かかった時間・パス」と、エラーの記録だけ。合言葉・本文は出さない。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/logs-request.txt'
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 呼び出しの記録（直近1時間）
+        run: |
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND httpRequest.requestUrl:"/v1/"' \
+            --project qualification-learning --freshness=1h --limit=60 \
+            --format='value(timestamp,httpRequest.requestMethod,httpRequest.status,httpRequest.latency,httpRequest.requestUrl)' || true
+      - name: エラーの記録（直近1時間）
+        run: |
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=ERROR' \
+            --project qualification-learning --freshness=1h --limit=20 \
+            --format='value(timestamp,severity,textPayload,jsonPayload.message)' || true
