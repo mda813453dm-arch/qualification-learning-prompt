@@ -23,7 +23,10 @@ QUALIFICATION_ID = "q063"
 SECTION = "測量士補"
 CHOICE_COUNT = 5
 
-HEADING_TEXT = re.compile(r"〔\s*No\.\s*([0-9]{1,2})\s*〕")
+HEADING_TEXT = re.compile(r"[〔【\[［(（「]\s*No\s*[.．。]?\s*([0-9]{1,2})\s*[〕】\]］)）」]?")
+# 選択肢の番号（「1」「1.」「1．」。OCRでは「.」が「。」に読まれることがある）
+MARKER = re.compile(r"^([1-5])[.．。]?$")
+OCR_INDENT_TOL = 8
 ANSWER = re.compile(r"No\.\s*([0-9]{1,2})\s+([1-5])(?![0-9])")
 REIWA = re.compile(r"令和\s*([0-9]{1,2}|元)\s*年")
 GLYPH_MAX = 20  # 1文字の図形とみなす大きさの上限（pt）
@@ -46,7 +49,9 @@ def check_year(doc, year):
 def parse_answers(doc):
     answers = {}
     for i in range(doc.page_count):
-        text = re.sub(r"\s+", " ", unicodedata.normalize("NFKC", doc[i].get_text(sort=True)))
+        page = doc[i]
+        raw = "\n".join(ln[2] for ln in ocr.page_ocr(page)) if ocr.needs_ocr(page) else page.get_text(sort=True)
+        text = re.sub(r"\s+", " ", unicodedata.normalize("NFKC", raw))
         for m in ANSWER.finditer(text):
             n, a = int(m.group(1)), int(m.group(2))
             if n in answers and answers[n] != a:
@@ -68,6 +73,14 @@ class _Page:
     def __init__(self, page):
         self.page = page
         self.limit = page.rect.height * FOOTER
+        # スキャンした紙・文字化けしたページ（令和4〜7年）は、ページ全体をOCRで読む
+        self.ocr = ocr.needs_ocr(page)
+        if self.ocr:
+            # 語の末尾に OCR の行番号を付ける（行のまとまりは OCR の判断どおりに使う）
+            self.words = [w + (OCR_LINE, k) for k, ln in enumerate(ocr.page_ocr(page)) for w in ln[4] if w[3] <= self.limit]
+            self.drawings, self.glyphs = [], []
+            self.images = [tuple(page.rect)]  # 問題1問分を公式PDFの画像でも見せる
+            return
         self.words = [_with_superscript(w, page) for w in page.get_text("words", sort=True) if w[3] <= self.limit]
         # 細い線は高さ0の範囲になる（Rect.intersects では拾えない）ので、座標で比べる
         pr = page.rect
@@ -75,6 +88,15 @@ class _Page:
                          and d["rect"].x0 < pr.x1 and d["rect"].x1 > pr.x0 and d["rect"].y0 < pr.y1 and d["rect"].y1 > pr.y0]
         self.images = [i["bbox"] for i in page.get_image_info() if i["bbox"][3] <= self.limit]
         self.glyphs = [d for d in self.drawings if _is_glyph(d)]
+
+    def body_rect_words(self):
+        """OCRで読んだページの問題の範囲（読めた語の範囲。ページ全体の画像は含めない）。"""
+        import fitz
+
+        r = fitz.Rect()
+        for w in self.words:
+            r.include_rect(fitz.Rect(w[:4]))
+        return r
 
     def body_rect(self):
         import fitz
@@ -124,14 +146,16 @@ def _covered(rect, words):
 
 def _choice_markers(pg):
     """行頭の「1」〜「5」（同じ字下げ・上から順）。最後に見つかった並びを採る。"""
-    marks = [w for w in pg.words if unicodedata.normalize("NFKC", w[4]) in {"1", "2", "3", "4", "5"}]
+    num = lambda w: int(MARKER.match(unicodedata.normalize("NFKC", w[4])).group(1))  # noqa: E731
+    marks = [w for w in pg.words if MARKER.match(unicodedata.normalize("NFKC", w[4]))]
+    tol = OCR_INDENT_TOL if pg.ocr else 2
     found = []
     for a, w1 in enumerate(marks):
-        if unicodedata.normalize("NFKC", w1[4]) != "1":
+        if num(w1) != 1:
             continue
         seq, want = [w1], 2
         for w in marks[a + 1:]:
-            if int(unicodedata.normalize("NFKC", w[4])) == want and abs(w[0] - w1[0]) <= 2 and w[1] > seq[-1][1]:
+            if num(w) == want and abs(w[0] - w1[0]) <= tol and w[1] > seq[-1][1]:
                 seq.append(w)
                 want += 1
                 if want > CHOICE_COUNT:
@@ -244,10 +268,17 @@ def _number_glyphs(pages):
 
 
 def _number_text(pages):
-    """見出しが文字で読めるPDF。読めたページだけを問題のページとする。"""
+    """見出しが文字で読めるPDF。読めたページだけを問題のページとする。
+
+    見出しはページ最上部の行だけで探す（表紙の注意書きにある「〔No.1〕～〔No.28〕」を見出しと取り違えないため）。
+    """
     out = []
     for no, pg in pages:
-        m = HEADING_TEXT.search(unicodedata.normalize("NFKC", pg.page.get_text()))
+        if not pg.words:
+            continue
+        top = min(w[1] for w in pg.words)
+        head = _line_text([w for w in pg.words if w[1] <= top + 4])
+        m = HEADING_TEXT.search(unicodedata.normalize("NFKC", head))
         if m:
             out.append((int(m.group(1)), no))
     return out
@@ -255,8 +286,17 @@ def _number_text(pages):
 
 # ---- 問題の組み立て ----
 
+OCR_LINE = "ocr_line"
+
+
+def _is_ocr(words):
+    return bool(words) and len(words[0]) == 7 and words[0][5] == OCR_LINE
+
+
 def _line_text(words):
     """同じ行の単語を左から順につなぐ。すき間が狭ければ（m2 の 2 など）詰める。"""
+    if _is_ocr(words):
+        return ocr._join_words([w[4] for w in sorted(words, key=lambda w: w[0])])
     out = ""
     prev = None
     for w in sorted(words, key=lambda w: w[0]):
@@ -268,6 +308,11 @@ def _line_text(words):
 
 
 def _lines(words):
+    if _is_ocr(words):
+        rows = {}
+        for w in words:
+            rows.setdefault(w[6], []).append(w)
+        return [rows[k] for k in sorted(rows)]
     rows = []
     for w in sorted(words, key=lambda w: (w[1], w[0])):
         if rows and abs(w[1] - rows[-1][0][1]) <= 3:
@@ -298,14 +343,16 @@ def _question(number, no, pg, text_heading):
         if any(top[1] - line_h - 3 <= d["rect"].y0 < top[1] - 3 and d["rect"].x0 > top[2] + 4 for d in pg.glyphs) or any(
                 top[1] - line_h - 3 <= w[1] < top[1] - 3 and w[0] > top[2] + 4 for w in pg.words):
             choice_mode = "official_image"
-        if choice_mode != "text":
+        if choice_mode == "text" and pg.ocr:
+            choice_mode = "ocr"
+        if choice_mode == "official_image":
             choices =[str(i) for i in range(1, CHOICE_COUNT + 1)]
             notes.append("choice_text_outlined")
     stem_top = markers[0][1] - 3 if markers else pg.limit
     stem_words = [w for w in pg.words if w[1] < stem_top]
     stem_glyphs = [d for d in pg.glyphs if d["rect"].y0 < stem_top and not _covered(d["rect"], stem_words)]
     if text_heading and not stem_glyphs:
-        stem_mode = "text"
+        stem_mode = "ocr" if pg.ocr else "text"
         rows = _lines(stem_words)
         lines = [_line_text(r) for r in rows]
         lines[0] = HEADING_TEXT.sub("", unicodedata.normalize("NFKC", lines[0])).strip() if lines else ""
@@ -316,6 +363,8 @@ def _question(number, no, pg, text_heading):
     graphics = bool(pg.images) or any(not _is_glyph(d) for d in pg.drawings)
     body = pg.body_rect()
     crops = []
+    if pg.ocr:
+        body = pg.body_rect_words()
     if not body.is_empty and (graphics or stem_mode != "text" or choice_mode != "text"):
         # 問題1問分（見出し〜最後の選択肢）をそのまま切り出す。ページ番号の欄は含めない
         crops.append((no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN, min(body.y1 + MARGIN, pg.limit))))
@@ -749,6 +798,7 @@ def _build_ocr_question(p, line_text, unknown):
 
 
 def parse_questions(doc):
+    ocr.prefetch([doc[i] for i in range(doc.page_count)])
     pages = [(i + 1, _Page(doc[i])) for i in range(doc.page_count)]
     numbered = _number_text(pages)
     text_heading = bool(numbered)

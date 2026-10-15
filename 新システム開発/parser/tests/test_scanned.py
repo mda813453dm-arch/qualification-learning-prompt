@@ -1,0 +1,114 @@
+"""スキャンした紙（画像だけのPDF）をOCRで読むテスト。合成PDFを画像にしてから読む。Tesseract（jpn）が無ければ飛ばす。"""
+
+import unittest
+
+import fitz
+
+from qlp_parser import ocr
+from qlp_parser.adapters import surveyor, takken
+from qlp_parser.cli import run
+from qlp_parser.core import PdfSource
+from tests.test_surveyor_synthetic import SurveyorTextPdf
+from tests.test_surveyor_synthetic import go as survey
+from tests.test_takken_synthetic import ANS, Q, URL, make_pdf
+
+
+def rasterize(data, dpi=200):
+    src = fitz.open(stream=data, filetype="pdf")
+    out = fitz.open()
+    for p in src:
+        page = out.new_page(width=p.rect.width, height=p.rect.height)
+        page.insert_image(page.rect, stream=p.get_pixmap(dpi=dpi).tobytes("png"))
+    return out.tobytes()
+
+
+@unittest.skipUnless(ocr.available(), "Tesseract（jpn）が無い")
+class TakkenScanned(unittest.TestCase):
+    def test_scanned_pdf_is_read_by_ocr_with_official_image(self):
+        r = run("takken", 2025, PdfSource(rasterize(make_pdf(Q, ANS)), URL), assets={})
+        self.assertEqual(r["status"], "ready", r.get("excluded"))
+        self.assertEqual([p["correctAnswer"] for p in r["packets"]], [3, 1, 4])
+        p1 = r["packets"][0]
+        self.assertEqual(p1["stemMode"], "ocr")
+        self.assertIn("民法", p1["stem"])
+        self.assertEqual(len(p1["choices"]), 4)
+        self.assertTrue(p1["figures"], "OCRで読んだ問題は公式PDFの画像も付ける")
+
+
+@unittest.skipUnless(ocr.available(), "Tesseract（jpn）が無い")
+class SurveyorScanned(unittest.TestCase):
+    def test_scanned_page_is_read_by_ocr(self):
+        r = survey(rasterize(SurveyorTextPdf().make(figure=True)))
+        self.assertEqual(r["status"], "ready", r.get("excluded") or r.get("detail"))
+        p = r["packets"][0]
+        self.assertEqual((p["stemMode"], p["choiceMode"]), ("ocr", "ocr"))
+        self.assertEqual(p["stem"], "次の文は、測量法に規定された事項について述べたものである。")
+        self.assertEqual(p["choices"], ["10 m", "20 m", "30 m", "40 m", "50 m"])
+        self.assertTrue(p["figures"], "OCRで読んだ問題は公式PDFの画像も付ける")
+
+
+class SurveyorOlderText(unittest.TestCase):
+    def test_choice_number_with_full_width_period(self):
+        """令和4年の形：選択肢の番号が「1．」。表紙の「〔No.1〕～〔No.28〕」は見出しにしない。"""
+        doc = fitz.open()
+        cover = doc.new_page(width=595, height=842)
+        cover.insert_text((75, 85), "令和4年測量士補試験問題集", fontname="japan", fontsize=10)
+        cover.insert_text((75, 105), "2 問題は，〔No.1〕～〔No.28〕まで全部で28問あります。", fontname="japan", fontsize=10)
+        page = doc.new_page(width=595, height=842)
+        page.insert_text((75, 85), "〔No. 1〕", fontname="japan", fontsize=10)
+        page.insert_text((93, 105), "次の文は，測量法に規定された事項について述べたものである。", fontname="japan", fontsize=10)
+        for k in range(5):
+            page.insert_text((93, 309 + 20 * k), f"{k + 1}． 選択肢{k + 1}", fontname="japan", fontsize=10)
+        r = survey(doc.tobytes())
+        self.assertEqual(r["status"], "ready", r.get("excluded") or r.get("detail"))
+        self.assertEqual([p["questionNumber"] for p in r["packets"]], [1])
+        self.assertEqual(r["packets"][0]["choices"], [f"選択肢{k}" for k in range(1, 6)])
+
+
+class Garbled(unittest.TestCase):
+    class FakePage:
+        def __init__(self, text):
+            self.text = text
+
+        def get_text(self):
+            return self.text
+
+    def test_garbled_text_is_detected(self):
+        # 令和5年の測量士補のPDFから取り出した字（字の対応表が無く化けたもの）
+        self.assertTrue(ocr.is_garbled(self.FakePage("ࠝNo㸬1ࠞḟࡢᩥࡣ㸪㔞ἲ㸦᫛࿴24ᖺἲᚊ➨188ྕ㸧࡟つᐃࡉࢀࡓ஦㡯࡟ࡘ࠸࡚㏙࡭ࡓࡶࡢ࡛࠶ࡿࠋ᫂ࡽ࠿࡟㛫㐪ࡗ࡚࠸ࡿࡶࡢࡣ࡝ࢀ࠿")))
+
+    def test_normal_text_and_answer_table_are_not_garbled(self):
+        self.assertFalse(ocr.is_garbled(self.FakePage("次の文は，測量法に規定された事項について述べたものである。明らかに間違っているものはどれか。" * 2)))
+        self.assertFalse(ocr.is_garbled(self.FakePage("令和５年測量士補試験解答 問題 正解 " + " ".join(f"No.{n} {n % 5 + 1}" for n in range(1, 29)))))
+
+
+class TakkenGridAnswers(unittest.TestCase):
+    def test_grid_without_labels_is_read_in_rows_of_ten(self):
+        doc = fitz.open()
+        page = doc.new_page()
+        cells = [(i % 4) + 1 for i in range(50)]
+        for r in range(5):
+            page.insert_text((50, 100 + r * 30), "    ".join(str(c) for c in cells[r * 10:(r + 1) * 10]), fontsize=10)
+        answers = takken.parse_answers(doc)
+        self.assertEqual(answers, {n: c for n, c in enumerate(cells, 1)})
+
+    def test_grid_is_not_used_when_rows_do_not_match(self):
+        doc = fitz.open()
+        page = doc.new_page()
+        page.insert_text((50, 100), "1 2 3 4 1 2 3 4 1 2", fontsize=10)
+        with self.assertRaises(Exception):
+            takken.parse_answers(doc)
+
+
+def setUpModule():
+    from tests import _fields_stub
+    _fields_stub.start()
+
+
+def tearDownModule():
+    from tests import _fields_stub
+    _fields_stub.stop()
+
+
+if __name__ == "__main__":
+    unittest.main()

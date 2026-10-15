@@ -8,7 +8,7 @@
  *   API_TOKEN     AIアプリが付ける Bearer トークン（図の取得だけは不要：画像表示がトークンを付けられないため）
  *   PARSER_URL    経路Bの分解サーバー（Cloud Run）。無ければ経路A（アプリが分解結果を送る）
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
- *   PARSER_VERSION 受け付ける分解結果の版（既定 0.3.0）
+ *   PARSER_VERSION 受け付ける分解結果の版（既定 0.5.0。パーサーの PARSER_VERSION と合わせる）
  */
 import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
@@ -20,7 +20,7 @@ import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { pages } from './pages.js';
 
-const DEFAULT_PARSER_VERSION = '0.3.0';
+export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;

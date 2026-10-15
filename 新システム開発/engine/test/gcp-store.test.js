@@ -46,7 +46,7 @@ const make = () => {
 
 test('図は Cloud Storage、分解結果は Firestore に入り、24時間保存の読み書きがそのまま動く', async () => {
   const { firestore, storage, store } = make();
-  const keyParts = { qualificationId: 'q063', year: 2026, section: 'main', questionSha256: 'a'.repeat(64), answerSha256: 'b'.repeat(64), parserVersion: '0.3.0' };
+  const keyParts = { qualificationId: 'q063', year: 2026, section: 'main', questionSha256: 'a'.repeat(64), answerSha256: 'b'.repeat(64), parserVersion: '0.5.0' };
   await writeResult(store, keyParts, { packets: [{ questionNumber: 1 }] }, { 'q1.png': PNG }, T0);
   assert.equal(storage.objects.size, 1);
   const [name, obj] = [...storage.objects.entries()][0];
@@ -57,7 +57,7 @@ test('図は Cloud Storage、分解結果は Firestore に入り、24時間保�
   assert.ok(!id.slice('qlp/'.length).includes('/'), 'Firestore の文書IDに / を含めない');
   assert.ok(doc.expireAt instanceof Date, '掃除用の期限を付ける');
   assert.equal((await readResult(store, keyParts, T0 + 1000)).result.packets[0].questionNumber, 1);
-  assert.deepEqual(new Uint8Array(await readFigure(store, keyParts.questionSha256, '0.3.0', 'q1.png')), PNG);
+  assert.deepEqual(new Uint8Array(await readFigure(store, keyParts.questionSha256, '0.5.0', 'q1.png')), PNG);
 });
 
 test('無いキーは null を返し、削除できる', async () => {

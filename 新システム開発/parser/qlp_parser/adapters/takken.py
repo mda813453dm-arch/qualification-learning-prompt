@@ -11,6 +11,7 @@ import re
 import unicodedata
 
 from .. import fields
+from .. import ocr
 from ..core import ParseError, RawQuestion, clean_text, is_page_number_line, to_int
 
 QUALIFICATION_ID = "q041"
@@ -18,8 +19,11 @@ SECTION = "年度共通"
 CHOICE_COUNT = 4
 QUESTION_COUNT = 50
 
-HEADING = re.compile(r"^【\s*問\s*([0-9０-９]{1,2})\s*】")
-CHOICE = re.compile(r"^([1-4１-４])[ 　]+")
+HEADING = re.compile(r"^[【\[［〔]\s*問\s*([0-9０-９]{1,2})\s*[】\]］〕]")
+# OCRでは番号の後の空白が「。」「.」に読まれることがある
+CHOICE = re.compile(r"^([1-4１-４])(?:[ 　]+|[。．.、][ 　]*)")
+# OCRで読んだ行は字下げ位置が数ptぶれるので、選択肢の番号の位置合わせを緩める
+OCR_INDENT_TOL = 8
 # 図形が「文字の囲み線」だけかを見分けるための目安（pt）
 THIN = 1.5
 
@@ -27,9 +31,13 @@ THIN = 1.5
 def _lines(page):
     """ページの行を上から順に (y0, y1, text, x0) で返す。
 
+    スキャンした紙・文字化けしたページは、ページ全体をOCRで読む（ocr.needs_ocr）。
+
     ふりがな（本文より小さい文字）は除く。ふりがなの行が選択肢の間に挟まると、
     前の選択肢の末尾に付いてしまうため。
     """
+    if ocr.needs_ocr(page):
+        return [ln[:4] for ln in ocr.page_ocr(page)]
     d = page.get_text("dict", sort=True)
     sizes = sorted(sp["size"] for b in d["blocks"] for ln in b.get("lines", []) for sp in ln["spans"] if sp["text"].strip())
     body_size = sizes[len(sizes) // 2] if sizes else 0
@@ -94,8 +102,12 @@ def _graphics_in(page, y0, y1, template=frozenset()):
 
 def parse_questions(doc):
     """全ページから問題を取り出す。見出しが重複・欠落していても止めず、問題ごとに記録する。"""
+    ocr.prefetch([doc[i] for i in range(doc.page_count)])
     items = []  # (page_index, y0, y1, text, x0)
+    ocr_pages = set()
     for i in range(doc.page_count):
+        if ocr.needs_ocr(doc[i]):
+            ocr_pages.add(i + 1)
         lines = _lines(doc[i])
         texts = [ln[2] for ln in lines]
         # 問題の見出しも選択肢もないページ（表紙・裏表紙・注意事項）と正答表のページは読まない
@@ -120,7 +132,8 @@ def parse_questions(doc):
         if cut is not None:
             body = body[:cut]
 
-        starts_at, notes = _choice_starts(body)
+        read_by_ocr = any(b[0] + 1 in ocr_pages for b in body)
+        starts_at, notes = _choice_starts(body, OCR_INDENT_TOL if read_by_ocr else 3)
         stem_lines = [b[3] for j, b in enumerate(body) if j < (starts_at[0] if starts_at else len(body))]
         choices = []
         for c, j in enumerate(starts_at):
@@ -128,7 +141,7 @@ def parse_questions(doc):
             if c + 1 == len(starts_at):
                 # 最後の選択肢の続きは字下げされた行だけ。字下げのない行（注意書きなど）で打ち切る
                 k = j + 1
-                while k < stop and body[k][4] >= body[j][4] + 4:
+                while k < stop and body[k][4] >= body[j][4] + (2 if read_by_ocr else 4):
                     k += 1
                 if k < stop:
                     notes.append("trailing_text_dropped")
@@ -146,6 +159,15 @@ def parse_questions(doc):
                 has_graphics = True
         first = [b for b in body if b[0] + 1 == pages[0]]
         rect = (round(min(b[1] for b in first), 1), round(max(b[2] for b in first), 1)) if first else None
+        mode, crops = "text", []
+        if read_by_ocr:
+            # OCRは読み違いがありうるので、問題の範囲を公式PDFの画像でも見せる（図の有無も画像で伝わる）
+            mode, has_graphics = "ocr", True
+            notes.append("read_by_ocr")
+            for p in pages:
+                on_page = [b for b in body if b[0] + 1 == p]
+                pr = doc[p - 1].rect
+                crops.append((p, (pr.x0 + 20, min(b[1] for b in on_page) - 6, pr.x1 - 20, max(b[2] for b in on_page) + 6)))
 
         questions.append(RawQuestion(
             number=number,
@@ -155,11 +177,14 @@ def parse_questions(doc):
             rect=rect,
             has_graphics=has_graphics,
             notes=notes,
+            stem_mode=mode,
+            choice_mode=mode,
+            crops=crops,
         ))
     return questions
 
 
-def _choice_starts(body):
+def _choice_starts(body, tol=3):
     """選択肢「1」〜「4」の行の位置を決める。
 
     - 選択肢は問題の末尾にあるので、2・3・4が順に続く「1」のうち最後のものを採る
@@ -174,7 +199,7 @@ def _choice_starts(body):
             continue
         seq, want = [j1], 2
         for j, n, x in marks[a + 1:]:
-            if n == want and abs(x - x1) <= 3:
+            if n == want and abs(x - x1) <= tol:
                 seq.append(j)
                 want += 1
                 if want > CHOICE_COUNT:
@@ -189,11 +214,34 @@ def _choice_starts(body):
 _ANSWER_ROW = re.compile(r"((?:問\s*[0-9]{1,2}\s*){2,10})((?:[1-4]\s*){2,10})")
 
 
+def _page_text(page):
+    if ocr.needs_ocr(page):
+        return "\n".join(ln[2] for ln in ocr.page_ocr(page))
+    return page.get_text(sort=True)
+
+
+_GRID_ROW = re.compile(r"^(?:[1-4]\s+){9}[1-4]$")
+
+
+def _grid_answers(doc):
+    """問番号の見出しが文字として取り出せない正答表（令和6年度）。
+
+    ページの文字が「1〜4が10個並ぶ行」だけで、それがちょうど5行（50問分）のときに限り、
+    上の行から問1〜10、11〜20…の順とみなす（公式の正答表は10問ずつの行で並ぶ）。
+    """
+    for i in range(doc.page_count):
+        rows = [ln.strip() for ln in unicodedata.normalize("NFKC", doc[i].get_text(sort=True)).splitlines() if ln.strip()]
+        if len(rows) == QUESTION_COUNT // 10 and all(_GRID_ROW.match(r) for r in rows):
+            cells = [int(x) for r in rows for x in r.split()]
+            return {n: c for n, c in enumerate(cells, 1)}
+    return {}
+
+
 def parse_answers(doc):
     """正答表を読む。「問 a … 問 b」の見出しと同数の正答番号が並ぶ行だけを採用する。"""
     answers = {}
     for i in range(doc.page_count):
-        text = unicodedata.normalize("NFKC", doc[i].get_text(sort=True))
+        text = unicodedata.normalize("NFKC", _page_text(doc[i]))
         text = re.sub(r"\s+", " ", text)
         for m in _ANSWER_ROW.finditer(text):
             nums = [int(x) for x in re.findall(r"問\s*([0-9]{1,2})", m.group(1))]
@@ -204,6 +252,8 @@ def parse_answers(doc):
                 if n in answers and answers[n] != c:
                     raise ParseError("ANSWER_TABLE_CONFLICT", question=n)
                 answers[n] = c
+    if not answers:
+        answers = _grid_answers(doc)
     if not answers:
         raise ParseError("ANSWER_TABLE_NOT_FOUND")
     return answers
