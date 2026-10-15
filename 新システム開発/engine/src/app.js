@@ -15,6 +15,7 @@ import { availablePackets, grade, jstToday, newState, pickNext, pin, present } f
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
+import { handleRpc } from './mcp.js';
 
 const DEFAULT_PARSER_VERSION = '0.3.0';
 const MAX_SOURCES = 40;
@@ -126,6 +127,16 @@ async function route(request, env, url, now) {
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
 
+  // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
+  // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
+  if (parts[0] === 'mcp' && parts.length <= 2) {
+    const viaPath = parts.length === 2 && env.API_TOKEN && timingSafeEqual(decodeURIComponent(parts[1]), env.API_TOKEN);
+    const viaHeader = env.API_TOKEN && timingSafeEqual(request.headers.get('authorization') ?? '', `Bearer ${env.API_TOKEN}`);
+    if (!viaPath && !viaHeader) throw new HttpError(401, 'UNAUTHORIZED');
+    if (method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
+    return mcp(request, env, url, now);
+  }
+
   const auth = request.headers.get('authorization') ?? '';
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED');
 
@@ -205,6 +216,29 @@ async function route(request, env, url, now) {
   }
 
   throw new HttpError(404, 'NOT_FOUND');
+}
+
+async function mcp(request, env, url, now) {
+  let msg;
+  try {
+    msg = JSON.parse(await request.text());
+  } catch {
+    return json(400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
+  }
+  // ツールの呼び出しは、認証済みの API 呼び出しとして同じ処理に回す
+  const callApi = async (method, path, body) => {
+    const inner = new Request(new URL(path, url), {
+      method,
+      headers: { authorization: `Bearer ${env.API_TOKEN}`, 'content-type': 'application/json' },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const res = await handle(inner, env);
+    return { status: res.status, body: await res.json() };
+  };
+  const batch = Array.isArray(msg);
+  const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi)))).filter(Boolean);
+  if (!out.length) return new Response(null, { status: 202 });
+  return json(200, batch ? out : out[0]);
 }
 
 function timingSafeEqual(a, b) {

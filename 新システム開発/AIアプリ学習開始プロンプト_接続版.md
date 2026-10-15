@@ -80,7 +80,9 @@ main と master_prompt.txt は変更しない。
 
 ## 補足（開発用。プロンプト本文には入れない）
 
-- 接続方式（ChatGPTのGPTのActions、MCP など）は未決定。`engine/openapi.yaml` は Actions にそのまま読み込める形で書いた。図のURL（`/v1/figure/...`）はトークンなしで開ける。
+- 接続方式：ChatGPT は GPT の Actions（`engine/openapi.yaml`）、Claude・Perplexity（・将来の Gemini）は MCP のカスタムコネクタ（`/mcp`）。
+  ツール名は operationId と同じなので、どちらもこの本文のまま動く。MCP ではこの本文を `instructions` として自動で渡す（`engine/src/instructions.js`、`deploy/gpt-instructions.txt` と同じ内容であることをテストで確認）。
+  図のURL（`/v1/figure/...`）はトークンなしで開ける。Claude の画面で外部画像が表示されるかは未確認（T7で確かめる）。
 - 経路A（AIアプリのコード実行で分解して `POST /v1/jobs/{qid}/sources/{index}/result` に送る手順）は、T2の結果を見てから追記する。分解サーバー（経路B）を使う構成なら不要。
 - OCRが要る資格（測量士補）は、最初の取り込みに1回の呼び出しで約50秒かかることがある（engine/README.md「分かっている課題」）。AIアプリの待ち時間の上限に掛かるかはT2・T7で確かめる。
 - 3問連続不正解の判定は、いまはAI側（4-6）。分野判定（`fieldId`）がエンジンに入ったら、エンジン側へ移す。

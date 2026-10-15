@@ -71,6 +71,7 @@ QLP_REAL_JSON=out.json QLP_REAL_ASSETS=out QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf nod
 | `GET /v1/jobs/:qid` | 取り込みの状況（進める） |
 | `POST /v1/jobs/:qid/sources/:index/result` | 経路A：分解結果 `{result, assets:{file: base64}}` |
 | `GET /v1/figure/:qsha/:pv/:file` | 図のPNG（トークン不要） |
+| `POST /mcp`（または `/mcp/<API_TOKEN>`） | MCP の入口（Claude・Perplexity などのカスタムコネクタ用）。ツールは startSession など6つ（`src/mcp.js`）、接続版プロンプトを instructions として渡す |
 
 公式PDFは https だけ受け付け、取り込み元は1回40件まで。
 
