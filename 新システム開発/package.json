@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test src/*.test.js src/*.test.mjs",
     "start": "node src/learning-runtime-server.js",
-    "test:legacy": "node --test tests/*.test.js"
+    "test:legacy": "node --test tests/*.test.js",
+    "test:engine": "node --test engine/test/*.test.js"
   },
   "engines": {
     "node": ">=20"

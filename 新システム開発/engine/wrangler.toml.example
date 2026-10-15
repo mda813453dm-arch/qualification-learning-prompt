@@ -1,0 +1,14 @@
+# Cloudflare Workers の設定ひな形。wrangler.toml にコピーして、KV の id だけ書き換える。
+# トークン類はここに書かない：`npx wrangler secret put API_TOKEN` で登録する（PARSER_TOKEN も同じ）。
+name = "qlp-engine"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+
+[[kv_namespaces]]
+binding = "QLP_CACHE"
+id = "<KV の id（npx wrangler kv namespace create QLP_CACHE で表示される）>"
+
+[vars]
+PARSER_VERSION = "0.3.0"
+# 経路B（Cloud Run の分解サーバー）を使うときだけ書く。書かなければ経路A（アプリが分解結果を送る）。
+# PARSER_URL = "https://<Cloud Run のURL>"
