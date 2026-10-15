@@ -7,7 +7,7 @@
  * 取り込みは「1回の呼び出しで時間の許す分だけ進める」形にしている（1回の応答を長く待たせない
  * ため）。残りは次の呼び出しで続きから進む。
  */
-import { readResult, readSource, touchResult, writeResult, writeSource } from './cache.js';
+import { readResult, readSource, writeResult, writeSource } from './cache.js';
 import { sha256Hex } from './store.js';
 
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
@@ -152,13 +152,10 @@ export async function readJob(store, qualificationId) {
   return store.get(jobKey(qualificationId), 'json');
 }
 
-/**
- * 資格名が決まった時点で登録する（方針3）。同じ資格の取り込みが24時間以内に済んでいれば作り直さない。
- * force：事前取り込み（warmJob）で作り直すとき。
- */
-export async function startJob(store, qualificationId, sources, now, { force = false } = {}) {
+/** 資格名が決まった時点で登録する（方針3）。同じ資格の取り込みが24時間以内に済んでいれば作り直さない。 */
+export async function startJob(store, qualificationId, sources, now) {
   const old = await readJob(store, qualificationId);
-  if (!force && old && old.state !== 'failed' && now - old.startedAt < 24 * 60 * 60 * 1000) return old;
+  if (old && old.state !== 'failed' && now - old.startedAt < 24 * 60 * 60 * 1000) return old;
   const job = {
     qualificationId,
     state: 'running',
@@ -226,36 +223,6 @@ export async function ingestOne(store, qualificationId, index, deps, now) {
   const code = await settle(s, deps, now);
   await saveJob(store, job, now);
   return { job: withNotice(job, now), source: s, code };
-}
-
-/**
- * 事前取り込み（2026年10月15日：確実性と速度の両立）。定期実行（Cloud Scheduler）から呼ぶ。
- * 公式PDFを毎回取り直してSHA-256を確かめ、変わっていなければ分解結果の期限を延ばすだけ（分解し直さない）。
- * 変わっていれば新しいPDFで分解し直す（差し替わった問は、照合が済むまで出題されない）。
- * 利用者が使う時点では取り込みが済んでいるので、待たずに出題できる。
- */
-export async function warmJob(store, qualificationId, sources, deps, { budgetMs = 240000, clock = () => Date.now() } = {}) {
-  const now = deps.now ?? clock();
-  const checked = [];
-  for (const src of sources) {
-    try {
-      const q = await fetchVerified(deps.fetchPdf, src.questionUrl);
-      await writeSource(store, src.questionUrl, q.sha256, now);
-      let aSha = q.sha256;
-      if (src.answerUrl && src.answerUrl !== src.questionUrl) {
-        const a = await fetchVerified(deps.fetchPdf, src.answerUrl);
-        await writeSource(store, src.answerUrl, a.sha256, now);
-        aSha = a.sha256;
-      }
-      const keyParts = { ...pick(src), questionSha256: q.sha256, answerSha256: aSha, parserVersion: deps.parserVersion };
-      checked.push({ year: src.year, section: src.section, touched: await touchResult(store, keyParts, now) });
-    } catch (e) {
-      checked.push({ year: src.year, section: src.section, error: e instanceof IngestError ? e.code : 'INGEST_FAILED' });
-    }
-  }
-  await startJob(store, qualificationId, sources, now, { force: true });
-  const job = await stepJob(store, qualificationId, { ...deps, now }, { budgetMs, clock });
-  return { job, checked };
 }
 
 export function withNotice(job, now) {

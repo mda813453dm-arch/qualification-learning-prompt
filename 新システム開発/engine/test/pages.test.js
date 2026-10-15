@@ -1,10 +1,10 @@
-// プロンプトだけで使う方式（pages.js）と事前取り込み（/v1/warm）
+// プロンプトだけで使う方式（pages.js）：利用開始時に取り込み、エンジンが出題・採点・記録する
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { handle } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
-import { DAY, T0, assetsB64, fakeResult, fakeWeb, pdf } from './helpers.js';
+import { T0, assetsB64, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'test-token';
 const BASE = 'https://engine.example';
@@ -46,12 +46,6 @@ async function get(env, path) {
   return res.text();
 }
 
-async function warm(env) {
-  const res = await handle(new Request(`${BASE}/v1/warm`, { method: 'POST', headers: { authorization: `Bearer ${TOKEN}` } }), env);
-  assert.equal(res.status, 200);
-  return res.json();
-}
-
 /** 「・ラベル：URL」の行からURLを取り出す。 */
 function link(text, label) {
   const line = text.split('\n').find((l) => l.startsWith(`・${label}：`));
@@ -72,11 +66,11 @@ async function onboard(env, slug, { exempt } = {}) {
   return { menu: t, lid };
 }
 
-test('事前取り込み済みなら、待たずに出題され、採点はエンジンが行う（正答は出題画面に出ない）', async () => {
+test('資格を選んだ時点で取り込みを始め、採点はエンジンが行う（正答は出題画面に出ない）', async () => {
   const { env, counts } = makeEnv();
-  await warm(env);
-  const parsed = counts.parse;
   const { menu } = await onboard(env, 'surveyor');
+  const parsed = counts.parse;
+  assert.equal(parsed, 1, '資格を選んだ時点で取り込んでいる');
   const q = await get(env, link(menu, '3 実践問題'));
   assert.match(q, /2026年度 問1/);
   assert.match(q, /問1の本文/);
@@ -95,7 +89,6 @@ test('事前取り込み済みなら、待たずに出題され、採点はエ�
 
 test('同じ回答のURLを2回開いても二重に数えない。古い問題のURLでは採点しない', async () => {
   const { env } = makeEnv();
-  await warm(env);
   const { menu, lid } = await onboard(env, 'surveyor');
   const q = await get(env, link(menu, '3 実践問題'));
   const ans = link(q, '2と答えた');
@@ -113,7 +106,6 @@ test('同じ回答のURLを2回開いても二重に数えない。古い問題�
 
 test('3問続けて間違えると確認問題への切り替えを勧める', async () => {
   const { env } = makeEnv();
-  await warm(env);
   const { menu } = await onboard(env, 'surveyor');
   let page = menu;
   let label = '3 実践問題';
@@ -129,7 +121,6 @@ test('3問続けて間違えると確認問題への切り替えを勧める', a
 
 test('引継ぎIDで開くと記録を日本語で示し、承認するまで再開しない', async () => {
   const { env } = makeEnv();
-  await warm(env);
   const { menu, lid } = await onboard(env, 'surveyor');
   const q = await get(env, link(menu, '3 実践問題'));
   await get(env, link(q, '1と答えた'));
@@ -142,11 +133,11 @@ test('引継ぎIDで開くと記録を日本語で示し、承認するまで再
   assert.match(resumed, /学習を再開します/);
   const paused = await get(env, link(back, '2 今は学習しない'));
   assert.match(paused, /今日はここまで/);
+  assert.match(paused, new RegExp(`資格試験の勉強の続きをしたいです。[\\s\\S]*/p/${lid}\\n`));
 });
 
 test('学習結果は訂正できるが、古い画面のリンクでは訂正しない', async () => {
   const { env } = makeEnv();
-  await warm(env);
   const { menu, lid } = await onboard(env, 'surveyor');
   let q = await get(env, link(menu, '3 実践問題'));
   let r = await get(env, link(q, '1と答えた')); // 問1 不正解
@@ -177,7 +168,6 @@ test('学習結果は訂正できるが、古い画面のリンクでは訂正�
 
 test('宅建で免除を利用すると、問46〜50は出題しない', async () => {
   const { env } = makeEnv();
-  await warm(env);
   const { menu, lid } = await onboard(env, 'takken', { exempt: true });
   const rec = await env.STORE.get(`lrn/${lid}`, 'json');
   assert.equal(rec.result.exempt, true);
@@ -195,24 +185,15 @@ test('宅建で免除を利用すると、問46〜50は出題しない', async (
   assert.ok(seen.every((n) => n <= 45));
 });
 
-test('事前取り込み：公式PDFが同じなら分解し直さずに期限を延ばし、差し替わったら分解し直す', async () => {
-  const { env, web, counts } = makeEnv();
-  await warm(env);
+test('同じ資格の2人目は、24時間以内なら分解し直さずに使う', async () => {
+  const { env, counts } = makeEnv();
+  await onboard(env, 'surveyor');
   const first = counts.parse;
-  env.now = T0 + 20 * 60 * 60 * 1000;
-  await warm(env);
-  assert.equal(counts.parse, first, 'PDFが同じなら分解しない');
-  env.now = T0 + 30 * 60 * 60 * 1000; // 最初の分解から24時間を過ぎても、延ばした期限内
+  env.now += 60 * 60 * 1000;
   const { menu } = await onboard(env, 'surveyor');
   const q = await get(env, link(menu, '3 実践問題'));
   assert.match(q, /問1の本文/);
   assert.equal(counts.parse, first);
-
-  web.files[CATALOG.surveyor.sources[0].questionUrl] = pdf('surveyor-q-v2');
-  env.now += DAY / 2;
-  const out = await warm(env);
-  assert.equal(counts.parse, first + 1, '差し替わった測量士補だけ分解し直す');
-  assert.equal(out.warmed.surveyor.state, 'done');
 });
 
 test('台帳にない資格・形の違う引継ぎIDは資格選びに戻す', async () => {

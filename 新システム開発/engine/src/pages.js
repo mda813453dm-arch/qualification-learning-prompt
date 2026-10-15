@@ -75,7 +75,19 @@ function newRecord(lid, slug, now) {
 }
 
 const url = (base, rec, ...rest) => [`${base}/p/${rec.fixed.lid}`, ...rest].join('/');
-const resumeLine = (base, rec) => `引継ぎID：${rec.fixed.lid}　続きから始めるURL：${base}/p/${rec.fixed.lid}　（次回は、学習開始のプロンプトの下にこのURLを貼ってください）`;
+const resumeLine = (base, rec) => `引継ぎID：${rec.fixed.lid}（学習を終えるときに、次回貼る文を表示します）`;
+
+/** 次回まるごと貼るだけで続きから始められる、その人専用の文。 */
+function personalPrompt(base, rec) {
+  return [
+    '次回は、下の文をまるごとAIのチャットに貼ってください。続きから始められます。',
+    '----',
+    '資格試験の勉強の続きをしたいです。',
+    '次のURLのページを開き、そこに書かれている指示に従って進めてください。ページを開けなかったときは、そのことを私に伝えてください。',
+    `${base}/p/${rec.fixed.lid}`,
+    '----',
+  ];
+}
 
 function chooseQualification(base, lid, lead = []) {
   return page({
@@ -139,6 +151,7 @@ function menu(base, rec, now, lead = []) {
       ['2 確認問題', url(base, rec, 'm', 'check', t)],
       ['3 実践問題', url(base, rec, 'q', t)],
       ['記録を確認・訂正する', url(base, rec, 'fix', t)],
+      ['学習を終える', url(base, rec, 'end', t)],
     ],
   });
 }
@@ -348,7 +361,7 @@ function onboarding(base, rec) {
   return planPage(base, rec);
 }
 
-async function route(env, base, parts, now, advance) {
+async function route(env, base, parts, now, advance, kick) {
   if (parts.length === 1) return { res: chooseQualification(base, newLearnerId()) };
   const lid = parts[1];
   if (!LID.test(lid)) return { res: chooseQualification(base, newLearnerId()) };
@@ -361,6 +374,7 @@ async function route(env, base, parts, now, advance) {
     rec = newRecord(lid, a1, now);
     const c = CATALOG[a1];
     await startJob(env.STORE, c.qualificationId, c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId })), now);
+    await kick(c.qualificationId);
     const lead = [`${c.name}の学習を始めます。`, '（ここに試験の概要を表示）', '', resumeLine(base, rec)];
     const ai = [`「（ここに試験の概要を表示）」の部分には、公式サイト（${c.officialSite}）で確認できた試験の概要（対象・出題分野・形式・時間・合格基準）を書いてください。確認できなかった項目は「未確認」と書いてください。`];
     return { rec, res: c.exemption ? exemptionPage(base, rec, lead, ai) : levelPage(base, rec, lead, ai) };
@@ -391,7 +405,9 @@ async function route(env, base, parts, now, advance) {
   if (step !== 'ready') return { rec, res: onboarding(base, rec) };
 
   if (action === 'resume') return { rec, res: menu(base, rec, now, ['学習を再開します。']) };
-  if (action === 'pause') return { rec, res: page({ show: ['分かりました。今日はここまでにします。', resumeLine(base, rec)] }) };
+  if (action === 'pause' || action === 'end') {
+    return { rec, res: page({ ai: ['「----」で囲まれた文は、利用者がコピーしやすいように、そのままの形で表示してください。'], show: ['お疲れさまでした。今日はここまでにします。', '', ...personalPrompt(base, rec)] }) };
+  }
   if (action === 'fix' && parts.length === 4) return { rec, res: fixPage(base, rec) };
   if (action === 'fx') {
     // 古い画面のリンク（番号が今と違う）では訂正しない
@@ -405,11 +421,11 @@ async function route(env, base, parts, now, advance) {
 }
 
 /**
- * GET /p で始まるURLを処理する。advance(env, qualificationId, now, budgetMs) は取り込みを進める関数（app.js）。
+ * GET /p で始まるURLを処理する。advance は取り込みを時間の許す分だけ進める関数、kick は取り込みを裏で始める関数（app.js）。
  */
-export async function pages(env, reqUrl, parts, now, advance) {
+export async function pages(env, reqUrl, parts, now, advance, kick) {
   const base = env.PUBLIC_BASE_URL || reqUrl.origin;
-  const { rec, res } = await route(env, base, parts, now, advance);
+  const { rec, res } = await route(env, base, parts, now, advance, kick);
   if (rec) await save(env, rec, now);
   return res;
 }

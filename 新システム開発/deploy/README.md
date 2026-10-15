@@ -36,7 +36,7 @@ AIアプリのチャット画面（iPhone アプリを含む）から学習エ�
 
 1. Cloud Shell で `cat ~/qlp-start-prompt.txt` を実行し、表示された文（入口URL入り。トークンは入っていません）をコピーする。
 2. ChatGPT・Claude・Perplexity の新しいチャットに貼って送る。資格の一覧が出たら、番号で答えて進める。
-3. 途中で出る「続きから始めるURL」を控えておき、別の新しいチャットで、プロンプトの下にそのURLを貼って送る。記録が表示され、再開を選べれば成功です。
+3. 「学習を終える」を選ぶと、次回貼る専用の文が出ます。別の新しいチャットにその文をまるごと貼って送り、記録が表示されて再開を選べれば成功です。
 
 ### 確かめてほしいこと
 
@@ -45,7 +45,7 @@ AIアプリのチャット画面（iPhone アプリを含む）から学習エ�
 3. 実践問題で問題文・選択肢・公式PDFのリンクが出るか、測量士補は図が画像で出るか
 4. 答えると正誤と正答が出て、そのあとAIの解説が出るか
 5. 別の新しいチャットで最初から始めたとき、違う引継ぎIDが出るか
-6. 続きから始めるURLで、記録の表示 → 再開ができるか
+6. 専用の文を貼ると、記録の表示 → 再開ができるか
 
 ---
 
@@ -108,7 +108,6 @@ GPT を開いて、まずは次のように話しかけてください（公式P
 - 使わなければ費用はほぼかかりません（保管料の数円〜数十円のみ）。
 - 完全に消すときは Cloud Shell で次を実行します。
   ```
-  gcloud scheduler jobs delete qlp-warm --location asia-northeast1
   gcloud run services delete qlp-engine --region asia-northeast1
   gcloud run services delete qlp-parser --region asia-northeast1
   ```

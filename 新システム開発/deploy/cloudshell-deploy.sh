@@ -18,18 +18,18 @@ BUCKET="${PROJECT}-qlp-figures"
 PROJECT_NUMBER="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
 RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
-echo "== 1/8 必要な機能を有効にする（初回は数分かかります）"
+echo "== 1/7 必要な機能を有効にする（初回は数分かかります）"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
-  firestore.googleapis.com storage.googleapis.com secretmanager.googleapis.com cloudscheduler.googleapis.com
+  firestore.googleapis.com storage.googleapis.com secretmanager.googleapis.com
 
-echo "== 2/8 Firestore（データベース）"
+echo "== 2/7 Firestore（データベース）"
 if ! gcloud firestore databases describe --database='(default)' >/dev/null 2>&1; then
   gcloud firestore databases create --location="$REGION" --type=firestore-native
 fi
 # 24時間保存の掃除用（期限切れの判定自体はプログラムが行う）
 gcloud firestore fields ttls update expireAt --collection-group=qlp --enable-ttl --async >/dev/null 2>&1 || true
 
-echo "== 3/8 図の保存場所（Cloud Storage）"
+echo "== 3/7 図の保存場所（Cloud Storage）"
 if ! gcloud storage buckets describe "gs://$BUCKET" >/dev/null 2>&1; then
   gcloud storage buckets create "gs://$BUCKET" --location="$REGION" --uniform-bucket-level-access
 fi
@@ -37,47 +37,33 @@ LIFECYCLE="$(mktemp)"
 echo '{"rule":[{"action":{"type":"Delete"},"condition":{"age":2}}]}' > "$LIFECYCLE"
 gcloud storage buckets update "gs://$BUCKET" --lifecycle-file="$LIFECYCLE" >/dev/null
 
-echo "== 4/8 トークン（自動で作成し、Secret Manager に保存）"
+echo "== 4/7 トークン（自動で作成し、Secret Manager に保存）"
 for name in qlp-api-token qlp-parser-token; do
   if ! gcloud secrets describe "$name" >/dev/null 2>&1; then
     openssl rand -hex 32 | tr -d '\n' | gcloud secrets create "$name" --data-file=- --replication-policy=automatic >/dev/null
   fi
 done
 
-echo "== 5/8 権限（プログラムが Firestore・Cloud Storage・トークンを使えるようにする）"
+echo "== 5/7 権限（プログラムが Firestore・Cloud Storage・トークンを使えるようにする）"
 # cloudbuild.builds.builder：新しいプロジェクトでは、プログラムの組み立て（Cloud Build）にもこのアカウントが使われるため
 for role in roles/datastore.user roles/secretmanager.secretAccessor roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/logging.logWriter; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$RUNTIME_SA" --role="$role" --condition=None >/dev/null
 done
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.objectAdmin >/dev/null
 
-echo "== 6/8 分解サーバー（qlp-parser）を配置（初回は10分ほどかかります）"
+echo "== 6/7 分解サーバー（qlp-parser）を配置（初回は10分ほどかかります）"
 gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
   --cpu 2 --memory 2Gi --timeout 300 --max-instances 2 --concurrency 4 \
   --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
 
-echo "== 7/8 学習エンジン（qlp-engine）を配置"
+echo "== 7/7 学習エンジン（qlp-engine）を配置"
 gcloud run deploy qlp-engine --source "$ROOT/engine" --region "$REGION" --allow-unauthenticated \
   --cpu 1 --memory 512Mi --timeout 300 --max-instances 3 \
   --set-env-vars "FIGURE_BUCKET=$BUCKET,PARSER_URL=$PARSER_URL" \
   --set-secrets API_TOKEN=qlp-api-token:latest,PARSER_TOKEN=qlp-parser-token:latest --quiet
 ENGINE_URL="$(gcloud run services describe qlp-engine --region "$REGION" --format='value(status.url)')"
 gcloud run services update qlp-engine --region "$REGION" --update-env-vars "PUBLIC_BASE_URL=$ENGINE_URL" --quiet >/dev/null
-
-echo "== 8/8 過去問の事前取り込み（いま1回と、6時間ごとの定期実行）"
-# 公式PDFが差し替わっていないかを確かめ、取り込みを済ませておく（利用者を待たせないため）
-API_TOKEN_VALUE="$(gcloud secrets versions access latest --secret=qlp-api-token)"
-SCHED_ARGS=(--location="$REGION" --schedule="0 */6 * * *" --time-zone="Asia/Tokyo" --uri="$ENGINE_URL/v1/warm" \
-  --http-method=POST --attempt-deadline=600s)
-if gcloud scheduler jobs describe qlp-warm --location="$REGION" >/dev/null 2>&1; then
-  gcloud scheduler jobs update http qlp-warm "${SCHED_ARGS[@]}" --update-headers="Authorization=Bearer $API_TOKEN_VALUE" --quiet >/dev/null
-else
-  gcloud scheduler jobs create http qlp-warm "${SCHED_ARGS[@]}" --headers="Authorization=Bearer $API_TOKEN_VALUE" --quiet >/dev/null
-fi
-WARM="$(curl -s -m 600 -X POST -H "Authorization: Bearer $API_TOKEN_VALUE" "$ENGINE_URL/v1/warm" || true)"
-unset API_TOKEN_VALUE
-echo "$WARM" | grep -q '"state":"done"' && echo "  過去問の取り込みが済みました。" || echo "  取り込みの結果：$WARM"
 
 # 学習者が貼るプロンプト（URL を書き込んだもの）
 sed "s#https://REPLACE-WITH-CLOUD-RUN-URL#$ENGINE_URL#" "$ROOT/deploy/start-prompt.txt" > "$HOME/qlp-start-prompt.txt"

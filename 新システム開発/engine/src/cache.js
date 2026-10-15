@@ -51,24 +51,6 @@ export async function writeResult(store, keyParts, result, assets, now) {
   await store.put(resultKey(keyParts), JSON.stringify({ savedAt: now, result }), { expirationTtl: CLEANUP_TTL_S });
 }
 
-/**
- * 事前取り込み（warm）用：公式PDFのSHA-256が変わっていないと確かめた分解結果の保存時刻を今に更新する。
- * 分解をやり直さずに24時間の期限を延ばす。図が1つでも欠けていれば更新せず false（分解し直させる）。
- */
-export async function touchResult(store, keyParts, now) {
-  const v = await store.get(resultKey(keyParts), 'json');
-  if (!v?.result) return false;
-  const files = [...new Set(v.result.packets.flatMap((p) => (p.figures ?? []).map((f) => f.file)))];
-  const figures = [];
-  for (const file of files) {
-    const bytes = await store.get(figureKey(keyParts.questionSha256, keyParts.parserVersion, file), 'arrayBuffer');
-    if (!bytes) return false;
-    figures.push([file, new Uint8Array(bytes)]);
-  }
-  await writeResult(store, keyParts, v.result, Object.fromEntries(figures), now);
-  return true;
-}
-
 export async function readFigure(store, questionSha256, parserVersion, file) {
   return store.get(figureKey(questionSha256, parserVersion, file), 'arrayBuffer');
 }

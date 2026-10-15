@@ -13,11 +13,10 @@
 import { readFigure } from './cache.js';
 import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
-import { IngestError, ingestOne, readJob, startJob, stepJob, warmJob, withNotice } from './ingest.js';
+import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { pages } from './pages.js';
-import { CATALOG } from './catalog.js';
 
 const DEFAULT_PARSER_VERSION = '0.3.0';
 const MAX_SOURCES = 40;
@@ -25,6 +24,7 @@ const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;
 const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
+const RUN_ALL_MS = 280000;
 const ADAPTERS = new Set(['takken', 'surveyor']);
 
 class HttpError extends Error {
@@ -116,6 +116,23 @@ async function advance(env, qualificationId, now, budgetMs) {
   return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now });
 }
 
+/**
+ * 取り込みを裏で進める（方針3：資格が決まった時点で始め、導入の間に進める）。
+ * 学習画面の応答を待たせないよう、自分自身の取り込みURLを別の呼び出しとして開き、応答は待たない。
+ * 自分のURLが分からない環境（テスト）では、その場で時間の許す分だけ進める。
+ */
+async function kickIngest(env, qid, now) {
+  if (!env.PUBLIC_BASE_URL || !env.API_TOKEN) {
+    await advance(env, qid, now, STEP_BUDGET_MS);
+    return;
+  }
+  const doFetch = env.selfFetch ?? fetch;
+  await doFetch(`${env.PUBLIC_BASE_URL}/v1/jobs/${encodeURIComponent(qid)}?run=all`, {
+    headers: { authorization: `Bearer ${env.API_TOKEN}` },
+    signal: AbortSignal.timeout(1500),
+  }).catch(() => {});
+}
+
 async function route(request, env, url, now) {
   const parts = url.pathname.split('/').filter(Boolean);
   const method = request.method;
@@ -130,7 +147,7 @@ async function route(request, env, url, now) {
   }
 
   // プロンプトだけで使う方式（pages.js）。AIアプリの「Webページを開く」機能で開くのでトークンは付けない
-  if (method === 'GET' && parts[0] === 'p') return pages(env, url, parts, now, advance);
+  if (method === 'GET' && parts[0] === 'p') return pages(env, url, parts, now, advance, (qid) => kickIngest(env, qid, now));
 
   // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
   // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
@@ -144,17 +161,6 @@ async function route(request, env, url, now) {
 
   const auth = request.headers.get('authorization') ?? '';
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED');
-
-  // 事前取り込み（定期実行から呼ぶ）。台帳の全資格の公式PDFを確かめ、取り込みを済ませておく
-  if (method === 'POST' && url.pathname === '/v1/warm') {
-    const out = {};
-    for (const [slug, c] of Object.entries(CATALOG)) {
-      const sources = c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId }));
-      const r = await warmJob(env.STORE, c.qualificationId, sources, deps(env, { now }), { clock: env.clock ?? Date.now });
-      out[slug] = { state: r.job.state, checked: r.checked, sources: jobView(r.job).sources.map((s) => ({ year: s.year, status: s.status, reason: s.reason, packetCount: s.packetCount })) };
-    }
-    return json(200, { warmed: out });
-  }
 
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);
@@ -217,7 +223,8 @@ async function route(request, env, url, now) {
     const qid = decodeURIComponent(parts[2]);
     if (!qidOk(qid)) throw new HttpError(404, 'JOB_NOT_FOUND');
     if (method === 'GET' && parts.length === 3) {
-      const job = await advance(env, qid, now, STEP_BUDGET_MS);
+      // ?run=all：学習画面から裏で呼ぶとき（取り込みを最後まで進める）
+      const job = await advance(env, qid, now, url.searchParams.get('run') === 'all' ? RUN_ALL_MS : STEP_BUDGET_MS);
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       return json(200, { job: jobView(job) });
     }
