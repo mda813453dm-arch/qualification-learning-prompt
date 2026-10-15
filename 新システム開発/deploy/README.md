@@ -13,6 +13,12 @@ AIアプリのチャット画面（iPhone アプリを含む）から学習エ�
 
 ## A. Google Cloud に配置する（20分ほど。待ち時間がほとんど）
 
+**iPhone の場合**：Cloud Shell には貼り付けができないため、次のリンクを開き、案内画面のボタン（Cloud Shell にコピー）を押して進めます（中身は tutorial.md）。
+https://shell.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https%3A%2F%2Fgithub.com%2Fmda813453dm-arch%2Fqualification-learning-prompt&cloudshell_git_branch=ai-learning-system&cloudshell_tutorial=%E6%96%B0%E3%82%B7%E3%82%B9%E3%83%86%E3%83%A0%E9%96%8B%E7%99%BA%2Fdeploy%2Ftutorial.md
+
+以下はパソコンなど、貼り付けができる場合の手順です。
+
+
 1. ブラウザ（iPhone の Safari でも可）で https://shell.cloud.google.com/ を開き、Google アカウントでログインする。
    画面下に黒い画面（Cloud Shell）が出ます。
 2. 画面上部でプロジェクトを選ぶ（無料トライアル登録時に作られた「My First Project」などで構いません）。
