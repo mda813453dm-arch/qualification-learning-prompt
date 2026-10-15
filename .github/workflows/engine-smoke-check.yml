@@ -1,5 +1,5 @@
 name: 公開中の学習エンジンの動作確認（読み取りのみ）
-# 公開URLを外から開き、ページのつながりとエラーログを確かめる。配置はしない。（2026-10-15 再確認2）
+# 公開URLを外から開き、ページのつながりとエラーログを確かめる。配置はしない。（2026-10-15 再確認3：実践問題まで）
 on:
   push:
     branches: [ai-learning-system]
@@ -9,7 +9,7 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     env:
       BASE: https://qlp-engine-ojsw3j46qa-an.a.run.app
     steps:
@@ -20,6 +20,36 @@ jobs:
           next=$(grep -o "$BASE/p/[^ ]*/go/takken" p.txt | head -1)
           curl -sS -A "Mozilla/5.0 ChatGPT-User" -D - "$next" -o go.txt; cat go.txt
           curl -sS -D - "$BASE/robots.txt" | head -20
+      - name: 宅建を学習者として最後まで進め、実践問題が出るまで待つ
+        run: |
+          python3 - <<'PY'
+          import re, time, urllib.request
+          BASE = "https://qlp-engine-ojsw3j46qa-an.a.run.app"
+          def get(u):
+              t = time.time()
+              r = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "smoke-check"}), timeout=60)
+              body = r.read().decode()
+              print(f"--- {u} ({time.time()-t:.1f}s)\n{body[:600]}\n")
+              return body
+          def link(body, prefix):
+              for line in body.splitlines():
+                  if line.startswith("・" + prefix):
+                      return line[line.rindex("：http") + 1:]
+              raise SystemExit(f"リンク「{prefix}」が無い")
+          b = get(BASE + "/p")
+          b = get(link(b, "宅地建物取引士"))
+          b = get(link(b, "2 利用しない"))
+          b = get(link(b, "3 "))
+          b = get(link(b, "1 始める"))
+          b = get(link(b, "3 実践問題"))
+          for i in range(30):
+              if "番号で答えてください" in b:
+                  print("実践問題が出ました"); break
+              time.sleep(20)
+              b = get(link(b, "もう一度"))
+          else:
+              raise SystemExit("10分待っても実践問題が出ませんでした")
+          PY
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
