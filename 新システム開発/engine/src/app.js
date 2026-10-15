@@ -10,6 +10,8 @@
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.3.0）
  */
+import https from 'node:https';
+import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
@@ -44,11 +46,39 @@ function deps(env, extra = {}) {
   return { store: env.STORE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, parse, parserVersion, ...extra };
 }
 
-async function defaultFetchPdf(url) {
-  const res = await fetch(url, { redirect: 'follow', headers: { accept: 'application/pdf' } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  if (!/^https:\/\//.test(res.url || url)) throw new Error('REDIRECT_NOT_HTTPS');
-  return new Uint8Array(await res.arrayBuffer());
+/**
+ * 公式PDFを取得する。国土地理院のサーバーは古い再ネゴシエーション方式を使うため、標準の fetch では
+ * 接続できない（2026-10-15 GitHub Actions で確認）。そのため node:https で、その方式を許可して取得する。
+ */
+const legacyAgent = new https.Agent({ secureOptions: cryptoConstants.SSL_OP_LEGACY_SERVER_CONNECT, keepAlive: false });
+const MAX_PDF_FETCH = 30 * 1024 * 1024;
+
+function defaultFetchPdf(url, redirects = 5) {
+  return new Promise((resolve, reject) => {
+    if (!/^https:\/\//.test(url)) return reject(new Error('REDIRECT_NOT_HTTPS'));
+    const req = https.get(url, { agent: legacyAgent, headers: { accept: 'application/pdf', 'user-agent': 'qualification-learning-system' }, timeout: 60000 }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        if (redirects <= 0) return reject(new Error('TOO_MANY_REDIRECTS'));
+        return resolve(defaultFetchPdf(new URL(res.headers.location, url).href, redirects - 1));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      let size = 0;
+      res.on('data', (c) => {
+        size += c.length;
+        if (size > MAX_PDF_FETCH) req.destroy(new Error('PDF_TOO_LARGE'));
+        else chunks.push(c);
+      });
+      res.on('end', () => resolve(new Uint8Array(Buffer.concat(chunks))));
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('TIMEOUT')));
+    req.on('error', reject);
+  });
 }
 
 async function body(request) {

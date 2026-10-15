@@ -7,6 +7,7 @@ GitHub Actions で動かす（開発環境からは公式サイトへつなが�
 """
 
 import html
+import ssl
 import json
 import re
 import subprocess
@@ -24,9 +25,14 @@ ANCHOR = re.compile(r"<a\s[^>]*href=\"([^\"]+)\"[^>]*>(.*?)</a>", re.S | re.I)
 TAG = re.compile(r"<[^>]+>")
 
 
+# 国土地理院のサーバーは古い再ネゴシエーション方式を使うため、標準設定では接続できない（2026-10-15 確認）
+CTX = ssl.create_default_context()
+CTX.options |= getattr(ssl, "OP_LEGACY_SERVER_CONNECT", 0x4)
+
+
 def get(url, timeout=60):
     req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with urllib.request.urlopen(req, timeout=timeout, context=CTX) as r:
         return r.read(), r.geturl()
 
 
@@ -56,7 +62,9 @@ def main(outdir):
             report[slug] = {"listing": url, "error": str(e)}
             print(f"[{slug}] listing error: {e}")
             continue
-        page = raw.decode("utf-8", errors="replace")
+        m = re.search(rb"charset=[\"']?([A-Za-z0-9_-]+)", raw[:2000])
+        enc = (m.group(1).decode() if m else "utf-8").lower().replace("shift_jis", "cp932")
+        page = raw.decode(enc, errors="replace")
         (out / f"{slug}-listing.html").write_text(page, encoding="utf-8")
         links = anchors(page, final)
         report[slug] = {"listing": url, "final": final, "pdfLinks": links}
