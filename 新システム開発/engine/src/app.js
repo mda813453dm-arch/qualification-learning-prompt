@@ -20,6 +20,7 @@ import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { newLearnerId, pages } from './pages.js';
 import { INSTRUCTIONS } from './instructions.js';
+import { PRIVACY_HTML } from './privacy.js';
 import { readFileSync } from 'node:fs';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
@@ -224,6 +225,10 @@ async function route(request, env, url, now) {
     return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 
+  // GPT の公開に必要なプライバシーポリシー（個人情報を集めていない内容を、ありのまま書く）
+  if (method === 'GET' && url.pathname === '/privacy') {
+    return new Response(PRIVACY_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  }
   // GPT の作成用（運営者が iPhone で GPT を作るとき、URL から取り込めるようにする）。秘密は含まない。
   if (method === 'GET' && url.pathname === '/gpt/openapi.yaml') {
     const base = env.PUBLIC_BASE_URL || url.origin;

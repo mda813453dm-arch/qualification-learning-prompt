@@ -14,3 +14,10 @@ test('GPT用のAPI定義と設定文をURLから取れる（秘密は含まな�
   assert.equal(ins.status, 200);
   assert.match(await ins.text(), /学習エンジン/);
 });
+
+test('プライバシーポリシーのページを公開する', async () => {
+  const env = { STORE: new MemoryStore(), API_TOKEN: 'test-token', clock: () => 0 };
+  const r = await handle(new Request('https://engine.example/privacy'), env);
+  assert.equal(r.status, 200);
+  assert.match(await r.text(), /プライバシーポリシー/);
+});
