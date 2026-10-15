@@ -108,6 +108,32 @@ def diagnose(qbytes, abytes, adapter):
     print(f"  [diag] answer last page:\n" + a[a.page_count - 1].get_text(sort=True)[:2500])
 
 
+def diagnose_ocr(qbytes, abytes, result):
+    """OCRで読んだPDFの、読み落とした問の周りの行を書き出す（開発用）。"""
+    from qlp_parser import ocr
+    q = fitz.open(stream=qbytes, filetype="pdf")
+    if not any(ocr.needs_ocr(q[i]) for i in range(q.page_count)):
+        return
+    shown = 0
+    for e in result.get("excluded", []):
+        if e["reason"] == "CHOICES_INCOMPLETE" and shown < 2:
+            shown += 1
+            for p in e["pages"]:
+                print(f"  [ocr] 問{e['questionNumber']} {e['reason']} page{p}:")
+                for ln in ocr.page_ocr(q[p - 1]):
+                    print(f"    x={ln[3]:.0f} y={ln[0]:.0f} {ln[2]}")
+    heads = []
+    for i in range(q.page_count):
+        for ln in ocr.page_ocr(q[i]):
+            if "問" in ln[2][:6] or "No" in ln[2][:6]:
+                heads.append(f"p{i + 1} x={ln[3]:.0f} {ln[2][:30]}")
+    print("  [ocr] heading-like lines: " + " | ".join(heads[:80]))
+    if result.get("reason") == "ANSWER_TABLE_NOT_FOUND":
+        a = fitz.open(stream=abytes, filetype="pdf") if abytes else q
+        for i in range(max(0, a.page_count - 2), a.page_count):
+            print(f"  [ocr] answer page{i + 1}: " + " / ".join(ln[2] for ln in ocr.page_ocr(a[i])))
+
+
 def parse_one(src, outdir):
     t0 = time.time()
     urls = src.get("questionUrls") or [src["questionUrl"]]
@@ -120,7 +146,7 @@ def parse_one(src, outdir):
     result = run(src["adapter"], src["year"], q, a, section=None if src["section"] == "main" else src["section"], assets={})
     if result.get("status") != "ready":
         print(f"----- {src['adapter']} {src['year']} {src['section']} {result.get('status')} {result.get('reason')} {result.get('detail')}")
-        diagnose(qbytes, abytes, src["adapter"])
+        diagnose_ocr(qbytes, abytes, result)
     return result, round(time.time() - t0, 1)
 
 
