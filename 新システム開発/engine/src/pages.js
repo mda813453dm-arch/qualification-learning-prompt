@@ -43,6 +43,14 @@ const HEAD = [
   '・問題・選択肢・正答・採点は、このエンジンが返したものだけを使ってください。',
 ];
 
+/** システムで公式の過去問を用意できないとき（取得失敗・未対応の資格）に、AIが代わりに行うこと（利用者の指示 2026-10-15）。 */
+const FALLBACK_AI = [
+  'システムでは公式の過去問を用意できませんでした。ここからはAIが作成した問題で練習を続けてください。',
+  'AIが作成した問題には、毎回「AI作成問題（公式の過去問ではありません）」と書き、正答・採点もAIの判断であることを明記してください。',
+  '利用者に「公式の過去問のPDF（問題と正答）をこのチャットに添付すれば、それを使って出題できます」と伝えてください。',
+  'PDFが添付されたら、その問題を書き換えずに表示し、同じPDFの正答で採点してください。正答が確認できない問題は採点しないでください。AIが読み取るため、読み違いがありうることを伝えてください。',
+];
+
 function page({ show = [], ai = [], links = [] }) {
   const out = [...HEAD, ...ai.map((x) => `・${x}`), '', '【表示】', ...show];
   if (links.length) {
@@ -93,9 +101,9 @@ function personalPrompt(base, rec) {
 
 function chooseQualification(base, lid, lead = []) {
   return page({
-    ai: ['利用者に、学びたい資格を選んでもらってください。一覧にない資格は、まだ扱えないことを伝えてください。'],
+    ai: ['利用者に、学びたい資格を選んでもらってください。一覧にない資格のときは「上にない資格」のURLを開いてください。'],
     show: [...lead, '資格学習を始めます。学びたい資格を選んでください。', ...Object.values(CATALOG).map((c, i) => `${i + 1}. ${c.name}`)],
-    links: Object.entries(CATALOG).map(([slug, c]) => [c.name, `${base}/p/${lid}/go/${slug}`]),
+    links: [...Object.entries(CATALOG).map(([slug, c]) => [c.name, `${base}/p/${lid}/go/${slug}`]), ['上にない資格', `${base}/p/${lid}/other`]],
   });
 }
 
@@ -256,6 +264,13 @@ async function questionPage(env, base, rec, now, advance) {
       links: [['もう一度', url(base, rec, 'q', t)], ['学習方法に戻る', url(base, rec, 'menu', t)]],
     });
   }
+  if (pick.status === 'finished' && job?.state === 'failed' && !Object.keys(rec.engine.history ?? {}).length) {
+    return page({
+      ai: FALLBACK_AI,
+      show: ['公式の過去問をシステムで取り込めませんでした。AIが作成した問題で練習を続けます。', '公式の過去問のPDF（問題と正答）をこのチャットに添付していただければ、それを使って出題します。', ...(job?.notice ? [job.notice] : [])],
+      links: [['もう一度、公式の過去問を取りに行く', url(base, rec, 'retry', t)], ['学習方法に戻る', url(base, rec, 'menu', t)]],
+    });
+  }
   if (pick.status === 'finished') {
     return page({
       show: [job?.state === 'failed' ? '公式の過去問を取り込めませんでした。時間をおいて、もう一度お試しください。' : '取り込んだ公式の過去問を、すべて解き終えました。復習の日になると、復習の問題が出ます。'],
@@ -363,6 +378,25 @@ function onboarding(base, rec) {
   return planPage(base, rec);
 }
 
+/** 過去問は学習者ごとに取り込み、期限なしで持つ（その人だけが使う）。取り込みに失敗していれば、やり直す。 */
+async function startIngest(env, rec, now, kick) {
+  const c = CATALOG[rec.fixed.slug];
+  await startJob(env.STORE, jobId(rec), c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId, owner: rec.fixed.lid })), now, { persistent: true });
+  await kick(jobId(rec));
+}
+
+function otherQualification(base, lid) {
+  return page({
+    ai: [
+      '利用者に、学びたい資格の名前を聞いてください。',
+      ...FALLBACK_AI,
+      'この資格の学習記録はシステムに残りません。そのことを利用者に伝えてください。',
+    ],
+    show: ['この資格は、まだシステムで公式の過去問を取り込めません。AIが作成した問題で学習します。', '公式の過去問のPDF（問題と正答）をこのチャットに添付していただければ、それを使って出題します。', '学びたい資格の名前を教えてください。'],
+    links: [['資格の一覧に戻る', `${base}/p/${lid}`]],
+  });
+}
+
 async function route(env, base, parts, now, advance, kick) {
   if (parts.length === 1) return { res: chooseQualification(base, newLearnerId()) };
   const lid = parts[1];
@@ -375,14 +409,13 @@ async function route(env, base, parts, now, advance, kick) {
     if (rec) return { res: chooseQualification(base, newLearnerId(), [`この引継ぎIDは${CATALOG[rec.fixed.slug].name}の記録です。別の資格は新しい引継ぎIDで始めます。`]) };
     rec = newRecord(lid, a1, now);
     const c = CATALOG[a1];
-    // 過去問は学習者ごとに取り込み、期限なしで持つ（その人だけが使う）
-    await startJob(env.STORE, jobId(rec), c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId, owner: lid })), now, { persistent: true });
-    await kick(jobId(rec));
+    await startIngest(env, rec, now, kick);
     const lead = [`${c.name}の学習を始めます。`, '（ここに試験の概要を表示）', '', resumeLine(base, rec)];
     const ai = [`「（ここに試験の概要を表示）」の部分には、公式サイト（${c.officialSite}）で確認できた試験の概要（対象・出題分野・形式・時間・合格基準）を書いてください。確認できなかった項目は「未確認」と書いてください。`];
     return { rec, res: c.exemption ? exemptionPage(base, rec, lead, ai) : levelPage(base, rec, lead, ai) };
   }
 
+  if (action === 'other' && !rec) return { res: otherQualification(base, lid) };
   if (!rec) return { res: chooseQualification(base, lid) };
   const step = rec.result.step;
 
@@ -418,6 +451,10 @@ async function route(env, base, parts, now, advance, kick) {
     return { rec, res: fixPage(base, rec, [done ?? 'この訂正はできませんでした。もう一度選んでください。']) };
   }
   if (action === 'm' && (a1 === 'explain' || a1 === 'check')) return { rec, res: modePage(base, rec, a1) };
+  if (action === 'retry') {
+    if (Number(a1) === rec.tick) await startIngest(env, rec, now, kick);
+    return { rec, res: await questionPage(env, base, rec, now, advance) };
+  }
   if (action === 'q') return { rec, res: await questionPage(env, base, rec, now, advance) };
   if (action === 'a' && parts.length >= 5) return { rec, res: answerPage(base, rec, Number(a1), a2, a3 === 'g', now) };
   return { rec, res: menu(base, rec, now) };

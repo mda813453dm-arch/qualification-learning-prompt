@@ -213,3 +213,24 @@ test('台帳にない資格・形の違う引継ぎIDは資格選びに戻す', 
   const u = await get(env, '/p/abcdefghjk/go/unknown');
   assert.match(u, /学びたい資格を選んでください/);
 });
+
+test('システムで過去問を取り込めないときは、AI作成問題と過去問PDFの添付に切り替え、やり直すこともできる', async () => {
+  const { env } = makeEnv();
+  const ok = env.parserFetch;
+  env.parserFetch = async () => new Response('down', { status: 500 });
+  const { menu } = await onboard(env, 'surveyor');
+  const q = await get(env, link(menu, '3 実践問題'));
+  assert.match(q, /AI作成問題（公式の過去問ではありません）/);
+  assert.match(q, /PDF（問題と正答）をこのチャットに添付/);
+  env.parserFetch = ok;
+  const again = await get(env, link(q, 'もう一度、公式の過去問を取りに行く'));
+  assert.match(again, /2026年度 問1/);
+});
+
+test('一覧にない資格は、AI作成問題と過去問PDFの添付で学習する', async () => {
+  const { env } = makeEnv();
+  const t = await get(env, link(await get(env, '/p'), '上にない資格'));
+  assert.match(t, /AI作成問題（公式の過去問ではありません）/);
+  assert.match(t, /学習記録はシステムに残りません/);
+  assert.match(t, /資格の一覧に戻る/);
+});
