@@ -21,7 +21,7 @@ import { handleRpc } from './mcp.js';
 import { newLearnerId, pages } from './pages.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
-import { readFileSync } from 'node:fs';
+import { OPENAPI_YAML } from './gpt-openapi.js';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
@@ -232,7 +232,7 @@ async function route(request, env, url, now) {
   // GPT の作成用（運営者が iPhone で GPT を作るとき、URL から取り込めるようにする）。秘密は含まない。
   if (method === 'GET' && url.pathname === '/gpt/openapi.yaml') {
     const base = env.PUBLIC_BASE_URL || url.origin;
-    const spec = readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8').replaceAll('https://REPLACE-WITH-CLOUD-RUN-URL', base);
+    const spec = OPENAPI_YAML.replaceAll('https://REPLACE-WITH-CLOUD-RUN-URL', base);
     return new Response(spec, { headers: { 'content-type': 'text/yaml; charset=utf-8', 'cache-control': 'no-store' } });
   }
   if (method === 'GET' && url.pathname === '/gpt/instructions.txt') {

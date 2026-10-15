@@ -21,3 +21,9 @@ test('プライバシーポリシーのページを公開する', async () => {
   assert.equal(r.status, 200);
   assert.match(await r.text(), /プライバシーポリシー/);
 });
+
+test('GPT用のAPI定義は engine/openapi.yaml と同じ内容', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { OPENAPI_YAML } = await import('../src/gpt-openapi.js');
+  assert.equal(OPENAPI_YAML, readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8'));
+});
