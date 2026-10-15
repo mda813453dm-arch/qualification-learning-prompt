@@ -49,8 +49,13 @@ export const CATALOG = {
   },
 };
 
+/**
+ * 学習の段階（マスタープロンプト U03・ChatGPT開発版の仕様：未着手／基礎／応用／過去問）。
+ * mode：分野の始め方（U07）のおすすめ。1=解説あり 2=確認問題から 3=実践問題から。段階だけで最初の分野は変えない。
+ */
 export const LEVELS = {
-  1: { label: 'これから始める', start: 'explain' },
-  2: { label: '基礎は学んだ', start: 'practice' },
-  3: { label: '過去問を解いている', start: 'practice' },
+  1: { label: '未着手', mode: 1 },
+  2: { label: '基礎学習中', mode: 2 },
+  3: { label: '応用学習中', mode: 3 },
+  4: { label: '過去問演習中', mode: 3 },
 };

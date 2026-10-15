@@ -155,7 +155,7 @@ function sourceOf(p) {
  * 回答を採点する。confidence: 'sure'（自信あり・既定）| 'guess'（勘で当てた）
  * 返り値 {ok, state, grade} / {ok:false, reason}
  */
-export function grade(state, { questionId, value, confidence = 'sure' }, { today, now }) {
+export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals }) {
   const cur = state.current;
   if (!cur) return { ok: false, reason: 'NO_QUESTION_PRESENTED' };
   if (questionId !== cur.questionId) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
@@ -171,7 +171,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     qualificationId: state.qualificationId,
     result,
     source: correct ? 'self_report' : 'wrong',
-  }, { today, examDate: state.plan.examDate });
+  }, { today, examDate: state.plan.examDate, intervals });
   const review = { ...state.review };
   if (upd.status === 'updated') review[questionId] = upd.item;
   return {
@@ -180,7 +180,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     state: {
       ...state,
       current: { ...cur, grade: g },
-      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null } },
+      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },
   };
