@@ -44,8 +44,16 @@ export async function availablePackets(store, job, now) {
 /** 同じ分野から続けて出す問の数（仕様：同分野の過去問を連続で3問）。 */
 export const SET_SIZE = 3;
 
-function weight(state, packet) {
-  return Number(state.plan.fieldWeights?.[packet.fieldId] ?? 0);
+/** 分野ごとの、取り込んだ過去問での出題数。 */
+function fieldCountsOf(items) {
+  const counts = {};
+  const seen = new Set();
+  for (const { packet: p } of items) {
+    if (!p.fieldId || seen.has(p.questionId)) continue;
+    seen.add(p.questionId);
+    counts[p.fieldId] = (counts[p.fieldId] ?? 0) + 1;
+  }
+  return counts;
 }
 
 /**
@@ -68,7 +76,7 @@ export function pickNext(state, items, { today, job }) {
   }
   // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
   //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
-  //    同じ重みならこれまでに解いた数が少ない分野）。分野の中では年度の新しい順・問番号順。
+  //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順。
   const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
   if (fresh.length) {
     const set = state.set;
@@ -78,12 +86,16 @@ export function pickNext(state, items, { today, job }) {
     }
     const solved = {};
     for (const h of Object.values(state.history)) if (h.fieldId) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
-    const score = (x) => [weight(state, x.packet), -(solved[x.packet.fieldId] ?? 0)];
-    const best = fresh.reduce((a, b) => {
-      const [wa, sa] = score(a);
-      const [wb, sb] = score(b);
-      return wb > wa || (wb === wa && sb > sa) ? b : a;
-    });
+    // 重み（学習計画の指定）→ これまでに解いた数が少ない分野 → 取り込んだ過去問での出題数が多い（頻出の）分野
+    const counts = fieldCountsOf(usable);
+    const score = (x) => [Number(state.plan.fieldWeights?.[x.packet.fieldId] ?? 0), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
+    const higher = (x, y) => { // x が y より先に出すべきなら true
+      const a = score(x);
+      const b = score(y);
+      for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return a[i] > b[i];
+      return false;
+    };
+    const best = fresh.reduce((a, b) => (higher(b, a) ? b : a));
     return { status: 'question', item: best, kind: 'new' };
   }
   if (job && job.state === 'running') return { status: 'waiting' };

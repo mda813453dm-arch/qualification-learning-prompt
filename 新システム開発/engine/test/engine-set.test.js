@@ -44,7 +44,8 @@ test('分野の残りが3問に満たないときは、別の分野に移って�
     state = r.state;
     seen.push(r.item.packet.fieldId);
   }
-  assert.deepEqual(seen, ['a', 'b', 'b', 'b', 'b']);
+  // 頻出（出題数の多い）b から3問、次に a、残った b
+  assert.deepEqual(seen, ['b', 'b', 'b', 'a', 'b']);
 });
 
 test('分類できていない問は新しい問として出さない', () => {
