@@ -28,6 +28,8 @@ const WRONG_STREAK = 3;
 const FIX_LIST = 10;
 
 const lrnKey = (lid) => `lrn/${lid}`;
+/** 学習者ごとの取り込みジョブの名前。 */
+const jobId = (rec) => `${rec.fixed.qualificationId}~${rec.fixed.lid}`;
 
 export function newLearnerId() {
   const bytes = crypto.getRandomValues(new Uint8Array(10));
@@ -242,7 +244,7 @@ function applyFix(rec, op, arg) {
 
 async function questionPage(env, base, rec, now, advance) {
   const c = CATALOG[rec.fixed.slug];
-  const job = await advance(env, c.qualificationId, now, PAGE_BUDGET_MS);
+  const job = await advance(env, jobId(rec), now, PAGE_BUDGET_MS);
   const skip = new Set(rec.result.exempt && c.exemption ? c.exemption.numbers : []);
   const items = (await availablePackets(env.STORE, job, now)).filter((x) => !skip.has(x.packet.questionNumber));
   const pick = pickNext(rec.engine, items, { today: jstToday(now), job });
@@ -373,8 +375,9 @@ async function route(env, base, parts, now, advance, kick) {
     if (rec) return { res: chooseQualification(base, newLearnerId(), [`この引継ぎIDは${CATALOG[rec.fixed.slug].name}の記録です。別の資格は新しい引継ぎIDで始めます。`]) };
     rec = newRecord(lid, a1, now);
     const c = CATALOG[a1];
-    await startJob(env.STORE, c.qualificationId, c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId })), now);
-    await kick(c.qualificationId);
+    // 過去問は学習者ごとに取り込み、期限なしで持つ（その人だけが使う）
+    await startJob(env.STORE, jobId(rec), c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId, owner: lid })), now, { persistent: true });
+    await kick(jobId(rec));
     const lead = [`${c.name}の学習を始めます。`, '（ここに試験の概要を表示）', '', resumeLine(base, rec)];
     const ai = [`「（ここに試験の概要を表示）」の部分には、公式サイト（${c.officialSite}）で確認できた試験の概要（対象・出題分野・形式・時間・合格基準）を書いてください。確認できなかった項目は「未確認」と書いてください。`];
     return { rec, res: c.exemption ? exemptionPage(base, rec, lead, ai) : levelPage(base, rec, lead, ai) };

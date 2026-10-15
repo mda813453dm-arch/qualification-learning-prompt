@@ -11,12 +11,18 @@ import { sha256Hex } from './store.js';
 export const TTL_MS = 24 * 60 * 60 * 1000;
 const CLEANUP_TTL_S = 26 * 60 * 60;
 
-export function resultKey({ qualificationId, year, section, questionSha256, answerSha256, parserVersion }) {
-  return ['pkt', qualificationId, year, section, questionSha256, answerSha256, parserVersion].map(encodeURIComponent).join('/');
+/**
+ * owner（引継ぎID）付きのものは、その学習者だけが使う保存（2026-10-15 方針4の改定）。
+ * 実施済みの試験の問題は変わらないので、期限なしで持ち続ける。
+ */
+export function resultKey({ qualificationId, year, section, questionSha256, answerSha256, parserVersion, owner }) {
+  const head = owner ? ['own', owner] : [];
+  return ['pkt', ...head, qualificationId, year, section, questionSha256, answerSha256, parserVersion].map(encodeURIComponent).join('/');
 }
 
-export function figureKey(questionSha256, parserVersion, file) {
-  return ['fig', questionSha256, parserVersion, file].map(encodeURIComponent).join('/');
+export function figureKey(questionSha256, parserVersion, file, owner = null) {
+  const head = owner ? ['own', owner] : [];
+  return ['fig', ...head, questionSha256, parserVersion, file].map(encodeURIComponent).join('/');
 }
 
 async function sourceKey(url) {
@@ -39,18 +45,19 @@ export async function writeSource(store, url, sha256, now) {
 export async function readResult(store, keyParts, now) {
   const v = await store.get(resultKey(keyParts), 'json');
   if (!v) return { hit: false, reason: 'MISS' };
-  if (!fresh(v.savedAt, now)) return { hit: false, reason: 'EXPIRED' };
+  if (!keyParts.owner && !fresh(v.savedAt, now)) return { hit: false, reason: 'EXPIRED' };
   return { hit: true, result: v.result, savedAt: v.savedAt };
 }
 
 /** 図を先に書き、最後にパケットを書く（途中で止まっても、図の欠けたパケットが見えないように）。 */
 export async function writeResult(store, keyParts, result, assets, now) {
+  const opts = keyParts.owner ? {} : { expirationTtl: CLEANUP_TTL_S };
   for (const [file, bytes] of Object.entries(assets)) {
-    await store.put(figureKey(keyParts.questionSha256, keyParts.parserVersion, file), bytes, { expirationTtl: CLEANUP_TTL_S });
+    await store.put(figureKey(keyParts.questionSha256, keyParts.parserVersion, file, keyParts.owner), bytes, opts);
   }
-  await store.put(resultKey(keyParts), JSON.stringify({ savedAt: now, result }), { expirationTtl: CLEANUP_TTL_S });
+  await store.put(resultKey(keyParts), JSON.stringify({ savedAt: now, result }), opts);
 }
 
-export async function readFigure(store, questionSha256, parserVersion, file) {
-  return store.get(figureKey(questionSha256, parserVersion, file), 'arrayBuffer');
+export async function readFigure(store, questionSha256, parserVersion, file, owner = null) {
+  return store.get(figureKey(questionSha256, parserVersion, file, owner), 'arrayBuffer');
 }

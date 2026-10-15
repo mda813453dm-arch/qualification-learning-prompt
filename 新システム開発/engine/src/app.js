@@ -138,10 +138,12 @@ async function route(request, env, url, now) {
   const method = request.method;
 
   // 図（画像表示用。トークン不要。キーにSHA-256が入るので推測できない）
-  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'figure' && parts.length === 5) {
-    const [qsha, pv, file] = parts.slice(2).map(decodeURIComponent);
+  // 学習者ごとの図は /v1/figure/own/<引継ぎID>/... 
+  const own = parts[2] === 'own' && parts.length === 7;
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'figure' && (parts.length === 5 || own)) {
+    const [qsha, pv, file] = parts.slice(own ? 4 : 2).map(decodeURIComponent);
     if (!/^[a-f0-9]{64}$/.test(qsha)) throw new HttpError(404, 'FIGURE_NOT_FOUND');
-    const bytes = await readFigure(env.STORE, qsha, pv, file);
+    const bytes = await readFigure(env.STORE, qsha, pv, file, own ? decodeURIComponent(parts[3]) : null);
     if (!bytes) throw new HttpError(404, 'FIGURE_NOT_FOUND');
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }

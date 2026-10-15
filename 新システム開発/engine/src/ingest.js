@@ -141,7 +141,9 @@ export async function ingestSource(src, deps) {
 }
 
 function pick(src) {
-  return { qualificationId: src.qualificationId, year: src.year, section: src.section };
+  const out = { qualificationId: src.qualificationId, year: src.year, section: src.section };
+  if (src.owner) out.owner = src.owner;
+  return out;
 }
 
 // ---- 取り込みジョブ（資格ごと） ----
@@ -152,18 +154,22 @@ export async function readJob(store, qualificationId) {
   return store.get(jobKey(qualificationId), 'json');
 }
 
-/** 資格名が決まった時点で登録する（方針3）。同じ資格の取り込みが24時間以内に済んでいれば作り直さない。 */
-export async function startJob(store, qualificationId, sources, now) {
+/**
+ * 資格名が決まった時点で登録する（方針3）。同じ資格の取り込みが24時間以内に済んでいれば作り直さない。
+ * persistent：学習者ごとの取り込み（期限なし）。一度登録したら作り直さない。
+ */
+export async function startJob(store, qualificationId, sources, now, { persistent = false } = {}) {
   const old = await readJob(store, qualificationId);
-  if (old && old.state !== 'failed' && now - old.startedAt < 24 * 60 * 60 * 1000) return old;
+  if (old && old.state !== 'failed' && (old.persistent || now - old.startedAt < 24 * 60 * 60 * 1000)) return old;
   const job = {
     qualificationId,
+    persistent,
     state: 'running',
     startedAt: now,
     updatedAt: now,
     sources: sources.map((s) => ({ ...s, status: 'pending' })),
   };
-  await store.put(jobKey(qualificationId), JSON.stringify(job), { expirationTtl: 26 * 60 * 60 });
+  await store.put(jobKey(qualificationId), JSON.stringify(job), persistent ? {} : { expirationTtl: 26 * 60 * 60 });
   return job;
 }
 
@@ -207,7 +213,7 @@ async function saveJob(store, job, now) {
   const done = job.sources.filter((s) => s.status === 'done').length;
   job.state = pending ? 'running' : done ? 'done' : 'failed';
   job.updatedAt = now;
-  await store.put(jobKey(job.qualificationId), JSON.stringify(job), { expirationTtl: 26 * 60 * 60 });
+  await store.put(jobKey(job.qualificationId), JSON.stringify(job), job.persistent ? {} : { expirationTtl: 26 * 60 * 60 });
 }
 
 /**

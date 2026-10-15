@@ -185,15 +185,25 @@ test('宅建で免除を利用すると、問46〜50は出題しない', async (
   assert.ok(seen.every((n) => n <= 45));
 });
 
-test('同じ資格の2人目は、24時間以内なら分解し直さずに使う', async () => {
+test('過去問は学習者ごとに取り込み、期限なしで持つ（ほかの学習者とは共有しない）', async () => {
   const { env, counts } = makeEnv();
-  await onboard(env, 'surveyor');
-  const first = counts.parse;
-  env.now += 60 * 60 * 1000;
-  const { menu } = await onboard(env, 'surveyor');
-  const q = await get(env, link(menu, '3 実践問題'));
-  assert.match(q, /問1の本文/);
-  assert.equal(counts.parse, first);
+  const a = await onboard(env, 'surveyor');
+  assert.equal(counts.parse, 1);
+  const b = await onboard(env, 'surveyor');
+  assert.equal(counts.parse, 2, '2人目は自分の分を取り込む');
+
+  env.now += 30 * 24 * 60 * 60 * 1000; // 30日後
+  const q1 = await get(env, link(a.menu, '3 実践問題'));
+  assert.match(q1, /問1の本文/);
+  const r = await get(env, link(q1, '3と答えた'));
+  const q2 = await get(env, link(r, '次の問題'));
+  assert.equal(counts.parse, 2, '30日たっても取り込み直さない');
+  const fig = /図：(\S+)/.exec(q2)[1];
+  assert.match(fig, new RegExp(`/v1/figure/own/${a.lid}/`));
+  const img = await handle(new Request(fig), env);
+  assert.equal(img.status, 200);
+  assert.equal(img.headers.get('content-type'), 'image/png');
+  assert.notEqual(a.lid, b.lid);
 });
 
 test('台帳にない資格・形の違う引継ぎIDは資格選びに戻す', async () => {

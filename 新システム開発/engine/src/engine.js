@@ -88,7 +88,7 @@ export function present(item, kind, figureBase = '/v1/figure') {
     choices: p.choices,
     choiceMode: p.choiceMode ?? 'text',
     figures: (p.figures ?? []).map((f) => ({
-      url: `${figureBase}/${p.questionPdfSha256}/${encodeURIComponent(item.keyParts.parserVersion)}/${encodeURIComponent(f.file)}`,
+      url: `${figureBase}${item.keyParts.owner ? `/own/${encodeURIComponent(item.keyParts.owner)}` : ''}/${p.questionPdfSha256}/${encodeURIComponent(item.keyParts.parserVersion)}/${encodeURIComponent(f.file)}`,
       width: f.width,
       height: f.height,
       sha256: f.sha256,

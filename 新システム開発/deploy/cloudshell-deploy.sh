@@ -33,9 +33,8 @@ echo "== 3/7 図の保存場所（Cloud Storage）"
 if ! gcloud storage buckets describe "gs://$BUCKET" >/dev/null 2>&1; then
   gcloud storage buckets create "gs://$BUCKET" --location="$REGION" --uniform-bucket-level-access
 fi
-LIFECYCLE="$(mktemp)"
-echo '{"rule":[{"action":{"type":"Delete"},"condition":{"age":2}}]}' > "$LIFECYCLE"
-gcloud storage buckets update "gs://$BUCKET" --lifecycle-file="$LIFECYCLE" >/dev/null
+# 学習者ごとの図は期限なしで持つため、自動削除の設定はしない（以前の設定があれば外す）
+gcloud storage buckets update "gs://$BUCKET" --clear-lifecycle >/dev/null 2>&1 || true
 
 echo "== 4/7 トークン（自動で作成し、Secret Manager に保存）"
 for name in qlp-api-token qlp-parser-token; do
