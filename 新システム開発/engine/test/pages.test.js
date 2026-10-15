@@ -221,7 +221,8 @@ test('システムで過去問を取り込めないときは、AI作成問題と
   const { menu } = await onboard(env, 'surveyor');
   const q = await get(env, link(menu, '3 実践問題'));
   assert.match(q, /AI作成問題（公式の過去問ではありません）/);
-  assert.match(q, /PDF（問題と正答）をこのチャットに添付/);
+  assert.match(q, /PDFを取得し、このチャットに添付/);
+  assert.match(q, /公式の過去問掲載ページ：https:\/\/www\.gsi\.go\.jp\/LAW\/SHIKEN\/past\.html/);
   env.parserFetch = ok;
   const again = await get(env, link(q, 'もう一度、公式の過去問を取りに行く'));
   assert.match(again, /2026年度 問1/);
@@ -232,5 +233,6 @@ test('一覧にない資格は、AI作成問題と過去問PDFの添付で学習
   const t = await get(env, link(await get(env, '/p'), '上にない資格'));
   assert.match(t, /AI作成問題（公式の過去問ではありません）/);
   assert.match(t, /学習記録はシステムに残りません/);
+  assert.match(t, /公式以外のサイトは示さないでください/);
   assert.match(t, /資格の一覧に戻る/);
 });

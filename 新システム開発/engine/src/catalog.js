@@ -7,6 +7,7 @@ export const CATALOG = {
     qualificationId: 'q041',
     name: '宅地建物取引士（宅建）',
     officialSite: 'https://www.retio.or.jp/exam/index.html',
+    pastExamPage: 'https://www.retio.or.jp/exam/past_ques_ans/other/',
     // 公式の免除制度：登録講習の修了者は問46〜50の5問が免除
     exemption: { label: '登録講習の修了による5問免除（問46〜50）', numbers: [46, 47, 48, 49, 50] },
     sources: [
@@ -17,6 +18,7 @@ export const CATALOG = {
     qualificationId: 'q063',
     name: '測量士補',
     officialSite: 'https://www.gsi.go.jp/LAW/SHIKEN/SHIKEN-top.htm',
+    pastExamPage: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html',
     exemption: null,
     sources: [
       { adapter: 'surveyor', year: 2026, section: 'main', questionUrl: 'https://www.gsi.go.jp/common/000278974.pdf', answerUrl: 'https://www.gsi.go.jp/common/000278975.pdf' },
