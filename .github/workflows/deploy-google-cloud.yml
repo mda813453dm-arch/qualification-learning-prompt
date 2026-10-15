@@ -1,7 +1,12 @@
 name: Google Cloud に配置する（資格学習システム）
 # iPhone だけで運用するため、Cloud Shell の代わりに GitHub Actions から配置する。
 # 必要なもの：リポジトリの Secret「GCP_SA_KEY」（配置用サービスアカウントの鍵 JSON）。
+# 配置の合図：deploy/deploy-request.txt を更新して push する（workflow_dispatch は main にファイルが無いと使えないため）
 on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/deploy-request.txt'
   workflow_dispatch:
 concurrency:
   group: deploy-google-cloud

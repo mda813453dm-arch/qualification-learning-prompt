@@ -1,0 +1,2 @@
+このファイルを更新して push すると、GitHub Actions が Google Cloud に配置します（.github/workflows/deploy-google-cloud.yml）。
+2026-10-15 19:45 配置（Manabu さんの指示「配置して」）
