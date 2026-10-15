@@ -1,3 +1,3 @@
 資格試験の勉強を手伝ってください。
 次のURLのページを開き、そこに書かれている指示に従って進めてください。ページを開けなかったときは、そのことを私に伝えてください。
-https://REPLACE-WITH-CLOUD-RUN-URL/p
+https://qlp-engine-ojsw3j46qa-an.a.run.app/p
