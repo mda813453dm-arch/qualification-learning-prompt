@@ -90,6 +90,24 @@ def classify_counts(packets, slug):
     return {table.get(k, k): v for k, v in sorted(c.items())}
 
 
+def diagnose(qbytes, abytes, adapter):
+    """分解できなかったPDFの形を、ログで確かめられるように書き出す（パーサーを年度の形式に合わせるため）。"""
+    from qlp_parser.cli import ADAPTERS
+    ad = ADAPTERS[adapter]
+    q = fitz.open(stream=qbytes, filetype="pdf")
+    print(f"  [diag] pages={q.page_count} chars/page={[len(q[i].get_text()) for i in range(min(q.page_count, 6))]}")
+    try:
+        raw = ad.parse_questions(q)
+        print(f"  [diag] parse_questions={len(raw)} numbers={[r.number for r in raw][:60]}")
+    except Exception as e:  # noqa: BLE001
+        print(f"  [diag] parse_questions error: {type(e).__name__}: {getattr(e, 'code', '')} {getattr(e, 'detail', '')}")
+    for i in sorted({0, 1, 2}) :
+        if i < q.page_count:
+            print(f"  [diag] page{i + 1}:\n" + q[i].get_text(sort=True)[:1200])
+    a = fitz.open(stream=abytes, filetype="pdf") if abytes else q
+    print(f"  [diag] answer last page:\n" + a[a.page_count - 1].get_text(sort=True)[:2500])
+
+
 def parse_one(src, outdir):
     t0 = time.time()
     urls = src.get("questionUrls") or [src["questionUrl"]]
@@ -100,6 +118,9 @@ def parse_one(src, outdir):
     q = PdfSource(data=qbytes, url=urls[0])
     a = PdfSource(data=abytes, url=src["answerUrl"]) if abytes else None
     result = run(src["adapter"], src["year"], q, a, section=None if src["section"] == "main" else src["section"], assets={})
+    if result.get("status") != "ready":
+        print(f"----- {src['adapter']} {src['year']} {src['section']} {result.get('status')} {result.get('reason')} {result.get('detail')}")
+        diagnose(qbytes, abytes, src["adapter"])
     return result, round(time.time() - t0, 1)
 
 
