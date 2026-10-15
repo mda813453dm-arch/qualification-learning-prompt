@@ -66,8 +66,9 @@ export function awaitUpload() {
 }
 
 /** 経路B：Cloud Run の分解サーバーを呼ぶ分解関数。 */
-export function httpParser({ endpoint, token, fetch: doFetch = fetch, timeoutMs = 25000 }) {
-  if (!/^https:\/\//.test(endpoint ?? '')) throw new Error('PARSER_URL_INVALID');
+export function httpParser({ endpoint, token, fetch: doFetch = fetch, timeoutMs = 120000 }) {
+  // https のみ（手元での確認用に localhost の http だけは許す）
+  if (!/^(https:\/\/|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$))/.test(endpoint ?? '')) throw new Error('PARSER_URL_INVALID');
   return async (input) => {
     const body = {
       adapter: input.adapter,

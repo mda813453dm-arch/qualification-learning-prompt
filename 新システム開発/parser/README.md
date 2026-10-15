@@ -9,6 +9,19 @@
 - 図の書き出し：`--assets-dir <フォルダ>` を付けると、公式PDFから切り出したPNGを書き出す（パケットの figures にファイル名・SHA-256・切り出し範囲）
 - テスト：`python -m unittest discover -s tests`（実PDFの受入テストは `TAKKEN_R7_PDF=<パス>`、`SURVEYOR_R8_Q=<問題PDF> SURVEYOR_R8_A=<正答PDF>` を付けたときだけ動く）
 
+## 経路Bの分解サーバー（T5、`qlp_parser/server.py`）
+
+Cloud Run で動かす。公式PDFの取得とSHA-256の照合はエンジン側で行い、サーバーは届いたPDFを分解するだけ。
+
+- `POST /v1/parse` `{adapter, year, section, question:{url, sha256, base64}, answer:{…}|null}` → `{result, assets:{ファイル名: base64 PNG}}`
+  - 届いたPDFのSHA-256が `sha256` と違えば分解しない（`result.status=unavailable`、`PDF_HASH_MISMATCH`）
+  - 分解できないときも 200 で理由コードを返す。リクエストの形が崩れているときだけ 400
+- `GET /healthz` → `{ok, parserVersion, ocr}`（`ocr` は Tesseract の日本語データが使えるか）
+- 環境変数：`PARSER_TOKEN`（Bearer。Secret Manager から渡す）、`PORT`
+- 手元で動かす：`PORT=8090 python -m qlp_parser.server`
+- イメージ：`Dockerfile`（python:3.13-slim ＋ tesseract-ocr・tesseract-ocr-jpn ＋ PyMuPDF 1.26.5）。公開はまだしない（2026年10月15日 水野さん指示）
+- 処理時間：測量士補R8（OCRあり）は手元で約45秒、宅建R7（文字のみ）は数秒。
+
 ## 現状（v0.3.0）
 - 宅建アダプタ：見出し【問 n】・4択・正答表（問 a … 問 b の行）。図・表がありそうな問題は、図を返せるまで出題しない。
 - 宅建R7公式PDF（SHA-256 829cde57…）で受入テスト合格：50問すべて出題可能、正答50問が既存索引と一致、問29が検証済みパケットと一致。

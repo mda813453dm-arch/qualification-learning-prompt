@@ -19,6 +19,18 @@ Cloud Storage（図のPNG）を使う（方針7：2026年10月15日、Cloudflare
 cd engine && npm install && npm test   # Google のライブラリを入れてから実行
 ```
 
+経路B（分解サーバー）まで通しで確かめるとき（任意）：
+
+```bash
+PORT=8090 PARSER_TOKEN=pt python3 -m qlp_parser.server &          # parser/ で実行
+NO_PROXY=127.0.0.1 QLP_PARSER_URL=http://127.0.0.1:8090 QLP_PARSER_TOKEN=pt \
+  QLP_REAL_ADAPTER=surveyor QLP_REAL_QID=q063 QLP_REAL_YEAR=2026 QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf \
+  node --test engine/test/route-b-real.test.js
+```
+
+**分かっている課題：** OCRが要る測量士補は、分解サーバーの処理に約45秒かかり、その間エンジンの1回の呼び出しも待たされる
+（手元の確認で約50秒）。AIアプリ側の待ち時間の上限に掛かるおそれがあるので、T2（AIアプリでの検証）で確かめる。
+
 本物の分解結果で通しで確かめるとき（任意）：
 
 ```bash
