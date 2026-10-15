@@ -12,7 +12,8 @@ import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 
-from qlp_parser.core import sha256
+from qlp_parser.cli import run
+from qlp_parser.core import PdfSource, sha256
 from qlp_parser.server import Handler
 from tests.test_takken_synthetic import ANS, Q, URL, make_pdf
 
@@ -53,6 +54,8 @@ class ParserServer(unittest.TestCase):
         self.assertEqual([p["correctAnswer"] for p in out["result"]["packets"]], [3, 1, 4])
         self.assertEqual(out["result"]["questionPdfSha256"], sha256(self.pdf))
         self.assertEqual(out["assets"], {})
+        # 受入4：経路A（cli の run）と経路B（サーバー）で同じ出力になる
+        self.assertEqual(out["result"], json.loads(json.dumps(run("takken", 2025, PdfSource(self.pdf, URL, sha256(self.pdf))))))
 
     def test_token_required(self):
         self.assertEqual(self.post(self.body(), token=None)[0], 401)

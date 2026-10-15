@@ -1,0 +1,208 @@
+openapi: 3.1.0
+info:
+  title: 資格学習エンジン
+  version: 0.1.0
+  description: >
+    公式過去問の出題・採点・復習・引継ぎを行う学習エンジン。AIアプリは返ってきた内容を表示するだけにする。
+    接続版プロンプト（AIアプリ学習開始プロンプト_接続版.md）と組み合わせて使う。
+servers:
+  - url: https://REPLACE-WITH-CLOUD-RUN-URL
+security:
+  - bearer: []
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  schemas:
+    Source:
+      type: object
+      required: [adapter, year, section, questionUrl]
+      properties:
+        adapter: { type: string, enum: [takken, surveyor], description: takken＝宅建、surveyor＝測量士補 }
+        year: { type: integer, description: 西暦の試験年度 }
+        section: { type: string, description: 区分。分からなければ main }
+        questionUrl: { type: string, description: 公式の問題PDFのURL（https） }
+        answerUrl: { type: [string, 'null'], description: 同じ年度の公式の正答PDFのURL。問題PDFに正答が入っていれば null }
+    Job:
+      type: object
+      properties:
+        state: { type: string, enum: [running, done, failed] }
+        notice: { type: [string, 'null'], description: 利用者にそのまま伝える案内文 }
+        sources:
+          type: array
+          items:
+            type: object
+            properties:
+              index: { type: integer }
+              status: { type: string, enum: [pending, done, failed] }
+              reason: { type: [string, 'null'] }
+              packetCount: { type: [integer, 'null'] }
+    Question:
+      type: object
+      properties:
+        questionId: { type: string }
+        kind: { type: string, enum: [new, review] }
+        year: { type: integer }
+        questionNumber: { type: integer }
+        stem: { type: string }
+        stemMode: { type: string, enum: [text, ocr, official_image] }
+        choices: { type: array, items: { type: string } }
+        figures:
+          type: array
+          items:
+            type: object
+            properties:
+              url: { type: string }
+              width: { type: integer }
+              height: { type: integer }
+        questionPdfUrl: { type: string }
+        questionPdfPages: { type: array, items: { type: integer } }
+        notices: { type: array, items: { type: string } }
+paths:
+  /v1/sessions:
+    post:
+      operationId: startSession
+      summary: 資格の過去問の取り込みを始め、学習セッションを作る
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qualificationId, sources]
+              properties:
+                qualificationId: { type: string, description: q041＝宅建、q063＝測量士補 }
+                sources: { type: array, maxItems: 40, items: { $ref: '#/components/schemas/Source' } }
+                plan:
+                  type: object
+                  properties:
+                    examDate: { type: string, description: YYYY-MM-DD }
+      responses:
+        '201':
+          description: 作成した
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId: { type: string }
+                  job: { $ref: '#/components/schemas/Job' }
+  /v1/sessions/{sessionId}/next:
+    post:
+      operationId: nextQuestion
+      summary: 次の問題を受け取る（未回答の問題があれば同じ問題を返す）
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 次の問題、または待ち・終了
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [question, waiting, finished] }
+                  repeated: { type: boolean }
+                  question: { $ref: '#/components/schemas/Question' }
+                  notice: { type: [string, 'null'] }
+  /v1/sessions/{sessionId}/answer:
+    post:
+      operationId: submitAnswer
+      summary: 回答を採点する
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [questionId, value]
+              properties:
+                questionId: { type: string, description: 出題時に受け取った questionId をそのまま }
+                value: { type: string, description: 利用者が選んだ選択肢の番号 }
+                confidence: { type: string, enum: [sure, guess], description: 勘で選んだと言われたら guess }
+      responses:
+        '200':
+          description: 採点結果
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  grade:
+                    type: object
+                    properties:
+                      questionId: { type: string }
+                      selected: { type: integer }
+                      correctAnswer: { type: integer }
+                      correct: { type: boolean }
+                      result: { type: string, enum: [wrong, guess_correct, confident_correct] }
+                      answerPdfUrl: { type: string }
+                      alreadyGraded: { type: boolean }
+        '409':
+          description: 出題中の問題と違う・番号が範囲外（error に理由コード）
+  /v1/sessions/{sessionId}/handoff:
+    get:
+      operationId: getHandoff
+      summary: 次のチャットへ引き継ぐデータ（問題本文は含まない）
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 引継ぎデータ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  handoff: { type: string }
+  /v1/handoff/import:
+    post:
+      operationId: importHandoff
+      summary: 引継ぎデータから学習を再開する（公式PDFが差し替わった問題は出題しない）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [handoff]
+              properties:
+                handoff: { type: string }
+                sources: { type: array, maxItems: 40, items: { $ref: '#/components/schemas/Source' } }
+      responses:
+        '201':
+          description: 再開した
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId: { type: string }
+                  restored: { type: integer }
+                  withheld:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        questionId: { type: string }
+                        reason: { type: string }
+                        message: { type: string }
+                  job: { $ref: '#/components/schemas/Job' }
+  /v1/jobs/{qualificationId}:
+    get:
+      operationId: getJob
+      summary: 過去問の取り込みの状況（呼ぶたびに少しずつ進む）
+      parameters:
+        - { name: qualificationId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 取り込みの状況
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job: { $ref: '#/components/schemas/Job' }
