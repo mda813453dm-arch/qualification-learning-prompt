@@ -12,7 +12,7 @@ import unicodedata
 
 from .. import fields
 from .. import ocr
-from ..core import ANSWER_SPECIAL, ParseError, RawQuestion, clean_text, is_page_number_line, to_int
+from ..core import ANSWER_SPECIAL, ParseError, mark_out_of_order, RawQuestion, clean_text, is_page_number_line, to_int
 
 QUALIFICATION_ID = "q041"
 SECTION = "年度共通"
@@ -182,7 +182,7 @@ def parse_questions(doc):
             choice_mode=mode,
             crops=crops,
         ))
-    return questions
+    return mark_out_of_order(questions)
 
 
 def _choice_starts(body, tol=3):

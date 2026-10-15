@@ -17,7 +17,7 @@ import unicodedata
 
 from .. import ocr
 from .. import fields
-from ..core import ParseError, RawQuestion, clean_text
+from ..core import ParseError, RawQuestion, clean_text, mark_out_of_order
 
 QUALIFICATION_ID = "q063"
 SECTION = "測量士補"
@@ -889,4 +889,4 @@ def parse_questions(doc):
                 return _ocr_questions(numbered, by_no)
             return [_question(n, no, by_no[no], False) for n, no in numbered]
     by_no = dict(pages)
-    return [_question(n, no, _region(by_no[no], y0, y1), True) for n, no, y0, y1 in regions]
+    return mark_out_of_order([_question(n, no, _region(by_no[no], y0, y1), True) for n, no, y0, y1 in regions])

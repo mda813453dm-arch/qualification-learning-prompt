@@ -149,6 +149,26 @@ def render_crops(doc, raw_questions, file_prefix):
     return figures, assets
 
 
+OUT_OF_ORDER = "question_number_out_of_order"
+
+
+def mark_out_of_order(questions):
+    """OCRで読んだ問番号を、前後の問との並びで確かめる。
+
+    問題は問番号の順に並んでいるので、前の問より大きく次の問より小さくない番号は、読み違いのおそれがある
+    （例：問13を「問18」と読む）。その問は出題しない（正答を取り違えないため）。questions は文書の順。
+    """
+    nums = [q.number for q in questions]
+    for k, q in enumerate(questions):
+        if "read_by_ocr" not in q.notes and q.stem_mode != "ocr":
+            continue
+        prev_ok = k == 0 or nums[k - 1] < q.number
+        next_ok = k + 1 == len(nums) or q.number < nums[k + 1]
+        if not (prev_ok and next_ok):
+            q.notes.append(OUT_OF_ORDER)
+    return questions
+
+
 # 公式の正答表の注記で「正解肢なし（全員正解）」「複数の選択肢を正解とする」とされた問の印（parse_answers が返す）
 ANSWER_SPECIAL = -1
 
@@ -172,6 +192,8 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         if counts[q.number] > 1:
             # 同じ問番号が2か所にあると、どちらが本物か決められないので両方出さない
             reason = "QUESTION_NUMBER_DUPLICATED"
+        elif OUT_OF_ORDER in q.notes:
+            reason = "QUESTION_NUMBER_UNVERIFIED"
         elif q.stem_mode != "official_image" and not q.stem.strip():
             reason = "STEM_EMPTY"
         elif len(q.choices) != choice_count or any(not c.strip() for c in q.choices):
