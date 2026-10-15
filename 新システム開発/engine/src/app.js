@@ -13,9 +13,11 @@
 import { readFigure } from './cache.js';
 import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
-import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
+import { IngestError, ingestOne, readJob, startJob, stepJob, warmJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
+import { pages } from './pages.js';
+import { CATALOG } from './catalog.js';
 
 const DEFAULT_PARSER_VERSION = '0.3.0';
 const MAX_SOURCES = 40;
@@ -127,6 +129,9 @@ async function route(request, env, url, now) {
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
 
+  // プロンプトだけで使う方式（pages.js）。AIアプリの「Webページを開く」機能で開くのでトークンは付けない
+  if (method === 'GET' && parts[0] === 'p') return pages(env, url, parts, now, advance);
+
   // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
   // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
   if (parts[0] === 'mcp' && parts.length <= 2) {
@@ -139,6 +144,17 @@ async function route(request, env, url, now) {
 
   const auth = request.headers.get('authorization') ?? '';
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED');
+
+  // 事前取り込み（定期実行から呼ぶ）。台帳の全資格の公式PDFを確かめ、取り込みを済ませておく
+  if (method === 'POST' && url.pathname === '/v1/warm') {
+    const out = {};
+    for (const [slug, c] of Object.entries(CATALOG)) {
+      const sources = c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId }));
+      const r = await warmJob(env.STORE, c.qualificationId, sources, deps(env, { now }), { clock: env.clock ?? Date.now });
+      out[slug] = { state: r.job.state, checked: r.checked, sources: jobView(r.job).sources.map((s) => ({ year: s.year, status: s.status, reason: s.reason, packetCount: s.packetCount })) };
+    }
+    return json(200, { warmed: out });
+  }
 
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);

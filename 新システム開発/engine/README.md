@@ -63,6 +63,8 @@ QLP_REAL_JSON=out.json QLP_REAL_ASSETS=out QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf nod
 
 | メソッド・パス | 内容 |
 |---|---|
+| `GET /p` 以下 | プロンプトだけで使う方式（トークン不要）。AIアプリが開く学習画面。仕組みは `../83_プロンプトだけで使う方式.md` |
+| `POST /v1/warm` | 事前取り込み（定期実行から呼ぶ）。台帳（`src/catalog.js`）の全資格の公式PDFを確かめ、取り込みを済ませる |
 | `POST /v1/sessions` | `{qualificationId, sources:[{adapter, year, section, questionUrl, answerUrl}], plan}` 取り込み開始・セッション作成 |
 | `POST /v1/sessions/:id/next` | 次の問（`status`: question / waiting / finished） |
 | `POST /v1/sessions/:id/answer` | `{questionId, value, confidence}` 採点 |
