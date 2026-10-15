@@ -13,6 +13,14 @@ jobs:
     env:
       BASE: https://qlp-engine-ojsw3j46qa-an.a.run.app
     steps:
+      - name: GPT用の定義・設定文・プライバシーポリシーが返るか
+        run: |
+          set -x
+          curl -sS -f "$BASE/gpt/openapi.yaml" -o api.yaml
+          head -1 api.yaml | grep -qx 'openapi: 3.1.0'
+          ! grep -q REPLACE-WITH-CLOUD-RUN-URL api.yaml
+          curl -sS -f "$BASE/gpt/instructions.txt" -o ins.txt && grep -q '学習エンジン' ins.txt
+          curl -sS -f "$BASE/privacy" -o priv.html && grep -q 'プライバシーポリシー' priv.html
       - name: 入口から宅建の次のページまで開く
         run: |
           set -x
