@@ -88,7 +88,9 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
   assert.equal(g.status, 200);
   assert.equal(g.body.grade.correct, true);
   assert.equal(g.body.grade.correctAnswer, 3);
-  assert.deepEqual(env.STORE.reads, [`ses/${sessionId}`]);
+  // 採点は最初にセッションだけを読む（次の問を決めるための取り込み記録の読み取りは、そのあと）
+  assert.equal(env.STORE.reads[0], `ses/${sessionId}`);
+  assert.ok(g.body.next, '採点の応答に次の問が付く');
   assert.equal(web.calls.length, fetchesBefore);
 });
 
@@ -188,4 +190,23 @@ test('経路Bの分解サーバーが失敗したら、その取り込み元を�
   const parse = httpParser({ endpoint: 'https://parser.example', fetch: async () => new Response('x', { status: 500 }) });
   await assert.rejects(parse({ question: { url: 'u', sha256: 's', bytes: pdf('q') }, answer: null }), (e) => e.code === 'PARSER_FAILED');
   assert.throws(() => httpParser({ endpoint: 'http://parser.example' }), /PARSER_URL_INVALID/);
+});
+
+test('採点の応答に次の問が付き、あとで nextQuestion を呼んでも同じ問が返る。回答を再送しても同じ結果', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const q1 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  const g = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q1.questionId, value: 3 });
+  assert.equal(g.body.grade.correct, true);
+  assert.equal(g.body.next.status, 'question');
+  assert.equal(g.body.next.question.questionNumber, 2);
+  assert.ok(!JSON.stringify(g.body.next).includes('correctAnswer'), '次の問にも正答を入れない');
+  const again = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;
+  assert.equal(again.repeated, true);
+  assert.equal(again.question.questionId, g.body.next.question.questionId);
+  // 次の問を先に控えたあとでも、前の問の回答の再送は「採点済み」として同じ結果を返す
+  const retry = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q1.questionId, value: 1 });
+  assert.equal(retry.status, 200);
+  assert.equal(retry.body.grade.alreadyGraded, true);
+  assert.equal(retry.body.grade.selected, 3);
 });

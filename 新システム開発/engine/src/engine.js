@@ -61,15 +61,17 @@ function fieldCountsOf(items) {
  * 返り値 {status, question?, notice?}。status: question | waiting | finished
  */
 export function pickNext(state, items, { today, job }) {
-  if (state.current && !state.current.grade) {
-    const same = items.find((x) => x.packet.questionId === state.current.questionId);
-    if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
-  }
   const withheld = new Set(state.withheld.map((w) => w.questionId));
   const usable = items.filter((x) => !withheld.has(x.packet.questionId));
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
-  // 1) 期限の来た復習
   const due = selectDueReviews({ today, items: Object.values(state.review), sessionStart: true });
+  // 採点の応答に付けて先に控えた問（まだ利用者に見せていない）は、期限の来た復習があれば出し直す
+  const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byId.has(r.unitId));
+  if (state.current && !state.current.grade && !unseenPrefetch) {
+    const same = items.find((x) => x.packet.questionId === state.current.questionId);
+    if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
+  }
+  // 1) 期限の来た復習
   for (const r of due.items ?? []) {
     const hit = byId.get(r.unitId);
     if (hit) return { status: 'question', item: hit, kind: 'review' };
@@ -171,6 +173,8 @@ function sourceOf(p) {
 export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals }) {
   const cur = state.current;
   if (!cur) return { ok: false, reason: 'NO_QUESTION_PRESENTED' };
+  // 採点の応答で次の問を先に控えたあと、同じ回答がもう一度届いても（再送）、同じ結果を返す
+  if (questionId !== cur.questionId && state.lastGrade?.questionId === questionId) return { ok: true, state, grade: { ...state.lastGrade, alreadyGraded: true } };
   if (questionId !== cur.questionId) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
   if (cur.grade) return { ok: true, state, grade: { ...cur.grade, alreadyGraded: true } };
   const n = Number(String(value ?? '').trim());
@@ -193,6 +197,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     state: {
       ...state,
       current: { ...cur, grade: g },
+      lastGrade: g,
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },

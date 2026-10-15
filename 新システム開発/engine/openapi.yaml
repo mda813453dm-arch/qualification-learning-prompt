@@ -145,6 +145,14 @@ paths:
                       result: { type: string, enum: [wrong, guess_correct, confident_correct] }
                       answerPdfUrl: { type: string }
                       alreadyGraded: { type: boolean }
+                  next:
+                    type: object
+                    description: 次の問題（nextQuestion と同じ形）。利用者が次へ進むときに、これを表示する
+                    properties:
+                      status: { type: string, enum: [question, waiting, finished] }
+                      repeated: { type: boolean }
+                      question: { $ref: '#/components/schemas/Question' }
+                      notice: { type: [string, 'null'] }
         '409':
           description: 出題中の問題と違う・番号が範囲外（error に理由コード）
   /v1/sessions/{sessionId}/handoff:

@@ -205,6 +205,21 @@ async function kickIngest(env, qid, now) {
   }).catch(() => {});
 }
 
+/** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
+async function nextView(env, id, state0, now, { prefetched = false } = {}) {
+  let state = state0;
+  const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
+  const items = await availablePackets(env.STORE, job, now);
+  const pick = pickNext(state, items, { today: jstToday(now), job });
+  if (pick.status !== 'question') {
+    return { status: pick.status, notice: job?.notice ?? null, job: jobView(job) };
+  }
+  state = pin(state, pick.item, pick.kind, now);
+  if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
+  await saveSession(env, id, state, now);
+  return { status: 'question', repeated: !!pick.repeated, question: present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), notice: job?.notice ?? null };
+}
+
 async function route(request, env, url, now) {
   const parts = url.pathname.split('/').filter(Boolean);
   const method = request.method;
@@ -280,16 +295,8 @@ async function route(request, env, url, now) {
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
-    let state = await loadSession(env, parts[2], now);
-    const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
-    const items = await availablePackets(env.STORE, job, now);
-    const pick = pickNext(state, items, { today: jstToday(now), job });
-    if (pick.status !== 'question') {
-      return json(200, { status: pick.status, notice: job?.notice ?? null, job: jobView(job) });
-    }
-    state = pin(state, pick.item, pick.kind, now);
-    await saveSession(env, parts[2], state, now);
-    return json(200, { status: 'question', repeated: !!pick.repeated, question: present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), notice: job?.notice ?? null });
+    const state = await loadSession(env, parts[2], now);
+    return json(200, await nextView(env, parts[2], state, now));
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
@@ -299,7 +306,9 @@ async function route(request, env, url, now) {
     const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence }, { today: jstToday(now), now });
     if (!r.ok) throw new HttpError(409, r.reason);
     if (!r.grade.alreadyGraded) await saveSession(env, parts[2], r.state, now);
-    return json(200, { grade: r.grade });
+    // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
+    // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
+    return json(200, { grade: r.grade, next: await nextView(env, parts[2], r.state, now, { prefetched: true }) });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
