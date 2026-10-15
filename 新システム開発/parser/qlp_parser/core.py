@@ -43,13 +43,13 @@ class RawQuestion:
     has_graphics: bool = False  # 問題の範囲に画像・図形があるか
     notes: list = field(default_factory=list)
     # 文字が取り出せない（アウトライン化された）PDFでは、本文・選択肢を公式PDFの画像で見せる
-    stem_mode: str = "text"  # "text" | "official_image"
-    choice_mode: str = "text"  # "text" | "official_image"（選択肢は番号だけを持つ）
+    stem_mode: str = "text"  # "text" | "ocr"（読み間違いがありうる） | "official_image"
+    choice_mode: str = "text"  # "text" | "ocr" | "official_image"（選択肢は番号だけを持つ）
     crops: list = field(default_factory=list)  # 切り出す範囲 [(ページ番号, (x0, y0, x1, y1))]
 
     @property
     def needs_image(self):
-        return self.has_graphics or self.stem_mode != "text" or self.choice_mode != "text"
+        return self.has_graphics or "official_image" in (self.stem_mode, self.choice_mode)
 
 
 def sha256(data):
@@ -111,6 +111,7 @@ def to_int(s):
     return int(unicodedata.normalize("NFKC", s))
 
 
+_TEXT_CHECK = {"text": "runtime_pdf_checked", "ocr": "ocr_unverified", "official_image": "official_pdf_image"}
 CROP_ZOOM = 3  # 80番の実機確認で読めた倍率（PDF描画倍率3倍）
 
 
@@ -167,7 +168,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         if counts[q.number] > 1:
             # 同じ問番号が2か所にあると、どちらが本物か決められないので両方出さない
             reason = "QUESTION_NUMBER_DUPLICATED"
-        elif q.stem_mode == "text" and not q.stem.strip():
+        elif q.stem_mode != "official_image" and not q.stem.strip():
             reason = "STEM_EMPTY"
         elif len(q.choices) != choice_count or any(not c.strip() for c in q.choices):
             reason = "CHOICES_INCOMPLETE"
@@ -203,8 +204,8 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "answerPdfSha256": answer_sha,
             "evidence": {"questionPdfPages": q.pages, "questionRect": q.rect, "field": cls.get("method"), "notes": list(q.notes)},
             "verification": {
-                "questionText": "runtime_pdf_checked" if q.stem_mode == "text" else "official_pdf_image",
-                "choices": "runtime_pdf_checked" if q.choice_mode == "text" else "official_pdf_image",
+                "questionText": _TEXT_CHECK[q.stem_mode],
+                "choices": _TEXT_CHECK[q.choice_mode],
                 "answer": "same_year_official_answer_checked",
                 "visual": "official_pdf_crop_rendered" if figures.get(q.number) else "question_level_pdf_graphics_checked",
                 "field": "verified" if cls.get("verified") else "unverified",

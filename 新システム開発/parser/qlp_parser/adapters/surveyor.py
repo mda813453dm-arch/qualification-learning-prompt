@@ -15,6 +15,7 @@ R8の問題PDFは日本語の文字が図形（アウトライン）になって
 import re
 import unicodedata
 
+from .. import ocr
 from ..core import ParseError, RawQuestion, clean_text
 
 QUALIFICATION_ID = "q063"
@@ -67,7 +68,10 @@ class _Page:
         self.page = page
         self.limit = page.rect.height * FOOTER
         self.words = [_with_superscript(w, page) for w in page.get_text("words", sort=True) if w[3] <= self.limit]
-        self.drawings = [d for d in page.get_drawings() if d["rect"].y1 <= self.limit and d["rect"].intersects(page.rect)]
+        # 細い線は高さ0の範囲になる（Rect.intersects では拾えない）ので、座標で比べる
+        pr = page.rect
+        self.drawings = [d for d in page.get_drawings() if d["rect"].y1 <= self.limit
+                         and d["rect"].x0 < pr.x1 and d["rect"].x1 > pr.x0 and d["rect"].y0 < pr.y1 and d["rect"].y1 > pr.y0]
         self.images = [i["bbox"] for i in page.get_image_info() if i["bbox"][3] <= self.limit]
         self.glyphs = [d for d in self.drawings if _is_glyph(d)]
 
@@ -162,12 +166,13 @@ def _shape(d):
         for p in it[1:]:
             if hasattr(p, "x"):
                 pts.append((p.x - r.x0, p.y - r.y0))
-    return "".join(kinds), pts
+    return "".join(kinds), pts, r.width, r.height
 
 
 def _same_shape(a, b, tol=0.4):
     # PDF内の座標の丸め（約0.12pt刻み）で同じ字でも数値がわずかにずれるので、許容幅で比べる
-    return a[0] == b[0] and len(a[1]) == len(b[1]) and all(
+    # 大きさも比べる（度の「°」と句点「。」のように、形が似て大きさだけ違う字を分けるため）
+    return a[0] == b[0] and len(a[1]) == len(b[1]) and abs(a[2] - b[2]) <= 0.25 and abs(a[3] - b[3]) <= 0.25 and all(
         abs(x1 - x2) <= tol and abs(y1 - y2) <= tol for (x1, y1), (x2, y2) in zip(a[1], b[1]))
 
 
@@ -327,6 +332,421 @@ def _question(number, no, pg, text_heading):
     )
 
 
+# ---- 図形の文字をOCRで読む（文字が取り出せないPDF） ----
+#
+# 1行ごとに、その行の「図形の文字」だけを白紙に描き直して読む（取り出せる数字・英字と
+# 枠線・図は描かない）。OCRが返す1字ごとの位置で、どの図形の字かを対応づける
+# （図形1つに字1つが対応したものだけを使う）。同じ形の字は文書全体で多数決をとり、
+# 行ごとの読み違いをならす。どの読みも付かなかった字は「〓」にし、notes に ocr_unknown を残す。
+
+OCR_ZOOM = 4
+PARA_MARGIN = 110  # 本文の行はこれより左から始まる（R8は左端93pt・字下げ104pt。図の中のラベル・表の行と見分ける）
+_ITEM = re.compile(r"^(?:[a-zア-オ][.．]|[（(][0-9０-９a-zア-オ]+[）)]|[①-⑳])")
+_FULLWIDTH = str.maketrans({",": "，", "(": "（", ")": "）", ":": "：", ";": "；", "?": "？", "!": "！", "%": "％", "~": "～"})
+
+
+_FLAT = set("ー一－-—―‐=＝_~～")
+
+
+def _cjk(c):
+    return "\u3000" <= c <= "\u9fff" or "\uff00" <= c <= "\uffef"
+
+
+class _El:
+    """行を作る要素：図形の文字（glyph）か、取り出せた語（word）。"""
+
+    __slots__ = ("rect", "glyph", "text", "sid", "under")
+
+    def __init__(self, rect, glyph=None, text=None):
+        self.rect, self.glyph, self.text, self.sid, self.under = rect, glyph, text, None, False
+
+
+class _ShapeIndex:
+    """形の番号付け（大きさで振り分けてから比べるので、字が多くても速い）。"""
+
+    def __init__(self):
+        self.buckets, self.count = {}, 0
+
+    def id(self, d):
+        s = _shape(d)
+        key = (s[0], len(s[1]))
+        reps = self.buckets.setdefault(key, [])
+        for k, rep in reps:
+            if _same_shape(s, rep):
+                return k
+        self.count += 1
+        reps.append((self.count, s))
+        return self.count
+
+
+def _cluster_lines(els):
+    rows = []
+    for e in sorted(els, key=lambda e: ((e.rect.y0 + e.rect.y1) / 2, e.rect.x0)):
+        c = (e.rect.y0 + e.rect.y1) / 2
+        if rows and c - rows[-1][0] <= 7:
+            rows[-1][1].append(e)
+        else:
+            rows.append([c, [e]])
+    return [sorted(r[1], key=lambda e: e.rect.x0) for r in rows]
+
+
+def _bbox(els):
+    import fitz
+
+    r = fitz.Rect()
+    for e in els:
+        r.include_rect(e.rect)
+    return r
+
+
+def _draw_glyphs(glyphs):
+    """図形の文字だけを白紙に描き直してPNGにする（位置関係はそのまま）。"""
+    import fitz
+
+    r = _bbox([_El(g["rect"]) for g in glyphs]) + (-3, -3, 3, 3)
+    doc = fitz.open()
+    page = doc.new_page(width=r.width, height=r.height)
+    sh = page.new_shape()
+    off = r.tl
+    move = fitz.Matrix(1, 0, 0, 1, -off.x, -off.y)
+    for g in glyphs:
+        for it in g["items"]:
+            op = it[0]
+            if op == "l":
+                sh.draw_line(it[1] - off, it[2] - off)
+            elif op == "c":
+                sh.draw_bezier(it[1] - off, it[2] - off, it[3] - off, it[4] - off)
+            elif op == "re":
+                sh.draw_rect(fitz.Rect(it[1]).transform(move))
+            elif op == "qu":
+                sh.draw_quad(fitz.Quad(it[1]).transform(move))
+        sh.finish(fill=(0, 0, 0), color=None, even_odd=bool(g.get("even_odd")), closePath=bool(g.get("closePath")))
+    sh.commit()
+    png = page.get_pixmap(matrix=fitz.Matrix(OCR_ZOOM, OCR_ZOOM), alpha=False).tobytes("png")
+    doc.close()
+    return png, off.x
+
+
+def _glyph_char(ch, g, mid=None):
+    """OCRの字を、図形の字（日本語の書体）として自然な形にそろえる。mid は行の中央の高さ。"""
+    r = g["rect"]
+    # 行の上半分にある小さな丸は度の記号（「。」と読まれやすい）
+    if mid is not None and ch in "。o○0O°゜" and r.y1 < mid and r.width < 6 and r.height < 6:
+        return "°"
+    # 横長の「＝」は「王」と読まれやすい
+    if ch == "王" and r.height < r.width * 0.7:
+        return "＝"
+    # 横長で曲線を含む字は「～」（単独だと「て」などに読まれやすい）。長音「ー」などはそのまま
+    if r.height < r.width * 0.45 and ch not in _FLAT and any(it[0] == "c" for it in g["items"]):
+        return "～"
+    return ch.translate(_FULLWIDTH)
+
+
+def _join(els, chars):
+    """要素を左から順に文字にする。英数字どうしの間だけ空白を入れる。下線部は［ ］で囲む。"""
+    out, prev = "", None
+    for e in els:
+        t = e.text if e.text is not None else chars.get(id(e), "")
+        if prev is not None and prev.under and not e.under:
+            out += "］"
+        if prev is not None and t and out and not _cjk(out.rstrip("］")[-1:] or "あ") and not _cjk(t[0]) and e.rect.x0 - prev.rect.x1 > 1.5:
+            out += " "
+        if e.under and not (prev is not None and prev.under):
+            out += "［"
+        out += t
+        prev = e
+    if prev is not None and prev.under:
+        out += "］"
+    return out
+
+
+def _cells(ln, gap=12):
+    """行を、間のあいた所（表の列の境目）で区切る。"""
+    cells = []
+    for e in ln:
+        if cells and e.rect.x0 - cells[-1][-1].rect.x1 <= gap:
+            cells[-1].append(e)
+        else:
+            cells.append([e])
+    return cells
+
+
+class _OcrPage:
+    """1問（1ページ）を、本文の行・図の範囲・選択肢の行に分ける。"""
+
+    def __init__(self, number, no, pg, shapes):
+        self.number, self.no, self.pg = number, no, pg
+        self.notes = []
+        heading = {id(d) for d in _top_glyph_run(pg)}
+        markers = _choice_markers(pg)
+        self.markers = markers
+        body_top = max((d["rect"].y1 for d in pg.glyphs if id(d) in heading), default=0)
+        boxes, graphics = [], [fitz_rect(b) for b in pg.images]
+        for d in pg.drawings:
+            if _is_glyph(d):
+                continue
+            r = d["rect"]
+            if r.height <= 22 and r.width <= 120 and r.width > 1.5 and r.height > 1.5:
+                boxes.append(r)  # 文中の枠（「ア」の空欄など）。行に文字があれば枠とみなす
+            else:
+                graphics.append(r)
+        els = [_El(fitz_rect(w[:4]), text=w[4]) for w in pg.words if w[1] >= body_top - 1]
+        for d in pg.glyphs:
+            if id(d) in heading or d["rect"].y0 < body_top - 1:
+                continue
+            e = _El(d["rect"], glyph=d)
+            e.sid = shapes.id(d)
+            els.append(e)
+        lines = _cluster_lines(els)
+        # 下線：文字の行のすぐ下にある横線。図としては数えず、上にある字に印を付ける
+        rest = []
+        for g in graphics:
+            # 表の罫線（ほかの線とつながっている線）は下線ではない
+            touching = any(o is not g and o.x0 <= g.x1 + 1 and o.x1 >= g.x0 - 1 and o.y0 <= g.y1 + 1 and o.y1 >= g.y0 - 1 for o in graphics)
+            marked = []
+            if g.height <= 1.5 and g.width > 5 and not touching:
+                near = {id(e) for e in els if -3 <= g.y0 - e.rect.y1 <= 4}
+                for ln in lines:
+                    # 本文・選択肢の行（左端から始まる行）の下の線だけを下線とする。図の中の線は図のまま
+                    if _bbox(ln).x0 <= PARA_MARGIN and any(id(e) in near for e in ln):
+                        marked += [e for e in ln if g.x0 - 1 <= (e.rect.x0 + e.rect.x1) / 2 <= g.x1 + 1]
+            if not marked:
+                rest.append(g)
+                continue
+            for e in marked:
+                e.under = True
+            self.notes.append("underline")
+        graphics = rest
+        for b in boxes:
+            line = next((ln for ln in lines if _bbox(ln).intersects(b)), None)
+            if not line or all(b.contains(e.rect) for e in line):
+                graphics.append(b)  # 文字が枠の中にしかない＝表のます目
+        choice_top = markers[0][1] - 3 if markers else self.pg.limit
+        above = [ln for ln in lines if _bbox(ln).y1 <= choice_top + 1]
+        self.choice_lines = [ln for ln in lines if _bbox(ln).y1 > choice_top + 1]
+
+        def left(ln):
+            # 行頭が枠（「ア」の空欄）なら枠の左端を行頭とする
+            b = _bbox(ln)
+            return min([b.x0] + [x.x0 for x in boxes if x.y0 < b.y1 and x.y1 > b.y0])
+
+        self.left = left
+
+        # 選択肢の列見出し（「ア イ ウ」）：選択肢のすぐ上の、短い字が間をあけて並ぶ行
+        self.header = None
+        if above and markers:
+            ln = above[-1]
+            b = _bbox(ln)
+            cells = _cells(ln)
+            if (b.y1 >= choice_top - 25 and left(ln) > PARA_MARGIN and len(cells) >= 2
+                    and all(len(c) <= 2 for c in cells) and not any(g.y0 < b.y1 and g.y1 > b.y0 for g in graphics)):
+                self.header = ln
+                above = above[:-1]
+        # 図・表の範囲：最初の図形（または本文の位置から外れた行）から選択肢の手前まで
+        starts = [g.y0 for g in graphics if g.y1 <= choice_top + 1]
+        starts += [_bbox(ln).y0 for ln in above if left(ln) > PARA_MARGIN]
+        self.below_choices = any(g.y0 > choice_top for g in graphics)
+        self.block = None
+        stem = above
+        if starts:
+            top = min(starts)
+            # 図のすぐ上のラベル行（点A・B・C、表の題など）は図の側に入れる
+            for ln in reversed([ln for ln in above if _bbox(ln).y0 < top]):
+                if _bbox(ln).y1 >= top - 12:
+                    top = _bbox(ln).y0
+                else:
+                    break
+            stem = [ln for ln in above if _bbox(ln).y1 <= top + 1]
+            block = [ln for ln in above if _bbox(ln).y1 > top + 1]
+            r = _bbox([e for ln in block for e in ln])
+            for g in graphics:
+                if g.y1 <= choice_top + 1 and (self.header is None or g.y1 <= _bbox(self.header).y0 + 1):
+                    r.include_rect(g)
+            self.block = r
+        self.stem_lines = stem
+        self.choice_content = self._choice_content()
+
+    def jobs(self):
+        """OCRする行（図形の文字を含む行）。"""
+        out = []
+        for ln in self.stem_lines + self.choice_content + ([self.header] if self.header else []):
+            gl = [e for e in ln if e.glyph is not None]
+            if gl:
+                out.append((ln, gl))
+        return out
+
+    def _choice_content(self):
+        if not self.markers:
+            return []
+        ids = {id(m) for m in self.markers}
+        out = []
+        for ln in self.choice_lines:
+            m = next((e for e in ln if e.text is not None and e.rect.y0 > 0 and _is_marker(e, self.markers)), None)
+            # 番号と、番号のすぐ右の「.」は除く
+            rest = [e for e in ln if e is not m and not (m is not None and e.glyph is not None and e.rect.x0 <= m.rect.x1 + 4)]
+            out.append(rest)
+        del ids
+        return out
+
+
+def fitz_rect(r):
+    import fitz
+
+    return fitz.Rect(r)
+
+
+def _is_marker(e, markers):
+    return any(abs(e.rect.x0 - m[0]) < 0.5 and abs(e.rect.y0 - m[1]) < 0.5 for m in markers)
+
+
+def _assign(gl, chars, offset_x):
+    """OCRの字を、中心の位置がいちばん近い図形の字に割り当てる。{要素id: [字]}"""
+    got = {id(e): [] for e in gl}
+    for ch, x0, x1, conf in chars or []:
+        cx = (x0 + x1) / 2 / OCR_ZOOM + offset_x
+        e = min(gl, key=lambda e: abs((e.rect.x0 + e.rect.x1) / 2 - cx))
+        got[id(e)].append(ch)
+    return got
+
+
+def _ocr_questions(numbered, by_no):
+    shapes = _ShapeIndex()
+    pages = [_OcrPage(n, no, by_no[no], shapes) for n, no in numbered]
+    jobs = [(p, ln, gl) for p in pages for ln, gl in p.jobs()]
+    images = [_draw_glyphs([e.glyph for e in gl]) for _, _, gl in jobs]
+    results = ocr.read_lines([png for png, _ in images])
+    # 字の数が描いた字の数と同じ行は、左から順に1字ずつ対応づける（確実）。その行の字だけで形ごとの多数決をとる。
+    # 数が合わない行は、OCRの字の位置でいちばん近い図形に割り当てる（位置はずれうるので多数決には使わない）
+    votes, own = {}, {}
+    for (p, ln, gl), (_, off), res in zip(jobs, images, results):
+        if res is None:
+            continue
+        if len(res) == len(gl):
+            mid = (_bbox(ln).y0 + _bbox(ln).y1) / 2
+            for e, r in zip(gl, res):
+                c = _glyph_char(r[0], e.glyph, mid)
+                own[id(e)] = c
+                votes.setdefault(e.sid, {}).setdefault(c, 0)
+                votes[e.sid][c] += 1
+        else:
+            got = _assign(gl, res, off)
+            mid = (_bbox(ln).y0 + _bbox(ln).y1) / 2
+            for e in gl:
+                if len(got[id(e)]) == 1:
+                    own[id(e)] = _glyph_char(got[id(e)][0], e.glyph, mid)
+    best = {sid: max(v.items(), key=lambda kv: (kv[1], kv[0]))[0] for sid, v in votes.items()}
+    # どの読みも付かなかった字は、1字だけ描いてもう一度読む
+    missing = {}
+    for _, ln, gl in jobs:
+        for e in gl:
+            if e.sid not in best and id(e) not in own and e.sid not in missing:
+                missing[e.sid] = (e.glyph, (_bbox(ln).y0 + _bbox(ln).y1) / 2)
+    for sid, ch in zip(missing, ocr.read_chars([_draw_glyphs([g])[0] for g, _ in missing.values()])):
+        if ch:
+            best[sid] = _glyph_char(ch, *missing[sid])
+    line_text, unknown = {"chars": {}}, {}
+    for p, ln, gl in jobs:
+        chars = {}
+        for e in gl:
+            c = best.get(e.sid) or own.get(id(e))
+            if c is None:
+                c = "〓"
+                unknown[p.number] = unknown.get(p.number, 0) + 1
+            elif c in "。°":
+                # 句点と度の記号はこの書体では同じ形。行の上半分にあれば度とする
+                c = _glyph_char("。", e.glyph, (_bbox(ln).y0 + _bbox(ln).y1) / 2)
+            chars[id(e)] = c
+        line_text["chars"].update(chars)
+        line_text[id(ln)] = _join(ln, chars)
+    return [_build_ocr_question(p, line_text, unknown.get(p.number, 0)) for p in pages]
+
+
+def _paragraphs(lines, line_text, left=lambda ln: _bbox(ln).x0):
+    """行をつなぐ。段落の1行目（字下げした行）と箇条（a. など）の1行目で改行する。
+
+    R8の形：段落は1行目が字下げ・2行目以降が左端。箇条は1行目が左端（a.）・2行目以降が字下げ。
+    """
+    if not lines:
+        return ""
+    margin = min(left(ln) for ln in lines)
+    parts, in_item = [], False
+    for ln in lines:
+        t = line_text.get(id(ln)) or _join(ln, {})
+        x0 = left(ln)
+        if _ITEM.match(t):
+            parts.append(t)
+            in_item = True
+            continue
+        if not parts or (x0 > margin + 5 and not in_item):
+            parts.append(t)
+            in_item = False
+            continue
+        prev = parts[-1]
+        sep = " " if prev and prev[-1].isascii() and prev[-1].isalnum() and t[:1].isascii() and t[:1].isalnum() else ""
+        parts[-1] = prev + sep + t
+    # 次の行へ続く下線部は1つにまとめる
+    return "\n".join(parts).replace("］［", "")
+
+
+def _build_ocr_question(p, line_text, unknown):
+    notes = ["ocr"] + sorted(set(p.notes))
+    if unknown:
+        notes.append(f"ocr_unknown:{unknown}")
+    stem = _paragraphs(p.stem_lines, line_text, p.left)
+    choices, choice_mode = [], "text"
+    content = p.choice_content
+    if p.markers:
+        groups = [[] for _ in p.markers]
+        for ln in content:
+            y = _bbox(ln).y0 if ln else None
+            if y is None:
+                continue
+            k = max((i for i, m in enumerate(p.markers) if m[1] - 3 <= y), default=None)
+            if k is not None:
+                groups[k].append(ln)
+        labels = None
+        if p.header is not None:
+            labels = [((_bbox(c).x0 + _bbox(c).x1) / 2, _join(c, line_text.get("chars", {}))) for c in _cells(p.header)]
+        for g in groups:
+            if any(e.glyph is not None for ln in g for e in ln):
+                choice_mode = "ocr"
+            if labels and len(g) == 1:
+                # 列見出しのある選択肢は「ア：…、イ：…」の形にする（列の意味を文字だけで伝えるため）
+                # 字間より広いすき間で区切ったまとまりを、中央がいちばん近い見出しの列に入れる
+                cols = [[] for _ in labels]
+                for c in _cells(g[0], gap=6):
+                    cx = (_bbox(c).x0 + _bbox(c).x1) / 2
+                    cols[min(range(len(labels)), key=lambda i: abs(labels[i][0] - cx))].extend(c)
+                parts = [f"{lab}：{_join(c, line_text['chars'])}" for (_, lab), c in zip(labels, cols) if c]
+                choices.append("、".join(parts))
+            else:
+                choices.append(_paragraphs(g, line_text) if g else "")
+    crops = []
+    has_graphics = p.block is not None
+    if p.below_choices:
+        # 選択肢より下に図がある形は想定外。1問分をまるごと画像にする
+        body = p.pg.body_rect()
+        crops.append((p.no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN, min(body.y1 + MARGIN, p.pg.limit))))
+        has_graphics = True
+        notes.append("graphics_below_choices")
+    elif p.block is not None:
+        body = p.pg.body_rect()
+        crops.append((p.no, (body.x0 - MARGIN, p.block.y0 - MARGIN, body.x1 + MARGIN, p.block.y1 + MARGIN)))
+    body = p.pg.body_rect()
+    return RawQuestion(
+        number=p.number,
+        stem=stem,
+        choices=choices,
+        pages=[p.no],
+        rect=(round(body.y0, 1), round(body.y1, 1)) if not body.is_empty else None,
+        has_graphics=has_graphics,
+        notes=notes,
+        stem_mode="ocr",
+        choice_mode=choice_mode,
+        crops=crops,
+    )
+
+
 def parse_questions(doc):
     pages = [(i + 1, _Page(doc[i])) for i in range(doc.page_count)]
     numbered = _number_text(pages)
@@ -334,4 +754,6 @@ def parse_questions(doc):
     if not numbered:
         numbered = _number_glyphs(pages)
     by_no = dict(pages)
+    if not text_heading and ocr.available():
+        return _ocr_questions(numbered, by_no)
     return [_question(n, no, by_no[no], text_heading) for n, no in numbered]

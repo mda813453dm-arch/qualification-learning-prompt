@@ -12,6 +12,7 @@ import unicodedata
 import unittest
 from pathlib import Path
 
+from qlp_parser import ocr
 from qlp_parser.cli import run
 from qlp_parser.core import PdfSource, sha256
 
@@ -55,14 +56,26 @@ class SurveyorR8Official(unittest.TestCase):
             # 検証済みパケットは上付きの²を「2」と書いている
             self.assertEqual([c.replace("²", "2") for c in p["choices"]], v["choices"])
 
-    def test_every_question_has_one_official_crop(self):
+    @unittest.skipUnless(ocr.available(), "Tesseract（jpn）が無い")
+    def test_ocr_text_and_figure_crops(self):
+        # 図・表のある問だけ、図・表の部分を切り出す（本文はOCRの文字）
+        with_figure = {n for n, p in self.by_n.items() if p["figures"]}
+        self.assertEqual(with_figure, {3, 7, 9, 12, 20, 21, 26, 27})
         for n, p in self.by_n.items():
-            self.assertEqual(p["stemMode"], "official_image", n)
-            self.assertEqual(len(p["figures"]), 1, n)
-            f = p["figures"][0]
-            self.assertEqual(f["sha256"], sha256(self.assets[f["file"]]), n)
-            self.assertGreaterEqual(f["width"], 1300, n)  # 80番で読めた幅（1335px）と同程度
-            self.assertLess(f["rect"][3], 757, n)  # ページ番号の欄は含めない
+            self.assertEqual(p["stemMode"], "ocr", n)
+            self.assertTrue(p["stem"], n)
+            for f in p["figures"]:
+                self.assertEqual(f["sha256"], sha256(self.assets[f["file"]]), n)
+                self.assertGreaterEqual(f["width"], 1300, n)  # 80番で読めた幅（1335px）と同程度
+        # OCRの読み（主要な語句が読めていること。読み違いの許容は水野さん決定 2026-10-15）
+        q7 = self.by_n[7]["stem"]
+        for phrase in ["トータルステーション", "器械定数と反射鏡定数", "BC間の距離は幾らか", "巻末の関数表を使用すること"]:
+            self.assertIn(phrase, q7)
+        self.assertEqual(self.by_n[1]["choices"], ["a，e", "b，c", "b，d", "c，d", "d，e"])
+        self.assertEqual(self.by_n[3]["choices"][0], "ア：40°、イ：49.5 m²")  # 列見出し付きの選択肢
+        self.assertIn("［線形図データファイルは", self.by_n[25]["choices"][0])  # 下線部
+        unknown = sum(int(x.split(":")[1]) for p in self.by_n.values() for x in p["evidence"]["notes"] if x.startswith("ocr_unknown:"))
+        self.assertLessEqual(unknown, 5)
 
     def test_report(self):
         modes = {n: p["choiceMode"] for n, p in self.by_n.items()}
