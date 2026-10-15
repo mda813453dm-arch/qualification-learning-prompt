@@ -63,6 +63,7 @@ paths:
   /v1/sessions:
     post:
       operationId: startSession
+      x-openai-isConsequential: false
       summary: 資格の過去問の取り込みを始め、学習セッションを作る
       requestBody:
         required: true
@@ -92,6 +93,7 @@ paths:
   /v1/sessions/{sessionId}/next:
     post:
       operationId: nextQuestion
+      x-openai-isConsequential: false
       summary: 次の問題を受け取る（未回答の問題があれば同じ問題を返す）
       parameters:
         - { name: sessionId, in: path, required: true, schema: { type: string } }
@@ -110,6 +112,7 @@ paths:
   /v1/sessions/{sessionId}/answer:
     post:
       operationId: submitAnswer
+      x-openai-isConsequential: false
       summary: 回答を採点する
       parameters:
         - { name: sessionId, in: path, required: true, schema: { type: string } }
@@ -147,6 +150,7 @@ paths:
   /v1/sessions/{sessionId}/handoff:
     get:
       operationId: getHandoff
+      x-openai-isConsequential: false
       summary: 次のチャットへ引き継ぐデータ（問題本文は含まない）
       parameters:
         - { name: sessionId, in: path, required: true, schema: { type: string } }
@@ -162,6 +166,7 @@ paths:
   /v1/handoff/import:
     post:
       operationId: importHandoff
+      x-openai-isConsequential: false
       summary: 引継ぎデータから学習を再開する（問題は引継ぎIDの保存から読む。公式PDFは取り直さない）
       requestBody:
         required: true
@@ -195,6 +200,7 @@ paths:
   /v1/jobs/{qualificationId}:
     get:
       operationId: getJob
+      x-openai-isConsequential: false
       summary: 過去問の取り込みの状況（呼ぶたびに少しずつ進む）
       parameters:
         - { name: qualificationId, in: path, required: true, schema: { type: string } }
