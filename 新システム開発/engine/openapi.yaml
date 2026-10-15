@@ -87,6 +87,7 @@ paths:
                 type: object
                 properties:
                   sessionId: { type: string }
+                  learnerId: { type: string, description: 引継ぎID。利用者に必ず伝える（別のチャットやAIで続けるときに使う） }
                   job: { $ref: '#/components/schemas/Job' }
   /v1/sessions/{sessionId}/next:
     post:
@@ -161,7 +162,7 @@ paths:
   /v1/handoff/import:
     post:
       operationId: importHandoff
-      summary: 引継ぎデータから学習を再開する（公式PDFが差し替わった問題は出題しない）
+      summary: 引継ぎデータから学習を再開する（問題は引継ぎIDの保存から読む。公式PDFは取り直さない）
       requestBody:
         required: true
         content:
