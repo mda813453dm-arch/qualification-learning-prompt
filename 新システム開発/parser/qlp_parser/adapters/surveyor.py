@@ -23,7 +23,9 @@ QUALIFICATION_ID = "q063"
 SECTION = "測量士補"
 CHOICE_COUNT = 5
 
-HEADING_TEXT = re.compile(r"[〔【\[［(（「]\s*No\s*[.．。]?\s*([0-9]{1,2})\s*[〕】\]］)）」]?")
+HEADING_TEXT = re.compile(r"[〔【\[［(（「{｛]\s*No\s*[.．。]?\s*([0-9]{1,2})\s*[〕】\]］)）」}｝J]?")
+# 行頭の見出し（OCRでは見出しの前に「_」「'」などの汚れが付くことがあるので、記号3字までは許す）
+HEADING_LINE = re.compile(r"^(?:[^\w【〔\[［(（「{｛]|_){0,4}" + HEADING_TEXT.pattern)
 # 選択肢の番号（「1」「1.」「1．」。OCRでは「.」が「。」に読まれることがある）
 MARKER = re.compile(r"^([1-5])[.．。]?$")
 OCR_INDENT_TOL = 8
@@ -70,11 +72,11 @@ def classify(question):
 # ---- ページの読み取り ----
 
 class _Page:
-    def __init__(self, page):
+    def __init__(self, page, force_ocr=False):
         self.page = page
         self.limit = page.rect.height * FOOTER
         # スキャンした紙・文字化けしたページ（令和4〜7年）は、ページ全体をOCRで読む
-        self.ocr = ocr.needs_ocr(page)
+        self.ocr = ocr.needs_ocr(page) or (force_ocr and ocr.available())
         if self.ocr:
             # 語の末尾に OCR の行番号を付ける（行のまとまりは OCR の判断どおりに使う）
             self.words = [w + (OCR_LINE, k) for k, ln in enumerate(ocr.page_ocr(page)) for w in ln[4] if w[3] <= self.limit]
@@ -162,7 +164,38 @@ def _choice_markers(pg):
                     break
         if len(seq) == CHOICE_COUNT:
             found.append(seq)
+    if not found and pg.ocr:
+        return _ocr_choice_markers(pg)
     return found[-1] if found else None
+
+
+_MARKER_LIKE = re.compile(r"^[0-9OoIlS]{1,2}[.．。,]?$")
+
+
+def _ocr_choice_markers(pg):
+    """OCRで番号を1つだけ読み違えた選択肢（「3.」が「38.」「9.」になるなど）。
+
+    行の先頭が番号らしい語の行が、同じ字下げで5行続き、そのうち4つ以上が順に1〜5と読めていれば、
+    その5行を選択肢とする（読み違えた番号は位置から決まる）。
+    """
+    heads = {}
+    for w in pg.words:
+        if w[6] not in heads or w[0] < heads[w[6]][0]:
+            heads[w[6]] = w
+    cands = sorted((w for w in heads.values() if _MARKER_LIKE.match(unicodedata.normalize("NFKC", w[4]))), key=lambda w: w[1])
+    best = None
+    for a in range(len(cands) - CHOICE_COUNT + 1):
+        win = cands[a:a + CHOICE_COUNT]
+        if max(w[0] for w in win) - min(w[0] for w in win) > OCR_INDENT_TOL:
+            continue
+        ok = sum(MARKER.match(unicodedata.normalize("NFKC", w[4])) is not None and num_of(w) == k for k, w in enumerate(win, 1))
+        if ok >= CHOICE_COUNT - 1:
+            best = win
+    return best
+
+
+def num_of(w):
+    return int(MARKER.match(unicodedata.normalize("NFKC", w[4])).group(1))
 
 
 def _top_glyph_run(pg):
@@ -268,20 +301,38 @@ def _number_glyphs(pages):
 
 
 def _number_text(pages):
-    """見出しが文字で読めるPDF。読めたページだけを問題のページとする。
+    """見出しが文字（またはOCR）で読めるPDF。見出しの行から、問番号と問題の範囲を決める。
 
-    見出しはページ最上部の行だけで探す（表紙の注意書きにある「〔No.1〕～〔No.28〕」を見出しと取り違えないため）。
+    令和4〜7年は1ページに2問あるページがあるので、ページの中の見出しをすべて探し、
+    見出しから次の見出しの手前までを1問の範囲とする。見出しは行頭にあるものだけ
+    （表紙の注意書きにある「〔No.1〕～〔No.28〕」を見出しと取り違えないため）。
+    返り値: [(問番号, ページ番号, 範囲の上端, 範囲の下端)]
     """
     out = []
     for no, pg in pages:
-        if not pg.words:
-            continue
-        top = min(w[1] for w in pg.words)
-        head = _line_text([w for w in pg.words if w[1] <= top + 4])
-        m = HEADING_TEXT.search(unicodedata.normalize("NFKC", head))
-        if m:
-            out.append((int(m.group(1)), no))
+        heads = []
+        for row in _lines(pg.words):
+            m = HEADING_LINE.match(unicodedata.normalize("NFKC", _line_text(row)))
+            if m:
+                heads.append((int(m.group(1)), min(w[1] for w in row)))
+        for k, (n, y) in enumerate(heads):
+            y1 = heads[k + 1][1] - 3 if k + 1 < len(heads) else pg.limit
+            out.append((n, no, y - 3, y1))
     return out
+
+
+def _region(pg, y0, y1):
+    """ページの一部（1問分）だけを見る _Page。"""
+    import copy
+
+    r = copy.copy(pg)
+    inside = lambda a, b: b > y0 and a < y1  # noqa: E731
+    r.words = [w for w in pg.words if y0 <= w[1] < y1]
+    r.drawings = [d for d in pg.drawings if inside(d["rect"].y0, d["rect"].y1)]
+    r.glyphs = [d for d in pg.glyphs if inside(d["rect"].y0, d["rect"].y1)]
+    r.images = [b for b in pg.images if inside(b[1], b[3])] if not pg.ocr else pg.images
+    r.limit = min(y1, pg.limit)
+    return r
 
 
 # ---- 問題の組み立て ----
@@ -800,11 +851,23 @@ def _build_ocr_question(p, line_text, unknown):
 def parse_questions(doc):
     ocr.prefetch([doc[i] for i in range(doc.page_count)])
     pages = [(i + 1, _Page(doc[i])) for i in range(doc.page_count)]
-    numbered = _number_text(pages)
-    text_heading = bool(numbered)
-    if not numbered:
-        numbered = _number_glyphs(pages)
+    regions = _number_text(pages)
+    if not regions:
+        try:
+            numbered = _number_glyphs(pages)
+        except ParseError:
+            # 字が図形になっていて、見出しの形でも問番号を確かめられない（令和7年など）：ページ全体をOCRで読む
+            if not ocr.available():
+                raise
+            ocr.prefetch([doc[i] for i in range(doc.page_count)], force=True)
+            pages = [(i + 1, _Page(doc[i], force_ocr=True)) for i in range(doc.page_count)]
+            regions = _number_text(pages)
+            if not regions:
+                raise
+        else:
+            by_no = dict(pages)
+            if ocr.available():
+                return _ocr_questions(numbered, by_no)
+            return [_question(n, no, by_no[no], False) for n, no in numbered]
     by_no = dict(pages)
-    if not text_heading and ocr.available():
-        return _ocr_questions(numbered, by_no)
-    return [_question(n, no, by_no[no], text_heading) for n, no in numbered]
+    return [_question(n, no, _region(by_no[no], y0, y1), True) for n, no, y0, y1 in regions]

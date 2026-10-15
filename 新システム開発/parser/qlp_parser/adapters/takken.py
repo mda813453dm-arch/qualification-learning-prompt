@@ -19,11 +19,12 @@ SECTION = "年度共通"
 CHOICE_COUNT = 4
 QUESTION_COUNT = 50
 
-HEADING = re.compile(r"^[【\[［〔]\s*問\s*([0-9０-９]{1,2})\s*[】\]］〕]")
+# OCRでは「【」が「{」「[」に、「問」が「間」に、「】」が「]】」に読まれることがある。行頭の汚れ（記号3字まで）も許す
+HEADING = re.compile(r"^(?:[^\w【\[［〔{｛]|_){0,4}[【\[［〔{｛]\s*[問間]\s*([0-9０-９]{1,2})\s*[】\]］〕}｝]{1,2}")
 # OCRでは番号の後の空白が「。」「.」に読まれることがある
 CHOICE = re.compile(r"^([1-4１-４])(?:[ 　]+|[。．.、][ 　]*)")
 # OCRで読んだ行は字下げ位置が数ptぶれるので、選択肢の番号の位置合わせを緩める
-OCR_INDENT_TOL = 8
+OCR_INDENT_TOL = 12
 # 図形が「文字の囲み線」だけかを見分けるための目安（pt）
 THIN = 1.5
 
@@ -146,7 +147,7 @@ def parse_questions(doc):
                 if k < stop:
                     notes.append("trailing_text_dropped")
                 stop = k
-            choices.append([CHOICE.sub("", body[j][3])] + [b[3] for b in body[j + 1:stop]])
+            choices.append([(_MARKER_LIKE if read_by_ocr else CHOICE).sub("", body[j][3], count=1)] + [b[3] for b in body[j + 1:stop]])
 
         pages = sorted({b[0] + 1 for b in body}) or [head[0] + 1]
         # 問題の範囲（ページごと）に図があるか
@@ -206,9 +207,30 @@ def _choice_starts(body, tol=3):
                     break
         if len(seq) == CHOICE_COUNT:
             valid.append(seq)
+    if not valid and tol > 3:
+        return _ocr_choice_starts(body, tol)
     if not valid:
         return [], []
     return valid[-1], (["multiple_choice_starts"] if len(valid) > 1 else [])
+
+
+_MARKER_LIKE = re.compile(r"^([0-9０-９OoIlS]{1,2})(?:[ 　]+|[。．.、][ 　]*)")
+
+
+def _ocr_choice_starts(body, tol):
+    """OCRで番号を1つだけ読み違えた選択肢。番号らしい字で始まる行が同じ字下げで4行（本文の続きの行を挟んでよい）並び、
+    そのうち3つ以上が順に1〜4と読めていれば、その4行を選択肢の始まりとする。"""
+    cands = [j for j, b in enumerate(body) if _MARKER_LIKE.match(b[3])]
+    best = None
+    for a in range(len(cands) - CHOICE_COUNT + 1):
+        win = cands[a:a + CHOICE_COUNT]
+        xs = [body[j][4] for j in win]
+        if max(xs) - min(xs) > tol:
+            continue
+        ok = sum(bool(CHOICE.match(body[j][3])) and to_int(CHOICE.match(body[j][3]).group(1)) == k for k, j in enumerate(win, 1))
+        if ok >= CHOICE_COUNT - 1:
+            best = win
+    return (best, ["choice_number_ocr_corrected"]) if best else ([], [])
 
 
 _ANSWER_ROW = re.compile(r"((?:問\s*[0-9]{1,2}\s*){2,10})((?:[1-4]\s*){2,10})")

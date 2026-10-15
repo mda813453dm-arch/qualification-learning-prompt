@@ -157,6 +157,19 @@ def _render(page, psm):
     return key, pix.tobytes("png"), zoom, page.rect.x0, page.rect.y0
 
 
+# スキャンした紙の汚れ・影が、行の先頭・末尾に記号として読まれることがある。記号だけの語は捨てる
+_LEAD_JUNK = set("'\"“”‘’_、。・-ー|,.「`~—–:;")
+_TRAIL_JUNK = set("'\"“”‘’_ー-|`~—–「")
+
+
+def _trim(words):
+    while words and set(words[0][4]) <= _LEAD_JUNK:
+        words = words[1:]
+    while words and set(words[-1][4]) <= _TRAIL_JUNK:
+        words = words[:-1]
+    return words
+
+
 def _recognize(png, zoom, ox, oy, psm):
     env = dict(os.environ, OMP_THREAD_LIMIT="1")
     r = subprocess.run(["tesseract", "stdin", "stdout", "-l", LANG, "--psm", psm, "hocr"],
@@ -167,10 +180,11 @@ def _recognize(png, zoom, ox, oy, psm):
     parser.feed(r.stdout.decode("utf-8", "replace"))
     out = []
     for (x0, y0, x1, y1), ws in parser.lines:
-        words = [(ox + a / zoom, oy + b / zoom, ox + c / zoom, oy + d / zoom, t) for (a, b, c, d), t in ws]
+        words = _trim([(ox + a / zoom, oy + b / zoom, ox + c / zoom, oy + d / zoom, t) for (a, b, c, d), t in ws])
         text = _join_words([w[4] for w in words])
         if text:
-            out.append((oy + y0 / zoom, oy + y1 / zoom, text, ox + x0 / zoom, words))
+            # 行の左端は、汚れを捨てた後の最初の語の位置（字下げで選択肢をそろえるため）
+            out.append((oy + y0 / zoom, oy + y1 / zoom, text, words[0][0], words))
     return out
 
 
@@ -188,10 +202,12 @@ def page_ocr(page, psm="6"):
     return _PAGE_CACHE[key]
 
 
-def prefetch(pages, workers=4):
+def prefetch(pages, workers=4, force=False):
     """OCRが要るページを並行して読み、控えに入れておく（1ページずつ順に読むと時間がかかるため）。"""
+    if not available():
+        return
     # PDFの描画は1つずつ（PyMuPDFは並行して描画できない）、文字認識だけを並行して行う
-    jobs = [_render(p, "6") for p in pages if needs_ocr(p)]
+    jobs = [_render(p, "6") for p in pages if force or needs_ocr(p)]
     jobs = [j for j in jobs if j[0] not in _PAGE_CACHE]
     if not jobs:
         return
