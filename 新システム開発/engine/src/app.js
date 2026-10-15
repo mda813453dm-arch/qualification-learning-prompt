@@ -19,6 +19,8 @@ import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from '
 import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { newLearnerId, pages } from './pages.js';
+import { INSTRUCTIONS } from './instructions.js';
+import { readFileSync } from 'node:fs';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
@@ -220,6 +222,16 @@ async function route(request, env, url, now) {
   // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
   if (method === 'GET' && url.pathname === '/robots.txt') {
     return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  }
+
+  // GPT の作成用（運営者が iPhone で GPT を作るとき、URL から取り込めるようにする）。秘密は含まない。
+  if (method === 'GET' && url.pathname === '/gpt/openapi.yaml') {
+    const base = env.PUBLIC_BASE_URL || url.origin;
+    const spec = readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8').replaceAll('https://REPLACE-WITH-CLOUD-RUN-URL', base);
+    return new Response(spec, { headers: { 'content-type': 'text/yaml; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+  if (method === 'GET' && url.pathname === '/gpt/instructions.txt') {
+    return new Response(INSTRUCTIONS, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
   }
 
   // ChatGPT の挙動を確かめるための試験用ページ（学習には使わない）
