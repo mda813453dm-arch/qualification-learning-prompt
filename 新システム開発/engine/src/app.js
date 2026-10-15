@@ -209,6 +209,11 @@ async function route(request, env, url, now) {
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
 
+  // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
+  if (method === 'GET' && url.pathname === '/robots.txt') {
+    return new Response('User-agent: *\nAllow: /p\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  }
+
   // プロンプトだけで使う方式（pages.js）。AIアプリの「Webページを開く」機能で開くのでトークンは付けない
   if (method === 'GET' && parts[0] === 'p') return pages({ ...env, fetchText: env.fetchText ?? defaultFetchText }, url, parts, now, advance, (qid) => kickIngest(env, qid, now));
 

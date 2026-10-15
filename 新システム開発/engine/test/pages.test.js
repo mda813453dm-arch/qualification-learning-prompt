@@ -53,7 +53,7 @@ async function get(env, path) {
 
 /** 「・ラベル：URL」の行からURLを取り出す。 */
 function link(text, label) {
-  const line = text.split('\n').find((l) => l.startsWith(`・${label}：`));
+  const line = text.split('\n').find((l) => l.startsWith(`・${label}：`) || l.startsWith(`・${label}［`));
   assert.ok(line, `リンク「${label}」が無い:\n${text}`);
   return line.slice(line.lastIndexOf('：http') + 1);
 }
@@ -214,9 +214,9 @@ test('過去問は学習者ごとに取り込み、期限なしで持つ（ほ�
 test('台帳にない資格・形の違う引継ぎIDは資格選びに戻す', async () => {
   const { env } = makeEnv();
   const t = await get(env, '/p/ABC/go/surveyor');
-  assert.match(t, /学びたい資格を選んでください/);
+  assert.match(t, /学びたい資格の名前を入力してください/);
   const u = await get(env, '/p/abcdefghjk/go/unknown');
-  assert.match(u, /学びたい資格を選んでください/);
+  assert.match(u, /学びたい資格の名前を入力してください/);
 });
 
 test('システムで過去問を取り込めないときは、AI作成問題と過去問PDFの添付に切り替え、やり直すこともできる', async () => {
@@ -239,7 +239,7 @@ test('一覧にない資格は、AI作成問題と過去問PDFの添付で学習
   assert.match(t, /AI作成問題（公式の過去問ではありません）/);
   assert.match(t, /学習記録はシステムに残りません/);
   assert.match(t, /公式以外のサイトは示さないでください/);
-  assert.match(t, /資格の一覧に戻る/);
+  assert.match(t, /資格名を入力し直す/);
 });
 
 test('資格を選ぶと公式の掲載ページから過去問PDFを探し、問題が2つに分かれた年度はそれぞれ取り込み元にする', async () => {
@@ -275,4 +275,24 @@ test('連続の誤答は分野ごとに数える（別の分野の誤答では�
   assert.doesNotMatch(r, /続けて間違えました/);
   const after = await env.STORE.get(`lrn/${lid}`, 'json');
   assert.deepEqual(after.result.wrongStreaks, { other: 2, f1: 1 });
+});
+
+test('資格名は自由入力にし、一覧は見せずに呼び方つきのURLだけを渡す', async () => {
+  const { env } = makeEnv();
+  const t = await get(env, '/p');
+  const shown = t.split('【表示】')[1].split('【次に開くURL】')[0];
+  assert.match(shown, /学びたい資格の名前を入力してください/);
+  assert.doesNotMatch(shown, /1\. 宅地建物取引士/);
+  assert.match(t, /選択肢の一覧は見せないでください/);
+  assert.match(t, /宅地建物取引士（宅建）［呼び方：宅建、宅建士/);
+  assert.match(t, /上にない資格：/);
+});
+
+test('robots.txt でページの取得を許可する（AIアプリが次のページを開けるように）', async () => {
+  const { env } = makeEnv();
+  const r = await handle(new Request('https://engine.example/robots.txt'), env);
+  assert.equal(r.status, 200);
+  const body = await r.text();
+  assert.match(body, /Allow: \/p/);
+  assert.match(body, /Disallow: \/\n/);
 });
