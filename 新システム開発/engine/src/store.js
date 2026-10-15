@@ -1,7 +1,7 @@
 /**
- * 保存先の共通の形（Cloudflare Workers KV と同じ呼び方）。
- *   get(key, 'json' | 'text' | 'arrayBuffer') / put(key, value, {expirationTtl, metadata}) / delete(key)
- * 本番は KV（env.QLP_CACHE）をそのまま渡す。テストと手元確認は MemoryStore を使う。
+ * 保存先の共通の形。
+ *   get(key, 'json' | 'text' | 'arrayBuffer') / put(key, value, {expirationTtl}) / delete(key)
+ * 本番は GcpStore（gcp-store.js：Firestore と Cloud Storage）。テストと手元確認は MemoryStore を使う。
  */
 export class MemoryStore {
   constructor() {

@@ -1,9 +1,9 @@
 // 合格条件6：問番号・本文・正答の誤結合なし／採点済みを採点保留へ戻さない／通常採点で再検索しない
-// あわせて Workers の入口（経路A・経路B・図・認証）を確かめる
+// あわせて API の入口（経路A・経路B・図・認証）を確かめる
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
-import { handle } from '../src/worker.js';
+import { handle } from '../src/app.js';
 import { httpParser } from '../src/parser-client.js';
 import { DAY, PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
@@ -25,7 +25,7 @@ class SpyStore extends MemoryStore {
 function makeEnv({ parserUrl } = {}) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
   const parse = fakeParser(web);
-  const env = { QLP_CACHE: new SpyStore(), API_TOKEN: TOKEN, fetchPdf: web.fetchPdf, now: T0 };
+  const env = { STORE: new SpyStore(), API_TOKEN: TOKEN, fetchPdf: web.fetchPdf, now: T0 };
   env.clock = () => env.now;
   if (parserUrl) {
     env.PARSER_URL = parserUrl;
@@ -83,12 +83,12 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
 
   // 採点：セッション以外は読まない・公式PDFも取りに行かない
   const fetchesBefore = web.calls.length;
-  env.QLP_CACHE.reads = [];
+  env.STORE.reads = [];
   const g = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: '3' });
   assert.equal(g.status, 200);
   assert.equal(g.body.grade.correct, true);
   assert.equal(g.body.grade.correctAnswer, 3);
-  assert.deepEqual(env.QLP_CACHE.reads, [`ses/${sessionId}`]);
+  assert.deepEqual(env.STORE.reads, [`ses/${sessionId}`]);
   assert.equal(web.calls.length, fetchesBefore);
 });
 

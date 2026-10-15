@@ -1,8 +1,10 @@
 /**
- * Cloudflare Workers の入口（T4）。AIアプリはこのAPIを呼び、返ってきた問題と採点結果を表示するだけ。
+ * 学習エンジンのAPI（T4）。AIアプリはこのAPIを呼び、返ってきた問題と採点結果を表示するだけ。
+ * Cloud Run では server.js がこの handle() を呼ぶ。
  *
- * 環境（wrangler の設定・シークレットで渡す。チャットには書かない）：
- *   QLP_CACHE     KV の結び付け（24時間保存・セッション）
+ * env（server.js が環境変数から作る。トークンは Secret Manager から渡し、チャットには書かない）：
+ *   STORE         保存先（24時間保存・セッション）。本番は GcpStore、テストは MemoryStore
+ *   PUBLIC_BASE_URL 図のURLの先頭（例 https://qlp-engine-xxxx.a.run.app）。無ければ相対URL
  *   API_TOKEN     AIアプリが付ける Bearer トークン（図の取得だけは不要：画像表示がトークンを付けられないため）
  *   PARSER_URL    経路Bの分解サーバー（Cloud Run）。無ければ経路A（アプリが分解結果を送る）
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
@@ -36,7 +38,7 @@ const json = (status, body) => new Response(JSON.stringify(body), { status, head
 function deps(env, extra = {}) {
   const parserVersion = env.PARSER_VERSION || DEFAULT_PARSER_VERSION;
   const parse = env.PARSER_URL ? httpParser({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch }) : awaitUpload();
-  return { store: env.QLP_CACHE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, parse, parserVersion, ...extra };
+  return { store: env.STORE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, parse, parserVersion, ...extra };
 }
 
 async function defaultFetchPdf(url) {
@@ -74,13 +76,13 @@ const sesKey = (id) => `ses/${id}`;
 
 async function loadSession(env, id, now) {
   if (!/^[0-9a-f-]{36}$/.test(id)) throw new HttpError(404, 'SESSION_NOT_FOUND');
-  const v = await env.QLP_CACHE.get(sesKey(id), 'json');
+  const v = await env.STORE.get(sesKey(id), 'json');
   if (!v || now - v.savedAt >= SESSION_MS) throw new HttpError(404, 'SESSION_NOT_FOUND');
   return v.state;
 }
 
 async function saveSession(env, id, state, now) {
-  await env.QLP_CACHE.put(sesKey(id), JSON.stringify({ savedAt: now, state }), { expirationTtl: SESSION_TTL_S });
+  await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, state }), { expirationTtl: SESSION_TTL_S });
 }
 
 /** 利用者に見せる取り込みの状況（URLとSHAは経路Aでアプリが分解するときに使う）。 */
@@ -105,10 +107,10 @@ function jobView(job) {
 }
 
 async function advance(env, qualificationId, now, budgetMs) {
-  const job = await readJob(env.QLP_CACHE, qualificationId);
+  const job = await readJob(env.STORE, qualificationId);
   if (!job) return null;
   if (job.state !== 'running') return withNotice(job, now);
-  return stepJob(env.QLP_CACHE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now });
+  return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now });
 }
 
 async function route(request, env, url, now) {
@@ -119,7 +121,7 @@ async function route(request, env, url, now) {
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'figure' && parts.length === 5) {
     const [qsha, pv, file] = parts.slice(2).map(decodeURIComponent);
     if (!/^[a-f0-9]{64}$/.test(qsha)) throw new HttpError(404, 'FIGURE_NOT_FOUND');
-    const bytes = await readFigure(env.QLP_CACHE, qsha, pv, file);
+    const bytes = await readFigure(env.STORE, qsha, pv, file);
     if (!bytes) throw new HttpError(404, 'FIGURE_NOT_FOUND');
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
@@ -131,7 +133,7 @@ async function route(request, env, url, now) {
     const b = await body(request);
     if (!qidOk(b.qualificationId)) throw new HttpError(400, 'QUALIFICATION_INVALID');
     const sources = checkSources(b.sources, b.qualificationId);
-    await startJob(env.QLP_CACHE, b.qualificationId, sources, now);
+    await startJob(env.STORE, b.qualificationId, sources, now);
     const job = await advance(env, b.qualificationId, now, STEP_BUDGET_MS);
     const id = crypto.randomUUID();
     await saveSession(env, id, newState({ qualificationId: b.qualificationId, plan: b.plan ?? {}, now }), now);
@@ -141,14 +143,14 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     let state = await loadSession(env, parts[2], now);
     const job = await advance(env, state.qualificationId, now, STEP_BUDGET_MS);
-    const items = await availablePackets(env.QLP_CACHE, job, now);
+    const items = await availablePackets(env.STORE, job, now);
     const pick = pickNext(state, items, { today: jstToday(now), job });
     if (pick.status !== 'question') {
       return json(200, { status: pick.status, notice: job?.notice ?? null, job: jobView(job) });
     }
     state = pin(state, pick.item, pick.kind, now);
     await saveSession(env, parts[2], state, now);
-    return json(200, { status: 'question', repeated: !!pick.repeated, question: present(pick.item, pick.kind), notice: job?.notice ?? null });
+    return json(200, { status: 'question', repeated: !!pick.repeated, question: present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), notice: job?.notice ?? null });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
@@ -168,10 +170,10 @@ async function route(request, env, url, now) {
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
     const b = await body(request);
-    const state = await importHandoff(b.handoff, { store: env.QLP_CACHE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, now });
+    const state = await importHandoff(b.handoff, { store: env.STORE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, now });
     let job = null;
     if (b.sources) {
-      await startJob(env.QLP_CACHE, state.qualificationId, checkSources(b.sources, state.qualificationId), now);
+      await startJob(env.STORE, state.qualificationId, checkSources(b.sources, state.qualificationId), now);
       job = await advance(env, state.qualificationId, now, STEP_BUDGET_MS);
     }
     const id = crypto.randomUUID();
@@ -197,7 +199,7 @@ async function route(request, env, url, now) {
       const index = Number(parts[4]);
       if (!Number.isInteger(index) || index < 0) throw new HttpError(404, 'SOURCE_NOT_FOUND');
       const b = await body(request);
-      const r = await ingestOne(env.QLP_CACHE, qid, index, deps(env, { parse: uploadedParse(b), now }), now);
+      const r = await ingestOne(env.STORE, qid, index, deps(env, { parse: uploadedParse(b), now }), now);
       return json(r.code ? 422 : 200, { accepted: !r.code, reason: r.code, job: jobView(r.job) });
     }
   }
@@ -226,4 +228,3 @@ export async function handle(request, env) {
   }
 }
 
-export default { fetch: (request, env) => handle(request, env) };

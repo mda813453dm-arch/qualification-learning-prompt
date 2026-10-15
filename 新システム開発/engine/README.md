@@ -1,7 +1,8 @@
 # 学習エンジン（T4）
 
 AIアプリから呼ばれる学習エンジン。出題順・正誤・復習・次問はここで決め、AIは返ってきた内容を表示するだけにする
-（AI裁量排除、文書61）。Cloudflare Workers で動き、保存は Workers KV だけを使う（R2 はカード登録が必要なため使わない）。
+（AI裁量排除、文書61）。Google Cloud の Cloud Run で動き、保存は Firestore（分解結果・セッション）と
+Cloud Storage（図のPNG）を使う（方針7：2026年10月15日、Cloudflare から Google へ統一）。
 
 ## 合格条件との対応（設計計画 82_T1 §7）
 
@@ -15,7 +16,7 @@ AIアプリから呼ばれる学習エンジン。出題順・正誤・復習・
 | 6. 通常採点で再検索しない | 同「経路B：…保存データを読み直さない」（採点中の読み出しがセッション1件だけであることを確認） |
 
 ```bash
-npm run test:engine          # 新システム開発/ で実行
+cd engine && npm install && npm test   # Google のライブラリを入れてから実行
 ```
 
 本物の分解結果で通しで確かめるとき（任意）：
@@ -29,8 +30,9 @@ QLP_REAL_JSON=out.json QLP_REAL_ASSETS=out QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf nod
 
 ## 仕組み
 
-- **24時間保存**（`src/cache.js`）：分解結果・図のPNG・公式PDFのSHA-256の控えを保存する。期限はプログラムが判定し、
-  KV の自動削除（26時間）は掃除用。キーに利用者IDは入れない。PDF本体は保存しない。
+- **24時間保存**（`src/cache.js`・`src/gcp-store.js`）：分解結果・図のPNG・公式PDFのSHA-256の控えを保存する。
+  期限はプログラムが判定し、Firestore の TTL（`expireAt`、26時間）とバケットのライフサイクル（2日で削除）は掃除用。
+  図は Firestore の1件1MiBの上限を超えることがある（測量士補R8問21の航空写真で約2.1MB）ため Cloud Storage に置く。キーに利用者IDは入れない。PDF本体は保存しない。
 - **取り込み**（`src/ingest.js`）：公式PDFを取得 → SHA-256 → 保存があれば使う → 無ければ分解 → 検査 → 保存。
   1回の呼び出しで時間の許す分だけ進め（既定15秒）、20秒を過ぎると利用者向けの案内文を付ける。
   1つのPDFが失敗しても、ほかは続ける。届いた分解結果は経路を問わず検査し、形の崩れた問はその問だけ外す。
@@ -43,7 +45,7 @@ QLP_REAL_JSON=out.json QLP_REAL_ASSETS=out QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf nod
 - **引継ぎ**（`src/handoff.js`）：問題本文を入れない `qlp-handoff-v1`。再開時に公式PDFのSHA-256を照合し、
   差し替え・削除された問は出題せず理由を返す。
 
-## API（`src/worker.js`）
+## API（`src/app.js`、Cloud Run の入口は `src/server.js`）
 
 図の取得以外は `Authorization: Bearer <API_TOKEN>` が必要。
 
@@ -62,9 +64,16 @@ QLP_REAL_JSON=out.json QLP_REAL_ASSETS=out QLP_REAL_Q=Q.pdf QLP_REAL_A=A.pdf nod
 
 ## 公開の手順（未実施）
 
-1. `cp wrangler.toml.example wrangler.toml`、`npx wrangler kv namespace create QLP_CACHE` の id を書く
-2. `npx wrangler secret put API_TOKEN`
-3. `npx wrangler deploy`
+東京リージョン（asia-northeast1）の例。トークンは Secret Manager に入れ、チャットや Git には書かない。
 
-KV の無料枠は書き込み1日1,000回。1問あたり2回（出題・採点）、取り込みは図の数＋数回なので、
-開発中の1人利用なら足りる見込み。超える場合は Workers 有料プラン（月5ドル）。
+1. Firestore（ネイティブモード）のデータベースを作り、コレクション `qlp` のフィールド `expireAt` に TTL ポリシーを付ける
+2. 図用のバケットを作り、ライフサイクルで「作成から2日で削除」を付ける
+3. `API_TOKEN` を Secret Manager に登録する
+4. `gcloud run deploy qlp-engine --source engine --region asia-northeast1 --max-instances 3 \
+   --set-env-vars FIGURE_BUCKET=<バケット名>,PUBLIC_BASE_URL=<サービスのURL> --set-secrets API_TOKEN=<シークレット名>:latest`
+5. 予算アラート（例：月3,000円）を設定する
+
+費用の見込み（2026年10月15日、公式料金ページで確認・使用量は推測）：50人・毎日で月0〜1,500円程度。
+Firestore の無料枠は1日に書き込み2万回・読み取り5万回、Cloud Run は月200万リクエストまで無料。
+費用の大半は Cloud Run での PDF 分解で、最悪（全員が別々の資格を毎日分解）でも月5,000円前後。
+使わない月は、保管しているコンテナイメージ等の数円〜数十円だけ。

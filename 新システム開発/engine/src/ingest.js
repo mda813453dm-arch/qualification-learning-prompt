@@ -4,8 +4,8 @@
  * 公式PDFを取得 → SHA-256 → 24時間保存を確認 → 無ければ分解（経路A：AIアプリが分解して送る／
  * 経路B：Cloud Run）→ 検査 → 保存。1つのPDFが失敗しても、ほかのPDFの取り込みは続ける。
  *
- * 取り込みは「1回の呼び出しで時間の許す分だけ進める」形にしている（Workersは1回の処理時間に
- * 上限があるため）。残りは次の呼び出しで続きから進む。
+ * 取り込みは「1回の呼び出しで時間の許す分だけ進める」形にしている（1回の応答を長く待たせない
+ * ため）。残りは次の呼び出しで続きから進む。
  */
 import { readResult, readSource, writeResult, writeSource } from './cache.js';
 import { sha256Hex } from './store.js';

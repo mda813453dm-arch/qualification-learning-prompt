@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { MemoryStore } from '../src/store.js';
-import { handle } from '../src/worker.js';
+import { handle } from '../src/app.js';
 import { toBase64 } from '../src/parser-client.js';
 
 const { QLP_REAL_JSON, QLP_REAL_ASSETS, QLP_REAL_Q, QLP_REAL_A } = process.env;
@@ -18,7 +18,7 @@ test('本物の分解結果を経路Aで受け取り、全問を出題・採点�
   const p0 = result.packets[0];
   const files = { [p0.questionPdfUrl]: new Uint8Array(readFileSync(QLP_REAL_Q)) };
   if (QLP_REAL_A) files[p0.answerPdfUrl] = new Uint8Array(readFileSync(QLP_REAL_A));
-  const env = { QLP_CACHE: new MemoryStore(), API_TOKEN: 't', fetchPdf: async (u) => files[u], clock: () => Date.parse('2026-10-15T01:00:00Z') };
+  const env = { STORE: new MemoryStore(), API_TOKEN: 't', fetchPdf: async (u) => files[u], clock: () => Date.parse('2026-10-15T01:00:00Z') };
   const call = async (method, path, body) => {
     const res = await handle(new Request(`https://e.example${path}`, { method, headers: { authorization: 'Bearer t' }, body: body && JSON.stringify(body) }), env);
     return { status: res.status, body: res.headers.get('content-type').startsWith('application/json') ? await res.json() : null };
