@@ -1,5 +1,5 @@
 name: 公開中の学習エンジンの動作確認（読み取りのみ）
-# 公開URLを外から開き、ページのつながりとエラーログを確かめる。配置はしない。（2026-10-15 再確認3：実践問題まで）
+# 公開URLを外から開き、ページのつながりとエラーログを確かめる。配置はしない。（2026-10-15 再確認4：計画・初期診断・採点後まで）
 on:
   push:
     branches: [ai-learning-system]
@@ -29,7 +29,7 @@ jobs:
               t = time.time()
               r = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": "smoke-check"}), timeout=60)
               body = r.read().decode()
-              print(f"--- {u} ({time.time()-t:.1f}s)\n{body[:600]}\n")
+              print(f"--- {u} ({time.time()-t:.1f}s)\n{body[:300]}\n")
               return body
           def link(body, prefix):
               for line in body.splitlines():
@@ -38,17 +38,33 @@ jobs:
               raise SystemExit(f"リンク「{prefix}」が無い")
           b = get(BASE + "/p")
           b = get(link(b, "宅地建物取引士"))
-          b = get(link(b, "2 利用しない"))
-          b = get(link(b, "3 "))
-          b = get(link(b, "1 始める"))
-          b = get(link(b, "3 実践問題"))
-          for i in range(30):
-              if "番号で答えてください" in b:
-                  print("実践問題が出ました"); break
-              time.sleep(20)
-              b = get(link(b, "もう一度"))
+          b = get(link(b, "2 免除を利用しない"))
+          b = get(link(b, "3 応用学習中"))
+          print(b)
+          b = get(link(b, "1 この計画で開始する"))
+          b = get(link(b, "1 学習を開始する"))
+          b = get(link(b, "1 初期診断を受ける"))
+          for i in range(60):
+              if "【初期診断の結果" in b:
+                  break
+              if "もう一度" in b and "番号で答えてください" not in b:
+                  time.sleep(20); b = get(link(b, "もう一度")); continue
+              if "確認問題に正解した" in b:
+                  b = get(link(b, "確認問題に正解した")); continue
+              b = get(link(b, "1と答えた"))
           else:
-              raise SystemExit("10分待っても実践問題が出ませんでした")
+              raise SystemExit("初期診断が終わりませんでした")
+          print(b)
+          b = get(link(b, "1 この診断結果で計画を作る"))
+          print(b)
+          b = get(link(b, "1 この計画で開始する"))
+          b = get(link(b, "3 以後も"))
+          print(b)
+          b = get(link(b, "2と答えた"))
+          print(b)
+          if "■解説の確認" not in b:
+              raise SystemExit("採点後に解説の確認が出ませんでした")
+          print("計画・初期診断・実践問題・採点後の流れを確認しました")
           PY
       - uses: google-github-actions/auth@v2
         with:
