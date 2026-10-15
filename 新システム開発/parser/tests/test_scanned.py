@@ -165,9 +165,13 @@ if __name__ == "__main__":
 class NumberOrder(unittest.TestCase):
     def test_ocr_number_out_of_order_is_flagged(self):
         from qlp_parser.core import OUT_OF_ORDER, RawQuestion, mark_out_of_order
+        qs = [RawQuestion(number=n, stem="s", choices=[], pages=[1], notes=["read_by_ocr"]) for n in (11, 12, 18, 13, 14)]
+        mark_out_of_order(qs)
+        self.assertEqual([OUT_OF_ORDER in q.notes for q in qs], [False, False, True, False, False])
+        # どちらが読み違いか決められないときは両方出さない
         qs = [RawQuestion(number=n, stem="s", choices=[], pages=[1], notes=["read_by_ocr"]) for n in (11, 12, 18, 14)]
         mark_out_of_order(qs)
-        self.assertEqual([OUT_OF_ORDER in q.notes for q in qs], [False, False, True, False])
+        self.assertEqual([OUT_OF_ORDER in q.notes for q in qs], [False, False, True, True])
 
     def test_text_questions_are_not_flagged(self):
         from qlp_parser.core import OUT_OF_ORDER, RawQuestion, mark_out_of_order

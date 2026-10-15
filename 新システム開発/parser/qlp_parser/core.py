@@ -153,18 +153,34 @@ OUT_OF_ORDER = "question_number_out_of_order"
 
 
 def mark_out_of_order(questions):
-    """OCRで読んだ問番号を、前後の問との並びで確かめる。
+    """OCRで読んだ問番号を、問の並びで確かめる。
 
-    問題は問番号の順に並んでいるので、前の問より大きく次の問より小さくない番号は、読み違いのおそれがある
-    （例：問13を「問18」と読む）。その問は出題しない（正答を取り違えないため）。questions は文書の順。
+    問題は問番号の順に並んでいるので、文書の順に番号を並べたとき、最も長い増加列（どの選び方でも必ず入る問）に
+    入らない番号は、読み違いのおそれがある（例：問13を「問18」と読む）。その問は出題しない（正答を取り違えないため）。
+    どちらが読み違いか決められないとき（11, 12, 18, 14 の 18 と 14）は両方出さない。questions は文書の順。
     """
     nums = [q.number for q in questions]
-    for k, q in enumerate(questions):
+    n = len(nums)
+    f = [1] * n  # f[i]: i で終わる最長の増加列の長さ
+    for i in range(n):
+        for j in range(i):
+            if nums[j] < nums[i]:
+                f[i] = max(f[i], f[j] + 1)
+    g = [1] * n  # g[i]: i から始まる最長の増加列の長さ
+    for i in reversed(range(n)):
+        for j in range(i + 1, n):
+            if nums[i] < nums[j]:
+                g[i] = max(g[i], g[j] + 1)
+    longest = max(f, default=0)
+    on_some = [f[i] + g[i] - 1 == longest for i in range(n)]
+    per_level = {}
+    for i in range(n):
+        if on_some[i]:
+            per_level[f[i]] = per_level.get(f[i], 0) + 1
+    for i, q in enumerate(questions):
         if "read_by_ocr" not in q.notes and q.stem_mode != "ocr":
             continue
-        prev_ok = k == 0 or nums[k - 1] < q.number
-        next_ok = k + 1 == len(nums) or q.number < nums[k + 1]
-        if not (prev_ok and next_ok):
+        if not (on_some[i] and per_level[f[i]] == 1):
             q.notes.append(OUT_OF_ORDER)
     return questions
 
