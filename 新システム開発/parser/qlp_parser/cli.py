@@ -6,6 +6,7 @@
       [--answer-pdf R7.pdf --answer-url https://... --answer-sha256 ...]
 
 正答PDFを省略すると、問題PDFに正答表が入っているものとして扱う。
+--assets-dir を付けると、公式PDFから切り出した図（PNG）をそこへ書き出す。
 結果はJSONで標準出力に出す。失敗も status=unavailable と理由コードで返し、成功を装わない。
 """
 
@@ -16,10 +17,11 @@ from pathlib import Path
 
 from . import PARSER_VERSION
 from .adapters import ADAPTERS
-from .core import ParseError, PdfSource, build_result, open_pdf
+from .core import ParseError, PdfSource, build_result, open_pdf, render_crops
 
 
-def run(adapter_name, year, question, answer=None, section=None):
+def run(adapter_name, year, question, answer=None, section=None, assets=None):
+    """assets に dict を渡すと、切り出したPNG（ファイル名 -> バイト列）をそこに入れる。"""
     adapter = ADAPTERS.get(adapter_name)
     if adapter is None:
         return {"status": "unavailable", "reason": "ADAPTER_NOT_FOUND", "parserVersion": PARSER_VERSION}
@@ -27,14 +29,20 @@ def run(adapter_name, year, question, answer=None, section=None):
     try:
         qdoc, qsha = open_pdf(question)
         adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
+        if hasattr(adapter, "check_year"):
+            adapter.check_year(adoc, year)
         raw = adapter.parse_questions(qdoc)
         answers = adapter.parse_answers(adoc)
     except ParseError as e:
         return {"status": "unavailable", "reason": e.code, "detail": e.detail, "parserVersion": PARSER_VERSION}
+    sec = section or adapter.SECTION
+    figures, pngs = render_crops(qdoc, raw, f"{adapter.QUALIFICATION_ID}-{year}-{qsha[:12]}")
+    if assets is not None:
+        assets.update(pngs)
     return build_result(
         qualification_id=adapter.QUALIFICATION_ID,
         year=year,
-        section=section or adapter.SECTION,
+        section=sec,
         question_source=question,
         question_sha=qsha,
         answer_source=answer,
@@ -43,6 +51,7 @@ def run(adapter_name, year, question, answer=None, section=None):
         answers=answers,
         choice_count=adapter.CHOICE_COUNT,
         classify=adapter.classify,
+        figures=figures,
     )
 
 
@@ -57,10 +66,17 @@ def main(argv=None):
     ap.add_argument("--answer-pdf")
     ap.add_argument("--answer-url")
     ap.add_argument("--answer-sha256")
+    ap.add_argument("--assets-dir", help="切り出したPNGを書き出すフォルダ")
     a = ap.parse_args(argv)
     q = PdfSource(Path(a.question_pdf).read_bytes(), a.question_url, a.question_sha256)
     ans = PdfSource(Path(a.answer_pdf).read_bytes(), a.answer_url, a.answer_sha256) if a.answer_pdf else None
-    result = run(a.adapter, a.year, q, ans, a.section)
+    pngs = {}
+    result = run(a.adapter, a.year, q, ans, a.section, pngs)
+    if a.assets_dir:
+        out = Path(a.assets_dir)
+        out.mkdir(parents=True, exist_ok=True)
+        for name, data in pngs.items():
+            (out / name).write_bytes(data)
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")
     return 0 if result["status"] in ("ready", "partial") else 1

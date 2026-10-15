@@ -42,6 +42,14 @@ class RawQuestion:
     rect: tuple | None = None  # 問題の範囲（最初のページ上）。図の判定用
     has_graphics: bool = False  # 問題の範囲に画像・図形があるか
     notes: list = field(default_factory=list)
+    # 文字が取り出せない（アウトライン化された）PDFでは、本文・選択肢を公式PDFの画像で見せる
+    stem_mode: str = "text"  # "text" | "official_image"
+    choice_mode: str = "text"  # "text" | "official_image"（選択肢は番号だけを持つ）
+    crops: list = field(default_factory=list)  # 切り出す範囲 [(ページ番号, (x0, y0, x1, y1))]
+
+    @property
+    def needs_image(self):
+        return self.has_graphics or self.stem_mode != "text" or self.choice_mode != "text"
 
 
 def sha256(data):
@@ -103,6 +111,43 @@ def to_int(s):
     return int(unicodedata.normalize("NFKC", s))
 
 
+CROP_ZOOM = 3  # 80番の実機確認で読めた倍率（PDF描画倍率3倍）
+
+
+def render_crops(doc, raw_questions, file_prefix):
+    """アダプタが決めた範囲を公式PDFから切り出してPNGにする。描き直しはしない（77番：原図優先）。
+
+    返り値: ({問番号: [図の情報]}, {ファイル名: PNGのバイト列})
+    真っ白な画像になった範囲は図として返さない（その問は図なしとして除外される）。
+    """
+    import fitz
+
+    figures, assets = {}, {}
+    for q in raw_questions:
+        for page_no, rect in q.crops:
+            page = doc[page_no - 1]
+            clip = fitz.Rect(rect) & page.rect
+            if clip.is_empty:
+                continue
+            pix = page.get_pixmap(matrix=fitz.Matrix(CROP_ZOOM, CROP_ZOOM), clip=clip, alpha=False)
+            if pix.is_unicolor:
+                continue
+            data = pix.tobytes("png")
+            name = f"{file_prefix}-q{q.number}-p{page_no}.png"
+            assets[name] = data
+            figures.setdefault(q.number, []).append({
+                "kind": "official_pdf_crop",
+                "file": name,
+                "page": page_no,
+                "rect": [round(v, 1) for v in clip],
+                "zoom": CROP_ZOOM,
+                "width": pix.width,
+                "height": pix.height,
+                "sha256": sha256(data),
+            })
+    return figures, assets
+
+
 def build_result(*, qualification_id, year, section, question_source, question_sha,
                  answer_source, answer_sha, raw_questions, answers, choice_count,
                  classify, figures=None):
@@ -110,7 +155,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
 
     answers: {問番号: 正答番号}（同年度・同区分の公式正答から読んだもの）
     classify: 問題 -> {"fieldId": str|None, "method": str, "verified": bool}
-    figures: {問番号: [図の情報]}（図の切り出しは測量士補アダプタで実装予定）
+    figures: {問番号: [図の情報]}（render_crops の結果）
     """
     figures = figures or {}
     packets, excluded = [], []
@@ -122,7 +167,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         if counts[q.number] > 1:
             # 同じ問番号が2か所にあると、どちらが本物か決められないので両方出さない
             reason = "QUESTION_NUMBER_DUPLICATED"
-        elif not q.stem.strip():
+        elif q.stem_mode == "text" and not q.stem.strip():
             reason = "STEM_EMPTY"
         elif len(q.choices) != choice_count or any(not c.strip() for c in q.choices):
             reason = "CHOICES_INCOMPLETE"
@@ -130,8 +175,8 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             reason = "OFFICIAL_ANSWER_NOT_FOUND"
         elif not 1 <= answers[q.number] <= len(q.choices):
             reason = "OFFICIAL_ANSWER_OUT_OF_RANGE"
-        elif q.has_graphics and not figures.get(q.number):
-            # 図が要るかもしれない問題は、図を返せるまで出題しない（安全側）
+        elif q.needs_image and not figures.get(q.number):
+            # 図が要るかもしれない問題・文字を画像で見せる問題は、画像を返せるまで出題しない（安全側）
             reason = "FIGURE_REQUIRED_NOT_AVAILABLE"
         if reason:
             excluded.append({"questionNumber": q.number, "reason": reason, "pages": q.pages})
@@ -146,7 +191,9 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "questionNumber": q.number,
             "fieldId": cls.get("fieldId"),
             "stem": q.stem,
+            "stemMode": q.stem_mode,
             "choices": list(q.choices),
+            "choiceMode": q.choice_mode,
             "correctAnswer": answers[q.number],
             "diagramRequired": bool(figures.get(q.number)),
             "figures": figures.get(q.number, []),
@@ -156,10 +203,10 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "answerPdfSha256": answer_sha,
             "evidence": {"questionPdfPages": q.pages, "questionRect": q.rect, "field": cls.get("method"), "notes": list(q.notes)},
             "verification": {
-                "questionText": "runtime_pdf_checked",
-                "choices": "runtime_pdf_checked",
+                "questionText": "runtime_pdf_checked" if q.stem_mode == "text" else "official_pdf_image",
+                "choices": "runtime_pdf_checked" if q.choice_mode == "text" else "official_pdf_image",
                 "answer": "same_year_official_answer_checked",
-                "visual": "question_level_pdf_graphics_checked",
+                "visual": "official_pdf_crop_rendered" if figures.get(q.number) else "question_level_pdf_graphics_checked",
                 "field": "verified" if cls.get("verified") else "unverified",
             },
         })
