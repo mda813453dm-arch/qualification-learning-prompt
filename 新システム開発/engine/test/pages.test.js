@@ -66,7 +66,7 @@ const has = (text, label) => text.split('\n').some((l) => l.startsWith(`・${lab
 async function onboard(env, slug, { exempt, level = '4 過去問演習中', diagnose = false } = {}) {
   const start = await get(env, '/p');
   let t = await get(env, link(start, CATALOG[slug].name));
-  assert.match(t, /■試験概要\n（ここに試験の概要を表示）/);
+  assert.match(t, /■試験概要\n・実施：.+\n・出題分野：/);
   if (exempt !== undefined) {
     assert.match(t, /免除制度を利用しますか？\n1\. 免除を利用する\n2\. 免除を利用しない\n番号で答えてください。/);
     t = await get(env, link(t, exempt ? '1 免除を利用する' : '2 免除を利用しない'));
@@ -74,7 +74,7 @@ async function onboard(env, slug, { exempt, level = '4 過去問演習中', diag
   assert.match(t, /今の学習の段階\n1：未着手\n2：基礎学習中\n3：応用学習中\n4：過去問演習中\n番号で答えてください。/);
   t = await get(env, link(t, level));
   assert.match(t, /【学習計画】/);
-  assert.match(t, /試験日：（ここに試験日を表示）/);
+  assert.match(t, /試験日：未確認（公式サイトの案内で確認してください：/);
   assert.match(t, /1\. この計画で開始する\n2\. 学習計画を見直す/);
   t = await get(env, link(t, '1 この計画で開始する'));
   assert.match(t, /この学習計画で学習を開始しますか？\n1\. 学習を開始する\n2\. 今は学習しない\n番号で答えてください。/);
@@ -447,4 +447,12 @@ test('robots.txt でページの取得を許可する（AIアプリが次のペ�
   const body = await r.text();
   assert.match(body, /Allow: \/p/);
   assert.match(body, /Disallow: \/\n/);
+});
+
+test('画面の指示：表示の内容は書き換えず、次の選択肢と復習の入力はページのものだけ使う', async () => {
+  const { env } = makeEnv();
+  const t = await get(env, '/p');
+  assert.match(t, /「表示」の内容は、「（ここに…を表示）」と書かれた部分を除き、そのまま/);
+  assert.match(t, /「次に開くURL」にあるものだけを使ってください/);
+  assert.match(t, /復習の間隔を利用者が自由に入力したときは、受け付けず/);
 });

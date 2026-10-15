@@ -8,6 +8,7 @@ export const CATALOG = {
     name: '宅地建物取引士（宅建）',
     // 利用者が自由に入力した資格名と照らし合わせるための呼び方
     aliases: ['宅建', '宅建士', '宅地建物取引士', '宅地建物取引主任者', '宅建試験'],
+    org: '一般財団法人 不動産適正取引推進機構（RETIO）',
     officialSite: 'https://www.retio.or.jp/exam/index.html',
     pastExamPage: 'https://www.retio.or.jp/exam/past_ques_ans/other/',
     // 公式の免除制度：登録講習の修了者は問46〜50の5問が免除
@@ -30,6 +31,7 @@ export const CATALOG = {
     qualificationId: 'q063',
     name: '測量士補',
     aliases: ['測量士補', '測量士補試験', '測量士補の国家試験'],
+    org: '国土地理院',
     officialSite: 'https://www.gsi.go.jp/LAW/SHIKEN/SHIKEN-top.htm',
     pastExamPage: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html',
     exemption: null,

@@ -49,6 +49,9 @@ export function newLearnerId() {
 const HEAD = [
   '【AIへの指示】これは資格学習エンジンの画面です。',
   '・「表示」の内容は、言い換えたり省いたりせずに利用者へ見せてください。番号付きの選択肢は、番号・文言・順番をそのまま表示してください。',
+  '・「表示」の内容は、「（ここに…を表示）」と書かれた部分を除き、そのまま利用者へ見せてください。自分で計画・分野・問題数・日程・選択肢を書き足したり、書き換えたりしないでください。',
+  '・次に進む選択肢は、「次に開くURL」にあるものだけを使ってください。「次へ進む」など、ここにない選択肢を作らないでください。',
+  '・復習の間隔を利用者が自由に入力したときは、受け付けず、「表示」の一覧から番号で選んでもらってください。',
   '・「（ここに…を表示）」と書かれた部分だけは、AIへの指示に従って書いた内容に置き換えて表示してください。',
   '・利用者の答えに合うURLを「次に開くURL」から選び、すぐ開いてください。URLを自分で作ったり書き換えたりしないでください。',
   '・問題・選択肢・正答・採点は、このエンジンが返したものだけを使ってください（AI作成の確認問題を除く）。',
@@ -73,6 +76,17 @@ function fallbackAi(pastExamPage) {
       ? `利用者が公式の過去問を使いたいときは、公式の過去問掲載ページ（${pastExamPage}）のリンクを示し、そこから問題と正答のPDFを取得して、このチャットに添付するよう促してください。`
       : '利用者が公式の過去問を使いたいときは、試験実施団体の公式サイトで過去問の掲載ページを探し、見つかればそのリンクを示して、問題と正答のPDFを取得してこのチャットに添付するよう促してください。公式の掲載ページが見つからないときは、そのことを伝えてください。公式以外のサイトは示さないでください。',
     'PDFが添付されたら、その問題を書き換えずに表示し、同じPDFの正答で採点してください。正答が確認できない問題は採点しないでください。AIが読み取るため、読み違いがありうることを伝えてください。',
+  ];
+}
+
+/** 試験概要のうち、エンジンが台帳で確かめている項目（AIには書かせない）。 */
+function overviewLines(c) {
+  return [
+    `・実施：${c.org}`,
+    `・出題分野：`,
+    ...Object.values(c.fields).map((f, i) => `　${i + 1}. ${f}`),
+    ...(c.exemption ? [`・免除制度：${c.exemption.label}`] : []),
+    `・過去問の掲載ページ：${c.pastExamPage}`,
   ];
 }
 
@@ -291,7 +305,7 @@ function planLines(rec, items) {
   const s = stats(rec, Date.now());
   return [
     `【学習計画】${c.name}`,
-    '・試験日：（ここに試験日を表示）',
+    `・試験日：未確認（公式サイトの案内で確認してください：${c.officialSite}）`,
     `・学習の段階：${LEVELS[r.level]?.label ?? '未設定'}`,
     `・免除：${c.exemption ? (r.exempt ? `利用する（${c.exemption.label}。該当する問題は出題しません）` : '利用しない') : '制度なし'}`,
     `・分野の優先順位（根拠：${basisText}${r.userTop ? '。最優先の分野はご指定どおり' : ''}）`,
@@ -306,14 +320,12 @@ function planLines(rec, items) {
   ];
 }
 
-const PLAN_AI = (rec) => `「（ここに試験日を表示）」の部分には、公式サイト（${CATALOG[rec.fixed.slug].officialSite}）で確認できた次の試験日を書いてください。確認できなければ「未確認」と書いてください。`;
-
 /** 学習計画の表示（PLAN_PREVIEW）。計画の作成・見直しのあとは必ずこれを出す。 */
 async function planPreview(ctx, lead = []) {
   const { items } = await loadItems(ctx);
   const { rec, base, t } = ctx;
   return compose({
-    ai: [PLAN_AI(rec)],
+    ai: [],
     show: [...lead, ...(lead.length ? [''] : []), ...planLines(rec, items), '', 'この学習計画で開始しますか？', '1. この計画で開始する', '2. 学習計画を見直す', '番号で答えてください。'],
     links: [['1 この計画で開始する', url(base, rec, 'pv', t, 1)], ['2 学習計画を見直す', url(base, rec, 'pv', t, 2)]],
   }, R(rec).session?.active ? { links: learnLinks(ctx) } : null);
@@ -1000,8 +1012,8 @@ async function route(env, base, parts, now, advance, kick) {
     if (!isNew) return { rec, res: page(rec.result.step === 'ready' ? resumeParts(ctx) : await onboarding(ctx)) };
     const c = CATALOG[a1];
     await startIngest(env, rec, now, kick);
-    const lead = [`${c.name}の学習を始めます。`, '■試験概要', '（ここに試験の概要を表示）', '', resumeLine(base, rec)];
-    const ai = [`「（ここに試験の概要を表示）」の部分には、公式サイト（${c.officialSite}）で確認できた試験の概要（対象・出題分野・形式・時間・合格基準・免除制度）を、初心者にも分かる言葉で書いてください。確認できなかった項目は「未確認」と書いてください。`];
+    const lead = [`${c.name}の学習を始めます。`, '■試験概要', ...overviewLines(c), '', resumeLine(base, rec)];
+    const ai = ['試験の概要のうち、上に書かれていない項目（対象・試験時間・合格基準など）は、公式サイトで確認できたことだけを初心者にも分かる言葉で書いてください。確認できなければ「未確認」と書いてください。'];
     return { rec, res: page(c.exemption ? exemptionParts(ctx, lead, ai) : levelParts(ctx, lead, ai)) };
   }
 
