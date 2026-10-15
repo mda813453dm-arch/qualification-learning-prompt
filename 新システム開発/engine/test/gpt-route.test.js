@@ -27,3 +27,19 @@ test('GPT用のAPI定義は engine/openapi.yaml と同じ内容', async () => {
   const { OPENAPI_YAML } = await import('../src/gpt-openapi.js');
   assert.equal(OPENAPI_YAML, readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8'));
 });
+
+test('合言葉が違うときは、中身を出さずに「どう違うか」だけ返す', async () => {
+  const env = { STORE: new MemoryStore(), API_TOKEN: 'a'.repeat(64) };
+  const hint = async (auth) => {
+    const res = await handle(new Request('https://engine.example/v1/sessions', { method: 'POST', headers: auth === null ? {} : { authorization: auth }, body: '{}' }), env);
+    assert.equal(res.status, 401);
+    return (await res.json()).hint;
+  };
+  assert.equal(await hint(null), 'no_authorization_header');
+  assert.equal(await hint('Basic xyz'), 'not_bearer');
+  assert.equal(await hint('Bearer projects/1/secrets/qlp-api-token'), 'looks_like_a_path_not_the_value');
+  assert.equal(await hint('Bearer ab cd'), 'contains_whitespace');
+  assert.equal(await hint(`Bearer ${'b'.repeat(64)}`), 'wrong_value_length_64');
+  const ok = await handle(new Request('https://engine.example/v1/jobs/q041', { headers: { authorization: `Bearer ${'a'.repeat(64)} ` } }), env);
+  assert.notEqual(ok.status, 401);
+});

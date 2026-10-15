@@ -262,8 +262,8 @@ async function route(request, env, url, now) {
     return mcp(request, env, url, now);
   }
 
-  const auth = request.headers.get('authorization') ?? '';
-  if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED');
+  const auth = (request.headers.get('authorization') ?? '').trim();
+  if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED', authHint(auth, env.API_TOKEN));
 
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);
@@ -374,6 +374,17 @@ async function mcp(request, env, url, now) {
   return json(200, batch ? out : out[0]);
 }
 
+/** 合言葉が合わないとき、運営者が直せるように「どう違うか」だけを返す（合言葉の中身は返さない）。 */
+function authHint(auth, token) {
+  if (!token) return 'server_token_not_set';
+  if (!auth) return 'no_authorization_header';
+  if (!auth.startsWith('Bearer ')) return 'not_bearer';
+  const t = auth.slice(7);
+  if (t.includes('/')) return 'looks_like_a_path_not_the_value';
+  if (t !== t.trim() || /\s/.test(t)) return 'contains_whitespace';
+  return `wrong_value_length_${t.length}`;
+}
+
 function timingSafeEqual(a, b) {
   const x = new TextEncoder().encode(a);
   const y = new TextEncoder().encode(b);
@@ -388,7 +399,7 @@ export async function handle(request, env) {
   try {
     return await route(request, env, url, now);
   } catch (e) {
-    if (e instanceof HttpError) return json(e.status, { error: e.code });
+    if (e instanceof HttpError) return json(e.status, e.detail ? { error: e.code, hint: e.detail } : { error: e.code });
     if (e instanceof IngestError) return json(422, { error: e.code });
     if (e?.message === 'HANDOFF_INVALID' || e?.message === 'HANDOFF_TOO_LARGE') return json(400, { error: e.message });
     return json(500, { error: 'INTERNAL_ERROR' });

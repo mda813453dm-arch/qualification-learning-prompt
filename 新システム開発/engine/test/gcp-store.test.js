@@ -84,7 +84,7 @@ test('Cloud Run の入口が起動し、トークンの無い呼び出しを断�
       if (!res) await new Promise((r) => setTimeout(r, 100));
     }
     assert.equal(res.status, 401);
-    assert.deepEqual(await res.json(), { error: 'UNAUTHORIZED' });
+    assert.deepEqual(await res.json(), { error: 'UNAUTHORIZED', hint: 'no_authorization_header' });
   } finally {
     child.kill();
   }
