@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { handle } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
+import { readJob } from '../src/ingest.js';
 import { T0, assetsB64, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'test-token';
@@ -25,6 +26,10 @@ function makeEnv() {
   const web = fakeWeb(files);
   const counts = { parse: 0 };
   const env = { STORE: new MemoryStore(), API_TOKEN: TOKEN, fetchPdf: web.fetchPdf, now: T0, PARSER_URL: 'https://parser.example' };
+  // 掲載ページを開けないときは台帳の確認済みURLを使う（発見処理は下のテストと discover.test.js で確かめる）
+  env.fetchText = async () => {
+    throw new Error('offline');
+  };
   env.clock = () => env.now;
   env.parserFetch = async (url, init) => {
     counts.parse += 1;
@@ -235,4 +240,24 @@ test('一覧にない資格は、AI作成問題と過去問PDFの添付で学習
   assert.match(t, /学習記録はシステムに残りません/);
   assert.match(t, /公式以外のサイトは示さないでください/);
   assert.match(t, /資格の一覧に戻る/);
+});
+
+test('資格を選ぶと公式の掲載ページから過去問PDFを探し、問題が2つに分かれた年度はそれぞれ取り込み元にする', async () => {
+  const { env } = makeEnv();
+  const opened = [];
+  env.fetchText = async (u) => {
+    opened.push(u);
+    return `<td>令和8年5月17日</td><a href="/common/1.pdf">解答用紙</a><a href="/common/a8q.pdf">問題</a><a href="/common/a8a.pdf">解答一覧</a>
+<td>令和7年5月18日</td><a href="/common/2.pdf">解答用紙</a><a href="/common/a7q1.pdf">問題1</a><a href="/common/a7q2.pdf">問題2</a><a href="/common/a7a.pdf">解答一覧</a>`;
+  };
+  const start = await get(env, '/p');
+  const t = await get(env, link(start, CATALOG.surveyor.name));
+  const lid = /\/p\/([a-z2-9]{10})\//.exec(t)[1];
+  assert.deepEqual(opened, ['https://www.gsi.go.jp/LAW/SHIKEN/past.html']);
+  const job = await readJob(env.STORE, `q063~${lid}`);
+  assert.deepEqual(job.sources.map((s) => [s.year, s.questionUrl.split('/').pop(), s.answerUrl.split('/').pop()]), [
+    [2026, 'a8q.pdf', 'a8a.pdf'],
+    [2025, 'a7q1.pdf', 'a7a.pdf'],
+    [2025, 'a7q2.pdf', 'a7a.pdf'],
+  ]);
 });

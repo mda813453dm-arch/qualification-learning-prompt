@@ -17,6 +17,7 @@
  */
 import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
 import { startJob } from './ingest.js';
+import { discover } from './discover.js';
 import { CATALOG, LEVELS } from './catalog.js';
 
 export const SYSTEM_ID = 'qlp';
@@ -390,10 +391,30 @@ function onboarding(base, rec) {
   return planPage(base, rec);
 }
 
+/**
+ * 取り込む公式PDFを、公式の過去問掲載ページから探す（掲載されている分を最大で直近10年度）。
+ * 掲載ページを開けないときは、台帳に控えた確認済みのURLを使う。
+ * 問題が2つのPDFに分かれている年度は、それぞれを取り込み元にする（正答PDFは共通）。
+ */
+async function findSources(env, slug) {
+  let found = [];
+  try {
+    found = env.fetchText ? await discover(slug, env.fetchText) : [];
+  } catch {
+    found = [];
+  }
+  if (!found.length) return CATALOG[slug].sources;
+  return found.flatMap((s) => {
+    const { questionUrls, ...one } = s;
+    return (questionUrls ?? [s.questionUrl]).map((questionUrl) => ({ ...one, questionUrl }));
+  });
+}
+
 /** 過去問は学習者ごとに取り込み、期限なしで持つ（その人だけが使う）。取り込みに失敗していれば、やり直す。 */
 async function startIngest(env, rec, now, kick) {
   const c = CATALOG[rec.fixed.slug];
-  await startJob(env.STORE, jobId(rec), c.sources.map((s) => ({ ...s, qualificationId: c.qualificationId, owner: rec.fixed.lid })), now, { persistent: true });
+  const sources = await findSources(env, rec.fixed.slug);
+  await startJob(env.STORE, jobId(rec), sources.map((s) => ({ ...s, qualificationId: c.qualificationId, owner: rec.fixed.lid })), now, { persistent: true });
   await kick(jobId(rec));
 }
 

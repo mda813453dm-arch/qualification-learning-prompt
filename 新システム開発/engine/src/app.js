@@ -81,6 +81,37 @@ function defaultFetchPdf(url, redirects = 5) {
   });
 }
 
+/** 公式の過去問掲載ページ（HTML）を取得する。文字コードは Shift_JIS のページもあるため、宣言を見て読む。 */
+function defaultFetchText(url, redirects = 5) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { agent: legacyAgent, headers: { accept: 'text/html', 'user-agent': 'qualification-learning-system' }, timeout: 8000 }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
+        res.resume();
+        return resolve(defaultFetchText(new URL(res.headers.location, url).href, redirects - 1));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const buf = Buffer.concat(chunks);
+        const m = /charset=["']?([A-Za-z0-9_-]+)/i.exec(res.headers['content-type'] ?? '') ?? /charset=["']?([A-Za-z0-9_-]+)/i.exec(buf.subarray(0, 2000).toString('latin1'));
+        const enc = (m?.[1] ?? 'utf-8').toLowerCase().replace(/^(shift_jis|sjis|x-sjis)$/, 'shift_jis');
+        try {
+          resolve(new TextDecoder(enc).decode(buf));
+        } catch {
+          resolve(buf.toString('utf8'));
+        }
+      });
+      res.on('error', reject);
+    });
+    req.on('timeout', () => req.destroy(new Error('TIMEOUT')));
+    req.on('error', reject);
+  });
+}
+
 async function body(request) {
   const len = Number(request.headers.get('content-length') ?? 0);
   if (len > MAX_BODY) throw new HttpError(413, 'BODY_TOO_LARGE');
@@ -179,7 +210,7 @@ async function route(request, env, url, now) {
   }
 
   // プロンプトだけで使う方式（pages.js）。AIアプリの「Webページを開く」機能で開くのでトークンは付けない
-  if (method === 'GET' && parts[0] === 'p') return pages(env, url, parts, now, advance, (qid) => kickIngest(env, qid, now));
+  if (method === 'GET' && parts[0] === 'p') return pages({ ...env, fetchText: env.fetchText ?? defaultFetchText }, url, parts, now, advance, (qid) => kickIngest(env, qid, now));
 
   // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
   // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
