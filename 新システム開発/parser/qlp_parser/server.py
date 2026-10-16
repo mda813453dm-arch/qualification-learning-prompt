@@ -120,7 +120,9 @@ def render_pages(body):
     if matched is not None:
         from .question_view import build_display
 
-        display = build_display(doc, nums, find, tables, figures)
+        display, used = build_display(doc, nums, find, tables, figures)
+        if display:
+            figures = used  # 次の問の図は付けない
     tables = [{k: v for k, v in t.items() if not k.startswith("_")} for t in tables]
     # 図だけを切り出したPDF（1ページに図1つ）。図が見つからなければページ全体。
     # ChatGPTは外部の画像を表示しないため、ファイルとして渡し、AI側のPythonで画像にする

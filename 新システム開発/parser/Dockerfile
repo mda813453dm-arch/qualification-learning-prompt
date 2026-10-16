@@ -1,7 +1,7 @@
-# 経路Bの分解サーバー（Cloud Run）。日本語OCRのため Tesseract（日本語データ）を入れる。
+# 経路Bの分解サーバー（Cloud Run）。日本語OCRのため Tesseract（日本語データ）、画像の図を線に直すため potrace を入れる。
 FROM python:3.13-slim
 RUN apt-get update \
- && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-jpn \
+ && apt-get install -y --no-install-recommends tesseract-ocr tesseract-ocr-jpn potrace \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY requirements.txt ./

@@ -12,7 +12,6 @@ PAGE_NO = re.compile(r"^[─—\-－]*\s*[（(]\s*[0-9]+\s*[）)]\s*[─—\-－
 NEW_PARA = re.compile(r"^(　|問\s*[0-9]|第\s*[0-9]+\s*問|〔|【|[0-9]\s|[（(][0-9一二三四五六七八九十アイウエオ])")
 CTRL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
 BLANK_IMAGE = 0.002  # 暗い画素がこれより少ない画像（地紋や汚れ）は図に入れない
-MAX_IMAGE_PX = 900
 
 
 def _norm(t):
@@ -57,20 +56,57 @@ def _path(items):
     return "".join(out)
 
 
-def _image_tag(page, rect, xref):
-    """ほとんど白い画像（地紋・汚れ）は入れない。それ以外は縮めたPNGで埋め込む。"""
-    import base64
+TRACE_ZOOM = 4  # 画像の図を線に直すときの解像度（288dpi相当）
+
+
+def _image_has_ink(doc, xref):
+    """画像そのものに、線や文字として見える暗い画素があるか（地紋・汚れだけの画像を除く）。"""
+    import fitz
+
+    try:
+        pix = fitz.Pixmap(doc, xref)
+        if pix.n - pix.alpha != 1:
+            pix = fitz.Pixmap(fitz.csGRAY, pix)
+    except Exception:  # noqa: BLE001
+        return True
+    data = pix.samples
+    step = max(1, len(data) // 200000)
+    dark = sum(1 for v in data[::step] if v < 128)
+    return dark > (len(data) // step) * BLANK_IMAGE
+
+
+def _trace(page, rect):
+    """図の範囲をそのまま線（SVGのパス）に直す（potrace）。画像で入っている図に使う。
+
+    画像をそのまま埋め込むと文字数が大きくなり、AIが一字一句写せないため、線にする。
+    """
+    import shutil
+    import subprocess
 
     import fitz
 
-    pix = page.get_pixmap(clip=rect, dpi=72, colorspace=fitz.csGRAY, alpha=False)
-    dark = sum(1 for v in pix.samples if v < 128)
-    if dark < pix.width * pix.height * BLANK_IMAGE:
+    if not shutil.which("potrace"):
         return ""
-    zoom = min(3.0, MAX_IMAGE_PX / max(rect.width, rect.height))
-    png = page.get_pixmap(clip=rect, matrix=fitz.Matrix(zoom, zoom), alpha=False).tobytes("png")
-    b64 = base64.b64encode(png).decode("ascii")
-    return f'<image x="{_num(rect.x0)}" y="{_num(rect.y0)}" width="{_num(rect.width)}" height="{_num(rect.height)}" href="data:image/png;base64,{b64}"/>'
+    pix = page.get_pixmap(clip=rect, matrix=fitz.Matrix(TRACE_ZOOM, TRACE_ZOOM), colorspace=fitz.csGRAY, alpha=False)
+    w, h, data = pix.width, pix.height, pix.samples
+    stride = (w + 7) // 8
+    bits = bytearray(stride * h)
+    for y in range(h):
+        row = data[y * w:(y + 1) * w]
+        base = y * stride
+        for x in range(w):
+            if row[x] < 160:
+                bits[base + (x >> 3)] |= 0x80 >> (x & 7)
+    pbm = f"P4\n{w} {h}\n".encode() + bytes(bits)
+    try:
+        svg = subprocess.run(["potrace", "-s", "-u", "1", "-t", "4", "-O", "0.5", "-o", "-", "-"], input=pbm, capture_output=True, timeout=30, check=True).stdout.decode()
+    except (subprocess.SubprocessError, OSError):
+        return ""
+    m = re.search(r'<g transform="([^"]+)"[^>]*>(.*?)</g>', svg, re.S)
+    if not m:
+        return ""
+    paths = re.sub(r"\s+", " ", m.group(2)).strip()
+    return f'<g transform="translate({_num(rect.x0)} {_num(rect.y0)}) scale({1 / TRACE_ZOOM})"><g transform="{m.group(1)}" fill="#000">{paths}</g></g>'
 
 
 def figure_svg(page, box):
@@ -79,10 +115,13 @@ def figure_svg(page, box):
 
     box = fitz.Rect(box)
     parts = [f'<rect x="{_num(box.x0)}" y="{_num(box.y0)}" width="{_num(box.width)}" height="{_num(box.height)}" fill="#fff"/>']
-    for img in page.get_images():
-        for r in page.get_image_rects(img[0]):
-            if r.intersects(box):
-                parts.append(_image_tag(page, r & box, img[0]))
+    view = f"{_num(box.x0)} {_num(box.y0)} {_num(box.width)} {_num(box.height)}"
+    head = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view}" width="100%" style="max-width:100%;height:auto;background:#fff" font-family="serif">'
+    raster = any(r.intersects(box) and _image_has_ink(page.parent, img[0]) for img in page.get_images() for r in page.get_image_rects(img[0]))
+    if raster:
+        # 画像で入っている図は、範囲全体を線に直す（線・文字と画像が重なっても一つの絵になる）
+        traced = _trace(page, box)
+        return head + parts[0] + traced + "</svg>" if traced else None
     for d in page.get_drawings():
         if not fitz.Rect(d["rect"]).intersects(box + (-1, -1, 1, 1)):
             continue
@@ -109,11 +148,7 @@ def figure_svg(page, box):
                 mode = ' writing-mode="tb"' if vertical else ""
                 fill = _color(((sp["color"] >> 16) / 255, ((sp["color"] >> 8) & 255) / 255, (sp["color"] & 255) / 255))
                 parts.append(f'<text x="{_num(x)}" y="{_num(y)}" font-size="{_num(sp["size"])}" fill="{fill}"{mode}>{text}</text>')
-    view = f"{_num(box.x0)} {_num(box.y0)} {_num(box.width)} {_num(box.height)}"
-    return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view}" width="100%" '
-        f'style="max-width:100%;height:auto;background:#fff" font-family="serif">' + "".join(p for p in parts if p) + "</svg>"
-    )
+    return head + "".join(p for p in parts if p) + "</svg>"
 
 
 def _table_md(t):
@@ -124,7 +159,7 @@ def _table_md(t):
 
 
 def build_display(doc, nums, find, tables, figures):
-    """見出しから次の問の見出しの手前まで、原本の順に「文・図・表」を並べた文章を返す。"""
+    """見出しから次の問の見出しの手前まで、原本の順に「文・図・表」を並べた文章と、その問で使った図を返す。"""
     import fitz
 
     key = _norm(find)
@@ -151,7 +186,7 @@ def build_display(doc, nums, find, tables, figures):
                 continue
             items.append((n, r.y0, "text", (text, r, right)))
     items.sort(key=lambda x: (x[0], x[1]))
-    started, out, para, prev_short = False, [], "", True
+    started, out, para, prev_short, used = False, [], "", True, []
     for n, _, kind, v in items:
         if kind == "text":
             text, r, right = v
@@ -178,8 +213,12 @@ def build_display(doc, nums, find, tables, figures):
             if kind == "table":
                 out.append(((v["caption"] + "\n") if v["caption"] else "") + _table_md(v))
             else:
-                out.append(figure_svg(doc[n - 1], v["bbox"]))
+                svg = figure_svg(doc[n - 1], v["bbox"])
+                if not svg:
+                    return None, []  # 図を表せないときは表示を作らない（AI側は別の方法で図を出す）
+                out.append(svg)
+                used.append(v)
             prev_short = True
     if para:
         out.append(para)
-    return "\n\n".join(out) if started else None
+    return ("\n\n".join(out), used) if started else (None, [])

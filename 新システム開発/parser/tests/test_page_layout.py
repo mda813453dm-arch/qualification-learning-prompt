@@ -89,3 +89,50 @@ class PageLayout(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def make_raster_pdf():
+    """図が画像で入っている問題（第4問のような形）と、次の問の見出し。"""
+    doc = fitz.open()
+    p = doc.new_page(width=595, height=842)
+    p.insert_text((66, 85), "第4問　次の〔図〕のとおり、水準点を新設するために水準測量を行った。", fontname=FONT, fontsize=10.5)
+    p.insert_text((99, 107), "ただし、既知点の標高は次の〔表〕のとおりとする。", fontname=FONT, fontsize=10.5)
+    p.insert_text((94, 140), "〔図〕", fontname=FONT, fontsize=10.5)
+    pic = fitz.open()
+    pp = pic.new_page(width=300, height=150)
+    pp.draw_bezier((20, 120), (80, 10), (160, 140), (280, 30), color=(0, 0, 0), width=2)
+    pp.draw_rect(fitz.Rect(14, 114, 26, 126), color=(0, 0, 0), width=1.5)
+    png = pp.get_pixmap(dpi=144).tobytes("png")
+    p.insert_image(fitz.Rect(100, 150, 400, 300), stream=png)
+    p.insert_text((94, 330), "〔表〕", fontname=FONT, fontsize=10.5)
+    _table(p, 101, 338, [["点名", "標高"], ["Ａ", "3.150ｍ"]])
+    p.insert_text((99, 420), "1 　4.370ｍ", fontname=FONT, fontsize=10.5)
+    p.insert_text((99, 442), "2 　4.380ｍ", fontname=FONT, fontsize=10.5)
+    p.insert_text((66, 500), "第5問　次の問題。", fontname=FONT, fontsize=10.5)
+    return doc.tobytes()
+
+
+class QuestionDisplay(unittest.TestCase):
+    def test_vector_figure_in_order(self):
+        r = render_pages({"pdf": {"base64": base64.b64encode(make_pdf()).decode()}, "find": "第11問", "span": 2})
+        d = r["display"]
+        self.assertTrue(d.startswith("第11問"))
+        self.assertLess(d.index("〔観測結果〕"), d.index("〔測量成果〕"))
+        self.assertLess(d.index("〔測量成果〕"), d.index("<svg"))
+        self.assertIn('width="100%"', d)
+        self.assertNotIn("─（12）─", d)
+        self.assertEqual(d.count("<svg"), 1)
+
+    @unittest.skipUnless(__import__("shutil").which("potrace"), "potrace がない")
+    def test_raster_figure_is_traced_and_next_question_excluded(self):
+        r = render_pages({"pdf": {"base64": base64.b64encode(make_raster_pdf()).decode()}, "find": "第4問", "span": 1})
+        d = r["display"]
+        self.assertIsNotNone(d)
+        self.assertLess(d.index("ただし"), d.index("<svg"))
+        self.assertLess(d.index("</svg>"), d.index("〔表〕\n|"))
+        self.assertLess(d.index("〔表〕\n|"), d.index("4.370"))
+        self.assertNotIn("第5問", d)
+        self.assertNotIn("base64", d)
+        self.assertIn("<path", d)
+        self.assertLess(len(d), 8000)
+        self.assertEqual(len(r["figures"]), 1)

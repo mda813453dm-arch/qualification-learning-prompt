@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install -r 新システム開発/parser/requirements.txt
+      - run: pip install -r 新システム開発/parser/requirements.txt && sudo apt-get install -y potrace
       - name: ページの作りを書き出す
         run: |
           mkdir -p out
@@ -52,6 +52,12 @@ jobs:
               for i, pg in enumerate(ex):
                   pg.get_pixmap(dpi=150).save(f'../../out/q{k+1}-crop{i+1}.png')
               open(f'../../out/q{k+1}-display.md', 'w').write(r['display'] or '')
+              import re
+              for j, svg in enumerate(re.findall(r'<svg.*?</svg>', r['display'] or '', re.S)):
+                  vb = [float(x) for x in re.search(r'viewBox="([^"]+)"', svg).group(1).split()]
+                  fixed = svg.replace('width="100%"', f'width="{vb[2]*2}" height="{vb[3]*2}"', 1)
+                  fitz.open(stream=fixed.encode(), filetype='svg')[0].get_pixmap(dpi=72).save(f'../../out/q{k+1}-svg{j+1}.png')
+                  print(find, 'svg', j + 1, 'chars', len(svg))
               json.dump({'find': find, 'matchedPage': r['matchedPage'], 'tables': r['tables'], 'figures': r['figures'], 'displayChars': len(r['display'] or '')}, open(f'../../out/q{k+1}.json', 'w'), ensure_ascii=False, indent=1)
               print(find, r['matchedPage'], 'display chars', len(r['display'] or ''))
           PY
