@@ -19,3 +19,4 @@
 2026-10-16 08:50 JST 採点の応答に次の問題を付ける（許可の確認を1問あたり1回にする）
 deploy wrong-streak 2026-10-16T00:12:45Z
 deploy field-notice 2026-10-16T01:33:58Z
+deploy stay-in-field 2026-10-16T03:40:29Z

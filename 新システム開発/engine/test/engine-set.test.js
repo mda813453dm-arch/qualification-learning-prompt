@@ -68,3 +68,17 @@ test('同じ分野で3問続けて間違えたら、採点の応答で確認問�
   // 誤・誤・正（数え直し）・誤・誤・誤 → 最後の1問で勧める
   assert.deepEqual(flags, [false, false, false, false, false, true]);
 });
+
+test('3問連続で間違えたあとは、同じ分野に戻って次の3問を出す', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'b'), item(7, 'b'), item(8, 'b'), item(9, 'b')];
+  let state = newState({ qualificationId: 'q1', now: NOW, plan: { fieldWeights: { a: 1 } } });
+  const seen = [];
+  for (let i = 0; i < 5; i += 1) {
+    const r = pickNext(state, items, { today: TODAY });
+    state = pin(state, r.item, r.kind, NOW);
+    seen.push(r.item.packet.fieldId);
+    state = grade(state, { questionId: r.item.packet.questionId, value: 2 }, { today: TODAY, now: NOW }).state;
+  }
+  // 誤答3問で確認問題を勧めたあとも、aの残り2問を続けて出す（3問ごとに別の分野へ移さない）
+  assert.deepEqual(seen, ['a', 'a', 'a', 'a', 'a']);
+});

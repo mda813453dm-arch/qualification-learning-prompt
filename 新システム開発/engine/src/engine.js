@@ -205,6 +205,8 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     state: {
       ...state,
       wrongStreak: { fieldId: fid, count: checkSuggested ? 0 : streak },
+      // 3問連続で間違えたら、確認問題のあとも同じ分野に戻る（次の3問を同じ分野から出す）
+      set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
       lastGrade: g,
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
