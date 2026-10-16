@@ -18,10 +18,10 @@ jobs:
       - name: 呼び出しの記録（直近1時間）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND httpRequest.requestUrl:"/v1/"' \
-            --project qualification-learning --freshness=1h --limit=60 \
+            --project qualification-learning --freshness=2h --limit=150 \
             --format='value(timestamp,httpRequest.requestMethod,httpRequest.status,httpRequest.latency,httpRequest.requestUrl)' || true
       - name: エラーの記録（直近1時間）
         run: |
-          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=ERROR' \
-            --project qualification-learning --freshness=1h --limit=20 \
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=WARNING' \
+            --project qualification-learning --freshness=2h --limit=40 \
             --format='value(timestamp,severity,textPayload,jsonPayload.message)' || true
