@@ -145,6 +145,8 @@ paths:
                       result: { type: string, enum: [wrong, guess_correct, confident_correct] }
                       answerPdfUrl: { type: string }
                       alreadyGraded: { type: boolean }
+                      wrongStreak: { type: integer, description: 同じ分野で連続して間違えた回数（エンジンが数える） }
+                      checkSuggested: { type: boolean, description: true なら、確認問題に切り替えるかを利用者に聞く }
                   next:
                     type: object
                     description: 次の問題（nextQuestion と同じ形）。利用者が次へ進むときに、これを表示する

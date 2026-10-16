@@ -53,3 +53,18 @@ test('分類できていない問は新しい問として出さない', () => {
   const state = newState({ qualificationId: 'q1', now: NOW });
   assert.equal(pickNext(state, items, { today: TODAY }).item.packet.questionId, 'q2');
 });
+
+test('同じ分野で3問続けて間違えたら、採点の応答で確認問題を勧める（正解で数え直し）', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'a')];
+  let state = newState({ qualificationId: 'q1', now: NOW });
+  const flags = [];
+  for (const answer of [2, 2, 1, 2, 2, 2]) { // 1が正解
+    const r = pickNext(state, items, { today: TODAY });
+    state = pin(state, r.item, r.kind, NOW);
+    const g = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW });
+    state = g.state;
+    flags.push(g.grade.checkSuggested);
+  }
+  // 誤・誤・正（数え直し）・誤・誤・誤 → 最後の1問で勧める
+  assert.deepEqual(flags, [false, false, false, false, false, true]);
+});

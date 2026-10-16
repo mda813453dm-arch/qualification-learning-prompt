@@ -44,6 +44,9 @@ export async function availablePackets(store, job, now) {
 /** 同じ分野から続けて出す問の数（仕様：同分野の過去問を連続で3問）。 */
 export const SET_SIZE = 3;
 
+/** 同じ分野で続けて間違えたら、確認問題へ移ることを勧める回数（仕様：3問連続不正解）。 */
+export const WRONG_STREAK = 3;
+
 /** 分野ごとの、取り込んだ過去問での出題数。 */
 function fieldCountsOf(items) {
   const counts = {};
@@ -191,11 +194,17 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   }, { today, examDate: state.plan.examDate, intervals });
   const review = { ...state.review };
   if (upd.status === 'updated') review[questionId] = upd.item;
+  // 同じ分野で続けて間違えた数（正解で0に戻る）。3に届いたら確認問題を勧め、数え直す
+  const fid = cur.fieldId ?? null;
+  const prev = state.wrongStreak && state.wrongStreak.fieldId === fid ? state.wrongStreak.count : 0;
+  const streak = result === 'wrong' ? prev + 1 : 0;
+  const checkSuggested = streak >= WRONG_STREAK;
   return {
     ok: true,
-    grade: g,
+    grade: { ...g, wrongStreak: streak, checkSuggested },
     state: {
       ...state,
+      wrongStreak: { fieldId: fid, count: checkSuggested ? 0 : streak },
       current: { ...cur, grade: g },
       lastGrade: g,
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
