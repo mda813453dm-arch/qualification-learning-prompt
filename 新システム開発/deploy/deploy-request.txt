@@ -21,3 +21,4 @@ deploy wrong-streak 2026-10-16T00:12:45Z
 deploy field-notice 2026-10-16T01:33:58Z
 deploy stay-in-field 2026-10-16T03:40:29Z
 deploy pdf-pages 2026-10-16T04:26:09Z
+deploy instructions-pdf-pages 2026-10-16T04:53:44Z
