@@ -335,11 +335,17 @@ async function route(request, env, url, now) {
     return json(200, { handoff: exportHandoff(state) });
   }
 
-  // 未対応の資格でも、公式PDFの指定ページを画像にして返す（図や表をそのまま見せるため）。PDFの検証・分解はしない
+  // 未対応の資格でも、公式PDFの指定ページ（または見出しを含むページ）を画像にして返す。PDFの検証・分解はしない
   if (method === 'POST' && url.pathname === '/v1/pdf-pages') {
     const b = await body(request);
     if (typeof b.url !== 'string' || !/^https:\/\/[^\s]{4,500}$/.test(b.url)) throw new HttpError(400, 'URL_INVALID');
-    if (!Array.isArray(b.pages) || b.pages.length < 1 || b.pages.length > 4 || b.pages.some((n) => !Number.isInteger(n) || n < 1 || n > 1000)) throw new HttpError(400, 'PAGES_INVALID');
+    const byFind = typeof b.find === 'string' && b.find.length > 0;
+    if (byFind) {
+      if (b.find.length > 30) throw new HttpError(400, 'FIND_INVALID');
+      if (b.span !== undefined && (!Number.isInteger(b.span) || b.span < 1 || b.span > 4)) throw new HttpError(400, 'SPAN_INVALID');
+    } else if (!Array.isArray(b.pages) || b.pages.length < 1 || b.pages.length > 4 || b.pages.some((n) => !Number.isInteger(n) || n < 1 || n > 1000)) {
+      throw new HttpError(400, 'PAGES_INVALID');
+    }
     if (!env.PARSER_URL) throw new HttpError(503, 'PAGE_IMAGES_UNAVAILABLE');
     let bytes;
     try {
@@ -349,23 +355,28 @@ async function route(request, env, url, now) {
     }
     if (!bytes || bytes.length < 5 || String.fromCharCode(...bytes.subarray(0, 5)) !== '%PDF-') throw new HttpError(422, 'NOT_A_PDF');
     const sha = await sha256Hex(bytes);
-    const want = [...new Set(b.pages)].sort((x, y) => x - y);
+    const want = byFind ? [] : [...new Set(b.pages)].sort((x, y) => x - y);
+    const missing = byFind ? null : [];
+    if (!byFind) for (const n of want) if (!(await env.STORE.get(`pgimg/${sha}/${n}`, 'arrayBuffer'))) missing.push(n);
     let pageCount = null;
-    const missing = [];
-    for (const n of want) if (!(await env.STORE.get(`pgimg/${sha}/${n}`, 'arrayBuffer'))) missing.push(n);
-    if (missing.length) {
+    let matchedPage = null;
+    let pageNums = want;
+    if (byFind || missing.length) {
       let r;
       try {
-        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, pages: missing });
+        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, ...(byFind ? { find: b.find, span: b.span ?? 2 } : { pages: missing }) });
       } catch (e) {
         const code = e instanceof IngestError ? e.code : 'PAGE_RENDER_FAILED';
-        throw new HttpError(code === 'PAGE_OUT_OF_RANGE' || code === 'PAGES_INVALID' || code === 'PDF_UNREADABLE' ? 422 : 502, code);
+        throw new HttpError(['PAGE_OUT_OF_RANGE', 'PAGES_INVALID', 'PDF_UNREADABLE', 'FIND_NOT_FOUND', 'FIND_INVALID', 'SPAN_INVALID'].includes(code) ? 422 : 502, code);
       }
       pageCount = r.pageCount ?? null;
-      for (const n of missing) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
+      matchedPage = r.matchedPage;
+      const nums = Object.keys(r.pages).map((f) => Number(/^p(\d+)\.png$/.exec(f)[1])).sort((x, y) => x - y);
+      for (const n of nums) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
+      if (byFind) pageNums = nums;
     }
     const base = env.PUBLIC_BASE_URL ?? '';
-    return json(200, { pageCount, pages: want.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` })) });
+    return json(200, { pageCount, matchedPage, pages: pageNums.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` })) });
   }
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {

@@ -82,13 +82,18 @@ export const TOOLS = [
   },
   {
     name: 'renderPdfPages',
-    description: '公式PDFの指定ページを画像にして返す（エンジンが対応していない資格の図や表を見せるため）。pages はPDFの先頭を1ページ目とした番号（最大4つ）。',
+    description: '公式PDFのページを画像にして返す（エンジンが対応していない資格の図や表を見せるため）。find に見出し（例：第11問）を渡すと、その見出しのあるページから span ページ分（既定2）を返す。find を使わないときは pages（PDFの先頭を1ページ目とした番号、最大4つ）。',
     inputSchema: {
       type: 'object',
-      required: ['url', 'pages'],
-      properties: { url: { type: 'string' }, pages: { type: 'array', minItems: 1, maxItems: 4, items: { type: 'integer', minimum: 1 } } },
+      required: ['url'],
+      properties: {
+        url: { type: 'string' },
+        find: { type: 'string', maxLength: 30 },
+        span: { type: 'integer', minimum: 1, maximum: 4 },
+        pages: { type: 'array', minItems: 1, maxItems: 4, items: { type: 'integer', minimum: 1 } },
+      },
     },
-    api: (a) => ['POST', '/v1/pdf-pages', { url: a.url, pages: a.pages }],
+    api: (a) => ['POST', '/v1/pdf-pages', { url: a.url, find: a.find, span: a.span, pages: a.pages }],
   },
 ];
 

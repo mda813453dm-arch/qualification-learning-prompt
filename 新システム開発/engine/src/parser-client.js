@@ -95,14 +95,14 @@ export function httpParser({ endpoint, token, fetch: doFetch = fetch, timeoutMs 
 }
 
 /** 公式PDFの指定ページを画像にしてもらう（資格を問わない）。返り値: {pageCount, pages:{'p12.png': bytes}} */
-export async function renderPages({ endpoint, token, fetch: doFetch = fetch, bytes, pages, timeoutMs = 120000 }) {
+export async function renderPages({ endpoint, token, fetch: doFetch = fetch, bytes, pages, find, span, timeoutMs = 120000 }) {
   if (!/^(https:\/\/|http:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$))/.test(endpoint ?? '')) throw new Error('PARSER_URL_INVALID');
   let res;
   try {
     res = await doFetch(`${endpoint.replace(/\/$/, '')}/v1/pages`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ pdf: { base64: toBase64(bytes) }, pages }),
+      body: JSON.stringify({ pdf: { base64: toBase64(bytes) }, ...(find ? { find, span } : { pages }) }),
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
@@ -114,5 +114,5 @@ export async function renderPages({ endpoint, token, fetch: doFetch = fetch, byt
   }
   if (!res.ok) throw new IngestError('PARSER_FAILED', { status: res.status });
   const v = await res.json();
-  return { pageCount: v?.pageCount, pages: decodeAssets(v?.pages) };
+  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages) };
 }

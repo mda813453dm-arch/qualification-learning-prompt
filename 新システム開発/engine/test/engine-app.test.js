@@ -238,3 +238,23 @@ test('未対応の資格でも、公式PDFの指定ページを画像にして�
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [0] })).status, 400);
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [1] }, 'wrong')).status, 401);
 });
+
+test('見出し（find）でページを探して画像にする。見つからなければ422', async () => {
+  const OTHER = 'https://example.go.jp/exam/find.pdf';
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.PUBLIC_BASE_URL = 'https://engine.example';
+  env.fetchPdf = async () => pdf('find-v1');
+  env.parserFetch = async (url, init) => {
+    const b = JSON.parse(init.body);
+    if (b.find !== '第11問') return new Response(JSON.stringify({ error: 'FIND_NOT_FOUND' }), { status: 400 });
+    assert.equal(b.span, 2);
+    const png = btoa(String.fromCharCode(...PNG));
+    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png } }));
+  };
+  const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第11問' });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.matchedPage, 14);
+  assert.deepEqual(r.body.pages.map((p) => p.page), [14, 15]);
+  assert.equal((await call(env, 'GET', new URL(r.body.pages[0].url).pathname, undefined, null)).status, 200);
+  assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第99問' })).status, 422);
+});

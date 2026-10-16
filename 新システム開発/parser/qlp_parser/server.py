@@ -4,8 +4,8 @@
     {adapter, year, section, question:{url, sha256, base64}, answer:{url, sha256, base64}|null}
   → 200 {result, assets:{<file>: <base64 PNG>}}
   POST /v1/pages
-    {pdf:{base64}, pages:[1始まりのページ番号, 最大4つ]}
-  → 200 {pageCount, pages:{"p<番号>.png": <base64 PNG>}}   （どの資格の公式PDFでも、ページをそのまま画像にする）
+    {pdf:{base64}, pages:[1始まりのページ番号, 最大4つ]}  または  {pdf:{base64}, find:"第11問", span:2}（見出しを含むページから）
+  → 200 {pageCount, matchedPage, pages:{"p<番号>.png": <base64 PNG>}}   （どの資格の公式PDFでも、ページをそのまま画像にする）
   GET /healthz → 200 {"ok": true, "parserVersion", "ocr"}
 
 公式PDFの取得はしない（取得とSHA-256の照合はエンジン側）。届いたPDFのSHA-256が sha256 と違えば分解しない。
@@ -77,9 +77,6 @@ def render_pages(body):
         data = base64.b64decode(part["base64"], validate=True)
     except (binascii.Error, ValueError) as e:
         raise BadRequest("PDF_BASE64_INVALID") from e
-    nums = body.get("pages")
-    if not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
-        raise BadRequest("PAGES_INVALID")
     import fitz
 
     try:
@@ -87,13 +84,36 @@ def render_pages(body):
     except Exception as e:  # noqa: BLE001
         raise BadRequest("PDF_UNREADABLE") from e
     count = doc.page_count
+    nums = body.get("pages")
+    find = body.get("find")
+    matched = None
+    if find is not None:
+        # 見出し（例：「第11問」）を含む最初のページと、続くページを返す。ページ番号をAIに推測させないため
+        if not isinstance(find, str) or not 1 <= len(find) <= 30:
+            raise BadRequest("FIND_INVALID")
+        span = body.get("span", 2)
+        if not isinstance(span, int) or isinstance(span, bool) or not 1 <= span <= MAX_PAGES:
+            raise BadRequest("SPAN_INVALID")
+        key = find.replace(" ", "").replace("\u3000", "")
+        norm = lambda t: t.replace(" ", "").replace("\u3000", "")  # noqa: E731
+        texts = [doc[i].get_text() for i in range(count)]
+        # 行の頭に見出しがあるページを優先し（目次や注意書きの言及を避ける）、無ければ文中に含むページ
+        first = next((i + 1 for i, t in enumerate(texts) if any(norm(line).startswith(key) for line in t.splitlines())), None)
+        if first is None:
+            first = next((i + 1 for i, t in enumerate(texts) if key in norm(t).replace("\n", "")), None)
+        if first is None:
+            raise BadRequest("FIND_NOT_FOUND")
+        nums = list(range(first, min(count, first + span - 1) + 1))
+        matched = first
+    elif not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
+        raise BadRequest("PAGES_INVALID")
     out = {}
     for n in sorted(set(nums)):
         if n > count:
             raise BadRequest("PAGE_OUT_OF_RANGE")
         pix = doc[n - 1].get_pixmap(matrix=fitz.Matrix(PAGE_ZOOM, PAGE_ZOOM), alpha=False)
         out[f"p{n}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
-    return {"pageCount": count, "pages": out}
+    return {"pageCount": count, "matchedPage": matched, "pages": out}
 
 
 class Handler(BaseHTTPRequestHandler):
