@@ -180,7 +180,7 @@ def page_layout(doc, nums):
         rects = [fitz.Rect(d["rect"]) for d in page.get_drawings()]
         for img in page.get_images():
             rects.extend(page.get_image_rects(img[0]))
-        rects = [r for r in rects if not any(g.contains(r) for g in grown) and r.get_area() < prect.get_area() * 0.8]
+        rects = [r for r in rects if not any(g.contains(r) for g in grown) and r.width * r.height < prect.width * prect.height * 0.8]
         clusters = []
         for r in rects:
             r = fitz.Rect(r) + (-0.5, -0.5, 0.5, 0.5)  # 縦線・横線は幅0なので、重なりを判定できるよう少し太らせる
