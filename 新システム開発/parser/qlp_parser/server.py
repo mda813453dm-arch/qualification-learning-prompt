@@ -116,6 +116,12 @@ def render_pages(body):
         pix = doc[n - 1].get_pixmap(matrix=fitz.Matrix(PAGE_ZOOM, PAGE_ZOOM), alpha=False)
         out[f"p{n}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
     tables, figures = page_layout(doc, nums)
+    display = None
+    if matched is not None:
+        from .question_view import build_display
+
+        display = build_display(doc, nums, find, tables, figures)
+    tables = [{k: v for k, v in t.items() if not k.startswith("_")} for t in tables]
     # 図だけを切り出したPDF（1ページに図1つ）。図が見つからなければページ全体。
     # ChatGPTは外部の画像を表示しないため、ファイルとして渡し、AI側のPythonで画像にする
     excerpt = fitz.open()
@@ -127,7 +133,7 @@ def render_pages(body):
         for n in nums:
             excerpt.insert_pdf(doc, from_page=n - 1, to_page=n - 1)
     pdf_b64 = base64.b64encode(excerpt.tobytes(garbage=3, deflate=True)).decode("ascii")
-    return {"pageCount": count, "matchedPage": matched, "pages": out, "excerpt": pdf_b64, "tables": tables, "figures": figures}
+    return {"pageCount": count, "matchedPage": matched, "pages": out, "excerpt": pdf_b64, "tables": tables, "figures": figures, "display": display}
 
 
 FIG_GAP = 15  # これより近い線や画像は同じ図とみなす（pt）
@@ -187,13 +193,16 @@ def page_layout(doc, nums):
             rows = [r for r in rows if any(r)]
             if not rows:
                 continue
-            caption = " ".join(_clean_cell(b[4]) for b in blocks if prev_bottom <= b[1] and box.y0 - CAPTION_GAP <= b[3] <= box.y0 + 1)
+            caps = [b for b in blocks if prev_bottom <= b[1] and box.y0 - CAPTION_GAP <= b[3] <= box.y0 + 1]
+            caption = " ".join(_clean_cell(b[4]) for b in caps)
             last = tables[-1] if tables else None
             continued = last and last["page"] == n - 1 and not caption and box.y0 < prect.height * 0.25 and len(rows[0]) == len(last["rows"][0])
+            # _boxes / _caps は問題の表示を組み立てるための位置（応答には含めない）
             if continued:
                 last["rows"].extend(rows)
+                last["_boxes"].append((n, box))
             else:
-                tables.append({"page": n, "caption": caption, "rows": rows})
+                tables.append({"page": n, "caption": caption, "rows": rows, "_boxes": [(n, box)], "_caps": [(n, fitz.Rect(b[:4])) for b in caps]})
             prev_bottom = box.y1
         grown = [b + (-2, -2, 2, 2) for b in tboxes]
         rects = [fitz.Rect(d["rect"]) for d in page.get_drawings()]
