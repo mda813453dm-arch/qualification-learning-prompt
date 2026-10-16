@@ -324,3 +324,26 @@ test('学習の開始と終了：時刻はエンジンが取り、累計は引�
   assert.ok(s3.body.studyId);
   assert.equal((await call(env, 'POST', '/v1/study/zzzzzzzzzz/end', {})).status, 404);
 });
+
+test('本番では、学習の開始と出題の呼び出しで分解を待たない（裏の取り込みに任せ、すぐ応答する）', async () => {
+  const { env, parse } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.PUBLIC_BASE_URL = 'https://engine.example';
+  const kicks = [];
+  env.selfFetch = async (url) => {
+    kicks.push(url);
+    return new Response('{}');
+  };
+  const s = await startSession(env);
+  assert.equal(parse.count, 0, '開始の応答の前に分解しない');
+  assert.equal(s.job.state, 'running');
+  assert.ok(kicks.some((u) => u.endsWith('?run=all')));
+  const waiting = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
+  assert.equal(waiting.status, 'waiting');
+  assert.equal(parse.count, 0);
+  // 裏の取り込み（自分自身への呼び出し）が終わると、出題できる
+  const bg = await call(env, 'GET', new URL(kicks[0]).pathname + '?run=all');
+  assert.equal(bg.status, 200, JSON.stringify(bg.body));
+  assert.equal(parse.count, 1);
+  const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
+  assert.equal(q.status, 'question');
+});

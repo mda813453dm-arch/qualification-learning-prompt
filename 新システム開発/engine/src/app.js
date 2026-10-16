@@ -222,10 +222,22 @@ async function kickIngest(env, qid, now) {
   }).catch(() => {});
 }
 
+/**
+ * AIアプリからの呼び出しで取り込みを進めるとき。公式PDF1件の分解（OCRなど）は数分かかることがあり、
+ * その場で待つとAIアプリが時間切れになって応答（sessionId など）を受け取れないため、本番では裏で進めて今の状況だけを返す。
+ */
+async function progress(env, qid, now) {
+  if (!env.PUBLIC_BASE_URL || !env.API_TOKEN) return advance(env, qid, now, STEP_BUDGET_MS);
+  const job = await readJob(env.STORE, qid);
+  if (!job) return null;
+  if (job.state === 'running') await kickIngest(env, qid, now);
+  return withNotice(job, now);
+}
+
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   let state = state0;
-  const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
+  const job = await progress(env, sessionJobId(state), now);
   const items = await availablePackets(env.STORE, job, now);
   const pick = pickNext(state, items, { today: jstToday(now), job });
   if (pick.status !== 'question') {
@@ -343,7 +355,7 @@ async function route(request, env, url, now) {
     const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
     const sources = checkSources(b.sources, b.qualificationId, learnerId);
     await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
-    const job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
+    const job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
     return json(201, { sessionId: id, learnerId, job: jobView(job) });
@@ -482,7 +494,7 @@ async function route(request, env, url, now) {
       const persistent = !!state.learnerId;
       await startJob(env.STORE, sessionJobId(state), checkSources(b.sources, state.qualificationId, state.learnerId), now, { persistent });
     }
-    if (state.learnerId || b.sources) job = await advance(env, sessionJobId(state), now, STEP_BUDGET_MS);
+    if (state.learnerId || b.sources) job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
     return json(201, {
@@ -499,7 +511,7 @@ async function route(request, env, url, now) {
     if (method === 'GET' && parts.length === 3) {
       // ?run=all：学習画面から裏で呼ぶとき（取り込みを最後まで進める）
       const runAll = url.searchParams.get('run') === 'all';
-      const job = await advance(env, qid, now, runAll ? RUN_ALL_MS : STEP_BUDGET_MS, runAll ? RUN_ALL_MS + 300000 : 0);
+      const job = runAll ? await advance(env, qid, now, RUN_ALL_MS, RUN_ALL_MS + 300000) : await progress(env, qid, now);
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
       if (runAll && job.state === 'running' && !job.leaseUntil) await kickIngest(env, qid, now);
