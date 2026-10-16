@@ -1,0 +1,48 @@
+name: 公式PDFのページの作り（図・表の位置）を調べる（読み取りのみ）
+# 合図：新システム開発/deploy/pdf-layout-request.txt に「PDFのURL ページ番号…」を書いて push する。
+# 結果は diag-pdf-layout ブランチに置く（ページ画像と、図・表・文字の位置）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/pdf-layout-request.txt'
+permissions:
+  contents: write
+jobs:
+  layout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pymupdf==1.24.10
+      - name: ページの作りを書き出す
+        run: |
+          mkdir -p out
+          python - <<'PY'
+          import json, urllib.request, fitz
+          words = open('新システム開発/deploy/pdf-layout-request.txt').read().split()
+          url, pages = words[0], [int(x) for x in words[1:] if x.isdigit()]
+          doc = fitz.open(stream=urllib.request.urlopen(url).read(), filetype='pdf')
+          for n in pages:
+              p = doc[n-1]
+              p.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False).save(f'out/p{n}.png')
+              info = {'rect': list(p.rect), 'rotation': p.rotation}
+              info['blocks'] = [{'bbox': [round(v,1) for v in b[:4]], 'text': b[4][:80]} for b in p.get_text('blocks')]
+              info['drawings'] = [{'rect': [round(v,1) for v in d['rect']], 'n': len(d['items'])} for d in p.get_drawings()]
+              info['images'] = [[round(v,1) for v in r] for x in p.get_images() for r in p.get_image_rects(x[0])]
+              try:
+                  info['tables'] = [{'bbox': [round(v,1) for v in t.bbox], 'rows': t.extract()} for t in p.find_tables().tables]
+              except Exception as e:
+                  info['tables'] = str(e)
+              json.dump(info, open(f'out/p{n}.json', 'w'), ensure_ascii=False, indent=1)
+              print(n, 'blocks', len(info['blocks']), 'drawings', len(info['drawings']), 'images', len(info['images']), 'tables', info['tables'] if isinstance(info['tables'], str) else len(info['tables']))
+          PY
+      - name: 結果を diag-pdf-layout に置く
+        run: |
+          cd out
+          git init -q -b diag-pdf-layout
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "layout diagnose"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-pdf-layout
