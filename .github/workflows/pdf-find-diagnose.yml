@@ -32,3 +32,23 @@ jobs:
                   heads = [x for x in lines if re.match(r'^[〔【\[（(]?\s*(第\s*[0-9０-９]+\s*問|問\s*[0-9０-９]+)', unicodedata.normalize('NFKC', x))]
                   print(f'p{i+1} chars={len(t)} imgs={len(doc[i].get_images())} heads={heads[:6]} first={lines[:3]}')
           PY
+      - name: エンジンに保存されたページ画像を確かめる
+        run: |
+          python - <<'PY'
+          import hashlib, urllib.request, fitz
+          url = 'https://www.moj.go.jp/content/001450010.pdf'
+          data = urllib.request.urlopen(url).read()
+          sha = hashlib.sha256(data).hexdigest()
+          doc = fitz.open(stream=data, filetype='pdf')
+          print('sha', sha, 'pages', doc.page_count)
+          for n in (14, 15):
+              pix = doc[n-1].get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
+              print('local render', n, pix.width, pix.height, len(pix.tobytes('png')))
+              u = f'https://qlp-engine-ojsw3j46qa-an.a.run.app/v1/pageimg/{sha}/p{n}.png'
+              try:
+                  r = urllib.request.urlopen(u)
+                  b = r.read()
+                  print('engine', n, r.status, r.headers.get('content-type'), len(b))
+              except Exception as e:
+                  print('engine', n, 'ERR', e)
+          PY
