@@ -259,3 +259,34 @@ test('見出し（find）でページを探して画像にする。見つから�
   assert.equal((await call(env, 'GET', new URL(r.body.pages[0].url).pathname, undefined, null)).status, 200);
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第99問' })).status, 422);
 });
+
+test('学習の開始と終了：時刻はエンジンが取り、累計は引継ぎIDごとに一度だけ足す', async () => {
+  const { env } = makeEnv();
+  const s = await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' });
+  assert.equal(s.status, 201, JSON.stringify(s.body));
+  assert.match(s.body.display, /^📚 学習開始｜\d{2}:\d{2}\n🔑 引継ぎID：[a-z2-9]{10}/);
+  assert.equal(s.body.resumed, false);
+  env.now += 25 * 60 * 1000;
+  const body = { area: '測量', results: { practiceCorrect: 2, practiceWrong: 1 }, weaknesses: ['令和7年度 第11問 座標法'] };
+  const e = await call(env, 'POST', `/v1/study/${s.body.studyId}/end`, body);
+  assert.equal(e.status, 200, JSON.stringify(e.body));
+  assert.equal(e.body.minutes, 25);
+  assert.equal(e.body.totalMinutes, 25);
+  assert.match(e.body.display, /⏱ 今回の学習時間：25分/);
+  assert.match(e.body.display, /・採点確定回答3問（正解2問・不正解1問）/);
+  assert.match(e.body.display, /```text\n【学習引き継ぎデータ】[\s\S]*引継ぎID：[a-z2-9]{10}[\s\S]*・資格名：土地家屋調査士[\s\S]*【引き継ぎデータ ここまで】\n```$/);
+  // 二度呼んでも累計は増えない
+  env.now += 5 * 60 * 1000;
+  const again = await call(env, 'POST', `/v1/study/${s.body.studyId}/end`, body);
+  assert.equal(again.body.totalMinutes, 25);
+  // 別のチャットで同じ引継ぎIDから始めると、累計が引き継がれる
+  const s2 = await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士', learnerId: s.body.learnerId });
+  assert.equal(s2.body.resumed, true);
+  assert.equal(s2.body.totalMinutes, 25);
+  assert.match(s2.body.display, /これまでの累計学習時間：25分/);
+  env.now += 60 * 60 * 1000;
+  const e2 = await call(env, 'POST', `/v1/study/${s2.body.studyId}/end`, {});
+  assert.equal(e2.body.totalMinutes, 85);
+  assert.match(e2.body.display, /📊 累計学習時間：1時間25分/);
+  assert.equal((await call(env, 'POST', '/v1/study/00000000-0000-0000-0000-000000000000/end', {})).status, 404);
+});

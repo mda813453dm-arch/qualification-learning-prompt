@@ -55,7 +55,7 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
   assert.deepEqual(names.sort(), ops.sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.length, 7);
+  assert.equal(TOOLS.length, 9);
 });
 
 test('トークンはヘッダーか URL で受け取り、どちらも無ければ断る', async () => {

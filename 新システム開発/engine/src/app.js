@@ -24,6 +24,7 @@ import { sha256Hex } from './store.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
+import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, studyKey, timeKey, validLearnerId } from './study-log.js';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
@@ -303,7 +304,8 @@ async function route(request, env, url, now) {
     const b = await body(request);
     if (!qidOk(b.qualificationId)) throw new HttpError(400, 'QUALIFICATION_INVALID');
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
-    const learnerId = newLearnerId();
+    // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
+    const learnerId = validLearnerId(b.learnerId) ?? newLearnerId();
     const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
     const sources = checkSources(b.sources, b.qualificationId, learnerId);
     await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
@@ -333,6 +335,52 @@ async function route(request, env, url, now) {
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
     const state = await loadSession(env, parts[2], now);
     return json(200, { handoff: exportHandoff(state) });
+  }
+
+  // 学習の開始：時刻はエンジンが取る（AIに推測させない）。引継ぎIDごとの累計学習時間も返す
+  if (method === 'POST' && url.pathname === '/v1/study/start') {
+    const b = await body(request);
+    const given = validLearnerId(b.learnerId);
+    const learnerId = given ?? newLearnerId();
+    const study = newStudy({ qualificationName: b.qualificationName, learnerId, now });
+    const studyId = crypto.randomUUID();
+    await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
+    const total = (await env.STORE.get(timeKey(learnerId), 'json'))?.minutes ?? 0;
+    const t = jst(now);
+    return json(201, {
+      studyId,
+      learnerId,
+      resumed: !!given,
+      startDate: t.date,
+      startTime: t.time,
+      totalMinutes: total,
+      display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${given ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
+    });
+  }
+
+  // 学習の終了：終了時刻・今回の時間・累計をエンジンが確定し、終了ログと引継ぎデータの全文を返す
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'study' && parts[3] === 'end' && parts.length === 4) {
+    if (!/^[0-9a-f-]{36}$/.test(parts[2])) throw new HttpError(404, 'STUDY_NOT_FOUND');
+    const b = await body(request);
+    const study = await env.STORE.get(studyKey(parts[2]), 'json');
+    if (!study) throw new HttpError(404, 'STUDY_NOT_FOUND');
+    const saved = (await env.STORE.get(timeKey(study.learnerId), 'json')) ?? { minutes: 0, studies: [] };
+    // 同じ学習を二度終了しても累計を二重に足さない
+    const before = study.endedAt == null ? saved.minutes : saved.minutes - (study.minutes ?? 0);
+    let engineHandoff = null;
+    if (typeof b.sessionId === 'string' && b.sessionId) {
+      try {
+        engineHandoff = exportHandoff(await loadSession(env, b.sessionId, now));
+      } catch {
+        engineHandoff = null;
+      }
+    }
+    const r = finishStudy(study, before, b, now, engineHandoff);
+    if (study.endedAt == null) {
+      await env.STORE.put(studyKey(parts[2]), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
+      await env.STORE.put(timeKey(study.learnerId), JSON.stringify({ minutes: r.total, updatedAt: now }));
+    }
+    return json(200, { minutes: r.minutes, totalMinutes: r.total, log: r.log, handoff: r.handoff, display: r.display });
   }
 
   // 未対応の資格でも、公式PDFの指定ページ（または見出しを含むページ）を画像にして返す。PDFの検証・分解はしない

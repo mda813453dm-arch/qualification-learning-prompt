@@ -75,6 +75,7 @@ paths:
               required: [qualificationId, sources]
               properties:
                 qualificationId: { type: string, description: q041＝宅建、q063＝測量士補 }
+                learnerId: { type: string, description: startStudy で受け取った引継ぎID（同じ学習者として記録する） }
                 sources: { type: array, maxItems: 40, items: { $ref: '#/components/schemas/Source' } }
                 plan:
                   type: object
@@ -212,8 +213,103 @@ paths:
                       properties:
                         page: { type: integer }
                         url: { type: string, description: この画像をそのまま表示する }
+                  markdown: { type: string, description: ページ画像を表示する文。1文字も変えずにそのまま回答に貼る }
         '422':
           description: PDFではない・ページが範囲外（error に理由コード）
+  /v1/study/start:
+    post:
+      operationId: startStudy
+      x-openai-isConsequential: false
+      summary: 学習の開始を記録する（開始時刻はエンジンが取る。どの資格でも、最初に必ず呼ぶ）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [qualificationName]
+              properties:
+                qualificationName: { type: string, description: 利用者が言った資格名 }
+                learnerId: { type: string, description: 引継ぎデータを貼られたときだけ、その「引継ぎID」 }
+      responses:
+        '201':
+          description: 開始した
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studyId: { type: string, description: 終了のとき endStudy に渡す }
+                  learnerId: { type: string, description: 引継ぎID。startSession にも渡す }
+                  resumed: { type: boolean }
+                  startTime: { type: string, description: 開始時刻（日本時間 HH:MM） }
+                  totalMinutes: { type: integer, description: これまでの累計学習時間（分） }
+                  display: { type: string, description: 利用者にそのまま表示する }
+  /v1/study/{studyId}/end:
+    post:
+      operationId: endStudy
+      x-openai-isConsequential: false
+      summary: 学習の終了。終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータの全文を返す
+      parameters:
+        - { name: studyId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: 今回の学習の中身。分からない項目は省く（エンジンが「記録なし」などと書く）
+              properties:
+                sessionId: { type: string, description: startSession を使ったときだけ }
+                area: { type: string, description: 今回の科目・領域 }
+                item: { type: string, description: 今回の項目 }
+                purpose: { type: string, description: 今回の目的 }
+                studiedAreas: { type: array, items: { type: string } }
+                contents: { type: array, items: { type: string }, description: 主な学習内容 }
+                results:
+                  type: object
+                  properties:
+                    practiceCorrect: { type: integer, description: 実践問題（過去問）の正解数 }
+                    practiceWrong: { type: integer }
+                    checkCorrect: { type: integer, description: 確認問題の正解数 }
+                    checkWrong: { type: integer }
+                    skipped: { type: integer }
+                    skippedDetail: { type: string }
+                    pendingDetail: { type: string }
+                weaknesses: { type: array, items: { type: string }, description: 誤答・弱点（年度と問番号を添える） }
+                review: { type: array, items: { type: string }, description: 復習対象 }
+                progress:
+                  type: object
+                  properties:
+                    done: { type: string }
+                    inProgress: { type: string }
+                    notStarted: { type: string }
+                    needReview: { type: string }
+                    unconfirmed: { type: string }
+                    exempt: { type: string }
+                nextPriority: { type: array, items: { type: string } }
+                nextPurpose: { type: array, items: { type: string } }
+                qualification:
+                  type: object
+                  properties:
+                    examYear: { type: string }
+                    examDate: { type: string }
+                    exemption: { type: string }
+                    stage: { type: string }
+                    settings: { type: string }
+                plan: { type: array, items: { type: string }, description: 試験範囲と学習計画の状態 }
+                skippedTopics: { type: array, items: { type: string }, description: 未回答・スキップした問題の論点 }
+      responses:
+        '200':
+          description: 終了ログと引継ぎデータ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  minutes: { type: integer }
+                  totalMinutes: { type: integer }
+                  display: { type: string, description: 終了ログと引継ぎデータの全文。1文字も変えずにそのまま表示する }
   /v1/handoff/import:
     post:
       operationId: importHandoff
