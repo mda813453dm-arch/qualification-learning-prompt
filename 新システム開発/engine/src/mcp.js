@@ -80,6 +80,16 @@ export const TOOLS = [
     inputSchema: { type: 'object', required: ['qualificationId'], properties: { qualificationId: { type: 'string' } } },
     api: (a) => ['GET', `/v1/jobs/${encodeURIComponent(a.qualificationId)}`],
   },
+  {
+    name: 'renderPdfPages',
+    description: '公式PDFの指定ページを画像にして返す（エンジンが対応していない資格の図や表を見せるため）。pages はPDFの先頭を1ページ目とした番号（最大4つ）。',
+    inputSchema: {
+      type: 'object',
+      required: ['url', 'pages'],
+      properties: { url: { type: 'string' }, pages: { type: 'array', minItems: 1, maxItems: 4, items: { type: 'integer', minimum: 1 } } },
+    },
+    api: (a) => ['POST', '/v1/pdf-pages', { url: a.url, pages: a.pages }],
+  },
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));

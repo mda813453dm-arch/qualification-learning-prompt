@@ -210,3 +210,31 @@ test('採点の応答に次の問が付き、あとで nextQuestion を呼んで
   assert.equal(retry.body.grade.alreadyGraded, true);
   assert.equal(retry.body.grade.selected, 3);
 });
+
+test('未対応の資格でも、公式PDFの指定ページを画像にして返す（同じページは作り直さない）', async () => {
+  const OTHER = 'https://example.go.jp/exam/other.pdf';
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.fetchPdf = async (u) => (u === OTHER ? pdf('other-v1') : null);
+  env.PUBLIC_BASE_URL = 'https://engine.example';
+  let renders = 0;
+  env.parserFetch = async (url, init) => {
+    assert.ok(url.endsWith('/v1/pages'));
+    const b = JSON.parse(init.body);
+    renders += 1;
+    const pages = Object.fromEntries(b.pages.map((n) => [`p${n}.png`, btoa(String.fromCharCode(...PNG))]));
+    return new Response(JSON.stringify({ pageCount: 20, pages }));
+  };
+  const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [12, 11] });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.deepEqual(r.body.pages.map((p) => p.page), [11, 12]);
+  const img = await call(env, 'GET', new URL(r.body.pages[1].url).pathname, undefined, null);
+  assert.equal(img.status, 200);
+  assert.equal(img.type, 'image/png');
+  const again = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [12] });
+  assert.equal(again.status, 200);
+  assert.equal(renders, 1);
+  // 入力の検査と認証
+  assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: 'http://x.example/a.pdf', pages: [1] })).status, 400);
+  assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [0] })).status, 400);
+  assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [1] }, 'wrong')).status, 401);
+});

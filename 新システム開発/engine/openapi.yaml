@@ -178,6 +178,39 @@ paths:
                 type: object
                 properties:
                   handoff: { type: string }
+  /v1/pdf-pages:
+    post:
+      operationId: renderPdfPages
+      x-openai-isConsequential: false
+      summary: 公式PDFの指定ページを画像にして返す（エンジンが対応していない資格の図や表を見せるため）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url, pages]
+              properties:
+                url: { type: string, description: 公式PDFのURL（https） }
+                pages: { type: array, minItems: 1, maxItems: 4, items: { type: integer, minimum: 1 }, description: PDFの先頭を1ページ目とした番号（本に印刷されたページ番号とは違うことがある） }
+      responses:
+        '200':
+          description: ページ画像
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pageCount: { type: [integer, 'null'] }
+                  pages:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page: { type: integer }
+                        url: { type: string, description: この画像をそのまま表示する }
+        '422':
+          description: PDFではない・ページが範囲外（error に理由コード）
   /v1/handoff/import:
     post:
       operationId: importHandoff

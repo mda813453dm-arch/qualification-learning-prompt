@@ -3,6 +3,9 @@
   POST /v1/parse
     {adapter, year, section, question:{url, sha256, base64}, answer:{url, sha256, base64}|null}
   → 200 {result, assets:{<file>: <base64 PNG>}}
+  POST /v1/pages
+    {pdf:{base64}, pages:[1始まりのページ番号, 最大4つ]}
+  → 200 {pageCount, pages:{"p<番号>.png": <base64 PNG>}}   （どの資格の公式PDFでも、ページをそのまま画像にする）
   GET /healthz → 200 {"ok": true, "parserVersion", "ocr"}
 
 公式PDFの取得はしない（取得とSHA-256の照合はエンジン側）。届いたPDFのSHA-256が sha256 と違えば分解しない。
@@ -59,6 +62,40 @@ def parse_request(body):
     return {"result": result, "assets": {k: base64.b64encode(v).decode("ascii") for k, v in assets.items()}}
 
 
+MAX_PAGES = 4
+PAGE_ZOOM = 2.0  # 約144dpi。スマホで図の細部が読める大きさ
+
+
+def render_pages(body):
+    """PDFの指定ページを、そのまま画像（PNG）にする。資格ごとの分解はしない。"""
+    if not isinstance(body, dict):
+        raise BadRequest("BODY_INVALID")
+    part = body.get("pdf")
+    if not isinstance(part, dict) or not isinstance(part.get("base64"), str):
+        raise BadRequest("PDF_REQUIRED")
+    try:
+        data = base64.b64decode(part["base64"], validate=True)
+    except (binascii.Error, ValueError) as e:
+        raise BadRequest("PDF_BASE64_INVALID") from e
+    nums = body.get("pages")
+    if not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
+        raise BadRequest("PAGES_INVALID")
+    import fitz
+
+    try:
+        doc = fitz.open(stream=data, filetype="pdf")
+    except Exception as e:  # noqa: BLE001
+        raise BadRequest("PDF_UNREADABLE") from e
+    count = doc.page_count
+    out = {}
+    for n in sorted(set(nums)):
+        if n > count:
+            raise BadRequest("PAGE_OUT_OF_RANGE")
+        pix = doc[n - 1].get_pixmap(matrix=fitz.Matrix(PAGE_ZOOM, PAGE_ZOOM), alpha=False)
+        out[f"p{n}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
+    return {"pageCount": count, "pages": out}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "qlp-parser"
 
@@ -83,7 +120,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, {"error": "NOT_FOUND"})
 
     def do_POST(self):  # noqa: N802
-        if self.path != "/v1/parse":
+        if self.path not in ("/v1/parse", "/v1/pages"):
             self._send(404, {"error": "NOT_FOUND"})
             return
         if not self._authorized():
@@ -95,7 +132,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             body = json.loads(self.rfile.read(length))
-            self._send(200, parse_request(body))
+            self._send(200, render_pages(body) if self.path == "/v1/pages" else parse_request(body))
         except (BadRequest, json.JSONDecodeError) as e:
             self._send(400, {"error": str(e) if isinstance(e, BadRequest) else "BODY_INVALID"})
         except Exception as e:  # noqa: BLE001  想定外の失敗は理由を伏せて500

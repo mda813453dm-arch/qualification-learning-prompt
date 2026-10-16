@@ -17,9 +17,10 @@ import { readFigure } from './cache.js';
 import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
-import { awaitUpload, httpParser, uploadedParse } from './parser-client.js';
+import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { newLearnerId, pages } from './pages.js';
+import { sha256Hex } from './store.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
@@ -243,9 +244,19 @@ async function route(request, env, url, now) {
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
 
+  // 公式PDFのページ画像（トークン不要。キーにPDFのSHA-256が入るので推測できない）
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'pageimg' && parts.length === 4) {
+    const sha = decodeURIComponent(parts[2]);
+    const m = /^p(\d{1,4})\.png$/.exec(decodeURIComponent(parts[3]));
+    if (!/^[a-f0-9]{64}$/.test(sha) || !m) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
+    const bytes = await env.STORE.get(`pgimg/${sha}/${m[1]}`, 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
+  }
+
   // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
   if (method === 'GET' && url.pathname === '/robots.txt') {
-    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nAllow: /v1/pageimg\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 
   // GPT の公開に必要なプライバシーポリシー（個人情報を集めていない内容を、ありのまま書く）
@@ -322,6 +333,39 @@ async function route(request, env, url, now) {
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
     const state = await loadSession(env, parts[2], now);
     return json(200, { handoff: exportHandoff(state) });
+  }
+
+  // 未対応の資格でも、公式PDFの指定ページを画像にして返す（図や表をそのまま見せるため）。PDFの検証・分解はしない
+  if (method === 'POST' && url.pathname === '/v1/pdf-pages') {
+    const b = await body(request);
+    if (typeof b.url !== 'string' || !/^https:\/\/[^\s]{4,500}$/.test(b.url)) throw new HttpError(400, 'URL_INVALID');
+    if (!Array.isArray(b.pages) || b.pages.length < 1 || b.pages.length > 4 || b.pages.some((n) => !Number.isInteger(n) || n < 1 || n > 1000)) throw new HttpError(400, 'PAGES_INVALID');
+    if (!env.PARSER_URL) throw new HttpError(503, 'PAGE_IMAGES_UNAVAILABLE');
+    let bytes;
+    try {
+      bytes = await (env.fetchPdf ?? defaultFetchPdf)(b.url);
+    } catch {
+      throw new HttpError(502, 'PDF_FETCH_FAILED');
+    }
+    if (!bytes || bytes.length < 5 || String.fromCharCode(...bytes.subarray(0, 5)) !== '%PDF-') throw new HttpError(422, 'NOT_A_PDF');
+    const sha = await sha256Hex(bytes);
+    const want = [...new Set(b.pages)].sort((x, y) => x - y);
+    let pageCount = null;
+    const missing = [];
+    for (const n of want) if (!(await env.STORE.get(`pgimg/${sha}/${n}`, 'arrayBuffer'))) missing.push(n);
+    if (missing.length) {
+      let r;
+      try {
+        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, pages: missing });
+      } catch (e) {
+        const code = e instanceof IngestError ? e.code : 'PAGE_RENDER_FAILED';
+        throw new HttpError(code === 'PAGE_OUT_OF_RANGE' || code === 'PAGES_INVALID' || code === 'PDF_UNREADABLE' ? 422 : 502, code);
+      }
+      pageCount = r.pageCount ?? null;
+      for (const n of missing) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
+    }
+    const base = env.PUBLIC_BASE_URL ?? '';
+    return json(200, { pageCount, pages: want.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` })) });
   }
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
