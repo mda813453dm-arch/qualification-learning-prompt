@@ -183,7 +183,7 @@ paths:
     post:
       operationId: renderPdfPages
       x-openai-isConsequential: false
-      summary: 公式PDFから問題のページだけを抜き出し、PDFファイルとしてチャットに付ける（エンジンが対応していない資格の図や表を見せるため）
+      summary: 公式PDFの問題のページから、表を文字で読み取り、図だけを切り出したPDFファイルをチャットに付ける（エンジンが対応していない資格の図や表を見せるため）
       requestBody:
         required: true
         content:
@@ -213,7 +213,9 @@ paths:
                       properties:
                         page: { type: integer }
                         url: { type: string, description: ページ画像のURL（回答には貼らない） }
-                  notice: { type: string, description: 利用者にそのまま表示する案内（付けたPDFファイルの見方） }
+                  tables: { type: [string, 'null'], description: 公式PDFから読み取った表（マークダウン）。問題文のあとに1文字も変えずにそのまま表示する }
+                  figureCount: { type: integer, description: 切り出した図の数。1以上なら、問題文と表のあとでPythonを実行し、付いたPDFを画像にして表示する }
+                  notice: { type: string, description: 図を表示できなかったときに、利用者にそのまま表示する案内 }
                   openaiFileResponse: { type: array, items: { type: string }, description: チャットに付けるPDFファイル }
         '422':
           description: PDFではない・ページが範囲外（error に理由コード）

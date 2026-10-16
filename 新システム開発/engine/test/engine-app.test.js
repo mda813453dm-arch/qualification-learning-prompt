@@ -211,7 +211,7 @@ test('採点の応答に次の問が付き、あとで nextQuestion を呼んで
   assert.equal(retry.body.grade.selected, 3);
 });
 
-test('未対応の資格でも、公式PDFの指定ページを画像にして返す（同じページは作り直さない）', async () => {
+test('未対応の資格でも、公式PDFの指定ページを画像にして返す（表の文字を返すため毎回作る）', async () => {
   const OTHER = 'https://example.go.jp/exam/other.pdf';
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   env.fetchPdf = async (u) => (u === OTHER ? pdf('other-v1') : null);
@@ -232,7 +232,10 @@ test('未対応の資格でも、公式PDFの指定ページを画像にして�
   assert.equal(img.type, 'image/png');
   const again = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [11, 12] });
   assert.equal(again.status, 200);
-  assert.equal(renders, 1);
+  assert.equal(renders, 2);
+  assert.equal(again.body.tables, null);
+  assert.equal(again.body.figureCount, 0);
+  assert.match(again.body.notice, /11〜12ページ/);
   // 入力の検査と認証
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: 'http://x.example/a.pdf', pages: [1] })).status, 400);
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [0] })).status, 400);
@@ -249,7 +252,11 @@ test('見出し（find）でページを探して画像にする。見つから�
     if (b.find !== '第11問') return new Response(JSON.stringify({ error: 'FIND_NOT_FOUND' }), { status: 400 });
     assert.equal(b.span, 2);
     const png = btoa(String.fromCharCode(...PNG));
-    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png }, excerpt: btoa('%PDF-excerpt') }));
+    const tables = [
+      { page: 14, caption: '〔観測結果〕', rows: [['器械点', '視準点', '水平角'], ['T1', 'T2', '0°00′00″'], ['', 'F', '243°44′07″']] },
+      { page: 14, caption: '〔測量成果〕 北は、X軸正方向に一致する。', rows: [['点名', 'X座標(m)'], ['A|B', '205.41']] },
+    ];
+    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png }, excerpt: btoa('%PDF-excerpt'), tables, figures: [{ page: 15, bbox: [68, 142, 556, 525] }] }));
   };
   const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第11問' });
   assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -258,7 +265,13 @@ test('見出し（find）でページを探して画像にする。見つから�
   // ChatGPTは外部の画像を表示しないので、同じページのPDFをファイルとして返す
   assert.deepEqual(r.body.openaiFileResponse, ['https://engine.example/v1/pagepdf/' + r.body.fileUrl.split('/v1/pagepdf/')[1]]);
   assert.match(r.body.fileUrl, /\/14-15\.pdf$/);
-  assert.match(r.body.notice, /14〜15ページ/);
+  // 表はエンジンが読み取った文字で返し、図は切り出したPDFで付ける
+  assert.equal(r.body.figureCount, 1);
+  assert.match(r.body.notice, /図を切り出して/);
+  assert.equal(
+    r.body.tables,
+    '〔観測結果〕\n| 器械点 | 視準点 | 水平角 |\n| --- | --- | --- |\n| T1 | T2 | 0°00′00″ |\n| 　 | F | 243°44′07″ |\n\n〔測量成果〕 北は、X軸正方向に一致する。\n| 点名 | X座標(m) |\n| --- | --- |\n| A｜B | 205.41 |',
+  );
   const file = await handle(new Request('https://engine.example' + new URL(r.body.fileUrl).pathname), env);
   assert.equal(file.status, 200);
   assert.equal(file.headers.get('content-type'), 'application/pdf');

@@ -123,5 +123,15 @@ export async function renderPages({ endpoint, token, fetch: doFetch = fetch, byt
     }
     if (excerpt && (excerpt.length > 20 * 1024 * 1024 || String.fromCharCode(...excerpt.subarray(0, 5)) !== '%PDF-')) excerpt = null;
   }
-  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt };
+  const str = (x, max) => (typeof x === 'string' ? x.slice(0, max) : '');
+  const tables = (Array.isArray(v?.tables) ? v.tables : [])
+    .slice(0, 10)
+    .map((t) => ({
+      page: Number.isInteger(t?.page) ? t.page : null,
+      caption: str(t?.caption, 200),
+      rows: (Array.isArray(t?.rows) ? t.rows : []).slice(0, 60).map((r) => (Array.isArray(r) ? r.slice(0, 12).map((c) => str(c, 100)) : [])).filter((r) => r.length),
+    }))
+    .filter((t) => t.rows.length);
+  const figures = (Array.isArray(v?.figures) ? v.figures : []).filter((f) => Number.isInteger(f?.page) && Array.isArray(f?.bbox)).slice(0, 10);
+  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt, tables, figures };
 }

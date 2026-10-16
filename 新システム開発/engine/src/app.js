@@ -164,6 +164,20 @@ async function saveSession(env, id, state, now) {
 }
 
 /** 利用者に見せる取り込みの状況（URLとSHAは経路Aでアプリが分解するときに使う）。 */
+/** 公式PDFから読み取った表を、そのまま表示できるマークダウンにする（見出しの文があれば表の前に置く）。 */
+export function tablesMarkdown(tables) {
+  if (!Array.isArray(tables) || !tables.length) return null;
+  const cell = (v) => String(v ?? '').replace(/\|/g, '｜').replace(/\s+/g, ' ').trim() || '　';
+  return tables
+    .map((t) => {
+      const width = Math.max(...t.rows.map((r) => r.length));
+      const row = (r) => `| ${Array.from({ length: width }, (_, i) => cell(r[i])).join(' | ')} |`;
+      const lines = [row(t.rows[0]), `|${' --- |'.repeat(width)}`, ...t.rows.slice(1).map(row)];
+      return [t.caption, ...lines].filter(Boolean).join('\n');
+    })
+    .join('\n\n');
+}
+
 function jobView(job) {
   if (!job) return null;
   return {
@@ -414,38 +428,36 @@ async function route(request, env, url, now) {
     }
     if (!bytes || bytes.length < 5 || String.fromCharCode(...bytes.subarray(0, 5)) !== '%PDF-') throw new HttpError(422, 'NOT_A_PDF');
     const sha = await sha256Hex(bytes);
-    const want = byFind ? [] : [...new Set(b.pages)].sort((x, y) => x - y);
-    const missing = byFind ? null : [];
-    if (!byFind) for (const n of want) if (!(await env.STORE.get(`pgimg/${sha}/${n}`, 'arrayBuffer'))) missing.push(n);
-    const pdfKey = (nums) => `fig/pgpdf/${sha}/${nums[0]}-${nums[nums.length - 1]}`;
-    const needPdf = !byFind && !missing.length && !(await env.STORE.get(pdfKey(want), 'arrayBuffer'));
-    let pageCount = null;
-    let matchedPage = null;
-    let pageNums = want;
-    let excerpt = null;
-    if (byFind || missing.length || needPdf) {
-      let r;
-      try {
-        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, ...(byFind ? { find: b.find, span: b.span ?? 2 } : { pages: want }) });
-      } catch (e) {
-        const code = e instanceof IngestError ? e.code : 'PAGE_RENDER_FAILED';
-        throw new HttpError(['PAGE_OUT_OF_RANGE', 'PAGES_INVALID', 'PDF_UNREADABLE', 'FIND_NOT_FOUND', 'FIND_INVALID', 'SPAN_INVALID'].includes(code) ? 422 : 502, code);
-      }
-      pageCount = r.pageCount ?? null;
-      matchedPage = r.matchedPage;
-      const nums = Object.keys(r.pages).map((f) => Number(/^p(\d+)\.png$/.exec(f)[1])).sort((x, y) => x - y);
-      for (const n of nums) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
-      if (byFind) pageNums = nums;
-      excerpt = r.excerpt;
-      if (excerpt && pageNums.length) await env.STORE.put(pdfKey(pageNums), excerpt);
+    // 表の文字と図の切り出しは毎回分解サーバーで作る（ページ画像だけの保存では表を返せないため）
+    let r;
+    try {
+      r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, ...(byFind ? { find: b.find, span: b.span ?? 2 } : { pages: [...new Set(b.pages)].sort((x, y) => x - y) }) });
+    } catch (e) {
+      const code = e instanceof IngestError ? e.code : 'PAGE_RENDER_FAILED';
+      throw new HttpError(['PAGE_OUT_OF_RANGE', 'PAGES_INVALID', 'PDF_UNREADABLE', 'FIND_NOT_FOUND', 'FIND_INVALID', 'SPAN_INVALID'].includes(code) ? 422 : 502, code);
     }
+    const pageNums = Object.keys(r.pages).map((f) => Number(/^p(\d+)\.png$/.exec(f)[1])).sort((x, y) => x - y);
+    for (const n of pageNums) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
+    const range = pageNums.length ? `${pageNums[0]}-${pageNums[pageNums.length - 1]}` : '';
+    if (r.excerpt && range) await env.STORE.put(`fig/pgpdf/${sha}/${range}`, r.excerpt);
     const base = env.PUBLIC_BASE_URL ?? '';
     const pages = pageNums.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` }));
-    const range = pageNums.length ? `${pageNums[0]}-${pageNums[pageNums.length - 1]}` : '';
-    // ChatGPTは外部の画像を回答に表示しないので、同じページを抜き出したPDFをファイルとして渡す（openaiFileResponse）
+    // ChatGPTは外部の画像を回答に表示しないので、図だけを切り出したPDFをファイルとして渡す（openaiFileResponse）。AI側のPythonで画像にする
     const fileUrl = `${base}/v1/pagepdf/${sha}/${range}.pdf`;
-    const notice = `公式PDFの${pageNums[0]}〜${pageNums[pageNums.length - 1]}ページを、ファイル（PDF）で付けました。チャットに出たファイルをタップすると、公式の図と表をそのまま見られます。`;
-    return json(200, { pageCount, matchedPage, pages, fileUrl, notice, openaiFileResponse: [fileUrl] });
+    const figureCount = r.figures.length;
+    const notice = figureCount
+      ? '公式PDFから問題の図を切り出して、ファイル（PDF）で付けました。チャットに出たファイルをタップすると、公式の図をそのまま見られます。'
+      : `公式PDFの${pageNums[0]}〜${pageNums[pageNums.length - 1]}ページを、ファイル（PDF）で付けました。チャットに出たファイルをタップすると、公式のページをそのまま見られます。`;
+    return json(200, {
+      pageCount: r.pageCount ?? null,
+      matchedPage: r.matchedPage,
+      pages,
+      tables: tablesMarkdown(r.tables),
+      figureCount,
+      fileUrl,
+      notice,
+      openaiFileResponse: [fileUrl],
+    });
   }
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {

@@ -123,7 +123,7 @@ export const TOOLS = [
   },
   {
     name: 'renderPdfPages',
-    description: '公式PDFのページを画像にして返す（エンジンが対応していない資格の図や表を見せるため）。find に見出し（例：第11問）を渡すと、その見出しのあるページから span ページ分（既定2）を返す。find を使わないときは pages（PDFの先頭を1ページ目とした番号、最大4つ）。',
+    description: '公式PDFのページを画像にして返し、表を文字で読み取って tables（マークダウン）で返す（エンジンが対応していない資格の図や表を見せるため）。tables は問題文のあとにそのまま表示する。find に見出し（例：第11問）を渡すと、その見出しのあるページから span ページ分（既定2）を返す。find を使わないときは pages（PDFの先頭を1ページ目とした番号、最大4つ）。',
     inputSchema: {
       type: 'object',
       required: ['url'],
