@@ -165,6 +165,10 @@ async function saveSession(env, id, state, now) {
 
 /** 利用者に見せる取り込みの状況（URLとSHAは経路Aでアプリが分解するときに使う）。 */
 /** 公式PDFから読み取った表を、そのまま表示できるマークダウンにする（見出しの文があれば表の前に置く）。 */
+// 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
+const SHOW_TEXT = 'display を1文字も変えずに本文に出す。選択肢を書き換えない。';
+const SHOW_WITH_FIGURE = 'display を1文字も変えずに本文に出す。svg タグの図は公式PDFの図なので、コードブロックに入れず省略せずそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索で探して出さない。選択肢を書き換えない。';
+
 export function tablesMarkdown(tables) {
   if (!Array.isArray(tables) || !tables.length) return null;
   const cell = (v) => String(v ?? '').replace(/\|/g, '｜').replace(/\s+/g, ' ').trim() || '　';
@@ -260,7 +264,8 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
     return bytes ? new TextDecoder().decode(bytes) : null;
   }));
   const figures = shown.figures.map(({ svgFile, ...f }) => f); // eslint-disable-line no-unused-vars
-  const question = { ...shown, figures, display: questionDisplay(shown, svgs), fieldName: fid ? names[fid] ?? null : null };
+  const display = questionDisplay(shown, svgs);
+  const question = { ...shown, figures, display, howToShow: display.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName: fid ? names[fid] ?? null : null };
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
