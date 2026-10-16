@@ -255,6 +255,7 @@ test('見出し（find）でページを探して画像にする。見つから�
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.matchedPage, 14);
   assert.deepEqual(r.body.pages.map((p) => p.page), [14, 15]);
+  assert.equal(r.body.markdown, `![公式PDF 14ページ](${r.body.pages[0].url})\n\n![公式PDF 15ページ](${r.body.pages[1].url})`);
   assert.equal((await call(env, 'GET', new URL(r.body.pages[0].url).pathname, undefined, null)).status, 200);
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第99問' })).status, 422);
 });

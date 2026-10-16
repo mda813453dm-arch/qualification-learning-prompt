@@ -376,7 +376,10 @@ async function route(request, env, url, now) {
       if (byFind) pageNums = nums;
     }
     const base = env.PUBLIC_BASE_URL ?? '';
-    return json(200, { pageCount, matchedPage, pages: pageNums.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` })) });
+    const pages = pageNums.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` }));
+    // GPTが自分で画像を探さないよう、そのまま貼れる表示用の文を返す
+    const markdown = pages.map((p) => `![公式PDF ${p.page}ページ](${p.url})`).join('\n\n');
+    return json(200, { pageCount, matchedPage, pages, markdown });
   }
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
