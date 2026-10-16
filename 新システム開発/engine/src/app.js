@@ -14,7 +14,7 @@ import { CATALOG } from './catalog.js';
 import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { availablePackets, grade, jstToday, newState, pickNext, pin, present, questionDisplay } from './engine.js';
+import { availablePackets, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -166,8 +166,9 @@ async function saveSession(env, id, state, now) {
 /** 利用者に見せる取り込みの状況（URLとSHAは経路Aでアプリが分解するときに使う）。 */
 /** 公式PDFから読み取った表を、そのまま表示できるマークダウンにする（見出しの文があれば表の前に置く）。 */
 // 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
-const SHOW_TEXT = 'display を1文字も変えずに本文に出す。選択肢を書き換えない。';
-const SHOW_WITH_FIGURE = 'display を1文字も変えずに本文に出す。svg タグの図は公式PDFの図なので、コードブロックに入れず省略せずそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索で探して出さない。選択肢を書き換えない。';
+const SHOW_COMMON = 'question.screen を1文字も変えずに、そのまま回答の本文として出す（見出し・問題文・図・選択肢・問題PDF・答え方が、この順で入っている。前後に説明を足さない）。選択肢を書き換えない。renderPdfPages は呼ばない。利用者が「スキップ」と答えたら、submitAnswer の value に「スキップ」を送る。';
+const SHOW_TEXT = SHOW_COMMON;
+const SHOW_WITH_FIGURE = `${SHOW_COMMON}svg タグの図は公式PDFの図なので、コードブロックに入れず省略せずそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索・Pythonで出さない。`;
 
 export function tablesMarkdown(tables) {
   if (!Array.isArray(tables) || !tables.length) return null;
@@ -239,6 +240,13 @@ async function progress(env, qid, now) {
   return withNotice(job, now);
 }
 
+const sourceKey = (urlSha) => `srcurl/${urlSha}`;
+
+/** エンジンが取り込む公式の問題PDFのURLを控える（renderPdfPages で別に出させないため）。 */
+async function markEngineSources(env, sources) {
+  for (const s of sources) await env.STORE.put(sourceKey(await sha256Hex(new TextEncoder().encode(s.questionUrl))), '1');
+}
+
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   let state = state0;
@@ -263,12 +271,15 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
     const bytes = await readFigure(env.STORE, pick.item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
     return bytes ? new TextDecoder().decode(bytes) : null;
   }));
-  const figures = shown.figures.map(({ svgFile, ...f }) => f); // eslint-disable-line no-unused-vars
+  // 本文に入れたSVGの図は画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
+  const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] ? f : { url, ...f })); // eslint-disable-line no-unused-vars
   const display = questionDisplay(shown, svgs);
-  const question = { ...shown, figures, display, howToShow: display.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName: fid ? names[fid] ?? null : null };
+  const fieldName = fid ? names[fid] ?? null : null;
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
+  const screen = questionScreen(shown, display, { fieldName, fieldNotice });
+  const question = { ...shown, figures, display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
   return { status: 'question', repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
 }
 
@@ -363,6 +374,7 @@ async function route(request, env, url, now) {
     const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
     const sources = checkSources(b.sources, b.qualificationId, learnerId);
     await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
+    await markEngineSources(env, sources);
     const job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
@@ -441,6 +453,11 @@ async function route(request, env, url, now) {
           const right = graded.filter((h) => h.result !== 'wrong').length;
           input = { ...b, results: { ...(b.results ?? {}), practiceCorrect: right, practiceWrong: graded.length - right } };
         }
+        const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
+        if (skipped.length) {
+          const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
+          input = { ...input, results: { ...(input.results ?? {}), skipped: skipped.length, skippedDetail: detail } };
+        }
       } catch {
         engineHandoff = null;
       }
@@ -463,6 +480,10 @@ async function route(request, env, url, now) {
       if (b.span !== undefined && (!Number.isInteger(b.span) || b.span < 1 || b.span > 4)) throw new HttpError(400, 'SPAN_INVALID');
     } else if (!Array.isArray(b.pages) || b.pages.length < 1 || b.pages.length > 4 || b.pages.some((n) => !Number.isInteger(n) || n < 1 || n > 1000)) {
       throw new HttpError(400, 'PAGES_INVALID');
+    }
+    // エンジンが出題する資格の公式PDFは、ここでページを出さない（AIが出題の表示を飛ばして、ページ全体の画像を出さないように）
+    if (await env.STORE.get(sourceKey(await sha256Hex(new TextEncoder().encode(b.url))))) {
+      throw new HttpError(409, 'ENGINE_QUESTION', 'この問題はエンジンが出題します。renderPdfPages は使わず、nextQuestion（または submitAnswer の next）の question.screen をそのまま出してください。');
     }
     if (!env.PARSER_URL) throw new HttpError(503, 'PAGE_IMAGES_UNAVAILABLE');
     let bytes;
@@ -512,7 +533,9 @@ async function route(request, env, url, now) {
     let job = null;
     if (b.sources) {
       const persistent = !!state.learnerId;
-      await startJob(env.STORE, sessionJobId(state), checkSources(b.sources, state.qualificationId, state.learnerId), now, { persistent });
+      const sources = checkSources(b.sources, state.qualificationId, state.learnerId);
+      await startJob(env.STORE, sessionJobId(state), sources, now, { persistent });
+      await markEngineSources(env, sources);
     }
     if (state.learnerId || b.sources) job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();

@@ -57,7 +57,7 @@ jobs:
               if n.get("status") != "question":
                   print(json.dumps(n, ensure_ascii=False)[:500]); break
               q = n["question"]
-              d = q.get("display") or ""
+              d = q.get("screen") or ""
               svgs = re.findall(r"<svg.*?</svg>", d, re.S)
               print(f"  問{q['questionNumber']} 図{len(q['figures'])} SVG{len(svgs)} 表示{len(d)}字")
               open(f"out/q{q['questionNumber']}-display.md", "w").write(d)
@@ -66,19 +66,24 @@ jobs:
                   vb = [float(x) for x in re.search(r'viewBox="([^"]+)"', svg).group(1).split()]
                   fixed = svg.replace('width="100%"', f'width="{vb[2]*2}" height="{vb[3]*2}"', 1)
                   fitz.open(stream=fixed.encode(), filetype="svg")[0].get_pixmap(dpi=72).save(f"out/q{q['questionNumber']}-svg{j+1}.png")
-              assert d, "display が無い"
+              assert d.startswith("📍") or d.startswith("■"), "screen が無い"
               if q["figures"]:
                   figs += 1
               seen.append(q["questionNumber"])
               if len(seen) >= 28 or figs >= 3:
                   break
               # ChatGPTが書き崩した番号で送っても採点される
-              code, a, _ = call("POST", f"/v1/sessions/{sid}/answer", {"questionId": f"{q['year']}年 問{q['questionNumber']}", "value": 1})
+              code, a, _ = call("POST", f"/v1/sessions/{sid}/answer", {"questionId": f"{q['year']}年 問{q['questionNumber']}", "value": "スキップ" if len(seen) == 1 else 1})
               assert code == 200, a
+              assert a["next"].get("question", {}).get("questionId") != q["questionId"], "次の問に進まない"
+              if len(seen) == 1: assert a["grade"].get("skipped"), a["grade"]
           assert figs, "図のある問が出なかった"
           code, e, _ = call("POST", f"/v1/study/{lid}/end", {"sessionId": sid})
           assert code == 200, e
           print(e["display"][:600])
+          assert "スキップ1問" in e["display"], "スキップが終了ログに出ない"
+          code, g, _ = call("POST", "/v1/pdf-pages", {"url": src[0]["questionUrl"], "find": "No. 26"})
+          assert code == 409 and g.get("error") == "ENGINE_QUESTION", (code, g)
           print("OK", seen)
           PY
       - name: 結果を gpt-smoke ブランチに置く

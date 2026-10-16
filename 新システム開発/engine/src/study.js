@@ -152,7 +152,7 @@ export function chooseField({ order, stats = {}, sets = {}, candidates }) {
 
 /** まだ解いていない問（引継ぎで止めた問は除く）。 */
 function freshIn(state, items, fieldId, exclude = new Set()) {
-  const withheld = new Set((state.withheld ?? []).map((w) => w.questionId));
+  const withheld = new Set([...(state.withheld ?? []), ...(state.skipped ?? [])].map((w) => w.questionId));
   return items.filter((x) => x.packet.fieldId === fieldId && !state.history[x.packet.questionId] && !withheld.has(x.packet.questionId) && !exclude.has(x.packet.questionId));
 }
 

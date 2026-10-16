@@ -122,11 +122,9 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   const n2 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
   assert.equal(n2.questionNumber, 2, '採点済みの問は出し直さず次へ進む');
   assert.equal(n2.figures.length, 1);
-  // 図はトークン無しで取れる
-  const fig = await call(env, 'GET', new URL(n2.figures[0].url, 'https://engine.example').pathname, undefined, null);
-  assert.equal(fig.status, 200);
-  assert.equal(fig.type, 'image/png');
-  assert.deepEqual(fig.body, PNG);  // 表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題と同じ形
+  // 本文に入れたSVGの図は、画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
+  assert.equal(n2.figures[0].url, undefined);
+  // 表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題と同じ形
   assert.equal(n2.display, `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.equal(n2.figures[0].svgFile, undefined);
   assert.equal(q.display, '問1の本文\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五');
@@ -372,4 +370,27 @@ test('取り込み中は、進み具合の棒と残り時間の目安を返す�
   assert.notEqual(r.body.next.question?.questionId, q.questionId, '採点した問は次に出さない');
   const again = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
   assert.notEqual(again.question?.questionId, q.questionId);
+});
+
+test('出題の画面は見出しから答え方までそろっており、「スキップ」で成績に数えず次の問へ進む', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const q = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  assert.match(q.screen, /^(📍.+\n)?■\d{4}年度 問1\n\n問1の本文\n\n1　一[\s\S]*問題PDF：\[公式の問題PDF[^\]]*\]\(https:[^)]+\)\n\n[\s\S]*飛ばすときは「スキップ」と入力してください。$/);
+  assert.match(q.howToShow, /question\.screen/);
+  const r = (await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: 'スキップ' })).body;
+  assert.equal(r.grade.skipped, true);
+  assert.equal(r.grade.correctAnswer, undefined, 'スキップでは正答を見せない');
+  assert.notEqual(r.next.question.questionId, q.questionId);
+  const again = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  assert.notEqual(again.questionId, q.questionId, 'スキップした問は今回の学習では出し直さない');
+});
+
+test('エンジンが出題する資格の公式PDFは、renderPdfPages でページを出さない', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  await startSession(env);
+  const r = await call(env, 'POST', '/v1/pdf-pages', { url: 'https://example.go.jp/q.pdf', find: '問26' });
+  assert.equal(r.status, 409);
+  assert.equal(r.body.error, 'ENGINE_QUESTION');
+  assert.match(r.body.hint, /question\.screen/);
 });

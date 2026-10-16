@@ -64,7 +64,7 @@ function fieldCountsOf(items) {
  * 返り値 {status, question?, notice?}。status: question | waiting | finished
  */
 export function pickNext(state, items, { today, job }) {
-  const withheld = new Set(state.withheld.map((w) => w.questionId));
+  const withheld = new Set([...state.withheld.map((w) => w.questionId), ...(state.skipped ?? []).map((x) => x.questionId)]);
   const usable = items.filter((x) => !withheld.has(x.packet.questionId));
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
   const due = selectDueReviews({ today, items: Object.values(state.review), sessionStart: true });
@@ -115,6 +115,23 @@ export function questionDisplay(q, svgs) {
   const figs = q.figures.map((f, i) => svgs[i] ?? `（図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、こちらで見てください：${f.url}）`);
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
   return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
+}
+
+export const ANSWER_PROMPT = '番号で答えてください。勘で選んだときは「勘」と添えてください。飛ばすときは「スキップ」と入力してください。';
+
+/** 出題の画面の全文：分野の変更 → 見出し → display → 問題PDF → 注意 → 答え方。AIはこれだけをそのまま出す。 */
+export function questionScreen(q, display, { fieldName = null, fieldNotice = null } = {}) {
+  const page = q.questionPdfPages?.[0];
+  const link = q.questionPdfUrl ? `問題PDF：[公式の問題PDF${page ? `（${page}ページ）` : ''}](${q.questionPdfUrl}${page ? `#page=${page}` : ''})` : null;
+  const head = `■${q.year}年度 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : ''}`;
+  return [
+    fieldNotice ? `**${fieldNotice}**` : null,
+    fieldName ? `📍${fieldName}\n${head}` : head,
+    display,
+    link,
+    ...(q.notices ?? []),
+    ANSWER_PROMPT,
+  ].filter(Boolean).join('\n\n');
 }
 
 /** AIに渡す形。正答は入れない。図は保存先のURLにする。 */
@@ -205,6 +222,20 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   if (questionId !== cur.questionId && !sameQuestion(questionId, cur.questionId)) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
   questionId = cur.questionId; // 書き崩した番号で届いても、記録は出題中の問の番号で残す
   if (cur.grade) return { ok: true, state, grade: { ...cur.grade, alreadyGraded: true } };
+  // 「スキップ」：採点せず、成績にも数えず、次の問へ進む（今回の学習ではもう出さない）
+  if (/^(skip|スキップ|ｽｷｯﾌﾟ)$/i.test(String(value ?? '').trim())) {
+    const g = { questionId, skipped: true };
+    return {
+      ok: true,
+      grade: g,
+      state: {
+        ...state,
+        current: { ...cur, grade: g },
+        lastGrade: g,
+        skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, questionNumber: cur.source?.number ?? null }],
+      },
+    };
+  }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
   const correct = n === cur.correctAnswer;
