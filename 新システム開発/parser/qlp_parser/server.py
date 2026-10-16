@@ -144,6 +144,25 @@ def _clean_cell(v):
     return " ".join((v or "").translate(_HALF).split())
 
 
+INK = 160  # これより暗い画素を「描かれている」とみなす（薄い汚れや地紋は無視する）
+
+
+def _ink_box(page, box):
+    """図の範囲を、実際に線や文字が描かれている部分まで縮める（白い余白を除き、図を大きく見せるため）。"""
+    import fitz
+
+    pix = page.get_pixmap(clip=box, matrix=fitz.Matrix(2, 2), colorspace=fitz.csGRAY, alpha=False)
+    w, h, data = pix.width, pix.height, pix.samples
+    if not w or not h:
+        return box
+    rows = [y for y in range(h) if min(data[y * w:(y + 1) * w]) < INK]
+    cols = [x for x in range(w) if min(data[x::w]) < INK]
+    if not rows or not cols:
+        return box
+    tight = fitz.Rect(box.x0 + cols[0] / 2, box.y0 + rows[0] / 2, box.x0 + (cols[-1] + 1) / 2, box.y0 + (rows[-1] + 1) / 2)
+    return (tight + (-FIG_MARGIN, -FIG_MARGIN, FIG_MARGIN, FIG_MARGIN)) & box
+
+
 def page_layout(doc, nums):
     """ページの表（行と列の文字）と、図（線や画像のまとまり）の位置を返す。
 
@@ -207,7 +226,7 @@ def page_layout(doc, nums):
                 br = fitz.Rect(b[:4])
                 if len(b[4].strip()) <= 4 and (c + (-10, -10, 10, 10)).intersects(br):
                     c |= br
-            box = (c + (-FIG_MARGIN, -FIG_MARGIN, FIG_MARGIN, FIG_MARGIN)) & prect
+            box = _ink_box(page, (c + (-FIG_MARGIN, -FIG_MARGIN, FIG_MARGIN, FIG_MARGIN)) & prect)
             figures.append({"page": n, "bbox": [round(v, 1) for v in box]})
     return tables, figures
 
