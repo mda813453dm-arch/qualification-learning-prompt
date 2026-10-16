@@ -24,7 +24,7 @@ import { sha256Hex } from './store.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
-import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, studyKey, timeKey, validLearnerId } from './study-log.js';
+import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId } from './study-log.js';
 
 export const DEFAULT_PARSER_VERSION = '0.5.0';
 const MAX_SOURCES = 40;
@@ -370,6 +370,7 @@ async function route(request, env, url, now) {
     const study = newStudy({ qualificationName: b.qualificationName, learnerId, now });
     const studyId = crypto.randomUUID();
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
+    await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     const total = (await env.STORE.get(timeKey(learnerId), 'json'))?.minutes ?? 0;
     const t = jst(now);
     return json(201, {
@@ -385,9 +386,12 @@ async function route(request, env, url, now) {
 
   // 学習の終了：終了時刻・今回の時間・累計をエンジンが確定し、終了ログと引継ぎデータの全文を返す
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'study' && parts[3] === 'end' && parts.length === 4) {
-    if (!/^[0-9a-f-]{36}$/.test(parts[2])) throw new HttpError(404, 'STUDY_NOT_FOUND');
+    // studyId の代わりに引継ぎIDが来たときは、その引継ぎIDで最後に始めた学習を終える
+    const lid = validLearnerId(parts[2]);
+    const studyId = lid ? await env.STORE.get(lastStudyKey(lid)) : parts[2];
+    if (!/^[0-9a-f-]{36}$/.test(studyId ?? '')) throw new HttpError(404, 'STUDY_NOT_FOUND');
     const b = await body(request);
-    const study = await env.STORE.get(studyKey(parts[2]), 'json');
+    const study = await env.STORE.get(studyKey(studyId), 'json');
     if (!study) throw new HttpError(404, 'STUDY_NOT_FOUND');
     const saved = (await env.STORE.get(timeKey(study.learnerId), 'json')) ?? { minutes: 0, studies: [] };
     // 同じ学習を二度終了しても累計を二重に足さない
@@ -402,7 +406,7 @@ async function route(request, env, url, now) {
     }
     const r = finishStudy(study, before, b, now, engineHandoff);
     if (study.endedAt == null) {
-      await env.STORE.put(studyKey(parts[2]), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
+      await env.STORE.put(studyKey(studyId), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
       await env.STORE.put(timeKey(study.learnerId), JSON.stringify({ minutes: r.total, updatedAt: now }));
     }
     return json(200, { minutes: r.minutes, totalMinutes: r.total, log: r.log, handoff: r.handoff, display: r.display });

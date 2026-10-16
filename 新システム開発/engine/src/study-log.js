@@ -10,6 +10,8 @@ const STUDY_TTL_S = 7 * 24 * 60 * 60;
 
 export const studyKey = (id) => `study/${id}`;
 export const timeKey = (lid) => `lrntime/${lid}`;
+// 引継ぎIDごとの、最後に始めた学習（AIが studyId を忘れて引継ぎIDで終了を呼んでも終われるように）
+export const lastStudyKey = (lid) => `lrnstudy/${lid}`;
 export const validLearnerId = (v) => (typeof v === 'string' && LID.test(v.trim()) ? v.trim() : null);
 
 /** JSTの「YYYY-MM-DD」と「HH:MM」。 */

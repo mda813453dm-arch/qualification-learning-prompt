@@ -311,4 +311,13 @@ test('学習の開始と終了：時刻はエンジンが取り、累計は引�
   assert.equal(e2.body.totalMinutes, 85);
   assert.match(e2.body.display, /📊 累計学習時間：1時間25分/);
   assert.equal((await call(env, 'POST', '/v1/study/00000000-0000-0000-0000-000000000000/end', {})).status, 404);
+  // AIが studyId の代わりに引継ぎIDを渡しても、その引継ぎIDの最後の学習を終える
+  const s3 = await call(env, 'POST', '/v1/study/start', { learnerId: s.body.learnerId });
+  env.now += 10 * 60 * 1000;
+  const e3 = await call(env, 'POST', `/v1/study/${s.body.learnerId}/end`, {});
+  assert.equal(e3.status, 200, JSON.stringify(e3.body));
+  assert.equal(e3.body.minutes, 10);
+  assert.equal(e3.body.totalMinutes, 95);
+  assert.ok(s3.body.studyId);
+  assert.equal((await call(env, 'POST', '/v1/study/zzzzzzzzzz/end', {})).status, 404);
 });
