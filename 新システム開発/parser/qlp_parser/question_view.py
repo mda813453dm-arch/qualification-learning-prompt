@@ -121,7 +121,9 @@ def figure_svg(page, box):
     if raster:
         # 画像で入っている図は、範囲全体を線に直す（線・文字と画像が重なっても一つの絵になる）
         traced = _trace(page, box)
-        return head + parts[0] + traced + "</svg>" if traced else None
+        if traced:
+            return head + parts[0] + traced + "</svg>"
+        # 線に直せないときも、PDFの線と文字だけで図を出す（図を出さないよりよい）
     for d in page.get_drawings():
         if not fitz.Rect(d["rect"]).intersects(box + (-1, -1, 1, 1)):
             continue
@@ -149,6 +151,37 @@ def figure_svg(page, box):
                 fill = _color(((sp["color"] >> 16) / 255, ((sp["color"] >> 8) & 255) / 255, (sp["color"] & 255) / 255))
                 parts.append(f'<text x="{_num(x)}" y="{_num(y)}" font-size="{_num(sp["size"])}" fill="{fill}"{mode}>{text}</text>')
     return head + "".join(p for p in parts if p) + "</svg>"
+
+
+APPENDIX = re.compile(r"^(付録|附録|参考|別表|関数表|三角関数|解答用紙|答案用紙)")
+
+
+def _body_blocks(page):
+    """ページ番号を除いた、文として読める塊（上から順）。"""
+    out = []
+    for b in sorted(page.get_text("blocks"), key=lambda b: (b[1], b[0])):
+        text = CTRL.sub("", b[4]).strip()
+        if text and not PAGE_NO.match(_norm(text)):
+            out.append(_norm(text))
+    return out
+
+
+def question_pages(doc, nums, find):
+    """見出しのページから、その問が続くページだけを返す（取得するページと、問に属するページを分ける）。
+
+    次の問の見出しで始まるページ、文の無いページ（線で描かれた関数表などの付録）、
+    付録の見出しで始まるページの手前で止める。
+    """
+    key = _norm(find)
+    keep = nums[:1]
+    for n in nums[1:]:
+        blocks = _body_blocks(doc[n - 1])
+        if not blocks or APPENDIX.match(blocks[0]):
+            break
+        if HEAD.match(blocks[0]) and blocks[0].startswith("第") and not blocks[0].startswith(key):
+            break
+        keep.append(n)
+    return keep
 
 
 def _table_md(t):

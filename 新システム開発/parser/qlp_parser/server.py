@@ -105,6 +105,9 @@ def render_pages(body):
         if first is None:
             raise BadRequest("FIND_NOT_FOUND")
         nums = list(range(first, min(count, first + span - 1) + 1))
+        from .question_view import question_pages
+
+        nums = question_pages(doc, nums, find)  # 次の問や付録（関数表など）のページは返さない
         matched = first
     elif not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
         raise BadRequest("PAGES_INVALID")

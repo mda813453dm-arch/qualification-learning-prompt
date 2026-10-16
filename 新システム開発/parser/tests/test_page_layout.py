@@ -79,6 +79,18 @@ class PageLayout(unittest.TestCase):
         self.assertEqual(len(r["tables"]), 2)
         self.assertEqual(sorted(r["pages"]), ["p1.png", "p2.png"])
 
+    def test_appendix_page_is_not_part_of_question(self):
+        # 最後の問の次のページにある、線だけで描かれた付録（関数表など）は返さない
+        doc = fitz.open(stream=self.pdf, filetype="pdf")
+        p3 = doc.new_page(width=595, height=842)
+        for i in range(40):
+            p3.draw_line((70, 80 + i * 17), (530, 80 + i * 17), color=(0, 0, 0), width=0.5)
+        p3.insert_text((298, 785), "─（13）─", fontname=FONT, fontsize=10)
+        r = render_pages({"pdf": {"base64": base64.b64encode(doc.tobytes()).decode()}, "find": "第11問", "span": 3})
+        self.assertEqual(sorted(r["pages"]), ["p1.png", "p2.png"])
+        self.assertEqual([f["page"] for f in r["figures"]], [2])
+        self.assertTrue(r["display"])
+
     def test_no_figure_keeps_whole_pages(self):
         r = render_pages({"pdf": {"base64": base64.b64encode(self.pdf).decode()}, "pages": [1]})
         ex = fitz.open(stream=base64.b64decode(r["excerpt"]), filetype="pdf")
