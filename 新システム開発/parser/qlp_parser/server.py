@@ -108,12 +108,16 @@ def render_pages(body):
     elif not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
         raise BadRequest("PAGES_INVALID")
     out = {}
+    excerpt = fitz.open()
     for n in sorted(set(nums)):
         if n > count:
             raise BadRequest("PAGE_OUT_OF_RANGE")
         pix = doc[n - 1].get_pixmap(matrix=fitz.Matrix(PAGE_ZOOM, PAGE_ZOOM), alpha=False)
         out[f"p{n}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
-    return {"pageCount": count, "matchedPage": matched, "pages": out}
+        excerpt.insert_pdf(doc, from_page=n - 1, to_page=n - 1)
+    # 同じページだけを抜き出したPDF（ChatGPTは外部の画像を表示しないため、ファイルとして渡す）
+    pdf_b64 = base64.b64encode(excerpt.tobytes(garbage=3, deflate=True)).decode("ascii")
+    return {"pageCount": count, "matchedPage": matched, "pages": out, "excerpt": pdf_b64}
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -222,7 +222,7 @@ test('未対応の資格でも、公式PDFの指定ページを画像にして�
     const b = JSON.parse(init.body);
     renders += 1;
     const pages = Object.fromEntries(b.pages.map((n) => [`p${n}.png`, btoa(String.fromCharCode(...PNG))]));
-    return new Response(JSON.stringify({ pageCount: 20, pages }));
+    return new Response(JSON.stringify({ pageCount: 20, pages, excerpt: btoa('%PDF-excerpt') }));
   };
   const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [12, 11] });
   assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -230,7 +230,7 @@ test('未対応の資格でも、公式PDFの指定ページを画像にして�
   const img = await call(env, 'GET', new URL(r.body.pages[1].url).pathname, undefined, null);
   assert.equal(img.status, 200);
   assert.equal(img.type, 'image/png');
-  const again = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [12] });
+  const again = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, pages: [11, 12] });
   assert.equal(again.status, 200);
   assert.equal(renders, 1);
   // 入力の検査と認証
@@ -249,13 +249,21 @@ test('見出し（find）でページを探して画像にする。見つから�
     if (b.find !== '第11問') return new Response(JSON.stringify({ error: 'FIND_NOT_FOUND' }), { status: 400 });
     assert.equal(b.span, 2);
     const png = btoa(String.fromCharCode(...PNG));
-    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png } }));
+    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png }, excerpt: btoa('%PDF-excerpt') }));
   };
   const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第11問' });
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.matchedPage, 14);
   assert.deepEqual(r.body.pages.map((p) => p.page), [14, 15]);
-  assert.equal(r.body.markdown, `![公式PDF 14ページ](${r.body.pages[0].url})\n\n![公式PDF 15ページ](${r.body.pages[1].url})`);
+  // ChatGPTは外部の画像を表示しないので、同じページのPDFをファイルとして返す
+  assert.deepEqual(r.body.openaiFileResponse, ['https://engine.example/v1/pagepdf/' + r.body.fileUrl.split('/v1/pagepdf/')[1]]);
+  assert.match(r.body.fileUrl, /\/14-15\.pdf$/);
+  assert.match(r.body.notice, /14〜15ページ/);
+  const file = await handle(new Request('https://engine.example' + new URL(r.body.fileUrl).pathname), env);
+  assert.equal(file.status, 200);
+  assert.equal(file.headers.get('content-type'), 'application/pdf');
+  assert.match(file.headers.get('content-disposition'), /attachment; filename="official-pages-14-15\.pdf"/);
+  assert.equal(new TextDecoder().decode(await file.arrayBuffer()), '%PDF-excerpt');
   assert.equal((await call(env, 'GET', new URL(r.body.pages[0].url).pathname, undefined, null)).status, 200);
   assert.equal((await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第99問' })).status, 422);
 });

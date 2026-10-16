@@ -114,5 +114,14 @@ export async function renderPages({ endpoint, token, fetch: doFetch = fetch, byt
   }
   if (!res.ok) throw new IngestError('PARSER_FAILED', { status: res.status });
   const v = await res.json();
-  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages) };
+  let excerpt = null;
+  if (typeof v?.excerpt === 'string') {
+    try {
+      excerpt = fromBase64(v.excerpt);
+    } catch {
+      excerpt = null;
+    }
+    if (excerpt && (excerpt.length > 20 * 1024 * 1024 || String.fromCharCode(...excerpt.subarray(0, 5)) !== '%PDF-')) excerpt = null;
+  }
+  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt };
 }

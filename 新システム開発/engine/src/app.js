@@ -255,9 +255,20 @@ async function route(request, env, url, now) {
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
   }
 
+  // 公式PDFから問題のページだけを抜き出したPDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'pagepdf' && parts.length === 4) {
+    const sha = decodeURIComponent(parts[2]);
+    const m = /^(\d{1,4})-(\d{1,4})\.pdf$/.exec(decodeURIComponent(parts[3]));
+    if (!/^[a-f0-9]{64}$/.test(sha) || !m) throw new HttpError(404, 'PAGE_PDF_NOT_FOUND');
+    const bytes = await env.STORE.get(`fig/pgpdf/${sha}/${m[1]}-${m[2]}`, 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'PAGE_PDF_NOT_FOUND');
+    const name = `official-pages-${m[1]}-${m[2]}.pdf`;
+    return new Response(bytes, { headers: { 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'public, max-age=3600' } });
+  }
+
   // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
   if (method === 'GET' && url.pathname === '/robots.txt') {
-    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nAllow: /v1/pageimg\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nAllow: /v1/pageimg\nAllow: /v1/pagepdf\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
   }
 
   // GPT の公開に必要なプライバシーポリシー（個人情報を集めていない内容を、ありのまま書く）
@@ -406,13 +417,16 @@ async function route(request, env, url, now) {
     const want = byFind ? [] : [...new Set(b.pages)].sort((x, y) => x - y);
     const missing = byFind ? null : [];
     if (!byFind) for (const n of want) if (!(await env.STORE.get(`pgimg/${sha}/${n}`, 'arrayBuffer'))) missing.push(n);
+    const pdfKey = (nums) => `fig/pgpdf/${sha}/${nums[0]}-${nums[nums.length - 1]}`;
+    const needPdf = !byFind && !missing.length && !(await env.STORE.get(pdfKey(want), 'arrayBuffer'));
     let pageCount = null;
     let matchedPage = null;
     let pageNums = want;
-    if (byFind || missing.length) {
+    let excerpt = null;
+    if (byFind || missing.length || needPdf) {
       let r;
       try {
-        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, ...(byFind ? { find: b.find, span: b.span ?? 2 } : { pages: missing }) });
+        r = await renderPages({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch, bytes, ...(byFind ? { find: b.find, span: b.span ?? 2 } : { pages: want }) });
       } catch (e) {
         const code = e instanceof IngestError ? e.code : 'PAGE_RENDER_FAILED';
         throw new HttpError(['PAGE_OUT_OF_RANGE', 'PAGES_INVALID', 'PDF_UNREADABLE', 'FIND_NOT_FOUND', 'FIND_INVALID', 'SPAN_INVALID'].includes(code) ? 422 : 502, code);
@@ -422,12 +436,16 @@ async function route(request, env, url, now) {
       const nums = Object.keys(r.pages).map((f) => Number(/^p(\d+)\.png$/.exec(f)[1])).sort((x, y) => x - y);
       for (const n of nums) await env.STORE.put(`pgimg/${sha}/${n}`, r.pages[`p${n}.png`], { expirationTtl: 26 * 60 * 60 });
       if (byFind) pageNums = nums;
+      excerpt = r.excerpt;
+      if (excerpt && pageNums.length) await env.STORE.put(pdfKey(pageNums), excerpt);
     }
     const base = env.PUBLIC_BASE_URL ?? '';
     const pages = pageNums.map((n) => ({ page: n, url: `${base}/v1/pageimg/${sha}/p${n}.png` }));
-    // GPTが自分で画像を探さないよう、そのまま貼れる表示用の文を返す
-    const markdown = pages.map((p) => `![公式PDF ${p.page}ページ](${p.url})`).join('\n\n');
-    return json(200, { pageCount, matchedPage, pages, markdown });
+    const range = pageNums.length ? `${pageNums[0]}-${pageNums[pageNums.length - 1]}` : '';
+    // ChatGPTは外部の画像を回答に表示しないので、同じページを抜き出したPDFをファイルとして渡す（openaiFileResponse）
+    const fileUrl = `${base}/v1/pagepdf/${sha}/${range}.pdf`;
+    const notice = `公式PDFの${pageNums[0]}〜${pageNums[pageNums.length - 1]}ページを、ファイル（PDF）で付けました。チャットに出たファイルをタップすると、公式の図と表をそのまま見られます。`;
+    return json(200, { pageCount, matchedPage, pages, fileUrl, notice, openaiFileResponse: [fileUrl] });
   }
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
