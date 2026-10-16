@@ -10,6 +10,7 @@
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.5.0。パーサーの PARSER_VERSION と合わせる）
  */
+import { CATALOG } from './catalog.js';
 import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
@@ -214,10 +215,17 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   if (pick.status !== 'question') {
     return { status: pick.status, notice: job?.notice ?? null, job: jobView(job) };
   }
+  const prevField = state.current?.fieldId ?? null;
   state = pin(state, pick.item, pick.kind, now);
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
   await saveSession(env, id, state, now);
-  return { status: 'question', repeated: !!pick.repeated, question: present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), notice: job?.notice ?? null };
+  const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
+  const fid = pick.item.packet.fieldId ?? null;
+  const question = { ...present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), fieldName: fid ? names[fid] ?? null : null };
+  // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
+  const changed = !pick.repeated && prevField && fid && prevField !== fid;
+  const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
+  return { status: 'question', repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
 }
 
 async function route(request, env, url, now) {

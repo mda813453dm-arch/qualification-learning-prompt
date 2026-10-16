@@ -46,6 +46,7 @@ components:
         year: { type: integer }
         questionNumber: { type: integer }
         stem: { type: string }
+        fieldName: { type: [string, 'null'], description: 分野の名前 }
         stemMode: { type: string, enum: [text, ocr, official_image] }
         choices: { type: array, items: { type: string } }
         figures:
@@ -107,6 +108,8 @@ paths:
                 properties:
                   status: { type: string, enum: [question, waiting, finished] }
                   repeated: { type: boolean }
+                  fieldChanged: { type: boolean, description: 前の問から分野が変わったとき true }
+                  fieldNotice: { type: [string, 'null'], description: 分野が変わるときの案内文。問題の前にそのまま表示する }
                   question: { $ref: '#/components/schemas/Question' }
                   notice: { type: [string, 'null'] }
   /v1/sessions/{sessionId}/answer:
@@ -153,6 +156,8 @@ paths:
                     properties:
                       status: { type: string, enum: [question, waiting, finished] }
                       repeated: { type: boolean }
+                      fieldChanged: { type: boolean, description: 前の問から分野が変わったとき true }
+                      fieldNotice: { type: [string, 'null'], description: 分野が変わるときの案内文。問題の前にそのまま表示する }
                       question: { $ref: '#/components/schemas/Question' }
                       notice: { type: [string, 'null'] }
         '409':
