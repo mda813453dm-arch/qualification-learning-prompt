@@ -27,7 +27,16 @@ export function fromBase64(text) {
 
 const PNG_MAGIC = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 
-/** 図の base64 を PNG のバイト列に戻す。PNG でないもの・大きすぎるものは受け取らない。 */
+const MAX_SVG_BYTES = 60000; // 本文に入れる図。AIが一字一句写せる長さまで
+
+/** 分解サーバーが作った図のSVG（線と白い背景だけ。スクリプトや外部参照は受け取らない）。 */
+function isFigureSvg(bytes) {
+  if (bytes.length > MAX_SVG_BYTES) return false;
+  const t = new TextDecoder().decode(bytes);
+  return t.startsWith('<svg xmlns="http://www.w3.org/2000/svg"') && t.endsWith('</svg>') && !/<script|<foreignObject|href=|\son[a-z]+=/i.test(t);
+}
+
+/** 図の base64 を PNG（本文用の図は SVG）のバイト列に戻す。PNG でないもの・大きすぎるものは受け取らない。 */
 export function decodeAssets(assets) {
   if (assets == null) return {};
   if (typeof assets !== 'object' || Array.isArray(assets)) throw new IngestError('ASSETS_INVALID');
@@ -35,14 +44,18 @@ export function decodeAssets(assets) {
   if (entries.length > MAX_ASSETS) throw new IngestError('ASSETS_INVALID');
   const out = {};
   for (const [file, b64] of entries) {
-    if (!/^[A-Za-z0-9._-]{1,100}\.png$/.test(file) || typeof b64 !== 'string') throw new IngestError('ASSETS_INVALID', { file });
+    if (!/^[A-Za-z0-9._-]{1,100}\.(png|svg)$/.test(file) || typeof b64 !== 'string') throw new IngestError('ASSETS_INVALID', { file });
     let bytes;
     try {
       bytes = fromBase64(b64);
     } catch {
       throw new IngestError('ASSETS_INVALID', { file });
     }
-    if (bytes.length > MAX_ASSET_BYTES || !PNG_MAGIC.every((b, i) => bytes[i] === b)) throw new IngestError('ASSETS_INVALID', { file });
+    if (file.endsWith('.svg')) {
+      if (!isFigureSvg(bytes)) continue; // 本文用の図は無くてもよい（PNGで出す）
+    } else if (bytes.length > MAX_ASSET_BYTES || !PNG_MAGIC.every((b, i) => bytes[i] === b)) {
+      throw new IngestError('ASSETS_INVALID', { file });
+    }
     out[file] = bytes;
   }
   return out;

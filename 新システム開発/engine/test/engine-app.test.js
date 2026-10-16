@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { handle } from '../src/app.js';
 import { httpParser } from '../src/parser-client.js';
-import { DAY, PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
+import { DAY, PNG, SRC, SVG, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'test-token';
 const SOURCE = { adapter: SRC.adapter, year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
@@ -126,7 +126,10 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   const fig = await call(env, 'GET', new URL(n2.figures[0].url, 'https://engine.example').pathname, undefined, null);
   assert.equal(fig.status, 200);
   assert.equal(fig.type, 'image/png');
-  assert.deepEqual(fig.body, PNG);
+  assert.deepEqual(fig.body, PNG);  // 表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題と同じ形
+  assert.equal(n2.display, `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  assert.equal(n2.figures[0].svgFile, undefined);
+  assert.equal(q.display, '問1の本文\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五');
 });
 
 test('間違えた問は翌日の復習で最初に出る', async () => {

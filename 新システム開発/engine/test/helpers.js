@@ -1,7 +1,7 @@
 import { sha256Hex } from '../src/store.js';
 import { toBase64 } from '../src/parser-client.js';
 
-export const PV = '0.5.0';
+export const PV = '0.6.0';
 export const DAY = 24 * 60 * 60 * 1000;
 export const T0 = Date.parse('2026-10-15T01:00:00Z');
 
@@ -29,10 +29,13 @@ export const SRC = {
 };
 
 /** 分解器の偽物：問題数・正答・図を指定して、パーサー出力と同じ形を作る。 */
+export const SVG = new TextEncoder().encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0L10 10"/></svg>');
+
 export async function fakeResult({ src = SRC, qBytes, aBytes, answers = [3, 1, 4], figureOn = [2], fieldIds = null }) {
   const qsha = await sha256Hex(qBytes);
   const asha = await sha256Hex(aBytes);
   const pngSha = await sha256Hex(PNG);
+  const svgSha = await sha256Hex(SVG);
   const packets = answers.map((correctAnswer, i) => {
     const n = i + 1;
     const fig = figureOn.includes(n);
@@ -51,11 +54,11 @@ export async function fakeResult({ src = SRC, qBytes, aBytes, answers = [3, 1, 4
       answerPdfUrl: src.answerUrl,
       questionPdfSha256: qsha,
       answerPdfSha256: asha,
-      figures: fig ? [{ file: `q${n}.png`, sha256: pngSha, width: 10, height: 10 }] : [],
+      figures: fig ? [{ file: `q${n}.png`, sha256: pngSha, width: 10, height: 10, svgFile: `q${n}.svg`, svgSha256: svgSha }] : [],
       evidence: { questionPdfPages: [n] },
     };
   });
-  const assets = Object.fromEntries(figureOn.map((n) => [`q${n}.png`, PNG]));
+  const assets = Object.fromEntries(figureOn.flatMap((n) => [[`q${n}.png`, PNG], [`q${n}.svg`, SVG]]));
   return {
     result: { status: 'ready', parserVersion: PV, qualificationId: src.qualificationId, year: src.year, section: src.section, questionPdfSha256: qsha, answerPdfSha256: asha, packets, excluded: [] },
     assets,

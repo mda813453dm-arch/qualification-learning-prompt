@@ -11,6 +11,7 @@ import unicodedata
 from dataclasses import dataclass, field
 
 from . import PARSER_VERSION
+from .question_view import compact_svg
 
 PDF_MAGIC = b"%PDF-"
 
@@ -136,7 +137,7 @@ def render_crops(doc, raw_questions, file_prefix):
             data = pix.tobytes("png")
             name = f"{file_prefix}-q{q.number}-p{page_no}.png"
             assets[name] = data
-            figures.setdefault(q.number, []).append({
+            fig = {
                 "kind": "official_pdf_crop",
                 "file": name,
                 "page": page_no,
@@ -145,7 +146,16 @@ def render_crops(doc, raw_questions, file_prefix):
                 "width": pix.width,
                 "height": pix.height,
                 "sha256": sha256(data),
-            })
+            }
+            # 同じ範囲を本文に入れられるSVGにもする（ChatGPTは外部の画像を出さないが、本文中のSVGはその位置に出す）
+            svg = compact_svg(page, clip)
+            if svg:
+                svg_bytes = svg.encode("utf-8")
+                svg_name = name[:-4] + ".svg"
+                assets[svg_name] = svg_bytes
+                fig["svgFile"] = svg_name
+                fig["svgSha256"] = sha256(svg_bytes)
+            figures.setdefault(q.number, []).append(fig)
     return figures, assets
 
 

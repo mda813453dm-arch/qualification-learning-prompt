@@ -89,6 +89,13 @@ function packetProblem(src, shas, p, seen, assetSha) {
   if (p.stemMode !== 'official_image' && (typeof p.stem !== 'string' || !p.stem.trim())) return 'STEM_EMPTY';
   const figures = Array.isArray(p.figures) ? p.figures : [];
   if (figures.some((f) => !f?.file || assetSha[f.file] !== f.sha256)) return 'FIGURE_ASSET_MISMATCH';
+  // 本文用のSVGが無い・合わないときは、その図をPNGだけで出す（問題は除外しない）
+  for (const f of figures) {
+    if (f.svgFile != null && assetSha[f.svgFile] !== f.svgSha256) {
+      delete f.svgFile;
+      delete f.svgSha256;
+    }
+  }
   if ((p.stemMode === 'official_image' || p.choiceMode === 'official_image' || p.diagramRequired) && !figures.length) return 'FIGURE_REQUIRED_NOT_AVAILABLE';
   return null;
 }
@@ -134,7 +141,7 @@ export async function ingestSource(src, deps) {
   }
   const result = await validateResult(src, { question: qSha, answer: aSha }, parserVersion, parsed?.result, parsed?.assets);
   if (result.status === 'unavailable') throw new IngestError('NO_USABLE_QUESTION', { excluded: result.excluded });
-  const used = new Set(result.packets.flatMap((p) => (p.figures ?? []).map((f) => f.file)));
+  const used = new Set(result.packets.flatMap((p) => (p.figures ?? []).flatMap((f) => (f.svgFile ? [f.file, f.svgFile] : [f.file]))));
   const assets = Object.fromEntries(Object.entries(parsed.assets ?? {}).filter(([f]) => used.has(f)));
   await writeResult(store, keyParts, result, assets, now);
   return { from: 'parsed', keyParts, result };

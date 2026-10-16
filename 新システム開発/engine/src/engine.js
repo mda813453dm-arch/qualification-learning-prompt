@@ -107,6 +107,16 @@ export function pickNext(state, items, { today, job }) {
   return { status: 'finished' };
 }
 
+/**
+ * 出題の表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題（renderPdfPages の display）と同じ形にそろえ、
+ * AIはこれを一字一句そのまま出す。svgs は図ごとのSVGの文字（無い図は null。その図は画像のURLを示す）。
+ */
+export function questionDisplay(q, svgs) {
+  const figs = q.figures.map((f, i) => svgs[i] ?? `（図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、こちらで見てください：${f.url}）`);
+  const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
+  return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
+}
+
 /** AIに渡す形。正答は入れない。図は保存先のURLにする。 */
 export function present(item, kind, figureBase = '/v1/figure') {
   const p = item.packet;
@@ -127,6 +137,7 @@ export function present(item, kind, figureBase = '/v1/figure') {
       width: f.width,
       height: f.height,
       sha256: f.sha256,
+      ...(f.svgFile ? { svgFile: f.svgFile } : {}),
     })),
     questionPdfUrl: p.questionPdfUrl,
     questionPdfPages: p.evidence?.questionPdfPages ?? [],

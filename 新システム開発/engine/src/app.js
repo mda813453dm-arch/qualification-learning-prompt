@@ -8,13 +8,13 @@
  *   API_TOKEN     AIアプリが付ける Bearer トークン（図の取得だけは不要：画像表示がトークンを付けられないため）
  *   PARSER_URL    経路Bの分解サーバー（Cloud Run）。無ければ経路A（アプリが分解結果を送る）
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
- *   PARSER_VERSION 受け付ける分解結果の版（既定 0.5.0。パーサーの PARSER_VERSION と合わせる）
+ *   PARSER_VERSION 受け付ける分解結果の版（既定 0.6.0。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
 import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { availablePackets, grade, jstToday, newState, pickNext, pin, present } from './engine.js';
+import { availablePackets, grade, jstToday, newState, pickNext, pin, present, questionDisplay } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -26,7 +26,7 @@ import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
 import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId } from './study-log.js';
 
-export const DEFAULT_PARSER_VERSION = '0.5.0';
+export const DEFAULT_PARSER_VERSION = '0.6.0';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;
@@ -237,7 +237,15 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   await saveSession(env, id, state, now);
   const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
   const fid = pick.item.packet.fieldId ?? null;
-  const question = { ...present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`), fieldName: fid ? names[fid] ?? null : null };
+  const shown = present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const { keyParts } = pick.item;
+  const svgs = await Promise.all(shown.figures.map(async (f) => {
+    if (!f.svgFile) return null;
+    const bytes = await readFigure(env.STORE, pick.item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
+    return bytes ? new TextDecoder().decode(bytes) : null;
+  }));
+  const figures = shown.figures.map(({ svgFile, ...f }) => f); // eslint-disable-line no-unused-vars
+  const question = { ...shown, figures, display: questionDisplay(shown, svgs), fieldName: fid ? names[fid] ?? null : null };
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
@@ -256,7 +264,8 @@ async function route(request, env, url, now) {
     if (!/^[a-f0-9]{64}$/.test(qsha)) throw new HttpError(404, 'FIGURE_NOT_FOUND');
     const bytes = await readFigure(env.STORE, qsha, pv, file, own ? decodeURIComponent(parts[3]) : null);
     if (!bytes) throw new HttpError(404, 'FIGURE_NOT_FOUND');
-    return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
+    const type = file.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'public, max-age=3600' } });
   }
 
   // 公式PDFのページ画像（トークン不要。キーにPDFのSHA-256が入るので推測できない）

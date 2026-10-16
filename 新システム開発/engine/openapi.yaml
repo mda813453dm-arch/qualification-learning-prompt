@@ -46,6 +46,7 @@ components:
         year: { type: integer }
         questionNumber: { type: integer }
         stem: { type: string }
+        display: { type: string, description: 問題文・図（本文中のSVG）・選択肢を公式の過去問と同じ順に並べた表示の全文。そのまま出す }
         fieldName: { type: [string, 'null'], description: 分野の名前 }
         stemMode: { type: string, enum: [text, ocr, official_image] }
         choices: { type: array, items: { type: string } }

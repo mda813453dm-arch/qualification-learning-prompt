@@ -681,7 +681,7 @@ class _OcrPage:
             r = _bbox([e for ln in block for e in ln])
             for g in graphics:
                 if g.y1 <= choice_top + 1 and (self.header is None or g.y1 <= _bbox(self.header).y0 + 1):
-                    r.include_rect(g)
+                    r.include_rect(g + (-0.5, -0.5, 0.5, 0.5))  # 縦横の線は幅0の範囲なので、広げてから含める
             self.block = r
         self.stem_lines = stem
         self.choice_content = self._choice_content()

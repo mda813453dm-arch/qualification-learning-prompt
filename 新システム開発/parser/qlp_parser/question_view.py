@@ -125,7 +125,7 @@ def figure_svg(page, box):
             return head + parts[0] + traced + "</svg>"
         # 線に直せないときも、PDFの線と文字だけで図を出す（図を出さないよりよい）
     for d in page.get_drawings():
-        if not fitz.Rect(d["rect"]).intersects(box + (-1, -1, 1, 1)):
+        if not (fitz.Rect(d["rect"]) + (-0.5, -0.5, 0.5, 0.5)).intersects(box + (-1, -1, 1, 1)):  # 縦横の線は幅0なので広げて比べる
             continue
         p = _path(d["items"])
         if not p:
@@ -182,6 +182,28 @@ def question_pages(doc, nums, find):
             break
         keep.append(n)
     return keep
+
+
+SVG_MAX = 60000  # これより長いSVGは本文に入れない（AIが一字一句写せないため）
+
+
+def compact_svg(page, box):
+    """図を本文に入れられる長さのSVGにする。作れないときは None（そのときは画像だけを使う）。"""
+    import fitz
+
+    from .server import _ink_box
+
+    box = _ink_box(page, fitz.Rect(box))  # 左右の白い余白を除き、スマートフォンでも図を大きく見せる
+    # 見えているとおりを線に直す（PDFの線の書き方の違いで、線が抜けたり余分に出たりしない）。
+    # potrace が無いときだけ、PDFの線と文字から作る
+    traced = _trace(page, box)
+    if traced:
+        view = f"{_num(box.x0)} {_num(box.y0)} {_num(box.width)} {_num(box.height)}"
+        svg = (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view}" width="100%" style="max-width:100%;height:auto;background:#fff">'
+               f'<rect x="{_num(box.x0)}" y="{_num(box.y0)}" width="{_num(box.width)}" height="{_num(box.height)}" fill="#fff"/>{traced}</svg>')
+    else:
+        svg = figure_svg(page, box)
+    return svg if svg and len(svg) <= SVG_MAX else None
 
 
 def _table_md(t):
