@@ -24,4 +24,4 @@ jobs:
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=WARNING' \
             --project qualification-learning --freshness=2h --limit=40 \
-            --format='value(timestamp,severity,textPayload,jsonPayload.message)' || true
+            --format='value(timestamp,severity,httpRequest.status,httpRequest.requestMethod,httpRequest.requestUrl,textPayload,jsonPayload.message)' || true
