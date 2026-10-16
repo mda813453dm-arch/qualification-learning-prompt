@@ -354,7 +354,7 @@ async function route(request, env, url, now) {
       startDate: t.date,
       startTime: t.time,
       totalMinutes: total,
-      display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${given ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
+      display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
     });
   }
 

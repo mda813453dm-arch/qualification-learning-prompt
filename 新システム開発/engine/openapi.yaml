@@ -75,7 +75,7 @@ paths:
               required: [qualificationId, sources]
               properties:
                 qualificationId: { type: string, description: q041＝宅建、q063＝測量士補 }
-                learnerId: { type: string, description: startStudy で受け取った引継ぎID（同じ学習者として記録する） }
+                learnerId: { type: string, description: 引継ぎデータから再開したときだけ、その引継ぎID }
                 sources: { type: array, maxItems: 40, items: { $ref: '#/components/schemas/Source' } }
                 plan:
                   type: object
@@ -220,7 +220,7 @@ paths:
     post:
       operationId: startStudy
       x-openai-isConsequential: false
-      summary: 学習の開始を記録する（開始時刻はエンジンが取る。どの資格でも、最初に必ず呼ぶ）
+      summary: 学習の開始を記録する（開始時刻はエンジンが取る）。学習計画を利用者が承認したとき（再開なら『始めます』と答えたとき）に呼ぶ。資格名を聞いた時点では呼ばない
       requestBody:
         required: true
         content:
@@ -230,7 +230,7 @@ paths:
               required: [qualificationName]
               properties:
                 qualificationName: { type: string, description: 利用者が言った資格名 }
-                learnerId: { type: string, description: 引継ぎデータを貼られたときだけ、その「引継ぎID」 }
+                learnerId: { type: string, description: startSession の learnerId、または貼られた引継ぎデータの「引継ぎID」 }
       responses:
         '201':
           description: 開始した

@@ -31,7 +31,7 @@ export const TOOLS = [
       required: ['qualificationId', 'sources'],
       properties: {
         qualificationId: { type: 'string' },
-        learnerId: { type: 'string', description: 'startStudy で受け取った引継ぎID' },
+        learnerId: { type: 'string', description: '引継ぎデータから再開したときだけ、その引継ぎID' },
         sources: { type: 'array', maxItems: 40, items: source },
         plan: { type: 'object', properties: { examDate: { type: 'string', description: 'YYYY-MM-DD' } } },
       },
@@ -40,13 +40,13 @@ export const TOOLS = [
   },
   {
     name: 'startStudy',
-    description: '学習の開始を記録する（開始時刻はエンジンが取る）。どの資格でも最初に必ず呼び、display をそのまま表示する。',
+    description: '学習の開始を記録する（開始時刻はエンジンが取る）。学習計画を利用者が承認したとき（再開なら『始めます』と答えたとき）に呼び、display をそのまま表示する。資格名を聞いた時点では呼ばない。',
     inputSchema: {
       type: 'object',
       required: ['qualificationName'],
       properties: {
         qualificationName: { type: 'string' },
-        learnerId: { type: 'string', description: '引継ぎデータを貼られたときだけ、その引継ぎID' },
+        learnerId: { type: 'string', description: 'startSession の learnerId、または貼られた引継ぎデータの引継ぎID' },
       },
     },
     api: (a) => ['POST', '/v1/study/start', { qualificationName: a.qualificationName, learnerId: a.learnerId }],
