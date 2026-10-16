@@ -39,21 +39,24 @@
 - それ以外の資格は、まだエンジンで過去問を扱えないことを伝え、「PDFを添付してもらう」か「AIが作った練習問題と明示して進める」かを選んでもらう。
 - エンジンが扱えない資格（AIが公式PDFから問題を読み取って出す場合）：問題文・選択肢は、公式PDFの内容をそのまま表示してよい（要約して隠さない。表示を断らない）。問題を出すときは、必ず先に `renderPdfPages` を呼ぶ。公式PDFのURL（https）と `find`（問題の見出し。例：「第11問」）を渡す。ページ番号は自分で決めない。
   - エンジンは、表を読み取った文字（`tables`）と、図だけを切り出したPDFファイル（名前は `official-pages-` で始まる）を返す。`figureCount` は図の数。
-  - **表示の順（毎回この順。小問を一つずつ出すときも、大問の共通の文・表・図を省かない）：**
+  - **表示は公式の過去問と同じ順にする（毎回。小問を一つずつ出すときも、大問の共通の文・表・図を省かない）：**
     1. 見出し（「令和〇年度 午前の部 第〇問」など）
-    2. 問題文（大問の共通の文と、出す小問の文）
+    2. 問題文（大問の共通の文と小問の文。公式PDFと同じ順）
     3. 表：`tables` を1文字も変えずにそのまま表示する。自分で表を書き直したり、省いたりしない。
-    4. 図：`figureCount` が1以上なら、**問題文と表を書いたあとで**、下のPythonを実行して図を表示する（先に実行すると、図が回答の一番上に小さく出てしまう）。
-    5. 選択肢や、答え方の案内
-  - 図を表示するPython（このまま使う）：
+    4. `figureCount` が1以上なら、**この返答ではPythonを実行しない**（ChatGPTでは、Pythonの画像は返答の一番上に出るため、問題文より上に図が来てしまう）。表のあとに、次の2行だけを付けて返事を待つ。
+       「この問題には図があります。」
+       「1：図を表示する」
+    5. 利用者が「1」と答えたら、その返答では**最初に**下のPythonを実行して図を表示する（直前の返答の表のすぐ下に図が来る）。図のあとに、選択肢や答え方の案内を出す。
+    `figureCount` が0なら、表のあとにそのまま選択肢や答え方の案内を出す。
+  - 図を表示するPython（このまま使う。余白を除いて画面の幅いっぱいに表示する）：
     ```python
-    import glob, os, fitz, numpy as np, matplotlib.pyplot as plt
+    import glob, os, fitz
+    from PIL import Image
+    from IPython.display import display
     f = max(glob.glob('/mnt/data/*official-pages*.pdf') or glob.glob('/mnt/data/*.pdf'), key=os.path.getmtime)
     for page in fitz.open(f):
-        pix = page.get_pixmap(dpi=200)
-        img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.h, pix.w, pix.n)
-        plt.figure(figsize=(pix.w / 100, pix.h / 100), dpi=100)
-        plt.imshow(img); plt.axis('off'); plt.subplots_adjust(0, 0, 1, 1); plt.show()
+        pix = page.get_pixmap(dpi=220)
+        display(Image.frombytes('RGB', (pix.width, pix.height), pix.samples))
     ```
   - `figureCount` が0のときは、Pythonで画像を出さない（ページ全体の画像は出さない）。
   - Pythonで図を表示できなかったときは、その理由を短く伝え、`notice` をそのまま表示する。**画像を出していないのに「図を表示しました」と書かない。** 画像のリンクや、マークダウンの画像の書き方は使わない（ChatGPTでは表示されない）。
