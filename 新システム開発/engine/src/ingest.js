@@ -197,6 +197,9 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
   for (const s of job.sources) {
     if (s.status !== 'pending' || s.reason === 'AWAITING_UPLOAD') continue; // 経路Aの結果待ちは ingestOne で進める
     if (clock() - begin >= budgetMs) break;
+    // 進み具合（残り時間の目安）を出すため、始めた時刻を先に残す
+    s.startedAt = clock();
+    await saveJob(store, job, s.startedAt);
     const code = await settle(s, deps, deps.now ?? clock());
     // 1件ごとに保存する（呼び出しが時間切れで打ち切られても、終わった分は失わない）
     await saveJob(store, job, clock());
@@ -247,7 +250,22 @@ export async function ingestOne(store, qualificationId, index, deps, now) {
   return { job: withNotice(job, now), source: s, code };
 }
 
+export const SOURCE_EST_MS = 80 * 1000; // 公式PDF1年度分の分解にかかる目安（測量士補R8で実測 約70秒）
+
+/** 取り込みの進み具合を、利用者に見せる1〜2行にする（棒グラフと残り時間の目安）。 */
+export function progressText(job, now) {
+  if (job.state !== 'running') return null;
+  const total = job.sources.length;
+  const done = job.sources.filter((s) => s.status !== 'pending').length;
+  const cur = job.sources.find((s) => s.status === 'pending' && s.startedAt);
+  const partial = cur ? Math.min(0.9, (now - cur.startedAt) / SOURCE_EST_MS) : 0;
+  const filled = Math.round(((done + partial) / total) * 10);
+  const leftMs = Math.max(15000, (total - done) * SOURCE_EST_MS - (cur ? now - cur.startedAt : 0));
+  const left = leftMs < 60000 ? '1分以内' : `約${Math.round(leftMs / 60000)}分`;
+  return `📥 過去問を取り込み中：${'■'.repeat(filled)}${'□'.repeat(10 - filled)} ${done}/${total}年度（残り${left}）\n取り込みが済んだ年度の問題から出題します。`;
+}
+
 export function withNotice(job, now) {
   const slow = job.state === 'running' && now - job.startedAt >= SLOW_AFTER_MS;
-  return { ...job, notice: slow ? '過去問の取り込みに時間がかかっています。取り込みが済んだ問題から出題します。' : null };
+  return { ...job, notice: slow ? '過去問の取り込みに時間がかかっています。取り込みが済んだ問題から出題します。' : null, progress: progressText(job, now) };
 }

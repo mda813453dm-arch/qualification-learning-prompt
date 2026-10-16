@@ -53,7 +53,7 @@ jobs:
               code, n, sec = call("POST", f"/v1/sessions/{sid}/next")
               assert sec < 40, ("出題が遅い", sec)
               if n.get("status") == "waiting":
-                  time.sleep(15); continue
+                  print("  ", n.get("notice")); time.sleep(15); continue
               if n.get("status") != "question":
                   print(json.dumps(n, ensure_ascii=False)[:500]); break
               q = n["question"]
@@ -72,7 +72,9 @@ jobs:
               seen.append(q["questionNumber"])
               if len(seen) >= 28 or figs >= 3:
                   break
-              call("POST", f"/v1/sessions/{sid}/answer", {"questionId": q["questionId"], "value": 1})
+              # ChatGPTが書き崩した番号で送っても採点される
+              code, a, _ = call("POST", f"/v1/sessions/{sid}/answer", {"questionId": f"{q['year']}年 問{q['questionNumber']}", "value": 1})
+              assert code == 200, a
           assert figs, "図のある問が出なかった"
           code, e, _ = call("POST", f"/v1/study/{lid}/end", {"sessionId": sid})
           assert code == 200, e

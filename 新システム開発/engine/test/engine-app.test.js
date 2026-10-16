@@ -347,3 +347,25 @@ test('本番では、学習の開始と出題の呼び出しで分解を待た�
   const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
   assert.equal(q.status, 'question');
 });
+
+test('取り込み中は、進み具合の棒と残り時間の目安を返す。AIが書き崩した問題番号でも、出題中の問なら採点する', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.PUBLIC_BASE_URL = 'https://engine.example';
+  const kicks = [];
+  env.selfFetch = async (url) => {
+    kicks.push(url);
+    return new Response('{}');
+  };
+  const s = await startSession(env);
+  const waiting = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
+  assert.equal(waiting.status, 'waiting');
+  assert.match(waiting.notice, /^📥 過去問を取り込み中：□{10} 0\/1年度（残り約1分）/);
+  assert.match(waiting.job.progress, /0\/1年度/);
+  await call(env, 'GET', new URL(kicks[0]).pathname + '?run=all');
+  const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
+  // 別の問の番号は受け付けない
+  assert.equal((await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: `${SRC.year}年 問2`, value: 1 })).status, 409);
+  assert.equal((await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: `${SRC.year + 1}年 問${q.questionNumber}`, value: 1 })).status, 409);
+  const r = await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: `${SRC.year}年 問${q.questionNumber}`, value: 1 });
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+});

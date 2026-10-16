@@ -181,6 +181,19 @@ function sourceOf(p) {
 }
 
 /**
+ * AIアプリが questionId を書き崩して送ったとき（「3」「2026年 問3」「q063-2026-3」など）に、出題中の問と同じかを見る。
+ * 数字の並びが「（年度）…問番号」で出題中の問と合うときだけ同じとみなす（別の問の採点にはしない）。
+ */
+function sameQuestion(given, current) {
+  if (typeof given !== 'string' || !given.trim()) return false;
+  const [, year, , number] = current.split(':');
+  const nums = given.normalize('NFKC').match(/\d+/g) ?? [];
+  if (!nums.length || nums.at(-1) !== String(Number(number))) return false;
+  const years = nums.slice(0, -1).filter((n) => n.length === 4 && !/^0/.test(n));
+  return years.every((y) => y === year);
+}
+
+/**
  * 回答を採点する。confidence: 'sure'（自信あり・既定）| 'guess'（勘で当てた）
  * 返り値 {ok, state, grade} / {ok:false, reason}
  */
@@ -189,7 +202,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   if (!cur) return { ok: false, reason: 'NO_QUESTION_PRESENTED' };
   // 採点の応答で次の問を先に控えたあと、同じ回答がもう一度届いても（再送）、同じ結果を返す
   if (questionId !== cur.questionId && state.lastGrade?.questionId === questionId) return { ok: true, state, grade: { ...state.lastGrade, alreadyGraded: true } };
-  if (questionId !== cur.questionId) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
+  if (questionId !== cur.questionId && !sameQuestion(questionId, cur.questionId)) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
   if (cur.grade) return { ok: true, state, grade: { ...cur.grade, alreadyGraded: true } };
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };

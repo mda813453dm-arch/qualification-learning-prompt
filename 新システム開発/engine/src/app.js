@@ -183,6 +183,7 @@ function jobView(job) {
   return {
     state: job.state,
     notice: job.notice ?? null,
+    progress: job.progress ?? null,
     sources: job.sources.map((s, index) => ({
       index,
       adapter: s.adapter,
@@ -241,7 +242,9 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   const items = await availablePackets(env.STORE, job, now);
   const pick = pickNext(state, items, { today: jstToday(now), job });
   if (pick.status !== 'question') {
-    return { status: pick.status, notice: job?.notice ?? null, job: jobView(job) };
+    // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
+    const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
+    return { status: pick.status, notice, job: jobView(job) };
   }
   const prevField = state.current?.fieldId ?? null;
   state = pin(state, pick.item, pick.kind, now);
@@ -371,7 +374,11 @@ async function route(request, env, url, now) {
     const state = await loadSession(env, parts[2], now);
     // 採点は出題時に控えた正答だけで行う（公式PDF・保存データは読み直さない）
     const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence }, { today: jstToday(now), now });
-    if (!r.ok) throw new HttpError(409, r.reason);
+    if (!r.ok) {
+      // 原因を後から確かめられるよう、送られた番号と出題中の番号だけを残す（回答の中身は残さない）
+      console.warn(JSON.stringify({ event: 'answer_rejected', reason: r.reason, given: String(b.questionId ?? '').slice(0, 80), current: state.current?.questionId ?? null }));
+      throw new HttpError(409, r.reason);
+    }
     if (!r.grade.alreadyGraded) await saveSession(env, parts[2], r.state, now);
     // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
     // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
