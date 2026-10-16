@@ -46,8 +46,10 @@ jobs:
           from qlp_parser.server import render_pages
           words = open('../deploy/pdf-layout-request.txt').read().split()
           data = urllib.request.urlopen(words[0]).read()
-          for k, find in enumerate(w for w in words[1:] if not w.isdigit()):
-              r = render_pages({'pdf': {'base64': base64.b64encode(data).decode()}, 'find': find, 'span': 2})
+          finds = [w for w in words[1:] if not w.isdigit()]
+          for k, (find, span) in enumerate((f, s) for f in finds for s in (2, 3)):
+              r = render_pages({'pdf': {'base64': base64.b64encode(data).decode()}, 'find': find, 'span': span})
+              find = f'{find}-span{span}'
               ex = fitz.open(stream=base64.b64decode(r['excerpt']), filetype='pdf')
               for i, pg in enumerate(ex):
                   pg.get_pixmap(dpi=150).save(f'../../out/q{k+1}-crop{i+1}.png')
