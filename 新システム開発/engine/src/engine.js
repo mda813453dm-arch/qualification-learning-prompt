@@ -203,6 +203,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   // 採点の応答で次の問を先に控えたあと、同じ回答がもう一度届いても（再送）、同じ結果を返す
   if (questionId !== cur.questionId && state.lastGrade?.questionId === questionId) return { ok: true, state, grade: { ...state.lastGrade, alreadyGraded: true } };
   if (questionId !== cur.questionId && !sameQuestion(questionId, cur.questionId)) return { ok: false, reason: 'QUESTION_BINDING_MISMATCH' };
+  questionId = cur.questionId; // 書き崩した番号で届いても、記録は出題中の問の番号で残す
   if (cur.grade) return { ok: true, state, grade: { ...cur.grade, alreadyGraded: true } };
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
@@ -233,7 +234,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
       lastGrade: g,
-      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
+      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },
   };

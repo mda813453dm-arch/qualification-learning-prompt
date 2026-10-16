@@ -425,14 +425,22 @@ async function route(request, env, url, now) {
     // 同じ学習を二度終了しても累計を二重に足さない
     const before = study.endedAt == null ? saved.minutes : saved.minutes - (study.minutes ?? 0);
     let engineHandoff = null;
+    let input = b;
     if (typeof b.sessionId === 'string' && b.sessionId) {
       try {
-        engineHandoff = exportHandoff(await loadSession(env, b.sessionId, now));
+        const st = await loadSession(env, b.sessionId, now);
+        engineHandoff = exportHandoff(st);
+        // 実践問題（過去問）の正誤は、エンジンが採点した記録で数える（AIの数え間違いを避ける）
+        const graded = Object.values(st.history).filter((h) => Number.isFinite(h.gradedAt) && h.gradedAt >= study.startedAt);
+        if (graded.length) {
+          const right = graded.filter((h) => h.result !== 'wrong').length;
+          input = { ...b, results: { ...(b.results ?? {}), practiceCorrect: right, practiceWrong: graded.length - right } };
+        }
       } catch {
         engineHandoff = null;
       }
     }
-    const r = finishStudy(study, before, b, now, engineHandoff);
+    const r = finishStudy(study, before, input, now, engineHandoff);
     if (study.endedAt == null) {
       await env.STORE.put(studyKey(studyId), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
       await env.STORE.put(timeKey(study.learnerId), JSON.stringify({ minutes: r.total, updatedAt: now }));

@@ -368,4 +368,8 @@ test('取り込み中は、進み具合の棒と残り時間の目安を返す�
   assert.equal((await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: `${SRC.year + 1}年 問${q.questionNumber}`, value: 1 })).status, 409);
   const r = await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: `${SRC.year}年 問${q.questionNumber}`, value: 1 });
   assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.equal(r.body.grade.questionId, q.questionId);
+  assert.notEqual(r.body.next.question?.questionId, q.questionId, '採点した問は次に出さない');
+  const again = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
+  assert.notEqual(again.question?.questionId, q.questionId);
 });
