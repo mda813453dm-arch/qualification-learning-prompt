@@ -256,7 +256,7 @@ test('見出し（find）でページを探して画像にする。見つから�
       { page: 14, caption: '〔観測結果〕', rows: [['器械点', '視準点', '水平角'], ['T1', 'T2', '0°00′00″'], ['', 'F', '243°44′07″']] },
       { page: 14, caption: '〔測量成果〕 北は、X軸正方向に一致する。', rows: [['点名', 'X座標(m)'], ['A|B', '205.41']] },
     ];
-    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png }, excerpt: btoa('%PDF-excerpt'), tables, figures: [{ page: 15, bbox: [68, 142, 556, 525] }] }));
+    return new Response(JSON.stringify({ pageCount: 30, matchedPage: 14, pages: { 'p14.png': png, 'p15.png': png }, excerpt: btoa('%PDF-excerpt'), tables, figures: [{ page: 15, bbox: [68, 142, 556, 525] }], display: '第11問　本文\n\n<svg viewBox="0 0 1 1"></svg>' }));
   };
   const r = await call(env, 'POST', '/v1/pdf-pages', { url: OTHER, find: '第11問' });
   assert.equal(r.status, 200, JSON.stringify(r.body));
@@ -267,6 +267,7 @@ test('見出し（find）でページを探して画像にする。見つから�
   assert.match(r.body.fileUrl, /\/14-15\.pdf$/);
   // 表はエンジンが読み取った文字で返し、図は切り出したPDFで付ける
   assert.equal(r.body.figureCount, 1);
+  assert.equal(r.body.display, '第11問　本文\n\n<svg viewBox="0 0 1 1"></svg>');
   assert.match(r.body.notice, /図を切り出して/);
   assert.equal(
     r.body.tables,

@@ -133,5 +133,6 @@ export async function renderPages({ endpoint, token, fetch: doFetch = fetch, byt
     }))
     .filter((t) => t.rows.length);
   const figures = (Array.isArray(v?.figures) ? v.figures : []).filter((f) => Number.isInteger(f?.page) && Array.isArray(f?.bbox)).slice(0, 10);
-  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt, tables, figures };
+  const display = typeof v?.display === 'string' && v.display.length <= 60000 ? v.display : null;
+  return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt, tables, figures, display };
 }

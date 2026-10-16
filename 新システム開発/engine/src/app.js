@@ -452,6 +452,7 @@ async function route(request, env, url, now) {
       pageCount: r.pageCount ?? null,
       matchedPage: r.matchedPage,
       pages,
+      display: r.display,
       tables: tablesMarkdown(r.tables),
       figureCount,
       fileUrl,

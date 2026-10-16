@@ -213,7 +213,8 @@ paths:
                       properties:
                         page: { type: integer }
                         url: { type: string, description: ページ画像のURL（回答には貼らない） }
-                  tables: { type: [string, 'null'], description: 公式PDFから読み取った表（マークダウン）。問題文のあとに1文字も変えずにそのまま表示する }
+                  display: { type: [string, 'null'], description: 問題文・図（SVG）・表・選択肢を公式と同じ順に並べた表示。あれば1文字も変えずにそのまま表示する }
+                  tables: { type: [string, 'null'], description: 公式PDFから読み取った表（マークダウン）。display が無いときに使う }
                   figureCount: { type: integer, description: 切り出した図の数。1以上なら、問題文と表のあとでPythonを実行し、付いたPDFを画像にして表示する }
                   notice: { type: string, description: 図を表示できなかったときに、利用者にそのまま表示する案内 }
                   openaiFileResponse: { type: array, items: { type: string }, description: チャットに付けるPDFファイル }
