@@ -1,0 +1,89 @@
+name: GPTと同じ呼び出しで、公開中のエンジンを確かめる（測量士補）
+# 合図：新システム開発/deploy/gpt-smoke-request.txt を更新して push する。
+# GPT「資格学習」が使うAPI（開始→取り込み→出題→採点→学習の終了）を順に呼び、
+# 応答の速さ、図の表示（本文中のSVG）、終了ログが出るかを確かめる。合言葉は出さない。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/gpt-smoke-request.txt'
+permissions:
+  contents: write
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 合言葉を読む（表示しない）
+        run: |
+          t=$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)
+          echo "::add-mask::$t"
+          echo "QLP_TOKEN=$t" >> "$GITHUB_ENV"
+      - run: pip install pymupdf==1.26.5
+      - name: 測量士補R8で、開始から終了まで呼ぶ
+        run: |
+          mkdir -p out
+          python3 - <<'PY'
+          import json, os, re, time, urllib.request
+          BASE = "https://qlp-engine-ojsw3j46qa-an.a.run.app"
+          TOKEN = os.environ["QLP_TOKEN"]
+          def call(method, path, body=None):
+              t = time.time()
+              req = urllib.request.Request(BASE + path, method=method, data=None if body is None else json.dumps(body).encode(),
+                                           headers={"authorization": f"Bearer {TOKEN}", "content-type": "application/json"})
+              try:
+                  r = urllib.request.urlopen(req, timeout=60); code = r.status; data = json.loads(r.read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  code = e.code; data = json.loads(e.read() or b"{}")
+              print(f"{method} {path} -> {code} ({time.time()-t:.1f}s)")
+              return code, data, time.time() - t
+          code, st, _ = call("POST", "/v1/study/start", {"qualificationName": "測量士補"})
+          lid = st["learnerId"]
+          src = [{"adapter": "surveyor", "year": 2026, "section": "main",
+                  "questionUrl": "https://web2.gsi.go.jp/common/000278974.pdf", "answerUrl": "https://web2.gsi.go.jp/common/000278975.pdf"}]
+          code, s, sec = call("POST", "/v1/sessions", {"qualificationId": "q063", "sources": src, "learnerId": lid})
+          assert code == 201 and sec < 20, ("開始が遅い・失敗", code, sec, s)
+          sid = s["sessionId"]
+          seen, figs = [], 0
+          for i in range(80):
+              code, n, sec = call("POST", f"/v1/sessions/{sid}/next")
+              assert sec < 40, ("出題が遅い", sec)
+              if n.get("status") == "waiting":
+                  time.sleep(15); continue
+              if n.get("status") != "question":
+                  print(json.dumps(n, ensure_ascii=False)[:500]); break
+              q = n["question"]
+              d = q.get("display") or ""
+              svgs = re.findall(r"<svg.*?</svg>", d, re.S)
+              print(f"  問{q['questionNumber']} 図{len(q['figures'])} SVG{len(svgs)} 表示{len(d)}字")
+              open(f"out/q{q['questionNumber']}-display.md", "w").write(d)
+              for j, svg in enumerate(svgs):
+                  import fitz
+                  vb = [float(x) for x in re.search(r'viewBox="([^"]+)"', svg).group(1).split()]
+                  fixed = svg.replace('width="100%"', f'width="{vb[2]*2}" height="{vb[3]*2}"', 1)
+                  fitz.open(stream=fixed.encode(), filetype="svg")[0].get_pixmap(dpi=72).save(f"out/q{q['questionNumber']}-svg{j+1}.png")
+              assert d, "display が無い"
+              if q["figures"]:
+                  figs += 1
+              seen.append(q["questionNumber"])
+              if len(seen) >= 28 or figs >= 3:
+                  break
+              call("POST", f"/v1/sessions/{sid}/answer", {"questionId": q["questionId"], "value": 1})
+          assert figs, "図のある問が出なかった"
+          code, e, _ = call("POST", f"/v1/study/{lid}/end", {"sessionId": sid})
+          assert code == 200, e
+          print(e["display"][:600])
+          print("OK", seen)
+          PY
+      - name: 結果を gpt-smoke ブランチに置く
+        if: always()
+        run: |
+          cd out
+          git init -q -b gpt-smoke
+          git config user.name smoke; git config user.email smoke@example.invalid
+          git add -A; git commit -qm "gpt smoke" --allow-empty
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" gpt-smoke
