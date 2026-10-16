@@ -5,7 +5,8 @@
   → 200 {result, assets:{<file>: <base64 PNG>}}
   POST /v1/pages
     {pdf:{base64}, pages:[1始まりのページ番号, 最大4つ]}  または  {pdf:{base64}, find:"第11問", span:2}（見出しを含むページから）
-  → 200 {pageCount, matchedPage, pages:{"p<番号>.png": <base64 PNG>}}   （どの資格の公式PDFでも、ページをそのまま画像にする）
+  → 200 {pageCount, matchedPage, pages:{"p<番号>.png": <base64 PNG>}, excerpt:<base64 PDF>, tables:[{page, caption, rows}], figures:[{page, bbox}]}
+    （どの資格の公式PDFでも、ページをそのまま画像にする。excerpt は図だけを切り出したPDF。図が無ければページ全体）
   GET /healthz → 200 {"ok": true, "parserVersion", "ocr"}
 
 公式PDFの取得はしない（取得とSHA-256の照合はエンジン側）。届いたPDFのSHA-256が sha256 と違えば分解しない。
@@ -108,16 +109,107 @@ def render_pages(body):
     elif not isinstance(nums, list) or not nums or len(nums) > MAX_PAGES or any(not isinstance(n, int) or isinstance(n, bool) or n < 1 for n in nums):
         raise BadRequest("PAGES_INVALID")
     out = {}
-    excerpt = fitz.open()
-    for n in sorted(set(nums)):
+    nums = sorted(set(nums))
+    for n in nums:
         if n > count:
             raise BadRequest("PAGE_OUT_OF_RANGE")
         pix = doc[n - 1].get_pixmap(matrix=fitz.Matrix(PAGE_ZOOM, PAGE_ZOOM), alpha=False)
         out[f"p{n}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
-        excerpt.insert_pdf(doc, from_page=n - 1, to_page=n - 1)
-    # 同じページだけを抜き出したPDF（ChatGPTは外部の画像を表示しないため、ファイルとして渡す）
+    tables, figures = page_layout(doc, nums)
+    # 図だけを切り出したPDF（1ページに図1つ）。図が見つからなければページ全体。
+    # ChatGPTは外部の画像を表示しないため、ファイルとして渡し、AI側のPythonで画像にする
+    excerpt = fitz.open()
+    if figures:
+        for f in figures:
+            excerpt.insert_pdf(doc, from_page=f["page"] - 1, to_page=f["page"] - 1)
+            excerpt[-1].set_cropbox(fitz.Rect(f["bbox"]))
+    else:
+        for n in nums:
+            excerpt.insert_pdf(doc, from_page=n - 1, to_page=n - 1)
     pdf_b64 = base64.b64encode(excerpt.tobytes(garbage=3, deflate=True)).decode("ascii")
-    return {"pageCount": count, "matchedPage": matched, "pages": out, "excerpt": pdf_b64}
+    return {"pageCount": count, "matchedPage": matched, "pages": out, "excerpt": pdf_b64, "tables": tables, "figures": figures}
+
+
+FIG_GAP = 15  # これより近い線や画像は同じ図とみなす（pt）
+FIG_MIN_W, FIG_MIN_H = 80, 60  # これより小さいまとまりは図とみなさない（記号や下線）
+FIG_MARGIN = 6
+FIG_ATTACH = 80  # 図からこの距離までの小さなまとまり（方位記号など）は図に含める
+CAPTION_GAP = 30  # 表のすぐ上（この距離まで）の文を、表の見出しとして付ける
+
+
+_HALF = {c: c - 0xFEE0 for c in range(0xFF01, 0xFF5F)}  # 全角の英数字・記号を半角に（″などの記号はそのまま）
+
+
+def _clean_cell(v):
+    return " ".join((v or "").translate(_HALF).split())
+
+
+def page_layout(doc, nums):
+    """ページの表（行と列の文字）と、図（線や画像のまとまり）の位置を返す。
+
+    表は PyMuPDF の表検出で読む。次のページの先頭に同じ列数の表が続くときは、ひとつの表につなぐ。
+    図は、表の外にある線と画像を近いものどうしでまとめ、小さすぎるものを除いた範囲。
+    """
+    import fitz
+
+    tables, figures = [], []
+    for n in nums:
+        page = doc[n - 1]
+        prect = page.rect
+        try:
+            found = page.find_tables().tables
+        except Exception:  # noqa: BLE001
+            found = []
+        tboxes = [fitz.Rect(t.bbox) for t in found]
+        blocks = [b for b in page.get_text("blocks") if b[4].strip()]
+        prev_bottom = 0
+        for t, box in sorted(zip(found, tboxes), key=lambda x: x[1].y0):
+            rows = [[_clean_cell(c) for c in r] for r in t.extract()]
+            rows = [r for r in rows if any(r)]
+            if not rows:
+                continue
+            caption = " ".join(_clean_cell(b[4]) for b in blocks if prev_bottom <= b[1] and box.y0 - CAPTION_GAP <= b[3] <= box.y0 + 1)
+            last = tables[-1] if tables else None
+            continued = last and last["page"] == n - 1 and not caption and box.y0 < prect.height * 0.25 and len(rows[0]) == len(last["rows"][0])
+            if continued:
+                last["rows"].extend(rows)
+            else:
+                tables.append({"page": n, "caption": caption, "rows": rows})
+            prev_bottom = box.y1
+        grown = [b + (-2, -2, 2, 2) for b in tboxes]
+        rects = [fitz.Rect(d["rect"]) for d in page.get_drawings()]
+        for img in page.get_images():
+            rects.extend(page.get_image_rects(img[0]))
+        rects = [r for r in rects if not any(g.contains(r) for g in grown) and r.get_area() < prect.get_area() * 0.8]
+        clusters = []
+        for r in rects:
+            r = fitz.Rect(r) + (-0.5, -0.5, 0.5, 0.5)  # 縦線・横線は幅0なので、重なりを判定できるよう少し太らせる
+            merged = True
+            while merged:
+                merged = False
+                for c in clusters:
+                    if (c + (-FIG_GAP, -FIG_GAP, FIG_GAP, FIG_GAP)).intersects(r):
+                        clusters.remove(c)
+                        r |= c
+                        merged = True
+                        break
+            clusters.append(r)
+        big = [c for c in clusters if c.width >= FIG_MIN_W and c.height >= FIG_MIN_H]
+        small = [c for c in clusters if not (c.width >= FIG_MIN_W and c.height >= FIG_MIN_H)]
+        # 方位記号のような小さなまとまりは、近くの図に含める
+        for c in small:
+            near = [i for i, b in enumerate(big) if (b + (-FIG_ATTACH, -FIG_ATTACH, FIG_ATTACH, FIG_ATTACH)).intersects(c)]
+            if near:
+                big[near[0]] = big[near[0]] | c
+        for c in sorted(big, key=lambda c: c.y0):
+            # 図のすぐ外にある短い文字（点名など）も含める
+            for b in blocks:
+                br = fitz.Rect(b[:4])
+                if len(b[4].strip()) <= 4 and (c + (-10, -10, 10, 10)).intersects(br):
+                    c |= br
+            box = (c + (-FIG_MARGIN, -FIG_MARGIN, FIG_MARGIN, FIG_MARGIN)) & prect
+            figures.append({"page": n, "bbox": [round(v, 1) for v in box]})
+    return tables, figures
 
 
 class Handler(BaseHTTPRequestHandler):

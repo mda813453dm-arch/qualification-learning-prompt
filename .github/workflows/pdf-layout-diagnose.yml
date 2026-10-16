@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
-      - run: pip install pymupdf==1.24.10
+      - run: pip install -r 新システム開発/parser/requirements.txt
       - name: ページの作りを書き出す
         run: |
           mkdir -p out
@@ -38,6 +38,23 @@ jobs:
                   info['tables'] = str(e)
               json.dump(info, open(f'out/p{n}.json', 'w'), ensure_ascii=False, indent=1)
               print(n, 'blocks', len(info['blocks']), 'drawings', len(info['drawings']), 'images', len(info['images']), 'tables', info['tables'] if isinstance(info['tables'], str) else len(info['tables']))
+          PY
+      - name: エンジンと同じ処理で、表と図の切り出しを試す
+        run: |
+          cd 新システム開発/parser && python - <<'PY'
+          import base64, json, urllib.request, fitz
+          from qlp_parser.server import render_pages
+          words = open('../deploy/pdf-layout-request.txt').read().split()
+          data = urllib.request.urlopen(words[0]).read()
+          find = next((w for w in words[1:] if not w.isdigit()), None)
+          body = {'pdf': {'base64': base64.b64encode(data).decode()}}
+          body.update({'find': find, 'span': 2} if find else {'pages': [int(w) for w in words[1:] if w.isdigit()]})
+          r = render_pages(body)
+          ex = fitz.open(stream=base64.b64decode(r['excerpt']), filetype='pdf')
+          for i, pg in enumerate(ex):
+              pg.get_pixmap(dpi=150).save(f'../../out/crop{i+1}.png')
+          json.dump({'matchedPage': r['matchedPage'], 'tables': r['tables'], 'figures': r['figures'], 'excerptPages': ex.page_count}, open('../../out/engine.json', 'w'), ensure_ascii=False, indent=1)
+          print(json.dumps({'tables': r['tables'], 'figures': r['figures']}, ensure_ascii=False))
           PY
       - name: 結果を diag-pdf-layout に置く
         run: |
