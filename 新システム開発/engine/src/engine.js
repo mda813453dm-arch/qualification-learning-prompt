@@ -138,7 +138,9 @@ export const ANSWER_PROMPT = '番号で答えてください。勘で選んだ�
 export function questionScreen(q, display, { fieldName = null, fieldNotice = null } = {}) {
   const page = q.questionPdfPages?.[0];
   const link = q.questionPdfUrl ? `問題PDF：[公式の問題PDF${page ? `（${page}ページ）` : ''}](${q.questionPdfUrl}${page ? `#page=${page}` : ''})` : null;
-  const head = `■${q.year}年度 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : ''}`;
+  // 年に何回もある試験（FP：2024年5月・9月など）は、回の名前で見出しにする
+  const when = /^\d{4}年\d{1,2}月/.test(q.section ?? '') ? q.section : `${q.year}年度`;
+  const head = `■${when} 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : ''}`;
   return [
     fieldNotice ? `**${fieldNotice}**` : null,
     fieldName ? `📍${fieldName}\n${head}` : head,

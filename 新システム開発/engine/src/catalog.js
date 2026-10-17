@@ -71,6 +71,48 @@ export const CATALOG = {
       { adapter: 'chintai', year: 2025, section: 'main', questionUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_question_2025.pdf', answerUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_answer_2025.pdf' },
     ],
   },
+  fp2: {
+    qualificationId: 'q002',
+    name: 'FP技能検定2級（学科）',
+    aliases: ['FP2級', 'ＦＰ2級', 'FP２級', 'ＦＰ２級', '2級FP', '２級ＦＰ', 'FP技能検定2級', '2級ファイナンシャル・プランニング技能士', 'ファイナンシャルプランナー2級', 'ファイナンシャル・プランナー2級'],
+    org: '特定非営利活動法人 日本ファイナンシャル・プランナーズ協会',
+    officialSite: 'https://www.jafp.or.jp/exam/',
+    pastExamPage: 'https://www.jafp.or.jp/exam/mohan/',
+    exemption: null,
+    // 学科試験の6分野（出題順に10問ずつ。parser/qlp_parser/fields.py）
+    fields: {
+      f1: 'ライフプランニングと資金計画',
+      f2: 'リスク管理',
+      f3: '金融資産運用',
+      f4: 'タックスプランニング',
+      f5: '不動産',
+      f6: '相続・事業承継',
+    },
+    sources: [
+      { adapter: 'fp2', year: 2026, section: '2026年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202605_qa.pdf', answerUrl: null },
+    ],
+  },
+  fp3: {
+    qualificationId: 'q003',
+    name: 'FP技能検定3級（学科）',
+    aliases: ['FP3級', 'ＦＰ3級', 'FP３級', 'ＦＰ３級', '3級FP', '３級ＦＰ', 'FP技能検定3級', '3級ファイナンシャル・プランニング技能士', 'ファイナンシャルプランナー3級', 'ファイナンシャル・プランナー3級'],
+    org: '特定非営利活動法人 日本ファイナンシャル・プランナーズ協会',
+    officialSite: 'https://www.jafp.or.jp/exam/',
+    pastExamPage: 'https://www.jafp.or.jp/exam/mohan/',
+    exemption: null,
+    // 学科試験の6分野（正誤式・三答択一式それぞれ出題順に5問ずつ）
+    fields: {
+      f1: 'ライフプランニングと資金計画',
+      f2: 'リスク管理',
+      f3: '金融資産運用',
+      f4: 'タックスプランニング',
+      f5: '不動産',
+      f6: '相続・事業承継',
+    },
+    sources: [
+      { adapter: 'fp3', year: 2026, section: '2026年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g3_202605_qa.pdf', answerUrl: null },
+    ],
+  },
 };
 
 /**

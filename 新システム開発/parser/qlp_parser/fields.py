@@ -145,3 +145,40 @@ CHINTAI_RULES = [
 
 def classify_chintai(question):
     return classify_by_rules(CHINTAI_RULES, question.stem, question.choices)
+
+
+# FP技能検定（2級・3級）：学科試験の6分野（試験科目）
+FP_FIELDS = {
+    "f1": "ライフプランニングと資金計画",
+    "f2": "リスク管理",
+    "f3": "金融資産運用",
+    "f4": "タックスプランニング",
+    "f5": "不動産",
+    "f6": "相続・事業承継",
+}
+
+FP_RULES = [
+    (r"相続|遺言|遺産|遺留分|贈与|事業承継|相続税|贈与税|後見|自社株|非上場株式|親族", "f6", "相続・事業承継"),
+    (r"不動産|借地|借家|建築基準|都市計画|区分所有|登記|固定資産税|不動産取得税|土地|建物|宅地|容積率|建蔽率|建ぺい率|農地|鑑定評価|地価", "f5", "不動産"),
+    (r"所得税|住民税|法人税|消費税|所得控除|税額控除|青色申告|確定申告|源泉徴収|必要経費|損益通算|課税|非課税|控除", "f4", "タックスプランニング"),
+    (r"保険|共済|保障|特約|損害|賠償|ソルベンシー|契約者保護", "f2", "リスク管理"),
+    (r"株式|債券|投資信託|預金|金利|為替|ＮＩＳＡ|NISA|ポートフォリオ|利回り|金融商品|ＥＴＦ|ETF|REIT|デリバティブ|オプション|日経平均|ＧＤＰ|GDP|景気|日本銀行|マネーストック|外貨|金融サービス|国債|消費者契約法|犯罪による収益|犯罪収益|ＲＯＥ|ROE|ＰＥＲ|PER|ファンド|シャープレシオ", "f3", "金融資産運用"),
+    (r"年金|雇用保険|健康保険|介護保険|労災|労働者災害|社会保険|キャッシュフロー|ライフプラン|教育資金|住宅ローン|奨学金|教育ローン|ファイナンシャル・プランナー|ＦＰ|クレジットカード|退職|資金計画|係数|中小企業|決算書|損益計算書|貸借対照表|財務分析", "f1", "ライフプランニングと資金計画"),
+]
+
+
+FP_ORDER = ["f1", "f2", "f3", "f4", "f5", "f6"]
+
+
+def classify_fp(question, block):
+    """FP（日本FP協会）の学科試験は、試験の決まりで分野ごとに問の範囲が決まっている
+    （2級：10問ずつ、3級：正誤式・三答択一式それぞれ5問ずつ、ライフ→リスク→金融→タックス→不動産→相続の順）。
+    その範囲で分野を決め、内容の規則は根拠として添える。"""
+    n = question.number
+    k = ((n - 1) % 30) // 5 if block == 5 else (n - 1) // block
+    if not 0 <= k < len(FP_ORDER):
+        return classify_by_rules(FP_RULES, question.stem, question.choices)
+    hit = classify_by_rules(FP_RULES, question.stem, question.choices)
+    return {"fieldId": FP_ORDER[k], "unitId": FP_FIELDS[FP_ORDER[k]], "method": "official_order",
+            "evidence": f"問{n}（試験の出題順）" + (f"・{hit['evidence']}" if hit["fieldId"] == FP_ORDER[k] else ""), "verified": True}
+

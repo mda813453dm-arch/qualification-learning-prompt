@@ -222,7 +222,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             reason = "QUESTION_NUMBER_UNVERIFIED"
         elif q.stem_mode != "official_image" and not q.stem.strip():
             reason = "STEM_EMPTY"
-        elif len(q.choices) != choice_count or any(not c.strip() for c in q.choices):
+        elif (len(q.choices) != choice_count if choice_count else not 2 <= len(q.choices) <= 5) or any(not c.strip() for c in q.choices):
             reason = "CHOICES_INCOMPLETE"
         elif q.number not in answers:
             reason = "OFFICIAL_ANSWER_NOT_FOUND"

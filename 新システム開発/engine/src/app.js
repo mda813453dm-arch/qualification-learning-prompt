@@ -34,7 +34,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor', 'chintai']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
@@ -192,8 +192,12 @@ async function sessionFromLearner(env, lid, now) {
 function catalogIdByName(name) {
   const t = String(name ?? '').replace(/\s/g, '');
   if (!t) return null;
-  const c = Object.values(CATALOG).find((x) => [x.name, ...(x.aliases ?? [])].some((a) => t.includes(a) || a.includes(t)));
-  return c?.qualificationId ?? null;
+  const names = (x) => [x.name, ...(x.aliases ?? [])];
+  const exact = Object.values(CATALOG).find((x) => names(x).some((a) => t.includes(a)));
+  if (exact) return exact.qualificationId;
+  // 短い呼び方（「宅地建物」など）は、当てはまる資格が1つだけのときに限る（「FP」だけでは2級か3級か決めない）
+  const part = [...new Set(Object.values(CATALOG).filter((x) => names(x).some((a) => a.includes(t))).map((x) => x.qualificationId))];
+  return part.length === 1 ? part[0] : null;
 }
 
 /** qualificationId か資格名から、エンジンの資格の番号を返す（エンジンの資格でなければ受け取った値のまま）。 */

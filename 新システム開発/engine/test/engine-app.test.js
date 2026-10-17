@@ -553,3 +553,20 @@ test('startSession は資格名でも呼べる。エンジンが扱わない資�
   assert.equal(ng.body.error, 'QUALIFICATION_NOT_SUPPORTED');
   assert.match(JSON.stringify(ng.body), /PDFを添付/);
 });
+
+test('FPは、公表問題（問題と正解が1つのPDF）と紙の試験（問題と正解が別）を、回ごとに集める。「FP」だけでは級を決めない', async () => {
+  const { fp2Sources, pdfLinks } = await import('../src/discover.js');
+  const html = ['g2_202605_qa', 'g3_202605_qa', 'g2_202409_q', 'g2_202409_a', 'g2_202405_q', 'j2_202405_q'].map((f) => `<a href="files/${f}.pdf">x</a>`).join('');
+  const s = fp2Sources(pdfLinks(html, 'https://www.jafp.or.jp/exam/mohan/'), 99);
+  assert.deepEqual(s.map((x) => [x.section, x.answerUrl?.split('/').pop() ?? null]), [['2026年5月', null], ['2024年9月', 'g2_202409_a.pdf']]);
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  assert.equal((await call(env, 'POST', '/v1/sessions', { qualificationId: 'FP3級', sources: [] })).status, 201);
+  assert.equal((await call(env, 'POST', '/v1/sessions', { qualificationId: 'FP', sources: [] })).status, 422);
+});
+
+test('年に何回もある試験は、見出しを回の名前（2024年9月）にする', async () => {
+  const { questionScreen } = await import('../src/engine.js');
+  const s = questionScreen({ year: 2024, section: '2024年9月', questionNumber: 3, choices: [] }, '本文');
+  assert.match(s, /^■2024年9月 問3/);
+  assert.match(questionScreen({ year: 2024, section: 'main', questionNumber: 3, choices: [] }, '本文'), /^■2024年度 問3/);
+});

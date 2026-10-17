@@ -91,10 +91,38 @@ export function chintaiSources(links, years = 10) {
   return latest(out, years);
 }
 
+/**
+ * FP（日本FP協会）の学科試験：g2_YYYYMM_qa.pdf（問題と正解が1つ。CBTの公表問題）、
+ * または g2_YYYYMM_q.pdf と g2_YYYYMM_a.pdf（紙の試験）。年に複数回あるので、区分を「2024年9月」のようにする。
+ */
+function fpSources(grade) {
+  return (links, years = 10) => {
+    const q = new Map();
+    const a = new Map();
+    for (const l of links) {
+      const m = new RegExp(`/g${grade}_(20[0-9]{2})(0[1-9]|1[0-2])_(qa|q|a)\\.pdf`).exec(l.href);
+      if (!m) continue;
+      const key = `${m[1]}${m[2]}`;
+      if (m[3] === 'a') a.set(key, l.href);
+      else q.set(key, { href: l.href, both: m[3] === 'qa' });
+    }
+    const out = [];
+    for (const [key, v] of q) {
+      if (!v.both && !a.has(key)) continue;
+      out.push({ adapter: `fp${grade}`, year: Number(key.slice(0, 4)), section: `${key.slice(0, 4)}年${Number(key.slice(4))}月`, questionUrl: v.href, answerUrl: v.both ? null : a.get(key) });
+    }
+    return latest(out, years);
+  };
+}
+export const fp2Sources = fpSources(2);
+export const fp3Sources = fpSources(3);
+
 export const LISTINGS = {
   takken: { url: 'https://www.retio.or.jp/exam/past_ques_ans/other/', sources: takkenSources },
   surveyor: { url: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html', sources: surveyorSources },
   chintai: { url: 'https://www.chintaikanrishi.jp/exam/past/', sources: chintaiSources },
+  fp2: { url: 'https://www.jafp.or.jp/exam/mohan/', sources: fp2Sources },
+  fp3: { url: 'https://www.jafp.or.jp/exam/mohan/', sources: fp3Sources },
 };
 
 /** 掲載ページを開いて、直近 years 年度分の取り込み元を返す。fetchText(url) は HTML の文字列を返す関数。 */
