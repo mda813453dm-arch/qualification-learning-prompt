@@ -362,8 +362,9 @@ test('取り込み中は、進み具合の棒と残り時間の目安を返す�
   assert.match(waiting.job.progress, /0\/1年度/);
   // 待つ間の選択肢を番号で出し、解説のあとにも進み具合を確かめる選択肢を付けさせる
   assert.ok(waiting.screen.startsWith(waiting.notice));
-  assert.match(waiting.screen, /1：今の項目の解説を読む\n2：今の項目の確認問題を解く\n3：取り込みの進み具合を確認する\n番号で答えてください。$/);
-  assert.match(waiting.afterScreen, /^■次はどうしますか？\n1：取り込みの進み具合を確認する/);
+  // 区切り線のあとの質問と選択肢で終える（ChatGPTがボタンにする形）
+  assert.match(waiting.screen, /\n\n---\n■取り込みを待つ間、どうしますか？\n1：今の項目の解説を読む\n2：今の項目の確認問題を解く\n3：取り込みの進み具合を確認する$/);
+  assert.match(waiting.afterScreen, /^---\n■次はどうしますか？\n1：取り込みの進み具合を確認する[^\n]*\n2：続けて解説を読む\n3：確認問題を解く$/);
   assert.match(waiting.howToShow, /afterScreen/);
   assert.doesNotMatch(waiting.screen + waiting.afterScreen, /セッション|session|nextQuestion/i);
   await call(env, 'GET', new URL(kicks[0]).pathname + '?run=all');
