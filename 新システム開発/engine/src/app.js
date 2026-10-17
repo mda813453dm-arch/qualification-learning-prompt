@@ -296,7 +296,7 @@ async function resolveSession(env, id, now) {
 /** 公式PDFから読み取った表を、そのまま表示できるマークダウンにする（見出しの文があれば表の前に置く）。 */
 // 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
 const SHOW_COMMON = 'question.screen を1文字も変えずに、そのまま回答の本文として出す（見出し・問題文・図・選択肢・問題PDF・答え方が、この順で入っている。前後に説明を足さない）。選択肢を書き換えない。renderPdfPages は呼ばない。利用者が「スキップ」と答えたら、submitAnswer の value に「スキップ」を送る。';
-const SHOW_TEXT = SHOW_COMMON;
+const SHOW_TEXT = `${SHOW_COMMON}「![公式の問題の図](…)」は公式PDFから切り出した図の画像なので、書き換えずにそのまま出す（その位置に図が出る）。図が表示されなくても、ウェブ検索・画像検索で別の図を探したり、自分で描いたりしない（「図を開く」のリンクを案内する）。`;
 const SHOW_WITH_FIGURE = `${SHOW_COMMON}svg タグの図は公式PDFの図なので、コードブロックに入れず省略せずそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索・Pythonで出さない。`;
 
 export function tablesMarkdown(tables) {

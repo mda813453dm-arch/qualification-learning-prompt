@@ -129,11 +129,16 @@ export function pickNext(state, items, { today, job }) {
  * 出題の表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題（renderPdfPages の display）と同じ形にそろえ、
  * AIはこれを一字一句そのまま出す。svgs は図ごとのSVGの文字（無い図は null。その図は画像のURLを示す）。
  */
+/** 本文に入れられない図：公式PDFから切り出した画像をその位置に出し、表示されないときのために開くリンクも付ける。 */
+export function figureImage(url, n = '') {
+  return `![公式の問題の図${n}](${url})\n▶ 図${n}が表示されないときは：[図${n}を開く（公式PDFの図）](${url})`;
+}
+
 export function questionDisplay(q, svgs) {
   // 本文に入れられない図は、リンクで開けるようにする（URLの直後に括弧を付けると、括弧までURLとして開かれてしまう）
   // 紙を画像にした年度（OCR）も、図は問題文と選択肢の間の図だけを切り出している（parser 0.6.2〜）
   const figs = q.figures.map((f, i) => svgs[i]
-    ?? `▶ 公式の問題の図${q.figures.length > 1 ? i + 1 : ''}：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`);
+    ?? figureImage(f.url, q.figures.length > 1 ? i + 1 : ''));
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
   return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
 }
