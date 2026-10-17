@@ -534,3 +534,22 @@ test('学習計画・項目の進め方・再開の確認は、区切り線の�
   const imp = (await call(env, 'POST', '/v1/handoff/import', { handoff: e.handoff })).body;
   assert.match(imp.resumeMenu, /^---\n■続きから始めますか？\n1：始めます$/);
 });
+
+test('賃管は、公式の掲載ページから年度ごとの問題と正解番号表のPDFを組にして集める', async () => {
+  const { chintaiSources, pdfLinks } = await import('../src/discover.js');
+  const html = ['2025', '2024', '2015'].map((y) => `<a href="/assets/common/else/past_question_${y}.pdf">（pdf）</a><a href="/assets/common/else/past_answer_${y}.pdf">（pdf）</a>`).join('')
+    + '<a href="/assets/common/else/past_question_2014.pdf">（pdf）</a>';
+  const s = chintaiSources(pdfLinks(html, 'https://www.chintaikanrishi.jp/exam/past/'), 99);
+  assert.deepEqual(s.map((x) => x.year).sort(), [2015, 2024, 2025], '正解番号表の無い年度は取り込まない');
+  assert.ok(s.every((x) => x.adapter === 'chintai' && x.answerUrl.endsWith(`past_answer_${x.year}.pdf`)));
+});
+
+test('startSession は資格名でも呼べる。エンジンが扱わない資格は、そのことと次の手を返す', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const ok = await call(env, 'POST', '/v1/sessions', { qualificationId: '賃管', sources: [] });
+  assert.equal(ok.status, 201, JSON.stringify(ok.body));
+  const ng = await call(env, 'POST', '/v1/sessions', { qualificationId: '気象予報士', sources: [] });
+  assert.equal(ng.status, 422);
+  assert.equal(ng.body.error, 'QUALIFICATION_NOT_SUPPORTED');
+  assert.match(JSON.stringify(ng.body), /PDFを添付/);
+});

@@ -8,7 +8,7 @@
  *   API_TOKEN     AIアプリが付ける Bearer トークン（図の取得だけは不要：画像表示がトークンを付けられないため）
  *   PARSER_URL    経路Bの分解サーバー（Cloud Run）。無ければ経路A（アプリが分解結果を送る）
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
- *   PARSER_VERSION 受け付ける分解結果の版（既定 0.6.2。パーサーの PARSER_VERSION と合わせる）
+ *   PARSER_VERSION 受け付ける分解結果の版（既定 0.7.0。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
 import https from 'node:https';
@@ -26,7 +26,7 @@ import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
 import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId } from './study-log.js';
 
-export const DEFAULT_PARSER_VERSION = '0.6.2';
+export const DEFAULT_PARSER_VERSION = '0.7.0';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;
@@ -34,7 +34,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'chintai']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
@@ -195,6 +195,15 @@ function catalogIdByName(name) {
   const c = Object.values(CATALOG).find((x) => [x.name, ...(x.aliases ?? [])].some((a) => t.includes(a) || a.includes(t)));
   return c?.qualificationId ?? null;
 }
+
+/** qualificationId か資格名から、エンジンの資格の番号を返す（エンジンの資格でなければ受け取った値のまま）。 */
+function catalogQid(v) {
+  const t = String(v ?? '').trim();
+  if (Object.values(CATALOG).some((c) => c.qualificationId === t)) return t;
+  return catalogIdByName(t) ?? t;
+}
+
+const NOT_SUPPORTED_HINT = 'この資格の過去問は、まだエンジンで扱えません。利用者に、公式の過去問PDFを添付してもらうか、AIが作った練習問題と明示して進めるかを選んでもらってください。';
 
 /** 新しい学習者のセッションを作り、過去問の取り込みを始める（startSession と同じ）。 */
 async function createSession(env, { qualificationId, learnerId, plan, sources }, now) {
@@ -485,7 +494,11 @@ async function route(request, env, url, now) {
 
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);
-    if (!qidOk(b.qualificationId)) throw new HttpError(400, 'QUALIFICATION_INVALID');
+    if (!qidOk(String(b.qualificationId ?? '').replace(/\s/g, ''))) throw new HttpError(400, 'QUALIFICATION_INVALID');
+    // 資格名（「賃管」など）で呼ばれても、エンジンが扱う資格なら番号に読み替える（指示文に番号を並べなくてよいように）
+    b.qualificationId = catalogQid(b.qualificationId);
+    const known = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId);
+    if (!known && !(Array.isArray(b.sources) && b.sources.length)) throw new HttpError(422, 'QUALIFICATION_NOT_SUPPORTED', NOT_SUPPORTED_HINT);
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);

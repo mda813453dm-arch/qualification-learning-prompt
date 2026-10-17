@@ -49,6 +49,28 @@ export const CATALOG = {
       { adapter: 'surveyor', year: 2026, section: 'main', questionUrl: 'https://www.gsi.go.jp/common/000278974.pdf', answerUrl: 'https://www.gsi.go.jp/common/000278975.pdf' },
     ],
   },
+  chintai: {
+    qualificationId: 'q097',
+    name: '賃貸不動産経営管理士（賃管）',
+    aliases: ['賃管', '賃貸不動産経営管理士', '賃貸管理士', '賃貸不動産管理士'],
+    org: '一般社団法人 賃貸不動産経営管理士協議会',
+    officialSite: 'https://www.chintaikanrishi.jp/',
+    pastExamPage: 'https://www.chintaikanrishi.jp/exam/past/',
+    // 公式の免除制度：賃貸不動産経営管理士講習の修了者は5問免除（問46〜50）
+    exemption: { label: '賃貸不動産経営管理士講習の修了による5問免除（問46〜50）', numbers: [46, 47, 48, 49, 50] },
+    // 分野の分け方（parser/qlp_parser/fields.py と同じ。協議会の試験案内の出題範囲6項目）
+    fields: {
+      c1: '管理受託契約に関する事項',
+      c2: '管理業務として行う賃貸住宅の維持保全に関する事項',
+      c3: '家賃、敷金、共益費その他の金銭の管理に関する事項',
+      c4: '賃貸住宅の賃貸借に関する事項',
+      c5: '賃貸住宅管理業法に関する事項',
+      c6: 'そのほかの賃貸住宅の管理の実務に関する事項',
+    },
+    sources: [
+      { adapter: 'chintai', year: 2025, section: 'main', questionUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_question_2025.pdf', answerUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_answer_2025.pdf' },
+    ],
+  },
 };
 
 /**

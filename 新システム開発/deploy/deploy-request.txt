@@ -50,3 +50,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T07:13:34Z plan/item/resume menus
 2026-10-17T07:44:58Z instructions buttons
 2026-10-17T08:24:21Z import-ready notice
+2026-10-17T08:32:56Z chintai adapter, parser 0.7.0, startSession by name

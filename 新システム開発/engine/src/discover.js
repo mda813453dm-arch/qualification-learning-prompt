@@ -79,9 +79,22 @@ export function surveyorSources(links, years = 10) {
   return latest(out, years);
 }
 
+/** 賃管（協議会）：年度ごとに past_question_YYYY.pdf と past_answer_YYYY.pdf が並ぶ（2015〜2025年度で確認）。 */
+export function chintaiSources(links, years = 10) {
+  const q = new Map();
+  const a = new Map();
+  for (const l of links) {
+    const m = /past_(question|answer)_(20[0-9]{2})\.pdf/.exec(l.href);
+    if (m) (m[1] === 'question' ? q : a).set(Number(m[2]), l.href);
+  }
+  const out = [...q].filter(([y]) => a.has(y)).map(([year, questionUrl]) => ({ adapter: 'chintai', year, section: 'main', questionUrl, answerUrl: a.get(year) }));
+  return latest(out, years);
+}
+
 export const LISTINGS = {
   takken: { url: 'https://www.retio.or.jp/exam/past_ques_ans/other/', sources: takkenSources },
   surveyor: { url: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html', sources: surveyorSources },
+  chintai: { url: 'https://www.chintaikanrishi.jp/exam/past/', sources: chintaiSources },
 };
 
 /** 掲載ページを開いて、直近 years 年度分の取り込み元を返す。fetchText(url) は HTML の文字列を返す関数。 */

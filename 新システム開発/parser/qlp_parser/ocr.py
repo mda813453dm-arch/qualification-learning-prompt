@@ -137,7 +137,11 @@ def is_garbled(page):
     text = re.sub(r"\s", "", page.get_text())
     if len(text) < 50:
         return False
-    return len(_ODD.findall(text)) > len(text) * 0.2
+    if len(_ODD.findall(text)) > len(text) * 0.2:
+        return True
+    # 字の対応表が無く、制御文字や記号に化けたページ（賃管の平成27年度など）：日本語がほとんど無く、記号ばかり
+    junk = len(re.findall(r"[\x00-\x1f!-/:-@\[-`{-~]", text))
+    return len(re.findall(_CJK, text)) < len(text) * 0.1 and junk > len(text) * 0.3
 
 
 def needs_ocr(page):
@@ -187,6 +191,11 @@ def _recognize(png, zoom, ox, oy, psm):
             # 行の左端は、汚れを捨てた後の最初の語の位置（字下げで選択肢をそろえるため）
             out.append((oy + y0 / zoom, oy + y1 / zoom, text, words[0][0], words))
     return out
+
+
+def image_text(png, psm="6"):
+    """画像（PNGのバイト列）を読み、行ごとの文字をつないだ文字列を返す（罫線を消した正答表などに使う）。"""
+    return "\n".join(ln[2] for ln in _recognize(png, 1, 0, 0, psm))
 
 
 def _remember(key, out):
