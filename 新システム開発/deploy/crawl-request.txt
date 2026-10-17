@@ -1,0 +1,4 @@
+itpass https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/questions.html
+chintai https://www.chintaikanrishi.jp/
+fp https://www.jafp.or.jp/exam/mohan/
+gyosei https://gyosei-shiken.or.jp/

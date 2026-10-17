@@ -1,0 +1,62 @@
+name: 公式サイトを巡って過去問PDFを集める（読み取りのみ）
+# 合図：新システム開発/deploy/crawl-request.txt に「名前 URL」を1行ずつ書いて push する。
+# 各URLのページと、同じサイト内の1段下のページを読み、見つかったPDFの一覧とPDF（各サイト最大60件）を diag-crawl ブランチに置く。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/crawl-request.txt'
+permissions:
+  contents: write
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: 巡る
+        run: |
+          mkdir -p out
+          cat > /tmp/crawl.py <<'PY'
+          import os, re, ssl, sys, json, urllib.request, urllib.parse
+          ctx = ssl.create_default_context()
+          def get(u):
+              req = urllib.request.Request(u, headers={'user-agent': 'Mozilla/5.0 qualification-learning-system'})
+              return urllib.request.urlopen(req, context=ctx, timeout=30).read()
+          KEY = re.compile(r'(kako|past|mondai|question|exam|shiken|kaitou|answer|seikai|mohan|openinfo|test|nendo|\d{4})', re.I)
+          name, start = sys.argv[1], sys.argv[2]
+          d = f'out/{name}'; os.makedirs(d, exist_ok=True)
+          host = urllib.parse.urlparse(start).netloc
+          pages, pdfs, log = [start], {}, []
+          seen = set()
+          i = 0
+          while i < len(pages) and i < 40:
+              u = pages[i]; i += 1
+              if u in seen: continue
+              seen.add(u)
+              try: html = get(u).decode('utf-8', 'replace')
+              except Exception as e: log.append(f'ERR {u} {e}'); continue
+              open(f'{d}/page{i:02d}.html', 'w').write(html); log.append(f'page{i:02d} {u}')
+              for m in re.finditer(r'<a[^>]+href=["\']([^"\'#]+)["\'][^>]*>(.*?)</a>', html, re.S | re.I):
+                  href = urllib.parse.urljoin(u, m.group(1)); text = re.sub(r'<[^>]+>|\s+', ' ', m.group(2)).strip()
+                  if href.lower().split('?')[0].endswith('.pdf'): pdfs.setdefault(href, f'{text} [on page{i:02d}]')
+                  elif i == 1 or len(pages) < 40:
+                      p = urllib.parse.urlparse(href)
+                      if p.netloc == host and KEY.search(p.path + text) and href not in pages and depth_ok(start, href) if False else (p.netloc == host and (KEY.search(p.path) or re.search('過去|試験問題|問題|解答|正解', text)) and href not in pages and i == 1):
+                          pages.append(href)
+          open(f'{d}/pdfs.txt', 'w').write('\n'.join(f'{k}\t{v}' for k, v in pdfs.items()))
+          for n, k in enumerate(list(pdfs)[:60]):
+              try: open(f'{d}/{n:02d}-' + os.path.basename(urllib.parse.urlparse(k).path), 'wb').write(get(k))
+              except Exception as e: log.append(f'ERR {k} {e}')
+          open(f'{d}/log.txt', 'w').write('\n'.join(log))
+          print(name, len(pages), 'pages', len(pdfs), 'pdfs')
+          PY
+          while read name url; do [ -n "$url" ] && python3 /tmp/crawl.py "$name" "$url" || true; done < 新システム開発/deploy/crawl-request.txt
+          du -sh out/*
+      - name: 結果を diag-crawl に置く
+        run: |
+          cd out
+          git init -q -b diag-crawl
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "crawl"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-crawl
