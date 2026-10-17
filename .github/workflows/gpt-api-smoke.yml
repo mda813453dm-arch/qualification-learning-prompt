@@ -50,6 +50,9 @@ jobs:
           code, s, sec = call("POST", "/v1/sessions", {"qualificationId": "q063", "sources": src, "learnerId": lid})
           assert code == 201 and sec < 20, ("開始が遅い・失敗", code, sec, s)
           sid = s["sessionId"]
+          years = [x["year"] for x in s["job"]["sources"]]
+          print("取り込む年度", years)
+          assert len(set(years)) >= 3 and years == sorted(years, reverse=True), ("公式ページの全年度を新しい順に取り込んでいない", years)
           # AIが引継ぎIDを sessionId として送っても出題できる
           code, n, _ = call("POST", f"/v1/sessions/{lid}/next")
           assert code == 200, ("引継ぎIDでの出題が失敗", code, n)
