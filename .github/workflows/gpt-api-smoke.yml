@@ -68,7 +68,8 @@ jobs:
               q = n["question"]
               d = q.get("screen") or ""
               svgs = re.findall(r"<svg.*?</svg>", d, re.S)
-              print(f"  問{q['questionNumber']} 図{len(q['figures'])} SVG{len(svgs)} 表示{len(d)}字")
+              print(f"  {q['year']}年度 問{q['questionNumber']} 図{len(q['figures'])} SVG{len(svgs)} 表示{len(d)}字 選択肢{[c[:12] for c in q['choices']]}")
+              assert "原本の画像を開く" not in d, ("問題PDFのリンクが2か所にある", d[:300])
               open(f"out/q{q['questionNumber']}-display.md", "w").write(d)
               for j, svg in enumerate(svgs):
                   import fitz
