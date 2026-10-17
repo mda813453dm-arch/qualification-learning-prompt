@@ -55,3 +55,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17 18:18 古い年度のOCRを Google Cloud Vision に切り替え（パーサー 0.8.0）
 2026-10-17T09:49:15Z resume from unanswered question, direct question pick, re-parse after parser upgrade
 2026-10-17T09:54:02Z move to a learner-requested field
+2026-10-17T10:09:15Z resume: learner chooses unanswered question or new

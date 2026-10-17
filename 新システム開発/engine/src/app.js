@@ -183,6 +183,19 @@ function resumed(saved) {
   return { ...saved, current: cur && !cur.grade ? cur : null };
 }
 
+/** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
+const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
+
+/** 前回答えていない問の名前（「2025年度 問13（応用測量）」）。無ければ null。 */
+function pendingLabel(saved) {
+  const cur = saved?.current;
+  if (!cur || cur.grade || !cur.source) return null;
+  const names = Object.values(CATALOG).find((c) => c.qualificationId === saved.qualificationId)?.fields ?? {};
+  const field = cur.fieldId ? names[cur.fieldId] : null;
+  const year = cur.source.year ? `${cur.source.year}年度 ` : '';
+  return `${year}問${cur.source.number ?? '?'}${field ? `（${field}）` : ''}`;
+}
+
 /** 引継ぎIDで残した学習の記録から、新しいセッションを作る（無ければ null）。 */
 async function sessionFromLearner(env, lid, now) {
   const saved = await env.STORE.get(learnerStateKey(lid), 'json');
@@ -365,10 +378,19 @@ const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込み�
 const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の答えを待つ（前後に案内を足さない。選択肢の後ろに何も書かない）。1・2を選ばれたら、解説（または「AIが作った確認問題」と明示した確認問題）を出し、その返答の最後に afterScreen を1文字も変えずに付ける（afterScreen の後ろに何も書かない）。確認問題の答え合わせのあとも同じく afterScreen を付ける。「取り込みの進み具合を確認する」を選ばれたら nextQuestion を呼ぶ（getJob は使わない）。';
 
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
-async function nextView(env, id, state0, now, { prefetched = false, want = null } = {}) {
+async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
+  let want = want0;
   let state = state0;
   const job = await progress(env, sessionJobId(state), now);
-  const items = await availablePackets(env.STORE, job, now);
+  let items = await availablePackets(env.STORE, job, now);
+  const prevField = state.current?.fieldId ?? null;
+  // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
+  if (want && FRESH_WANT.test(want)) {
+    const skipId = state.current && !state.current.grade ? state.current.questionId : null;
+    state = { ...state, current: null };
+    if (skipId) items = items.filter((x) => x.packet.questionId !== skipId);
+    want = null;
+  }
   // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
   const fieldNames = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
   const wanted = want ? findWanted(state, items, want, fieldNames) : null;
@@ -387,7 +409,6 @@ async function nextView(env, id, state0, now, { prefetched = false, want = null 
     }
     return { status: pick.status, notice, job: jobView(job) };
   }
-  const prevField = state.current?.fieldId ?? null;
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
   state = pin(state, pick.item, pick.kind, now);
@@ -570,6 +591,8 @@ async function route(request, env, url, now) {
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     const total = (await env.STORE.get(timeKey(learnerId), 'json'))?.minutes ?? 0;
+    // 前回答えていない問があれば、その問から続けるかを利用者に選んでもらう（勝手には出さない）
+    const pendingQuestion = given ? pendingLabel(await env.STORE.get(learnerStateKey(learnerId), 'json')) : null;
     const t = jst(now);
     return json(201, {
       studyId,
@@ -578,6 +601,7 @@ async function route(request, env, url, now) {
       startDate: t.date,
       startTime: t.time,
       totalMinutes: total,
+      pendingQuestion,
       display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
       itemMenu: ITEM_MENU,
       howToShow: ITEM_HOW,

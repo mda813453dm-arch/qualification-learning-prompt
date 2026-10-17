@@ -107,7 +107,7 @@ paths:
             schema:
               type: object
               properties:
-                question: { type: string, description: 利用者が指定した問題または分野（例「2025年度 問13」「問13」「応用測量」）。指定が無ければ省く }
+                question: { type: string, description: 利用者が指定した問題または分野（例「2025年度 問13」「問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く }
       responses:
         '200':
           description: 次の問題、または待ち・終了
@@ -257,6 +257,7 @@ paths:
                   resumed: { type: boolean }
                   startTime: { type: string, description: 開始時刻（日本時間 HH:MM） }
                   totalMinutes: { type: integer, description: これまでの累計学習時間（分） }
+                  pendingQuestion: { type: [string, 'null'], description: 再開のとき、前回答えていない問題（例「2025年度 問13（応用測量）」）。あれば、そこから続けるかを利用者に選んでもらう }
                   display: { type: string, description: 利用者にそのまま表示する }
   /v1/study/{studyId}/end:
     post:

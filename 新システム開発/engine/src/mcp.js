@@ -81,7 +81,7 @@ export const TOOLS = [
   {
     name: 'nextQuestion',
     description: '次の問題を受け取る。未回答の問題があれば同じ問題を返す。status は question / waiting / finished。利用者が問題や分野を指定したとき（「問13を出して」「応用測量に移りたい」など）は question にその言葉を入れる。',
-    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。指定が無ければ省く' } } },
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く' } } },
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.question ? { question: a.question } : undefined],
   },
   {

@@ -586,6 +586,26 @@ test('答えていない問を残して終えたら、別のチャットで再�
   assert.equal(n.repeated, true);
 });
 
+test('再開のとき、前回答えていない問を startStudy で知らせ、利用者が「新しい問題から」を選べば別の問を出す', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
+  assert.equal(st.pendingQuestion, null);
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const q1 = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
+  await call(env, 'POST', `/v1/study/${st.studyId}/end`, { sessionId: s.sessionId });
+  env.now = T0 + 3 * DAY;
+  const st2 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士', learnerId: st.learnerId })).body;
+  assert.match(st2.pendingQuestion, new RegExp(`^${q1.year}年度 問${q1.questionNumber}`));
+  const again = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const fresh = (await call(env, 'POST', `/v1/sessions/${again.sessionId}/next`, { question: '新しい問題' })).body;
+  assert.equal(fresh.status, 'question');
+  assert.notEqual(fresh.question.questionId, q1.questionId);
+  assert.doesNotMatch(fresh.question.screen, /見つかりませんでした/);
+  // 新しい問を答えると、前回の問は採点も記録もされていない
+  const g = (await call(env, 'POST', `/v1/sessions/${again.sessionId}/answer`, { questionId: fresh.question.questionId, value: 1 })).body;
+  assert.equal(g.grade.questionId, fresh.question.questionId);
+});
+
 test('利用者が問題を指定したら（「問3を出して」）、出題中の問があってもその問を出す。無ければ知らせて通常の次の問', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const { sessionId } = await startSession(env);
