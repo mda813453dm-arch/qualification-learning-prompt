@@ -345,6 +345,10 @@ test('本番では、学習の開始と出題の呼び出しで分解を待た�
   assert.equal(parse.count, 1);
   const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
   assert.equal(q.status, 'question');
+  // 待ったあとの最初の問題は、取り込めた年度を一言知らせてから出す（2問目からは付けない）
+  assert.match(q.question.screen, /^\*\*\d{4}(〜\d{4})?年度の過去問の取り込みが終わりました。過去問を出題します。\*\*\n\n(📍.+\n)?■\d{4}年度 問/);
+  const r = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: q.question.questionId, value: '1' })).body;
+  if (r.next?.question) assert.ok(!r.next.question.screen.includes('取り込みが終わりました'));
 });
 
 test('取り込み中は、進み具合の棒と残り時間の目安を返す。AIが書き崩した問題番号でも、出題中の問なら採点する', async () => {
@@ -384,7 +388,7 @@ test('出題の画面は見出しから答え方までそろっており、「�
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const { sessionId } = await startSession(env);
   const q = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
-  assert.match(q.screen, /^(📍.+\n)?■\d{4}年度 問1\n\n問1の本文\n\n1　一[\s\S]*問題PDF：\[公式の問題PDF[^\]]*\]\(https:[^)]+\)\n\n[\s\S]*飛ばすときは「スキップ」と入力してください。$/);
+  assert.match(q.screen, /^(\*\*.+取り込みが終わりました。過去問を出題します。\*\*\n\n)?(📍.+\n)?■\d{4}年度 問1\n\n問1の本文\n\n1　一[\s\S]*問題PDF：\[公式の問題PDF[^\]]*\]\(https:[^)]+\)\n\n[\s\S]*飛ばすときは「スキップ」と入力してください。$/);
   assert.match(q.howToShow, /question\.screen/);
   const r = (await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: 'スキップ' })).body;
   assert.equal(r.grade.skipped, true);

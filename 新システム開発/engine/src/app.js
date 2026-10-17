@@ -356,12 +356,17 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
     const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
     if (pick.status === 'waiting') {
       // 待つ間にできることを番号で選べるようにし、解説や確認問題のあとにも、進み具合を確かめる選択肢を必ず出す
+      // 取り込みを待ったことを控え、そろって最初の問題を出すときに一言知らせる
+      if (!state.waitedForImport) await saveSession(env, id, { ...state, waitedForImport: true }, now);
       return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
     }
     return { status: pick.status, notice, job: jobView(job) };
   }
   const prevField = state.current?.fieldId ?? null;
+  // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
+  const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
   state = pin(state, pick.item, pick.kind, now);
+  if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
   await saveSession(env, id, state, now);
   const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
@@ -380,9 +385,20 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
-  const screen = questionScreen(shown, display, { fieldName, fieldNotice });
+  const screen = [readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   const question = { ...shown, figures, display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
   return { status: 'question', repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
+}
+
+/** 「2022〜2026年度の過去問の取り込みが終わりました。過去問を出題します。」（取り込み中の年度が残っていれば、そのことも添える） */
+export function importReadyNotice(job) {
+  const done = (job?.sources ?? []).filter((s) => s.status === 'done' && (s.packetCount ?? 1) > 0).map((s) => s.year);
+  if (!done.length) return null;
+  const lo = Math.min(...done);
+  const hi = Math.max(...done);
+  const span = lo === hi ? `${hi}年度` : `${lo}〜${hi}年度`;
+  const rest = (job.sources ?? []).some((s) => s.status === 'pending') ? '残りの年度は、学習を続けている間に取り込みます。' : '';
+  return `**${span}の過去問の取り込みが終わりました。過去問を出題します。**${rest ? `\n${rest}` : ''}`;
 }
 
 async function route(request, env, url, now) {
