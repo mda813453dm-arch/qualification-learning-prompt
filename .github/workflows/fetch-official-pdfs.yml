@@ -1,0 +1,46 @@
+name: 公式PDFを取ってきて調べられるように置く（読み取りのみ）
+# 合図：新システム開発/deploy/fetch-pdf-request.txt に「surveyor 2024」のように資格と年度を書いて push する。
+# 結果は diag-pdfs ブランチに置く（掲載ページのHTMLと、その年度の問題・正答PDF）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/fetch-pdf-request.txt'
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: 掲載ページから探して取ってくる
+        run: |
+          mkdir -p out
+          cd 新システム開発/engine && node --input-type=module -e "
+          import fs from 'node:fs';
+          import { LISTINGS, pdfLinks } from './src/discover.js';
+          const [slug, ...years] = fs.readFileSync('../deploy/fetch-pdf-request.txt', 'utf8').trim().split(/\s+/).slice(-2 - 0);
+          const l = LISTINGS[slug];
+          const html = await (await fetch(l.url)).text();
+          fs.writeFileSync('../../out/listing.html', html);
+          const all = l.sources(pdfLinks(html, l.url), 99);
+          fs.writeFileSync('../../out/sources.json', JSON.stringify(all, null, 1));
+          for (const s of all.filter((x) => years.map(Number).includes(x.year))) {
+            for (const u of [...(s.questionUrls ?? [s.questionUrl]), s.answerUrl].filter(Boolean)) {
+              const b = Buffer.from(await (await fetch(u)).arrayBuffer());
+              fs.writeFileSync('../../out/' + s.year + '-' + u.split('/').pop(), b);
+              console.log(s.year, u, b.length);
+            }
+          }
+          console.log(all.map((s) => s.year).join(' '));
+          "
+      - name: 結果を diag-pdfs に置く
+        run: |
+          cd out
+          git init -q -b diag-pdfs
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "official pdfs"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-pdfs
