@@ -45,6 +45,8 @@ jobs:
           lid = st["learnerId"]
           src = [{"adapter": "surveyor", "year": 2026, "section": "main",
                   "questionUrl": "https://web2.gsi.go.jp/common/000278974.pdf", "answerUrl": "https://web2.gsi.go.jp/common/000278975.pdf"}]
+          code, j, _ = call("GET", "/v1/jobs/q063")
+          assert code == 200 and "nextQuestion" in j.get("notice", ""), (code, j)
           code, s, sec = call("POST", "/v1/sessions", {"qualificationId": "q063", "sources": src, "learnerId": lid})
           assert code == 201 and sec < 20, ("開始が遅い・失敗", code, sec, s)
           sid = s["sessionId"]
@@ -67,10 +69,14 @@ jobs:
                   fixed = svg.replace('width="100%"', f'width="{vb[2]*2}" height="{vb[3]*2}"', 1)
                   fitz.open(stream=fixed.encode(), filetype="svg")[0].get_pixmap(dpi=72).save(f"out/q{q['questionNumber']}-svg{j+1}.png")
               assert d.startswith("📍") or d.startswith("■"), "screen が無い"
+              for link in re.findall(r"\]\((https://[^)]+/v1/figure/[^)]+)\)", d):
+                  r = urllib.request.urlopen(link, timeout=30)
+                  print("  図のリンク", r.status, r.headers.get("content-type"))
+                  assert r.status == 200
               if q["figures"]:
                   figs += 1
               seen.append(q["questionNumber"])
-              if len(seen) >= 28 or figs >= 3:
+              if len(seen) >= 28 or (figs >= 3 and 21 in seen):
                   break
               # ChatGPTが書き崩した番号で送っても採点される
               code, a, _ = call("POST", f"/v1/sessions/{sid}/answer", {"questionId": f"{q['year']}年 問{q['questionNumber']}", "value": "スキップ" if len(seen) == 1 else 1})

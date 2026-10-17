@@ -112,7 +112,11 @@ export function pickNext(state, items, { today, job }) {
  * AIはこれを一字一句そのまま出す。svgs は図ごとのSVGの文字（無い図は null。その図は画像のURLを示す）。
  */
 export function questionDisplay(q, svgs) {
-  const figs = q.figures.map((f, i) => svgs[i] ?? `（図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、こちらで見てください：${f.url}）`);
+  // 本文に入れられない図は、リンクで開けるようにする（URLの直後に括弧を付けると、括弧までURLとして開かれてしまう）
+  const ocr = q.stemMode === 'ocr' || q.choiceMode === 'ocr';
+  const figs = q.figures.map((f, i) => svgs[i] ?? (ocr
+    ? `▶ 公式PDFの原本（図を含む）を画像で見る：[原本の画像を開く](${f.url})`
+    : `▶ 図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、画像で見てください：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`));
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
   return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
 }

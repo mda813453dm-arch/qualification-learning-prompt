@@ -240,6 +240,8 @@ async function progress(env, qid, now) {
   return withNotice(job, now);
 }
 
+const JOB_BY_SESSION = '取り込みは続いています。状況は nextQuestion（startSession の sessionId）で確かめてください。取り込み中なら進み具合が出ます。startSession をやり直さないでください。';
+
 const sourceKey = (urlSha) => `srcurl/${urlSha}`;
 
 /** エンジンが取り込む公式の問題PDFのURLを控える（renderPdfPages で別に出させないため）。 */
@@ -555,6 +557,10 @@ async function route(request, env, url, now) {
       // ?run=all：学習画面から裏で呼ぶとき（取り込みを最後まで進める）
       const runAll = url.searchParams.get('run') === 'all';
       const job = runAll ? await advance(env, qid, now, RUN_ALL_MS, RUN_ALL_MS + 300000) : await progress(env, qid, now);
+      if (!job && !runAll && !qid.includes('~')) {
+        // AIが資格の番号だけで状況を聞いたとき。404 を返すと、取り込みをやり直してしまう（学習者が別になる）
+        return json(200, { job: null, notice: JOB_BY_SESSION });
+      }
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
       if (runAll && job.state === 'running' && !job.leaseUntil) await kickIngest(env, qid, now);

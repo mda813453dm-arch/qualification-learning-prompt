@@ -394,3 +394,11 @@ test('エンジンが出題する資格の公式PDFは、renderPdfPages でペ�
   assert.equal(r.body.error, 'ENGINE_QUESTION');
   assert.match(r.body.hint, /question\.screen/);
 });
+
+test('資格の番号だけで取り込み状況を聞かれても 404 にせず、nextQuestion で確かめるよう返す', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const r = await call(env, 'GET', '/v1/jobs/q063');
+  assert.equal(r.status, 200);
+  assert.equal(r.body.job, null);
+  assert.match(r.body.notice, /nextQuestion/);
+});
