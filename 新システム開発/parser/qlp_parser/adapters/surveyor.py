@@ -390,27 +390,44 @@ def _lines(words):
     return rows
 
 
+LABEL = re.compile(r"^[(（]?[ア-ンa-eA-E][)）]?$")
+
+
 def _question(number, no, pg, text_heading):
     markers = _choice_markers(pg)
     notes = []
     choices, choice_mode = [], "text"
     if markers:
         line_h = (markers[-1][1] - markers[0][1]) / (CHOICE_COUNT - 1)
+        top = markers[0]
+        # 選択肢のすぐ上の1行に「ア イ ウ」のような列の見出しがあるか。選択肢が複数行だと line_h が大きく、
+        # 問題文の最後の行まで入ってしまうので、見るのは番号の高さの数行分だけ。文の行は見出しにしない
+        band = 5 * (top[3] - top[1])
+        above = [w for w in pg.words if top[1] - band - 3 <= w[1] and w[3] < top[1] - 1 and w[0] > top[2] + 4]
+        labels = None
+        if len(above) >= 2 and all(LABEL.match(unicodedata.normalize("NFKC", w[4])) for w in above):
+            labels = [((w[0] + w[2]) / 2, unicodedata.normalize("NFKC", w[4])) for w in sorted(above, key=lambda w: w[0])]
+        if any(top[1] - band - 3 <= d["rect"].y0 < top[1] - 3 and d["rect"].x0 > top[2] + 4 for d in pg.glyphs):
+            choice_mode = "official_image"
         for c, m in enumerate(markers):
             # 同じ行の語は上端が番号より少し上にずれることがある（m2 など）ので、3pt上から次の番号の3pt上まで
             y0, y1 = m[1] - 3, (markers[c + 1][1] - 3 if c + 1 < CHOICE_COUNT else m[1] + line_h - 3)
-            words = [w for w in pg.words if y0 <= w[1] < y1 and w is not m]
+            # 語の上下の中央で選択肢に振り分ける（OCRの語は上端が番号より上にはみ出すことがある）
+            words = [w for w in pg.words if y0 <= (w[1] + w[3]) / 2 < y1 and w is not m]
             # 番号のすぐ右の「.」は番号の一部（R8では図形）。それ以外の字の図形が文字で読めなければ欠けあり
             stray = [d for d in pg.glyphs if y0 <= d["rect"].y0 < y1 and d["rect"].x0 > m[2] + 4 and not _covered(d["rect"], words)]
-            text = clean_text("\n".join(_line_text(r) for r in _lines(words)))
+            if labels:
+                # 列の見出しのある選択肢は「ア：…、イ：…」の形にする（列の意味を文字だけで伝えるため）
+                cols = [[] for _ in labels]
+                for w in words:
+                    cx = (w[0] + w[2]) / 2
+                    cols[min(range(len(labels)), key=lambda i: abs(labels[i][0] - cx))].append(w)
+                text = "、".join(f"{lab}：{clean_text(_line_text(col))}" for (_, lab), col in zip(labels, cols) if col)
+            else:
+                text = clean_text("\n".join(_line_text(r) for r in _lines(words)))
             if stray or not text:
                 choice_mode = "official_image"
             choices.append(text)
-        # 選択肢のすぐ上に列の見出し（「ア イ」など）があれば、文字だけでは列の意味が伝わらないので画像で見せる
-        top = markers[0]
-        if any(top[1] - line_h - 3 <= d["rect"].y0 < top[1] - 3 and d["rect"].x0 > top[2] + 4 for d in pg.glyphs) or any(
-                top[1] - line_h - 3 <= w[1] < top[1] - 3 and w[0] > top[2] + 4 for w in pg.words):
-            choice_mode = "official_image"
         if choice_mode == "text" and pg.ocr:
             choice_mode = "ocr"
         if choice_mode == "official_image":
