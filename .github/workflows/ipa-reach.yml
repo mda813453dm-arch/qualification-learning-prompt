@@ -1,0 +1,56 @@
+name: ITパスポートの公式PDFに届くかを確かめる（読み取りのみ）
+# 合図：新システム開発/deploy/ipa-reach-request.txt を更新して push する。
+# GitHub の実行環境から直接取りに行った結果と、公開中のエンジン（Cloud Run）経由で取りに行った結果を diag-ipa ブランチに置く。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/ipa-reach-request.txt'
+permissions:
+  contents: write
+jobs:
+  reach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 合言葉を読む（表示しない）
+        run: |
+          t=$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)
+          echo "::add-mask::$t"
+          echo "QLP_TOKEN=$t" >> "$GITHUB_ENV"
+      - name: 取りに行く
+        run: |
+          mkdir -p out
+          python3 - <<'PY' | tee out/result.txt
+          import json, os, urllib.request
+          BASE = "https://qlp-engine-ojsw3j46qa-an.a.run.app"
+          UA = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'}
+          urls = [l.strip() for l in open('新システム開発/deploy/ipa-reach-request.txt') if l.startswith('http')]
+          for u in urls:
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30); b = r.read()
+                  print('runner', u, r.status, len(b), b[:8])
+              except Exception as e:
+                  print('runner', u, 'ERR', e)
+              req = urllib.request.Request(BASE + '/v1/pdf-pages', method='POST', data=json.dumps({'url': u, 'pages': [1]}).encode(),
+                                           headers={'authorization': 'Bearer ' + os.environ['QLP_TOKEN'], 'content-type': 'application/json'})
+              try:
+                  r = urllib.request.urlopen(req, timeout=120); j = json.loads(r.read())
+                  print('engine', u, r.status, (j.get('pages') or [{}])[0].get('url', '')[:80] if isinstance(j.get('pages'), list) else list(j)[:6])
+              except urllib.error.HTTPError as e:
+                  print('engine', u, e.code, e.read()[:300])
+              except Exception as e:
+                  print('engine', u, 'ERR', e)
+          PY
+      - name: 結果を diag-ipa に置く
+        run: |
+          cd out
+          git init -q -b diag-ipa
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "ipa reach"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-ipa
