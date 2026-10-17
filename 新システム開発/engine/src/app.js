@@ -453,8 +453,10 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
   const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
-  const question = { ...shown, figures, display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
-  return { status: 'question', repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
+  // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
+  const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
+  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
+  return { status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
 }
 
 /** 「2022〜2026年度の過去問の取り込みが終わりました。過去問を出題します。」（取り込み中の年度が残っていれば、そのことも添える） */
@@ -539,12 +541,13 @@ async function route(request, env, url, now) {
 
   // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
   // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
-  if (parts[0] === 'mcp' && parts.length <= 2) {
+  // ChatGPT アプリ（/app/<トークン>）は、問題をエンジンが描く画面で出す
+  if ((parts[0] === 'mcp' || parts[0] === 'app') && parts.length <= 2) {
     const viaPath = parts.length === 2 && env.API_TOKEN && timingSafeEqual(decodeURIComponent(parts[1]), env.API_TOKEN);
     const viaHeader = env.API_TOKEN && timingSafeEqual(request.headers.get('authorization') ?? '', `Bearer ${env.API_TOKEN}`);
     if (!viaPath && !viaHeader) throw new HttpError(401, 'UNAUTHORIZED');
     if (method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
-    return mcp(request, env, url, now);
+    return mcp(request, env, url, now, parts[0] === 'app');
   }
 
   const auth = (request.headers.get('authorization') ?? '').trim();
@@ -803,7 +806,7 @@ async function route(request, env, url, now) {
   throw new HttpError(404, 'NOT_FOUND');
 }
 
-async function mcp(request, env, url, now) {
+async function mcp(request, env, url, now, widget = false) {
   let msg;
   try {
     msg = JSON.parse(await request.text());
@@ -817,11 +820,12 @@ async function mcp(request, env, url, now) {
       headers: { authorization: `Bearer ${env.API_TOKEN}`, 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const res = await handle(inner, env);
+    const res = await handle(inner, widget ? { ...env, QLP_WIDGET: true } : env);
     return { status: res.status, body: await res.json() };
   };
   const batch = Array.isArray(msg);
-  const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi)))).filter(Boolean);
+  const opts = { widget, baseUrl: env.PUBLIC_BASE_URL ?? url.origin };
+  const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi, opts)))).filter(Boolean);
   if (!out.length) return new Response(null, { status: 202 });
   return json(200, batch ? out : out[0]);
 }

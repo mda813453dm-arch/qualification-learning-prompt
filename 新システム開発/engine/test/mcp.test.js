@@ -98,3 +98,47 @@ test('必須の引数が無い・知らないツール・知らないメソッ�
   assert.equal((await rpc(env, 'tools/call', { name: 'nothing', arguments: {} })).body.error.code, -32602);
   assert.equal((await rpc(env, 'resources/list', {})).body.error.code, -32601);
 });
+
+test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画面に出し、AIには図や表示文を渡さない', async () => {
+  const env = makeEnv();
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${TOKEN}` })).body.result;
+  assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
+  const tools = (await app('tools/list', {})).tools;
+  const nq = tools.find((t) => t.name === 'nextQuestion');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v1.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
+  const res = (await app('resources/list', {})).resources;
+  assert.equal(res[0].mimeType, 'text/html;profile=mcp-app');
+  const html = (await app('resources/read', { uri: res[0].uri })).contents[0];
+  assert.match(html.text, /submitAnswer/);
+  assert.deepEqual(html._meta.ui.csp.resourceDomains, ['https://engine.example']);
+  // 通常の /mcp には画面を出さない（Claude などの接続はこれまでどおり）
+  assert.equal((await rpc(env, 'tools/list', {})).body.result.tools.find((t) => t.name === 'nextQuestion')._meta, undefined);
+  assert.equal((await rpc(env, 'resources/list', {})).body.error.code, -32601);
+
+  const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
+  const call2 = (name, args) => app('tools/call', { name, arguments: args });
+  const { sessionId } = (await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
+  const r = await call2('nextQuestion', { sessionId });
+  const full = r._meta.qlp;
+  assert.equal(full.sessionId, sessionId);
+  assert.ok(Array.isArray(full.question.figureUrls));
+  assert.ok(full.question.screen);
+  const q = r.structuredContent.question;
+  assert.equal(q.screen, undefined);
+  assert.equal(q.display, undefined);
+  assert.equal(q.figures, undefined);
+  assert.equal(q.figureUrls, undefined);
+  assert.match(q.howToShow, /書き直したり/);
+  assert.ok(q.stem && q.choices);
+  const a = await call2('submitAnswer', { sessionId, questionId: q.questionId, value: '3' });
+  assert.equal(a._meta.qlp.grade.correct, true);
+  if (a._meta.qlp.next.question) {
+    assert.equal(a.structuredContent.next.question.screen, undefined);
+    assert.ok(a._meta.qlp.next.question.screen);
+  }
+  // 通常の /mcp では figureUrls を付けない
+  const s2 = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
+  assert.equal((await call(env, 'nextQuestion', { sessionId: s2.sessionId })).structuredContent.question.figureUrls, undefined);
+});

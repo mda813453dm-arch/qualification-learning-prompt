@@ -4,6 +4,7 @@
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
+import { WIDGET_URI, WIDGET_MIME, widgetHtml } from './widget.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const SERVER_INFO = { name: 'qlp-engine', title: '資格学習エンジン', version: '0.1.0' };
@@ -139,6 +140,39 @@ export const TOOLS = [
 ];
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
+
+/** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
+const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer']);
+const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
+
+/** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
+export function forModel(body) {
+  if (!body || typeof body !== 'object') return body;
+  const slim = (v) => {
+    if (!v?.question) return v;
+    const { display, screen, figures, figureUrls, howToShow, ...q } = v.question; // eslint-disable-line no-unused-vars
+    return { ...v, question: { ...q, figureCount: (figureUrls ?? figures ?? []).length, howToShow: WIDGET_HOW } };
+  };
+  const out = slim(body);
+  return out.next ? { ...out, next: slim(out.next) } : out;
+}
+
+function widgetResource(baseUrl) {
+  const origin = (() => { try { return new URL(baseUrl).origin; } catch { return null; } })();
+  const csp = { connectDomains: [], resourceDomains: origin ? [origin] : [] };
+  return {
+    uri: WIDGET_URI,
+    mimeType: WIDGET_MIME,
+    text: widgetHtml(),
+    _meta: {
+      ui: { prefersBorder: true, csp },
+      'openai/widgetPrefersBorder': true,
+      'openai/widgetCSP': { connect_domains: [], resource_domains: csp.resourceDomains },
+      'openai/widgetDescription': '過去問の問題文・公式PDFの図・選択肢を表示し、選択肢を押すと採点する画面。',
+    },
+  };
+}
+const WIDGET_TOOL_META = { ui: { resourceUri: WIDGET_URI }, 'openai/outputTemplate': WIDGET_URI, 'openai/widgetAccessible': true };
 const ok = (id, result) => ({ jsonrpc: '2.0', id, result });
 const fail = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 
@@ -146,7 +180,7 @@ const fail = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { 
  * JSON-RPC の1件を処理する。callApi(method, path, body) は認証済みで API を呼び、{status, body} を返す。
  * 通知（id が無いもの）は null を返す。
  */
-export async function handleRpc(msg, callApi) {
+export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } = {}) {
   if (!msg || msg.jsonrpc !== '2.0' || typeof msg.method !== 'string') return fail(msg?.id, -32600, 'Invalid Request');
   const isNotification = msg.id === undefined;
   if (isNotification) return null;
@@ -156,7 +190,7 @@ export async function handleRpc(msg, callApi) {
       const asked = params.protocolVersion;
       return ok(id, {
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
-        capabilities: { tools: { listChanged: false } },
+        capabilities: widget ? { tools: { listChanged: false }, resources: { listChanged: false } } : { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
         instructions: INSTRUCTIONS,
       });
@@ -164,7 +198,19 @@ export async function handleRpc(msg, callApi) {
     case 'ping':
       return ok(id, {});
     case 'tools/list':
-      return ok(id, { tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema })) });
+      return ok(id, {
+        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+      });
+    case 'resources/list':
+      if (!widget) return fail(id, -32601, `Method not found: ${method}`);
+      return ok(id, { resources: [{ uri: WIDGET_URI, name: '問題の画面', mimeType: WIDGET_MIME }] });
+    case 'resources/templates/list':
+      if (!widget) return fail(id, -32601, `Method not found: ${method}`);
+      return ok(id, { resourceTemplates: [] });
+    case 'resources/read':
+      if (!widget) return fail(id, -32601, `Method not found: ${method}`);
+      if (params.uri !== WIDGET_URI) return fail(id, -32602, `Unknown resource: ${params.uri}`);
+      return ok(id, { contents: [widgetResource(baseUrl)] });
     case 'tools/call': {
       const tool = BY_NAME.get(params.name);
       if (!tool) return fail(id, -32602, `Unknown tool: ${params.name}`);
@@ -176,6 +222,10 @@ export async function handleRpc(msg, callApi) {
       }
       const [m, path, body] = tool.api(args);
       const res = await callApi(m, path, body);
+      if (widget && WIDGET_TOOLS.has(tool.name) && res.status < 400) {
+        const view = forModel(res.body);
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: res.body } });
+      }
       return ok(id, {
         isError: res.status >= 400,
         content: [{ type: 'text', text: JSON.stringify(res.body) }],
