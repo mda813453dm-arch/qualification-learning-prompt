@@ -44,3 +44,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T05:36:07Z parser 0.6.1 OCR choices; no duplicate original link
 2026-10-17T05:47:08Z rotate years within a field set
 2026-10-17T06:22:59Z engine hide internal notices
+2026-10-17T06:43:35Z parser 0.6.2 OCR figure-only crop
