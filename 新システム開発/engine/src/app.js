@@ -189,14 +189,12 @@ export const INLINE_SVG_MAX = 8000;
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 
-/** 前回答えていない問の名前（「2025年度 問13（応用測量）」）。無ければ null。 */
+/** 前回答えていない問の名前（「2025年度 問13」）。無ければ null。選択ボタンに入るので短くする（分野名は付けない）。 */
 function pendingLabel(saved) {
   const cur = saved?.current;
   if (!cur || cur.grade || !cur.source) return null;
-  const names = Object.values(CATALOG).find((c) => c.qualificationId === saved.qualificationId)?.fields ?? {};
-  const field = cur.fieldId ? names[cur.fieldId] : null;
   const year = cur.source.year ? `${cur.source.year}年度 ` : '';
-  return `${year}問${cur.source.number ?? '?'}${field ? `（${field}）` : ''}`;
+  return `${year}問${cur.source.number ?? '?'}`;
 }
 
 /** 引継ぎデータの文から、引継ぎIDらしい文字列を探す（「引継ぎID」の近くを先に。最大5つ）。 */
@@ -393,7 +391,7 @@ const RESUME_HOW = '読めた内容を短く確認したあと、「続きから
 
 // ChatGPTは、返答が区切り線のあとの「質問＋番号の選択肢」で終わるとボタンにする（後ろに案内の行があるとボタンにならない）
 const WAIT_MENU = ['---', '■取り込みを待つ間、どうしますか？', '1：今の項目の解説を読む', '2：今の項目の確認問題を解く', '3：取り込みの進み具合を確認する'].join('\n');
-const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込みの進み具合を確認する（そろっていれば過去問を始めます）', '2：続けて解説を読む', '3：確認問題を解く'].join('\n');
+const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込みの進み具合を確認する', '2：続けて解説を読む', '3：確認問題を解く'].join('\n');
 const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の答えを待つ（前後に案内を足さない。選択肢の後ろに何も書かない）。1・2を選ばれたら、解説（または「AIが作った確認問題」と明示した確認問題）を出し、その返答の最後に afterScreen を1文字も変えずに付ける（afterScreen の後ろに何も書かない）。確認問題の答え合わせのあとも同じく afterScreen を付ける。「取り込みの進み具合を確認する」を選ばれたら nextQuestion を呼ぶ（getJob は使わない）。';
 
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
