@@ -19,7 +19,7 @@ import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
-import { newLearnerId, pages } from './pages.js';
+import { findSources, newLearnerId, pages } from './pages.js';
 import { sha256Hex } from './store.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
@@ -129,6 +129,16 @@ async function body(request) {
   } catch {
     throw new HttpError(400, 'BODY_INVALID');
   }
+}
+
+/**
+ * エンジンが扱う資格（宅建・測量士補）は、取り込む年度をAIに選ばせず、公式の掲載ページにある過去問をすべて取り込む。
+ * 新しい年度から順に取り込むので、直近の数年度で出題を始め、残りは裏で続く。
+ */
+async function catalogSources(env, qualificationId) {
+  const slug = Object.keys(CATALOG).find((k) => CATALOG[k].qualificationId === qualificationId);
+  if (!slug) return null;
+  return findSources({ ...env, fetchText: env.fetchText ?? defaultFetchText }, slug, { years: 99, max: MAX_SOURCES });
 }
 
 function checkSources(sources, qualificationId, owner = null) {
@@ -391,7 +401,7 @@ async function route(request, env, url, now) {
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const learnerId = validLearnerId(b.learnerId) ?? newLearnerId();
     const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
-    const sources = checkSources(b.sources, b.qualificationId, learnerId);
+    const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
     await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
     await markEngineSources(env, sources);
     const job = await progress(env, sessionJobId(state), now);
@@ -554,7 +564,7 @@ async function route(request, env, url, now) {
     let job = null;
     if (b.sources) {
       const persistent = !!state.learnerId;
-      const sources = checkSources(b.sources, state.qualificationId, state.learnerId);
+      const sources = checkSources((await catalogSources(env, state.qualificationId)) ?? b.sources, state.qualificationId, state.learnerId);
       await startJob(env.STORE, sessionJobId(state), sources, now, { persistent });
       await markEngineSources(env, sources);
     }

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { handle } from '../src/app.js';
 import { httpParser } from '../src/parser-client.js';
+import { readJob, startJob } from '../src/ingest.js';
 import { DAY, PNG, SRC, SVG, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'test-token';
@@ -357,7 +358,7 @@ test('取り込み中は、進み具合の棒と残り時間の目安を返す�
   const s = await startSession(env);
   const waiting = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body;
   assert.equal(waiting.status, 'waiting');
-  assert.match(waiting.notice, /^📥 過去問を取り込み中：□{10} 0\/1年度（残り約1分）/);
+  assert.match(waiting.notice, /^📥 直近1年度の過去問を取り込み中：□{10} 0\/1年度（残り約1分）/);
   assert.match(waiting.job.progress, /0\/1年度/);
   await call(env, 'GET', new URL(kicks[0]).pathname + '?run=all');
   const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
@@ -420,4 +421,41 @@ test('sessionId の代わりに引継ぎIDや studyId が送られても、そ�
   const none = await call(env, 'POST', `/v1/sessions/${other.learnerId}/next`);
   assert.equal(none.status, 404);
   assert.match(none.body.hint, /startSession/);
+});
+
+test('宅建・測量士補は、AIが選んだ年度ではなく、公式の掲載ページにある過去問を新しい年度から全部取り込む', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const opened = [];
+  env.fetchText = async (u) => {
+    opened.push(u);
+    return `<tr><td>令和6年5月19日</td><td><a href="/common/b.pdf">問題</a><a href="/common/b2.pdf">解答一覧</a><a href="/common/x.pdf">解答用紙</a></td>
+      <td><a href="/common/2024q.pdf">問題</a><a href="/common/2024a.pdf">解答一覧</a></td></tr>
+      <tr><td>令和8年5月17日</td><td><a href="/common/c.pdf">問題</a><a href="/common/y.pdf">解答用紙</a></td>
+      <td><a href="/common/2026q.pdf">問題</a><a href="/common/2026a.pdf">解答一覧</a></td></tr>`;
+  };
+  const gpt = [{ adapter: 'surveyor', year: 2024, section: 'main', questionUrl: 'https://www.gsi.go.jp/common/2024q.pdf', answerUrl: 'https://www.gsi.go.jp/common/2024a.pdf' }];
+  const r = await call(env, 'POST', '/v1/sessions', { qualificationId: 'q063', sources: gpt });
+  assert.equal(r.status, 201, JSON.stringify(r.body));
+  assert.deepEqual(opened, ['https://www.gsi.go.jp/LAW/SHIKEN/past.html']);
+  assert.deepEqual(r.body.job.sources.map((s) => s.year), [2026, 2024]);
+});
+
+test('学習者ごとの取り込みに、まだ無い年度だけを後ろに足す（取り込み済みの年度はそのまま）', async () => {
+  const store = new MemoryStore();
+  const src = (y) => ({ qualificationId: 'q063', adapter: 'surveyor', year: y, section: 'main', questionUrl: `https://www.gsi.go.jp/${y}q.pdf`, answerUrl: `https://www.gsi.go.jp/${y}a.pdf` });
+  await startJob(store, 'q063~abc', [src(2026), src(2024)], T0, { persistent: true });
+  const job = await readJob(store, 'q063~abc');
+  job.sources[0].status = 'done';
+  await store.put('job/q063~abc', JSON.stringify(job));
+  const merged = await startJob(store, 'q063~abc', [src(2026), src(2025), src(2024)], T0 + 1000, { persistent: true });
+  assert.deepEqual(merged.sources.map((s) => [s.year, s.status]), [[2026, 'done'], [2024, 'pending'], [2025, 'pending']]);
+});
+
+test('直近3年度の取り込みが済むまでは新しい問を出さず、4年度目より前は待たない', async () => {
+  const { pickNext, newState } = await import('../src/engine.js');
+  const state = newState({ qualificationId: 'q063', plan: {}, now: T0 });
+  const items = [{ packet: { questionId: 'a', fieldId: 's1' } }];
+  const job = (st) => ({ state: 'running', sources: [2026, 2025, 2024, 2023].map((year, i) => ({ year, status: st[i] })) });
+  assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'pending', 'pending', 'pending']) }).status, 'waiting');
+  assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'done', 'failed', 'pending']) }).status, 'question');
 });

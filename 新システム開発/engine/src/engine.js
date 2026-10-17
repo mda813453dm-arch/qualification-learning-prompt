@@ -59,6 +59,14 @@ function fieldCountsOf(items) {
   return counts;
 }
 
+export const FIRST_YEARS = 3;
+
+function recentYearsPending(job) {
+  if (!job || job.state !== 'running' || !Array.isArray(job.sources)) return false;
+  const recent = new Set([...new Set(job.sources.map((s) => s.year))].sort((a, b) => b - a).slice(0, FIRST_YEARS));
+  return job.sources.some((s) => recent.has(s.year) && s.status === 'pending');
+}
+
 /**
  * 次の問を決める。出題中で未採点の問があれば、それをもう一度返す（別の問に差し替えない）。
  * 返り値 {status, question?, notice?}。status: question | waiting | finished
@@ -83,6 +91,8 @@ export function pickNext(state, items, { today, job }) {
   //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
   //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順。
   const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
+  // 同じ分野の3問を複数の年度から出せるよう、直近3年度の取り込みが済むまで新しい問は待つ（残りの年度は裏で続ける）
+  if (fresh.length && recentYearsPending(job)) return { status: 'waiting' };
   if (fresh.length) {
     const set = state.set;
     if (set && set.count < SET_SIZE) {

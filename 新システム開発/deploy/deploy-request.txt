@@ -40,3 +40,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-16T14:03:52Z screen+skip+guard
 2026-10-17T04:15:52Z figure link + bare job
 2026-10-17T04:39:00Z session id fallback (learnerId/studyId)
+2026-10-17T05:20:41Z all official years, recent 3 first

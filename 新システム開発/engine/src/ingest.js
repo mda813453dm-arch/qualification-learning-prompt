@@ -167,7 +167,15 @@ export async function readJob(store, qualificationId) {
  */
 export async function startJob(store, qualificationId, sources, now, { persistent = false } = {}) {
   const old = await readJob(store, qualificationId);
-  if (old && old.state !== 'failed' && (old.persistent || now - old.startedAt < 24 * 60 * 60 * 1000)) return old;
+  if (old && old.state !== 'failed' && (old.persistent || now - old.startedAt < 24 * 60 * 60 * 1000)) {
+    // 学習者ごとの取り込みに、まだ無い年度が見つかったら後ろに足す（取り込み済みの年度はそのまま）
+    const have = new Set(old.sources.map((s) => s.questionUrl));
+    const added = old.persistent ? sources.filter((s) => !have.has(s.questionUrl)) : [];
+    if (!added.length) return old;
+    old.sources.push(...added.map((s) => ({ ...s, status: 'pending' })));
+    await saveJob(store, old, now);
+    return old;
+  }
   const job = {
     qualificationId,
     persistent,
@@ -255,14 +263,23 @@ export const SOURCE_EST_MS = 80 * 1000; // 公式PDF1年度分の分解にかか
 /** 取り込みの進み具合を、利用者に見せる1〜2行にする（棒グラフと残り時間の目安）。 */
 export function progressText(job, now) {
   if (job.state !== 'running') return null;
-  const total = job.sources.length;
-  const done = job.sources.filter((s) => s.status !== 'pending').length;
-  const cur = job.sources.find((s) => s.status === 'pending' && s.startedAt);
+  // 先に直近3年度を取り込み（そろったら出題を始める）、残りの年度は裏で続ける
+  const recent = new Set([...new Set(job.sources.map((s) => s.year))].sort((a, b) => b - a).slice(0, 3));
+  const first = job.sources.filter((s) => recent.has(s.year));
+  const firstPhase = first.some((s) => s.status === 'pending');
+  const list = firstPhase ? first : job.sources;
+  const total = list.length;
+  const done = list.filter((s) => s.status !== 'pending').length;
+  const cur = list.find((s) => s.status === 'pending' && s.startedAt);
   const partial = cur ? Math.min(0.9, (now - cur.startedAt) / SOURCE_EST_MS) : 0;
   const filled = Math.round(((done + partial) / total) * 10);
   const leftMs = Math.max(15000, (total - done) * SOURCE_EST_MS - (cur ? now - cur.startedAt : 0));
   const left = leftMs < 60000 ? '1分以内' : `約${Math.round(leftMs / 60000)}分`;
-  return `📥 過去問を取り込み中：${'■'.repeat(filled)}${'□'.repeat(10 - filled)} ${done}/${total}年度（残り${left}）\n取り込みが済んだ年度の問題から出題します。`;
+  const bar = `${'■'.repeat(filled)}${'□'.repeat(10 - filled)}`;
+  const years = (xs) => new Set(xs.map((s) => s.year)).size;
+  const yearsDone = (xs) => [...new Set(xs.map((s) => s.year))].filter((y) => xs.every((s) => s.year !== y || s.status !== 'pending')).length;
+  if (firstPhase) return `📥 直近${years(first)}年度の過去問を取り込み中：${bar} ${yearsDone(first)}/${years(first)}年度（残り${left}）\nそろったら出題を始めます。それより前の年度は、学習しながら裏で取り込みます。`;
+  return `📥 それより前の年度を裏で取り込み中：${bar} ${yearsDone(job.sources)}/${years(job.sources)}年度（学習はそのまま続けられます）`;
 }
 
 export function withNotice(job, now) {

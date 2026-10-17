@@ -953,22 +953,26 @@ async function onboarding(ctx) {
 }
 
 /**
- * 取り込む公式PDFを、公式の過去問掲載ページから探す（掲載されている分を最大で直近10年度）。
+ * 取り込む公式PDFを、公式の過去問掲載ページから探す（既定は直近10年度。GPTからの開始では掲載分すべて）。
  * 掲載ページを開けないときは、台帳に控えた確認済みのURLを使う。
  * 問題が2つのPDFに分かれている年度は、それぞれを取り込み元にする（正答PDFは共通）。
  */
-async function findSources(env, slug) {
+export async function findSources(env, slug, { years = 10, max = 40 } = {}) {
   let found = [];
   try {
-    found = env.fetchText ? await discover(slug, env.fetchText) : [];
+    found = env.fetchText ? await discover(slug, env.fetchText, years) : [];
   } catch {
     found = [];
   }
   if (!found.length) return CATALOG[slug].sources;
-  return found.flatMap((s) => {
-    const { questionUrls, ...one } = s;
-    return (questionUrls ?? [s.questionUrl]).map((questionUrl) => ({ ...one, questionUrl }));
-  });
+  // 新しい年度から順に取り込む（はじめの数年度で出題を始め、残りは裏で続ける）
+  return found
+    .sort((a, b) => b.year - a.year)
+    .flatMap((s) => {
+      const { questionUrls, ...one } = s;
+      return (questionUrls ?? [s.questionUrl]).map((questionUrl) => ({ ...one, questionUrl }));
+    })
+    .slice(0, max);
 }
 
 /** 過去問は学習者ごとに取り込み、期限なしで持つ（その人だけが使う）。取り込みに失敗していれば、やり直す。 */
