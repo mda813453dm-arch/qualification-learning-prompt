@@ -58,3 +58,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T10:09:15Z resume: learner chooses unanswered question or new
 2026-10-17T10:30:47Z handoff import: tolerant learner id
 2026-10-17T10:37:13Z long svg figures as link
+2026-10-17T11:01:17Z parser 0.8.1: pad tall figures to landscape

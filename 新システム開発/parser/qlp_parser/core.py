@@ -134,6 +134,7 @@ def render_crops(doc, raw_questions, file_prefix):
             pix = page.get_pixmap(matrix=fitz.Matrix(CROP_ZOOM, CROP_ZOOM), clip=clip, alpha=False)
             if pix.is_unicolor:
                 continue
+            pix = _pad_landscape(pix)
             data = pix.tobytes("png")
             name = f"{file_prefix}-q{q.number}-p{page_no}.png"
             assets[name] = data
@@ -157,6 +158,24 @@ def render_crops(doc, raw_questions, file_prefix):
                 fig["svgSha256"] = sha256(svg_bytes)
             figures.setdefault(q.number, []).append(fig)
     return figures, assets
+
+
+# ChatGPTは縦長の画像を横長の枠に切り詰めて表示する（上下が切れる。2026-10-17、測量士補R8 問26）。
+# 縦長の図は左右に白い余白を足して横長にし、枠の中に全体が入るようにする（図そのものは変えない）
+FIGURE_MIN_ASPECT = 1.8
+
+
+def _pad_landscape(pix):
+    import fitz
+
+    if pix.width >= pix.height * FIGURE_MIN_ASPECT:
+        return pix
+    width = int(round(pix.height * FIGURE_MIN_ASPECT))
+    out = fitz.Pixmap(pix.colorspace, fitz.IRect(0, 0, width, pix.height), False)
+    out.clear_with(255)
+    pix.set_origin((width - pix.width) // 2, 0)
+    out.copy(pix, pix.irect)
+    return out
 
 
 OUT_OF_ORDER = "question_number_out_of_order"

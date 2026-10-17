@@ -1,7 +1,7 @@
 import { sha256Hex } from '../src/store.js';
 import { toBase64 } from '../src/parser-client.js';
 
-export const PV = '0.8.0';
+export const PV = '0.8.1';
 export const DAY = 24 * 60 * 60 * 1000;
 export const T0 = Date.parse('2026-10-15T01:00:00Z');
 
