@@ -125,8 +125,9 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   assert.equal(n2.figures.length, 1);
   // 本文に入れたSVGの図は、画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
   assert.equal(n2.figures[0].url, undefined);
-  // 表示の全文：問題文 → 図（本文中のSVG）→ 選択肢。公式PDFの問題と同じ形
-  assert.equal(n2.display, `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  // 表示の全文：問題文 → 図（本文中のSVG と、公式PDFの図を開くリンク）→ 選択肢。公式PDFの問題と同じ形
+  assert.match(n2.display, /\n\n▶ 図が見えにくいときは：\[図を開く（公式PDFの図）\]\(\/v1\/figure\/[^)]+\.png\)\n\n1　一/);
+  assert.equal(n2.display.replace(/\n\n▶ 図が見えにくいときは：[^\n]+/, ''), `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.equal(n2.figures[0].svgFile, undefined);
   assert.equal(q.display, '問1の本文\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五');
 });
