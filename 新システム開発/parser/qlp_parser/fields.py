@@ -195,3 +195,24 @@ def classify_itpass(question):
     if fid not in ITPASS_FIELDS:
         return {"fieldId": None, "method": "official_banner", "evidence": f"問{n}", "verified": False}
     return {"fieldId": fid, "unitId": ITPASS_FIELDS[fid], "method": "official_banner", "evidence": f"問{n}（問題冊子の分野の案内）", "verified": True}
+
+
+# 行政書士：試験の区分（行政書士試験研究センターの試験案内）。区分ごとの問番号の範囲は平成18年度以降同じ
+GYOSEI_FIELDS = {
+    "g1": "基礎法学",
+    "g2": "憲法",
+    "g3": "行政法",
+    "g4": "民法",
+    "g5": "商法・会社法",
+    "g6": "基礎知識",
+}
+
+GYOSEI_RANGES = [(1, 2, "g1"), (3, 7, "g2"), (8, 26, "g3"), (27, 35, "g4"), (36, 40, "g5"), (47, 60, "g6")]
+
+
+def classify_gyosei(question):
+    for lo, hi, field_id in GYOSEI_RANGES:
+        if lo <= question.number <= hi:
+            return {"fieldId": field_id, "unitId": GYOSEI_FIELDS[field_id], "method": "official_number_range",
+                    "evidence": f"問題{lo}〜{hi}", "verified": True}
+    return {"fieldId": None, "unitId": None, "method": "unclassified", "evidence": None, "verified": False}

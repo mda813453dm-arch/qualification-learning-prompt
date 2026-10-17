@@ -26,6 +26,13 @@ function isPdf(bytes) {
   return bytes instanceof Uint8Array && bytes.length > 5 && PDF_MAGIC.every((b, i) => bytes[i] === b);
 }
 
+/** 正答がPDFでなくウェブページで公開されている資格（行政書士）。URLが .html で、中身がHTMLのときだけ受け付ける。 */
+function isHtmlPage(url, bytes) {
+  if (!/\.html?$/i.test(String(url)) || !(bytes instanceof Uint8Array)) return false;
+  const head = new TextDecoder().decode(bytes.subarray(0, 512)).replace(/^\uFEFF/, '').trimStart().toLowerCase();
+  return head.startsWith('<!doctype html') || head.startsWith('<html');
+}
+
 async function fetchVerified(fetchPdf, url) {
   let bytes;
   try {
@@ -34,7 +41,7 @@ async function fetchVerified(fetchPdf, url) {
     throw new IngestError('PDF_FETCH_FAILED', { url, error: String(e?.message ?? e) });
   }
   if (bytes instanceof ArrayBuffer) bytes = new Uint8Array(bytes);
-  if (!isPdf(bytes)) throw new IngestError('PDF_INVALID', { url });
+  if (!isPdf(bytes) && !isHtmlPage(url, bytes)) throw new IngestError('PDF_INVALID', { url });
   if (bytes.length > MAX_PDF_BYTES) throw new IngestError('PDF_TOO_LARGE', { url });
   return { bytes, sha256: await sha256Hex(bytes) };
 }

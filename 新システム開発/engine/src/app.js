@@ -35,7 +35,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'gyosei']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
@@ -64,7 +64,7 @@ const MAX_PDF_FETCH = 30 * 1024 * 1024;
 function defaultFetchPdf(url, redirects = 5) {
   return new Promise((resolve, reject) => {
     if (!/^https:\/\//.test(url)) return reject(new Error('REDIRECT_NOT_HTTPS'));
-    const req = https.get(url, { agent: legacyAgent, headers: { accept: 'application/pdf', 'user-agent': 'qualification-learning-system' }, timeout: 60000 }, (res) => {
+    const req = https.get(url, { agent: legacyAgent, headers: { accept: /\.html?$/i.test(url) ? 'text/html' : 'application/pdf', 'user-agent': 'qualification-learning-system' }, timeout: 60000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if (redirects <= 0) return reject(new Error('TOO_MANY_REDIRECTS'));

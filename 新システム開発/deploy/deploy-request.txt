@@ -65,3 +65,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T15:52:45Z shorter choice buttons
 2026-10-17T16:07:20Z figure links
 2026-10-17T16:20:58Z itpass adapter + stored source PDFs
+2026-10-17T16:30:33Z 行政書士（q090）：問題PDFと正解ページ（HTML）から取り込む

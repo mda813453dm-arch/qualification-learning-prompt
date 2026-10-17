@@ -559,6 +559,19 @@ test('賃管は、公式の掲載ページから年度ごとの問題と正解�
   assert.ok(s.every((x) => x.adapter === 'chintai' && x.answerUrl.endsWith(`past_answer_${x.year}.pdf`)));
 });
 
+test('行政書士は、掲載ページの問題PDFの年度から、正解ページ（HTML）のURLを決めて組にする', async () => {
+  const { gyoseiSources, pdfLinks } = await import('../src/discover.js');
+  const html = ['r7', 'r6', 'r2'].map((r) => `<a href="/pdf/${r}_mondai.pdf">問題</a>`).join('') + '<a href="/pdf/org/houkoku.pdf">報告書</a>';
+  const s = gyoseiSources(pdfLinks(html, 'https://gyosei-shiken.or.jp/doc/exam/index.html'), 99);
+  assert.deepEqual(s.map((x) => [x.year, x.answerUrl]), [
+    [2025, 'https://gyosei-shiken.or.jp/doc/exam/r7ans.html'],
+    [2024, 'https://gyosei-shiken.or.jp/doc/exam/r6ans.html'],
+    [2020, 'https://gyosei-shiken.or.jp/doc/exam/r2ans.html'],
+  ]);
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  assert.equal((await call(env, 'POST', '/v1/sessions', { qualificationId: '行政書士', sources: [] })).status, 201);
+});
+
 test('startSession は資格名でも呼べる。エンジンが扱わない資格は、そのことと次の手を返す', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const ok = await call(env, 'POST', '/v1/sessions', { qualificationId: '賃管', sources: [] });

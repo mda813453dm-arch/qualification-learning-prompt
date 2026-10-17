@@ -17,7 +17,18 @@ from pathlib import Path
 
 from . import PARSER_VERSION
 from .adapters import ADAPTERS
-from .core import ParseError, PdfSource, build_result, open_pdf, render_crops
+from .core import ParseError, PdfSource, build_result, open_pdf, render_crops, sha256
+
+
+def _is_html_answer(adapter, source):
+    return hasattr(adapter, "parse_answers_html") and not bytes(source.data[:5]).startswith(b"%PDF")
+
+
+def _verified_sha(source):
+    digest = sha256(source.data)
+    if source.expected_sha256 and source.expected_sha256.lower() != digest:
+        raise ParseError("ANSWER_HASH_MISMATCH", expected=source.expected_sha256, actual=digest)
+    return digest
 
 
 def run(adapter_name, year, question, answer=None, section=None, assets=None):
@@ -28,11 +39,19 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
     answer = answer or question
     try:
         qdoc, qsha = open_pdf(question)
-        adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
-        if hasattr(adapter, "check_year"):
-            adapter.check_year(adoc, year)
-        raw = adapter.parse_questions(qdoc)
-        answers = adapter.parse_answers(adoc)
+        if answer is not question and _is_html_answer(adapter, answer):
+            # 正答がウェブページで公開されている資格（行政書士）。ページそのものを公式の正答として読む
+            asha = _verified_sha(answer)
+            page = bytes(answer.data).decode("utf-8", errors="replace")
+            adapter.check_year_html(page, year)
+            raw = adapter.parse_questions(qdoc)
+            answers = adapter.parse_answers_html(page)
+        else:
+            adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
+            if hasattr(adapter, "check_year"):
+                adapter.check_year(adoc, year)
+            raw = adapter.parse_questions(qdoc)
+            answers = adapter.parse_answers(adoc)
     except ParseError as e:
         return {"status": "unavailable", "reason": e.code, "detail": e.detail, "parserVersion": PARSER_VERSION}
     sec = section or adapter.SECTION

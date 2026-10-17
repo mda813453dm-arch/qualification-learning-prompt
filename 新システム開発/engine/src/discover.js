@@ -117,12 +117,29 @@ function fpSources(grade) {
 export const fp2Sources = fpSources(2);
 export const fp3Sources = fpSources(3);
 
+/**
+ * 行政書士（試験研究センター）：問題は /pdf/rN_mondai.pdf。正解はPDFがなく、ページ /doc/exam/rNans.html の表で公開される
+ * （令和2〜7年度で確認。正解ページのURLは問題PDFの年度から決める）。
+ */
+export function gyoseiSources(links, years = 10) {
+  const out = [];
+  for (const l of links) {
+    const m = /\/pdf\/r([0-9]{1,2})_mondai\.pdf$/.exec(l.href);
+    if (!m) continue;
+    const year = 2018 + Number(m[1]);
+    if (out.some((s) => s.year === year)) continue;
+    out.push({ adapter: 'gyosei', year, section: '年度共通', questionUrl: l.href, answerUrl: new URL(`/doc/exam/r${m[1]}ans.html`, l.href).href });
+  }
+  return latest(out, years);
+}
+
 export const LISTINGS = {
   takken: { url: 'https://www.retio.or.jp/exam/past_ques_ans/other/', sources: takkenSources },
   surveyor: { url: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html', sources: surveyorSources },
   chintai: { url: 'https://www.chintaikanrishi.jp/exam/past/', sources: chintaiSources },
   fp2: { url: 'https://www.jafp.or.jp/exam/mohan/', sources: fp2Sources },
   fp3: { url: 'https://www.jafp.or.jp/exam/mohan/', sources: fp3Sources },
+  gyosei: { url: 'https://gyosei-shiken.or.jp/doc/exam/index.html', sources: gyoseiSources },
 };
 
 /** 掲載ページを開いて、直近 years 年度分の取り込み元を返す。fetchText(url) は HTML の文字列を返す関数。 */

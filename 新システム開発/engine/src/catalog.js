@@ -132,6 +132,28 @@ export const CATALOG = {
       { adapter: 'itpass', year: 2026, section: '公開問題', questionUrl: 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.pdf', answerUrl: 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_ans.pdf' },
     ],
   },
+  gyosei: {
+    qualificationId: 'q090',
+    name: '行政書士',
+    aliases: ['行政書士', '行政書士試験', '行書'],
+    org: '一般財団法人 行政書士試験研究センター',
+    officialSite: 'https://gyosei-shiken.or.jp/',
+    pastExamPage: 'https://gyosei-shiken.or.jp/doc/exam/index.html',
+    exemption: null,
+    // 分野（試験の区分。問番号の範囲で決まる。parser/qlp_parser/fields.py）。出題するのは5肢択一式だけ
+    fields: {
+      g1: '基礎法学',
+      g2: '憲法',
+      g3: '行政法',
+      g4: '民法',
+      g5: '商法・会社法',
+      g6: '基礎知識',
+    },
+    // 正解はPDFがなく、正解ページ（HTML）の表から読む
+    sources: [
+      { adapter: 'gyosei', year: 2025, section: '年度共通', questionUrl: 'https://gyosei-shiken.or.jp/pdf/r7_mondai.pdf', answerUrl: 'https://gyosei-shiken.or.jp/doc/exam/r7ans.html' },
+    ],
+  },
 };
 
 /**

@@ -107,6 +107,19 @@ test('PDFでないもの・取得できないものは、その取り込み元�
   assert.equal(job.state, 'done');
 });
 
+test('正解がウェブページで公開されている資格は、.html のURLでHTMLのときだけ正答として受け付ける', async () => {
+  const { web, store, parse } = setup();
+  const page = { ...SRC, year: 2025, answerUrl: 'https://example.go.jp/r7ans.html' };
+  web.files[page.answerUrl] = new TextEncoder().encode('<html><head><title>令和７年度</title></head></html>');
+  const notHtml = { ...SRC, year: 2024, answerUrl: 'https://example.go.jp/r6ans.html' };
+  web.files[notHtml.answerUrl] = new TextEncoder().encode('not a page');
+  await startJob(store, 'surveyor', [page, notHtml], T0);
+  const job = await stepJob(store, 'surveyor', { store, fetchPdf: web.fetchPdf, parse, parserVersion: PV, now: T0 }, { clock: () => T0 });
+  // 1つ目は取得を通って分解まで進む（ここでの分解の結果は別の年度なので不一致になる）。2つ目はHTMLでないので取得で止まる
+  assert.notEqual(job.sources[0].reason, 'PDF_INVALID');
+  assert.equal(job.sources[1].reason, 'PDF_INVALID');
+});
+
 test('時間の上限を過ぎたら残りは次回に回し、20秒を過ぎたら案内文を付ける', async () => {
   const { web, store, parse } = setup();
   const second = { ...SRC, year: 2025 };
