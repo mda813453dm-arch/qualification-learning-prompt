@@ -133,7 +133,7 @@ export function questionDisplay(q, svgs) {
   // 本文に入れられない図は、リンクで開けるようにする（URLの直後に括弧を付けると、括弧までURLとして開かれてしまう）
   // 紙を画像にした年度（OCR）も、図は問題文と選択肢の間の図だけを切り出している（parser 0.6.2〜）
   const figs = q.figures.map((f, i) => svgs[i]
-    ?? `▶ 図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、画像で見てください：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`);
+    ?? `▶ 公式の問題の図${q.figures.length > 1 ? i + 1 : ''}：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`);
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
   return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
 }

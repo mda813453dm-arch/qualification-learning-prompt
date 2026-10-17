@@ -183,6 +183,9 @@ function resumed(saved) {
   return { ...saved, current: cur && !cur.grade ? cur : null };
 }
 
+/** 本文に入れるSVGの長さの上限（これより長い図は、画像を開くリンクにする）。 */
+export const INLINE_SVG_MAX = 8000;
+
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 
@@ -438,7 +441,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const svgs = await Promise.all(shown.figures.map(async (f) => {
     if (!f.svgFile) return null;
     const bytes = await readFigure(env.STORE, pick.item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
-    return bytes ? new TextDecoder().decode(bytes) : null;
+    const svg = bytes ? new TextDecoder().decode(bytes) : null;
+    // 長いSVGはAIが写しきれず、図だけでなく問題文や選択肢まで省いて出してしまう（2026-10-17、ChatGPT）。その図は画像で開く形にする
+    return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
   }));
   // 本文に入れたSVGの図は画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
   const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] ? f : { url, ...f })); // eslint-disable-line no-unused-vars

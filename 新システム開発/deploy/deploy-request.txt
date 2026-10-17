@@ -57,3 +57,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T09:54:02Z move to a learner-requested field
 2026-10-17T10:09:15Z resume: learner chooses unanswered question or new
 2026-10-17T10:30:47Z handoff import: tolerant learner id
+2026-10-17T10:37:13Z long svg figures as link
