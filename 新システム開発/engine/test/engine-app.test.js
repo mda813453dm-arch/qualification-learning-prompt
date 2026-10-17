@@ -89,6 +89,7 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
   assert.equal(g.status, 200);
   assert.equal(g.body.grade.correct, true);
   assert.equal(g.body.grade.correctAnswer, 3);
+  assert.match(g.body.grade.explainHow, /自信をもって正解[\s\S]*|マークダウンの表/);
   // 採点は最初にセッションだけを読む（次の問を決めるための取り込み記録の読み取りは、そのあと）
   assert.equal(env.STORE.reads[0], `ses/${sessionId}`);
   assert.ok(g.body.next, '採点の応答に次の問が付く');
@@ -678,4 +679,19 @@ test('分解プログラムの版が上がったら、取り込み済みの年�
   assert.equal(after.status, 'question');
   assert.equal((await readJob(env.STORE, jobId)).sources[0].keyParts.parserVersion, '0.8.2');
   assert.equal(parse.count, n + 1);
+});
+
+test('解説の書き方（explainHow）：学習開始と採点の応答に付け、終了時の学習段階を次の開始に引き継ぐ', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE] })).body;
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId })).body;
+  assert.equal(st.learnerStage, null);
+  assert.match(st.explainHow, /マークダウンの表[\s\S]*SVG[\s\S]*利用者が答えた学習段階に合わせる/);
+  await call(env, 'POST', `/v1/study/${st.studyId}/end`, { qualification: { stage: '2：基礎学習中' } });
+  const st2 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId })).body;
+  assert.equal(st2.learnerStage, 2);
+  assert.match(st2.explainHow, /利用者の学習段階は「基礎学習中」/);
+  // 開始のときに段階が送られれば、それを使う
+  const st3 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId, stage: '4' })).body;
+  assert.equal(st3.learnerStage, 4);
 });

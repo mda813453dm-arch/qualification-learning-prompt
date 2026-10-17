@@ -74,3 +74,25 @@ test('エンジンの固定UIは、新システム開発/src/fixed-ui-choices.js
   const { FIXED_UI_CHOICES: original } = await import(src.href);
   assert.deepEqual(JSON.parse(JSON.stringify(FIXED_UI_CHOICES)), JSON.parse(JSON.stringify(original)));
 });
+
+test('解説の書き方：学習段階・苦手な分野・正誤に合わせる', async () => {
+  const { explainHow, stageNumber, weakFields } = await import('../src/explain.js');
+  assert.equal(stageNumber('2：基礎学習中'), 2);
+  assert.equal(stageNumber('過去問演習中'), 4);
+  assert.equal(stageNumber('3'), 3);
+  assert.equal(stageNumber(''), null);
+  const history = {
+    a: { fieldId: 's1', result: 'wrong' }, b: { fieldId: 's1', result: 'wrong' }, c: { fieldId: 's1', result: 'confident_correct' },
+    d: { fieldId: 's2', result: 'confident_correct' }, e: { fieldId: 's2', result: 'wrong' }, f: { fieldId: 's3', result: 'wrong' },
+  };
+  assert.deepEqual(weakFields(history, { s1: '法規', s2: '基準点測量' }), ['法規（3問中2問まちがい）', '基準点測量（2問中1問まちがい）']);
+  const h = explainHow({ stage: 1, weak: ['法規（3問中2問まちがい）'], grade: { result: 'wrong', selected: 2, correctAnswer: 4 }, fieldName: '法規' });
+  assert.match(h, /マークダウンの表/);
+  assert.match(h, /SVG/);
+  assert.match(h, /未着手/);
+  assert.doesNotMatch(h, /過去問演習中/);
+  assert.match(h, /選んだのは2、正答は4/);
+  assert.match(h, /法規（3問中2問まちがい）/);
+  // 段階が分からないときは、4つの段階をすべて示して、利用者が答えた段階に合わせさせる
+  assert.match(explainHow({}), /利用者が答えた学習段階に合わせる[\s\S]*未着手[\s\S]*過去問演習中/);
+});

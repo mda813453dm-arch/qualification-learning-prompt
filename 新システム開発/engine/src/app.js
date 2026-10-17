@@ -15,6 +15,7 @@ import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { explainHow, stageNumber, weakFields } from './explain.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -177,6 +178,8 @@ async function saveSession(env, id, state, now) {
 }
 
 const learnerStateKey = (lid) => `lrnstate/${lid}`;
+// 利用者が答えた学習段階（1〜4）。解説の深さを合わせるため、引継ぎIDごとに残す（期限なし）
+const learnerProfileKey = (lid) => `lrnprof/${lid}`;
 
 /** 引継ぎIDの記録から再開するときの状態。出題したまま答えていない問は残す（再開したらその問から続ける）。 */
 function resumed(saved) {
@@ -603,12 +606,17 @@ async function route(request, env, url, now) {
       throw new HttpError(409, r.reason);
     }
     if (!r.grade.alreadyGraded) await saveSession(env, id, r.state, now);
+    // 解説の書き方：学習段階と、エンジンの採点記録（苦手な分野・今回の正誤）に合わせる
+    const names = Object.values(CATALOG).find((c) => c.qualificationId === r.state.qualificationId)?.fields ?? {};
+    const prof = r.state.learnerId ? await env.STORE.get(learnerProfileKey(r.state.learnerId), 'json') : null;
+    const fid = r.state.history?.[r.grade.questionId]?.fieldId ?? null;
+    const how = explainHow({ stage: prof?.stage, weak: weakFields(r.state.history, names), grade: r.grade, fieldName: fid ? names[fid] ?? null : null });
     // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
     // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
     const next = await nextView(env, id, r.state, now, { prefetched: true });
     // 次の問題の図のファイルも、この応答で付ける（利用者が次へ進んだときに、AIがPythonで表示する）
     const { openaiFileResponse, ...nextBody } = next;
-    return json(200, { grade: r.grade, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
+    return json(200, { grade: { ...r.grade, explainHow: how }, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
@@ -627,7 +635,13 @@ async function route(request, env, url, now) {
     await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     const total = (await env.STORE.get(timeKey(learnerId), 'json'))?.minutes ?? 0;
     // 前回答えていない問があれば、その問から続けるかを利用者に選んでもらう（勝手には出さない）
-    const pendingQuestion = given ? pendingLabel(await env.STORE.get(learnerStateKey(learnerId), 'json')) : null;
+    const savedState = given ? await env.STORE.get(learnerStateKey(learnerId), 'json') : null;
+    const pendingQuestion = pendingLabel(savedState);
+    // 学習段階：今回答えた段階（stage）があれば残す。無ければ前回までに残した段階を使う
+    const stageNow = stageNumber(b.stage);
+    if (stageNow) await env.STORE.put(learnerProfileKey(learnerId), JSON.stringify({ stage: stageNow, updatedAt: now }));
+    const stage = stageNow ?? (given ? (await env.STORE.get(learnerProfileKey(learnerId), 'json'))?.stage ?? null : null);
+    const names = Object.values(CATALOG).find((c) => c.qualificationId === savedState?.qualificationId)?.fields ?? {};
     const t = jst(now);
     return json(201, {
       studyId,
@@ -640,6 +654,9 @@ async function route(request, env, url, now) {
       display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
       itemMenu: ITEM_MENU,
       howToShow: ITEM_HOW,
+      learnerStage: stage,
+      // 解説（項目の解説・採点後の解説）の書き方。この学習の間ずっと従う
+      explainHow: explainHow({ stage, weak: weakFields(savedState?.history, names) }),
     });
   }
 
@@ -682,6 +699,9 @@ async function route(request, env, url, now) {
         engineHandoff = null;
       }
     }
+    // 学習段階が書かれていれば残す（次のチャットで解説の深さを合わせるため）
+    const stageEnd = stageNumber(b?.qualification?.stage);
+    if (stageEnd) await env.STORE.put(learnerProfileKey(study.learnerId), JSON.stringify({ stage: stageEnd, updatedAt: now }));
     const r = finishStudy(study, before, input, now, engineHandoff);
     if (study.endedAt == null) {
       await env.STORE.put(studyKey(studyId), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
