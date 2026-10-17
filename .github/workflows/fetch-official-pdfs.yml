@@ -19,24 +19,29 @@ jobs:
       - name: 掲載ページから探して取ってくる
         run: |
           mkdir -p out
+          cat > /tmp/get.py <<'PY'
+          import ssl, sys, urllib.request
+          ctx = ssl.create_default_context()
+          ctx.options |= 0x4  # 国土地理院は古い再ネゴシエーションを使う（OP_LEGACY_SERVER_CONNECT）
+          req = urllib.request.Request(sys.argv[1], headers={'user-agent': 'qualification-learning-system'})
+          open(sys.argv[2], 'wb').write(urllib.request.urlopen(req, context=ctx).read())
+          PY
+          read slug years < 新システム開発/deploy/fetch-pdf-request.txt
+          url=$(cd 新システム開発/engine && node --input-type=module -e "import { LISTINGS } from './src/discover.js'; console.log(LISTINGS['$slug'].url)")
+          python3 /tmp/get.py "$url" out/listing.html
           cd 新システム開発/engine && node --input-type=module -e "
           import fs from 'node:fs';
           import { LISTINGS, pdfLinks } from './src/discover.js';
-          const [slug, ...years] = fs.readFileSync('../deploy/fetch-pdf-request.txt', 'utf8').trim().split(/\s+/).slice(-2 - 0);
-          const l = LISTINGS[slug];
-          const html = await (await fetch(l.url)).text();
-          fs.writeFileSync('../../out/listing.html', html);
+          const l = LISTINGS['$slug'];
+          const html = fs.readFileSync('../../out/listing.html', 'utf8');
           const all = l.sources(pdfLinks(html, l.url), 99);
           fs.writeFileSync('../../out/sources.json', JSON.stringify(all, null, 1));
-          for (const s of all.filter((x) => years.map(Number).includes(x.year))) {
-            for (const u of [...(s.questionUrls ?? [s.questionUrl]), s.answerUrl].filter(Boolean)) {
-              const b = Buffer.from(await (await fetch(u)).arrayBuffer());
-              fs.writeFileSync('../../out/' + s.year + '-' + u.split('/').pop(), b);
-              console.log(s.year, u, b.length);
-            }
-          }
-          console.log(all.map((s) => s.year).join(' '));
-          "
+          const want = '$years'.split(',').map(Number);
+          for (const s of all.filter((x) => want.includes(x.year))) for (const u of [...(s.questionUrls ?? [s.questionUrl]), s.answerUrl].filter(Boolean)) console.log(s.year + ' ' + u);
+          " > /tmp/list.txt
+          cat /tmp/list.txt
+          while read y u; do python3 /tmp/get.py "$u" "../../out/$y-$(basename $u)"; done < /tmp/list.txt
+          ls -la ../../out
       - name: 結果を diag-pdfs に置く
         run: |
           cd out
