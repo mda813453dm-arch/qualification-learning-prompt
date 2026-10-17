@@ -177,16 +177,14 @@ def _trim(words):
     return words
 
 
-def _recognize(png, zoom, ox, oy, psm):
-    if psm == "6":
+def _recognize(png, zoom, ox, oy, psm, use_vision=False):
+    if use_vision and psm == "6":
         # ページ全体の本文は、使えるときは Google Cloud Vision で読む（記号・数字の読み違いが少ない）
         full = vision.annotate(png)
         if full is not None:
             out = []
-            for y0, y1, ws in vision.lines(full, zoom, ox, oy):
-                ws = _trim(ws)
-                text = _join_words([w[4] for w in ws])
-                if text:
+            for y0, y1, ws, text in vision.lines(full, zoom, ox, oy):
+                if ws and text:
                     out.append((y0, y1, text, ws[0][0], ws))
             return out
     env = dict(os.environ, OMP_THREAD_LIMIT="1")
@@ -221,7 +219,7 @@ def page_ocr(page, psm="6"):
     """ページ全体を読む。返り値は行のリスト [(y0, y1, 文字, x0, 語のリスト[(x0, y0, x1, y1, 文字)])]（座標はPDFのpt）。"""
     key, png, zoom, ox, oy = _render(page, psm)
     if key not in _PAGE_CACHE:
-        _remember(key, _recognize(png, zoom, ox, oy, psm))
+        _remember(key, _recognize(png, zoom, ox, oy, psm, use_vision=True))
     return _PAGE_CACHE[key]
 
 
@@ -235,7 +233,7 @@ def prefetch(pages, workers=4, force=False):
     if not jobs:
         return
     with ThreadPoolExecutor(max_workers=workers) as ex:
-        results = list(ex.map(lambda j: _recognize(*j[1:], "6"), jobs))
+        results = list(ex.map(lambda j: _recognize(*j[1:], "6", use_vision=True), jobs))
     for j, out in zip(jobs, results):
         _remember(j[0], out)
 

@@ -52,3 +52,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T08:24:21Z import-ready notice
 2026-10-17T08:32:56Z chintai adapter, parser 0.7.0, startSession by name
 2026-10-17T08:42:14Z FP2/FP3 adapters, section heads
+2026-10-17 18:18 古い年度のOCRを Google Cloud Vision に切り替え（パーサー 0.8.0）

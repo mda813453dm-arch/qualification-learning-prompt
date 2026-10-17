@@ -79,7 +79,7 @@ class _Page:
         self.ocr = ocr.needs_ocr(page) or (force_ocr and ocr.available())
         if self.ocr:
             # 語の末尾に OCR の行番号を付ける（行のまとまりは OCR の判断どおりに使う）
-            self.words = [w + (OCR_LINE, k) for k, ln in enumerate(ocr.page_ocr(page)) for w in ln[4] if w[3] <= self.limit]
+            self.words = _split_markers([w + (OCR_LINE, k) for k, ln in enumerate(ocr.page_ocr(page)) for w in ln[4] if w[3] <= self.limit])
             self.drawings, self.glyphs = [], []
             self.images = [tuple(page.rect)]  # 問題1問分を公式PDFの画像でも見せる
             return
@@ -182,7 +182,7 @@ def _choice_markers(pg):
         if len(seq) == CHOICE_COUNT:
             found.append(seq)
     if not found and pg.ocr:
-        return _ocr_choice_markers(pg)
+        return _ocr_choice_markers(pg) or _gap_markers(pg)
     return found[-1] if found else None
 
 
@@ -208,6 +208,99 @@ def _ocr_choice_markers(pg):
         ok = sum(MARKER.match(unicodedata.normalize("NFKC", w[4])) is not None and num_of(w) == k for k, w in enumerate(win, 1))
         if ok >= CHOICE_COUNT - 1:
             best = win
+    return best
+
+
+_COMBO = re.compile(r"^[a-eA-E](?:\s*[,，、.]\s*[a-eA-E])*$")
+
+
+def _LETTER_COMBO_FIX(text):
+    """「C , d」のような記号の組合せの選択肢は、小文字の「c, d」の形にそろえる（OCRは c を C と読むことがある）。"""
+    if not _COMBO.match(text):
+        return text
+    return ", ".join(re.findall(r"[a-eA-E]", text)).lower()
+
+
+def _tidy_ocr_choice(text):
+    """OCRで読んだ選択肢の形を整える（番号の後の「.」の残り・符号と数の間の空白・記号の組合せの大文字）。"""
+    text = re.sub(r"(^|：)[.．。,，、]\s*", r"\1", text)
+    text = re.sub(r"(\d)\.\s+(?=\d)", r"\1.", text)
+    text = re.sub(r"(^|[\s：、(（])([+\-−－])\s+(?=\d)", r"\1\2", text)
+    return _LETTER_COMBO_FIX(text)
+
+
+def _uneven(choices, labels):
+    """OCRで字を読み落とした選択肢があるか（ほかの選択肢と、列・記号・矢印の数がそろわない）。
+
+    「−」「c」「→」のような細い・小さい字は、読み落とすことがある。読み落としたまま出すと正誤が変わるので、
+    そのときは選択肢を公式PDFの画像で見せる。
+    """
+    if labels and len({c.count("：") for c in choices}) > 1:
+        return True
+    if all(_COMBO.match(c) for c in choices) and len({len(re.findall(r"[a-eA-E]", c)) for c in choices}) > 1:
+        return True
+    return any("→" in c for c in choices) and len({c.count("→") for c in choices}) > 1
+
+
+def _last_choice_end(pg, m, line_h):
+    """最後の選択肢の下端。ほかの選択肢より行が多いときも、続きの行（番号より右から始まる、すぐ下の行）まで含める。"""
+    y1 = m[1] + line_h - 3
+    rowh = m[3] - m[1]
+    rows = []
+    for w in sorted((w for w in pg.words if (w[1] + w[3]) / 2 >= y1), key=lambda w: w[1]):
+        if rows and w[1] < rows[-1][1] + 3:
+            rows[-1] = (min(rows[-1][0], w[0]), rows[-1][1], max(rows[-1][2], w[3]))
+        else:
+            rows.append((w[0], w[1], w[3]))
+    bottom = y1
+    for x0, top, bot in rows:
+        if top - bottom > 1.2 * rowh or not m[2] < x0 < m[2] + 30:
+            break
+        bottom = bot
+        y1 = bot + 1
+    return y1
+
+
+def _gap_markers(pg):
+    """OCRが選択肢の番号を1つだけ読み落としたとき（Vision が「2.」を読まないことがある）。
+
+    行頭の番号が、同じ字下げで（1〜5のうち）真ん中の1つを除いて順に読めていて、その抜けた位置に、
+    ほかの選択肢の本文と同じ字下げで始まる行がちょうど1つあれば、その行を抜けた番号の選択肢とする。
+    最後の番号が抜けたときは、4つ目の番号の後（選択肢の間隔の1.5倍まで）で最初にそうなっている行とする。
+    """
+    lines = {}
+    for w in pg.words:
+        lines.setdefault(w[6], []).append(w)
+    heads = sorted((min(ws, key=lambda w: w[0]), sorted(ws, key=lambda w: w[0])) for ws in lines.values())
+    heads.sort(key=lambda h: h[0][1])
+    marks = [(h, ws) for h, ws in heads if MARKER.match(unicodedata.normalize("NFKC", h[4]))]
+    best = None
+    for gap in range(2, CHOICE_COUNT + 1):
+        want = [k for k in range(1, CHOICE_COUNT + 1) if k != gap]
+        for a in range(len(marks)):
+            seq = []
+            for h, ws in marks[a:]:
+                if num_of(h) == want[len(seq)] and (not seq or (abs(h[0] - seq[0][0][0]) <= OCR_INDENT_TOL and h[1] > seq[-1][0][1])):
+                    seq.append((h, ws))
+                    if len(seq) == len(want):
+                        break
+            if len(seq) != len(want):
+                continue
+            bodies = sorted(ws[1][0] for _, ws in seq if len(ws) > 1)
+            if not bodies:
+                continue
+            bx = bodies[len(bodies) // 2]
+            lo = seq[gap - 2][0][1]
+            if gap < CHOICE_COUNT:
+                cand = [h for h, _ in heads if lo < h[1] < seq[gap - 1][0][1] and abs(h[0] - bx) <= 3]
+            else:
+                step = max(b[0][1] - a[0][1] for a, b in zip(seq, seq[1:]))
+                cand = [h for h, _ in heads if lo < h[1] < lo + 1.5 * step and abs(h[0] - bx) <= 3][:1]
+            if len(cand) != 1:
+                continue
+            c, mx = cand[0], min(m[0][0] for m in seq)
+            made = (mx, c[1], mx + (seq[0][0][2] - seq[0][0][0]), c[3], f"{gap}.") + tuple(c[5:])
+            best = [m for m, _ in seq[:gap - 1]] + [made] + [m for m, _ in seq[gap - 1:]]
     return best
 
 
@@ -390,9 +483,10 @@ def _lines(words):
     return rows
 
 
-LABEL = re.compile(r"^[(（]?[ア-ンa-eA-E][)）]?$")
+# 列の見出し：「ア」「a」のほか、座標の「XB」「YB」のような英字の短い記号
+LABEL = re.compile(r"^[(（]?(?:[ア-ンa-eA-E]|[A-Z][A-Za-z0-9]?)[)）]?$")
 # OCRは見出しの「ア」を「アァ」のように読むことがある
-HEADER_WORD = re.compile(r"^[(（]?[ァ-ンa-eA-E]{1,2}[)）]?$")
+HEADER_WORD = re.compile(r"^[(（]?(?:[ァ-ンa-eA-E]{1,2}|[A-Z][A-Za-z0-9]?)[)）]?$")
 
 
 def _question(number, no, pg, text_heading):
@@ -413,7 +507,7 @@ def _question(number, no, pg, text_heading):
             choice_mode = "official_image"
         for c, m in enumerate(markers):
             # 同じ行の語は上端が番号より少し上にずれることがある（m2 など）ので、3pt上から次の番号の3pt上まで
-            y0, y1 = m[1] - 3, (markers[c + 1][1] - 3 if c + 1 < CHOICE_COUNT else m[1] + line_h - 3)
+            y0, y1 = m[1] - 3, (markers[c + 1][1] - 3 if c + 1 < CHOICE_COUNT else _last_choice_end(pg, m, line_h))
             # 語の上下の中央で選択肢に振り分ける（OCRの語は上端が番号より上にはみ出すことがある）
             words = [w for w in pg.words if y0 <= (w[1] + w[3]) / 2 < y1 and w is not m]
             # 番号のすぐ右の「.」は番号の一部（R8では図形）。それ以外の字の図形が文字で読めなければ欠けあり
@@ -430,6 +524,10 @@ def _question(number, no, pg, text_heading):
             if stray or not text:
                 choice_mode = "official_image"
             choices.append(text)
+        if pg.ocr:
+            choices = [_tidy_ocr_choice(c) for c in choices]
+            if _uneven(choices, labels):
+                choice_mode = "official_image"  # 読み落としのある選択肢は、公式PDFの画像で見せる
         if choice_mode == "text" and pg.ocr:
             choice_mode = "ocr"
         if choice_mode == "official_image":
@@ -455,6 +553,12 @@ def _question(number, no, pg, text_heading):
         if lines:
             lines[0] = HEADING_TEXT.sub("", unicodedata.normalize("NFKC", lines[0])).strip()
         stem = clean_text("\n".join(lines))
+        if pg.ocr:
+            # 細い「〜」や小さい「a」の読み落としを、決まった言い回し（「次のa〜eの文」「ア〜エに入る」）から補う
+            stem = re.sub(r"次の\s*[~〜～]\s*([b-e])\s*の", r"次の a ~ \1 の", stem)
+            stem = re.sub(r"ア\s*([イウエオカ])に入る", r"ア ~ \1に入る", stem)
+            stem = re.sub(r"(\d)\.\s+(?=\d)", r"\1.", stem)
+            stem = re.sub(r"円周率\s*[兀元]", "円周率 π", stem)
     else:
         stem_mode, stem = "official_image", ""
         notes.append("stem_text_outlined")
@@ -523,7 +627,7 @@ def _ocr_figure(pg, stem_words, bottom):
         dense = n * line_h / max(1.0, x1 - x0)
         # 字の詰まり方（行の幅あたりの字数）と、語のすき間の少なさ（図の中の地名の行は、すき間が大きい）
         wide = (x1 - x0) >= 0.5 * width and dense >= 0.7 and inked >= 0.5 * (x1 - x0)
-        follows = bool(text) and text[-1] == i - 1 and y0 - rows[i - 1][1] <= 1.2 * line_h and dense >= 0.7 and x0 <= left + 3 * line_h
+        follows = bool(text) and text[-1] == i - 1 and y0 - rows[i - 1][1] <= 1.4 * line_h and dense >= 0.7 and x0 <= left + 4 * line_h
         # 文の行は1行分の高さで、前の行と重ならない（地図の中の字は高さがまちまちで重なる）
         # 図の中の行のすぐ下に続く行も図の中（文は図のあと、行間を空けて始まる）
         single = y1 - y0 <= 1.6 * line_h and (i == 0 or y0 >= rows[i - 1][1] - 2) and (i == 0 or text[-1:] == [i - 1] or y0 - rows[i - 1][1] >= 1.5 * line_h)
@@ -531,8 +635,10 @@ def _ocr_figure(pg, stem_words, bottom):
             text.append(i)
     best = None
     for k, i in enumerate(text):
-        top = rows[i][1] + 1
-        end = rows[text[k + 1]][0] - 1 if k + 1 < len(text) else bottom
+        # OCRの語の枠は字の上下の端より少し内側のことがあり、空欄の枠は字より上下にはみ出す。
+        # 文の行の字・枠の線が図に入らないよう、行の高さの6割ほど離す
+        top = rows[i][1] + 0.6 * line_h
+        end = rows[text[k + 1]][0] - 0.6 * line_h if k + 1 < len(text) else bottom
         if end - top < 2 * line_h:
             continue
         block = _ink_block(pg, fitz.Rect(left, top, right, end), line_h)

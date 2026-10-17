@@ -20,7 +20,7 @@ RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
 echo "== 1/7 必要な機能を有効にする（初回は数分かかります）"
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
-  firestore.googleapis.com storage.googleapis.com secretmanager.googleapis.com
+  firestore.googleapis.com storage.googleapis.com secretmanager.googleapis.com vision.googleapis.com
 
 echo "== 2/7 Firestore（データベース）"
 if ! gcloud firestore databases describe --database='(default)' >/dev/null 2>&1; then
@@ -45,7 +45,8 @@ done
 
 echo "== 5/7 権限（プログラムが Firestore・Cloud Storage・トークンを使えるようにする）"
 # cloudbuild.builds.builder：新しいプロジェクトでは、プログラムの組み立て（Cloud Build）にもこのアカウントが使われるため
-for role in roles/datastore.user roles/secretmanager.secretAccessor roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/logging.logWriter; do
+# serviceusage.serviceUsageConsumer：紙をスキャンしたページの文字を Google Cloud Vision で読むため
+for role in roles/datastore.user roles/secretmanager.secretAccessor roles/cloudbuild.builds.builder roles/artifactregistry.writer roles/logging.logWriter roles/serviceusage.serviceUsageConsumer; do
   gcloud projects add-iam-policy-binding "$PROJECT" --member="serviceAccount:$RUNTIME_SA" --role="$role" --condition=None >/dev/null
 done
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.objectAdmin >/dev/null
@@ -53,6 +54,7 @@ gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAc
 echo "== 6/7 分解サーバー（qlp-parser）を配置（初回は10分ほどかかります）"
 gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
   --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
+  --set-env-vars "QLP_OCR=vision,OCR_CACHE_BUCKET=$BUCKET" \
   --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
 

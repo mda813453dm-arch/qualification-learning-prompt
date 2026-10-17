@@ -103,8 +103,45 @@ def _box(vs):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+def _merge_ascii(ws):
+    """Vision は「1」「.」や「a」「,」を別の語にする。Tesseract と同じく、空白なしで続く英数字・記号は1語にまとめる
+    （選択肢の番号「1.」を1語として見つけられるように）。日本語の字はまとめない。"""
+    out = []
+    for w in ws:
+        if out:
+            p = out[-1]
+            # 「1」と「A」（選択肢の番号と本文の英字）はまとめない
+            digit_then_letter = p[4][-1].isdigit() and w[4][0].isalpha()
+            if not p[5] and w[0] - p[2] <= 1.5 and p[4].isascii() and w[4].isascii() and not digit_then_letter:
+                out[-1] = (p[0], min(p[1], w[1]), w[2], max(p[3], w[3]), p[4] + w[4], w[5])
+                continue
+        out.append(w)
+    return out
+
+
+def _overlaps(a, b):
+    """2つの範囲 (x0, y0, x1, y1) が、低い方の高さの半分以上、縦に重なっているか（同じ行か）。"""
+    return min(a[3], b[3]) - max(a[1], b[1]) >= 0.5 * min(a[3] - a[1], b[3] - b[1])
+
+
+def _runs(word):
+    """語を字に分け、縦に重ならない字のところで分ける（表の列を Vision が「11」のように縦に1語で読むことがある）。"""
+    syms = [s for s in word.get("symbols", []) if s.get("boundingBox", {}).get("vertices")]
+    if not syms:
+        return []
+    out = [[syms[0]]]
+    for k, s in enumerate(syms[1:], 1):
+        # 「1A」（選択肢の番号と本文の英字）は Vision が1語にすることがある。番号を別の語にする
+        number_then_letter = k == 1 and syms[0].get("text") in ("1", "2", "3", "4", "5") and "A" <= s.get("text", "")[:1] <= "Z"
+        if not number_then_letter and _overlaps(_box(out[-1][-1]["boundingBox"]["vertices"]), _box(s["boundingBox"]["vertices"])):
+            out[-1].append(s)
+        else:
+            out.append([s])
+    return out
+
+
 def lines(full, zoom, ox, oy):
-    """Tesseract と同じ形の行のリスト [(y0, y1, 文字, x0, 語[(x0, y0, x1, y1, 文字)])]（PDFのpt）にする。
+    """行のリスト [(y0, y1, 語[(x0, y0, x1, y1, 文字)], 行の文字)]（PDFのpt）にする。
 
     Vision は段落ごとに行を返すので、同じ高さにある行のかけらは1行にまとめる（Tesseract の psm 6 と同じく、
     ページの横幅いっぱいの行にする。選択肢の字下げなどの判定が同じ形で使えるように）。
@@ -115,18 +152,31 @@ def lines(full, zoom, ox, oy):
             for para in block.get("paragraphs", []):
                 cur = []
                 for word in para.get("words", []):
-                    text = "".join(s.get("text", "") for s in word.get("symbols", []))
-                    if not text.strip():
-                        continue
-                    x0, y0, x1, y1 = _box(word["boundingBox"]["vertices"])
-                    cur.append((ox + x0 / zoom, oy + y0 / zoom, ox + x1 / zoom, oy + y1 / zoom, text))
-                    last = (word.get("symbols") or [{}])[-1]
-                    brk = last.get("property", {}).get("detectedBreak", {}).get("type")
-                    if brk in _BREAKS_LINE:
-                        pieces.append(cur)
-                        cur = []
+                    for syms in _runs(word):
+                        text = "".join(s.get("text", "") for s in syms)
+                        if not text.strip():
+                            continue
+                        x0, y0, x1, y1 = _box([v for s in syms for v in s["boundingBox"]["vertices"]])
+                        brk = syms[-1].get("property", {}).get("detectedBreak", {}).get("type")
+                        # 語の後ろに空白があるか（Vision が読んだ空白だけを残す。日本語の語の間には空白を入れない）
+                        cur.append((ox + x0 / zoom, oy + y0 / zoom, ox + x1 / zoom, oy + y1 / zoom, text, brk in _BREAKS_SPACE))
+                        if brk in _BREAKS_LINE:
+                            pieces.append(cur)
+                            cur = []
                 if cur:
                     pieces.append(cur)
+    # 表の列などを、Vision が上から下へ1つの行として返すことがある（「4.」「5.」が1行になる）。
+    # 前の語と高さが重ならない語のところで、行のかけらを分ける
+    split = []
+    for ws in pieces:
+        cur = [ws[0]]
+        for w in ws[1:]:
+            if not _overlaps(cur[-1], w):
+                split.append(cur)
+                cur = []
+            cur.append(w)
+        split.append(cur)
+    pieces = split
     rows = []
     for ws in sorted(pieces, key=lambda w: min(x[1] for x in w)):
         y0, y1 = min(w[1] for w in ws), max(w[3] for w in ws)
@@ -140,6 +190,31 @@ def lines(full, zoom, ox, oy):
             rows.append({"y0": y0, "y1": y1, "words": list(ws)})
     out = []
     for row in sorted(rows, key=lambda r: r["y0"]):
-        ws = sorted(row["words"], key=lambda w: w[0])
-        out.append((row["y0"], row["y1"], ws))
+        ws = []
+        for w in sorted(row["words"], key=lambda w: w[0]):
+            # 同じ字を同じ場所で2回読むことがある（表の列）。重なる同じ字は1つにする
+            if any(v[4] == w[4] and min(v[2], w[2]) - max(v[0], w[0]) > 0.5 * (w[2] - w[0]) for v in ws[-2:]):
+                continue
+            ws.append(w)
+        ws = _merge_ascii(ws)
+        # 空欄の記号「エ」を Vision は英字の「I」と読む（「ア〜I」「は I 方向」）。日本語の中の1字だけの「I」はエにする
+        ws = [w[:4] + ("エ",) + w[5:] if w[4] == "I" and not any(
+            0 <= j < len(ws) and ws[j][4][-1 if j < k else 0].isascii() and ws[j][4][-1 if j < k else 0].isalnum()
+            for j in (k - 1, k + 1)) else w for k, w in enumerate(ws)]
+        # 空白は、Vision が読んだ空白と、語の間が字の高さほど空いているところ（選択肢の番号の後など）に入れる
+        text = ""
+        for k, w in enumerate(ws):
+            # 行頭の数字1字（選択肢の番号「1 AはBに…」）の後にも空白を入れる
+            lead_number = k == 1 and ws[0][4] in ("1", "2", "3", "4", "5") and not w[4][0].isdigit() and w[4][0] not in ".．,，、°"
+            if k and (ws[k - 1][5] or lead_number or w[0] - ws[k - 1][2] > 0.8 * (w[3] - w[1])):
+                text += " "
+            text += w[4]
+        out.append((row["y0"], row["y1"], [w[:5] for w in ws], text))
+    # 小文字の「c.」を、大きさの似た「C.」と読むことがある。行頭の「b.」「d.」と並ぶ行頭の「C.」は「c.」にする
+    heads = {ln[2][0][4] for ln in out if ln[2]}
+    if heads & {"b.", "d."}:
+        for i, (y0, y1, ws, text) in enumerate(out):
+            if ws and ws[0][4] == "C.":
+                ws = [ws[0][:4] + ("c.",)] + ws[1:]
+                out[i] = (y0, y1, ws, "c." + text[2:])
     return out
