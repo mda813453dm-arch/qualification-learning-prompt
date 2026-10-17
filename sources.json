@@ -1,0 +1,41 @@
+[
+ {
+  "adapter": "surveyor",
+  "year": 2026,
+  "section": "main",
+  "questionUrl": "https://www.gsi.go.jp/common/000278974.pdf",
+  "answerUrl": "https://www.gsi.go.jp/common/000278975.pdf"
+ },
+ {
+  "adapter": "surveyor",
+  "year": 2025,
+  "section": "main",
+  "questionUrl": "https://www.gsi.go.jp/common/000270177.pdf",
+  "questionUrls": [
+   "https://www.gsi.go.jp/common/000270177.pdf",
+   "https://www.gsi.go.jp/common/000270178.pdf"
+  ],
+  "answerUrl": "https://www.gsi.go.jp/common/000270180.pdf"
+ },
+ {
+  "adapter": "surveyor",
+  "year": 2024,
+  "section": "main",
+  "questionUrl": "https://www.gsi.go.jp/common/000257605.pdf",
+  "answerUrl": "https://www.gsi.go.jp/common/000258686.pdf"
+ },
+ {
+  "adapter": "surveyor",
+  "year": 2023,
+  "section": "main",
+  "questionUrl": "https://www.gsi.go.jp/common/000249818.pdf",
+  "answerUrl": "https://www.gsi.go.jp/common/000250866.pdf"
+ },
+ {
+  "adapter": "surveyor",
+  "year": 2022,
+  "section": "main",
+  "questionUrl": "https://www.gsi.go.jp/common/000240138.pdf",
+  "answerUrl": "https://www.gsi.go.jp/common/000241388.pdf"
+ }
+]
