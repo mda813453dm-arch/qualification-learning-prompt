@@ -296,6 +296,8 @@ async function resolveSession(env, id, now) {
 // 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
 const SHOW_COMMON = 'question.screen を1文字も変えずに、そのまま回答の本文として出す（見出し・問題文・図・選択肢・問題PDF・答え方が、この順で入っている。前後に説明を足さない）。選択肢を書き換えない。renderPdfPages は呼ばない。利用者が「スキップ」と答えたら、submitAnswer の value に「スキップ」を送る。';
 const SHOW_TEXT = `${SHOW_COMMON}「図を開く（公式PDFの図）」のリンクは公式PDFから切り出した図なので、書き換えずにそのまま出す。図をウェブ検索・画像検索で探したり、自分で描いたりしない（このリンクを案内する）。`;
+// GPT：図の画像ファイルがアクションの応答に付いている。Pythonで表示しないと利用者に図が見えない
+const SHOW_WITH_FILES = `図の画像ファイル（figureCount 枚）がこの応答に付いている。回答を書く前に必ずPythonを実行し、付いた画像ファイルを全部、1枚ずつ表示する（例：from PIL import Image; display(Image.open(パス))）。ファイルの中身を変えたり描き直したりしない。表示したら、続けて ${SHOW_COMMON}`;
 const SHOW_WITH_FIGURE = `${SHOW_COMMON}svg タグの図は公式PDFの図なので、コードブロックに入れず省略せず、白い背景（rect）も消さずにそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索・Pythonで出さない。`;
 
 export function tablesMarkdown(tables) {
@@ -445,8 +447,10 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
   }));
   // 本文に入れたSVGの図は画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
-  const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] ? f : { url, ...f })); // eslint-disable-line no-unused-vars
-  const display = questionDisplay(shown, svgs);
+  // GPT（MCP以外の呼び出し）では、図を画像ファイルとして応答に付け、Pythonで表示させる
+  const attach = !env.QLP_MCP && !env.QLP_WIDGET && shown.figures.length > 0;
+  const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] && !attach ? f : { url, ...f })); // eslint-disable-line no-unused-vars
+  const display = questionDisplay(shown, attach ? [] : svgs, { attached: attach });
   const fieldName = fid ? names[fid] ?? null : null;
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
@@ -454,8 +458,13 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
-  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
-  return { status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
+  const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;
+  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName, ...(attach ? { figureCount: shown.figures.length } : {}) };
+  return {
+    status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
+    // ChatGPT はこの欄のURLのファイルを取り込み、AIのPythonから開けるようにする（最大10個）
+    ...(attach ? { openaiFileResponse: shown.figures.slice(0, 10).map((f) => f.url) } : {}),
+  };
 }
 
 /** 「2022〜2026年度の過去問の取り込みが終わりました。過去問を出題します。」（取り込み中の年度が残っていれば、そのことも添える） */
@@ -596,7 +605,10 @@ async function route(request, env, url, now) {
     if (!r.grade.alreadyGraded) await saveSession(env, id, r.state, now);
     // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
     // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
-    return json(200, { grade: r.grade, next: await nextView(env, id, r.state, now, { prefetched: true }) });
+    const next = await nextView(env, id, r.state, now, { prefetched: true });
+    // 次の問題の図のファイルも、この応答で付ける（利用者が次へ進んだときに、AIがPythonで表示する）
+    const { openaiFileResponse, ...nextBody } = next;
+    return json(200, { grade: r.grade, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
@@ -819,7 +831,7 @@ async function mcp(request, env, url, now, widget = false) {
       headers: { authorization: `Bearer ${env.API_TOKEN}`, 'content-type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
-    const res = await handle(inner, widget ? { ...env, QLP_WIDGET: true } : env);
+    const res = await handle(inner, widget ? { ...env, QLP_MCP: true, QLP_WIDGET: true } : { ...env, QLP_MCP: true });
     return { status: res.status, body: await res.json() };
   };
   const batch = Array.isArray(msg);

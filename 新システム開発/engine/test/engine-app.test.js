@@ -123,11 +123,19 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   const n2 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
   assert.equal(n2.questionNumber, 2, '採点済みの問は出し直さず次へ進む');
   assert.equal(n2.figures.length, 1);
-  // 本文に入れたSVGの図は、画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
-  assert.equal(n2.figures[0].url, undefined);
-  // 表示の全文：問題文 → 図（本文中のSVG と、公式PDFの図を開くリンク）→ 選択肢。公式PDFの問題と同じ形
-  assert.match(n2.display, /\n\n▶ 図が見えにくいときは：\[図を開く（公式PDFの図）\]\(\/v1\/figure\/[^)]+\.png\)\n\n1　一/);
-  assert.equal(n2.display.replace(/\n\n▶ 図が見えにくいときは：[^\n]+/, ''), `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  // GPT：図はSVGを本文に入れず、公式PDFの図の画像ファイルを応答に付けて、AIのPythonで表示させる
+  const r2 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;
+  assert.deepEqual(r2.openaiFileResponse, [n2.figures[0].url]);
+  assert.match(n2.figures[0].url, /\/v1\/figure\/.+\.png$/);
+  assert.equal(n2.figureCount, 1);
+  assert.match(n2.howToShow, /Python/);
+  assert.equal(n2.display, `問2の本文\n\n〔図〕この回答の一番上に、公式PDFから切り出した図を表示しています。\n▶ 図が表示されないときは：[図を開く（公式PDFの図）](${n2.figures[0].url})\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  assert.ok(!n2.display.includes('<svg'));
+  // MCP（Claude など）は今までどおり、本文中のSVGと、公式PDFの図を開くリンク
+  const m2 = (await call({ ...env, QLP_MCP: true }, 'POST', `/v1/sessions/${sessionId}/next`)).body;
+  assert.equal(m2.openaiFileResponse, undefined);
+  assert.equal(m2.question.figures[0].url, undefined);
+  assert.equal(m2.question.display.replace(/\n\n▶ 図が見えにくいときは：[^\n]+/, ''), `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.equal(n2.figures[0].svgFile, undefined);
   assert.equal(q.display, '問1の本文\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五');
 });

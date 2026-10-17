@@ -142,11 +142,20 @@ export function figureSvg(svg, url, n = '') {
   return url ? `${svg}\n\n▶ 図${n}が見えにくいときは：[図${n}を開く（公式PDFの図）](${url})` : svg;
 }
 
-export function questionDisplay(q, svgs) {
+/**
+ * ChatGPT（GPT）では、図の画像ファイルをアクションの応答に付け（openaiFileResponse）、AIがPythonで表示する。
+ * その画像は回答の一番上に出るので、本文の図の位置には、そのことと、出ないときに開くリンクを書く（2026-10-17 利用者「チャット中に必ず図表を出して」）。
+ */
+export function figureAttached(url, n = '') {
+  return `〔図${n}〕この回答の一番上に、公式PDFから切り出した図${n}を表示しています。\n▶ 図${n}が表示されないときは：[図${n}を開く（公式PDFの図）](${url})`;
+}
+
+export function questionDisplay(q, svgs, { attached = false } = {}) {
   // 本文に入れられない図は、リンクで開けるようにする（URLの直後に括弧を付けると、括弧までURLとして開かれてしまう）
   // 紙を画像にした年度（OCR）も、図は問題文と選択肢の間の図だけを切り出している（parser 0.6.2〜）
   const figs = q.figures.map((f, i) => {
     const n = q.figures.length > 1 ? i + 1 : '';
+    if (attached) return figureAttached(f.url, n);
     return svgs[i] ? figureSvg(svgs[i], f.url, n) : figureImage(f.url, n);
   });
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');

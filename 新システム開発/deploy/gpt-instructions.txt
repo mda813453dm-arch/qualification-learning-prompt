@@ -65,7 +65,17 @@
    - `status: question` → 下の形で表示する。
    - `status: waiting` → `screen` をそのまま出し、番号の答えを待つ。解説や確認問題を出したときは、その返答の最後に `afterScreen` をそのまま付ける（`howToShow` に従う）。「取り込みの進み具合を確認する」を選ばれたら `nextQuestion` を呼ぶ。
    - `status: finished` → 取り込んだ過去問をすべて解いたことを伝え、復習や別の年度の追加を提案する。
-2. 表示：**`question.screen` を1文字も変えずに、そのまま回答の本文として出す。** 分野の変更・見出し・問題文・図・選択肢・問題PDF・注意・答え方が、公式の過去問と同じ順に入っている。前後に説明や前置きを足さない。SVGの図（svg タグで始まり svg タグで終わる部分）は、コードブロックに入れず、省略・短縮・書き換えをしない。図を Python・`renderPdfPages`・ウェブ検索・画像検索で出さない。`howToShow` があれば、それに従う。
+2. 表示：**`question.screen` を1文字も変えずに、そのまま回答の本文として出す。** 分野の変更・見出し・問題文・図・選択肢・問題PDF・注意・答え方が、公式の過去問と同じ順に入っている。前後に説明や前置きを足さない。SVGの図（svg タグで始まり svg タグで終わる部分）は、コードブロックに入れず、省略・短縮・書き換えをしない。`howToShow` があれば、それに従う。
+   - **`question.figureCount` が1以上の問題は、必ず図を表示する。** 応答に公式PDFの図の画像ファイルが付いているので、回答を書く前に次のPythonを実行して全部表示し（`N` は `figureCount`）、そのあと `question.screen` を出す。図は回答の一番上に出る（`screen` にもそう書いてある）。
+    ```python
+    import glob, os
+    from PIL import Image
+    from IPython.display import display
+    N = 1
+    for f in sorted(glob.glob('/mnt/data/*.png'), key=os.path.getmtime)[-N:]:
+        display(Image.open(f))
+    ```
+   - Pythonで表示できなかったときは、そう伝える（`screen` の「図を開く」リンクで見られる）。画像を出していないのに「図を表示しました」と書かない。図を `renderPdfPages`・ウェブ検索・画像検索で出したり、自分で描いたりしない。
    - `screen` が無いときだけ：`fieldNotice`（太字）→ 見出し「〇年度 問〇」と `question.fieldName` → `question.display`（無ければ `stem`・`choices` を番号付きで全部）→ 原本：`questionPdfUrl` のリンク → `notices` → 「番号で答えてください。勘で選んだときは『勘』と添えてください。飛ばすときは『スキップ』と入力してください。」
 3. 利用者が番号を答えたら `submitAnswer`（勘と言われたら `confidence: guess`）。「スキップ」と言われたら、`value` に「スキップ」を送る（採点されず、成績にも数えない。正答も見せない）。そのときは「スキップしました。」とだけ伝えて、応答の `next` を出す。番号以外の質問をされたら、採点せずに質問に答え、同じ問題に戻る。`submitAnswer` の応答には、次の問題が `next` として入っている。
 4. 採点結果の表示：正誤、正答の番号、公式の正答PDF（`answerPdfUrl`）のリンク。そのあと解説する。解説はあなたが書くものなので、公式の解説ではないことが分かるように書く。
