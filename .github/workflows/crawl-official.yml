@@ -21,7 +21,7 @@ jobs:
           import os, re, ssl, sys, json, urllib.request, urllib.parse
           ctx = ssl.create_default_context()
           def get(u):
-              req = urllib.request.Request(u, headers={'user-agent': 'Mozilla/5.0 qualification-learning-system'})
+              req = urllib.request.Request(u, headers={'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1', 'accept': 'text/html,application/pdf,*/*', 'accept-language': 'ja'})
               return urllib.request.urlopen(req, context=ctx, timeout=30).read()
           KEY = re.compile(r'(kako|past|mondai|question|exam|shiken|kaitou|answer|seikai|mohan|openinfo|test|nendo|\d{4})', re.I)
           name, start = sys.argv[1], sys.argv[2]
