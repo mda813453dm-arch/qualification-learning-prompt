@@ -401,7 +401,9 @@ test('資格の番号だけで取り込み状況を聞かれても 404 にせず
   const r = await call(env, 'GET', '/v1/jobs/q063');
   assert.equal(r.status, 200);
   assert.equal(r.body.job, null);
-  assert.match(r.body.notice, /nextQuestion/);
+  // 利用者に見せる文には内部の話を入れない。AIへの案内は hint に分ける
+  assert.doesNotMatch(r.body.notice, /セッション|session|nextQuestion|startSession/i);
+  assert.match(r.body.hint, /nextQuestion/);
 });
 
 test('sessionId の代わりに引継ぎIDや studyId が送られても、その学習者のセッションで出題する。無ければ startSession を促す', async () => {
@@ -417,10 +419,45 @@ test('sessionId の代わりに引継ぎIDや studyId が送られても、そ�
   assert.equal(a.status, 200);
   const real = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
   assert.notEqual(real.questionId, q.questionId, '採点が本来のセッションに記録されている');
-  const other = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
+  const other = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
   const none = await call(env, 'POST', `/v1/sessions/${other.learnerId}/next`);
   assert.equal(none.status, 404);
   assert.match(none.body.hint, /startSession/);
+});
+
+test('startSession の前に引継ぎIDで出題を求められても、学習の開始で決めた資格（測量士補）の取り込みをエンジンが始める', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.fetchText = async () => `<tr><td>令和8年5月17日</td><td><a href="/common/2026q.pdf">問題</a><a href="/common/2026a.pdf">解答一覧</a></td></tr>`;
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
+  const r = await call(env, 'POST', `/v1/sessions/${st.learnerId}/next`);
+  assert.equal(r.status, 200, JSON.stringify(r.body));
+  assert.ok(['waiting', 'question', 'finished'].includes(r.body.status), JSON.stringify(r.body).slice(0, 300));
+  assert.deepEqual(r.body.job.sources.map((s) => s.year), [2026]);
+});
+
+test('引継ぎデータにエンジンの記録を載せず、引継ぎIDだけで続きから出題する（セッションが切れていても）', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
+  await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: q.questionId, value: 3 });
+  const e = (await call(env, 'POST', `/v1/study/${st.studyId}/end`, { sessionId: s.sessionId })).body;
+  assert.doesNotMatch(e.display, /エンジンの記録/);
+  assert.match(e.display, /正解\d+問・不正解\d+問/);
+  env.now = T0 + 3 * DAY;
+  // 別のチャット：引継ぎIDで出題を求める
+  const n = await call(env, 'POST', `/v1/sessions/${st.learnerId}/next`);
+  assert.equal(n.status, 200, JSON.stringify(n.body));
+  assert.notEqual(n.body.question.questionId, q.questionId, '解いた問は飛ばす');
+  // startSession を呼び直されても、記録を消さない
+  env.now += DAY;
+  const again = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const n2 = (await call(env, 'POST', `/v1/sessions/${again.sessionId}/next`)).body.question;
+  assert.notEqual(n2.questionId, q.questionId);
+  // 引継ぎデータ（エンジンの記録なし）を importHandoff に渡しても、引継ぎIDで続ける
+  const imp = await call(env, 'POST', '/v1/handoff/import', { handoff: e.handoff });
+  assert.equal(imp.status, 201, JSON.stringify(imp.body));
+  assert.equal(imp.body.restored, 1);
 });
 
 test('宅建・測量士補は、AIが選んだ年度ではなく、公式の掲載ページにある過去問を新しい年度から全部取り込む', async () => {

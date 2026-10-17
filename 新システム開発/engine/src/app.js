@@ -171,6 +171,41 @@ async function loadSession(env, id, now) {
 
 async function saveSession(env, id, state, now) {
   await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, state }), { expirationTtl: SESSION_TTL_S });
+  // 引継ぎIDごとにも残す（期限なし）。再開は引継ぎIDだけでできるので、引継ぎデータにエンジンの記録を載せなくてよい
+  if (state.learnerId) await env.STORE.put(learnerStateKey(state.learnerId), JSON.stringify(state));
+}
+
+const learnerStateKey = (lid) => `lrnstate/${lid}`;
+
+/** 引継ぎIDで残した学習の記録から、新しいセッションを作る（無ければ null）。 */
+async function sessionFromLearner(env, lid, now) {
+  const saved = await env.STORE.get(learnerStateKey(lid), 'json');
+  if (!saved) return null;
+  const state = { ...saved, current: null };
+  const id = crypto.randomUUID();
+  await saveSession(env, id, state, now);
+  await env.STORE.put(lastSessionKey(lid), id, { expirationTtl: SESSION_TTL_S });
+  return { id, state };
+}
+
+/** 学習の開始（startStudy）で決めた資格名から、エンジンが出題する資格の番号を探す（無ければ null）。 */
+function catalogIdByName(name) {
+  const t = String(name ?? '').replace(/\s/g, '');
+  if (!t) return null;
+  const c = Object.values(CATALOG).find((x) => [x.name, ...(x.aliases ?? [])].some((a) => t.includes(a) || a.includes(t)));
+  return c?.qualificationId ?? null;
+}
+
+/** 新しい学習者のセッションを作り、過去問の取り込みを始める（startSession と同じ）。 */
+async function createSession(env, { qualificationId, learnerId, plan, sources }, now) {
+  const state = newState({ qualificationId, learnerId, plan: plan ?? {}, now });
+  const checked = checkSources((await catalogSources(env, qualificationId)) ?? sources, qualificationId, learnerId);
+  await startJob(env.STORE, sessionJobId(state), checked, now, { persistent: true });
+  await markEngineSources(env, checked);
+  const id = crypto.randomUUID();
+  await saveSession(env, id, state, now);
+  await env.STORE.put(lastSessionKey(learnerId), id, { expirationTtl: SESSION_TTL_S });
+  return { id, state };
 }
 
 // AIアプリが sessionId の代わりに引継ぎIDや学習の番号（studyId）を送ってくることがあるので、
@@ -185,8 +220,24 @@ async function resolveSession(env, id, now) {
     let lid = validLearnerId(id);
     if (!lid && /^[0-9a-f-]{36}$/.test(id)) lid = (await env.STORE.get(studyKey(id), 'json'))?.learnerId ?? null;
     const sid = lid ? await env.STORE.get(lastSessionKey(lid)) : null;
-    if (!sid) throw new HttpError(404, 'SESSION_NOT_FOUND', NO_SESSION_HINT);
-    return { id: sid, state: await loadSession(env, sid, now) };
+    if (sid) {
+      try {
+        return { id: sid, state: await loadSession(env, sid, now) };
+      } catch {
+        // 期限切れ：下で引継ぎIDの記録から作り直す
+      }
+    }
+    if (lid) {
+      // セッションが切れていても、引継ぎIDの記録から続ける（AIに作り直させない）
+      const restored = await sessionFromLearner(env, lid, now);
+      if (restored) return restored;
+      // まだ取り込みを始めていない学習者：学習の開始で決めた資格がエンジンの資格なら、ここで始める
+      const studyId = await env.STORE.get(lastStudyKey(lid));
+      const study = studyId ? await env.STORE.get(studyKey(studyId), 'json') : null;
+      const qid = catalogIdByName(study?.qualificationName);
+      if (qid) return createSession(env, { qualificationId: qid, learnerId: lid }, now);
+    }
+    throw new HttpError(404, 'SESSION_NOT_FOUND', NO_SESSION_HINT);
   }
 }
 
@@ -267,6 +318,8 @@ async function progress(env, qid, now) {
   return withNotice(job, now);
 }
 
+// 利用者に見せる文（notice）と、AIへの案内（hint）を分ける。内部の話（セッションなど）は利用者に見せない
+const JOB_NOTICE = '過去問を準備しています。そろったら問題を出します。';
 const JOB_BY_SESSION = '取り込みは続いています。状況は nextQuestion（startSession の sessionId）で確かめてください。取り込み中なら進み具合が出ます。startSession をやり直さないでください。';
 
 const sourceKey = (urlSha) => `srcurl/${urlSha}`;
@@ -399,15 +452,18 @@ async function route(request, env, url, now) {
     if (!qidOk(b.qualificationId)) throw new HttpError(400, 'QUALIFICATION_INVALID');
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
-    const learnerId = validLearnerId(b.learnerId) ?? newLearnerId();
-    const state = newState({ qualificationId: b.qualificationId, learnerId, plan: b.plan ?? {}, now });
-    const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
-    await startJob(env.STORE, sessionJobId(state), sources, now, { persistent: true });
-    await markEngineSources(env, sources);
+    const given = validLearnerId(b.learnerId);
+    const learnerId = given ?? newLearnerId();
+    // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
+    const restored = given ? await sessionFromLearner(env, given, now) : null;
+    if (restored && restored.state.qualificationId === b.qualificationId) {
+      const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
+      await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
+      await markEngineSources(env, sources);
+      return json(201, { sessionId: restored.id, learnerId, job: jobView(await progress(env, sessionJobId(restored.state), now)) });
+    }
+    const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const job = await progress(env, sessionJobId(state), now);
-    const id = crypto.randomUUID();
-    await saveSession(env, id, state, now);
-    await env.STORE.put(lastSessionKey(learnerId), id, { expirationTtl: SESSION_TTL_S });
     return json(201, { sessionId: id, learnerId, job: jobView(job) });
   }
 
@@ -477,7 +533,12 @@ async function route(request, env, url, now) {
     if (sesRef) {
       try {
         const { state: st } = await resolveSession(env, sesRef, now);
-        engineHandoff = exportHandoff(st);
+        if (st.learnerId) {
+          // 記録はエンジン側に引継ぎIDで残す（引継ぎデータには載せない。利用者に内部の記録を見せないため）
+          await env.STORE.put(learnerStateKey(st.learnerId), JSON.stringify(st));
+        } else {
+          engineHandoff = exportHandoff(st);
+        }
         // 実践問題（過去問）の正誤は、エンジンが採点した記録で数える（AIの数え間違いを避ける）
         const graded = Object.values(st.history).filter((h) => Number.isFinite(h.gradedAt) && h.gradedAt >= study.startedAt);
         if (graded.length) {
@@ -560,7 +621,16 @@ async function route(request, env, url, now) {
 
   if (method === 'POST' && url.pathname === '/v1/handoff/import') {
     const b = await body(request);
-    const state = importHandoff(b.handoff, { now });
+    // 引継ぎデータにエンジンの記録が無いとき（今の形）は、引継ぎIDで残した記録から続ける
+    let state;
+    try {
+      state = importHandoff(b.handoff, { now });
+    } catch (e) {
+      const lid = validLearnerId(b.learnerId) ?? validLearnerId(/引継ぎID[：:]\s*([0-9a-z]+)/.exec(String(b.handoff ?? ''))?.[1]);
+      const saved = lid ? await env.STORE.get(learnerStateKey(lid), 'json') : null;
+      if (!saved) throw e;
+      state = { ...saved, current: null };
+    }
     let job = null;
     if (b.sources) {
       const persistent = !!state.learnerId;
@@ -589,7 +659,7 @@ async function route(request, env, url, now) {
       const job = runAll ? await advance(env, qid, now, RUN_ALL_MS, RUN_ALL_MS + 300000) : await progress(env, qid, now);
       if (!job && !runAll && !qid.includes('~')) {
         // AIが資格の番号だけで状況を聞いたとき。404 を返すと、取り込みをやり直してしまう（学習者が別になる）
-        return json(200, { job: null, notice: JOB_BY_SESSION });
+        return json(200, { job: null, notice: JOB_NOTICE, hint: JOB_BY_SESSION });
       }
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
