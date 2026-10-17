@@ -15,6 +15,8 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
 
+from . import vision
+
 LANG = "jpn"
 
 
@@ -176,6 +178,17 @@ def _trim(words):
 
 
 def _recognize(png, zoom, ox, oy, psm):
+    if psm == "6":
+        # ページ全体の本文は、使えるときは Google Cloud Vision で読む（記号・数字の読み違いが少ない）
+        full = vision.annotate(png)
+        if full is not None:
+            out = []
+            for y0, y1, ws in vision.lines(full, zoom, ox, oy):
+                ws = _trim(ws)
+                text = _join_words([w[4] for w in ws])
+                if text:
+                    out.append((y0, y1, text, ws[0][0], ws))
+            return out
     env = dict(os.environ, OMP_THREAD_LIMIT="1")
     r = subprocess.run(["tesseract", "stdin", "stdout", "-l", LANG, "--psm", psm, "hocr"],
                        input=png, capture_output=True, timeout=180, env=env)

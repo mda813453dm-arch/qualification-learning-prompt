@@ -1,0 +1,60 @@
+name: Google Cloud Vision でOCRを試し、結果を控える（開発用）
+# 合図：新システム開発/deploy/vision-request.txt を更新して push する。
+# diag-vision-in ブランチのPDFのうち、OCRが要るページを Vision で読み、応答を diag-vision ブランチに置く
+# （開発環境では Vision を呼べないので、この控えを使って読み取りを確かめる）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/vision-request.txt'
+permissions:
+  contents: write
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: diag-vision-in, path: vin }
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Vision を使えるようにする
+        run: |
+          gcloud config set project "$PROJECT"
+          gcloud services enable vision.googleapis.com
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: 読む
+        run: |
+          pip install -q pymupdf==1.28.2
+          export QLP_OCR=vision QLP_VISION_RECORD=1 QLP_VISION_CACHE="$PWD/out"
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
+          cd 新システム開発/parser
+          python - <<'PY'
+          import glob, sys
+          import pymupdf as fitz
+          from qlp_parser import ocr, vision
+          n = 0
+          for f in sorted(glob.glob('../../vin/*.pdf')):
+              d = fitz.open(f)
+              for p in d:
+                  if ocr.is_scanned(p) or ocr.is_garbled(p):
+                      key, png, *_ = ocr._render(p, "6")
+                      ok = vision.annotate(png) is not None
+                      n += ok
+                      print(f, p.number + 1, 'ok' if ok else 'FAILED')
+          print('pages', n)
+          PY
+          ls ../../out | wc -l
+      - name: 結果を diag-vision に置く
+        run: |
+          cd out
+          git init -q -b diag-vision
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "vision responses"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-vision
