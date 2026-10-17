@@ -76,7 +76,7 @@ jobs:
                   vb = [float(x) for x in re.search(r'viewBox="([^"]+)"', svg).group(1).split()]
                   fixed = svg.replace('width="100%"', f'width="{vb[2]*2}" height="{vb[3]*2}"', 1)
                   fitz.open(stream=fixed.encode(), filetype="svg")[0].get_pixmap(dpi=72).save(f"out/q{q['questionNumber']}-svg{j+1}.png")
-              assert d.startswith("📍") or d.startswith("■"), "screen が無い"
+              assert "■" in d and q["choices"][0] in d, "screen が無い"
               for link in re.findall(r"\]\((https://[^)]+/v1/figure/[^)]+)\)", d):
                   r = urllib.request.urlopen(link, timeout=30)
                   print("  図のリンク", r.status, r.headers.get("content-type"))
