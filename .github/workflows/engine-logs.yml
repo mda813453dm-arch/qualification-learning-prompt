@@ -20,6 +20,11 @@ jobs:
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND httpRequest.requestUrl:"/v1/"' \
             --project qualification-learning --freshness=2h --limit=150 \
             --format='value(timestamp,httpRequest.requestMethod,httpRequest.status,httpRequest.latency,httpRequest.requestUrl)' || true
+      - name: 引継ぎの読み込みの記録（直近16時間）
+        run: |
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND (httpRequest.requestUrl:"/v1/handoff/import" OR jsonPayload.event="handoff_import_failed")' \
+            --project qualification-learning --freshness=16h --limit=60 \
+            --format='value(timestamp,httpRequest.status,httpRequest.requestUrl,jsonPayload.event,jsonPayload.candidates,jsonPayload.length)' || true
       - name: エラーの記録（直近1時間）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=WARNING' \

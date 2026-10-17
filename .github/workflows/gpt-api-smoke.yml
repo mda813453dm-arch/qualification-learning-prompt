@@ -96,6 +96,32 @@ jobs:
           assert code == 200, e
           print(e["display"][:600])
           assert "スキップ1問" in e["display"], "スキップが終了ログに出ない"
+          # 新しいチャット：GPTが引継ぎデータを要約して渡しても再開できる
+          summary = f"前回の学習の引き継ぎです。資格は測量士補。**引き継ぎID：{lid}**。続きから始めたい。"
+          code, im, _ = call("POST", "/v1/handoff/import", {"handoff": summary})
+          assert code == 201, ("要約した引継ぎデータで再開できない", code, im)
+          sid2 = im["sessionId"]
+          print("新しいチャットでの再開 OK", im.get("restored"))
+          # 問題の指定：2025年度 問13 を出すと、図が付く
+          for i in range(20):
+              code, n, _ = call("POST", f"/v1/sessions/{sid2}/next", {"question": "2025年度 問13"})
+              if n.get("status") == "waiting":
+                  print("  ", n.get("notice")); time.sleep(15); continue
+              break
+          assert code == 200 and n.get("status") == "question", ("問13が出ない", code, json.dumps(n, ensure_ascii=False)[:500])
+          q = n["question"]; d = q.get("screen") or ""
+          open("out/r7-q13-display.md", "w").write(d)
+          print(f"  {q['year']}年度 問{q['questionNumber']} 図{len(q['figures'])} 選択肢{len(q['choices'])}")
+          assert (q["year"], q["questionNumber"]) == (2025, 13), ("指定した問が出ない", q["year"], q["questionNumber"])
+          assert q["figures"], "問13に図が無い"
+          links = re.findall(r"\]\((https://[^)]+/v1/figure/[^)]+)\)", d)
+          assert links or "<svg" in d, ("問13の画面に図が無い", d[:500])
+          for link in links:
+              r = urllib.request.urlopen(link, timeout=30); body = r.read()
+              print("  問13の図", r.status, r.headers.get("content-type"), len(body))
+              assert r.status == 200 and len(body) > 1000
+              open("out/r7-q13-fig.png", "wb").write(body)
+          assert q["choices"] and q["choices"][0] in d, "問13の選択肢が画面に無い"
           code, g, _ = call("POST", "/v1/pdf-pages", {"url": src[0]["questionUrl"], "find": "No. 26"})
           assert code == 409 and g.get("error") == "ENGINE_QUESTION", (code, g)
           print("OK", seen)
