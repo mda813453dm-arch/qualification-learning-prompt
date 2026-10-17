@@ -44,7 +44,28 @@ class SurveyorScanned(unittest.TestCase):
         self.assertEqual((p["stemMode"], p["choiceMode"]), ("ocr", "ocr"))
         self.assertEqual(p["stem"], "次の文は、測量法に規定された事項について述べたものである。")
         self.assertEqual(p["choices"], ["10 m", "20 m", "30 m", "40 m", "50 m"])
-        self.assertTrue(p["figures"], "OCRで読んだ問題は公式PDFの画像も付ける")
+        self.assertTrue(p["figures"], "OCRで読んだ問題でも図は付ける")
+        # 図だけを切り出す（問題文・選択肢は文字で出すので、1問分の画像にしない）
+        x0, y0, x1, y1 = p["figures"][0]["rect"]
+        self.assertGreater(y0, 126)
+        self.assertLess(y1, 290)
+        self.assertGreater(x1, 395, "字より右へはみ出す図も切らない")
+
+    def test_blank_box_in_the_text_is_not_a_figure(self):
+        doc = fitz.open()
+        page = doc.new_page(width=595, height=842)
+        page.insert_text((75, 85), "〔No. 1〕", fontname="japan", fontsize=10)
+        page.insert_text((93, 105), "次の文は、測量法に規定された事項について述べたものである。", fontname="japan", fontsize=10)
+        page.insert_text((75, 125), "測量とは、", fontname="japan", fontsize=10)
+        page.draw_rect(fitz.Rect(130, 114, 175, 128), color=(0, 0, 0), width=1)  # 空欄の枠
+        page.insert_text((180, 125), "をいう。次の中から選べ。", fontname="japan", fontsize=10)
+        for k in range(5):
+            y = 169 + 20 * k
+            page.insert_text((93, y), f"{k + 1}", fontname="japan", fontsize=10)
+            page.insert_text((113, y), f"{10 * (k + 1)} m", fontname="japan", fontsize=10)
+        r = survey(rasterize(doc.tobytes()))
+        self.assertEqual(r["status"], "ready", r.get("excluded") or r.get("detail"))
+        self.assertEqual(r["packets"][0]["figures"], [])
 
 
 class SurveyorOlderText(unittest.TestCase):

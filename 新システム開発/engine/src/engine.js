@@ -125,11 +125,9 @@ export function pickNext(state, items, { today, job }) {
  */
 export function questionDisplay(q, svgs) {
   // 本文に入れられない図は、リンクで開けるようにする（URLの直後に括弧を付けると、括弧までURLとして開かれてしまう）
-  // 文字をOCRで読んだ問の「図」は1問分の原本の画像。原本は末尾の問題PDFのリンクで開けるので、ここには出さない
-  const ocr = q.stemMode === 'ocr' || q.choiceMode === 'ocr';
-  const figs = q.figures.map((f, i) => svgs[i] ?? (ocr
-    ? null
-    : `▶ 図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、画像で見てください：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`));
+  // 紙を画像にした年度（OCR）も、図は問題文と選択肢の間の図だけを切り出している（parser 0.6.2〜）
+  const figs = q.figures.map((f, i) => svgs[i]
+    ?? `▶ 図${q.figures.length > 1 ? i + 1 : ''}は本文に入れられないため、画像で見てください：[図${q.figures.length > 1 ? i + 1 : ''}を開く](${f.url})`);
   const choices = q.choices.map((c, i) => `${i + 1}　${c}`).join('\n\n');
   return [q.stem, ...figs, choices].filter((v) => typeof v === 'string' && v.trim()).join('\n\n');
 }

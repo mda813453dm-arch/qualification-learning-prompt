@@ -391,6 +391,8 @@ def _lines(words):
 
 
 LABEL = re.compile(r"^[(（]?[ア-ンa-eA-E][)）]?$")
+# OCRは見出しの「ア」を「アァ」のように読むことがある
+HEADER_WORD = re.compile(r"^[(（]?[ァ-ンa-eA-E]{1,2}[)）]?$")
 
 
 def _question(number, no, pg, text_heading):
@@ -435,6 +437,14 @@ def _question(number, no, pg, text_heading):
             notes.append("choice_text_outlined")
     stem_top = markers[0][1] - 3 if markers else pg.limit
     stem_words = [w for w in pg.words if w[1] < stem_top]
+    figure = None
+    if pg.ocr and markers:
+        # 紙を画像にしたページ：問題文と選択肢の間にある図だけを切り出す（図の中の字は問題文に入れない）
+        # 選択肢が見つからない問は出題しないので、図も探さない
+        fig_bottom = min([stem_top] + [w[1] - 2 for w in (above if markers and labels else [])])
+        stem_end, figure = _ocr_figure(pg, stem_words, fig_bottom)
+        # 図の中の字と選択肢の見出しは問題文に入れない（図のあとに続く文は残す）
+        stem_words = [w for w in stem_words if w[1] < stem_end and not (figure is not None and figure.contains(((w[0] + w[2]) / 2, (w[1] + w[3]) / 2)))]
     stem_glyphs = [d for d in pg.glyphs if d["rect"].y0 < stem_top and not _covered(d["rect"], stem_words)]
     # 本文が日本語の文字として取り出せていれば、残った小さな図形は図の一部（令和4年など）。本文は文字のまま使う
     stem_has_kana = any(re.search(r"[\u3040-\u30ff]", w[4]) for w in stem_words)
@@ -442,7 +452,8 @@ def _question(number, no, pg, text_heading):
         stem_mode = "ocr" if pg.ocr else "text"
         rows = _lines(stem_words)
         lines = [_line_text(r) for r in rows]
-        lines[0] = HEADING_TEXT.sub("", unicodedata.normalize("NFKC", lines[0])).strip() if lines else ""
+        if lines:
+            lines[0] = HEADING_TEXT.sub("", unicodedata.normalize("NFKC", lines[0])).strip()
         stem = clean_text("\n".join(lines))
     else:
         stem_mode, stem = "official_image", ""
@@ -452,7 +463,12 @@ def _question(number, no, pg, text_heading):
     crops = []
     if pg.ocr:
         body = pg.body_rect_words()
-    if not body.is_empty and (graphics or stem_mode != "text" or choice_mode != "text"):
+        graphics = figure is not None
+    if pg.ocr and "official_image" not in (stem_mode, choice_mode):
+        # 文字は読めている。図があれば、図だけを切り出す
+        if figure is not None:
+            crops.append((no, tuple(figure)))
+    elif not body.is_empty and (graphics or stem_mode != "text" or choice_mode != "text"):
         # 問題1問分（見出し〜最後の選択肢）をそのまま切り出す。ページ番号の欄は含めない
         crops.append((no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN, min(body.y1 + MARGIN, pg.limit))))
     return RawQuestion(
@@ -467,6 +483,137 @@ def _question(number, no, pg, text_heading):
         choice_mode=choice_mode,
         crops=crops,
     )
+
+
+def _ocr_figure(pg, stem_words, bottom):
+    """紙を画像にしたページで、問題文と選択肢の間にある図・表の範囲を返す。
+
+    問題文の行（字が詰まって並ぶ行）を見分け、その行と行の間（または最後の行と選択肢の間）で、
+    字ではない線が2行分以上の高さで続くところを図・表とする。空欄の枠は文の行の中にあるので図にしない。
+    図の中の地名・数値・「図13」などの見出しは、図の範囲に入れる。
+    返り値 (問題文として読む範囲の下端のy（選択肢の見出しの行は除く）, 図の範囲 または None)。
+    """
+    import fitz
+
+    from ..server import _ink_box
+
+    # 選択肢のすぐ上の見出しの行（「ア　イ　ウ」）は図に入れない
+    lines = sorted((r for r in _lines(stem_words) if r and min(w[1] for w in r) < bottom), key=lambda r: min(w[1] for w in r))
+    while lines and _header_row(lines[-1]):
+        bottom = min(w[1] for w in lines.pop()) - 2
+    rows = []
+    for r in lines:
+        if min(w[1] for w in r) >= bottom:
+            continue
+        rows.append((min(w[1] for w in r), max(w[3] for w in r), min(w[0] for w in r), max(w[2] for w in r), sum(len(w[4]) for w in r), sum(w[2] - w[0] for w in r)))
+    rows.sort()
+    if len(rows) < 2:
+        return bottom, None
+    xs = [w[0] for w in pg.words] + [w[2] for w in pg.words]
+    left, right = min(xs), max(xs)
+    width = right - left
+    # 図は字より右へはみ出すことがあるので、探す範囲は左右の余白をそろえたところまで
+    right = max(right, pg.page.rect.width - left)
+    # 行の高さは、幅の広い行（問題文）で測る（図の中の短いラベルは字が小さく、地図の中の字は行が高くなる）
+    heights = sorted(y1 - y0 for y0, y1, x0, x1, *_ in rows if x1 - x0 >= 0.5 * width) or sorted(y1 - y0 for y0, y1, *_ in rows)
+    line_h = heights[len(heights) // 4]
+    # 文の行：幅が広く字が詰まった行。直前が文の行なら、短い行（段落の最後の行）も文の行
+    text = []
+    for i, (y0, y1, x0, x1, n, inked) in enumerate(rows):
+        dense = n * line_h / max(1.0, x1 - x0)
+        # 字の詰まり方（行の幅あたりの字数）と、語のすき間の少なさ（図の中の地名の行は、すき間が大きい）
+        wide = (x1 - x0) >= 0.5 * width and dense >= 0.7 and inked >= 0.5 * (x1 - x0)
+        follows = bool(text) and text[-1] == i - 1 and y0 - rows[i - 1][1] <= 1.2 * line_h and dense >= 0.7 and x0 <= left + 3 * line_h
+        # 文の行は1行分の高さで、前の行と重ならない（地図の中の字は高さがまちまちで重なる）
+        # 図の中の行のすぐ下に続く行も図の中（文は図のあと、行間を空けて始まる）
+        single = y1 - y0 <= 1.6 * line_h and (i == 0 or y0 >= rows[i - 1][1] - 2) and (i == 0 or text[-1:] == [i - 1] or y0 - rows[i - 1][1] >= 1.5 * line_h)
+        if i == 0 or ((wide or follows) and single and not _framed(pg, fitz.Rect(left, y0, right, y1), x0, x1)):
+            text.append(i)
+    best = None
+    for k, i in enumerate(text):
+        top = rows[i][1] + 1
+        end = rows[text[k + 1]][0] - 1 if k + 1 < len(text) else bottom
+        if end - top < 2 * line_h:
+            continue
+        block = _ink_block(pg, fitz.Rect(left, top, right, end), line_h)
+        if block is not None and (best is None or block[1] - block[0] > best[2]):
+            best = (top, end, block[1] - block[0])
+    if best is None:
+        return bottom, None
+    top, end, _ = best
+    # 図のあと選択肢までが1行だけで、語が離れて並ぶ行なら、選択肢の列の見出し（「新点Aの高低角　新点Bの高低角」など）。
+    # 問題文に入れると図の前に出てしまうので、図に含めて見せる
+    after = [r for r in lines if min(w[1] for w in r) > end and min(w[1] for w in r) < bottom]
+    if len(after) == 1:
+        ws = sorted(after[0], key=lambda w: w[0])
+        if sum(1 for a, b in zip(ws, ws[1:]) if b[0] - a[2] > 2 * line_h) >= 2:
+            end = bottom
+    return bottom, _ink_box(pg.page, fitz.Rect(left, top, right, end))
+
+
+def _blank_words(pg, region, zoom, pad_x=1, pad_y=1):
+    """region を灰色の画素にし、OCRで読めた語の位置（pad 分広げる）を白く消したもの（字ではない線だけが残る）。"""
+    import fitz
+
+    pix = pg.page.get_pixmap(clip=region, matrix=fitz.Matrix(zoom, zoom), colorspace=fitz.csGRAY, alpha=False)
+    w, h = pix.width, pix.height
+    data = bytearray(pix.samples)
+    for wd in pg.words:
+        r = fitz.Rect(wd[:4]) & region
+        if r.is_empty:
+            continue
+        x0, x1 = max(0, int((r.x0 - region.x0 - pad_x) * zoom)), min(w, int((r.x1 - region.x0 + pad_x + 1) * zoom))
+        for y in range(max(0, int((r.y0 - region.y0 - pad_y) * zoom)), min(h, int((r.y1 - region.y0 + pad_y + 1) * zoom))):
+            data[y * w + x0:y * w + x1] = b"\xff" * (x1 - x0)
+    return data, w, h
+
+
+def _header_row(words):
+    """選択肢の上の見出しの行（「ア　イ　ウ」）か。OCRが一部を読み違えても（「P/」など）、短い語が並ぶだけの行なら見出しとみなす。"""
+    texts = [unicodedata.normalize("NFKC", w[4]).strip() for w in words]
+    return len(texts) >= 2 and all(len(t) <= 2 for t in texts) and sum(1 for t in texts if HEADER_WORD.match(t)) * 2 >= len(texts)
+
+
+def _framed(pg, row, x0, x1):
+    """行の字の左右に、縦の線があるか（表の行・地図の中の行。文の行は左右に線が無い）。"""
+    data, w, h = _blank_words(pg, row, 2)
+    from ..server import INK
+
+    if not w or not h:
+        return False
+    cols = [x for x in range(w) if sum(1 for y in range(h) if data[y * w + x] < INK) >= 0.7 * h]
+    return any(c / 2 + row.x0 < x0 - 1 for c in cols) and any(c / 2 + row.x0 > x1 + 1 for c in cols)
+
+
+def _ink_block(pg, region, line_h):
+    """region で読めた語を消したあとに残る線のまとまりのうち、いちばん高いもの (上のy, 下のy)。2行分に満たなければ None。"""
+    blocks = [b for b in _blocks(pg, region, line_h, 1, 1) if b[1] - b[0] >= 2 * line_h]
+    if not blocks:
+        return None
+    b = max(blocks, key=lambda b: b[1] - b[0])
+    return region.y0 + b[0], region.y0 + b[1]
+
+
+def _blocks(pg, region, line_h, pad_x, pad_y, zoom=2):
+    """字を消したあとに線が残る行の続き [(上, 下)]（region の上端からの距離、ポイント）。1行分より長く空けば分ける。"""
+    from ..server import INK
+
+    data, w, h = _blank_words(pg, region, zoom, pad_x=pad_x, pad_y=pad_y)
+    blocks, cur, gap = [], None, 0
+    for y in range(h):
+        # 細い縦線（2倍で2〜3画素）も線として数える
+        if sum(1 for v in data[y * w:(y + 1) * w] if v < INK) >= 3:
+            if cur is None:
+                cur = [y / zoom, y / zoom]
+            cur[1], gap = y / zoom, 0
+        elif cur is not None:
+            gap += 1
+            if gap > line_h * zoom:
+                blocks.append(cur)
+                cur = None
+    if cur is not None:
+        blocks.append(cur)
+    return blocks
 
 
 # ---- 図形の文字をOCRで読む（文字が取り出せないPDF） ----
