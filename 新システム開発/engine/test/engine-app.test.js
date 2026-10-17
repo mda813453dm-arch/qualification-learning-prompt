@@ -402,3 +402,22 @@ test('資格の番号だけで取り込み状況を聞かれても 404 にせず
   assert.equal(r.body.job, null);
   assert.match(r.body.notice, /nextQuestion/);
 });
+
+test('sessionId の代わりに引継ぎIDや studyId が送られても、その学習者のセッションで出題する。無ければ startSession を促す', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const byLid = await call(env, 'POST', `/v1/sessions/${st.learnerId}/next`);
+  assert.equal(byLid.status, 200, JSON.stringify(byLid.body));
+  const q = byLid.body.question;
+  const byStudy = await call(env, 'POST', `/v1/sessions/${st.studyId}/next`);
+  assert.equal(byStudy.body.question.questionId, q.questionId, '同じセッションの出題中の問が返る');
+  const a = await call(env, 'POST', `/v1/sessions/${st.learnerId}/answer`, { questionId: q.questionId, value: 1 });
+  assert.equal(a.status, 200);
+  const real = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
+  assert.notEqual(real.questionId, q.questionId, '採点が本来のセッションに記録されている');
+  const other = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
+  const none = await call(env, 'POST', `/v1/sessions/${other.learnerId}/next`);
+  assert.equal(none.status, 404);
+  assert.match(none.body.hint, /startSession/);
+});

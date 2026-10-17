@@ -50,6 +50,10 @@ jobs:
           code, s, sec = call("POST", "/v1/sessions", {"qualificationId": "q063", "sources": src, "learnerId": lid})
           assert code == 201 and sec < 20, ("開始が遅い・失敗", code, sec, s)
           sid = s["sessionId"]
+          # AIが引継ぎIDを sessionId として送っても出題できる
+          code, n, _ = call("POST", f"/v1/sessions/{lid}/next")
+          assert code == 200, ("引継ぎIDでの出題が失敗", code, n)
+          print("引継ぎIDでの出題 OK", n.get("status"))
           seen, figs = [], 0
           for i in range(80):
               code, n, sec = call("POST", f"/v1/sessions/{sid}/next")

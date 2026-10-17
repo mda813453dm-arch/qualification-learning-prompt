@@ -163,6 +163,23 @@ async function saveSession(env, id, state, now) {
   await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, state }), { expirationTtl: SESSION_TTL_S });
 }
 
+// AIアプリが sessionId の代わりに引継ぎIDや学習の番号（studyId）を送ってくることがあるので、
+// その学習者の最後のセッションに読み替える
+const lastSessionKey = (lid) => `lrnsess/${lid}`;
+const NO_SESSION_HINT = '出題用のセッションがまだありません。startSession を learnerId（引継ぎID）と sources を付けて1回だけ呼び、返った sessionId を nextQuestion と submitAnswer に使ってください。';
+
+async function resolveSession(env, id, now) {
+  try {
+    return { id, state: await loadSession(env, id, now) };
+  } catch (e) {
+    let lid = validLearnerId(id);
+    if (!lid && /^[0-9a-f-]{36}$/.test(id)) lid = (await env.STORE.get(studyKey(id), 'json'))?.learnerId ?? null;
+    const sid = lid ? await env.STORE.get(lastSessionKey(lid)) : null;
+    if (!sid) throw new HttpError(404, 'SESSION_NOT_FOUND', NO_SESSION_HINT);
+    return { id: sid, state: await loadSession(env, sid, now) };
+  }
+}
+
 /** 利用者に見せる取り込みの状況（URLとSHAは経路Aでアプリが分解するときに使う）。 */
 /** 公式PDFから読み取った表を、そのまま表示できるマークダウンにする（見出しの文があれば表の前に置く）。 */
 // 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
@@ -380,17 +397,18 @@ async function route(request, env, url, now) {
     const job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
+    await env.STORE.put(lastSessionKey(learnerId), id, { expirationTtl: SESSION_TTL_S });
     return json(201, { sessionId: id, learnerId, job: jobView(job) });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
-    const state = await loadSession(env, parts[2], now);
-    return json(200, await nextView(env, parts[2], state, now));
+    const { id, state } = await resolveSession(env, parts[2], now);
+    return json(200, await nextView(env, id, state, now));
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
     const b = await body(request);
-    const state = await loadSession(env, parts[2], now);
+    const { id, state } = await resolveSession(env, parts[2], now);
     // 採点は出題時に控えた正答だけで行う（公式PDF・保存データは読み直さない）
     const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence }, { today: jstToday(now), now });
     if (!r.ok) {
@@ -398,14 +416,14 @@ async function route(request, env, url, now) {
       console.warn(JSON.stringify({ event: 'answer_rejected', reason: r.reason, given: String(b.questionId ?? '').slice(0, 80), current: state.current?.questionId ?? null }));
       throw new HttpError(409, r.reason);
     }
-    if (!r.grade.alreadyGraded) await saveSession(env, parts[2], r.state, now);
+    if (!r.grade.alreadyGraded) await saveSession(env, id, r.state, now);
     // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
     // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
-    return json(200, { grade: r.grade, next: await nextView(env, parts[2], r.state, now, { prefetched: true }) });
+    return json(200, { grade: r.grade, next: await nextView(env, id, r.state, now, { prefetched: true }) });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
-    const state = await loadSession(env, parts[2], now);
+    const { state } = await resolveSession(env, parts[2], now);
     return json(200, { handoff: exportHandoff(state) });
   }
 
@@ -445,9 +463,10 @@ async function route(request, env, url, now) {
     const before = study.endedAt == null ? saved.minutes : saved.minutes - (study.minutes ?? 0);
     let engineHandoff = null;
     let input = b;
-    if (typeof b.sessionId === 'string' && b.sessionId) {
+    const sesRef = typeof b.sessionId === 'string' && b.sessionId ? b.sessionId : study.learnerId;
+    if (sesRef) {
       try {
-        const st = await loadSession(env, b.sessionId, now);
+        const { state: st } = await resolveSession(env, sesRef, now);
         engineHandoff = exportHandoff(st);
         // 実践問題（過去問）の正誤は、エンジンが採点した記録で数える（AIの数え間違いを避ける）
         const graded = Object.values(st.history).filter((h) => Number.isFinite(h.gradedAt) && h.gradedAt >= study.startedAt);
@@ -542,6 +561,7 @@ async function route(request, env, url, now) {
     if (state.learnerId || b.sources) job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
+    if (state.learnerId) await env.STORE.put(lastSessionKey(state.learnerId), id, { expirationTtl: SESSION_TTL_S });
     return json(201, {
       sessionId: id,
       restored: Object.keys(state.history).length,
