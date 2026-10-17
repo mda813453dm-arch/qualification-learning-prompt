@@ -570,3 +570,56 @@ test('年に何回もある試験は、見出しを回の名前（2024年9月）
   assert.match(s, /^■2024年9月 問3/);
   assert.match(questionScreen({ year: 2024, section: 'main', questionNumber: 3, choices: [] }, '本文'), /^■2024年度 問3/);
 });
+
+test('答えていない問を残して終えたら、別のチャットで再開したときにその問から出す', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const q1 = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
+  const a = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: q1.questionId, value: 3 })).body;
+  const shown = a.next.question; // 採点の応答に付いて表示された問（答えないまま終える）
+  await call(env, 'POST', `/v1/study/${st.studyId}/end`, { sessionId: s.sessionId });
+  env.now = T0 + 3 * DAY; // セッションは切れている
+  const again = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
+  const n = (await call(env, 'POST', `/v1/sessions/${again.sessionId}/next`)).body;
+  assert.equal(n.question.questionId, shown.questionId);
+  assert.equal(n.repeated, true);
+});
+
+test('利用者が問題を指定したら（「問3を出して」）、出題中の問があってもその問を出す。無ければ知らせて通常の次の問', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const first = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  assert.notEqual(first.questionNumber, 3);
+  const want = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: `${SRC.year}年度の問3` })).body;
+  assert.equal(want.question.questionNumber, 3);
+  // 指定した問がそのまま採点できる
+  const g = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: want.question.questionId, value: 4 });
+  assert.equal(g.body.grade.correct, true);
+  const none = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '問99' })).body;
+  assert.equal(none.status, 'question');
+  assert.match(none.question.screen, /問99）は、取り込んだ過去問の中に見つかりませんでした/);
+});
+
+test('分解プログラムの版が上がったら、取り込み済みの年度も新しい版で分解し直し、終わるまでは前の版で出題を続ける', async () => {
+  const { env, parse } = makeEnv({ parserUrl: 'https://parser.example' });
+  env.PARSER_VERSION = '0.7.0';
+  // 偽の分解サーバーは、いまエンジンが求める版で結果を返す
+  const real = env.parserFetch;
+  env.parserFetch = async (url, init) => {
+    const r = await (await real(url, init)).json();
+    r.result.parserVersion = env.PARSER_VERSION ?? r.result.parserVersion;
+    return new Response(JSON.stringify(r));
+  };
+  const { sessionId, learnerId } = await startSession(env);
+  const before = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;
+  assert.equal(before.status, 'question');
+  const jobId = `${SRC.qualificationId}~${learnerId}`;
+  assert.equal((await readJob(env.STORE, jobId)).sources[0].keyParts.parserVersion, '0.7.0');
+  delete env.PARSER_VERSION;
+  const n = parse.count;
+  const after = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;
+  assert.equal(after.status, 'question');
+  assert.equal((await readJob(env.STORE, jobId)).sources[0].keyParts.parserVersion, '0.8.0');
+  assert.equal(parse.count, n + 1);
+});

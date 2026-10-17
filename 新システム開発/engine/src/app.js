@@ -14,9 +14,9 @@ import { CATALOG } from './catalog.js';
 import https from 'node:https';
 import { constants as cryptoConstants } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { availablePackets, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
-import { IngestError, ingestOne, readJob, startJob, stepJob, withNotice } from './ingest.js';
+import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { findSources, newLearnerId, pages } from './pages.js';
@@ -177,11 +177,17 @@ async function saveSession(env, id, state, now) {
 
 const learnerStateKey = (lid) => `lrnstate/${lid}`;
 
+/** 引継ぎIDの記録から再開するときの状態。出題したまま答えていない問は残す（再開したらその問から続ける）。 */
+function resumed(saved) {
+  const cur = saved.current;
+  return { ...saved, current: cur && !cur.grade ? cur : null };
+}
+
 /** 引継ぎIDで残した学習の記録から、新しいセッションを作る（無ければ null）。 */
 async function sessionFromLearner(env, lid, now) {
   const saved = await env.STORE.get(learnerStateKey(lid), 'json');
   if (!saved) return null;
-  const state = { ...saved, current: null };
+  const state = resumed(saved);
   const id = crypto.randomUUID();
   await saveSession(env, id, state, now);
   await env.STORE.put(lastSessionKey(lid), id, { expirationTtl: SESSION_TTL_S });
@@ -298,7 +304,7 @@ function jobView(job) {
 async function advance(env, qualificationId, now, budgetMs, leaseMs = 0) {
   const job = await readJob(env.STORE, qualificationId);
   if (!job) return null;
-  if (job.state !== 'running') return withNotice(job, now);
+  if (job.state !== 'running' && !staleSources(job, deps(env).parserVersion).length) return withNotice(job, now);
   return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now, leaseMs });
 }
 
@@ -327,7 +333,7 @@ async function progress(env, qid, now) {
   if (!env.PUBLIC_BASE_URL || !env.API_TOKEN) return advance(env, qid, now, STEP_BUDGET_MS);
   const job = await readJob(env.STORE, qid);
   if (!job) return null;
-  if (job.state === 'running') await kickIngest(env, qid, now);
+  if (job.state === 'running' || staleSources(job, deps(env).parserVersion).length) await kickIngest(env, qid, now);
   return withNotice(job, now);
 }
 
@@ -359,11 +365,14 @@ const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込み�
 const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の答えを待つ（前後に案内を足さない。選択肢の後ろに何も書かない）。1・2を選ばれたら、解説（または「AIが作った確認問題」と明示した確認問題）を出し、その返答の最後に afterScreen を1文字も変えずに付ける（afterScreen の後ろに何も書かない）。確認問題の答え合わせのあとも同じく afterScreen を付ける。「取り込みの進み具合を確認する」を選ばれたら nextQuestion を呼ぶ（getJob は使わない）。';
 
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
-async function nextView(env, id, state0, now, { prefetched = false } = {}) {
+async function nextView(env, id, state0, now, { prefetched = false, want = null } = {}) {
   let state = state0;
   const job = await progress(env, sessionJobId(state), now);
   const items = await availablePackets(env.STORE, job, now);
-  const pick = pickNext(state, items, { today: jstToday(now), job });
+  // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
+  const wanted = want ? findWanted(state, items, want) : null;
+  const wantNotice = want && !wanted ? `指定の問題（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
+  const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), job });
   if (pick.status !== 'question') {
     // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
     const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
@@ -398,7 +407,7 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
-  const screen = [readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
+  const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   const question = { ...shown, figures, display, screen, howToShow: screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT, fieldName };
   return { status: 'question', repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null };
 }
@@ -521,8 +530,10 @@ async function route(request, env, url, now) {
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
+    const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
-    return json(200, await nextView(env, id, state, now));
+    const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
+    return json(200, await nextView(env, id, state, now, { want }));
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
@@ -684,7 +695,7 @@ async function route(request, env, url, now) {
       const lid = validLearnerId(b.learnerId) ?? validLearnerId(/引継ぎID[：:]\s*([0-9a-z]+)/.exec(String(b.handoff ?? ''))?.[1]);
       const saved = lid ? await env.STORE.get(learnerStateKey(lid), 'json') : null;
       if (!saved) throw e;
-      state = { ...saved, current: null };
+      state = resumed(saved);
     }
     let job = null;
     if (b.sources) {
@@ -720,7 +731,8 @@ async function route(request, env, url, now) {
       }
       if (!job) throw new HttpError(404, 'JOB_NOT_FOUND');
       // 時間内に終わらなかった分は、続きを別の呼び出しで進める（取り込みが途中で止まらないように）
-      if (runAll && job.state === 'running' && !job.leaseUntil) await kickIngest(env, qid, now);
+      const more = job.state === 'running' || staleSources(job, deps(env).parserVersion).length;
+      if (runAll && more && !job.leaseUntil) await kickIngest(env, qid, now);
       return json(200, { job: jobView(job) });
     }
     // 経路A：POST /v1/jobs/:qid/sources/:index/result  {result, assets:{file: base64}}

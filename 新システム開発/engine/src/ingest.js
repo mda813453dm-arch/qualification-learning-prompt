@@ -213,11 +213,27 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
     await saveJob(store, job, clock());
     if (code === 'PDF_CHANGED_DURING_INGEST') break;
   }
+  // 分解プログラムの版が上がったときは、取り込み済みの年度も新しい版で分解し直す（読み取りの改善を反映するため）。
+  // 分解し直す間も前の版の問題で学習を続けられるよう、終わった年度から差し替える。失敗したら前の版のまま使う
+  for (const s of staleSources(job, deps.parserVersion)) {
+    if (clock() - begin >= budgetMs) break;
+    const fresh = { ...s };
+    const code = await settle(fresh, deps, deps.now ?? clock());
+    if (code) s.upgradeTried = deps.parserVersion;
+    else Object.assign(s, fresh, { upgradeTried: null });
+    await saveJob(store, job, clock());
+  }
   if (leaseMs) {
     job.leaseUntil = null;
     await saveJob(store, job, clock());
   }
   return withNotice(job, clock());
+}
+
+/** 前の版の分解プログラムで取り込んだ年度（新しい版での分解し直しを、まだ試していないもの）。 */
+export function staleSources(job, parserVersion) {
+  if (!parserVersion) return [];
+  return (job?.sources ?? []).filter((s) => s.status === 'done' && s.keyParts && s.keyParts.parserVersion !== parserVersion && s.upgradeTried !== parserVersion);
 }
 
 /** 1つの取り込み元を処理して、結果を job.sources の要素に書き込む。失敗の理由コードを返す。 */

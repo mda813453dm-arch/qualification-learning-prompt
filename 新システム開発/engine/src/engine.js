@@ -180,6 +180,22 @@ export function present(item, kind, figureBase = '/v1/figure') {
 }
 
 /** 出題した問を控える（正答・出典もここで固定する）。 */
+/**
+ * 利用者が出題する問を指定したとき（「2025年度の問13」「問13」「令和7年 問13」）。見つかれば {item, kind}、無ければ null。
+ * 年度を言わなければ、まだ答えていない年度の新しい方、それも無ければ最も新しい年度にする。
+ */
+export function findWanted(state, items, want) {
+  const t = String(want ?? '').normalize('NFKC');
+  const num = /問\s*(\d{1,3})/.exec(t)?.[1] ?? /^\s*(\d{1,3})\s*$/.exec(t)?.[1];
+  if (!num) return null;
+  const reiwa = /令和\s*(\d{1,2})/.exec(t)?.[1];
+  const year = reiwa ? 2018 + Number(reiwa) : Number(/(20\d{2})/.exec(t)?.[1] ?? 0) || null;
+  const hits = items.filter((x) => x.packet.questionNumber === Number(num) && (!year || x.packet.year === year));
+  if (!hits.length) return null;
+  const item = hits.find((x) => !state.history[x.packet.questionId]) ?? hits[0];
+  return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new' };
+}
+
 export function pin(state, item, kind, now) {
   const p = item.packet;
   if (state.current && !state.current.grade && state.current.questionId === p.questionId) return state;

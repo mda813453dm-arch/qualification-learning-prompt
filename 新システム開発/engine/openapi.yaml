@@ -97,9 +97,17 @@ paths:
     post:
       operationId: nextQuestion
       x-openai-isConsequential: false
-      summary: 次の問題を受け取る（未回答の問題があれば同じ問題を返す）
+      summary: 次の問題を受け取る（未回答の問題があれば同じ問題を返す。利用者が問題を指定したときは question を付ける）
       parameters:
         - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                question: { type: string, description: 利用者が出題を指定した問題（例「2025年度 問13」「問13」）。指定が無ければ省く }
       responses:
         '200':
           description: 次の問題、または待ち・終了

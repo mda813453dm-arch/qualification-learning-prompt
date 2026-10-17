@@ -80,9 +80,9 @@ export const TOOLS = [
   },
   {
     name: 'nextQuestion',
-    description: '次の問題を受け取る。未回答の問題があれば同じ問題を返す。status は question / waiting / finished。',
-    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`],
+    description: '次の問題を受け取る。未回答の問題があれば同じ問題を返す。status は question / waiting / finished。利用者が問題を指定したとき（「問13を出して」など）は question にその言葉を入れる。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題（例：「2025年度 問13」「問13」）。指定が無ければ省く' } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.question ? { question: a.question } : undefined],
   },
   {
     name: 'submitAnswer',
