@@ -46,7 +46,7 @@ jobs:
           src = [{"adapter": "surveyor", "year": 2026, "section": "main",
                   "questionUrl": "https://web2.gsi.go.jp/common/000278974.pdf", "answerUrl": "https://web2.gsi.go.jp/common/000278975.pdf"}]
           code, j, _ = call("GET", "/v1/jobs/q063")
-          assert code == 200 and "nextQuestion" in j.get("notice", ""), (code, j)
+          assert code == 200 and "nextQuestion" in j.get("hint", "") and "セッション" not in j.get("notice", "") and "session" not in j.get("notice", ""), (code, j)
           code, s, sec = call("POST", "/v1/sessions", {"qualificationId": "q063", "sources": src, "learnerId": lid})
           assert code == 201 and sec < 20, ("開始が遅い・失敗", code, sec, s)
           sid = s["sessionId"]
