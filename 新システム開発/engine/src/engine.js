@@ -94,6 +94,12 @@ export function pickNext(state, items, { today, job }) {
   // 同じ分野の3問を複数の年度から出せるよう、直近3年度の取り込みが済むまで新しい問は待つ（残りの年度は裏で続ける）
   if (fresh.length && recentYearsPending(job)) return { status: 'waiting' };
   if (fresh.length) {
+    // 利用者が移りたいと言った分野は、その分野の問が残っている間はそこから出す（3問ずつのまとまりも続ける）
+    if (state.focusField && (!state.set || state.set.fieldId !== state.focusField || state.set.count >= SET_SIZE)) {
+      const inFocus = fresh.filter((x) => x.packet.fieldId === state.focusField);
+      const next = inFocus.find((x) => !(state.set?.years ?? []).includes(x.packet.year)) ?? inFocus[0];
+      if (next) return { status: 'question', item: next, kind: 'new' };
+    }
     const set = state.set;
     if (set && set.count < SET_SIZE) {
       // 同じ分野の3問は、まだこのまとまりで出していない年度を先にする（1つの年度に偏らせない）
@@ -181,13 +187,24 @@ export function present(item, kind, figureBase = '/v1/figure') {
 
 /** 出題した問を控える（正答・出典もここで固定する）。 */
 /**
- * 利用者が出題する問を指定したとき（「2025年度の問13」「問13」「令和7年 問13」）。見つかれば {item, kind}、無ければ null。
- * 年度を言わなければ、まだ答えていない年度の新しい方、それも無ければ最も新しい年度にする。
+ * 利用者が出題する問や分野を指定したとき（「2025年度の問13」「問13」「令和7年 問13」「応用測量に移りたい」）。
+ * 見つかれば {item, kind, fieldId?}（分野の指定なら fieldId を付ける）、無ければ null。
+ * 問の年度を言わなければ、まだ答えていない年度の新しい方、それも無ければ最も新しい年度にする。
+ * fields：分野の番号 → 分野名（資格台帳）。
  */
-export function findWanted(state, items, want) {
+export function findWanted(state, items, want, fields = {}) {
   const t = String(want ?? '').normalize('NFKC');
   const num = /問\s*(\d{1,3})/.exec(t)?.[1] ?? /^\s*(\d{1,3})\s*$/.exec(t)?.[1];
-  if (!num) return null;
+  if (!num) {
+    const plain = t.replace(/\s/g, '');
+    const fid = Object.keys(fields).find((k) => plain.includes(fields[k].replace(/\s/g, '')))
+      ?? Object.keys(fields).find((k) => plain.length >= 2 && fields[k].includes(plain));
+    if (!fid) return null;
+    const inField = items.filter((x) => x.packet.fieldId === fid && !(state.skipped ?? []).some((k) => k.questionId === x.packet.questionId));
+    if (!inField.length) return null;
+    const item = inField.find((x) => !state.history[x.packet.questionId]) ?? inField[0];
+    return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new', fieldId: fid };
+  }
   const reiwa = /令和\s*(\d{1,2})/.exec(t)?.[1];
   const year = reiwa ? 2018 + Number(reiwa) : Number(/(20\d{2})/.exec(t)?.[1] ?? 0) || null;
   const hits = items.filter((x) => x.packet.questionNumber === Number(num) && (!year || x.packet.year === year));
