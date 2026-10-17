@@ -518,3 +518,15 @@ test('同じ分野の3問は、年度を替えながら出す', async () => {
   }
   assert.deepEqual(years, [2026, 2025, 2024]);
 });
+
+test('学習計画・項目の進め方・再開の確認は、区切り線のあとの選択肢で終わる形を応答に添える（ChatGPTでボタンになる）', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE] })).body;
+  assert.match(s.planMenu, /^---\n■この学習計画で学習を開始しますか？\n1：始めます\n2：計画を見直す$/);
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId })).body;
+  assert.match(st.itemMenu, /^---\n■この項目はどう進めますか？[^\n]*\n1：解説あり[^\n]*\n2：確認問題から[^\n]*\n3：実践問題から[^\n]*$/);
+  assert.match(st.howToShow, /itemMenu/);
+  const e = (await call(env, 'POST', `/v1/study/${st.studyId}/end`, {})).body;
+  const imp = (await call(env, 'POST', '/v1/handoff/import', { handoff: e.handoff })).body;
+  assert.match(imp.resumeMenu, /^---\n■続きから始めますか？\n1：始めます$/);
+});

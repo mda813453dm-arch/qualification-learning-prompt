@@ -329,6 +329,17 @@ async function markEngineSources(env, sources) {
   for (const s of sources) await env.STORE.put(sourceKey(await sha256Hex(new TextEncoder().encode(s.questionUrl))), '1');
 }
 
+// 学習計画・項目の進め方・再開の確認も、同じ形で選べるようにする（指示文を貼り直さなくてよいよう、応答に添える）
+const PLAN_MENU = ['---', '■この学習計画で学習を開始しますか？', '1：始めます', '2：計画を見直す'].join('\n');
+const PLAN_UI = {
+  planMenu: PLAN_MENU,
+  planHowToShow: '学習計画を示す返答の最後に、「学習を開始しますか？」「1：始めます」の代わりに planMenu を1文字も変えずに付ける（後ろに何も書かない）。「1」「始めます」なら startStudy を呼ぶ。「2」なら、どこを見直すかを聞く。',
+};
+const ITEM_MENU = ['---', '■この項目はどう進めますか？（以後も同じにするときは「2 以後も」のように入力してください）', '1：解説あり（解説→確認問題→実践問題）', '2：確認問題から（解説なし）', '3：実践問題から（解説も確認問題もなし）'].join('\n');
+const ITEM_HOW = 'display をそのまま表示し、📍今回の位置・🎯今回の目的・🧭始める理由と全体の進捗を示したあと、「📍〔科目・領域〕→〔項目〕」の1行に続けて itemMenu を1文字も変えずに付ける（後ろに何も書かない）。';
+const RESUME_MENU = ['---', '■続きから始めますか？', '1：始めます'].join('\n');
+const RESUME_HOW = '読めた内容を短く確認したあと、「続きから始めるときは『始めます』と入力してください。」の代わりに resumeMenu を1文字も変えずに付ける（後ろに何も書かない）。';
+
 // ChatGPTは、返答が区切り線のあとの「質問＋番号の選択肢」で終わるとボタンにする（後ろに案内の行があるとボタンにならない）
 const WAIT_MENU = ['---', '■取り込みを待つ間、どうしますか？', '1：今の項目の解説を読む', '2：今の項目の確認問題を解く', '3：取り込みの進み具合を確認する'].join('\n');
 const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込みの進み具合を確認する（そろっていれば過去問を始めます）', '2：続けて解説を読む', '3：確認問題を解く'].join('\n');
@@ -469,11 +480,11 @@ async function route(request, env, url, now) {
       const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
       await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
       await markEngineSources(env, sources);
-      return json(201, { sessionId: restored.id, learnerId, job: jobView(await progress(env, sessionJobId(restored.state), now)) });
+      return json(201, { sessionId: restored.id, learnerId, job: jobView(await progress(env, sessionJobId(restored.state), now)), ...PLAN_UI });
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const job = await progress(env, sessionJobId(state), now);
-    return json(201, { sessionId: id, learnerId, job: jobView(job) });
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
@@ -521,6 +532,8 @@ async function route(request, env, url, now) {
       startTime: t.time,
       totalMinutes: total,
       display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
+      itemMenu: ITEM_MENU,
+      howToShow: ITEM_HOW,
     });
   }
 
@@ -656,6 +669,8 @@ async function route(request, env, url, now) {
       restored: Object.keys(state.history).length,
       withheld: state.withheld.map((w) => ({ ...w, message: WITHHELD_MESSAGES[w.reason] })),
       job: jobView(job),
+      resumeMenu: RESUME_MENU,
+      howToShow: RESUME_HOW,
     });
   }
 
