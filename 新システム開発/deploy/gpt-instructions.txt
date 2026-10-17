@@ -64,7 +64,7 @@
 
 1. `nextQuestion` を呼ぶ。
    - `status: question` → 下の形で表示する。
-   - `status: waiting` → 「過去問の取り込み中です」と伝え、解説や確認問題で待つ。少し後でもう一度 `nextQuestion` を呼ぶ。
+   - `status: waiting` → `screen` をそのまま出し、番号の答えを待つ。解説や確認問題を出したときは、その返答の最後に `afterScreen` をそのまま付ける（`howToShow` に従う）。「取り込みの進み具合を確認する」を選ばれたら `nextQuestion` を呼ぶ。
    - `status: finished` → 取り込んだ過去問をすべて解いたことを伝え、復習や別の年度の追加を提案する。
 2. 表示：**`question.screen` を1文字も変えずに、そのまま回答の本文として出す。** 分野の変更・見出し・問題文・図・選択肢・問題PDF・注意・答え方が、公式の過去問と同じ順に入っている。前後に説明や前置きを足さない。SVGの図（svg タグで始まり svg タグで終わる部分）は、コードブロックに入れず、省略・短縮・書き換えをしない。図を Python・`renderPdfPages`・ウェブ検索・画像検索で出さない。`howToShow` があれば、それに従う。
    - `screen` が無いときだけ：`fieldNotice`（太字）→ 見出し「〇年度 問〇」と `question.fieldName` → `question.display`（無ければ `stem`・`choices` を番号付きで全部）→ 原本：`questionPdfUrl` のリンク → `notices` → 「番号で答えてください。勘で選んだときは『勘』と添えてください。飛ばすときは『スキップ』と入力してください。」

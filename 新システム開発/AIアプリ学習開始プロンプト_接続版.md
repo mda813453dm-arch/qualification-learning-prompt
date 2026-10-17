@@ -45,7 +45,7 @@ main と master_prompt.txt は変更しない。
 
 1. `nextQuestion` を呼ぶ。
    - `status: question` → 下の形で表示する。
-   - `status: waiting` → 「過去問の取り込み中です」と伝え、解説や確認問題で待つ。少し後でもう一度 `nextQuestion` を呼ぶ。
+   - `status: waiting` → `screen` をそのまま出し、番号の答えを待つ。解説や確認問題を出したときは、その返答の最後に `afterScreen` をそのまま付ける（`howToShow` に従う）。「取り込みの進み具合を確認する」を選ばれたら `nextQuestion` を呼ぶ。
    - `status: finished` → 取り込んだ過去問をすべて解いたことを伝え、復習や別の年度の追加を提案する。
 2. 表示の形（毎回この順。省略しない）：
    - 見出し：「〇年度 問〇」（`kind: review` なら「復習」と添える）

@@ -329,6 +329,10 @@ async function markEngineSources(env, sources) {
   for (const s of sources) await env.STORE.put(sourceKey(await sha256Hex(new TextEncoder().encode(s.questionUrl))), '1');
 }
 
+const WAIT_MENU = ['■取り込みを待つ間、どうしますか？', '1：今の項目の解説を読む', '2：今の項目の確認問題を解く', '3：取り込みの進み具合を確認する', '番号で答えてください。'].join('\n');
+const WAIT_AFTER = ['■次はどうしますか？', '1：取り込みの進み具合を確認する（そろっていれば過去問を始めます）', '2：続けて解説を読む', '3：確認問題を解く', '番号で答えてください。'].join('\n');
+const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の答えを待つ（前後に案内を足さない）。1・2を選ばれたら、解説（または「AIが作った確認問題」と明示した確認問題）を出し、その返答の最後に afterScreen を1文字も変えずに付ける。確認問題の答え合わせのあとも同じく afterScreen を付ける。「取り込みの進み具合を確認する」を選ばれたら nextQuestion を呼ぶ（getJob は使わない）。';
+
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   let state = state0;
@@ -338,6 +342,10 @@ async function nextView(env, id, state0, now, { prefetched = false } = {}) {
   if (pick.status !== 'question') {
     // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
     const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
+    if (pick.status === 'waiting') {
+      // 待つ間にできることを番号で選べるようにし、解説や確認問題のあとにも、進み具合を確かめる選択肢を必ず出す
+      return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
+    }
     return { status: pick.status, notice, job: jobView(job) };
   }
   const prevField = state.current?.fieldId ?? null;

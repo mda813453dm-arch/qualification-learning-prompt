@@ -360,6 +360,12 @@ test('取り込み中は、進み具合の棒と残り時間の目安を返す�
   assert.equal(waiting.status, 'waiting');
   assert.match(waiting.notice, /^📥 直近1年度の過去問を取り込み中：□{10} 0\/1年度（残り約1分）/);
   assert.match(waiting.job.progress, /0\/1年度/);
+  // 待つ間の選択肢を番号で出し、解説のあとにも進み具合を確かめる選択肢を付けさせる
+  assert.ok(waiting.screen.startsWith(waiting.notice));
+  assert.match(waiting.screen, /1：今の項目の解説を読む\n2：今の項目の確認問題を解く\n3：取り込みの進み具合を確認する\n番号で答えてください。$/);
+  assert.match(waiting.afterScreen, /^■次はどうしますか？\n1：取り込みの進み具合を確認する/);
+  assert.match(waiting.howToShow, /afterScreen/);
+  assert.doesNotMatch(waiting.screen + waiting.afterScreen, /セッション|session|nextQuestion/i);
   await call(env, 'GET', new URL(kicks[0]).pathname + '?run=all');
   const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
   // 別の問の番号は受け付けない
