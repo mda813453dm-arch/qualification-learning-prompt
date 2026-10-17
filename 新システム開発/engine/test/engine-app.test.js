@@ -459,3 +459,18 @@ test('直近3年度の取り込みが済むまでは新しい問を出さず、4
   assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'pending', 'pending', 'pending']) }).status, 'waiting');
   assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'done', 'failed', 'pending']) }).status, 'question');
 });
+
+test('同じ分野の3問は、年度を替えながら出す', async () => {
+  const { pickNext, pin, newState } = await import('../src/engine.js');
+  let state = newState({ qualificationId: 'q063', plan: {}, now: T0 });
+  const it = (year, n) => ({ packet: { questionId: `q063:${year}:main:${n}`, fieldId: 's1', year, questionNumber: n, choices: ['a', 'b', 'c', 'd', 'e'], correctAnswer: 1 }, keyParts: {} });
+  const items = [it(2026, 1), it(2026, 2), it(2025, 1), it(2024, 1)];
+  const years = [];
+  for (let i = 0; i < 3; i += 1) {
+    const p = pickNext(state, items, { today: '2026-10-17', job: null });
+    years.push(p.item.packet.year);
+    state = pin(state, p.item, p.kind, T0);
+    state = { ...state, history: { ...state.history, [p.item.packet.questionId]: { result: 'wrong' } }, current: null };
+  }
+  assert.deepEqual(years, [2026, 2025, 2024]);
+});

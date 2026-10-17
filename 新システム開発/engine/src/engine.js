@@ -89,14 +89,16 @@ export function pickNext(state, items, { today, job }) {
   }
   // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
   //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
-  //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順。
+  //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順（同じまとまりでは、まだ出していない年度を先に）。
   const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
   // 同じ分野の3問を複数の年度から出せるよう、直近3年度の取り込みが済むまで新しい問は待つ（残りの年度は裏で続ける）
   if (fresh.length && recentYearsPending(job)) return { status: 'waiting' };
   if (fresh.length) {
     const set = state.set;
     if (set && set.count < SET_SIZE) {
-      const next = fresh.find((x) => x.packet.fieldId === set.fieldId);
+      // 同じ分野の3問は、まだこのまとまりで出していない年度を先にする（1つの年度に偏らせない）
+      const same = fresh.filter((x) => x.packet.fieldId === set.fieldId);
+      const next = same.find((x) => !(set.years ?? []).includes(x.packet.year)) ?? same[0];
       if (next) return { status: 'question', item: next, kind: 'new' };
     }
     const solved = {};
@@ -183,7 +185,11 @@ export function pin(state, item, kind, now) {
   if (state.current && !state.current.grade && state.current.questionId === p.questionId) return state;
   // 新しい問は「同じ分野の3問」の何問目かを数える（復習の問は数えない）
   let set = state.set ?? null;
-  if (kind === 'new') set = set && set.fieldId === p.fieldId && set.count < SET_SIZE ? { fieldId: p.fieldId, count: set.count + 1 } : { fieldId: p.fieldId, count: 1 };
+  if (kind === 'new') {
+    set = set && set.fieldId === p.fieldId && set.count < SET_SIZE
+      ? { fieldId: p.fieldId, count: set.count + 1, years: [...(set.years ?? []), p.year] }
+      : { fieldId: p.fieldId, count: 1, years: [p.year] };
+  }
   return {
     ...state,
     set,
