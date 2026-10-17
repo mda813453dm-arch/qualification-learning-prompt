@@ -31,6 +31,26 @@ jobs:
           BASE = "https://qlp-engine-ojsw3j46qa-an.a.run.app"
           UA = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'}
           urls = [l.strip() for l in open('新システム開発/deploy/ipa-reach-request.txt') if l.startswith('http')]
+          HDRS = {
+              'desktop': {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'accept-language': 'ja,en-US;q=0.9,en;q=0.8'},
+              'referer': {'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36', 'accept': '*/*', 'accept-language': 'ja', 'referer': 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/questions.html'},
+              'none': {},
+          }
+          for name, h in HDRS.items():
+              for u in urls[:1] + urls[-1:]:
+                  try:
+                      r = urllib.request.urlopen(urllib.request.Request(u, headers=h), timeout=30); b = r.read()
+                      print('runner', name, u, r.status, len(b), b[:8])
+                  except Exception as e:
+                      print('runner', name, u, 'ERR', e)
+          import http.cookiejar
+          cj = http.cookiejar.CookieJar(); op = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+          for u in ['https://www3.jitec.ipa.go.jp/JitesCbt/index.html', urls[-1], urls[0]]:
+              try:
+                  r = op.open(urllib.request.Request(u, headers=HDRS['referer']), timeout=30); b = r.read()
+                  print('cookie', u, r.status, len(b), b[:8], [c.name for c in cj])
+              except Exception as e:
+                  print('cookie', u, 'ERR', e)
           for u in urls:
               try:
                   r = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30); b = r.read()

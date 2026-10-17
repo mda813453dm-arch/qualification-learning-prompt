@@ -3,3 +3,4 @@ https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_ans.pdf
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2025r07_ip_qs.pdf
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/questions.html
+# 2026-10-17T16:02:48Z headers
