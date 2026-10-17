@@ -8,7 +8,7 @@
  *   API_TOKEN     AIアプリが付ける Bearer トークン（図の取得だけは不要：画像表示がトークンを付けられないため）
  *   PARSER_URL    経路Bの分解サーバー（Cloud Run）。無ければ経路A（アプリが分解結果を送る）
  *   PARSER_TOKEN  分解サーバーへ付けるトークン（任意）
- *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.1。パーサーの PARSER_VERSION と合わせる）
+ *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.2。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
 import https from 'node:https';
@@ -26,7 +26,7 @@ import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
 import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId } from './study-log.js';
 
-export const DEFAULT_PARSER_VERSION = '0.8.1';
+export const DEFAULT_PARSER_VERSION = '0.8.2';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;

@@ -15,7 +15,7 @@ R8の問題PDFは日本語の文字が図形（アウトライン）になって
 import re
 import unicodedata
 
-from .. import ocr
+from .. import ocr, vision
 from .. import fields
 from ..core import ParseError, RawQuestion, clean_text, mark_out_of_order
 
@@ -489,6 +489,16 @@ LABEL = re.compile(r"^[(（]?(?:[ア-ンa-eA-E]|[A-Z][A-Za-z0-9]?)[)）]?$")
 HEADER_WORD = re.compile(r"^[(（]?(?:[ァ-ンa-eA-E]{1,2}|[A-Z][A-Za-z0-9]?)[)）]?$")
 
 
+def _fix_symbols(stem):
+    """読み取りで崩れやすい決まった記号を直す。基線ベクトルの成分「ΔX，ΔY，ΔZ」の Δ は「4」「A」と読まれる（令和8年 問9）。"""
+    stem = re.sub(r"[4AΔ△]\s*X(\s*[，,]\s*)[4AΔ△]\s*Y(\s*[，,]\s*)[4AΔ△]\s*Z", r"ΔX\1ΔY\2ΔZ", stem)
+    # 字の間を空けて組んだ数字（「電子地形図２５０００」が「2 5 0 0 0」になる）は詰める
+    stem = re.sub(r"(?<![\d.,])\d(?: \d){2,}(?![\d.,])", lambda m: m.group(0).replace(" ", ""), stem)
+    stem = stem.replace("∠ ", "∠")
+    # 「円周率π」の π は「率」「兀」と読まれる
+    return re.sub(r"円周率\s*[率兀元](?=\s*[＝=])", "円周率π", stem)
+
+
 def _question(number, no, pg, text_heading):
     markers = _choice_markers(pg)
     notes = []
@@ -559,6 +569,7 @@ def _question(number, no, pg, text_heading):
             stem = re.sub(r"ア\s*([イウエオカ])に入る", r"ア ~ \1に入る", stem)
             stem = re.sub(r"(\d)\.\s+(?=\d)", r"\1.", stem)
             stem = re.sub(r"円周率\s*[兀元]", "円周率 π", stem)
+            stem = _fix_symbols(stem)
     else:
         stem_mode, stem = "official_image", ""
         notes.append("stem_text_outlined")
@@ -735,7 +746,7 @@ _ITEM = re.compile(r"^(?:[a-zア-オ][.．]|[（(][0-9０-９a-zア-オ]+[）)]|
 _FULLWIDTH = str.maketrans({",": "，", "(": "（", ")": "）", ":": "：", ";": "；", "?": "？", "!": "！", "%": "％", "~": "～"})
 
 
-_FLAT = set("ー一－-—―‐=＝_~～")
+_FLAT = set("ー一－-—―‐=＝_~～へヘ")  # 「へ」も横長で曲線を含むが、「～」にしない（「外側へ倒れこむ」）
 
 
 def _cjk(c):
@@ -999,12 +1010,42 @@ def _assign(gl, chars, offset_x):
     return got
 
 
+VISION_WEIGHT = 3  # Vision の1票は Tesseract の3票分
+VISION_FIX = {"=": "＝", "'": "′", "’": "′", '"': "″", "”": "″"}  # 等号は全角。角度の分・秒の記号はプライムにそろえる
+
+
+def _vision_reads(pages, jobs):
+    """図形の字ごとに、Vision がその位置で読んだ1字を返す {要素id: 字}（Vision が使えないときは空）。"""
+    if not vision.enabled():
+        return {}
+    out = {}
+    syms = {}
+    for p in pages:
+        _, png, zoom, ox, oy = ocr._render(p.pg.page, "6")
+        full = vision.annotate(png)
+        syms[p.number] = vision.symbols(full, zoom, ox, oy) if full else []
+    for p, ln, gl in jobs:
+        for e in gl:
+            r = e.rect
+            # Vision の字の枠は行の高さいっぱいなので、横は字の中央、縦は重なりで比べる（小さな「′」「²」も拾う）
+            hit = {t for x0, y0, x1, y1, t in syms.get(p.number, ()) if r.x0 - 0.5 <= (x0 + x1) / 2 <= r.x1 + 0.5 and y0 < r.y1 and y1 > r.y0}
+            if len(hit) == 1:
+                t = hit.pop()
+                # 空欄の記号「エ」を Vision は英字の「I」と読む。「I」は Tesseract の読みに任せる
+                if t != "I":
+                    out[id(e)] = VISION_FIX.get(t, t)
+    return out
+
+
 def _ocr_questions(numbered, by_no):
     shapes = _ShapeIndex()
     pages = [_OcrPage(n, no, by_no[no], shapes) for n, no in numbered]
     jobs = [(p, ln, gl) for p in pages for ln, gl in p.jobs()]
     images = [_draw_glyphs([e.glyph for e in gl]) for _, _, gl in jobs]
     results = ocr.read_lines([png for png, _ in images])
+    # Google Cloud Vision が使えるときは、ページ全体を読んだ字も、位置の重なる図形の字に1票ずつ（重み付きで）入れる。
+    # Tesseract は「楕→椿」「署→賭」や R・α・β・π などを同じ形でいつも読み違えるので、多数決で Vision の読みを優先する
+    seen = _vision_reads(pages, jobs)
     # 字の数が描いた字の数と同じ行は、左から順に1字ずつ対応づける（確実）。その行の字だけで形ごとの多数決をとる。
     # 数が合わない行は、OCRの字の位置でいちばん近い図形に割り当てる（位置はずれうるので多数決には使わない）
     votes, own = {}, {}
@@ -1024,6 +1065,15 @@ def _ocr_questions(numbered, by_no):
             for e in gl:
                 if len(got[id(e)]) == 1:
                     own[id(e)] = _glyph_char(got[id(e)][0], e.glyph, mid)
+    for (p, ln, gl) in jobs:
+        mid = (_bbox(ln).y0 + _bbox(ln).y1) / 2
+        for e in gl:
+            ch = seen.get(id(e))
+            if ch:
+                c = _glyph_char(ch, e.glyph, mid)
+                own[id(e)] = c
+                votes.setdefault(e.sid, {}).setdefault(c, 0)
+                votes[e.sid][c] += VISION_WEIGHT
     best = {sid: max(v.items(), key=lambda kv: (kv[1], kv[0]))[0] for sid, v in votes.items()}
     # どの読みも付かなかった字は、1字だけ描いてもう一度読む
     missing = {}
@@ -1125,7 +1175,7 @@ def _build_ocr_question(p, line_text, unknown):
     body = p.pg.body_rect()
     return RawQuestion(
         number=p.number,
-        stem=stem,
+        stem=_fix_symbols(stem),
         choices=choices,
         pages=[p.no],
         rect=(round(body.y0, 1), round(body.y1, 1)) if not body.is_empty else None,

@@ -654,6 +654,6 @@ test('分解プログラムの版が上がったら、取り込み済みの年�
   const n = parse.count;
   const after = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body;
   assert.equal(after.status, 'question');
-  assert.equal((await readJob(env.STORE, jobId)).sources[0].keyParts.parserVersion, '0.8.1');
+  assert.equal((await readJob(env.STORE, jobId)).sources[0].keyParts.parserVersion, '0.8.2');
   assert.equal(parse.count, n + 1);
 });

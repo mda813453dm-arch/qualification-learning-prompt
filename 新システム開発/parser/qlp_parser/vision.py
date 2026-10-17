@@ -14,6 +14,7 @@ import base64
 import hashlib
 import json
 import os
+import re
 import urllib.request
 
 ENDPOINT = "https://vision.googleapis.com/v1/images:annotate"
@@ -119,6 +120,25 @@ def _merge_ascii(ws):
     return out
 
 
+_CJK = re.compile(r"[\u3000-\u30ff\u3400-\u9fff\uff00-\uffef]")
+
+
+def symbols(full, zoom, ox, oy):
+    """Vision の応答を1字ずつにする [(x0, y0, x1, y1, 字)]（座標はPDFのpt）。"""
+    out = []
+    for page in full.get("pages", []):
+        for block in page.get("blocks", []):
+            for para in block.get("paragraphs", []):
+                for word in para.get("words", []):
+                    for s in word.get("symbols", []):
+                        t = s.get("text", "")
+                        if not t.strip():
+                            continue
+                        x0, y0, x1, y1 = _box(s["boundingBox"]["vertices"])
+                        out.append((ox + x0 / zoom, oy + y0 / zoom, ox + x1 / zoom, oy + y1 / zoom, t))
+    return out
+
+
 def _overlaps(a, b):
     """2つの範囲 (x0, y0, x1, y1) が、低い方の高さの半分以上、縦に重なっているか（同じ行か）。"""
     return min(a[3], b[3]) - max(a[1], b[1]) >= 0.5 * min(a[3] - a[1], b[3] - b[1])
@@ -206,7 +226,9 @@ def lines(full, zoom, ox, oy):
         for k, w in enumerate(ws):
             # 行頭の数字1字（選択肢の番号「1 AはBに…」）の後にも空白を入れる
             lead_number = k == 1 and ws[0][4] in ("1", "2", "3", "4", "5") and not w[4][0].isdigit() and w[4][0] not in ".．,，、°"
-            if k and (ws[k - 1][5] or lead_number or w[0] - ws[k - 1][2] > 0.8 * (w[3] - w[1])):
+            # Vision が読んだ空白でも、日本語の字や全角の記号に接するところには入れない（「測量法 ( 昭和 24 年」→「測量法(昭和24年」）
+            said = ws[k - 1][5] and not (_CJK.match(ws[k - 1][4][-1]) or _CJK.match(w[4][0]))
+            if k and (said or lead_number or w[0] - ws[k - 1][2] > 0.8 * (w[3] - w[1])):
                 text += " "
             text += w[4]
         out.append((row["y0"], row["y1"], [w[:5] for w in ws], text))
