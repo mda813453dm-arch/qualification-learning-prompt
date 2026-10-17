@@ -469,6 +469,20 @@ test('引継ぎデータにエンジンの記録を載せず、引継ぎIDだけ
   const imp = await call(env, 'POST', '/v1/handoff/import', { handoff: e.handoff });
   assert.equal(imp.status, 201, JSON.stringify(imp.body));
   assert.equal(imp.body.restored, 1);
+  // 新しいチャットのAIが、引継ぎデータを要約したり、IDだけを渡したりしても続ける
+  for (const handoff of [
+    `測量士補の学習の続き。**引継ぎID**：\`${st.learnerId}\`、累計22分、未回答：2025年度 問13`,
+    `【引き継ぎデータ】\n引き継ぎ ID: ${st.learnerId}`,
+    st.learnerId,
+    `資格：測量士補 / 前回 ${st.learnerId} で学習`,
+  ]) {
+    const r = await call(env, 'POST', '/v1/handoff/import', { handoff });
+    assert.equal(r.status, 201, `${handoff} → ${JSON.stringify(r.body)}`);
+    assert.equal(r.body.restored, 1);
+  }
+  const bad = await call(env, 'POST', '/v1/handoff/import', { handoff: '測量士補の続き（IDなし）' });
+  assert.equal(bad.status, 400);
+  assert.match(bad.body.hint, /引継ぎID/);
 });
 
 test('宅建・測量士補は、AIが選んだ年度ではなく、公式の掲載ページにある過去問を新しい年度から全部取り込む', async () => {

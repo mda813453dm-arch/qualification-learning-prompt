@@ -196,6 +196,22 @@ function pendingLabel(saved) {
   return `${year}問${cur.source.number ?? '?'}${field ? `（${field}）` : ''}`;
 }
 
+/** 引継ぎデータの文から、引継ぎIDらしい文字列を探す（「引継ぎID」の近くを先に。最大5つ）。 */
+export function learnerIdCandidates(given, text) {
+  const t = String(text ?? '').normalize('NFKC');
+  const out = [];
+  const add = (v) => {
+    const lid = validLearnerId(String(v ?? '').toLowerCase());
+    if (lid && !out.includes(lid)) out.push(lid);
+  };
+  add(given);
+  for (const m of t.matchAll(/引き?継ぎ\s*ID[^A-Za-z0-9]{0,8}([A-Za-z0-9]{10})(?![A-Za-z0-9])/gi)) add(m[1]);
+  for (const m of t.matchAll(/(?<![A-Za-z0-9])([a-z2-9]{10})(?![A-Za-z0-9])/g)) add(m[1]);
+  return out.slice(0, 5);
+}
+
+const HANDOFF_HINT = '引継ぎデータから引継ぎIDを読めなかった。前回の終了時に表示された引継ぎデータの「引継ぎID：」の行を含めて、handoff にそのまま入れて呼び直す。';
+
 /** 引継ぎIDで残した学習の記録から、新しいセッションを作る（無ければ null）。 */
 async function sessionFromLearner(env, lid, now) {
   const saved = await env.STORE.get(learnerStateKey(lid), 'json');
@@ -719,9 +735,16 @@ async function route(request, env, url, now) {
     try {
       state = importHandoff(b.handoff, { now });
     } catch (e) {
-      const lid = validLearnerId(b.learnerId) ?? validLearnerId(/引継ぎID[：:]\s*([0-9a-z]+)/.exec(String(b.handoff ?? ''))?.[1]);
-      const saved = lid ? await env.STORE.get(learnerStateKey(lid), 'json') : null;
-      if (!saved) throw e;
+      // AIは引継ぎデータを要約したり、IDだけを渡したり、太字や記号で囲んだりするので、それらしい文字列を順に確かめる
+      let saved = null;
+      for (const lid of learnerIdCandidates(b.learnerId, b.handoff)) {
+        saved = await env.STORE.get(learnerStateKey(lid), 'json');
+        if (saved) break;
+      }
+      if (!saved) {
+        console.warn(JSON.stringify({ event: 'handoff_import_failed', candidates: learnerIdCandidates(b.learnerId, b.handoff).length, length: String(b.handoff ?? '').length }));
+        throw new HttpError(400, 'HANDOFF_INVALID', HANDOFF_HINT);
+      }
       state = resumed(saved);
     }
     let job = null;
