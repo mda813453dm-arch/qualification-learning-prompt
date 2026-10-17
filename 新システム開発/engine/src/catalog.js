@@ -113,6 +113,25 @@ export const CATALOG = {
       { adapter: 'fp3', year: 2026, section: '2026年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g3_202605_qa.pdf', answerUrl: null },
     ],
   },
+  itpass: {
+    qualificationId: 'q006',
+    name: 'ITパスポート試験',
+    aliases: ['ITパスポート', 'ＩＴパスポート', 'iパス', 'アイパス', 'ITパス', 'ITパスポート試験'],
+    org: '独立行政法人情報処理推進機構（IPA）',
+    officialSite: 'https://www3.jitec.ipa.go.jp/JitesCbt/',
+    pastExamPage: 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/questions.html',
+    exemption: null,
+    // 分野（公開問題の冊子の案内「問1から問34までは、ストラテジ系の問題です。」で決まる。parser/qlp_parser/fields.py）
+    fields: {
+      s: 'ストラテジ系',
+      m: 'マネジメント系',
+      t: 'テクノロジ系',
+    },
+    // IPAのサイトはクラウドからの取得を断る（2026-10-17 確認）。運営者が添付したPDFを保管場所に置き、そこから読む（src/source-store.js）
+    sources: [
+      { adapter: 'itpass', year: 2026, section: '公開問題', questionUrl: 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.pdf', answerUrl: 'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_ans.pdf' },
+    ],
+  },
 };
 
 /**

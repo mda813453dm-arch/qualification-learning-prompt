@@ -13,7 +13,7 @@ const source = {
   type: 'object',
   required: ['adapter', 'year', 'section', 'questionUrl'],
   properties: {
-    adapter: { type: 'string', enum: ['takken', 'surveyor', 'chintai', 'fp2', 'fp3'], description: 'takken＝宅建、surveyor＝測量士補、chintai＝賃管、fp2＝FP2級学科、fp3＝FP3級学科' },
+    adapter: { type: 'string', enum: ['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass'], description: 'takken＝宅建、surveyor＝測量士補、chintai＝賃管、fp2＝FP2級学科、fp3＝FP3級学科、itpass＝ITパスポート' },
     year: { type: 'integer', description: '西暦の試験年度' },
     section: { type: 'string', description: '区分。分からなければ main' },
     questionUrl: { type: 'string', description: '公式の問題PDFのURL（https）' },
@@ -26,7 +26,7 @@ const sessionId = { type: 'string', description: 'startSession / importHandoff �
 export const TOOLS = [
   {
     name: 'startSession',
-    description: '資格の過去問の取り込みを始め、学習セッションを作る。qualificationId は q041＝宅建、q063＝測量士補、q097＝賃管（賃貸不動産経営管理士）、q002＝FP2級、q003＝FP3級。資格名をそのまま入れてもよい。エンジンの資格は sources を空の配列にしてよい（エンジンが公式サイトから集める）。',
+    description: '資格の過去問の取り込みを始め、学習セッションを作る。qualificationId は q041＝宅建、q063＝測量士補、q097＝賃管（賃貸不動産経営管理士）、q002＝FP2級、q003＝FP3級、q006＝ITパスポート。資格名をそのまま入れてもよい。エンジンの資格は sources を空の配列にしてよい（エンジンが公式サイトから集める）。',
     inputSchema: {
       type: 'object',
       required: ['qualificationId', 'sources'],

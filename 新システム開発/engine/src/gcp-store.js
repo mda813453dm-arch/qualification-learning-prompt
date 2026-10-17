@@ -7,6 +7,9 @@
  * 期限切れの判定はプログラム側（cache.js）で行う。expireAt（Firestore の TTL）とバケットのライフサイクル（2日で削除）は掃除用。
  */
 const FIG = 'fig/';
+// 運営者が添付した公式PDFの控え（source-store.js）も Cloud Storage に置く
+const SRC = 'src/';
+const inBucket = (key) => key.startsWith(FIG) || key.startsWith(SRC);
 
 export class GcpStore {
   /**
@@ -44,7 +47,7 @@ export class GcpStore {
 
   async get(key, type = 'text') {
     let raw;
-    if (key.startsWith(FIG)) {
+    if (inBucket(key)) {
       try {
         [raw] = await (await this.#bucket()).file(key).download();
       } catch (e) {
@@ -65,9 +68,9 @@ export class GcpStore {
   }
 
   async put(key, value, { expirationTtl } = {}) {
-    if (key.startsWith(FIG)) {
+    if (inBucket(key)) {
       const body = typeof value === 'string' ? Buffer.from(value, 'utf8') : Buffer.from(value instanceof ArrayBuffer ? new Uint8Array(value) : value);
-      await (await this.#bucket()).file(key).save(body, { contentType: 'image/png', resumable: false });
+      await (await this.#bucket()).file(key).save(body, { contentType: key.startsWith(SRC) ? 'application/pdf' : 'image/png', resumable: false });
       return;
     }
     const v = typeof value === 'string' ? value : Buffer.from(value instanceof ArrayBuffer ? new Uint8Array(value) : value);
@@ -77,7 +80,7 @@ export class GcpStore {
   }
 
   async delete(key) {
-    if (key.startsWith(FIG)) {
+    if (inBucket(key)) {
       await (await this.#bucket()).file(key).delete({ ignoreNotFound: true });
       return;
     }

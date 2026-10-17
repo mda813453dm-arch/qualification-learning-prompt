@@ -64,3 +64,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-17T13:22:17Z chatgpt app widget (/app/<token>)
 2026-10-17T15:52:45Z shorter choice buttons
 2026-10-17T16:07:20Z figure links
+2026-10-17T16:20:58Z itpass adapter + stored source PDFs

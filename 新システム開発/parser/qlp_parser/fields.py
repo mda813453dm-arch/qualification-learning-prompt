@@ -182,3 +182,16 @@ def classify_fp(question, block):
     return {"fieldId": FP_ORDER[k], "unitId": FP_FIELDS[FP_ORDER[k]], "method": "official_order",
             "evidence": f"問{n}（試験の出題順）" + (f"・{hit['evidence']}" if hit["fieldId"] == FP_ORDER[k] else ""), "verified": True}
 
+
+
+ITPASS_FIELDS = {"s": "ストラテジ系", "m": "マネジメント系", "t": "テクノロジ系"}
+
+
+def classify_itpass(question):
+    """ITパスポートの公開問題は、冊子の案内（「問1から問34までは、ストラテジ系の問題です。」）で分野の範囲が決まる。
+    案内が読めなかった問は分野を決めない（出題しない）。"""
+    n = question.number
+    fid = next((x.split(":", 1)[1] for x in question.notes if x.startswith("field:")), None)
+    if fid not in ITPASS_FIELDS:
+        return {"fieldId": None, "method": "official_banner", "evidence": f"問{n}", "verified": False}
+    return {"fieldId": fid, "unitId": ITPASS_FIELDS[fid], "method": "official_banner", "evidence": f"問{n}（問題冊子の分野の案内）", "verified": True}

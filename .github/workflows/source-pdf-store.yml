@@ -1,0 +1,40 @@
+name: 運営者が添付した公式PDFを保管場所に置く
+# 公式サイトがクラウドからの取得を断る資格（ITパスポート）のため。エンジンは控えがあればそれを読む（engine/src/source-store.js）。
+# 合図：新システム開発/deploy/source-pdf-request.txt に「公式URL ファイル名」を1行ずつ書いて push する。
+# PDFは一時ブランチ src-in に置いておき、保管場所に入れたら src-in を消す（公開のリポジトリに残さない）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/source-pdf-request.txt'
+permissions:
+  contents: write
+jobs:
+  store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PROJECT: qualification-learning
+      BUCKET: qualification-learning-qlp-figures
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: src-in, path: srcin }
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 置く
+        run: |
+          gcloud config set project "$PROJECT"
+          grep -E '^https://' 新システム開発/deploy/source-pdf-request.txt | while read url file; do
+            f="srcin/$file"
+            [ -f "$f" ] || { echo "見つからない: $file"; exit 1; }
+            head -c 5 "$f" | grep -q '%PDF-' || { echo "PDFでない: $file"; exit 1; }
+            key=$(printf '%s' "$url" | sha256sum | cut -d' ' -f1)
+            gcloud storage cp "$f" "gs://$BUCKET/src/$key.pdf" --content-type=application/pdf
+            echo "置いた: $url ($(sha256sum "$f" | cut -c1-12))"
+          done
+      - name: 一時ブランチを消す
+        if: always()
+        run: git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" --delete src-in || true

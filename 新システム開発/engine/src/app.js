@@ -19,6 +19,7 @@ import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
+import { withStoredSources } from './source-store.js';
 import { findSources, newLearnerId, pages } from './pages.js';
 import { sha256Hex } from './store.js';
 import { INSTRUCTIONS } from './instructions.js';
@@ -34,7 +35,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
@@ -50,7 +51,7 @@ const json = (status, body) => new Response(JSON.stringify(body), { status, head
 function deps(env, extra = {}) {
   const parserVersion = env.PARSER_VERSION || DEFAULT_PARSER_VERSION;
   const parse = env.PARSER_URL ? httpParser({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN, fetch: env.parserFetch }) : awaitUpload();
-  return { store: env.STORE, fetchPdf: env.fetchPdf ?? defaultFetchPdf, parse, parserVersion, ...extra };
+  return { store: env.STORE, fetchPdf: withStoredSources(env.STORE, env.fetchPdf ?? defaultFetchPdf), parse, parserVersion, ...extra };
 }
 
 /**
@@ -695,7 +696,7 @@ async function route(request, env, url, now) {
     if (!env.PARSER_URL) throw new HttpError(503, 'PAGE_IMAGES_UNAVAILABLE');
     let bytes;
     try {
-      bytes = await (env.fetchPdf ?? defaultFetchPdf)(b.url);
+      bytes = await withStoredSources(env.STORE, env.fetchPdf ?? defaultFetchPdf)(b.url);
     } catch {
       throw new HttpError(502, 'PDF_FETCH_FAILED');
     }

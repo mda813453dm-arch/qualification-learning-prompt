@@ -1,0 +1,3 @@
+# 運営者が添付した公式PDF（公式URL ファイル名）。ファイルは一時ブランチ src-in に置く
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.pdf 2026r08_ip_qs.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_ans.pdf 2026r08_ip_ans.pdf
