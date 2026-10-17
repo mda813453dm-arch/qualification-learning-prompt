@@ -1,0 +1,7 @@
+page01 https://gyosei-shiken.or.jp/doc/exam/r6ans.html
+page02 https://gyosei-shiken.or.jp/doc/exam/index.html
+page03 https://gyosei-shiken.or.jp/doc/faq/exam.html
+page04 https://gyosei-shiken.or.jp/doc/faq/testday.html
+page05 https://gyosei-shiken.or.jp/doc/guide/testrooms.html
+page06 https://gyosei-shiken.or.jp/doc/exam/result/passedid.html
+page07 https://gyosei-shiken.or.jp/doc/exam/r7ans.html
