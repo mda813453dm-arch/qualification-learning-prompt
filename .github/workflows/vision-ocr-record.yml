@@ -43,7 +43,8 @@ jobs:
           for f in sorted(glob.glob('../../vin/*.pdf')):
               d = fitz.open(f)
               for p in d:
-                  if ocr.is_scanned(p) or ocr.is_garbled(p):
+                  # 字が図形になったページ（測量士補）もOCRで読むので、全ページを読んでおく
+                  if len(p.get_text().strip()) < 3000:
                       key, png, *_ = ocr._render(p, "6")
                       ok = vision.annotate(png) is not None
                       n += ok
