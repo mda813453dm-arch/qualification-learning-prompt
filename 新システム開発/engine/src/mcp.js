@@ -157,6 +157,12 @@ export function forModel(body) {
   return out.next ? { ...out, next: slim(out.next) } : out;
 }
 
+/** ChatGPT アプリには、GPTのような指示文を置く場所がない。AIが必ず読むツールの説明に、学習の始め方の順番を入れる（2026-10-18 アプリで試験概要・学習状況の聴取が飛ばされた） */
+const APP_FLOW = {
+  startSession: '【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に「学習を開始しますか？」「1：始めます」だけを付けて返事を待つ。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
+  startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて「この項目はどう進めますか？」「1：解説あり（解説→確認問題→実践問題）」「2：確認問題から（解説なし）」「3：実践問題から（解説も確認問題もなし）」を出して選んでもらう。',
+};
+
 function widgetResource(baseUrl) {
   const origin = (() => { try { return new URL(baseUrl).origin; } catch { return null; } })();
   const csp = { connectDomains: [], resourceDomains: origin ? [origin] : [] };
@@ -199,7 +205,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
