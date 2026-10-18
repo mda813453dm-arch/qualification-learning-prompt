@@ -137,12 +137,29 @@ export const TOOLS = [
     },
     api: (a) => ['POST', '/v1/pdf-pages', { url: a.url, find: a.find, span: a.span, pages: a.pages }],
   },
+  {
+    name: 'showMenu',
+    appOnly: true,
+    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['plan', 'item', 'resume', 'next'] } } },
+    local: (a) => {
+      const menu = APP_MENUS[a.kind];
+      return menu ? { status: 'menu', menu, howToProceed: '選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。' } : null;
+    },
+  },
 ];
+
+const APP_MENUS = {
+  plan: { kind: 'plan', prompt: '学習を開始しますか？', choices: ['始めます'] },
+  item: { kind: 'item', prompt: 'この項目はどう進めますか？', choices: ['解説あり（解説→確認問題→実践問題）', '確認問題から（解説なし）', '実践問題から（解説も確認問題もなし）'], notice: '以後も同じにするときは「2 以後も」のように入力してください。' },
+  resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
+  next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ'] },
+};
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer']);
+const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -164,7 +181,7 @@ export function appInstructions() {
   const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
   if (a < 0 || b < 0) return INSTRUCTIONS;
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
-  const noInvent = '\n**仕様に書かれていない選択肢・段階・計画の型（資格の一覧、「第1段階〜第4段階」のような学習計画の型、独自の「1〜4」の選択肢など）を作らない。** 番号の選択肢は、この仕様と、エンジンが返した menu（planMenu・itemMenu など）の文だけを、ChatGPTの選択ボタンで出す。\n';
+  const noInvent = '\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。';
   return INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent;
 }
 
@@ -172,9 +189,9 @@ export function appInstructions() {
 const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「学習したい資格名を入力してください。（例：宅建、測量士補）」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  nextQuestion: '利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に区切り線「---」の行に続けて「1：次の問題へ」の1行だけを付けて返事を待つ（後ろには何も書かない）。利用者が「1」または「次の問題へ」と答えたときに、このツールを呼ぶ。',
-  startSession: '【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に「学習を開始しますか？」「1：始めます」だけを付けて返事を待つ。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
-  startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて「この項目はどう進めますか？」「1：解説あり（解説→確認問題→実践問題）」「2：確認問題から（解説なし）」「3：実践問題から（解説も確認問題もなし）」を出して選んでもらう。',
+  nextQuestion: '利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に showMenu（kind=next）を呼んで返事を待つ（「1：次の問題へ」をチャットに書かない）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。',
+  startSession: '【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
+  startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };
 
 function widgetResource(baseUrl) {
@@ -219,7 +236,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
@@ -239,6 +256,12 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         if (args[k] === undefined || args[k] === null || args[k] === '') {
           return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_REQUIRED', argument: k }) }] });
         }
+      }
+      if (tool.appOnly && !widget) return fail(id, -32602, `Unknown tool: ${params.name}`);
+      if (tool.local) {
+        const out = tool.local(args);
+        if (!out) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_INVALID', argument: 'kind' }) }] });
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify({ status: out.status, howToProceed: out.howToProceed }) }], structuredContent: { status: out.status, howToProceed: out.howToProceed }, _meta: { qlp: out } });
       }
       const [m, path, body] = tool.api(args);
       const res = await callApi(m, path, body);

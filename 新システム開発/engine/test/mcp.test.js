@@ -55,7 +55,7 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
   assert.deepEqual(names.sort(), ops.sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.length, 9);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 9);
 });
 
 test('トークンはヘッダーか URL で受け取り、どちらも無ければ断る', async () => {
@@ -110,6 +110,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
   assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v1.html');
   assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
+  const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
+  assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
+  assert.equal(menu.structuredContent.menu, undefined);
+  assert.equal((await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'plan' } })).body.error.code, -32602);
   const res = (await app('resources/list', {})).resources;
   assert.equal(res[0].mimeType, 'text/html;profile=mcp-app');
   const html = (await app('resources/read', { uri: res[0].uri })).contents[0];

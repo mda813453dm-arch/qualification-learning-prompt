@@ -58,6 +58,7 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
+    if (data.menu) { showMenu(data.menu); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
@@ -77,6 +78,17 @@ a{color:inherit}
     app.innerHTML = h;
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){ answer(b.getAttribute('data-n')); }; });
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
+  }
+  // 番号で選ぶ確認は、押せるボタンで出す（押したら結果の1行に縮め、選んだ内容をチャットに送る）
+  function showMenu(m){
+    var h = '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
+    app.innerHTML = h;
+    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
+      var n = b.getAttribute('data-n'), c = m.choices[n - 1];
+      app.innerHTML = '<div class="notice">' + esc(m.prompt) + '</div><div class="result ok">' + esc(n + '：' + c) + '</div>';
+      ask(n + '：' + c);
+    }; });
   }
   async function answer(v){
     if (state.answered || !state.question) return;
