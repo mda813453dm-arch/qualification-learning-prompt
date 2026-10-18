@@ -1,0 +1,22 @@
+name: ChatGPTアプリの合言葉を作る（読み取りのみ）
+# 合図：新システム開発/deploy/app-key-request.txt を更新して push する。
+# 主のトークンから決まるアプリ専用の合言葉だけを、この実行の記録に出す（主のトークンは出さない）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/app-key-request.txt'
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: アプリ専用の合言葉
+        run: |
+          T=$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)
+          K=$(printf '%s' 'qlp-app-v1' | openssl dgst -sha256 -hmac "$T" -hex | awk '{print $NF}' | cut -c1-40)
+          echo "APPKEY=$K"

@@ -12,7 +12,7 @@
  */
 import { CATALOG } from './catalog.js';
 import https from 'node:https';
-import { constants as cryptoConstants } from 'node:crypto';
+import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
@@ -591,7 +591,9 @@ async function route(request, env, url, now) {
   // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
   // ChatGPT アプリ（/app/<トークン>）は、問題をエンジンが描く画面で出す
   if ((parts[0] === 'mcp' || parts[0] === 'app') && parts.length <= 2) {
-    const viaPath = parts.length === 2 && env.API_TOKEN && timingSafeEqual(decodeURIComponent(parts[1]), env.API_TOKEN);
+    // ChatGPT アプリはヘッダーを設定できないので URL に合言葉を入れる。主のトークンは URL に入れず、アプリ専用の合言葉（appKey）だけを受け付ける
+    const pathKey = parts[0] === 'app' ? appKey(env.API_TOKEN) : env.API_TOKEN;
+    const viaPath = parts.length === 2 && pathKey && timingSafeEqual(decodeURIComponent(parts[1]), pathKey);
     const viaHeader = env.API_TOKEN && timingSafeEqual(request.headers.get('authorization') ?? '', `Bearer ${env.API_TOKEN}`);
     if (!viaPath && !viaHeader) throw new HttpError(401, 'UNAUTHORIZED');
     if (method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
@@ -907,6 +909,12 @@ function authHint(auth, token) {
   if (t.includes('/')) return 'looks_like_a_path_not_the_value';
   if (t !== t.trim() || /\s/.test(t)) return 'contains_whitespace';
   return `wrong_value_length_${t.length}`;
+}
+
+/** アプリ専用の合言葉：主のトークンから決まる（主のトークンを変えれば変わる。VERSION を変えても作り直せる）。 */
+const APP_KEY_VERSION = 'qlp-app-v1';
+export function appKey(token) {
+  return token ? createHmac('sha256', token).update(APP_KEY_VERSION).digest('hex').slice(0, 40) : null;
 }
 
 function timingSafeEqual(a, b) {

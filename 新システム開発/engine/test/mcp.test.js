@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { MemoryStore } from '../src/store.js';
-import { handle } from '../src/app.js';
+import { appKey, handle } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
 import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
@@ -101,7 +101,9 @@ test('必須の引数が無い・知らないツール・知らないメソッ�
 
 test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画面に出し、AIには図や表示文を渡さない', async () => {
   const env = makeEnv();
-  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${TOKEN}` })).body.result;
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  // 主のトークンをURLに入れても入れない（URLに入れるのはアプリ専用の合言葉だけ）
+  assert.equal((await rpc(env, 'initialize', {}, { token: null, path: `/app/${TOKEN}` })).status, 401);
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
