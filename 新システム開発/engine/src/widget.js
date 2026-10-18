@@ -127,17 +127,26 @@ a{color:inherit}
     }
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
     if (g.checkSuggested) h += '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめますか？</div><div class="row"><button id="check">確認問題で基本を確かめる</button></div>';
-    h += '<div class="row">' + (g.skipped ? '' : '<button id="explain">解説を聞く</button>') + '<button id="next">次の問題へ</button></div>';
-    app.insertAdjacentHTML('beforeend', h);
-    var ck = document.getElementById('check');
-    if (ck) ck.onclick = function(){ ck.disabled = true; ask('同じ分野（' + (q.fieldName || '') + '）で3問続けて間違えたので、基本を確かめる確認問題を出してください。「AIが作った確認問題」と明示し、過去問と混ぜないでください。終わったら「1：次の問題へ」を出してください。'); };
-    var ex = document.getElementById('explain');
-    // 解説はチャットの下に出るので、この画面は結果の1行に縮める（問題文・選択肢・図を残さない。次の問題はチャットの「1：次の問題へ」から）
-    if (ex) ex.onclick = function(){ app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '：' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div><div class="notice">解説はこの下に表示されます。</div><div class="row"><button id="next2">次の問題へ</button></div>'; document.getElementById('next2').onclick = function(){ document.getElementById('next2').disabled = true; ask('1：次の問題へ'); }; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。\\n問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n') + '\\n\\n図は新しく出したり探したりせず、この問題の画面の図を前提に説明してください。解説を書き終えたら、最後に showMenu（kind=next）を呼んでください。' + (g.explainHow ? '\\n\\n解説の書き方（エンジンの指定）：\\n' + g.explainHow : '')); };
-    document.getElementById('next').onclick = async function(){
-      if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
-      render(await callTool('nextQuestion', { sessionId: state.sessionId }));
+    var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
+    var nextBtn = function(){
+      document.getElementById('next').onclick = async function(){
+        if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
+        render(await callTool('nextQuestion', { sessionId: state.sessionId }));
+      };
     };
+    if (g.skipped) {
+      app.insertAdjacentHTML('beforeend', h + '<div class="row"><button id="next">次の問題へ</button></div>');
+      nextBtn();
+      return;
+    }
+    // 採点のあと：この画面は結果の1行に縮め、簡単な理由→「詳しい解説／次の問題へ」のボタンはチャットの下に出す（AIが書く）
+    app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>' + (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>下のボタンで確認問題も選べます。</div>' : '');
+    var stem = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
+    ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。\\n'
+      + '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。'
+      + '③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、下の「詳しい解説の書き方」で書き、最後に showMenu（kind=next）を呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。'
+      + (g.checkSuggested ? '⑤同じ分野で3問続けて間違えたので、②のあとに「確認問題で基本を確かめる」も選べるようにしたい。選ばれたらAIが作った確認問題（そうと明示）を出し、答え合わせのあと showMenu（kind=next）を呼ぶ。' : '')
+      + '\\n' + stem + (g.explainHow ? '\\n\\n詳しい解説の書き方（エンジンの指定）：\\n' + g.explainHow : ''));
   }
   window.addEventListener('message', function(e){
     var m = e.data; if (!m || m.jsonrpc !== '2.0') return;

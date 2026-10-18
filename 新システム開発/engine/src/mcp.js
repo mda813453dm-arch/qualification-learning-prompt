@@ -140,8 +140,8 @@ export const TOOLS = [
   {
     name: 'showMenu',
     appOnly: true,
-    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
-    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['plan', 'item', 'resume', 'next'] } } },
+    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['plan', 'item', 'resume', 'next', 'review'] } } },
     local: (a) => {
       const menu = APP_MENUS[a.kind];
       return menu ? { status: 'menu', menu, howToProceed: '選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。' } : null;
@@ -153,6 +153,7 @@ const APP_MENUS = {
   plan: { kind: 'plan', prompt: '学習を開始しますか？', choices: ['始めます'] },
   item: { kind: 'item', prompt: 'この項目はどう進めますか？', choices: ['解説あり（解説→確認問題→実践問題）', '確認問題から（解説なし）', '実践問題から（解説も確認問題もなし）'], notice: '以後も同じにするときは「2 以後も」のように入力してください。' },
   resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
+  review: { kind: 'review', prompt: 'この問題はどうしますか？', choices: ['詳しい解説（法的根拠つき）', '次の問題へ'] },
   next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ'] },
 };
 
