@@ -197,7 +197,7 @@ const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
 
 // 図をもう一度見せるとき：AIがウェブ検索や画像検索で図を探さないよう、エンジンが公式の図のファイルを付け直す（2026-10-18 ChatGPTが再表示で検索画像を出した）
-const FIGURE_AGAIN_HOW = '図の画像ファイル（figureCount 枚）がこの応答に付いている。回答の最初にPythonで全部表示し、そのあと screen をそのまま出す。図はこのファイルだけを使う。表示できなかったときは、そう伝えて screen のリンクを案内する。';
+const FIGURE_AGAIN_HOW = '図の画像ファイル（figureCount 枚）がこの応答に付いている。付いた図はChatGPTが回答に表示する（Pythonは使わない）。screen をそのまま出す。図はこのファイルだけを使い、ウェブ検索・画像検索で探したり描いたりしない。付いた図が見えないときは、見えないと伝えて screen のリンクを案内する。';
 
 /** 前回答えていない問の名前（「2025年度 問13」）。無ければ null。選択ボタンに入るので短くする（分野名は付けない）。 */
 function pendingLabel(saved) {
@@ -305,8 +305,8 @@ async function resolveSession(env, id, now) {
 // 推論の浅いモデルでも表示を崩さないよう、問題ごとに表示のしかたを添える
 const SHOW_COMMON = 'question.screen を1文字も変えずに、そのまま回答の本文として出す（見出し・問題文・図・選択肢・問題PDF・答え方が、この順で入っている。前後に説明を足さない）。選択肢を書き換えない。renderPdfPages は呼ばない。利用者が「スキップ」と答えたら、submitAnswer の value に「スキップ」を送る。';
 const SHOW_TEXT = `${SHOW_COMMON}「図を開く（公式PDFの図）」のリンクは公式PDFから切り出した図なので、書き換えずにそのまま出す。図をウェブ検索・画像検索で探したり、自分で描いたりしない（このリンクを案内する）。`;
-// GPT：図の画像ファイルがアクションの応答に付いている。Pythonで表示しないと利用者に図が見えない
-const SHOW_WITH_FILES = `図の画像ファイル（figureCount 枚）がこの応答に付いている。回答を書く前に必ずPythonを実行し、付いた画像ファイルを全部、1枚ずつ表示する（例：from PIL import Image; display(Image.open(パス))）。ファイルの中身を変えたり描き直したりしない。表示したら、続けて ${SHOW_COMMON}利用者が図をもう一度見たいと言ったら（解説の途中でも）、nextQuestion の question に「〔年度〕年度 問〔番号〕の図をもう一度」と入れて呼び、付いた図のファイルをPythonで表示する（図をウェブ検索・画像検索で探さない）。`;
+// GPT：図の画像ファイルがアクションの応答に付いている。ChatGPTが回答に添付として出す（Pythonで探す必要はない。2026-10-18 実機：添付は出たが、Pythonは対象ファイルを見つけられなかった）
+const SHOW_WITH_FILES = `図の画像ファイル（figureCount 枚）がこの応答に付いている。付いた図はChatGPTが回答に表示する。Pythonは使わず、ファイルを探したり描き直したりしない。続けて ${SHOW_COMMON}図が見えていないときは、見えないと伝える（「表示しました」と書かない）。利用者が図をもう一度見たいと言ったら（解説の途中でも）、nextQuestion の question に「〔年度〕年度 問〔番号〕の図をもう一度」と入れて呼ぶ（図をウェブ検索・画像検索で探さない）。`;
 const SHOW_WITH_FIGURE = `${SHOW_COMMON}svg タグの図は公式PDFの図なので、コードブロックに入れず省略せず、白い背景（rect）も消さずにそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索・Pythonで出さない。`;
 
 export function tablesMarkdown(tables) {
@@ -469,7 +469,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
   }));
   // 本文に入れたSVGの図は画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
-  // GPT（MCP以外の呼び出し）では、図を画像ファイルとして応答に付け、Pythonで表示させる
+  // GPT（MCP以外の呼び出し）では、図を画像ファイルとして応答に付ける（ChatGPTが添付として表示する）
   const attach = !env.QLP_MCP && !env.QLP_WIDGET && shown.figures.length > 0;
   const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] && !attach ? f : { url, ...f })); // eslint-disable-line no-unused-vars
   const display = questionDisplay(shown, attach ? [] : svgs, { attached: attach });
@@ -484,7 +484,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName, ...(attach ? { figureCount: shown.figures.length } : {}) };
   return {
     status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
-    // ChatGPT はこの欄のURLのファイルを取り込み、AIのPythonから開けるようにする（最大10個）
+    // ChatGPT はこの欄のURLのファイルを取り込み、回答に添付として表示する（最大10個）
     ...(attach ? { openaiFileResponse: shown.figures.slice(0, 10).map((f) => f.url) } : {}),
   };
 }
@@ -501,7 +501,7 @@ function figureAgain(env, item) {
     status: 'figure',
     questionId: shown.questionId,
     figureCount: urls.length,
-    screen: attach ? `〔図〕この回答の一番上に、${label}の公式PDFから切り出した図を表示しています。\n${links}` : `${label}の公式PDFから切り出した図です。\n${links}`,
+    screen: attach ? `〔図〕${label}の公式PDFから切り出した図を、この回答に添付しています。\n${links}` : `${label}の公式PDFから切り出した図です。\n${links}`,
     howToShow: attach ? FIGURE_AGAIN_HOW : 'screen をそのまま出す（リンクから公式の図を開ける）。図を探したり描いたりしない。',
     ...(attach ? { openaiFileResponse: urls.slice(0, 10) } : {}),
   };
@@ -651,7 +651,7 @@ async function route(request, env, url, now) {
     // 次の問題も同じ応答で返す（AIアプリの「許可」の確認が、採点と出題で2回出るのを1回にするため）。
     // 表示は利用者が次へ進むときでよい（出題済みの問は、nextQuestion を呼んでも同じ問が返る）
     const next = await nextView(env, id, r.state, now, { prefetched: true });
-    // 次の問題の図のファイルも、この応答で付ける（利用者が次へ進んだときに、AIがPythonで表示する）
+    // 次の問題の図のファイルも、この応答で付ける（利用者が次へ進んだときに、ChatGPTが添付として表示する）
     const { openaiFileResponse, ...nextBody } = next;
     return json(200, { grade: { ...r.grade, explainHow: how }, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
   }

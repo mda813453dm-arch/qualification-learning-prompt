@@ -129,8 +129,8 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   assert.deepEqual(r2.openaiFileResponse, [n2.figures[0].url]);
   assert.match(n2.figures[0].url, /\/v1\/figure\/.+\.png$/);
   assert.equal(n2.figureCount, 1);
-  assert.match(n2.howToShow, /Python/);
-  assert.equal(n2.display, `問2の本文\n\n〔図〕この回答の一番上に、公式PDFから切り出した図を表示しています。もう一度見るときは「図をもう一度」と入力してください。\n▶ 図が表示されないときは：[図を開く（公式PDFの図）](${n2.figures[0].url})\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  assert.match(n2.howToShow, /Pythonは使わず/);
+  assert.equal(n2.display, `問2の本文\n\n〔図〕公式PDFから切り出した図を、この回答に添付しています。もう一度見るときは「図をもう一度」と入力してください。\n▶ 図が表示されないときは：[図を開く（公式PDFの図）](${n2.figures[0].url})\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.ok(!n2.display.includes('<svg'));
   // MCP（Claude など）は今までどおり、本文中のSVGと、公式PDFの図を開くリンク
   const m2 = (await call({ ...env, QLP_MCP: true }, 'POST', `/v1/sessions/${sessionId}/next`)).body;
@@ -710,7 +710,7 @@ test('図をもう一度：公式の図のファイルだけを付け直し、�
   assert.equal(again.status, 'figure');
   assert.deepEqual(again.openaiFileResponse, [q2.figures[0].url]);
   assert.match(again.screen, /2026年度 問2の公式PDFから切り出した図/);
-  assert.match(again.howToShow, /Python/);
+  assert.match(again.howToShow, /Pythonは使わない/);
   // 問を書いて頼んでも同じ図。答えたあとに次の問が付いていても、書いた問の図を返す
   const g = (await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q2.questionId, value: 1 })).body;
   const named = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '2026年度 問2の図をもう一度' })).body;
