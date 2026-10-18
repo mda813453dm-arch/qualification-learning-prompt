@@ -164,8 +164,12 @@ export function appInstructions() {
   const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
   if (a < 0 || b < 0) return INSTRUCTIONS;
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
-  return INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b);
+  const noInvent = '\n**仕様に書かれていない選択肢・段階・計画の型（資格の一覧、「第1段階〜第4段階」のような学習計画の型、独自の「1〜4」の選択肢など）を作らない。** 番号の選択肢は、この仕様と、エンジンが返した menu（planMenu・itemMenu など）の文だけを、ChatGPTの選択ボタンで出す。\n';
+  return INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent;
 }
+
+// アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
+const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「学習したい資格名を入力してください。（例：宅建、測量士補）」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
   nextQuestion: '利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に区切り線「---」の行に続けて「1：次の問題へ」の1行だけを付けて返事を待つ（後ろには何も書かない）。利用者が「1」または「次の問題へ」と答えたときに、このツールを呼ぶ。',
@@ -215,7 +219,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${description}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
