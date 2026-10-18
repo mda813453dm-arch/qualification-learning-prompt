@@ -929,7 +929,7 @@ async function mcp(request, env, url, now, widget = false) {
   };
   const batch = Array.isArray(msg);
   // 診断用：どの呼び出しが来たか（方法とツール名だけ。引数・合言葉は記録しない）
-  for (const m of batch ? msg : [msg]) console.log(JSON.stringify({ event: 'mcp_rpc', route: widget ? 'app' : 'mcp', method: m?.method, tool: m?.params?.name }));
+  for (const m of batch ? msg : [msg]) console.log(JSON.stringify({ event: 'mcp_rpc', route: widget ? 'app' : 'mcp', method: m?.method, tool: m?.params?.name, ...(m?.params?.name === 'showMenu' && typeof m?.params?.arguments?.kind === 'string' ? { kind: m.params.arguments.kind.slice(0, 24) } : {}) }));
   const opts = { widget, baseUrl: env.PUBLIC_BASE_URL ?? url.origin };
   const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi, opts)))).filter(Boolean);
   if (!out.length) return new Response(null, { status: 202 });

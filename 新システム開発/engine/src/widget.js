@@ -51,8 +51,12 @@ a{color:inherit}
   // 画面用の全文は _meta.qlp（AIには渡らない）、無ければ structuredContent
   function full(r){ return r && ((r._meta && r._meta.qlp) || r.structuredContent || r); }
   function input(){ return (window.openai && window.openai.toolInput) || {}; }
+  // 診断：画面が動いたことを、エンジンの記録に残す（中身は送らない）。iPhone のアプリで画面が出ない原因を調べるため
+  function diag(k){ try { var p = (window.openai && window.openai.callTool) ? window.openai.callTool('showMenu', { kind: k }) : rpc('tools/call', { name: 'showMenu', arguments: { kind: k } }); if (p && p.catch) p.catch(function(){}); } catch (e) {} }
+  var diagged = false;
   function render(data){
     if (!data) return;
+    if (!diagged) { diagged = true; diag('diag_render_' + (data.onboarding ? 'onb' : data.question ? 'q' : 'x')); }
     if (data.grade && data.next) {
       if (state.question && !state.answered) { state.answered = true; showGrade(data.grade); state.next = data.next; return; }
       var g = data.grade; render(data.next);
@@ -192,6 +196,7 @@ a{color:inherit}
   }
   try { new ResizeObserver(fit).observe(app); } catch (e) {}
   fit();
+  diag('diag_loaded');
   window.addEventListener('openai:set_globals', function(){ if (window.openai && window.openai.toolOutput && !state.question) render(openaiOutput()); });
   function openaiOutput(){ var o = window.openai; return (o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput; }
   if (window.openai && window.openai.toolOutput) render(openaiOutput());
