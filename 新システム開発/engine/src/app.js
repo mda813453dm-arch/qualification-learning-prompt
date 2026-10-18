@@ -392,7 +392,11 @@ async function markEngineSources(env, sources) {
 
 // 学習計画・項目の進め方・再開の確認も、同じ形で選べるようにする（指示文を貼り直さなくてよいよう、応答に添える）
 const PLAN_MENU = ['---', '学習を開始しますか？', '1：始めます'].join('\n');
+// アプリ（ウィジェット）では指示文を置けず、AIが学習の始め方の順番を飛ばした（2026-10-18）。順番はエンジンが応答で示し、学習の開始（startStudy）の前は出題しない
+export const PLAN_STEPS = '学習の始め方（この順で、飛ばさない）：①公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準。確認できない項目は「未確認」）を示す。②公式に免除制度がある資格だけ、免除を使うかを聞く。③利用者の学習状況（1：未着手／2：基礎学習中／3：応用学習中／4：過去問演習中）を聞き、答えを待つ。④その答えと出題分野の頻度を踏まえた学習計画（始める分野と理由、進め方）を示し、planMenu を付けて返事を待つ。利用者の答えより先に、学習計画を作ったり問題を出したりしない。';
+const NEED_PLAN = '先に、学習の始め方（試験概要→学習状況の確認→学習計画→「1：始めます」）を進めます。';
 const PLAN_UI = {
+  howToProceed: PLAN_STEPS,
   planMenu: PLAN_MENU,
   planHowToShow: '学習計画を示す返答の最後に、「学習を開始しますか？」「1：始めます」の代わりに planMenu を1文字も変えずに付ける（後ろに何も書かない）。「1」「始めます」なら startStudy を呼ぶ。',
 };
@@ -410,6 +414,10 @@ const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
   let want = want0;
   let state = state0;
+  // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
+  if (env.QLP_WIDGET && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
+    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU };
+  }
   const job = await progress(env, sessionJobId(state), now);
   let items = await availablePackets(env.STORE, job, now);
   const prevField = state.current?.fieldId ?? null;

@@ -121,7 +121,14 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
 
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
   const call2 = (name, args) => app('tools/call', { name, arguments: args });
-  const { sessionId } = (await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
+  const started = (await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
+  const { sessionId } = started;
+  assert.match(started.howToProceed, /試験概要/);
+  // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
+  const early = (await call2('nextQuestion', { sessionId })).structuredContent;
+  assert.equal(early.status, 'needPlan');
+  assert.equal(early.question, undefined);
+  await call2('startStudy', { qualificationName: '測量士補', learnerId: started.learnerId });
   const r = await call2('nextQuestion', { sessionId });
   const full = r._meta.qlp;
   assert.equal(full.sessionId, sessionId);
