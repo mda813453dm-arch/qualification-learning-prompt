@@ -109,7 +109,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const nq = tools.find((t) => t.name === 'nextQuestion');
   assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
   assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v1.html');
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
   assert.equal(menu.structuredContent.menu, undefined);
@@ -125,9 +125,13 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
 
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
   const call2 = (name, args) => app('tools/call', { name, arguments: args });
-  const started = (await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
+  const startedRes = await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] });
+  const started = startedRes.structuredContent;
+  const startedFull = startedRes._meta.qlp;
   const { sessionId } = started;
   assert.match(started.howToProceed, /試験概要/);
+  assert.equal(started.onboarding, undefined);
+  assert.equal(startedFull.onboarding.at(-1).kind, 'status');
   // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
   const early = (await call2('nextQuestion', { sessionId })).structuredContent;
   assert.equal(early.status, 'needPlan');

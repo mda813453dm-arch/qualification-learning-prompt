@@ -11,6 +11,7 @@
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.2。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
+import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
@@ -640,7 +641,7 @@ async function route(request, env, url, now) {
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const job = await progress(env, sessionJobId(state), now);
-    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI });
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { onboarding: onboardingSteps(b.qualificationId) } : {}) });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
@@ -958,6 +959,15 @@ function timingSafeEqual(a, b) {
   let diff = x.length ^ y.length;
   for (let i = 0; i < Math.max(x.length, y.length); i += 1) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
   return diff === 0;
+}
+
+/** アプリで最初に聞く確認（免除・学習状況）。ChatGPT に任せると自分の選択肢画面で聞くので、エンジンの画面（ボタン）で聞く */
+function onboardingSteps(qid) {
+  const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
+  const steps = [];
+  if (c?.exemption) steps.push({ kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices], notice: c.exemption.label });
+  steps.push({ kind: 'status', prompt: '現在の学習状況を選んでください。', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] });
+  return steps;
 }
 
 /** 利用コードの確認（ChatGPT アプリだけ。設定の required が true のときだけ働く） */

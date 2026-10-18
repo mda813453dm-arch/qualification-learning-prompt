@@ -164,7 +164,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy']);
+const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -174,6 +174,11 @@ export function forModel(body) {
   if (typeof body.handoff === 'string' && typeof body.display === 'string') {
     const id = body.handoff.match(/引[継き]ぎ\s*ID\**\s*[：:]\s*\**\s*([A-Za-z0-9]+)/)?.[1];
     return { minutes: body.minutes, totalMinutes: body.totalMinutes, ...(id ? { handoffId: id } : {}), howToShow: '終了ログと引継ぎデータの全文は、この下の画面に表示している。チャットに書き直したり、要約したり、省いたりしない。「引継ぎデータは画面のコピーボタンでコピーできます。次のチャットで貼り付けるか、引継ぎIDを伝えてください」とだけ伝える。' };
+  }
+  // 学習の始め：免除・学習状況は画面のボタンで聞いている（AIは聞かない）
+  if (Array.isArray(body.onboarding)) {
+    const { onboarding, planMenu, howToProceed, ...rest } = body; // eslint-disable-line no-unused-vars
+    return { ...rest, howToProceed: '試験概要を示す。免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、利用者が答えるまで学習計画を作らない。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
   }
   const slim = (v) => {
     if (!v?.question) return v;

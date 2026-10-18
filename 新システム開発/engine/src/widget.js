@@ -59,6 +59,7 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
+    if (Array.isArray(data.onboarding) && data.onboarding.length) { if (data.sessionId) state.sessionId = data.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
@@ -111,6 +112,18 @@ a{color:inherit}
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
       app.innerHTML = '<div class="notice">' + esc(m.prompt) + '</div><div class="result ok">' + esc(n + '：' + c) + '</div>';
       ask(n + '：' + c);
+    }; });
+  }
+  // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
+  function onboard(steps, got){
+    var m = steps[got.length];
+    if (!m) { app.innerHTML = '<div class="result ok">' + esc(got.join('／')) + '</div>'; ask(got.join('／')); return; }
+    var h = '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
+    app.innerHTML = h;
+    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
+      var c = m.choices[b.getAttribute('data-n') - 1];
+      onboard(steps, got.concat([(m.kind === 'exempt' ? '免除：' : '学習状況：') + c]));
     }; });
   }
   async function answer(v){
