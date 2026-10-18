@@ -61,6 +61,11 @@ a{color:inherit}
     if (data.menu) { showMenu(data.menu); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
+    if (data.status === 'figure' && (data.figureUrls || []).length) {
+      var fh = '<div class="notice">' + esc(data.screen || '') + '</div>';
+      data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
+      app.innerHTML = fh; return;
+    }
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
       app.innerHTML = '<div class="stem">' + esc(data.screen || data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
       return;
@@ -72,11 +77,18 @@ a{color:inherit}
     if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<button data-n="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
-    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div>';
+    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row"><button id="decide" disabled>この答えで決定</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
-    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){ answer(b.getAttribute('data-n')); }; });
+    // 触れただけでは採点しない：選んでから「この答えで決定」を押す
+    var chosen = null;
+    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
+      app.querySelectorAll('.choices button').forEach(function(x){ x.classList.remove('picked'); });
+      b.classList.add('picked'); chosen = b.getAttribute('data-n');
+      var d = document.getElementById('decide'); d.disabled = false; d.textContent = chosen + ' で決定';
+    }; });
+    document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
   }
   // 番号で選ぶ確認は、押せるボタンで出す（押したら結果の1行に縮め、選んだ内容をチャットに送る）
@@ -122,7 +134,7 @@ a{color:inherit}
     if (ck) ck.onclick = function(){ ck.disabled = true; ask('同じ分野（' + (q.fieldName || '') + '）で3問続けて間違えたので、基本を確かめる確認問題を出してください。「AIが作った確認問題」と明示し、過去問と混ぜないでください。終わったら「1：次の問題へ」を出してください。'); };
     var ex = document.getElementById('explain');
     // 解説はチャットの下に出るので、この画面は結果の1行に縮める（問題文・選択肢・図を残さない。次の問題はチャットの「1：次の問題へ」から）
-    if (ex) ex.onclick = function(){ app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '：' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div><div class="notice">解説はこの下に表示されます。</div>'; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。\\n問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n') + (g.explainHow ? '\\n\\n解説の書き方（エンジンの指定）：\\n' + g.explainHow : '')); };
+    if (ex) ex.onclick = function(){ app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '：' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div><div class="notice">解説はこの下に表示されます。</div><div class="row"><button id="next2">次の問題へ</button></div>'; document.getElementById('next2').onclick = function(){ document.getElementById('next2').disabled = true; ask('1：次の問題へ'); }; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。\\n問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n') + '\\n\\n図は新しく出したり探したりせず、この問題の画面の図を前提に説明してください。解説を書き終えたら、最後に showMenu（kind=next）を呼んでください。' + (g.explainHow ? '\\n\\n解説の書き方（エンジンの指定）：\\n' + g.explainHow : '')); };
     document.getElementById('next').onclick = async function(){
       if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
       render(await callTool('nextQuestion', { sessionId: state.sessionId }));

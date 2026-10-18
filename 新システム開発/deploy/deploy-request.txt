@@ -84,3 +84,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-18T04:15:09Z アプリ：資格の一覧を説明から外し、仕様外の選択肢を作らせない
 2026-10-18T04:18:08Z showMenu buttons + plan layout
 2026-10-18T04:19:13Z nextQuestion order
+2026-10-18T09:47:59Z select-then-decide, figure in widget

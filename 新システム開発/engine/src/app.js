@@ -509,7 +509,8 @@ function figureAgain(env, item) {
     status: 'figure',
     questionId: shown.questionId,
     figureCount: urls.length,
-    screen: attach ? `〔図〕${label}の公式PDFから切り出した図を、この回答に添付しています。\n${links}` : `${label}の公式PDFから切り出した図です。\n${links}`,
+    screen: attach ? `〔図〕${label}の公式PDFから切り出した図を、この回答に添付しています。\n${links}` : env.QLP_WIDGET ? `${label}の公式PDFから切り出した図です。` : `${label}の公式PDFから切り出した図です。\n${links}`,
+    ...(env.QLP_WIDGET ? { figureUrls: urls } : {}),
     howToShow: attach ? FIGURE_AGAIN_HOW : 'screen をそのまま出す（リンクから公式の図を開ける）。図を探したり描いたりしない。',
     ...(attach ? { openaiFileResponse: urls.slice(0, 10) } : {}),
   };
