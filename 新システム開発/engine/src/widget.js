@@ -21,6 +21,7 @@ h2{font-size:17px;margin:0 0 6px}
 .fig{margin:10px 0}.fig img{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
 .choices{display:flex;flex-direction:column;gap:8px;margin:12px 0}
 .choices button{display:flex;gap:10px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.choices .opt{display:flex;gap:10px;align-items:flex-start;background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}.choices .opt input{margin-top:6px}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
 .choices button b{min-width:1.2em}
 .choices button:disabled{opacity:.6;cursor:default}
 .choices button.correct{border-color:var(--ok);border-width:2px}.choices button.picked{outline:2px solid var(--sub)}
@@ -76,17 +77,15 @@ a{color:inherit}
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
-    h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<button data-n="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
-    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row"><button id="decide" disabled>この答えで決定</button></div>';
+    h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
+    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
-    // 触れただけでは採点しない：選んでから「この答えで決定」を押す
+    // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
     var chosen = null;
-    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
-      app.querySelectorAll('.choices button').forEach(function(x){ x.classList.remove('picked'); });
-      b.classList.add('picked'); chosen = b.getAttribute('data-n');
-      var d = document.getElementById('decide'); d.disabled = false; d.textContent = chosen + ' で決定';
+    app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){
+      chosen = r.value; document.getElementById('decrow').style.display = 'flex';
     }; });
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
@@ -105,14 +104,14 @@ a{color:inherit}
   async function answer(v){
     if (state.answered || !state.question) return;
     state.answered = true;
-    app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
-    var picked = app.querySelector('.choices button[data-n="' + v + '"]'); if (picked) picked.classList.add('picked');
+    app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
+    var picked = app.querySelector('.choices .opt[data-n="' + v + '"]'); if (picked) picked.classList.add('picked');
     var guess = document.getElementById('guess');
     try {
       var r = await callTool('submitAnswer', { sessionId: state.sessionId, questionId: state.question.questionId, value: String(v), confidence: guess && guess.checked ? 'guess' : 'sure' });
       showGrade(r && r.grade); state.next = r && r.next;
     } catch (e) {
-      state.answered = false; app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+      state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
       app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
     }
   }
@@ -122,7 +121,7 @@ a{color:inherit}
     var h = '';
     if (g.skipped) h = '<div class="result">スキップしました。</div>';
     else {
-      var c = app.querySelector('.choices button[data-n="' + g.correctAnswer + '"]'); if (c) c.classList.add('correct');
+      var c = app.querySelector('.choices .opt[data-n="' + g.correctAnswer + '"]'); if (c) c.classList.add('correct');
       h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
       if (safeUrl(g.answerPdfUrl)) h += '<div class="notice"><a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a></div>';
     }

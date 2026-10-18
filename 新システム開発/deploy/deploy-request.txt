@@ -85,3 +85,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-18T04:18:08Z showMenu buttons + plan layout
 2026-10-18T04:19:13Z nextQuestion order
 2026-10-18T09:47:59Z select-then-decide, figure in widget
+2026-10-18T09:48:40Z radio choices
