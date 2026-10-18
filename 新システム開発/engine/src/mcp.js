@@ -158,6 +158,15 @@ export function forModel(body) {
 }
 
 /** ChatGPT アプリには、GPTのような指示文を置く場所がない。AIが必ず読むツールの説明に、学習の始め方の順番を入れる（2026-10-18 アプリで試験概要・学習状況の聴取が飛ばされた） */
+/** アプリ用の指示文：GPTの指示文と同じ仕様。問題の表示だけ「問題の画面」に差し替える */
+export function appInstructions() {
+  const a = INSTRUCTIONS.indexOf('2. 表示：');
+  const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
+  if (a < 0 || b < 0) return INSTRUCTIONS;
+  const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
+  return INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b);
+}
+
 const APP_FLOW = {
   nextQuestion: '利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に区切り線「---」の行に続けて「1：次の問題へ」の1行だけを付けて返事を待つ（後ろには何も書かない）。利用者が「1」または「次の問題へ」と答えたときに、このツールを呼ぶ。',
   startSession: '【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に「学習を開始しますか？」「1：始めます」だけを付けて返事を待つ。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
@@ -199,14 +208,14 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         protocolVersion: PROTOCOL_VERSIONS.includes(asked) ? asked : PROTOCOL_VERSIONS[0],
         capabilities: widget ? { tools: { listChanged: false }, resources: { listChanged: false } } : { tools: { listChanged: false } },
         serverInfo: SERVER_INFO,
-        instructions: INSTRUCTIONS,
+        instructions: widget ? appInstructions() : INSTRUCTIONS,
       });
     }
     case 'ping':
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+        tools: TOOLS.map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${description}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
