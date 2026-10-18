@@ -109,7 +109,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const nq = tools.find((t) => t.name === 'nextQuestion');
   assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v2.html');
   assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v2.html');
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v2.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
   assert.equal(menu.structuredContent.menu, undefined);
@@ -126,12 +126,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
   const call2 = (name, args) => app('tools/call', { name, arguments: args });
   const startedRes = await call2('startSession', { qualificationId: SRC.qualificationId, sources: [source] });
-  const started = startedRes.structuredContent;
-  const startedFull = startedRes._meta.qlp;
+  const started = startedRes.structuredContent ?? JSON.parse(startedRes.content[0].text);
   const { sessionId } = started;
   assert.match(started.howToProceed, /試験概要/);
-  assert.equal(started.onboarding, undefined);
-  assert.equal(startedFull.onboarding.at(-1).kind, 'status');
+  assert.match(started.howToProceed, /showMenu（kind=status）/);
   // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
   const early = (await call2('nextQuestion', { sessionId })).structuredContent;
   assert.equal(early.status, 'needPlan');
@@ -216,4 +214,11 @@ test('showMenu：免除の確認と学習状況も、エンジンの固定の選
   const app = async (args) => (await rpc(env, 'tools/call', { name: 'showMenu', arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
   assert.deepEqual((await app({ kind: 'exempt' }))._meta.qlp.menu.choices, ['免除を利用する', '免除を利用しない']);
   assert.equal((await app({ kind: 'status' }))._meta.qlp.menu.choices.length, 4);
+});
+
+test('showMenu：免除のあとは学習状況、学習状況のあとは学習計画へ進むよう、AIに次の1手を伝える', async () => {
+  const env = makeEnv();
+  const app = async (args) => (await rpc(env, 'tools/call', { name: 'showMenu', arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  assert.match((await app({ kind: 'exempt' })).structuredContent.howToProceed, /kind=status/);
+  assert.match((await app({ kind: 'status' })).structuredContent.howToProceed, /kind=plan/);
 });

@@ -11,7 +11,6 @@
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.2。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
-import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
@@ -641,7 +640,7 @@ async function route(request, env, url, now) {
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const job = await progress(env, sessionJobId(state), now);
-    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { onboarding: onboardingSteps(b.qualificationId) } : {}) });
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(b.qualificationId), planMenu: undefined } : {}) });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
@@ -961,13 +960,10 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-/** アプリで最初に聞く確認（免除・学習状況）。ChatGPT に任せると自分の選択肢画面で聞くので、エンジンの画面（ボタン）で聞く */
-function onboardingSteps(qid) {
-  const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
-  const steps = [];
-  if (c?.exemption) steps.push({ kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices], notice: c.exemption.label });
-  steps.push({ kind: 'status', prompt: '現在の学習状況を選んでください。', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] });
-  return steps;
+/** アプリでは、ChatGPT が免除・学習状況を自分の質問画面で聞いた。この応答で、次に呼ぶツールを名指しする */
+function appStartHint(qid) {
+  const first = Object.values(CATALOG).find((x) => x.qualificationId === qid)?.exemption ? 'exempt' : 'status';
+  return `試験概要を示す（公式サイトで確認できなかった項目は「未確認」）。そのあと、必ず showMenu（kind=${first}）を呼んで、押されるまで待つ。ChatGPT標準の質問・選択肢の画面は使わない。利用者の答えより先に、学習計画を作ったり問題を出したりしない。`;
 }
 
 /** 利用コードの確認（ChatGPT アプリだけ。設定の required が true のときだけ働く） */
