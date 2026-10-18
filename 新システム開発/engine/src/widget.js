@@ -60,6 +60,7 @@ a{color:inherit}
       return;
     }
     if (data.menu) { showMenu(data.menu); return; }
+    if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     if (data.status === 'figure' && (data.figureUrls || []).length) {
@@ -89,6 +90,17 @@ a{color:inherit}
     }; });
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
+  }
+  // 学習の終了：終了ログと引継ぎデータの全文を、そのまま出す（コピーできる）
+  function showEnd(d){
+    app.innerHTML = '<h2>学習を終了しました</h2><div class="stem">' + esc(d.log || '') + '</div><h2>引継ぎデータ</h2><div class="notice">次のチャットで貼り付けるか、引継ぎIDを伝えると再開できます。</div><textarea id="ho" readonly rows="10" style="width:100%;box-sizing:border-box;font:13px/1.5 monospace;background:var(--btn);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea><div class="row"><button id="cp">引継ぎデータをコピー</button></div>';
+    var ta = document.getElementById('ho'); ta.value = d.handoff;
+    document.getElementById('cp').onclick = function(){
+      var b = document.getElementById('cp');
+      var done = function(){ b.textContent = 'コピーしました'; };
+      try { navigator.clipboard.writeText(d.handoff).then(done, function(){ ta.select(); document.execCommand('copy'); done(); }); }
+      catch (e) { ta.select(); try { document.execCommand('copy'); } catch (e2) {} done(); }
+    };
   }
   // 番号で選ぶ確認は、押せるボタンで出す（押したら結果の1行に縮め、選んだ内容をチャットに送る）
   function showMenu(m){

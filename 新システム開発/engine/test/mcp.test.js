@@ -155,3 +155,12 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const s2 = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [source] })).structuredContent;
   assert.equal((await call(env, 'nextQuestion', { sessionId: s2.sessionId })).structuredContent.question.figureUrls, undefined);
 });
+
+test('アプリ：終了ログと引継ぎデータの全文はAIに渡さず、画面に出す', async () => {
+  const { forModel } = await import('../src/mcp.js');
+  const v = forModel({ minutes: 5, totalMinutes: 9, log: 'LOG', handoff: '引継ぎID：a3txuxxwvj\n中身', display: 'D' });
+  assert.equal(v.handoffId, 'a3txuxxwvj');
+  assert.equal(v.handoff, undefined);
+  assert.equal(v.log, undefined);
+  assert.equal(v.display, undefined);
+});
