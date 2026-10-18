@@ -903,6 +903,8 @@ async function mcp(request, env, url, now, widget = false) {
     return { status: res.status, body: await res.json() };
   };
   const batch = Array.isArray(msg);
+  // 診断用：どの呼び出しが来たか（方法とツール名だけ。引数・合言葉は記録しない）
+  for (const m of batch ? msg : [msg]) console.log(JSON.stringify({ event: 'mcp_rpc', route: widget ? 'app' : 'mcp', method: m?.method, tool: m?.params?.name }));
   const opts = { widget, baseUrl: env.PUBLIC_BASE_URL ?? url.origin };
   const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi, opts)))).filter(Boolean);
   if (!out.length) return new Response(null, { status: 202 });
