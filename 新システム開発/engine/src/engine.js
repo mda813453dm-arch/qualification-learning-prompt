@@ -216,6 +216,24 @@ export function present(item, kind, figureBase = '/v1/figure') {
  * 問の年度を言わなければ、まだ答えていない年度の新しい方、それも無ければ最も新しい年度にする。
  * fields：分野の番号 → 分野名（資格台帳）。
  */
+// 分野名でも番号でもない言葉（「方向角の問題」など）は、問題文と選択肢にその語を含む問題を探す（解いていない問題を先に）
+const KEYWORD_STOP = /^(問題|過去問|出題|解説|次|別|新しい|他|もう|今|同じ|練習|復習|お願い|ください|して|したい|ほしい|欲しい)$/;
+function findByKeyword(state, items, plain) {
+  const words = [...new Set(plain.match(/[\u4e00-\u9fff]{2,}|[\u30a1-\u30fc]{2,}|[A-Za-z0-9]{2,}/g) ?? [])]
+    .filter((w) => !KEYWORD_STOP.test(w))
+    .map((w) => w.replace(/(の問題|問題|について|に関する|を出して|出して)$/, ''))
+    .filter((w) => w.length >= 2)
+    .sort((a, b) => b.length - a.length);
+  for (const w of words) {
+    const hits = items.filter((x) => !(state.skipped ?? []).some((k) => k.questionId === x.packet.questionId)
+      && `${x.packet.stem ?? ''}${(x.packet.choices ?? []).join('')}`.normalize('NFKC').includes(w));
+    if (!hits.length) continue;
+    const item = hits.find((x) => !state.history[x.packet.questionId]) ?? hits[0];
+    return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new' };
+  }
+  return null;
+}
+
 export function findWanted(state, items, want, fields = {}) {
   const t = String(want ?? '').normalize('NFKC');
   const num = /問\s*(\d{1,3})/.exec(t)?.[1] ?? /^\s*(\d{1,3})\s*$/.exec(t)?.[1];
@@ -223,7 +241,7 @@ export function findWanted(state, items, want, fields = {}) {
     const plain = t.replace(/\s/g, '');
     const fid = Object.keys(fields).find((k) => plain.includes(fields[k].replace(/\s/g, '')))
       ?? Object.keys(fields).find((k) => plain.length >= 2 && fields[k].includes(plain));
-    if (!fid) return null;
+    if (!fid) return findByKeyword(state, items, plain);
     const inField = items.filter((x) => x.packet.fieldId === fid && !(state.skipped ?? []).some((k) => k.questionId === x.packet.questionId));
     if (!inField.length) return null;
     const item = inField.find((x) => !state.history[x.packet.questionId]) ?? inField[0];

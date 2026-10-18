@@ -42,3 +42,14 @@ test('利用者が分野を指定したら、その分野の問を出し、そ�
   assert.equal(findWanted(state, items, '問1', fields).item.packet.questionNumber, 1);
   assert.equal(findWanted(state, items, '写真測量', fields), null);
 });
+
+test('分野名でも番号でもない言葉（「方向角の問題を出して」）は、問題文に含む問題を探す', () => {
+  const mk = (year, n, stem) => ({ packet: { questionId: `q:${year}:${n}`, year, questionNumber: n, fieldId: 's2', stem, choices: ['1', '2'] } });
+  const items = [mk(2025, 16, '写真測量の問題'), mk(2025, 9, '点Aから点Bへの方向角を求めよ'), mk(2024, 8, '方向角と距離から座標を求める')];
+  const state = newState({ qualificationId: 'q063', now: 0 });
+  const w = findWanted(state, items, '方向角の問題を出して', {});
+  assert.equal(w.item.packet.questionNumber, 9);
+  const done = { ...state, history: { 'q:2025:9': { fieldId: 's2' } } };
+  assert.equal(findWanted(done, items, '方向角の問題を出して', {}).item.packet.questionNumber, 8);
+  assert.equal(findWanted(state, items, '三角網の問題', {}), null);
+});
