@@ -122,6 +122,10 @@ jobs:
               assert r.status == 200 and len(body) > 1000
               open("out/r7-q13-fig.png", "wb").write(body)
           assert q["choices"] and q["choices"][0] in d, "問13の選択肢が画面に無い"
+          # 図をもう一度：エンジンが公式の図のファイルを付け直す（AIに画像を探させない）
+          code, fa, _ = call("POST", f"/v1/sessions/{sid2}/next", {"question": "2025年度 問13の図をもう一度"})
+          print("  図をもう一度", fa.get("status"), fa.get("figureCount"), (fa.get("screen") or "")[:60])
+          assert code == 200 and fa.get("status") == "figure" and fa.get("openaiFileResponse"), ("図をもう一度が返らない", code, fa)
           code, g, _ = call("POST", "/v1/pdf-pages", {"url": src[0]["questionUrl"], "find": "No. 26"})
           assert code == 409 and g.get("error") == "ENGINE_QUESTION", (code, g)
           print("OK", seen)

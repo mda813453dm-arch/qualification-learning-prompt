@@ -193,6 +193,12 @@ export const INLINE_SVG_MAX = 8000;
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 
+/** 利用者が「図をもう一度」「図を表示して」などと言った（nextQuestion の question）。直前の問の公式の図だけを付け直す。 */
+const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
+
+// 図をもう一度見せるとき：AIがウェブ検索や画像検索で図を探さないよう、エンジンが公式の図のファイルを付け直す（2026-10-18 ChatGPTが再表示で検索画像を出した）
+const FIGURE_AGAIN_HOW = '図の画像ファイル（figureCount 枚）がこの応答に付いている。回答の最初にPythonで全部表示し、そのあと screen をそのまま出す。図はこのファイルだけを使う。表示できなかったときは、そう伝えて screen のリンクを案内する。';
+
 /** 前回答えていない問の名前（「2025年度 問13」）。無ければ null。選択ボタンに入るので短くする（分野名は付けない）。 */
 function pendingLabel(saved) {
   const cur = saved?.current;
@@ -300,7 +306,7 @@ async function resolveSession(env, id, now) {
 const SHOW_COMMON = 'question.screen を1文字も変えずに、そのまま回答の本文として出す（見出し・問題文・図・選択肢・問題PDF・答え方が、この順で入っている。前後に説明を足さない）。選択肢を書き換えない。renderPdfPages は呼ばない。利用者が「スキップ」と答えたら、submitAnswer の value に「スキップ」を送る。';
 const SHOW_TEXT = `${SHOW_COMMON}「図を開く（公式PDFの図）」のリンクは公式PDFから切り出した図なので、書き換えずにそのまま出す。図をウェブ検索・画像検索で探したり、自分で描いたりしない（このリンクを案内する）。`;
 // GPT：図の画像ファイルがアクションの応答に付いている。Pythonで表示しないと利用者に図が見えない
-const SHOW_WITH_FILES = `図の画像ファイル（figureCount 枚）がこの応答に付いている。回答を書く前に必ずPythonを実行し、付いた画像ファイルを全部、1枚ずつ表示する（例：from PIL import Image; display(Image.open(パス))）。ファイルの中身を変えたり描き直したりしない。表示したら、続けて ${SHOW_COMMON}`;
+const SHOW_WITH_FILES = `図の画像ファイル（figureCount 枚）がこの応答に付いている。回答を書く前に必ずPythonを実行し、付いた画像ファイルを全部、1枚ずつ表示する（例：from PIL import Image; display(Image.open(パス))）。ファイルの中身を変えたり描き直したりしない。表示したら、続けて ${SHOW_COMMON}利用者が図をもう一度見たいと言ったら（解説の途中でも）、nextQuestion の question に「〔年度〕年度 問〔番号〕の図をもう一度」と入れて呼び、付いた図のファイルをPythonで表示する（図をウェブ検索・画像検索で探さない）。`;
 const SHOW_WITH_FIGURE = `${SHOW_COMMON}svg タグの図は公式PDFの図なので、コードブロックに入れず省略せず、白い背景（rect）も消さずにそのまま出す（その位置に図が表示される）。図をウェブ検索・画像検索・Pythonで出さない。`;
 
 export function tablesMarkdown(tables) {
@@ -414,6 +420,17 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     if (skipId) items = items.filter((x) => x.packet.questionId !== skipId);
     want = null;
   }
+  // 図をもう一度：直前の問（答えた後でもよい）の公式の図を付け直す。問の順番や記録は変えない
+  if (want && FIGURE_WANT.test(want.normalize('NFKC'))) {
+    // 「2026年度 問3の図をもう一度」のように問が書かれていればその問。無ければ、いま見ている問
+    // （採点の応答に付けた次の問は、まだ見ていないことがあるので、そのときは答えたばかりの問）
+    const named = /問\s*\d/.test(want) ? findWanted(state, items, want.replace(/の?図.*$/, ''), {}) : null;
+    const cur = state.current && !(state.current.prefetched && state.lastGrade) ? state.current.questionId : null;
+    const qid = named?.item.packet.questionId ?? cur ?? state.lastGrade?.questionId ?? state.current?.questionId ?? null;
+    const item = qid ? items.find((x) => x.packet.questionId === qid) : null;
+    if (item) return figureAgain(env, item);
+    want = null;
+  }
   // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
   const fieldNames = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
   const wanted = want ? findWanted(state, items, want, fieldNames) : null;
@@ -437,6 +454,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   state = pin(state, pick.item, pick.kind, now);
   if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
+  // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
+  else if (!prefetched && state.current?.prefetched) state = { ...state, current: { ...state.current, prefetched: false } };
   await saveSession(env, id, state, now);
   const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
   const fid = pick.item.packet.fieldId ?? null;
@@ -467,6 +486,24 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
     // ChatGPT はこの欄のURLのファイルを取り込み、AIのPythonから開けるようにする（最大10個）
     ...(attach ? { openaiFileResponse: shown.figures.slice(0, 10).map((f) => f.url) } : {}),
+  };
+}
+
+/** 図をもう一度見せる応答（図の無い問は、そのことを伝える文だけ）。 */
+function figureAgain(env, item) {
+  const shown = present(item, 'review', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const label = `${shown.year}年度 問${shown.questionNumber}`;
+  const urls = shown.figures.map((f) => f.url);
+  if (!urls.length) return { status: 'figure', questionId: shown.questionId, figureCount: 0, screen: `${label}には、図はありません。`, howToShow: 'screen をそのまま出す。図を探したり描いたりしない。' };
+  const links = urls.map((u, i) => `▶ 図${urls.length > 1 ? i + 1 : ''}が表示されないときは：[図${urls.length > 1 ? i + 1 : ''}を開く（公式PDFの図）](${u})`).join('\n');
+  const attach = !env.QLP_MCP && !env.QLP_WIDGET;
+  return {
+    status: 'figure',
+    questionId: shown.questionId,
+    figureCount: urls.length,
+    screen: attach ? `〔図〕この回答の一番上に、${label}の公式PDFから切り出した図を表示しています。\n${links}` : `${label}の公式PDFから切り出した図です。\n${links}`,
+    howToShow: attach ? FIGURE_AGAIN_HOW : 'screen をそのまま出す（リンクから公式の図を開ける）。図を探したり描いたりしない。',
+    ...(attach ? { openaiFileResponse: urls.slice(0, 10) } : {}),
   };
 }
 

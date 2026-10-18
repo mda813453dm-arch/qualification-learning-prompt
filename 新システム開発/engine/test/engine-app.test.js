@@ -130,7 +130,7 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   assert.match(n2.figures[0].url, /\/v1\/figure\/.+\.png$/);
   assert.equal(n2.figureCount, 1);
   assert.match(n2.howToShow, /Python/);
-  assert.equal(n2.display, `問2の本文\n\n〔図〕この回答の一番上に、公式PDFから切り出した図を表示しています。\n▶ 図が表示されないときは：[図を開く（公式PDFの図）](${n2.figures[0].url})\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
+  assert.equal(n2.display, `問2の本文\n\n〔図〕この回答の一番上に、公式PDFから切り出した図を表示しています。もう一度見るときは「図をもう一度」と入力してください。\n▶ 図が表示されないときは：[図を開く（公式PDFの図）](${n2.figures[0].url})\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.ok(!n2.display.includes('<svg'));
   // MCP（Claude など）は今までどおり、本文中のSVGと、公式PDFの図を開くリンク
   const m2 = (await call({ ...env, QLP_MCP: true }, 'POST', `/v1/sessions/${sessionId}/next`)).body;
@@ -694,4 +694,30 @@ test('解説の書き方（explainHow）：学習開始と採点の応答に付�
   // 開始のときに段階が送られれば、それを使う
   const st3 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId, stage: '4' })).body;
   assert.equal(st3.learnerStage, 4);
+});
+
+test('図をもう一度：公式の図のファイルだけを付け直し、問の順番や記録は変えない', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const q1 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  const none = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '図をもう一度' })).body;
+  assert.equal(none.status, 'figure');
+  assert.equal(none.figureCount, 0, '問1には図が無い');
+  await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q1.questionId, value: 3 });
+  const q2 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  assert.equal(q2.questionNumber, 2);
+  const again = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '図を再表示して' })).body;
+  assert.equal(again.status, 'figure');
+  assert.deepEqual(again.openaiFileResponse, [q2.figures[0].url]);
+  assert.match(again.screen, /2026年度 問2の公式PDFから切り出した図/);
+  assert.match(again.howToShow, /Python/);
+  // 問を書いて頼んでも同じ図。答えたあとに次の問が付いていても、書いた問の図を返す
+  const g = (await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q2.questionId, value: 1 })).body;
+  const named = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '2026年度 問2の図をもう一度' })).body;
+  assert.deepEqual(named.openaiFileResponse, [q2.figures[0].url]);
+  const bare = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '図をもう一度' })).body;
+  assert.deepEqual(bare.openaiFileResponse, [q2.figures[0].url], '次の問をまだ見ていないときは、答えたばかりの問の図');
+  // 図の再表示は出題の流れを変えない：次は採点の応答に付いた問
+  const n = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  assert.equal(n.questionId, g.next.question.questionId);
 });

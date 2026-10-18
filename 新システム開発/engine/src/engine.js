@@ -147,7 +147,7 @@ export function figureSvg(svg, url, n = '') {
  * その画像は回答の一番上に出るので、本文の図の位置には、そのことと、出ないときに開くリンクを書く（2026-10-17 利用者「チャット中に必ず図表を出して」）。
  */
 export function figureAttached(url, n = '') {
-  return `〔図${n}〕この回答の一番上に、公式PDFから切り出した図${n}を表示しています。\n▶ 図${n}が表示されないときは：[図${n}を開く（公式PDFの図）](${url})`;
+  return `〔図${n}〕この回答の一番上に、公式PDFから切り出した図${n}を表示しています。もう一度見るときは「図をもう一度」と入力してください。\n▶ 図${n}が表示されないときは：[図${n}を開く（公式PDFの図）](${url})`;
 }
 
 export function questionDisplay(q, svgs, { attached = false } = {}) {
