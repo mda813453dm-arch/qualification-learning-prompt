@@ -23,6 +23,7 @@ import { handleRpc } from './mcp.js';
 import { withStoredSources } from './source-store.js';
 import { findSources, newLearnerId, pages } from './pages.js';
 import { sha256Hex } from './store.js';
+import { LIMIT_MSG, NEED_CODE, admin as accessAdmin, checkCode, countUse, getConfig as accessConfig, grantLearner, learnerAccess } from './access.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
@@ -612,6 +613,11 @@ async function route(request, env, url, now) {
   const auth = (request.headers.get('authorization') ?? '').trim();
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED', authHint(auth, env.API_TOKEN));
 
+  // 運営者の操作：利用コードの追加・無効化・回数の変更（合言葉で守る）
+  if (method === 'POST' && url.pathname === '/v1/admin/access') {
+    return json(200, await accessAdmin(env.STORE, await body(request), jstToday(now)));
+  }
+
   if (method === 'POST' && url.pathname === '/v1/sessions') {
     const b = await body(request);
     if (!qidOk(String(b.qualificationId ?? '').replace(/\s/g, ''))) throw new HttpError(400, 'QUALIFICATION_INVALID');
@@ -623,6 +629,7 @@ async function route(request, env, url, now) {
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);
     const learnerId = given ?? newLearnerId();
+    await gateEnter(env, learnerId, b.accessCode, now);
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
     const restored = given ? await sessionFromLearner(env, given, now) : null;
     if (restored && restored.state.qualificationId === b.qualificationId) {
@@ -639,6 +646,7 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
     return json(200, await nextView(env, id, state, now, { want }));
   }
@@ -646,6 +654,7 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
     const b = await body(request);
     const { id, state } = await resolveSession(env, parts[2], now);
+    const acc = await gateUse(env, state.learnerId, now, { answering: true });
     // 採点は出題時に控えた正答だけで行う（公式PDF・保存データは読み直さない）
     const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence }, { today: jstToday(now), now });
     if (!r.ok) {
@@ -653,7 +662,10 @@ async function route(request, env, url, now) {
       console.warn(JSON.stringify({ event: 'answer_rejected', reason: r.reason, given: String(b.questionId ?? '').slice(0, 80), current: state.current?.questionId ?? null }));
       throw new HttpError(409, r.reason);
     }
-    if (!r.grade.alreadyGraded) await saveSession(env, id, r.state, now);
+    if (!r.grade.alreadyGraded) {
+      await saveSession(env, id, r.state, now);
+      if (acc) await countUse(env.STORE, acc.hash, jstToday(now));
+    }
     // 診断：送られた番号と採点の結果（回答の中身以外・個人情報なし）
     console.log(JSON.stringify({ event: 'answer_graded', questionId: r.grade.questionId, given: String(b.questionId ?? '').slice(0, 80), value: String(b.value ?? '').slice(0, 10), selected: r.grade.selected ?? null, correctAnswer: r.grade.correctAnswer ?? null, correct: r.grade.correct ?? null, alreadyGraded: !!r.grade.alreadyGraded, viaMcp: !!env.QLP_MCP }));
     // 解説の書き方：学習段階と、エンジンの採点記録（苦手な分野・今回の正誤）に合わせる
@@ -845,6 +857,7 @@ async function route(request, env, url, now) {
       }
       state = resumed(saved);
     }
+    await gateEnter(env, state.learnerId, b.accessCode, now);
     let job = null;
     if (b.sources) {
       const persistent = !!state.learnerId;
@@ -945,6 +958,25 @@ function timingSafeEqual(a, b) {
   let diff = x.length ^ y.length;
   for (let i = 0; i < Math.max(x.length, y.length); i += 1) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
   return diff === 0;
+}
+
+/** 利用コードの確認（ChatGPT アプリだけ。設定の required が true のときだけ働く） */
+async function gateEnter(env, learnerId, code, now) {
+  if (!env.QLP_WIDGET || !(await accessConfig(env.STORE)).required) return;
+  const day = jstToday(now);
+  if (await learnerAccess(env.STORE, learnerId, day)) return;
+  const ok = await checkCode(env.STORE, code);
+  if (!ok) throw new HttpError(403, 'ACCESS_CODE_REQUIRED', NEED_CODE + '（利用者が入力したコードを accessCode に入れて、もう一度呼ぶ。コードを推測・補完しない）');
+  await grantLearner(env.STORE, learnerId, ok.hash);
+}
+
+async function gateUse(env, learnerId, now, { answering = false } = {}) {
+  if (!env.QLP_WIDGET || !(await accessConfig(env.STORE)).required) return null;
+  const day = jstToday(now);
+  const a = await learnerAccess(env.STORE, learnerId, day);
+  if (!a) throw new HttpError(403, 'ACCESS_CODE_REQUIRED', NEED_CODE + '（startSession を、利用者が入力したコード accessCode つきで呼ぶ）');
+  if (answering && a.used >= a.limit) throw new HttpError(429, 'DAILY_LIMIT', LIMIT_MSG);
+  return a;
 }
 
 export async function handle(request, env) {

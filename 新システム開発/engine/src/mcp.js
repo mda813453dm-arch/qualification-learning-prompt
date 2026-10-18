@@ -33,11 +33,12 @@ export const TOOLS = [
       properties: {
         qualificationId: { type: 'string' },
         learnerId: { type: 'string', description: '引継ぎデータから再開したときだけ、その引継ぎID' },
+        accessCode: { type: 'string', description: '利用コードが必要と返されたときだけ、利用者が入力したコードをそのまま入れる' },
         sources: { type: 'array', maxItems: 40, items: source },
         plan: { type: 'object', properties: { examDate: { type: 'string', description: 'YYYY-MM-DD' } } },
       },
     },
-    api: (a) => ['POST', '/v1/sessions', { qualificationId: a.qualificationId, learnerId: a.learnerId, sources: a.sources, plan: a.plan }],
+    api: (a) => ['POST', '/v1/sessions', { qualificationId: a.qualificationId, learnerId: a.learnerId, sources: a.sources, plan: a.plan, accessCode: a.accessCode }],
   },
   {
     name: 'startStudy',
@@ -112,9 +113,9 @@ export const TOOLS = [
     inputSchema: {
       type: 'object',
       required: ['handoff'],
-      properties: { handoff: { type: 'string' }, sources: { type: 'array', maxItems: 40, items: source } },
+      properties: { handoff: { type: 'string' }, accessCode: { type: 'string', description: '利用コードが必要と返されたときだけ、利用者が入力したコード' }, sources: { type: 'array', maxItems: 40, items: source } },
     },
-    api: (a) => ['POST', '/v1/handoff/import', { handoff: a.handoff, sources: a.sources }],
+    api: (a) => ['POST', '/v1/handoff/import', { handoff: a.handoff, sources: a.sources, accessCode: a.accessCode }],
   },
   {
     name: 'getJob',
@@ -196,7 +197,7 @@ const APP_START_DESC = '資格の過去問の取り込みを始める。qualific
 
 const APP_FLOW = {
   nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、まず答え合わせと解説を書き、最後に showMenu（kind=next）を呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に showMenu（kind=next）を呼んで返事を待つ（「1：次の問題へ」をチャットに書かない）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。',
-  startSession: '【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
+  startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };
 

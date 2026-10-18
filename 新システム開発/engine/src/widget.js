@@ -121,6 +121,11 @@ a{color:inherit}
     var guess = document.getElementById('guess');
     try {
       var r = await callTool('submitAnswer', { sessionId: state.sessionId, questionId: state.question.questionId, value: String(v), confidence: guess && guess.checked ? 'guess' : 'sure' });
+      if (r && (r.error === 'DAILY_LIMIT' || r.error === 'ACCESS_CODE_REQUIRED')) {
+        state.answered = false;
+        app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(String(r.hint || '').replace(/（.*$/, '')) + '</div>');
+        return;
+      }
       showGrade(r && r.grade); state.next = r && r.next;
     } catch (e) {
       state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });

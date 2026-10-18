@@ -164,3 +164,45 @@ test('アプリ：終了ログと引継ぎデータの全文はAIに渡さず、
   assert.equal(v.log, undefined);
   assert.equal(v.display, undefined);
 });
+
+test('利用コード：設定を入れるまでは制限なし。入れると、コード無しは断り、コードで入れ、1日の回数で止まる', async () => {
+  const env = makeEnv();
+  const adminCall = async (b) => (await handle(new Request('https://engine.example/v1/admin/access', { method: 'POST', headers: { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' }, body: JSON.stringify(b) }), env)).json();
+  const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
+  // 管理の操作は主のトークンが要る
+  assert.equal((await handle(new Request('https://engine.example/v1/admin/access', { method: 'POST', body: '{}' }), env)).status, 401);
+  // 制限なし（既定）
+  assert.ok(!(await app('startSession', { qualificationId: SRC.qualificationId, sources: [source] })).isError);
+
+  assert.equal((await adminCall({ action: 'config', required: true })).config.required, true);
+  assert.equal((await adminCall({ action: 'add', code: 'note-abc123', label: '1人目', dailyLimit: 1 })).ok, true);
+  // コード無し・違うコードは断る
+  const no = await app('startSession', { qualificationId: SRC.qualificationId, sources: [source] });
+  assert.equal(no.isError, true);
+  assert.equal(no.structuredContent.error, 'ACCESS_CODE_REQUIRED');
+  assert.equal((await app('startSession', { qualificationId: SRC.qualificationId, sources: [source], accessCode: 'wrong-code' })).structuredContent.error, 'ACCESS_CODE_REQUIRED');
+  // /mcp（Claude など）は制限しない
+  assert.equal((await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [source] })).isError, false);
+
+  const ok = (await app('startSession', { qualificationId: SRC.qualificationId, sources: [source], accessCode: 'note-abc123' })).structuredContent;
+  assert.ok(ok.sessionId);
+  await app('startStudy', { qualificationName: '測量士補', learnerId: ok.learnerId });
+  // 同じ学習者は、コードを入れ直さなくてよい
+  assert.ok((await app('startSession', { qualificationId: SRC.qualificationId, sources: [source], learnerId: ok.learnerId })).structuredContent.sessionId);
+  const q = (await app('nextQuestion', { sessionId: ok.sessionId })).structuredContent.question;
+  assert.ok(!(await app('submitAnswer', { sessionId: ok.sessionId, questionId: q.questionId, value: '1' })).isError);
+  // 1日1回まで：2問目は止まる。同じ問の再送は数えない
+  const q2 = (await app('nextQuestion', { sessionId: ok.sessionId })).structuredContent.question;
+  const lim = await app('submitAnswer', { sessionId: ok.sessionId, questionId: q2.questionId, value: '1' });
+  assert.equal(lim.structuredContent.error, 'DAILY_LIMIT');
+  // 回数を増やせば、続けられる。一覧にコードそのものは出ない
+  await adminCall({ action: 'limit', code: 'note-abc123', dailyLimit: 5 });
+  assert.ok(!(await app('submitAnswer', { sessionId: ok.sessionId, questionId: q2.questionId, value: '1' })).isError);
+  const list = await adminCall({ action: 'list' });
+  assert.equal(list.codes[0].usedToday, 2);
+  assert.ok(!JSON.stringify(list).includes('note-abc123'));
+  // 無効にすると、使っていた人も止まる
+  await adminCall({ action: 'disable', code: 'note-abc123' });
+  assert.equal((await app('nextQuestion', { sessionId: ok.sessionId })).structuredContent.error, 'ACCESS_CODE_REQUIRED');
+});

@@ -1,0 +1,89 @@
+name: 利用コードの発行・無効化・回数変更（資格学習システム）
+# 合図：新システム開発/deploy/access-request.json を更新して push する。
+# このリポジトリは公開なので、利用コードは実行の記録にも、リポジトリにも出さない。
+# 発行したコードは Secret Manager の「qlp-access-<名前>」に保存する（運営者がそこで読む）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/access-request.json'
+jobs:
+  access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 合言葉を読む（表示しない）
+        run: |
+          t=$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)
+          echo "::add-mask::$t"
+          echo "QLP_TOKEN=$t" >> "$GITHUB_ENV"
+      - name: 依頼を実行する
+        run: |
+          python3 - <<'PY'
+          import json, os, re, secrets, subprocess, urllib.request
+          BASE = "https://qlp-engine-ojsw3j46qa-an.a.run.app"
+          TOKEN = os.environ["QLP_TOKEN"]
+          PROJ = "qualification-learning"
+          req = json.load(open("新システム開発/deploy/access-request.json", encoding="utf-8"))
+
+          def admin(body):
+              r = urllib.request.Request(BASE + "/v1/admin/access", method="POST", data=json.dumps(body).encode(),
+                                         headers={"authorization": f"Bearer {TOKEN}", "content-type": "application/json"})
+              try:
+                  return json.loads(urllib.request.urlopen(r, timeout=60).read() or b"{}")
+              except urllib.error.HTTPError as e:
+                  return {"http_error": e.code}
+
+          def sh(*a, stdin=None):
+              return subprocess.run(a, input=stdin, capture_output=True, text=True)
+
+          def secret_name(label):
+              assert re.fullmatch(r"[a-z0-9-]{1,30}", label), "名前は英小文字・数字・ハイフンのみ"
+              return "qlp-access-" + label
+
+          def read_code(label):
+              r = sh("gcloud", "secrets", "versions", "access", "latest", "--secret", secret_name(label), "--project", PROJ)
+              return r.stdout.strip() if r.returncode == 0 else None
+
+          for a in req.get("actions", []):
+              act = a["action"]
+              if act in ("config", "list"):
+                  b = {k: v for k, v in a.items()}
+                  print(act, json.dumps(admin(b), ensure_ascii=False))
+                  continue
+              label = a["label"]
+              if act == "issue":
+                  old = read_code(label)
+                  if old and not a.get("rotate"):
+                      print(f"issue {label}: すでに発行済み（作り直すには rotate:true）")
+                      continue
+                  if old:
+                      admin({"action": "disable", "code": old})
+                  code = "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(12))
+                  code = f"{code[:4]}-{code[4:8]}-{code[8:]}"
+                  print("::add-mask::" + code)
+                  r = admin({"action": "add", "code": code, "label": label, "dailyLimit": a.get("dailyLimit")})
+                  if not r.get("ok"):
+                      print(f"issue {label}: 登録できませんでした", r); raise SystemExit(1)
+                  name = secret_name(label)
+                  if sh("gcloud", "secrets", "describe", name, "--project", PROJ).returncode != 0:
+                      c = sh("gcloud", "secrets", "create", name, "--project", PROJ, "--replication-policy", "automatic")
+                      if c.returncode != 0:
+                          print(f"issue {label}: 保存先を作れませんでした：", c.stderr.replace(code, "***")); raise SystemExit(1)
+                  v = sh("gcloud", "secrets", "versions", "add", name, "--project", PROJ, "--data-file=-", stdin=code)
+                  if v.returncode != 0:
+                      print(f"issue {label}: 保存できませんでした：", v.stderr.replace(code, "***")); raise SystemExit(1)
+                  print(f"issue {label}: 発行して Secret Manager の {name} に保存しました（id {r['id']}）")
+              else:
+                  code = read_code(label)
+                  if not code:
+                      print(f"{act} {label}: 発行されていません"); continue
+                  b = {"action": act, "code": code}
+                  if act == "limit": b["dailyLimit"] = a.get("dailyLimit")
+                  print(act, label, json.dumps(admin(b), ensure_ascii=False))
+          PY
