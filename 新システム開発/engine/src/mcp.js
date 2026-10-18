@@ -5,6 +5,7 @@
  */
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, widgetHtml } from './widget.js';
+import { FIXED_UI_CHOICES } from './fixed-ui.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 const SERVER_INFO = { name: 'qlp-engine', title: '資格学習エンジン', version: '0.1.0' };
@@ -141,8 +142,8 @@ export const TOOLS = [
   {
     name: 'showMenu',
     appOnly: true,
-    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
-    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['plan', 'item', 'resume', 'next', 'review'] } } },
+    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review'] } } },
     local: (a) => {
       const menu = APP_MENUS[a.kind];
       return menu ? { status: 'menu', menu, howToProceed: '選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。' } : null;
@@ -151,6 +152,8 @@ export const TOOLS = [
 ];
 
 const APP_MENUS = {
+  exempt: { kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices] },
+  status: { kind: 'status', prompt: '現在の学習状況を選んでください。', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] },
   plan: { kind: 'plan', prompt: '学習を開始しますか？', choices: ['始めます'] },
   item: { kind: 'item', prompt: 'この項目はどう進めますか？', choices: ['解説あり（解説→確認問題→実践問題）', '確認問題から（解説なし）', '実践問題から（解説も確認問題もなし）'], notice: '以後も同じにするときは「2 以後も」のように入力してください。' },
   resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
@@ -197,7 +200,7 @@ const APP_START_DESC = '資格の過去問の取り込みを始める。qualific
 
 const APP_FLOW = {
   nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、まず答え合わせと解説を書き、最後に showMenu（kind=next）を呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に showMenu（kind=next）を呼んで返事を待つ（「1：次の問題へ」をチャットに書かない）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。',
-  startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、免除を使うかを聞く。④利用者の学習状況（未着手／基礎学習中／応用学習中／過去問演習中）を聞き、答えを待つ。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
+  startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②公式サイトで確認できた試験概要（対象・出題分野・形式・時間・合格基準）を示す。確認できなかった項目は「未確認」と書く。③公式に免除制度がある資格だけ、showMenu（kind=exempt）を呼んで免除を使うかを聞き、押されるまで待つ。④続けて showMenu（kind=status）を呼んで学習状況を聞き、押されるまで待つ。ChatGPT標準の質問・選択肢の画面は使わない。⑤答えを受けてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };
 

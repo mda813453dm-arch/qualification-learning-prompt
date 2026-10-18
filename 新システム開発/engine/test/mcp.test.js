@@ -206,3 +206,10 @@ test('利用コード：設定を入れるまでは制限なし。入れると�
   await adminCall({ action: 'disable', code: 'note-abc123' });
   assert.equal((await app('nextQuestion', { sessionId: ok.sessionId })).structuredContent.error, 'ACCESS_CODE_REQUIRED');
 });
+
+test('showMenu：免除の確認と学習状況も、エンジンの固定の選択肢で出す', async () => {
+  const env = makeEnv();
+  const app = async (args) => (await rpc(env, 'tools/call', { name: 'showMenu', arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  assert.deepEqual((await app({ kind: 'exempt' }))._meta.qlp.menu.choices, ['免除を利用する', '免除を利用しない']);
+  assert.equal((await app({ kind: 'status' }))._meta.qlp.menu.choices.length, 4);
+});
