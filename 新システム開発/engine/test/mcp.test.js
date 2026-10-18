@@ -129,9 +129,12 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const started = startedRes.structuredContent ?? JSON.parse(startedRes.content[0].text);
   const { sessionId } = started;
   assert.match(started.howToProceed, /試験概要/);
-  assert.match(started.howToProceed, /showMenu（kind=status）/);
+  assert.match(started.howToProceed, /nextQuestion/);
   // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
-  const early = (await call2('nextQuestion', { sessionId })).structuredContent;
+  const earlyRes = await call2('nextQuestion', { sessionId });
+  const early = earlyRes.structuredContent;
+  assert.equal(early.onboarding, undefined);
+  assert.equal(earlyRes._meta.qlp.onboarding.at(-1).kind, 'status');
   assert.equal(early.status, 'needPlan');
   assert.equal(early.question, undefined);
   await call2('startStudy', { qualificationName: '測量士補', learnerId: started.learnerId });

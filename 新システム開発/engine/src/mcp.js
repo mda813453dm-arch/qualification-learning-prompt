@@ -176,6 +176,11 @@ export function forModel(body) {
     const id = body.handoff.match(/引[継き]ぎ\s*ID\**\s*[：:]\s*\**\s*([A-Za-z0-9]+)/)?.[1];
     return { minutes: body.minutes, totalMinutes: body.totalMinutes, ...(id ? { handoffId: id } : {}), howToShow: '終了ログと引継ぎデータの全文は、この下の画面に表示している。チャットに書き直したり、要約したり、省いたりしない。「引継ぎデータは画面のコピーボタンでコピーできます。次のチャットで貼り付けるか、引継ぎIDを伝えてください」とだけ伝える。' };
   }
+  // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
+  if (Array.isArray(body.onboarding)) {
+    const { onboarding, planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
+    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、利用者が答えるまで待つ。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
+  }
   const slim = (v) => {
     if (!v?.question) return v;
     const { display, screen, figures, figureUrls, howToShow, ...q } = v.question; // eslint-disable-line no-unused-vars

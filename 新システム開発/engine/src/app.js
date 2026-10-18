@@ -11,6 +11,7 @@
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.2。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
+import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
@@ -417,7 +418,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let state = state0;
   // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
   if (env.QLP_WIDGET && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
-    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU };
+    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId) };
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = await availablePackets(env.STORE, job, now);
@@ -640,7 +641,7 @@ async function route(request, env, url, now) {
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const job = await progress(env, sessionJobId(state), now);
-    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(b.qualificationId), planMenu: undefined } : {}) });
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(), planMenu: undefined } : {}) });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
@@ -960,10 +961,17 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
-/** アプリでは、ChatGPT が免除・学習状況を自分の質問画面で聞いた。この応答で、次に呼ぶツールを名指しする */
-function appStartHint(qid) {
-  const first = Object.values(CATALOG).find((x) => x.qualificationId === qid)?.exemption ? 'exempt' : 'status';
-  return `試験概要を示す（公式サイトで確認できなかった項目は「未確認」）。そのあと、必ず showMenu（kind=${first}）を呼んで、押されるまで待つ。ChatGPT標準の質問・選択肢の画面は使わない。利用者の答えより先に、学習計画を作ったり問題を出したりしない。`;
+/** アプリで最初に聞く確認（免除・学習状況）。ChatGPT に任せると自分の質問フォームで聞くので、問題の画面（nextQuestion）にボタンで出す */
+function onboardingSteps(qid) {
+  const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
+  const steps = [];
+  if (c?.exemption) steps.push({ kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices], notice: c.exemption.label });
+  steps.push({ kind: 'status', prompt: '現在の学習状況を選んでください。', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] });
+  return steps;
+}
+
+function appStartHint() {
+  return '試験概要を示す（公式サイトで確認できなかった項目は「未確認」）。そのあと、必ず nextQuestion を呼ぶ。免除（ある資格だけ）と学習状況の質問は、その画面にエンジンがボタンで出す。AIは聞かない（ChatGPT標準の質問・選択肢の画面は使わない）。答え（「免除：…／学習状況：…」）がチャットに届くまで、学習計画を作らない。';
 }
 
 /** 利用コードの確認（ChatGPT アプリだけ。設定の required が true のときだけ働く） */
