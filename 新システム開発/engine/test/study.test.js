@@ -89,6 +89,7 @@ test('解説の書き方：学習段階・苦手な分野・正誤に合わせ�
   const h = explainHow({ stage: 1, weak: ['法規（3問中2問まちがい）'], grade: { result: 'wrong', selected: 2, correctAnswer: 4 }, fieldName: '法規' });
   assert.match(h, /マークダウンの表/);
   assert.match(h, /SVG/);
+  assert.match(h, /写真があれば写真、無ければ図解/);
   assert.match(h, /未着手/);
   assert.doesNotMatch(h, /過去問演習中/);
   assert.match(h, /選んだのは2、正答は4/);
