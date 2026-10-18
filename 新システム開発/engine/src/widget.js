@@ -99,7 +99,7 @@ a{color:inherit}
     if (g.skipped) h = '<div class="result">スキップしました。</div>';
     else {
       var c = app.querySelector('.choices button[data-n="' + g.correctAnswer + '"]'); if (c) c.classList.add('correct');
-      h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div>';
+      h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
       if (safeUrl(g.answerPdfUrl)) h += '<div class="notice"><a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a></div>';
     }
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）

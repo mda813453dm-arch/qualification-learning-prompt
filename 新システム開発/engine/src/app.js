@@ -653,6 +653,8 @@ async function route(request, env, url, now) {
       throw new HttpError(409, r.reason);
     }
     if (!r.grade.alreadyGraded) await saveSession(env, id, r.state, now);
+    // 診断：送られた番号と採点の結果（回答の中身以外・個人情報なし）
+    console.log(JSON.stringify({ event: 'answer_graded', questionId: r.grade.questionId, given: String(b.questionId ?? '').slice(0, 80), value: String(b.value ?? '').slice(0, 10), selected: r.grade.selected ?? null, correctAnswer: r.grade.correctAnswer ?? null, correct: r.grade.correct ?? null, alreadyGraded: !!r.grade.alreadyGraded, viaMcp: !!env.QLP_MCP }));
     // 解説の書き方：学習段階と、エンジンの採点記録（苦手な分野・今回の正誤）に合わせる
     const names = Object.values(CATALOG).find((c) => c.qualificationId === r.state.qualificationId)?.fields ?? {};
     const prof = r.state.learnerId ? await env.STORE.get(learnerProfileKey(r.state.learnerId), 'json') : null;
