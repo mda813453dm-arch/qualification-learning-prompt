@@ -3,7 +3,7 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v1.html';
+export const WIDGET_URI = 'ui://qlp/question-v2.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
 
 /** 画面の HTML。 */

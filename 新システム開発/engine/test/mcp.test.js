@@ -107,9 +107,9 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v1.html');
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v1.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v2.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v2.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v2.html');
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
   assert.equal(menu.structuredContent.menu, undefined);
