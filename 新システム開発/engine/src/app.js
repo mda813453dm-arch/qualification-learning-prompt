@@ -729,6 +729,15 @@ async function route(request, env, url, now) {
           const right = graded.filter((h) => h.result !== 'wrong').length;
           input = { ...b, results: { ...(b.results ?? {}), practiceCorrect: right, practiceWrong: graded.length - right } };
         }
+        // 苦手な分野・今回解いた問題は、AIが書かなかったときもエンジンの記録から入れる（アプリではAIが採点結果を見ないため）
+        const cat = Object.values(CATALOG).find((c) => c.qualificationId === st.qualificationId);
+        if (!(input.weaknesses ?? []).length) {
+          const weak = weakFields(st.history, cat?.fields ?? {});
+          if (weak.length) input = { ...input, weaknesses: weak };
+        }
+        if (!(input.contents ?? []).length && graded.length) {
+          input = { ...input, contents: graded.map((h) => `${h.source?.year ?? '年度未確認'}年度 問${h.source?.number ?? '?'}：${h.result === 'wrong' ? '不正解' : '正解'}`) };
+        }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
           const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');

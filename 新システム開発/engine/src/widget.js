@@ -102,8 +102,12 @@ a{color:inherit}
       h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div>';
       if (safeUrl(g.answerPdfUrl)) h += '<div class="notice"><a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a></div>';
     }
+    // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
+    if (g.checkSuggested) h += '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめますか？</div><div class="row"><button id="check">確認問題で基本を確かめる</button></div>';
     h += '<div class="row">' + (g.skipped ? '' : '<button id="explain">解説を聞く</button>') + '<button id="next">次の問題へ</button></div>';
     app.insertAdjacentHTML('beforeend', h);
+    var ck = document.getElementById('check');
+    if (ck) ck.onclick = function(){ ck.disabled = true; ask('同じ分野（' + (q.fieldName || '') + '）で3問続けて間違えたので、基本を確かめる確認問題を出してください。「AIが作った確認問題」と明示し、過去問と混ぜないでください。終わったら「1：次の問題へ」を出してください。'); };
     var ex = document.getElementById('explain');
     // 解説はチャットの下に出るので、この画面は結果の1行に縮める（問題文・選択肢・図を残さない。次の問題はチャットの「1：次の問題へ」から）
     if (ex) ex.onclick = function(){ app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '：' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div><div class="notice">解説はこの下に表示されます。</div>'; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。\\n問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n') + (g.explainHow ? '\\n\\n解説の書き方（エンジンの指定）：\\n' + g.explainHow : '')); };
