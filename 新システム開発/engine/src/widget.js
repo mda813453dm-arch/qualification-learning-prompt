@@ -105,7 +105,8 @@ a{color:inherit}
     h += '<div class="row">' + (g.skipped ? '' : '<button id="explain">解説を聞く</button>') + '<button id="next">次の問題へ</button></div>';
     app.insertAdjacentHTML('beforeend', h);
     var ex = document.getElementById('explain');
-    if (ex) ex.onclick = function(){ ex.disabled = true; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + 'に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。'); };
+    // 解説はチャットの下に出るので、この画面は結果の1行に縮める（問題文・選択肢・図を残さない。次の問題はチャットの「1：次の問題へ」から）
+    if (ex) ex.onclick = function(){ app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '：' + (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）</div><div class="notice">解説はこの下に表示されます。</div>'; ask((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber + 'に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。この問題を解説してください。'); };
     document.getElementById('next').onclick = async function(){
       if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
       render(await callTool('nextQuestion', { sessionId: state.sessionId }));
