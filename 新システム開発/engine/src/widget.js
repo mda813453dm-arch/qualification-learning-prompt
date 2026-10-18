@@ -184,6 +184,14 @@ a{color:inherit}
     if (m.method === 'ui/notifications/tool-input' && m.params && m.params.arguments && m.params.arguments.sessionId) state.sessionId = state.sessionId || m.params.arguments.sessionId;
     if (m.method === 'ui/notifications/tool-result' && m.params) render(full(m.params));
   });
+  // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
+  function fit(){
+    var h = Math.ceil(document.documentElement.scrollHeight);
+    try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
+    notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
+  }
+  try { new ResizeObserver(fit).observe(app); } catch (e) {}
+  fit();
   window.addEventListener('openai:set_globals', function(){ if (window.openai && window.openai.toolOutput && !state.question) render(openaiOutput()); });
   function openaiOutput(){ var o = window.openai; return (o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput; }
   if (window.openai && window.openai.toolOutput) render(openaiOutput());
