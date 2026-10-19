@@ -300,10 +300,7 @@ a{color:inherit}
   // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
   function scrollUp(){
     try { window.scrollTo(0, 0); } catch (e) {}
-    var mark = document.createElement('div');
-    mark.className = 'latest';
-    mark.textContent = '▼ ここが最新の表示です';
-    app.insertBefore(mark, app.firstChild);
+    app.insertAdjacentHTML('afterbegin', '<div class="latest">▼ ここが最新の表示です</div>');
   }
   // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
   function fit(){
