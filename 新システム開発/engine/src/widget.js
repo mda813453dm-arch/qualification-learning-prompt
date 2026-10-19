@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v31.html';
+export const WIDGET_URI = 'ui://qlp/question-v32.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.30';
+export const WIDGET_VERSION = '2026-10-19.31';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -125,6 +125,7 @@ a{color:inherit}
     var h = '<h2>' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</h2>';
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
+    if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
     if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
@@ -379,7 +380,8 @@ a{color:inherit}
     var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
     app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
-      (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
+      (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
+      (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
       '<div class="stem"><b>■解説の確認</b></div><div class="choices"><button id="exp"><b>1</b><span>解説を見る</span></button><button id="next"><b>2</b><span>解説を省略して学習を続ける</span></button>' +
       (g.checkSuggested ? '<button id="check"><b>3</b><span>確認問題で基本を確かめる</span></button>' : '') + '</div>' + endBar();
     scrollUp();
@@ -395,7 +397,7 @@ a{color:inherit}
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
       waitMore('確認問題はこの下のチャットに出ます。答え合わせのあと「次の問題へ」を押してください。');
-      ask((q.fieldName || 'この分野') + 'で3問続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。');
+      ask((q.fieldName || 'この分野') + 'を続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。');
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）

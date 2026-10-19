@@ -54,19 +54,37 @@ test('分類できていない問は新しい問として出さない', () => {
   assert.equal(pickNext(state, items, { today: TODAY }).item.packet.questionId, 'q2');
 });
 
-test('同じ分野で3問続けて間違えたら、採点の応答で確認問題を勧める（正解で数え直し）', () => {
-  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'a')];
+test('同じ分野を2問続けて間違えたら、次は同じ分野の補強の問。補強を3回間違えたら確認問題を勧める（B15 分岐5・U21）', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'a'), item(7, 'b')];
   let state = newState({ qualificationId: 'q1', now: NOW });
-  const flags = [];
-  for (const answer of [2, 2, 1, 2, 2, 2]) { // 1が正解
+  const log = [];
+  for (const answer of [2, 2, 2, 2, 2]) { // 1が正解
     const r = pickNext(state, items, { today: TODAY });
     state = pin(state, r.item, r.kind, NOW);
     const g = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW });
     state = g.state;
-    flags.push(g.grade.checkSuggested);
+    log.push([r.kind, r.item.packet.fieldId, !!g.grade.reinforceNext, g.grade.checkSuggested]);
   }
-  // 誤・誤・正（数え直し）・誤・誤・誤 → 最後の1問で勧める
-  assert.deepEqual(flags, [false, false, false, false, false, true]);
+  assert.deepEqual(log, [
+    ['new', 'a', false, false],
+    ['new', 'a', true, false], // 2問続けて誤答 → 次は補強
+    ['reinforce', 'a', true, false],
+    ['reinforce', 'a', true, false],
+    ['reinforce', 'a', false, true], // 補強を3回誤答 → 補強を止め、確認問題を勧める
+  ]);
+});
+
+test('補強の問に正解したら、補強を終えて通常の出題に戻る', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a')];
+  let state = newState({ qualificationId: 'q1', now: NOW });
+  const kinds = [];
+  for (const answer of [2, 2, 1, 1]) {
+    const r = pickNext(state, items, { today: TODAY });
+    state = pin(state, r.item, r.kind, NOW);
+    state = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW }).state;
+    kinds.push(r.kind);
+  }
+  assert.deepEqual(kinds, ['new', 'new', 'reinforce', 'new']);
 });
 
 test('3問連続で間違えたあとは、同じ分野に戻って次の3問を出す', () => {

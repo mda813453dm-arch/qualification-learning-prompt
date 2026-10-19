@@ -47,6 +47,12 @@ export const SET_SIZE = 3;
 /** 同じ分野で続けて間違えたら、確認問題へ移ることを勧める回数（仕様：3問連続不正解）。 */
 export const WRONG_STREAK = 3;
 
+/** 実践問題で同じ分野を続けて間違えたら、次の問より先に補強の問を出す回数（仕様 B15 分岐5：連続誤答2以上）。 */
+export const REINFORCE_STREAK = 2;
+
+/** 補強の問を続けて間違えたら、補強を止めて確認問題（AI作成）を勧める回数（仕様 U21：補強確認で3回以上不正解）。 */
+export const REINFORCE_TRIES = 3;
+
 /** 分野ごとの、取り込んだ過去問での出題数。 */
 function fieldCountsOf(items) {
   const counts = {};
@@ -81,6 +87,15 @@ export function pickNext(state, items, { today, job }) {
   if (state.current && !state.current.grade && !unseenPrefetch) {
     const same = items.find((x) => x.packet.questionId === state.current.questionId);
     if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
+  }
+  // 0) 補強：実践問題で同じ分野を2問続けて間違えたら、ほかの問より先に、同じ分野の過去問で補強する（仕様 B15 分岐5）
+  if (state.reinforce?.fieldId) {
+    const f = state.reinforce.fieldId;
+    const lastId = state.lastGrade?.questionId ?? null;
+    const freshIn = usable.filter((x) => x.packet.fieldId === f && !state.history[x.packet.questionId]);
+    const wrongIn = usable.filter((x) => x.packet.fieldId === f && state.history[x.packet.questionId]?.result === 'wrong' && x.packet.questionId !== lastId);
+    const hit = freshIn[0] ?? wrongIn[0];
+    if (hit) return { status: 'question', item: hit, kind: 'reinforce' };
   }
   // 1) 期限の来た復習
   for (const r of due.items ?? []) {
@@ -171,7 +186,7 @@ export function questionScreen(q, display, { fieldName = null, fieldNotice = nul
   const link = q.questionPdfUrl ? `問題PDF：[公式の問題PDF${page ? `（${page}ページ）` : ''}](${q.questionPdfUrl}${page ? `#page=${page}` : ''})` : null;
   // 年に何回もある試験（FP：2024年5月・9月など）は、回の名前で見出しにする
   const when = /^\d{4}年\d{1,2}月/.test(q.section ?? '') ? q.section : `${q.year}年度`;
-  const head = `■${when} 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : ''}`;
+  const head = `■${when} 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : q.kind === 'reinforce' ? '（補強）' : ''}`;
   return [
     fieldNotice ? `**${fieldNotice}**` : null,
     fieldName ? `📍${fieldName}\n${head}` : head,
@@ -351,13 +366,27 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   const fid = cur.fieldId ?? null;
   const prev = state.wrongStreak && state.wrongStreak.fieldId === fid ? state.wrongStreak.count : 0;
   const streak = result === 'wrong' ? prev + 1 : 0;
-  const checkSuggested = streak >= WRONG_STREAK;
+  // 補強（B15 分岐5）：通常の問で2問続けて間違えたら、次は同じ分野の補強の問。補強の問に正解したら終える。
+  // 補強を3回続けて間違えたら補強を止め、確認問題（AI作成）を勧める
+  let reinforce = state.reinforce ?? null;
+  let checkSuggested = false;
+  if (cur.kind === 'reinforce') {
+    const tries = (reinforce?.tries ?? 0) + (result === 'wrong' ? 1 : 0);
+    if (result !== 'wrong') reinforce = null;
+    else if (tries >= REINFORCE_TRIES) { reinforce = null; checkSuggested = true; }
+    else reinforce = { fieldId: fid, tries };
+  } else if (result === 'wrong' && fid && streak >= REINFORCE_STREAK) {
+    reinforce = { fieldId: fid, tries: 0 };
+  } else if (!reinforce) {
+    checkSuggested = streak >= WRONG_STREAK;
+  }
   return {
     ok: true,
-    grade: { ...g, wrongStreak: streak, checkSuggested },
+    grade: { ...g, wrongStreak: streak, checkSuggested, ...(reinforce ? { reinforceNext: true } : {}) },
     state: {
       ...state,
-      wrongStreak: { fieldId: fid, count: checkSuggested ? 0 : streak },
+      wrongStreak: { fieldId: fid, count: checkSuggested || cur.kind === 'reinforce' ? 0 : streak },
+      reinforce,
       // 3問連続で間違えたら、確認問題のあとも同じ分野に戻る（次の3問を同じ分野から出す）
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
