@@ -194,6 +194,7 @@ export const INLINE_SVG_MAX = 8000;
 
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
+const REVIEW_WANT = /総復習|間違えた問題/;
 
 /** 利用者が「図をもう一度」「図を表示して」などと言った（nextQuestion の question）。直前の問の公式の図だけを付け直す。 */
 const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
@@ -443,10 +444,18 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
   const fieldNames = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
-  const wanted = want ? findWanted(state, items, want, fieldNames) : null;
+  // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
+  const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
+  const wrongPool = reviewWant ? items.filter((x) => state.history[x.packet.questionId]?.result === 'wrong') : [];
+  const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
+  const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
+  const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
+  if (reviewWant && !wanted) {
+    return { status: 'waiting', screen: '間違えた問題はまだありません。解説・確認問題・実践問題を続けてください。', notice: '間違えた問題はまだありません。' };
+  }
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
-  const wantNotice = want && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
+  const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
   const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), job });
   if (pick.status !== 'question') {
     // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
