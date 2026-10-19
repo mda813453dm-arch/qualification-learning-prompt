@@ -108,8 +108,8 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v29.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v29.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v30.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v30.html');
   assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '承認して始める');
@@ -326,6 +326,33 @@ test('アプリ：項目開始で選んだ分野から、過去問を出す', as
   assert.equal(ok.mode, 'practice');
   const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: s.learnerId } });
   assert.equal(n._meta.qlp.question.questionNumber, 3);
+});
+
+test('アプリ：免除が適用確定なら免除される問を出さず、学習段階は残す（U02・U03）', async () => {
+  const env = makeEnv();
+  const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
+  const parse = fakeParser(web, { src: { ...SRC, qualificationId: 'takken' }, answers: Array(47).fill(1), fieldIds: Array(47).fill('t7'), figureOn: [] });
+  env.parserFetch = async (u, init) => {
+    const b = JSON.parse(init.body);
+    const bytes = (x) => Uint8Array.from(atob(x.base64), (c) => c.charCodeAt(0));
+    const r = await parse({ question: { bytes: bytes(b.question) }, answer: { bytes: bytes(b.answer) } });
+    return new Response(JSON.stringify({ result: r.result, assets: assetsB64(r.assets) }));
+  };
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const content = (r) => r.structuredContent ?? JSON.parse(r.content[0].text);
+  const source = { adapter: 'takken', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
+  const s = content(await app('tools/call', { name: 'startSession', arguments: { qualificationId: 'takken', sources: [source] } }));
+  const steps = onboardingSteps(CATALOG.takken.qualificationId);
+  assert.equal(steps[0].prompt, '今回の試験での免除適用状況');
+  assert.equal(steps[0].choices.length, 3);
+  assert.equal(steps[1].prompt, '今の学習の段階');
+  const saved = content(await app('tools/call', { name: 'saveProfile', arguments: { sessionId: s.learnerId, exemption: 'confirmed', stage: 3 } }));
+  assert.equal(saved.exemption, 'confirmed');
+  const st = content(await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId: s.learnerId } }));
+  assert.equal(st.learnerStage ?? 3, 3);
+  const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: s.learnerId, question: '2026年度 問46' } });
+  assert.notEqual(n._meta.qlp.question.questionNumber, 46);
+  assert.notEqual(n._meta.qlp.question.questionNumber, 47);
 });
 
 test('アプリ：過去問がまだ無いときの初期診断は、取り込み待ちのエラーで返す', async () => {

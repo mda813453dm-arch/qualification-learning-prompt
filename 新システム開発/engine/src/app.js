@@ -418,6 +418,14 @@ const WAIT_MENU = ['---', '■取り込みを待つ間、どうしますか？',
 const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込みの進み具合を確認する', '2：続けて解説を読む', '3：確認問題を解く'].join('\n');
 const WAIT_HOW = 'screen を1文字も変えずにそのまま出し、番号の答えを待つ（前後に案内を足さない。選択肢の後ろに何も書かない）。1・2を選ばれたら、解説（または「AIが作った確認問題」と明示した確認問題）を出し、その返答の最後に afterScreen を1文字も変えずに付ける（afterScreen の後ろに何も書かない）。確認問題の答え合わせのあとも同じく afterScreen を付ける。「取り込みの進み具合を確認する」を選ばれたら nextQuestion を呼ぶ（getJob は使わない）。';
 
+/** 免除が適用確定（U02の1）なら、免除される問番号の問を出題の候補から外す（未確認・申請中は外さない） */
+function withoutExempt(state, items) {
+  if (state.exemption !== 'confirmed') return items;
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  const skip = new Set(cat?.exemption?.numbers ?? []);
+  return skip.size ? items.filter((x) => !skip.has(x.packet.questionNumber)) : items;
+}
+
 /** いまのチャット（startSession のあと）で学習を開始（startStudy）したか。前回の学習の記録では通さない */
 async function studyStartedInThisChat(env, lid) {
   const started = Number(await env.STORE.get(studyStartKey(lid)));
@@ -432,7 +440,7 @@ async function diagStep(env, id, state0, now, b) {
   const name = (f) => cat?.fields?.[f] ?? f;
   let state = state0;
   const job = await progress(env, sessionJobId(state), now);
-  const items = await availablePackets(env.STORE, job, now);
+  const items = withoutExempt(state, await availablePackets(env.STORE, job, now));
   const byId = new Map(items.map((x) => [x.packet.questionId, x]));
   const view = (d) => {
     const i = d.answers.length;
@@ -501,7 +509,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
   }
   const job = await progress(env, sessionJobId(state), now);
-  let items = await availablePackets(env.STORE, job, now);
+  let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
   const prevField = state.current?.fieldId ?? null;
   // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
   if (want && FRESH_WANT.test(want)) {
@@ -747,6 +755,20 @@ async function route(request, env, url, now) {
     const { id, state } = await resolveSession(env, parts[2], now);
     await gateUse(env, state.learnerId, now);
     return json(200, await diagStep(env, id, state, now, b ?? {}));
+  }
+
+  // 学習準備の確認（U02 免除・U03 学習段階）の答えを残す。画面だけが呼ぶ
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'profile' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const exemption = ['confirmed', 'no', 'pending'].includes(b.exemption) ? b.exemption : null;
+    const stage = stageNumber(b.stage);
+    if (exemption) await saveSession(env, id, { ...state, exemption }, now);
+    if (stage && state.learnerId) {
+      const prev = (await env.STORE.get(learnerProfileKey(state.learnerId), 'json')) ?? {};
+      await env.STORE.put(learnerProfileKey(state.learnerId), JSON.stringify({ ...prev, stage, updatedAt: now }));
+    }
+    return json(200, { status: 'profile', sessionId: id, exemption, stage });
   }
 
   // 項目開始（U07）：学習する分野と進め方を控える。分野は以後の過去問の出題先になる（AIに頼らない）
@@ -1082,8 +1104,9 @@ function timingSafeEqual(a, b) {
 export function onboardingSteps(qid) {
   const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
   const steps = [];
-  if (c?.exemption) steps.push({ kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices], notice: c.exemption.label });
-  steps.push({ kind: 'status', prompt: '現在の学習状況を選んでください。', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] });
+  // 文言は master_prompt の U02・U03 のとおり
+  if (c?.exemption) steps.push({ kind: 'exempt', prompt: '今回の試験での免除適用状況', choices: ['適用確定（対象と受験申込等の条件を満たしている）', '免除を利用しない', '未確認・申請中（利用予定だが確定していない場合も含む）'], notice: `免除制度：${c.exemption.label}` });
+  steps.push({ kind: 'status', prompt: '今の学習の段階', choices: ['未着手', '基礎学習中', '応用学習中', '過去問演習中'] });
   return steps;
 }
 

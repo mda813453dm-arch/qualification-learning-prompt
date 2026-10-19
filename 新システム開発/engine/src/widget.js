@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v29.html';
+export const WIDGET_URI = 'ui://qlp/question-v30.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.28';
+export const WIDGET_VERSION = '2026-10-19.29';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -125,8 +125,10 @@ a{color:inherit}
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
+    h += endBar();
     app.innerHTML = h;
     scrollUp();
+    bindEnd();
     // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
     var chosen = null;
     app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){
@@ -158,7 +160,7 @@ a{color:inherit}
     }; });
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
-  var onboardOv = null, studyLearner = null, onboardSteps = null;
+  var onboardOv = null, studyLearner = null, onboardSteps = null, studyLid = null, studyField = null, onboardProfile = {};
   // 概要の強弱：大事な項目（日時・試験時間・方式・合格基準）は大きく太く、そこまで必要でない項目（手数料・申込・発表など）は小さく控えめに
   var OV_MAJOR = /^(試験日|試験日時|試験日及び時間|試験時間|試験の方法|試験方法|出題形式|合格基準|合格基準点|実施方式|試験方式)/;
   var OV_MINOR = /^(受験手数料|受験申込|実施公告|試験の基準|合格後|試験地|試験場所|合格発表|登録|試験の一部|法令基準日|出題基準日|対象年度|実施|資格名|受験資格|試験科目|試験の対象|試験科目・出題範囲)/;
@@ -271,6 +273,7 @@ a{color:inherit}
     var ov = onboardOv || {};
     var fields = ov.fields || [];
     var field = fields[0] || '';
+    studyLid = learner; studyField = field || null;
     var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
     var h = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
     if (field) {
@@ -300,13 +303,19 @@ a{color:inherit}
   }
   function onboard(steps, got){
     var m = steps[got.length];
-    if (!m) { planPanel(got); return; }
+    if (!m) {
+      // 免除と学習段階の答えをエンジンに残す（免除が適用確定なら、その問は出さない。学習段階は解説の深さと引継ぎに使う）
+      if (studyLearner) callTool('saveProfile', { sessionId: studyLearner, exemption: onboardProfile.exemption || undefined, stage: onboardProfile.stage || undefined }).catch(function(){});
+      planPanel(got); return;
+    }
     var h = ovHtml() + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;
     scrollUp();
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
-      var c = m.choices[b.getAttribute('data-n') - 1];
+      var n = Number(b.getAttribute('data-n')), c = m.choices[n - 1];
+      if (m.kind === 'exempt') onboardProfile.exemption = ['confirmed', 'no', 'pending'][n - 1];
+      else onboardProfile.stage = n;
       onboard(steps, got.concat([(m.kind === 'exempt' ? '免除：' : '学習状況：') + c]));
     }; });
   }
@@ -353,13 +362,46 @@ a{color:inherit}
       nextBtn();
       return;
     }
-    // 採点のあと：この画面は結果の1行に縮め、簡単な理由→「詳しい解説／次の問題へ」のボタンはチャットの下に出す（AIが書く）
-    app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>' + (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>下のボタンで確認問題も選べます。</div>' : '');
+    // 採点のあと：■採点（固定4行）→ ■解説の確認（U14）。次へ進むボタンは画面に置き、AIに任せない
+    var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
+    app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
+      '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
+      (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
+      '<div class="stem"><b>■解説の確認</b></div><div class="choices"><button id="exp"><b>1</b><span>解説を見る</span></button><button id="next"><b>2</b><span>解説を省略して学習を続ける</span></button>' +
+      (g.checkSuggested ? '<button id="check"><b>3</b><span>確認問題で基本を確かめる</span></button>' : '') + '</div>' + endBar();
     scrollUp();
-    var stem = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
-    ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。\\n'
-      + (g.checkSuggested ? '（同じ分野で3問続けて不正解）\\n' : '')
-      + '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n'));
+    nextBtn(); bindEnd();
+    var qtext = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
+    var waitMore = function(msg){
+      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="choices"><button id="next"><b>▶</b><span>次の問題へ</span></button></div>';
+      nextBtn();
+    };
+    document.getElementById('exp').onclick = function(){
+      waitMore('解説はこの下のチャットに出ます。読み終えたら「次の問題へ」を押してください。');
+      ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。\\n' + qtext);
+    };
+    if (g.checkSuggested) document.getElementById('check').onclick = function(){
+      waitMore('確認問題はこの下のチャットに出ます。答え合わせのあと「次の問題へ」を押してください。');
+      ask((q.fieldName || 'この分野') + 'で3問続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。');
+    };
+  }
+  // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
+  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
+  function bindEnd(){
+    var b = document.getElementById('endStudy'); if (!b) return;
+    b.onclick = async function(){
+      b.disabled = true;
+      try {
+        var lid = studyLid || state.sessionId;
+        var r = await callTool('endStudy', { studyId: lid, sessionId: state.sessionId || lid, area: studyField || undefined, item: studyField || undefined, purpose: studyField ? studyField + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
+        if (!r || r.error || typeof r.display !== 'string') throw new Error('end');
+        app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
+        scrollUp(true);
+      } catch (e) {
+        b.disabled = false;
+        app.insertAdjacentHTML('beforeend', '<div class="notice">終了できませんでした。もう一度押してください。</div>');
+      }
+    };
   }
   window.addEventListener('message', function(e){
     if (e.source !== window.parent) return;

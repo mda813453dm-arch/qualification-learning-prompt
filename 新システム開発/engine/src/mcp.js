@@ -178,6 +178,14 @@ export const TOOLS = [
     }),
   },
   {
+    name: 'saveProfile',
+    appOnly: true,
+    uiOnly: true,
+    description: '学習準備の確認（免除の適用状況・学習段階）の答えを控える。問題の画面だけが呼ぶ。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, exemption: { type: 'string', enum: ['confirmed', 'no', 'pending'] }, stage: { type: 'integer', minimum: 1, maximum: 4 } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/profile`, { exemption: a.exemption, stage: a.stage }],
+  },
+  {
     name: 'chooseItem',
     appOnly: true,
     uiOnly: true,
@@ -211,7 +219,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
