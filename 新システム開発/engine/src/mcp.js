@@ -4,7 +4,7 @@
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, widgetHtml } from './widget.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -22,9 +22,22 @@ const source = {
   },
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
+const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
+  {
+    name: 'reportUiEvent',
+    appOnly: true,
+    uiOnly: true,
+    description: '画面の通信と描画の到達点だけを記録する。学習データを送らず、画面も変更しない。',
+    inputSchema: { type: 'object', required: ['stage', 'version'], additionalProperties: false, properties: { stage: { type: 'string', enum: UI_STAGES }, version: { type: 'string', enum: [WIDGET_VERSION] } } },
+    local: (a) => {
+      if (!UI_STAGES.includes(a.stage) || a.version !== WIDGET_VERSION || Object.keys(a).some((k) => !['stage', 'version'].includes(k))) return null;
+      console.log(JSON.stringify({ event: 'widget_ui', stage: a.stage, version: a.version }));
+      return { status: 'recorded' };
+    },
+  },
   {
     name: 'startSession',
     description: '資格の過去問の取り込みを始め、学習セッションを作る。qualificationId は q041＝宅建、q063＝測量士補、q097＝賃管（賃貸不動産経営管理士）、q002＝FP2級、q003＝FP3級、q006＝ITパスポート、q090＝行政書士。資格名をそのまま入れてもよい。エンジンの資格は sources を空の配列にしてよい（エンジンが公式サイトから集める）。',
@@ -253,7 +266,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
@@ -277,7 +290,8 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       if (tool.appOnly && !widget) return fail(id, -32602, `Unknown tool: ${params.name}`);
       if (tool.local) {
         const out = tool.local(args);
-        if (!out) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_INVALID', argument: 'kind' }) }] });
+        if (!out) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_INVALID', argument: tool.uiOnly ? 'stage/version' : 'kind' }) }] });
+        if (tool.uiOnly) return ok(id, { content: [], structuredContent: out });
         return ok(id, { content: [{ type: 'text', text: JSON.stringify({ status: out.status, howToProceed: out.howToProceed }) }], structuredContent: { status: out.status, howToProceed: out.howToProceed }, _meta: { qlp: out } });
       }
       const [m, path, body] = tool.api(args);

@@ -5,6 +5,7 @@
  */
 export const WIDGET_URI = 'ui://qlp/question-v2.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
+export const WIDGET_VERSION = '2026-10-19.1';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -14,7 +15,7 @@ export function widgetHtml() {
 :root{color-scheme:light dark;--fg:#1a1a1a;--sub:#555;--line:#ddd;--bg:#fff;--ok:#0a7d32;--ng:#c62828;--btn:#f4f4f4}
 @media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a}}
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
-#app{padding:12px 14px}
+#app{padding:12px 14px;min-height:120px;box-sizing:border-box}
 h2{font-size:17px;margin:0 0 6px}
 .field{color:var(--sub);font-size:14px;margin-bottom:8px}
 .stem{white-space:pre-wrap;margin:8px 0}
@@ -30,33 +31,51 @@ h2{font-size:17px;margin:0 0 6px}
 .notice{font-size:13px;color:var(--sub);white-space:pre-wrap}
 .result{font-weight:700;font-size:17px;margin:10px 0 4px}.result.ok{color:var(--ok)}.result.ng{color:var(--ng)}
 a{color:inherit}
-</style></head><body><div id="app">問題を読み込んでいます…</div>
+</style></head><body><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
 <script>
 (function(){
   var app = document.getElementById('app');
   var state = { sessionId: null, question: null, answered: false };
-  var pending = {}, rid = 1;
-  function rpc(method, params){ return new Promise(function(res, rej){ var id = rid++; pending[id] = { res: res, rej: rej }; window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*'); }); }
+  var pending = {}, rid = 1, bridgeReady = false, hasView = false;
+  function rpc(method, params){ return new Promise(function(res, rej){
+    var id = rid++;
+    var timer = setTimeout(function(){ delete pending[id]; rej(new Error('通信が時間切れになりました')); }, method === 'ui/initialize' ? 5000 : 20000);
+    pending[id] = { res: res, rej: rej, timer: timer };
+    window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*');
+  }); }
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   async function callTool(name, args){
-    var r = (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await rpc('tools/call', { name: name, arguments: args });
+    var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
     return full(r);
   }
-  function ask(text){
-    if (window.openai && window.openai.sendFollowUpMessage) return window.openai.sendFollowUpMessage({ prompt: text });
-    return rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] });
+  async function ask(text){
+    try {
+      if (bridgeReady) return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] });
+      if (window.openai && window.openai.sendFollowUpMessage) return await window.openai.sendFollowUpMessage({ prompt: text });
+      await ready;
+      return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] });
+    } catch (e) {
+      // 送信を勝手に再試行しない。選択済みの正確な文をコピーして続行できる。
+      app.insertAdjacentHTML('beforeend', '<div class="notice">選択内容を送信できませんでした。次の文をチャットに入力してください。</div><div class="stem">' + esc(text) + '</div>');
+    }
   }
   // 画面用の全文は _meta.qlp（AIには渡らない）、無ければ structuredContent
   function full(r){ return r && ((r._meta && r._meta.qlp) || r.structuredContent || r); }
   function input(){ return (window.openai && window.openai.toolInput) || {}; }
   // 診断：画面が動いたことを、エンジンの記録に残す（中身は送らない）。iPhone のアプリで画面が出ない原因を調べるため
-  function diag(k){ try { var p = (window.openai && window.openai.callTool) ? window.openai.callTool('showMenu', { kind: k }) : rpc('tools/call', { name: 'showMenu', arguments: { kind: k } }); if (p && p.catch) p.catch(function(){}); } catch (e) {} }
+  function diag(k){
+    // 学習用メニューのスキーマ外の値を送らない。初期化完了後の専用ツールのみ。
+    var args = { stage: k, version: '${WIDGET_VERSION}' };
+    if (!bridgeReady && !(window.openai && window.openai.callTool)) return;
+    callTool('reportUiEvent', args).catch(function(){});
+  }
   var diagged = false;
   function render(data){
-    if (!data) return;
-    if (!diagged) { diagged = true; diag('diag_render_' + (data.onboarding ? 'onb' : data.question ? 'q' : 'x')); }
+    if (!data || (!data.onboarding && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure'].includes(data.status))) return;
+    hasView = true;
+    if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
     if (data.grade && data.next) {
       if (state.question && !state.answered) { state.answered = true; showGrade(data.grade); state.next = data.next; return; }
       var g = data.grade; render(data.next);
@@ -183,8 +202,9 @@ a{color:inherit}
       + '\\n' + stem + (g.explainHow ? '\\n\\n詳しい解説の書き方（エンジンの指定）：\\n' + g.explainHow : ''));
   }
   window.addEventListener('message', function(e){
+    if (e.source !== window.parent) return;
     var m = e.data; if (!m || m.jsonrpc !== '2.0') return;
-    if (m.id != null && pending[m.id]) { var p = pending[m.id]; delete pending[m.id]; if (m.error) p.rej(m.error); else p.res(m.result); return; }
+    if (m.id != null && !m.method && pending[m.id]) { var p = pending[m.id]; clearTimeout(p.timer); delete pending[m.id]; if (m.error) p.rej(m.error); else p.res(m.result); return; }
     if (m.method === 'ui/notifications/tool-input' && m.params && m.params.arguments && m.params.arguments.sessionId) state.sessionId = state.sessionId || m.params.arguments.sessionId;
     if (m.method === 'ui/notifications/tool-result' && m.params) render(full(m.params));
   });
@@ -192,15 +212,26 @@ a{color:inherit}
   function fit(){
     var h = Math.ceil(document.documentElement.scrollHeight);
     try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
-    notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
+    if (bridgeReady) notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
   }
   try { new ResizeObserver(fit).observe(app); } catch (e) {}
   fit();
-  diag('diag_loaded');
-  window.addEventListener('openai:set_globals', function(){ if (window.openai && window.openai.toolOutput && !state.question) render(openaiOutput()); });
+  window.addEventListener('openai:set_globals', function(){ if (!bridgeReady && window.openai && !state.question) render(openaiOutput()); });
   function openaiOutput(){ var o = window.openai; return (o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput; }
-  if (window.openai && window.openai.toolOutput) render(openaiOutput());
-  else rpc('ui/initialize', { protocolVersion: '2025-06-18', appCapabilities: {}, appInfo: { name: 'qlp-question', version: '1' } }).then(function(){ notify('ui/notifications/initialized'); }).catch(function(){});
+  // MCP本体のバージョンとMCP Apps UIのバージョンは別。部分的なopenai.toolOutputがあっても初期化する。
+  var ready = rpc('ui/initialize', { protocolVersion: '2026-01-26', appCapabilities: {}, appInfo: { name: 'qlp-question', version: '${WIDGET_VERSION}' } }).then(function(){
+    bridgeReady = true;
+    notify('ui/notifications/initialized', {});
+    fit();
+    diag('bridge_ready');
+  });
+  ready.catch(function(){
+    if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
+    if (!hasView) unavailable();
+  });
+  function unavailable(){ app.innerHTML = '<h2>資格学習</h2><div class="notice">学習画面との接続を確認できませんでした。「画面が表示されない」とチャットに入力してください。</div>'; fit(); }
+  if (window.openai) render(openaiOutput());
+  setTimeout(function(){ if (!hasView) unavailable(); }, 10000);
 })();
 </script></body></html>`;
 }

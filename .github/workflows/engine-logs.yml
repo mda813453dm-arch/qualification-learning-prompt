@@ -35,3 +35,8 @@ jobs:
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="mcp_rpc"' \
             --project qualification-learning --freshness=3h --limit=80 \
             --format='value(timestamp,jsonPayload.route,jsonPayload.method,jsonPayload.tool,jsonPayload.kind)' || true
+      - name: 画面の通信・描画の到達点（学習内容・識別子なし）
+        run: |
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="widget_ui"' \
+            --project qualification-learning --freshness=3h --limit=80 \
+            --format='value(timestamp,jsonPayload.version,jsonPayload.stage)' || true

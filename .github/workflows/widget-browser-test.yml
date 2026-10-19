@@ -1,0 +1,29 @@
+name: 学習画面の通信・ボタン試験
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/engine/src/widget.js'
+      - '新システム開発/engine/src/mcp.js'
+      - '新システム開発/engine/test/widget*'
+      - '.github/workflows/widget-browser-test.yml'
+permissions:
+  contents: read
+jobs:
+  widget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: エンジン・通信の回帰試験
+        working-directory: 新システム開発/engine
+        run: npm test
+      - name: 試験専用ブラウザを準備（本番依存には追加しない）
+        run: |
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install --with-deps chromium webkit
+      - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
+        run: PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
