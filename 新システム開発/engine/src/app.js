@@ -425,63 +425,65 @@ async function studyStartedInThisChat(env, lid) {
   return started > 0 && started >= opened;
 }
 
-/** 初期診断（アプリ）の1歩：start＝分野と問数を決める／question＝AIが作った問を控えて画面に出す／answer＝採点し、次の分野か結果を返す */
+/** 初期診断（アプリ）の1歩：start＝各分野から年度の違う過去問を選んで1問目を返す／answer＝採点し、次の問か結果を返す。AIは使わない */
 async function diagStep(env, id, state0, now, b) {
-  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state0.qualificationId);
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state0.qualificationId) ?? CATALOG[state0.qualificationId];
   const fieldIds = Object.keys(cat?.fields ?? {});
   const name = (f) => cat?.fields?.[f] ?? f;
-  const total = fieldIds.length * DIAG_PER_FIELD;
   let state = state0;
-  const d0 = state.aiDiag;
-  const slot = (d) => {
+  const job = await progress(env, sessionJobId(state), now);
+  const items = await availablePackets(env.STORE, job, now);
+  const byId = new Map(items.map((x) => [x.packet.questionId, x]));
+  const view = (d) => {
     const i = d.answers.length;
-    return { index: i + 1, total: d.queue.length, fieldName: name(d.queue[i]), label: `初期診断 ${i + 1}/${d.queue.length}` };
+    const item = byId.get(d.queue[i]);
+    if (!item) return null;
+    const shown = present(item, 'diag', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+    const label = `初期診断 ${i + 1}/${d.queue.length}`;
+    return {
+      diag: true, label, fieldName: name(item.packet.fieldId), year: shown.year, questionNumber: shown.questionNumber,
+      stem: shown.stem, choices: shown.choices, notices: shown.notices, figureUrls: shown.figures.map((f) => f.url),
+    };
   };
+  const d0 = state.aiDiag;
   if (b.action === 'start' || !d0 || d0.status !== 'running') {
     if (b.action !== 'start') throw new HttpError(409, 'DIAG_NOT_STARTED');
-    const queue = fieldIds.flatMap((f) => Array(DIAG_PER_FIELD).fill(f));
-    state = { ...state, aiDiag: { status: 'running', queue, answers: [], current: null } };
+    // 各分野から、年度の違う問を新しい年度から選ぶ（同じ年度ばかりにしない）
+    const queue = fieldIds.flatMap((f) => {
+      const pool = items.filter((x) => x.packet.fieldId === f).sort((x, y) => y.packet.year - x.packet.year || x.packet.questionNumber - y.packet.questionNumber);
+      const picked = [];
+      const years = new Set();
+      for (const x of pool) { if (picked.length < DIAG_PER_FIELD && !years.has(x.packet.year)) { picked.push(x); years.add(x.packet.year); } }
+      for (const x of pool) { if (picked.length < DIAG_PER_FIELD && !picked.includes(x)) picked.push(x); }
+      return picked.map((x) => x.packet.questionId);
+    });
+    if (!queue.length) throw new HttpError(409, 'DIAG_NO_PAST_EXAMS');
+    state = { ...state, aiDiag: { status: 'running', queue, answers: [] } };
     await saveSession(env, id, state, now);
-    const first = slot(state.aiDiag);
-    return {
-      status: 'diagIntro',
-      sessionId: id,
-      diag: { per: DIAG_PER_FIELD, total, fields: fieldIds.map(name), next: first },
-      howToProceed: `初期診断を始めた。${first.label}（分野：${first.fieldName}）の確認問題を作り、diagQuestion で出す。`,
-    };
+    const fields = fieldIds.map((f) => ({ name: name(f), count: queue.filter((q) => byId.get(q)?.packet.fieldId === f).length })).filter((f) => f.count);
+    return { status: 'diagIntro', sessionId: id, diag: { total: queue.length, fields }, question: view(state.aiDiag) };
   }
   const d = d0;
-  if (b.action === 'question') {
-    const stem = typeof b.stem === 'string' ? b.stem.trim().slice(0, 2000) : '';
-    const choices = Array.isArray(b.choices) ? b.choices.map((c) => String(c ?? '').trim().slice(0, 400)).filter(Boolean) : [];
-    const answer = Number(b.answer);
-    if (!stem || choices.length < 2 || choices.length > 5 || !Number.isInteger(answer) || answer < 1 || answer > choices.length) throw new HttpError(400, 'DIAG_QUESTION_INVALID');
-    const at = slot(d);
-    state = { ...state, aiDiag: { ...d, current: { fieldId: d.queue[d.answers.length], stem, choices, answer } } };
-    await saveSession(env, id, state, now);
-    return { status: 'question', sessionId: id, question: { diag: true, aiMade: true, label: at.label, fieldName: at.fieldName, stem, choices } };
-  }
   if (b.action === 'answer') {
-    const cur = d.current;
-    if (!cur) throw new HttpError(409, 'DIAG_NO_QUESTION');
+    const item = byId.get(d.queue[d.answers.length]);
+    if (!item) throw new HttpError(409, 'DIAG_NO_QUESTION');
     const selected = String(b.value ?? '').trim();
-    const correct = Number(selected) === cur.answer;
-    const at = slot(d);
-    const answers = [...d.answers, { fieldId: cur.fieldId, result: correct ? 'correct' : 'wrong' }];
-    const grade = { diag: true, label: at.label, fieldName: at.fieldName, correct, selected, correctAnswer: String(cur.answer) };
+    const correct = Number(selected) === item.packet.correctAnswer;
+    const label = `初期診断 ${d.answers.length + 1}/${d.queue.length}`;
+    const answers = [...d.answers, { fieldId: item.packet.fieldId, questionId: item.packet.questionId, result: correct ? 'correct' : 'wrong' }];
+    const grade = { diag: true, label, fieldName: name(item.packet.fieldId), correct, selected, correctAnswer: String(item.packet.correctAnswer) };
     if (answers.length < d.queue.length) {
-      state = { ...state, aiDiag: { ...d, answers, current: null } };
+      state = { ...state, aiDiag: { ...d, answers } };
       await saveSession(env, id, state, now);
-      return { status: 'diagGraded', sessionId: id, grade, next: slot(state.aiDiag) };
+      return { status: 'diagGraded', sessionId: id, grade, question: view(state.aiDiag) };
     }
     // 全問を答えたら、誤答率の高い順（同じなら出題数、次に公式の分野順）に計画を並べ直す
-    const job = await progress(env, sessionJobId(state), now);
-    const counts = fieldCounts(await availablePackets(env.STORE, job, now), fieldIds);
+    const counts = fieldCounts(items, fieldIds);
     const res = diagnosisOrder(fieldIds, answers, counts);
     const weights = Object.fromEntries(res.order.map((f, i) => [f, res.order.length - i]));
-    state = { ...state, aiDiag: { ...d, status: 'done', answers, current: null }, diag: { status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
+    state = { ...state, aiDiag: { ...d, status: 'done', answers }, diag: { status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
     await saveSession(env, id, state, now);
-    const rows = res.rows.map((r) => `${name(r.fieldId)}：${r.n}問中${r.n - r.w}問正解`);
+    const rows = res.rows.filter((r) => r.n > 0).map((r) => `${name(r.fieldId)}：${r.n}問中${r.n - r.w}問正解`);
     const note = res.allRight ? '初期診断では誤答がありませんでした（弱点がないとは断定しません）。出題数と公式の分野順で並べました。'
       : res.allWrong ? '初期診断は全問不正解でした。分野の間に差はないため、出題数と公式の分野順で並べました。'
       : '初期診断の結果（暫定評価）で、誤答の多い分野から並べました。';
@@ -738,8 +740,8 @@ async function route(request, env, url, now) {
     return json(200, await nextView(env, id, state, now, { want }));
   }
 
-  // 初期診断（アプリ）：各分野から決まった数の確認問題（AIが作った問題）を出し、正誤から苦手分野の順に計画を作り直す。
-  // どの分野を何問出すか・採点・結果の計算はエンジンが行う。AIは問題文と選択肢と正答を作るだけ
+  // 初期診断（アプリ）：各分野から決まった数の過去問を出し、正誤から苦手分野の順に計画を作り直す。
+  // どの問を出すか・採点・結果の計算はすべてエンジンが行う（AIに頼らない）
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'diag' && parts.length === 4) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);

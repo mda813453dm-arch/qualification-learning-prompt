@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v27.html';
+export const WIDGET_URI = 'ui://qlp/question-v28.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.26';
+export const WIDGET_VERSION = '2026-10-19.27';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -104,7 +104,6 @@ a{color:inherit}
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
-    if (data.question && data.question.diag) { diagQuestion(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     if (data.status === 'figure' && (data.figureUrls || []).length) {
@@ -195,7 +194,7 @@ a{color:inherit}
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="diag" data-n="2"><b>2</b><span>初期診断：確認問題で苦手分野を調べる（おすすめ）</span></button><button id="revise" data-n="3"><b>3</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button><button id="revise" data-n="3"><b>3</b><span>希望を伝えて作り直す</span></button></div>' +
       '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
       '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
       '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
@@ -205,8 +204,9 @@ a{color:inherit}
       app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       try {
         var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'start' }));
-        if (!r || !r.diag) throw new Error('diag');
-        diagIntro(r.diag);
+        if (r && r.error === 'DIAG_NO_PAST_EXAMS') { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">過去問の取り込みがまだ終わっていません。少し待ってから、もう一度押してください。</div>'); return; }
+        if (!r || !r.diag || !r.question) throw new Error('diag');
+        diagIntro(r.diag, r.question);
       }
       catch (e) { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">初期診断を始められませんでした。もう一度押してください。</div>'); }
     };
@@ -217,23 +217,21 @@ a{color:inherit}
       ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。計画の承認は文章で聞かず、必ず showMenu（kind=plan）を呼んで「承認して始める」「手直しする」のボタンで選んでもらう。承認のボタンが押されたら startStudy を呼ぶ。');
     };
   }
-  // 初期診断：どの分野から何問出すかを先に見せ、問題はAIが作って画面に出す（採点と結果はエンジン）
+  // 初期診断：どの分野から何問出すかを先に見せ、過去問をこの画面で続けて出す（出題・採点・結果はエンジン。AIに頼らない）
   var diagSid = null;
-  function diagAsk(prefix, nx){
-    app.insertAdjacentHTML('beforeend', '<div class="notice"><b>次は' + esc(nx.label) + '（' + esc(nx.fieldName) + '）です。</b>問題はこの下のチャットに出ます。下へスクロールしてください。</div>');
-    ask(prefix + nx.label + '（分野：' + nx.fieldName + '）の確認問題をお願いします。');
-  }
-  function diagIntro(d){
+  function diagIntro(d, q){
     diagSid = studyLearner;
-    app.innerHTML = '<h2>初期診断</h2><div class="stem">次の' + d.fields.length + '分野から各' + d.per + '問、<b>全' + d.total + '問</b>の確認問題を出します。</div>' +
-      '<ol class="ov-l">' + d.fields.map(function(f){ return '<li>' + esc(f) + '（' + d.per + '問）</li>'; }).join('') + '</ol>' +
-      '<div class="notice">問題はAIが作ったものです。答えの正誤から苦手な分野を調べ（暫定評価）、学習する分野の順を決め直します。</div>';
-    scrollUp(true);
-    diagAsk('初期診断を始めます。', d.next);
+    var intro = '<h2>初期診断</h2><div class="stem">次の' + d.fields.length + '分野から、<b>全' + d.total + '問</b>の過去問を出します。</div>' +
+      '<ol class="ov-l">' + d.fields.map(function(f){ return '<li>' + esc(f.name) + '（' + f.count + '問）</li>'; }).join('') + '</ol>' +
+      '<div class="notice">答えの正誤から苦手な分野を調べ（暫定評価）、学習する分野の順を決め直します。</div>';
+    diagQuestion(q, intro);
   }
-  function diagQuestion(data){
-    var q = data.question; diagSid = data.sessionId || diagSid || state.sessionId || input().sessionId;
-    var h = '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '</div><div class="notice">AIが作った確認問題です。</div><div class="stem">' + esc(q.stem) + '</div>';
+  function diagQuestion(q, head){
+    if (!q) return;
+    var h = (head || '') + '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '　' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</div>';
+    (q.notices || []).forEach(function(n){ h += '<div class="notice">' + esc(n) + '</div>'; });
+    h += '<div class="stem">' + esc(q.stem) + '</div>';
+    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     app.innerHTML = h;
@@ -248,11 +246,9 @@ a{color:inherit}
         var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen) }));
         var g = r && r.grade;
         if (!g) throw new Error('grade');
-        var line = esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）';
-        if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>'); return; }
-        app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>';
-        scrollUp(true);
-        diagAsk(g.label + ' は ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。次の', r.next);
+        var line = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
+        if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', line); return; }
+        diagQuestion(r.question, line);
       } catch (e) {
         sent = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
         app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
@@ -350,6 +346,16 @@ a{color:inherit}
     if (noMark) return;
     app.insertAdjacentHTML('afterbegin', '<div class="latest">▼ ここが最新の表示です</div>');
   }
+  // 全画面で表示する（チャットの途中に枠が固定され、上下にスクロールし直す手間をなくす）。アプリが断ったら、今のまま続ける
+  var fullAsked = false;
+  function goFull(){
+    if (fullAsked) return; fullAsked = true;
+    try {
+      if (window.openai && window.openai.requestDisplayMode) { window.openai.requestDisplayMode({ mode: 'fullscreen' }); return; }
+      if (bridgeReady) rpc('ui/request-display-mode', { mode: 'fullscreen' }).catch(function(){});
+    } catch (e) {}
+  }
+  try { document.addEventListener('click', function(){ goFull(); }, true); } catch (e) {}
   // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
   function fit(){
     var h = Math.ceil(app.offsetHeight) + 2;
@@ -366,6 +372,7 @@ a{color:inherit}
     notify('ui/notifications/initialized', {});
     fit();
     diag('bridge_ready');
+    goFull();
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
