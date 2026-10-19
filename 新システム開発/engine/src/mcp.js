@@ -178,7 +178,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
