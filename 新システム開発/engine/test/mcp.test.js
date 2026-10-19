@@ -119,6 +119,13 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const html = (await app('resources/read', { uri: res[0].uri })).contents[0];
   assert.match(html.text, /submitAnswer/);
   assert.deepEqual(html._meta.ui.csp.resourceDomains, ['https://engine.example']);
+  assert.equal(html._meta.ui.domain, 'https://engine.example');
+  assert.equal(html._meta['openai/widgetDomain'], 'https://engine.example');
+  assert.ok(res.some((r) => r.uri === 'ui://qlp/question-v1.html'));
+  const legacy = (await app('resources/read', { uri: 'ui://qlp/question-v1.html' })).contents[0];
+  assert.equal(legacy.uri, 'ui://qlp/question-v1.html');
+  assert.match(legacy.text, /submitAnswer/);
+  assert.equal((await rpc(env, 'resources/read', { uri: 'ui://qlp/unknown.html' }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.error.code, -32602);
   // 通常の /mcp には画面を出さない（Claude などの接続はこれまでどおり）
   assert.equal((await rpc(env, 'tools/list', {})).body.result.tools.find((t) => t.name === 'nextQuestion')._meta, undefined);
   assert.equal((await rpc(env, 'resources/list', {})).body.error.code, -32601);
