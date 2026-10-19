@@ -977,9 +977,11 @@ export function overviewFor(qid) {
   return {
     title: `${c.name}｜試験概要`,
     lines: [
+      `資格名：${c.name}`,
       `実施：${c.org}`,
       ...(c.overview ?? []).map(([k, v]) => `${k}：${v}`),
-      `出題分野：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
+      `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
+      ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),
       ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
       '※ここに無い項目は、公式ページに書かれていないため載せていません（公式サイトでご確認ください）。',
     ],
