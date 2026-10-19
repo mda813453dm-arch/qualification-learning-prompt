@@ -235,7 +235,7 @@ export function forModel(body) {
   // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
   if (Array.isArray(body.onboarding)) {
     const { onboarding, overview, planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
-    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、利用者が答えるまで待つ。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
+    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、利用者が答えるまで待つ。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。【初期診断】利用者が「初期診断 n/N（分野：○○）の確認問題をお願いします」と送ってきたら、その分野の確認問題を1問作り、必ず diagQuestion（sessionId はこの学習の sessionId）を呼んで画面に出す。問題文・選択肢はチャットに書かない。diagQuestion を呼ばずに「接続できない」などと答えて止めない。呼んで失敗したときだけ、返ったエラーをそのまま伝える。' };
   }
   const slim = (v) => {
     if (!v?.question) return v;
