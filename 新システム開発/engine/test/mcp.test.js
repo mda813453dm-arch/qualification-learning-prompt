@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { MemoryStore } from '../src/store.js';
-import { appKey, handle } from '../src/app.js';
+import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
 import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
@@ -143,6 +143,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(early.onboarding, undefined);
   assert.equal(earlyRes._meta.qlp.onboarding.at(-1).kind, 'status');
   assert.equal(early.status, 'needPlan');
+  assert.equal(early.overview, undefined);
   assert.equal(early.question, undefined);
   await call2('startStudy', { qualificationName: '測量士補', learnerId: started.learnerId });
   const r = await call2('nextQuestion', { sessionId });
@@ -231,4 +232,11 @@ test('showMenu：免除のあとは学習状況、学習状況のあとは学習
   const app = async (args) => (await rpc(env, 'tools/call', { name: 'showMenu', arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
   assert.match((await app({ kind: 'exempt' })).structuredContent.howToProceed, /kind=status/);
   assert.match((await app({ kind: 'status' })).structuredContent.howToProceed, /kind=plan/);
+});
+
+test('宅建は試験概要の直下に免除→学習状況のボタン、免除なしの資格は学習状況だけ', () => {
+  assert.deepEqual(onboardingSteps('q041').map((x) => x.kind), ['exempt', 'status']);
+  assert.ok(overviewFor('q041').lines.some((l) => /免除制度：登録講習/.test(l)));
+  assert.deepEqual(onboardingSteps('q063').map((x) => x.kind), ['status']);
+  assert.ok(!overviewFor('q063').lines.some((l) => /免除制度/.test(l)));
 });

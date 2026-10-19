@@ -82,7 +82,7 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
-    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboard(data.onboarding, []); return; }
+    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
@@ -128,7 +128,7 @@ a{color:inherit}
   }
   // 番号で選ぶ確認は、押せるボタンで出す（押したら結果の1行に縮め、選んだ内容をチャットに送る）
   function showMenu(m){
-    var h = '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    var h = ovHtml() + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
@@ -138,6 +138,8 @@ a{color:inherit}
     }; });
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
+  var onboardOv = null;
+  function ovHtml(){ if (!onboardOv) return ''; return '<div class="notice"><b>' + esc(onboardOv.title || '') + '</b><br>' + (onboardOv.lines || []).map(esc).join('<br>') + '</div>'; }
   function onboard(steps, got){
     var m = steps[got.length];
     if (!m) { app.innerHTML = '<div class="result ok">' + esc(got.join('／')) + '</div>'; ask(got.join('／')); return; }

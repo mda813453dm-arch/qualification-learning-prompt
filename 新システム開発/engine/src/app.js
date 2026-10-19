@@ -418,7 +418,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let state = state0;
   // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
   if (env.QLP_WIDGET && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
-    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId) };
+    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId) };
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = await availablePackets(env.STORE, job, now);
@@ -962,7 +962,7 @@ function timingSafeEqual(a, b) {
 }
 
 /** アプリで最初に聞く確認（免除・学習状況）。ChatGPT に任せると自分の質問フォームで聞くので、問題の画面（nextQuestion）にボタンで出す */
-function onboardingSteps(qid) {
+export function onboardingSteps(qid) {
   const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
   const steps = [];
   if (c?.exemption) steps.push({ kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices], notice: c.exemption.label });
@@ -970,8 +970,23 @@ function onboardingSteps(qid) {
   return steps;
 }
 
+/** 試験概要のうち、台帳で確かめている項目（エンジンが画面に出す。AIは推測で埋めない）。免除ボタンの直前に置く */
+export function overviewFor(qid) {
+  const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
+  if (!c) return undefined;
+  return {
+    title: `${c.name}｜試験概要`,
+    lines: [
+      `実施：${c.org}`,
+      `出題分野：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
+      ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
+      '対象・形式・試験時間・合格基準：エンジンの台帳には未登録（公式サイトでご確認ください）',
+    ],
+  };
+}
+
 function appStartHint() {
-  return '試験概要を示す（公式サイトで確認できなかった項目は「未確認」）。そのあと、必ず nextQuestion を呼ぶ。免除（ある資格だけ）と学習状況の質問は、その画面にエンジンがボタンで出す。AIは聞かない（ChatGPT標準の質問・選択肢の画面は使わない）。答え（「免除：…／学習状況：…」）がチャットに届くまで、学習計画を作らない。';
+  return '試験概要はエンジンが画面（免除・学習状況のボタンの直前）に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。そのあと、必ず nextQuestion を呼ぶ。免除（ある資格だけ）と学習状況の質問は、その画面にエンジンがボタンで出す。AIは聞かない（ChatGPT標準の質問・選択肢の画面は使わない）。答え（「免除：…／学習状況：…」）がチャットに届くまで、学習計画を作らない。';
 }
 
 /** 利用コードの確認（ChatGPT アプリだけ。設定の required が true のときだけ働く） */
