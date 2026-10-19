@@ -124,7 +124,7 @@ a{color:inherit}
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
-    window.scrollTo(0, 0);
+    scrollUp();
     // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
     var chosen = null;
     app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){
@@ -189,7 +189,7 @@ a{color:inherit}
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
       '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button></div>';
-    window.scrollTo(0, 0);
+    scrollUp();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
   }
   async function startStudyNow(name, learner){
@@ -210,7 +210,7 @@ a{color:inherit}
     var h = ovHtml() + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;
-    window.scrollTo(0, 0);
+    scrollUp();
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var c = m.choices[b.getAttribute('data-n') - 1];
       onboard(steps, got.concat([(m.kind === 'exempt' ? '免除：' : '学習状況：') + c]));
@@ -261,7 +261,7 @@ a{color:inherit}
     }
     // 採点のあと：この画面は結果の1行に縮め、簡単な理由→「詳しい解説／次の問題へ」のボタンはチャットの下に出す（AIが書く）
     app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>' + (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>下のボタンで確認問題も選べます。</div>' : '');
-    window.scrollTo(0, 0);
+    scrollUp();
     var stem = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
     ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。\\n'
       + '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。'
@@ -277,6 +277,8 @@ a{color:inherit}
     if (m.method === 'ui/notifications/tool-result' && m.params) render(full(m.params));
   });
   // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
+  // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
+  function scrollUp(){ try { window.scrollTo(0, 0); } catch (e) {} }
   // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
   function fit(){
     var h = Math.ceil(app.offsetHeight) + 2;
