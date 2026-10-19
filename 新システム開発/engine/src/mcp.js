@@ -178,6 +178,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
+const LEGACY_WIDGET_URI = 'ui://qlp/question-v1.html';
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
@@ -223,15 +224,15 @@ const APP_FLOW = {
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };
 
-function widgetResource(baseUrl) {
+function widgetResource(baseUrl, uri = WIDGET_URI) {
   const origin = (() => { try { return new URL(baseUrl).origin; } catch { return null; } })();
   const csp = { connectDomains: [], resourceDomains: origin ? [origin] : [] };
   return {
-    uri: WIDGET_URI,
+    uri,
     mimeType: WIDGET_MIME,
     text: widgetHtml(),
     _meta: {
-      ui: { prefersBorder: true, csp },
+      ui: { prefersBorder: true, ...(origin ? { domain: origin } : {}), csp },
       'openai/widgetPrefersBorder': true,
       ...(origin ? { 'openai/widgetDomain': origin } : {}),
       'openai/widgetCSP': { connect_domains: [], resource_domains: csp.resourceDomains },
@@ -270,14 +271,14 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
-      return ok(id, { resources: [{ uri: WIDGET_URI, name: '問題の画面', mimeType: WIDGET_MIME }] });
+      return ok(id, { resources: [{ uri: WIDGET_URI, name: '問題の画面', mimeType: WIDGET_MIME }, { uri: LEGACY_WIDGET_URI, name: '旧版互換の問題の画面', mimeType: WIDGET_MIME }] });
     case 'resources/templates/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       return ok(id, { resourceTemplates: [] });
     case 'resources/read':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
-      if (params.uri !== WIDGET_URI) return fail(id, -32602, `Unknown resource: ${params.uri}`);
-      return ok(id, { contents: [widgetResource(baseUrl)] });
+      if (params.uri !== WIDGET_URI && params.uri !== LEGACY_WIDGET_URI) return fail(id, -32602, `Unknown resource: ${params.uri}`);
+      return ok(id, { contents: [widgetResource(baseUrl, params.uri)] });
     case 'tools/call': {
       const tool = BY_NAME.get(params.name);
       if (!tool) return fail(id, -32602, `Unknown tool: ${params.name}`);
