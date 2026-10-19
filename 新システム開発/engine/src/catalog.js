@@ -40,14 +40,15 @@ export const CATALOG = {
     // 公式の免除制度：登録講習の修了者は問46〜50の5問が免除
     exemption: { label: '登録講習の修了による5問免除（問46〜50）', numbers: [46, 47, 48, 49, 50] },
     // 分野の分け方（parser/qlp_parser/fields.py と同じ。2026-10-15 確定）
+    // 並びは学習計画の順（出題数の多い分野から）。宅地建物取引業法は出題数が最も多い（20問）ので先頭。事前情報が無いときはこの並びの先頭から
     fields: {
+      t7: '宅地建物取引業法と関係法令',
       t1: '土地・建物の形質・構造',
       t2: '権利と権利の変動（民法・借地借家法・区分所有法・不動産登記法）',
       t3: '法令上の制限',
       t4: '税',
       t5: '需給と実務（住宅金融支援機構・景品表示法・統計）',
       t6: '価格の評定（地価公示・鑑定評価）',
-      t7: '宅地建物取引業法と関係法令',
     },
     sources: [
       { adapter: 'takken', year: 2025, section: 'main', questionUrl: 'https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf', answerUrl: null },
