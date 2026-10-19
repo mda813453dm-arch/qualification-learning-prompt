@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v28.html';
+export const WIDGET_URI = 'ui://qlp/question-v29.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.27';
+export const WIDGET_VERSION = '2026-10-19.28';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -191,16 +191,16 @@ a{color:inherit}
     app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' + dr +
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
       (ov.review ? '<div class="notice"><b>復習の間隔：</b>' + esc(ov.review) + '（希望を伝えると変えられます）</div>' : '') +
-      '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
+      '<div class="notice">' + ((ov.diagResult || []).length ? esc(got[0] || '') : '公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。') + '</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button><button id="revise" data-n="3"><b>3</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
       '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
       '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
       '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
     scrollUp();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
-    document.getElementById('diag').onclick = async function(){
+    if (document.getElementById('diag')) document.getElementById('diag').onclick = async function(){
       app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       try {
         var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'start' }));
@@ -260,12 +260,43 @@ a{color:inherit}
     try {
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
       if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
-      app.insertAdjacentHTML('afterbegin', '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>');
-      render(await callTool('nextQuestion', { sessionId: learner }));
+      itemStart(r, learner);
     } catch (e) {
       app.insertAdjacentHTML('beforeend', '<div class="notice">学習を始められませんでした。もう一度押してください。</div>');
       app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
     }
+  }
+  // 学習開始（U09）と項目開始（U07）：開始時刻・今回の位置・目的・理由・全体の進捗を見せ、この分野の進め方をボタンで選んでもらう
+  function itemStart(r, learner){
+    var ov = onboardOv || {};
+    var fields = ov.fields || [];
+    var field = fields[0] || '';
+    var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
+    var h = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
+    if (field) {
+      h += '<div class="stem">📍今回の位置：' + esc(field) + '<br>🎯今回の目的：' + esc(field) + 'の要点をつかみ、過去問で得点できるか確かめる<br>🧭始める理由：' + esc(reason) + '</div>';
+      if (!r.resumed && fields.length) h += '<div class="stem"><b>【全体の進捗】</b></div><ul class="ov-l"><li>学習中：' + esc(field) + '</li>' + (fields.length > 1 ? '<li>未着手：' + esc(fields.slice(1).join('、')) + '</li>' : '') + '</ul>';
+    }
+    var modes = [['explain', '解説あり（解説→確認問題→実践問題）'], ['check', '確認問題から（解説なし）'], ['practice', '実践問題から（解説も確認問題もなし）']];
+    h += '<h2>📍' + esc(field || '最初の分野') + '</h2><div class="stem"><b>■この項目はどう進めますか？</b></div><div class="choices">' + modes.map(function(m, i){ return '<button data-mode="' + m[0] + '"><b>' + (i + 1) + '</b><span>' + esc(m[1]) + '</span></button>'; }).join('') + '</div>';
+    app.innerHTML = h;
+    scrollUp();
+    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = async function(){
+      var mode = b.getAttribute('data-mode');
+      app.querySelectorAll('button').forEach(function(x){ x.disabled = true; });
+      try {
+        if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode });
+        if (mode === 'practice') { render(await callTool('nextQuestion', { sessionId: learner, question: field || undefined })); return; }
+        app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説' : '確認問題') + 'はこの下に出ます。</div>';
+        scrollUp(true);
+        ask(mode === 'explain'
+          ? field + 'の解説をお願いします。解説のあと、確認問題（AIが作った問題）を出し、そのあと過去問へ進みます。'
+          : field + 'の確認問題（AIが作った問題）をお願いします。答え合わせのあと、過去問へ進みます。');
+      } catch (e) {
+        app.querySelectorAll('button').forEach(function(x){ x.disabled = false; });
+        app.insertAdjacentHTML('beforeend', '<div class="notice">選べませんでした。もう一度押してください。</div>');
+      }
+    }; });
   }
   function onboard(steps, got){
     var m = steps[got.length];

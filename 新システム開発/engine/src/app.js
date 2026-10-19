@@ -749,6 +749,18 @@ async function route(request, env, url, now) {
     return json(200, await diagStep(env, id, state, now, b ?? {}));
   }
 
+  // 項目開始（U07）：学習する分野と進め方を控える。分野は以後の過去問の出題先になる（AIに頼らない）
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'item' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    const fid = Object.entries(cat?.fields ?? {}).find(([, n]) => n === String(b.fieldName ?? ''))?.[0] ?? null;
+    const mode = ['explain', 'check', 'practice'].includes(b.mode) ? b.mode : null;
+    if (!fid || !mode) throw new HttpError(400, 'ITEM_INVALID');
+    await saveSession(env, id, { ...state, focusField: fid, itemMode: mode }, now);
+    return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode });
+  }
+
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
     const b = await body(request);
     const { id, state } = await resolveSession(env, parts[2], now);
