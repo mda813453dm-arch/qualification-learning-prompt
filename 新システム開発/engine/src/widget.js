@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v20.html';
+export const WIDGET_URI = 'ui://qlp/question-v21.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.19';
+export const WIDGET_VERSION = '2026-10-19.20';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -188,6 +188,7 @@ a{color:inherit}
     var order = '<ol class="ov-l">' + (ov.fields || []).map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>';
     app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' +
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
+      (ov.review ? '<div class="notice"><b>復習の間隔：</b>' + esc(ov.review) + '（希望を伝えると変えられます）</div>' : '') +
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
@@ -207,7 +208,7 @@ a{color:inherit}
       var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
       app.querySelectorAll('button,textarea').forEach(function(b){ b.disabled = true; });
       app.insertAdjacentHTML('beforeend', '<div class="notice">希望を送りました。作り直した計画をチャットに示します。</div>');
-      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野と進め方を示す。最後に showMenu（kind=plan）を呼び、「承認して始める」か「手直しする」を選んでもらう。承認されたら startStudy を呼ぶ。');
+      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。最後に showMenu（kind=plan）を呼び、「承認して始める」か「手直しする」を選んでもらう。承認されたら startStudy を呼ぶ。');
     };
   }
   async function startStudyNow(name, learner){

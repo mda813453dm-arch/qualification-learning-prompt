@@ -17,7 +17,7 @@ import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
-import { DIAG_PER_FIELD, fieldCounts, planOrder } from './study.js';
+import { DIAG_PER_FIELD, REVIEW_PATTERNS, fieldCounts, planOrder } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -1013,6 +1013,8 @@ export function overviewFor(qid) {
   const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
   if (!c) return undefined;
   return {
+    // 復習の間隔（既定はAIが正解の続き具合で調整する型。利用者は希望で変えられる）
+    review: REVIEW_PATTERNS.ai.label,
     title: `${c.name}｜試験概要`,
     name: c.aliases[0],
     fields: Object.values(c.fields),
