@@ -7,7 +7,7 @@ import { STATE_VERSION } from './engine.js';
 export const SCHEMA = 'qlp-handoff-v1';
 const MAX_BYTES = 64 * 1024;
 const MAX_QUESTIONS = 2000;
-const RESULTS = new Set(['wrong', 'guess_correct', 'confident_correct']);
+const RESULTS = new Set(['wrong', 'guess_correct', 'confident_correct', 'recall_failure']);
 const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 const isSha = (v) => typeof v === 'string' && /^[a-f0-9]{64}$/.test(v);
 const isUrl = (v) => typeof v === 'string' && /^https:\/\/[^\s]+$/.test(v) && v.length <= 500;
@@ -78,7 +78,7 @@ export function importHandoff(text, { now }) {
     const questionId = `${v.qualificationId}:${q.year}:${q.section}:${q.number}`;
     const source ={ year: q.year, section: q.section, number: q.number, questionPdfUrl: q.questionPdfUrl, questionPdfSha256: q.questionPdfSha256, answerPdfUrl: q.answerPdfUrl, answerPdfSha256: q.answerPdfSha256 };
     state.history[questionId] = { result: q.result, selected: null, answeredAt: q.answeredAt, source };
-    if (q.reviewDue || q.result === 'wrong') {
+    if (q.reviewDue || q.result === 'wrong' || q.result === 'recall_failure') {
       state.review[questionId] = {
         qualificationId: v.qualificationId,
         topicId: 'unclassified',

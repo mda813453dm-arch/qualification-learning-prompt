@@ -348,6 +348,15 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       },
     };
   }
+  // 「分からない」：想起できなかった問（B15）。採点には数えず、正答を見せ、復習に登録する（同じ分野の連続誤答にも数えない）
+  if (/^(分からない|わからない|分かりません|わかりません|dontknow)$/i.test(String(value ?? '').trim())) {
+    const g = { questionId, dontKnow: true, result: 'recall_failure', correctAnswer: cur.correctAnswer, answerPdfUrl: cur.source.answerPdfUrl };
+    const upd = updateReviewItem(state.review[questionId] ?? null, { unitId: questionId, topicId: cur.fieldId ?? 'unclassified', qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, examDate: state.plan.examDate, intervals });
+    const review = { ...state.review };
+    if (upd.status === 'updated') review[questionId] = upd.item;
+    const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
+    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g } };
+  }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
   const correct = n === cur.correctAnswer;

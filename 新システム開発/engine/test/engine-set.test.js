@@ -100,3 +100,20 @@ test('3問連続で間違えたあとは、同じ分野に戻って次の3問を
   // 誤答3問で確認問題を勧めたあとも、aの残り2問を続けて出す（3問ごとに別の分野へ移さない）
   assert.deepEqual(seen, ['a', 'a', 'a', 'a', 'a']);
 });
+
+test('「分からない」は採点に数えず、正答を見せて復習に登録し、連続誤答にも数えない', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a')];
+  let state = newState({ qualificationId: 'q1', now: NOW });
+  const r = pickNext(state, items, { today: TODAY });
+  state = pin(state, r.item, r.kind, NOW);
+  const g = grade(state, { questionId: r.item.packet.questionId, value: '分からない' }, { today: TODAY, now: NOW });
+  assert.equal(g.ok, true);
+  assert.equal(g.grade.dontKnow, true);
+  assert.equal(g.grade.correctAnswer, 1);
+  assert.equal(g.grade.correct, undefined);
+  assert.equal(g.state.history[r.item.packet.questionId].result, 'recall_failure');
+  assert.ok(g.state.review[r.item.packet.questionId]);
+  assert.equal(g.state.wrongStreak?.count ?? 0, 0);
+  // 次は別の（まだ出していない）問
+  assert.notEqual(pickNext(g.state, items, { today: TODAY }).item.packet.questionId, r.item.packet.questionId);
+});

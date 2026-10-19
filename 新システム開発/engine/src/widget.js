@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v32.html';
+export const WIDGET_URI = 'ui://qlp/question-v33.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.31';
+export const WIDGET_VERSION = '2026-10-19.32';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -97,7 +97,7 @@ a{color:inherit}
     if (data.grade && data.next) {
       if (state.question && !state.answered) { state.answered = true; showGrade(data.grade); state.next = data.next; return; }
       var g = data.grade; render(data.next);
-      app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
+      app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : g.dontKnow ? '分からない（正答は ' + esc(g.correctAnswer) + '）' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
     if (data.planReady) { onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
@@ -112,7 +112,18 @@ a{color:inherit}
       app.innerHTML = fh; return;
     }
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
-      app.innerHTML = '<div class="stem">' + esc(data.screen || data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
+      // 待つ間・解き終えたときも、次にできることをボタンで出す（番号の選択肢の文は出さない）
+      var waiting = data.status === 'waiting';
+      var wh = '<div class="stem">' + esc(data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
+      if (data.attachNotice) wh += '<div class="notice">' + esc(data.attachNotice) + '</div>';
+      wh += '<div class="row">' + (waiting ? '<button id="wProg">取り込みの進み具合を確認する</button><button id="wExp">今の分野の解説を読む</button><button id="wChk">今の分野の確認問題を解く</button>' : '<button id="wRev">総復習（間違えた問題）</button>') + '</div>' + endBar();
+      app.innerHTML = wh;
+      var wb = function(idn, fn){ var el = document.getElementById(idn); if (el) el.onclick = fn; };
+      wb('wProg', async function(){ render(await callTool('nextQuestion', { sessionId: state.sessionId })); });
+      wb('wRev', async function(){ render(await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習' })); });
+      wb('wExp', function(){ ask((studyField || '今の分野') + 'の解説をお願いします。'); });
+      wb('wChk', function(){ ask((studyField || '今の分野') + 'の確認問題（AIが作った問題）を出してください。'); });
+      bindEnd();
       return;
     }
     if (data.fieldChanged && !data.repeated && data.question.kind === 'new' && !data.itemAsked && (studyLid || state.sessionId)) {
@@ -129,7 +140,7 @@ a{color:inherit}
     if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
-    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
+    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     h += endBar();
@@ -143,6 +154,7 @@ a{color:inherit}
     }; });
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
+    document.getElementById('dk').onclick = function(){ answer('分からない'); };
   }
   // 学習の終了：終了ログと引継ぎデータの全文を、そのまま出す（コピーできる）
   function showEnd(d){
@@ -203,7 +215,8 @@ a{color:inherit}
       '<div class="notice">' + ((ov.diagResult || []).length ? esc(got[0] || '') : '公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。') + '</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div class="stem"><b>学習を開始しますか？</b></div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
       '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
       '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
       '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
@@ -374,6 +387,15 @@ a{color:inherit}
     if (g.skipped) {
       app.insertAdjacentHTML('beforeend', h + '<div class="row"><button id="next">次の問題へ</button></div>');
       nextBtn();
+      return;
+    }
+    // 「分からない」：採点に数えず、正答を見せて復習に回す（解説も頼める）
+    if (g.dontKnow) {
+      var ck = app.querySelector('.choices .opt[data-n="' + g.correctAnswer + '"]'); if (ck) ck.classList.add('correct');
+      var dpdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
+      app.insertAdjacentHTML('beforeend', '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div><div class="stem">正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div><div class="row"><button id="dkExp">解説を見る</button><button id="next">次の問題へ</button></div>');
+      nextBtn();
+      document.getElementById('dkExp').onclick = function(){ ask(label + '（' + (q.fieldName || '') + '）が分かりませんでした（正答は ' + g.correctAnswer + '）。解説をお願いします。'); };
       return;
     }
     // 採点のあと：■採点（固定4行）→ ■解説の確認（U14）。次へ進むボタンは画面に置き、AIに任せない

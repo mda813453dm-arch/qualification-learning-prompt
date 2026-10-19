@@ -117,6 +117,23 @@ export const TOOLS = [
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/answer`, { questionId: a.questionId, value: a.value, confidence: a.confidence }],
   },
   {
+    name: 'attachPdf',
+    appOnly: true,
+    description: '利用者がこのチャットに添付した過去問のPDF（公式の問題PDF、あれば正答PDF）をエンジンに渡し、出題に加える。過去問がそろわないときや、利用者が手元の過去問を使いたいときに、利用者がPDFを添付したら呼ぶ。year は添付PDFの表紙にある実施年度（西暦。令和7年度なら2025）。PDFの中身をAIが書き写して問題を作らない（出題・採点はエンジンが行う）。返ってきた notice をそのまま伝え、次の問題は nextQuestion で受け取る。',
+    meta: { 'openai/fileParams': ['questionPdf', 'answerPdf'] },
+    inputSchema: {
+      type: 'object',
+      required: ['sessionId', 'year', 'questionPdf'],
+      properties: {
+        sessionId,
+        year: { type: 'integer', description: '添付PDFの実施年度（西暦）' },
+        questionPdf: { type: 'object', description: '添付された問題PDF', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url'] },
+        answerPdf: { type: 'object', description: '添付された正答PDF（問題PDFに正答が入っていれば省く）', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url'] },
+      },
+    },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/attach`, { year: a.year, question: a.questionPdf, answer: a.answerPdf }],
+  },
+  {
     name: 'getHandoff',
     description: '次のチャットへ引き継ぐデータ（問題本文は含まない）を受け取る。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
@@ -219,7 +236,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html', 'ui://qlp/question-v32.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -253,12 +270,13 @@ export function appInstructions() {
   const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
   if (a < 0 || b < 0) return INSTRUCTIONS;
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
-  const noInvent = '\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。';
-  return INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent;
+  const noInvent = '\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDF（公式の問題PDF・正答PDF）を添付したら、`attachPdf` を呼んでエンジンに渡す。** PDFの中身をAIが書き写して出題・採点しない。';
+  // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
+  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
-const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「学習したい資格名を入力してください。（例：宅建、測量士補）」とだけ聞く（資格の選択肢を自分で作らない）。';
+const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
   nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、まず答え合わせと解説を書き、最後に showMenu（kind=next）を呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に showMenu（kind=next）を呼んで返事を待つ（「1：次の問題へ」をチャットに書かない）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。',
@@ -309,7 +327,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);

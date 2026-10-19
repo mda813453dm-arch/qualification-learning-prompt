@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v32.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v32.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v33.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v33.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v32.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v33.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
@@ -379,7 +379,8 @@ test('アプリ：宅建を始めると nextQuestion の画面データに試験
   const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: sid } });
   assert.equal(n._meta.qlp.status, 'needPlan');
   assert.deepEqual(n._meta.qlp.onboarding.map((x) => x.kind), ['exempt', 'status']);
-  assert.match(n._meta.qlp.overview.title, /宅建/);
+  assert.equal(n._meta.qlp.overview.title, '■試験概要');
+  assert.ok(n._meta.qlp.overview.lines.some((l) => /宅建/.test(l)));
 });
 
 test('全資格：概要は公式ページの記載（台帳）を出し、出典と未掲載の注記が付く', () => {
@@ -387,8 +388,41 @@ test('全資格：概要は公式ページの記載（台帳）を出し、出�
     assert.ok(c.overview?.length >= 4, c.name);
     assert.ok(c.overview.every(([k, v]) => k && v), c.name);
     const ov = overviewFor(c.qualificationId);
-    assert.ok(ov.lines.some((l) => /公式ページに書かれていない/.test(l)), c.name);
+    assert.equal(ov.title, '■試験概要', c.name);
+    assert.ok(ov.lines.some((l) => /^公式：/.test(l)) && ov.lines.includes('参考（非公式）：なし'), c.name);
+    assert.ok(ov.lines.some((l) => /^合格基準/.test(l)), c.name);
     assert.match(ov.source, /^https:\/\//);
   }
   assert.ok(overviewFor('q041').lines.some((l) => /試験時間：午後1時〜午後3時/.test(l)));
+});
+
+test('アプリ：利用者が添付した過去問PDFを受け取り、保管して取り込みに足す（PDFでないものは断る）', async () => {
+  const env = makeEnv();
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const listed = (await app('tools/list', {})).tools.find((t) => t.name === 'attachPdf');
+  assert.deepEqual(listed._meta['openai/fileParams'], ['questionPdf', 'answerPdf']);
+  const s = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
+  const sid = (s.structuredContent ?? JSON.parse(s.content[0].text)).sessionId;
+  const bytes = new TextEncoder().encode('%PDF-1.7 attached question 2019');
+  env.fetchAttached = async (u) => {
+    if (u === 'https://files.example/q.pdf') return bytes;
+    if (u === 'https://files.example/a.png') return new Uint8Array([0x89, 0x50, 0x4e, 0x47]);
+    throw new Error('HTTP 404');
+  };
+  const bad = await app('tools/call', { name: 'attachPdf', arguments: { sessionId: sid, year: 2019, questionPdf: { download_url: 'https://files.example/a.png', file_id: 'f2' } } });
+  assert.equal(bad.isError, true);
+  assert.equal(bad.structuredContent.error, 'ATTACH_NOT_PDF');
+  const r = await app('tools/call', { name: 'attachPdf', arguments: { sessionId: sid, year: 2019, questionPdf: { download_url: 'https://files.example/q.pdf', file_id: 'f1' } } });
+  assert.equal(r.isError, false);
+  assert.equal(r.structuredContent.status, 'attached');
+  assert.match(r.structuredContent.notice, /2019年度/);
+  const added = r.structuredContent.job.sources.find((x) => x.year === 2019);
+  assert.match(added.questionUrl, /\/v1\/attached\/[a-f0-9]{64}\.pdf$/);
+  assert.equal(added.adapter, 'takken');
+  const got = await handle(new Request(added.questionUrl), env);
+  assert.equal(got.status, 200);
+  assert.deepEqual(new Uint8Array(await got.arrayBuffer()), bytes);
+  // 年度が無いときは受け取らない
+  const noYear = await app('tools/call', { name: 'attachPdf', arguments: { sessionId: sid, year: 0, questionPdf: { download_url: 'https://files.example/q.pdf' } } });
+  assert.equal(noYear.structuredContent.error, 'ATTACH_YEAR_REQUIRED');
 });

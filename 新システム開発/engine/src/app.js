@@ -22,7 +22,7 @@ import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
-import { withStoredSources } from './source-store.js';
+import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
 import { findSources, newLearnerId, pages } from './pages.js';
 import { sha256Hex } from './store.js';
 import { LIMIT_MSG, NEED_CODE, admin as accessAdmin, checkCode, countUse, getConfig as accessConfig, grantLearner, learnerAccess } from './access.js';
@@ -358,6 +358,66 @@ async function advance(env, qualificationId, now, budgetMs, leaseMs = 0) {
   return stepJob(env.STORE, qualificationId, deps(env, { now }), { budgetMs, clock: env.clock ?? Date.now, leaseMs });
 }
 
+const attachedKey = (sha) => `att/${sha}.pdf`;
+const ATTACH_NOTICE = '手元に公式の過去問PDF（問題と正答）があれば、このチャットに添付してください。取り込んで出題に加えます。';
+const ATTACH_HOW = '利用者が過去問のPDFを添付したら、attachPdf を呼ぶ（PDFの中身をAIが書き写して出題しない）。';
+const ATTACH_NOT_PDF = '添付されたファイルをPDFとして読めませんでした。公式の問題PDF（と正答PDF）をそのまま添付してください。';
+
+/** 添付ファイルの一時URLからPDFを受け取る（https のみ・30MBまで・中身がPDFのものだけ） */
+async function fetchAttached(env, ref) {
+  const link = typeof ref === 'string' ? ref : ref?.download_url;
+  if (typeof link !== 'string' || !/^https:\/\/\S+$/.test(link)) throw new HttpError(400, 'ATTACH_INVALID', ATTACH_NOT_PDF);
+  let bytes;
+  try {
+    bytes = await (env.fetchAttached ?? env.fetchPdf ?? defaultFetchPdf)(link);
+  } catch (e) {
+    throw new HttpError(422, 'ATTACH_FETCH_FAILED', `添付ファイルを受け取れませんでした（${String(e?.message ?? e).slice(0, 60)}）。もう一度添付してください。`);
+  }
+  const head = new TextDecoder().decode(bytes.subarray(0, 1024));
+  if (!head.includes('%PDF-')) throw new HttpError(422, 'ATTACH_NOT_PDF', ATTACH_NOT_PDF);
+  return bytes;
+}
+
+/** 添付PDFを保管し、公開用のURL（出題画面の「問題PDF」のリンク先）を返す。取り込みは保管したものを読む（source-store.js） */
+async function keepAttached(env, bytes, origin) {
+  const sha = await sha256Hex(bytes);
+  const link = `${env.PUBLIC_BASE_URL || origin}/v1/attached/${sha}.pdf`;
+  await env.STORE.put(attachedKey(sha), bytes);
+  await env.STORE.put(await storedSourceKey(link), bytes);
+  return link;
+}
+
+/**
+ * 利用者が添付した過去問PDFを取り込みに足す。エンジンが読める資格（読み方の決まっている資格）だけ。
+ * 年度は添付PDFの表紙で確かめた年度を受け取り、分解のときに PDF の中の年度とも照合する（違えば取り込まない）
+ */
+async function attachPdf(env, id, state, b, url, now) {
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  const base = cat?.sources?.[0];
+  if (!base) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED', 'この資格の過去問PDFは、まだエンジンで読み取れません。AIが作った問題と明示して進めてください。');
+  const year = Number(b.year);
+  if (!Number.isInteger(year) || year < 1990 || year > 2100) throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', '添付された過去問の実施年度（西暦）を、PDFの表紙で確かめて year に入れてください。');
+  const jobId = sessionJobId(state);
+  const section = cat.sources.find((s) => s.year === year)?.section ?? base.section;
+  const job = await readJob(env.STORE, jobId);
+  const have = (job?.sources ?? []).find((s) => s.year === year && s.section === section && s.status === 'done');
+  if (have) return { status: 'attachedAlready', sessionId: id, year, notice: `${year}年度の過去問は、すでに取り込んであります。` };
+  const origin = url.origin;
+  const questionUrl = await keepAttached(env, await fetchAttached(env, b.question), origin);
+  const answerUrl = b.answer ? await keepAttached(env, await fetchAttached(env, b.answer), origin) : null;
+  const sources = checkSources([{ adapter: base.adapter, year, section, questionUrl, answerUrl }], state.qualificationId, state.learnerId);
+  await startJob(env.STORE, jobId, sources, now, { persistent: true });
+  await markEngineSources(env, sources);
+  const started = await progress(env, jobId, now);
+  return {
+    status: 'attached',
+    sessionId: id,
+    year,
+    notice: `添付の過去問（${year}年度）を取り込んでいます。読み取れた問題から出題に加えます。`,
+    job: jobView(started),
+  };
+}
+
 /**
  * 取り込みを裏で進める（方針3：資格が決まった時点で始め、導入の間に進める）。
  * 学習画面の応答を待たせないよう、自分自身の取り込みURLを別の呼び出しとして開き、応答は待たない。
@@ -533,7 +593,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const fieldNames = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
   // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
   const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
-  const wrongPool = reviewWant ? items.filter((x) => state.history[x.packet.questionId]?.result === 'wrong') : [];
+  const wrongPool = reviewWant ? items.filter((x) => ['wrong', 'recall_failure'].includes(state.history[x.packet.questionId]?.result)) : [];
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
   const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
@@ -552,7 +612,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       if (!state.waitedForImport) await saveSession(env, id, { ...state, waitedForImport: true }, now);
       return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
     }
-    return { status: pick.status, notice, job: jobView(job) };
+    return { status: pick.status, notice, attachNotice: ATTACH_NOTICE, howToAttach: ATTACH_HOW, job: jobView(job) };
   }
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
@@ -648,6 +708,14 @@ async function route(request, env, url, now) {
     const bytes = await env.STORE.get(`pgimg/${sha}/${m[1]}`, 'arrayBuffer');
     if (!bytes) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // 利用者が添付した過去問PDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）。出題画面の「問題PDF」のリンク先
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'attached' && parts.length === 3) {
+    const m = /^([a-f0-9]{64})\.pdf$/.exec(decodeURIComponent(parts[2]));
+    const bytes = m ? await env.STORE.get(attachedKey(m[1]), 'arrayBuffer') : null;
+    if (!bytes) throw new HttpError(404, 'ATTACHED_PDF_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'application/pdf', 'cache-control': 'public, max-age=3600' } });
   }
 
   // 公式PDFから問題のページだけを抜き出したPDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）
@@ -771,6 +839,15 @@ async function route(request, env, url, now) {
     return json(200, { status: 'profile', sessionId: id, exemption, stage });
   }
 
+  // 利用者が添付した過去問PDF（U06「公式の問題・正答資料をこのチャットに添付する」）。
+  // ChatGPT が渡す一時URLからエンジンがPDFを受け取り、保管して、公式サイトから取得したPDFと同じ取り込みに足す
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'attach' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    return json(200, await attachPdf(env, id, state, b, url, now));
+  }
+
   // 項目開始（U07）：学習する分野と進め方を控える。分野は以後の過去問の出題先になる（AIに頼らない）
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'item' && parts.length === 4) {
     const b = (await body(request).catch(() => ({}))) ?? {};
@@ -882,10 +959,12 @@ async function route(request, env, url, now) {
           engineHandoff = exportHandoff(st);
         }
         // 実践問題（過去問）の正誤は、エンジンが採点した記録で数える（AIの数え間違いを避ける）
+        // 「分からない」と答えた問は採点に数えない（正答を見せて復習に回した問）
         const graded = Object.values(st.history).filter((h) => Number.isFinite(h.gradedAt) && h.gradedAt >= study.startedAt);
-        if (graded.length) {
-          const right = graded.filter((h) => h.result !== 'wrong').length;
-          input = { ...b, results: { ...(b.results ?? {}), practiceCorrect: right, practiceWrong: graded.length - right } };
+        const scored = graded.filter((h) => h.result !== 'recall_failure');
+        if (scored.length) {
+          const right = scored.filter((h) => h.result !== 'wrong').length;
+          input = { ...b, results: { ...(b.results ?? {}), practiceCorrect: right, practiceWrong: scored.length - right } };
         }
         // 苦手な分野・今回解いた問題は、AIが書かなかったときもエンジンの記録から入れる（アプリではAIが採点結果を見ないため）
         const cat = Object.values(CATALOG).find((c) => c.qualificationId === st.qualificationId);
@@ -894,7 +973,7 @@ async function route(request, env, url, now) {
           if (weak.length) input = { ...input, weaknesses: weak };
         }
         if (!(input.contents ?? []).length && graded.length) {
-          input = { ...input, contents: graded.map((h) => `${h.source?.year ?? '年度未確認'}年度 問${h.source?.number ?? '?'}：${h.result === 'wrong' ? '不正解' : '正解'}`) };
+          input = { ...input, contents: graded.map((h) => `${h.source?.year ?? '年度未確認'}年度 問${h.source?.number ?? '?'}：${h.result === 'wrong' ? '不正解' : h.result === 'recall_failure' ? '分からない（正答を確認）' : '正解'}`) };
         }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
@@ -1112,6 +1191,7 @@ export function onboardingSteps(qid) {
   return steps;
 }
 
+const OVERVIEW_REQUIRED = [['受験資格・対象', /受験資格|受験対象|対象者/], ['試験日', /試験日|実施時期|試験期日|実施日/], ['出題形式', /出題形式|方式|方法/], ['合格基準', /合格基準|合格点|合格ライン/]];
 /** 試験概要のうち、台帳で確かめている項目（エンジンが画面に出す。AIは推測で埋めない）。免除ボタンの直前に置く */
 export function overviewFor(qid) {
   const c = Object.values(CATALOG).find((x) => x.qualificationId === qid);
@@ -1119,17 +1199,20 @@ export function overviewFor(qid) {
   return {
     // 復習の間隔（既定はAIが正解の続き具合で調整する型。利用者は希望で変えられる）
     review: REVIEW_PATTERNS.ai.label,
-    title: `${c.name}｜試験概要`,
+    title: '■試験概要',
     name: c.aliases[0],
     fields: Object.values(c.fields),
     lines: [
       `資格名：${c.name}`,
       `実施：${c.org}`,
       ...(c.overview ?? []).map(([k, v]) => `${k}：${v}`),
+      // U18：公式ページで確かめられなかった項目は「未確認」と示す（推測で埋めない）
+      ...OVERVIEW_REQUIRED.filter(([, re]) => !(c.overview ?? []).some(([k]) => re.test(k))).map(([k]) => `${k}：未確認`),
       `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
       ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),
       ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
-      '※ここに無い項目は、公式ページに書かれていないため載せていません（公式サイトでご確認ください）。',
+      `公式：${c.org}（${c.overviewSource ?? c.officialSite}）`,
+      '参考（非公式）：なし',
     ],
     source: c.overviewSource ?? c.officialSite,
   };
