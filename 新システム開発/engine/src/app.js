@@ -450,9 +450,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
   const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
-  if (reviewWant && !wanted) {
-    return { status: 'waiting', screen: '間違えた問題はまだありません。解説・確認問題・実践問題を続けてください。', notice: '間違えた問題はまだありません。' };
-  }
+  // 間違えた問題が無いときは止めず、いつもの次の問題を出す（総復習を押して画面が止まるのを防ぐ）
+  const reviewNotice = reviewWant && !wanted ? '間違えた問題はまだありません。いつもどおり次の問題を出します。' : null;
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
   const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
@@ -496,7 +495,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
-  const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
+  const screen = [wantNotice, reviewNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
   const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;

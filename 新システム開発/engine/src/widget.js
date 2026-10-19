@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v14.html';
+export const WIDGET_URI = 'ui://qlp/question-v15.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.13';
+export const WIDGET_VERSION = '2026-10-19.14';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -99,7 +99,7 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
-    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
+    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
@@ -120,7 +120,7 @@ a{color:inherit}
     if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
-    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button><button id="review">総復習（間違えた問題）</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
+    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
@@ -132,7 +132,6 @@ a{color:inherit}
     }; });
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
-    document.getElementById('review').onclick = async function(){ app.querySelectorAll('button').forEach(function(b){ b.disabled = true; }); try { render(await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習' })); } catch (e) { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">総復習を開けませんでした。もう一度押してください。</div>'); } };
   }
   // 学習の終了：終了ログと引継ぎデータの全文を、そのまま出す（コピーできる）
   function showEnd(d){
@@ -157,7 +156,7 @@ a{color:inherit}
     }; });
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
-  var onboardOv = null, studyLearner = null;
+  var onboardOv = null, studyLearner = null, onboardSteps = null;
   // 概要の強弱：大事な項目（日時・試験時間・方式・合格基準）は大きく太く、そこまで必要でない項目（手数料・申込・発表など）は小さく控えめに
   var OV_MAJOR = /^(試験日|試験日時|試験日及び時間|試験時間|試験の方法|試験方法|出題形式|合格基準|合格基準点|実施方式|試験方式)/;
   var OV_MINOR = /^(受験手数料|受験申込|実施公告|試験の基準|合格後|試験地|試験場所|合格発表|登録|試験の一部|法令基準日|出題基準日|対象年度|実施|資格名|受験資格|試験科目|試験の対象|試験科目・出題範囲)/;
@@ -185,12 +184,16 @@ a{color:inherit}
   function planPanel(got){
     var ov = onboardOv || {};
     var first = (ov.fields || [])[0] || '';
+    var order = '<ol class="ov-l">' + (ov.fields || []).map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>';
     app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' +
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button></div>';
+      '<div class="stem"><b>学習する分野の順</b></div>' + order +
+      '<div class="notice">この計画で始めるか、手直ししてください。</div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="revise" data-n="2"><b>2</b><span>手直しする（免除・学習状況を選び直す）</span></button></div>';
     scrollUp();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
+    document.getElementById('revise').onclick = function(){ onboard(onboardSteps, []); };
   }
   async function startStudyNow(name, learner){
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });

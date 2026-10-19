@@ -172,13 +172,13 @@ const APP_MENUS = {
   item: { kind: 'item', prompt: 'この項目はどう進めますか？', choices: ['解説あり（解説→確認問題→実践問題）', '確認問題から（解説なし）', '実践問題から（解説も確認問題もなし）'], notice: '以後も同じにするときは「2 以後も」のように入力してください。' },
   resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
   review: { kind: 'review', prompt: 'この問題はどうしますか？', choices: ['詳しい解説（法的根拠つき）', '次の問題へ'] },
-  next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ'] },
+  next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '総復習（間違えた問題）'] },
 };
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
