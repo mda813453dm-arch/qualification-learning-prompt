@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v7.html';
+export const WIDGET_URI = 'ui://qlp/question-v8.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.6';
+export const WIDGET_VERSION = '2026-10-19.7';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -91,7 +91,7 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
-    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboard(data.onboarding, []); return; }
+    if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
@@ -147,7 +147,7 @@ a{color:inherit}
     }; });
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
-  var onboardOv = null;
+  var onboardOv = null, studyLearner = null;
   function ovHtml(){
     if (!onboardOv) return '';
     var rows = '', list = null, note = '';
@@ -166,9 +166,31 @@ a{color:inherit}
     var link = safeUrl(onboardOv.source) ? '<a class="ov-a" href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページを開く ›</a>' : '';
     return '<div class="ov"><div class="ov-h">' + esc(onboardOv.title || '') + '</div><div class="ov-b">' + rows + (note ? '<div class="ov-n">' + esc(note) + '</div>' : '') + link + '</div></div>';
   }
+  // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
+  function planPanel(got){
+    var ov = onboardOv || {};
+    var first = (ov.fields || [])[0] || '';
+    app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' +
+      '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
+      '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button></div>';
+    document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
+  }
+  async function startStudyNow(name, learner){
+    app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+    try {
+      var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
+      if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
+      app.insertAdjacentHTML('afterbegin', '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>');
+      render(await callTool('nextQuestion', { sessionId: learner }));
+    } catch (e) {
+      app.insertAdjacentHTML('beforeend', '<div class="notice">学習を始められませんでした。もう一度押してください。</div>');
+      app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+    }
+  }
   function onboard(steps, got){
     var m = steps[got.length];
-    if (!m) { app.innerHTML = '<div class="result ok">' + esc(got.join('／')) + '</div>'; ask(got.join('／')); return; }
+    if (!m) { planPanel(got); return; }
     var h = ovHtml() + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;

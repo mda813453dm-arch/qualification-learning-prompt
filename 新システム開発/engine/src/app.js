@@ -418,7 +418,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let state = state0;
   // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
   if (env.QLP_WIDGET && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
-    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId) };
+    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = await availablePackets(env.STORE, job, now);
@@ -976,6 +976,8 @@ export function overviewFor(qid) {
   if (!c) return undefined;
   return {
     title: `${c.name}｜試験概要`,
+    name: c.aliases[0],
+    fields: Object.values(c.fields),
     lines: [
       `資格名：${c.name}`,
       `実施：${c.org}`,
