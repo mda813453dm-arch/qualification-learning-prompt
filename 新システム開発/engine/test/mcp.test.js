@@ -2,6 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
+import { CATALOG } from '../src/catalog.js';
 import { MemoryStore } from '../src/store.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
@@ -107,8 +108,8 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v4.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v4.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v5.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v5.html');
   assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
@@ -250,4 +251,15 @@ test('アプリ：宅建を始めると nextQuestion の画面データに試験
   assert.equal(n._meta.qlp.status, 'needPlan');
   assert.deepEqual(n._meta.qlp.onboarding.map((x) => x.kind), ['exempt', 'status']);
   assert.match(n._meta.qlp.overview.title, /宅建/);
+});
+
+test('全資格：概要は公式ページの記載（台帳）を出し、出典と未掲載の注記が付く', () => {
+  for (const c of Object.values(CATALOG)) {
+    assert.ok(c.overview?.length >= 4, c.name);
+    assert.ok(c.overview.every(([k, v]) => k && v), c.name);
+    const ov = overviewFor(c.qualificationId);
+    assert.ok(ov.lines.some((l) => /公式ページに書かれていない/.test(l)), c.name);
+    assert.match(ov.source, /^https:\/\//);
+  }
+  assert.ok(overviewFor('q041').lines.some((l) => /試験時間：午後1時〜午後3時/.test(l)));
 });

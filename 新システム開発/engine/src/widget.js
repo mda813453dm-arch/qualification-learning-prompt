@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v4.html';
+export const WIDGET_URI = 'ui://qlp/question-v5.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.3';
+export const WIDGET_VERSION = '2026-10-19.4';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -139,7 +139,7 @@ a{color:inherit}
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
   var onboardOv = null;
-  function ovHtml(){ if (!onboardOv) return ''; return '<div class="notice"><b>' + esc(onboardOv.title || '') + '</b><br>' + (onboardOv.lines || []).map(esc).join('<br>') + '</div>'; }
+  function ovHtml(){ if (!onboardOv) return ''; return '<div class="notice"><b>' + esc(onboardOv.title || '') + '</b><br>' + (onboardOv.lines || []).map(function(l){ return esc(l); }).join('<br>') + (safeUrl(onboardOv.source) ? '<br><a href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページ</a>' : '') + '</div>'; }
   function onboard(steps, got){
     var m = steps[got.length];
     if (!m) { app.innerHTML = '<div class="result ok">' + esc(got.join('／')) + '</div>'; ask(got.join('／')); return; }

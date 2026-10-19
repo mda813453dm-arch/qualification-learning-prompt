@@ -978,10 +978,12 @@ export function overviewFor(qid) {
     title: `${c.name}｜試験概要`,
     lines: [
       `実施：${c.org}`,
+      ...(c.overview ?? []).map(([k, v]) => `${k}：${v}`),
       `出題分野：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
       ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
-      '対象・形式・試験時間・合格基準：エンジンの台帳には未登録（公式サイトでご確認ください）',
+      '※ここに無い項目は、公式ページに書かれていないため載せていません（公式サイトでご確認ください）。',
     ],
+    source: c.overviewSource ?? c.officialSite,
   };
 }
 
