@@ -3,17 +3,17 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v5.html';
+export const WIDGET_URI = 'ui://qlp/question-v6.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.4';
+export const WIDGET_VERSION = '2026-10-19.5';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-:root{color-scheme:light dark;--fg:#1a1a1a;--sub:#555;--line:#ddd;--bg:#fff;--ok:#0a7d32;--ng:#c62828;--btn:#f4f4f4}
-@media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a}}
+:root{color-scheme:light dark;--fg:#1a1a1a;--sub:#555;--line:#ddd;--bg:#fff;--ok:#0a7d32;--ng:#c62828;--btn:#f4f4f4;--acc:#1557b0;--accbg:#eaf2fd}
+@media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a;--acc:#8ab4f8;--accbg:#22304a}}
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
 h2{font-size:17px;margin:0 0 6px}
@@ -30,6 +30,15 @@ h2{font-size:17px;margin:0 0 6px}
 .row button{font:inherit;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
 .notice{font-size:13px;color:var(--sub);white-space:pre-wrap}
 .result{font-weight:700;font-size:17px;margin:10px 0 4px}.result.ok{color:var(--ok)}.result.ng{color:var(--ng)}
+.ov{margin:0 0 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ov-h{background:var(--accbg);color:var(--acc);font-size:19px;font-weight:700;padding:10px 14px;line-height:1.4}
+.ov-b{padding:6px 14px 10px}
+.ov-r{padding:8px 0;border-bottom:1px solid var(--line)}.ov-r:last-child{border-bottom:0}
+.ov-k{display:block;color:var(--acc);font-weight:700;font-size:15px}
+.ov-v{display:block;font-size:17px;line-height:1.65}
+.ov-l{margin:4px 0 0;padding-left:1.6em;font-size:17px}.ov-l li{margin:3px 0}
+.ov-n{font-size:14px;color:var(--sub);padding-top:8px}
+.ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
 </style></head><body><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
 <script>
@@ -139,7 +148,24 @@ a{color:inherit}
   }
   // 学習の始めの確認（免除・学習状況）を順にボタンで聞き、答えをまとめてチャットに送る
   var onboardOv = null;
-  function ovHtml(){ if (!onboardOv) return ''; return '<div class="notice"><b>' + esc(onboardOv.title || '') + '</b><br>' + (onboardOv.lines || []).map(function(l){ return esc(l); }).join('<br>') + (safeUrl(onboardOv.source) ? '<br><a href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページ</a>' : '') + '</div>'; }
+  function ovHtml(){
+    if (!onboardOv) return '';
+    var rows = '', list = null, note = '';
+    (onboardOv.lines || []).forEach(function(l){
+      l = String(l);
+      if (l.charAt(0) === '※') { note = l; return; }
+      var m = l.match(/^[\u3000 ]+\d+\.\s*(.*)$/);
+      if (m) { if (list) list.push(m[1]); return; }
+      var i = l.indexOf('：');
+      if (i < 0) { rows += '<div class="ov-r"><span class="ov-v">' + esc(l) + '</span></div>'; return; }
+      var k = l.slice(0, i), v = l.slice(i + 1);
+      if (!v) { list = []; rows += '<div class="ov-r"><span class="ov-k">' + esc(k) + '</span>@@LIST@@</div>'; return; }
+      rows += '<div class="ov-r"><span class="ov-k">' + esc(k) + '</span><span class="ov-v">' + esc(v) + '</span></div>';
+    });
+    if (list) rows = rows.replace('@@LIST@@', '<ol class="ov-l">' + list.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>');
+    var link = safeUrl(onboardOv.source) ? '<a class="ov-a" href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページを開く ›</a>' : '';
+    return '<div class="ov"><div class="ov-h">' + esc(onboardOv.title || '') + '</div><div class="ov-b">' + rows + (note ? '<div class="ov-n">' + esc(note) + '</div>' : '') + link + '</div></div>';
+  }
   function onboard(steps, got){
     var m = steps[got.length];
     if (!m) { app.innerHTML = '<div class="result ok">' + esc(got.join('／')) + '</div>'; ask(got.join('／')); return; }
