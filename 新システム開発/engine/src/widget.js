@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v12.html';
+export const WIDGET_URI = 'ui://qlp/question-v13.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.11';
+export const WIDGET_VERSION = '2026-10-19.12';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -39,13 +39,12 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-r{padding:8px 0;border-bottom:1px solid var(--line)}.ov-r:last-child{border-bottom:0}
 .ov-r{display:grid;grid-template-columns:6.2em 1fr;gap:2px 10px;align-items:baseline}
 .ov-r .ov-k{display:block}
-.ov-r.major .ov-v{font-size:18px;font-weight:700;line-height:1.5}
+.ov-r.major .ov-v{font-weight:700}
 .ov-r.tone-date .ov-k{color:#1557b0}.ov-r.tone-score .ov-k{color:#0a7d32}.ov-r.tone-fee .ov-k{color:#b45309}.ov-r.tone-note .ov-k{color:#6b5b95}
-.ov-r.tone-date .ov-k,.ov-r.tone-score .ov-k,.ov-r.tone-fee .ov-k,.ov-r.tone-note .ov-k{font-size:15px}
-.ov-r.minor .ov-k{font-size:13px;font-weight:600;color:var(--sub)}.ov-r.minor .ov-v{font-size:14px;color:var(--sub);line-height:1.6}
-.ov-k{display:block;color:var(--acc);font-weight:700;font-size:15px}
-.ov-v{display:block;font-size:17px;line-height:1.65}
-.ov-l{margin:4px 0 0;padding-left:1.6em;font-size:17px}.ov-l li{margin:3px 0}
+.ov-r.minor .ov-k{font-weight:600}.ov-r.minor .ov-v{color:var(--sub)}
+.ov-k{display:block;color:var(--acc);font-weight:700;font-size:16px}
+.ov-v{display:block;font-size:16px;line-height:1.65}
+.ov-l{margin:4px 0 0;padding-left:1.6em;font-size:16px}.ov-l li{margin:3px 0}
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
