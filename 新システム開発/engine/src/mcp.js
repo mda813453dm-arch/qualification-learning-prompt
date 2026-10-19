@@ -178,7 +178,8 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URI = 'ui://qlp/question-v1.html';
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html'];
+const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
@@ -271,13 +272,13 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
-      return ok(id, { resources: [{ uri: WIDGET_URI, name: '問題の画面', mimeType: WIDGET_MIME }, { uri: LEGACY_WIDGET_URI, name: '旧版互換の問題の画面', mimeType: WIDGET_MIME }] });
+      return ok(id, { resources: [{ uri: WIDGET_URI, name: '問題の画面', mimeType: WIDGET_MIME }, ...LEGACY_WIDGET_URIS.map((u) => ({ uri: u, name: '旧版互換の問題の画面', mimeType: WIDGET_MIME }))] });
     case 'resources/templates/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       return ok(id, { resourceTemplates: [] });
     case 'resources/read':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
-      if (params.uri !== WIDGET_URI && params.uri !== LEGACY_WIDGET_URI) return fail(id, -32602, `Unknown resource: ${params.uri}`);
+      if (params.uri !== WIDGET_URI && !LEGACY_WIDGET_URIS.includes(params.uri)) return fail(id, -32602, `Unknown resource: ${params.uri}`);
       return ok(id, { contents: [widgetResource(baseUrl, params.uri)] });
     case 'tools/call': {
       const tool = BY_NAME.get(params.name);
