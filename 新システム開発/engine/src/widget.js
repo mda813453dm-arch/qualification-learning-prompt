@@ -154,7 +154,7 @@ a{color:inherit}
     (onboardOv.lines || []).forEach(function(l){
       l = String(l);
       if (l.charAt(0) === '※') { note = l; return; }
-      var m = l.match(/^[\u3000 ]+\d+\.\s*(.*)$/);
+      var m = l.match(/^[\\u3000 ]+\\d+\\.\\s*(.*)$/);
       if (m) { if (list) list.push(m[1]); return; }
       var i = l.indexOf('：');
       if (i < 0) { rows += '<div class="ov-r"><span class="ov-v">' + esc(l) + '</span></div>'; return; }
