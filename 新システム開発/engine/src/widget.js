@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v22.html';
+export const WIDGET_URI = 'ui://qlp/question-v23.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.21';
+export const WIDGET_VERSION = '2026-10-19.22';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -48,6 +48,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
+.latest{font-size:13px;font-weight:700;color:var(--acc);background:var(--accbg);border-radius:8px;padding:4px 10px;margin-bottom:8px}
 </style></head><body><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
 <script>
 (function(){
@@ -296,7 +297,14 @@ a{color:inherit}
   });
   // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
-  function scrollUp(){ try { window.scrollTo(0, 0); } catch (e) {} }
+  // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
+  function scrollUp(){
+    try { window.scrollTo(0, 0); } catch (e) {}
+    var mark = document.createElement('div');
+    mark.className = 'latest';
+    mark.textContent = '▼ ここが最新の表示です';
+    app.insertBefore(mark, app.firstChild);
+  }
   // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
   function fit(){
     var h = Math.ceil(app.offsetHeight) + 2;
