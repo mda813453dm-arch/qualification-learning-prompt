@@ -177,6 +177,30 @@ export const TOOLS = [
       ...(a.checkSuggested ? { checkPlan: `同じ分野（${a.fieldName ?? '今の分野'}）で3問続けて間違えたので、解説のあと showMenu（kind=check）を呼ぶ。「確認問題で基本を確かめる」が押されたら、まず『${a.fieldName ?? '今の分野'}の確認問題を3問出します（AIが作った問題です）』と書き、その分野の確認問題を1問ずつ出す。3問の答え合わせのあと showMenu（kind=next）を呼ぶ。` } : {}),
     }),
   },
+  {
+    name: 'diagQuestion',
+    appOnly: true,
+    description: '初期診断の確認問題（AIが作った問題）を1問、問題の画面に出す。利用者が「初期診断 n/N（分野：○○）の確認問題をお願いします」と送ってきたら、その分野の試験範囲から、本試験と同じ形式の問題を1問作り、このツールを呼ぶ（stem＝問題文、choices＝選択肢の文（番号は付けない）、answer＝正答の番号）。問題文・選択肢・正答・解説はチャットに書かない（画面に出る。答えは画面のボタンで受け、エンジンが採点する）。文に前の問の答え合わせ（正解／不正解）があれば、なぜその答えになるかを1〜2文で書いてから呼ぶ。分野と問の番号はエンジンが決めるので、変えない・飛ばさない。',
+    inputSchema: {
+      type: 'object',
+      required: ['sessionId', 'stem', 'choices', 'answer'],
+      properties: {
+        sessionId,
+        stem: { type: 'string', description: '問題文' },
+        choices: { type: 'array', items: { type: 'string' }, minItems: 2, maxItems: 5, description: '選択肢の文（番号は付けない）' },
+        answer: { type: 'integer', minimum: 1, maximum: 5, description: '正答の番号（1から）' },
+      },
+    },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/diag`, { action: 'question', stem: a.stem, choices: a.choices, answer: a.answer }],
+  },
+  {
+    name: 'diagStep',
+    appOnly: true,
+    uiOnly: true,
+    description: '初期診断を始める（action=start）、または画面で選ばれた答えを採点する（action=answer）。問題の画面だけが呼ぶ。',
+    inputSchema: { type: 'object', required: ['sessionId', 'action'], properties: { sessionId, action: { type: 'string', enum: ['start', 'answer'] }, value: { type: 'string' } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/diag`, { action: a.action, value: a.value }],
+  },
 ];
 
 const REVIEW_ORDER = '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、explainHow の書き方で書き、最後に showMenu（kind=next）を呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。';
@@ -195,9 +219,9 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
+const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'diagQuestion']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */

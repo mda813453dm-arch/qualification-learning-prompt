@@ -108,8 +108,8 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v25.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v25.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v26.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v26.html');
   assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '承認して始める');
@@ -261,6 +261,35 @@ test('アプリ：前回の学習の記録があっても、新しいセッシ�
   await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId } });
   const n2 = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: again.sessionId } });
   assert.notEqual(n2._meta.qlp.status, 'needPlan');
+});
+
+test('アプリ：初期診断は、分野と問数を先に示し、AIが作った確認問題をエンジンが採点して、結果で計画を並べ直す', async () => {
+  const env = makeEnv();
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const content = (r) => r.structuredContent ?? JSON.parse(r.content[0].text);
+  const s = content(await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } }));
+  const listed = (await app('tools/list', {})).tools;
+  assert.ok(listed.find((t) => t.name === 'diagQuestion')._meta);
+  assert.equal(listed.find((t) => t.name === 'diagStep')._meta['openai/visibility'], 'private');
+  const start = content(await app('tools/call', { name: 'diagStep', arguments: { sessionId: s.learnerId, action: 'start' } }));
+  assert.equal(start.diag.total, 14);
+  assert.equal(start.diag.fields[0], '宅地建物取引業法と関係法令');
+  assert.equal(start.diag.next.label, '初期診断 1/14');
+  let last;
+  for (let i = 0; i < 14; i++) {
+    const q = await app('tools/call', { name: 'diagQuestion', arguments: { sessionId: s.sessionId, stem: `問${i + 1}`, choices: ['あ', 'い', 'う', 'え'], answer: 2 } });
+    assert.equal(q._meta.qlp.question.label, `初期診断 ${i + 1}/14`);
+    assert.equal(q._meta.qlp.question.aiMade, true);
+    // 最初の分野（宅建業法）の2問だけ間違える
+    last = content(await app('tools/call', { name: 'diagStep', arguments: { sessionId: s.learnerId, action: 'answer', value: i < 2 ? '1' : '2' } }));
+    assert.equal(last.grade.correct, i >= 2);
+  }
+  assert.equal(last.planReady, true);
+  assert.equal(last.plan.fields[0], '宅地建物取引業法と関係法令');
+  assert.match(last.diagResult[0], /2問中0問正解/);
+  // 診断のあとも、学習の開始（startStudy）までは実践問題を出さない
+  const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: s.sessionId } });
+  assert.equal(n._meta.qlp.status, 'needPlan');
 });
 
 test('アプリ：宅建を始めると nextQuestion の画面データに試験概要と免除ボタンが入る', async () => {

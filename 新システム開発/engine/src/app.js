@@ -17,7 +17,7 @@ import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
-import { DIAG_PER_FIELD, REVIEW_PATTERNS, fieldCounts, planOrder } from './study.js';
+import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -200,7 +200,6 @@ export const INLINE_SVG_MAX = 8000;
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const REVIEW_WANT = /総復習|間違えた問題/;
-const DIAG_WANT = /初期診断/;
 
 /** 利用者が「図をもう一度」「図を表示して」などと言った（nextQuestion の question）。直前の問の公式の図だけを付け直す。 */
 const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
@@ -426,40 +425,77 @@ async function studyStartedInThisChat(env, lid) {
   return started > 0 && started >= opened;
 }
 
+/** 初期診断（アプリ）の1歩：start＝分野と問数を決める／question＝AIが作った問を控えて画面に出す／answer＝採点し、次の分野か結果を返す */
+async function diagStep(env, id, state0, now, b) {
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state0.qualificationId);
+  const fieldIds = Object.keys(cat?.fields ?? {});
+  const name = (f) => cat?.fields?.[f] ?? f;
+  const total = fieldIds.length * DIAG_PER_FIELD;
+  let state = state0;
+  const d0 = state.aiDiag;
+  const slot = (d) => {
+    const i = d.answers.length;
+    return { index: i + 1, total: d.queue.length, fieldName: name(d.queue[i]), label: `初期診断 ${i + 1}/${d.queue.length}` };
+  };
+  if (b.action === 'start' || !d0 || d0.status !== 'running') {
+    if (b.action !== 'start') throw new HttpError(409, 'DIAG_NOT_STARTED');
+    const queue = fieldIds.flatMap((f) => Array(DIAG_PER_FIELD).fill(f));
+    state = { ...state, aiDiag: { status: 'running', queue, answers: [], current: null } };
+    await saveSession(env, id, state, now);
+    const first = slot(state.aiDiag);
+    return {
+      status: 'diagIntro',
+      sessionId: id,
+      diag: { per: DIAG_PER_FIELD, total, fields: fieldIds.map(name), next: first },
+      howToProceed: `初期診断を始めた。${first.label}（分野：${first.fieldName}）の確認問題を作り、diagQuestion で出す。`,
+    };
+  }
+  const d = d0;
+  if (b.action === 'question') {
+    const stem = typeof b.stem === 'string' ? b.stem.trim().slice(0, 2000) : '';
+    const choices = Array.isArray(b.choices) ? b.choices.map((c) => String(c ?? '').trim().slice(0, 400)).filter(Boolean) : [];
+    const answer = Number(b.answer);
+    if (!stem || choices.length < 2 || choices.length > 5 || !Number.isInteger(answer) || answer < 1 || answer > choices.length) throw new HttpError(400, 'DIAG_QUESTION_INVALID');
+    const at = slot(d);
+    state = { ...state, aiDiag: { ...d, current: { fieldId: d.queue[d.answers.length], stem, choices, answer } } };
+    await saveSession(env, id, state, now);
+    return { status: 'question', sessionId: id, question: { diag: true, aiMade: true, label: at.label, fieldName: at.fieldName, stem, choices } };
+  }
+  if (b.action === 'answer') {
+    const cur = d.current;
+    if (!cur) throw new HttpError(409, 'DIAG_NO_QUESTION');
+    const selected = String(b.value ?? '').trim();
+    const correct = Number(selected) === cur.answer;
+    const at = slot(d);
+    const answers = [...d.answers, { fieldId: cur.fieldId, result: correct ? 'correct' : 'wrong' }];
+    const grade = { diag: true, label: at.label, fieldName: at.fieldName, correct, selected, correctAnswer: String(cur.answer) };
+    if (answers.length < d.queue.length) {
+      state = { ...state, aiDiag: { ...d, answers, current: null } };
+      await saveSession(env, id, state, now);
+      return { status: 'diagGraded', sessionId: id, grade, next: slot(state.aiDiag) };
+    }
+    // 全問を答えたら、誤答率の高い順（同じなら出題数、次に公式の分野順）に計画を並べ直す
+    const job = await progress(env, sessionJobId(state), now);
+    const counts = fieldCounts(await availablePackets(env.STORE, job, now), fieldIds);
+    const res = diagnosisOrder(fieldIds, answers, counts);
+    const weights = Object.fromEntries(res.order.map((f, i) => [f, res.order.length - i]));
+    state = { ...state, aiDiag: { ...d, status: 'done', answers, current: null }, diag: { status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
+    await saveSession(env, id, state, now);
+    const rows = res.rows.map((r) => `${name(r.fieldId)}：${r.n}問中${r.n - r.w}問正解`);
+    const note = res.allRight ? '初期診断では誤答がありませんでした（弱点がないとは断定しません）。出題数と公式の分野順で並べました。'
+      : res.allWrong ? '初期診断は全問不正解でした。分野の間に差はないため、出題数と公式の分野順で並べました。'
+      : '初期診断の結果（暫定評価）で、誤答の多い分野から並べました。';
+    return { status: 'needPlan', planReady: true, grade, diagResult: rows, plan: { fields: res.order.map(name), note }, overview: overviewFor(state.qualificationId), learnerId: state.learnerId, sessionId: id };
+  }
+  throw new HttpError(400, 'DIAG_ACTION_INVALID');
+}
+
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
   let want = want0;
   let state = state0;
-  // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
-  // 初期診断：分野ごとに数問ずつ出し、その結果で学習の順を決める（学習を始める前に受けられる）。結果は計画に反映し、承認は利用者が行う
-  let diagItem = null;
-  if (env.QLP_WIDGET && (state.diag?.status === 'running' || (want && DIAG_WANT.test(String(want).normalize('NFKC'))))) {
-    const job0 = await progress(env, sessionJobId(state), now);
-    const items0 = await availablePackets(env.STORE, job0, now);
-    const cat0 = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
-    const fieldIds = Object.keys(cat0?.fields ?? {});
-    if (state.diag?.status !== 'running') {
-      const queue = fieldIds.flatMap((f) => items0
-        .filter((x) => x.packet.fieldId === f && !state.history[x.packet.questionId])
-        .sort((a, b) => b.packet.year - a.packet.year)
-        .slice(0, DIAG_PER_FIELD)
-        .map((x) => x.packet.questionId));
-      state = { ...state, diag: { status: 'running', queue } };
-    }
-    const nextId = state.diag.queue.find((qid) => !state.history[qid] && items0.some((x) => x.packet.questionId === qid));
-    if (nextId) {
-      diagItem = items0.find((x) => x.packet.questionId === nextId);
-    } else {
-      const answers = state.diag.queue.filter((qid) => state.history[qid]).map((qid) => ({ fieldId: state.history[qid].fieldId, result: state.history[qid].result }));
-      const plan = planOrder({ diag: { status: 'done', answers } }, fieldIds, fieldCounts(items0, fieldIds));
-      const weights = Object.fromEntries(plan.order.map((f, i) => [f, plan.order.length - i]));
-      state = { ...state, diag: { ...state.diag, status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
-      await saveSession(env, id, state, now);
-      const note = plan.basis === 'diagnosis' ? '初期診断の結果で、誤答の多い分野から並べました。' : '出題数と公式の分野順で並べました。';
-      return { status: 'needPlan', planReady: true, plan: { fields: plan.order.map((f) => cat0.fields[f]), note }, overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
-    }
-  }
-  if (env.QLP_WIDGET && !diagItem && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
+  // アプリでは、このチャットで学習を開始（startStudy）するまで出題しない（学習計画の確認を飛ばさせない）
+  if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
   }
   const job = await progress(env, sessionJobId(state), now);
@@ -490,7 +526,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const wrongPool = reviewWant ? items.filter((x) => state.history[x.packet.questionId]?.result === 'wrong') : [];
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
-  const wanted = diagItem ? { item: diagItem, kind: 'diag' } : reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
+  const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
   // 間違えた問題が無いときは止めず、いつもの次の問題を出す（総復習を押して画面が止まるのを防ぐ）
   const reviewNotice = reviewWant && !wanted ? '間違えた問題はまだありません。いつもどおり次の問題を出します。' : null;
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
@@ -700,6 +736,15 @@ async function route(request, env, url, now) {
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
     return json(200, await nextView(env, id, state, now, { want }));
+  }
+
+  // 初期診断（アプリ）：各分野から決まった数の確認問題（AIが作った問題）を出し、正誤から苦手分野の順に計画を作り直す。
+  // どの分野を何問出すか・採点・結果の計算はエンジンが行う。AIは問題文と選択肢と正答を作るだけ
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'diag' && parts.length === 4) {
+    const b = await body(request).catch(() => ({}));
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    return json(200, await diagStep(env, id, state, now, b ?? {}));
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {

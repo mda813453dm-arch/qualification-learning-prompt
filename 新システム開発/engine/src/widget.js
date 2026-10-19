@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v25.html';
+export const WIDGET_URI = 'ui://qlp/question-v26.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.24';
+export const WIDGET_VERSION = '2026-10-19.25';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -100,10 +100,11 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
       return;
     }
-    if (data.planReady) { onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
+    if (data.planReady) { onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
+    if (data.question && data.question.diag) { diagQuestion(data); return; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     if (data.status === 'figure' && (data.figureUrls || []).length) {
@@ -187,13 +188,14 @@ a{color:inherit}
     var ov = onboardOv || {};
     var first = (ov.fields || [])[0] || '';
     var order = '<ol class="ov-l">' + (ov.fields || []).map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>';
-    app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' +
+    var dr = (ov.diagResult || []).length ? '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' + ov.diagResult.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
+    app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' + dr +
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
       (ov.review ? '<div class="notice"><b>復習の間隔：</b>' + esc(ov.review) + '（希望を伝えると変えられます）</div>' : '') +
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="diag" data-n="2"><b>2</b><span>初期診断で苦手分野を調べる（おすすめ）</span></button><button id="revise" data-n="3"><b>3</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="diag" data-n="2"><b>2</b><span>初期診断：確認問題で苦手分野を調べる（おすすめ）</span></button><button id="revise" data-n="3"><b>3</b><span>希望を伝えて作り直す</span></button></div>' +
       '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
       '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
       '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
@@ -201,7 +203,11 @@ a{color:inherit}
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
     document.getElementById('diag').onclick = async function(){
       app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
-      try { render(await callTool('nextQuestion', { sessionId: studyLearner, question: '初期診断' })); }
+      try {
+        var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'start' }));
+        if (!r || !r.diag) throw new Error('diag');
+        diagIntro(r.diag);
+      }
       catch (e) { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">初期診断を始められませんでした。もう一度押してください。</div>'); }
     };
     document.getElementById('revise').onclick = function(){ var b = document.getElementById('reviseBox'); b.style.display = b.style.display === 'none' ? 'block' : 'none'; };
@@ -209,6 +215,48 @@ a{color:inherit}
       var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
       app.insertAdjacentHTML('beforeend', '<div class="notice"><b>希望をチャットに送りました。</b>作り直した計画は、この画面の下のチャットに出ます。下へスクロールして、承認か手直しを選んでください。</div>');
       ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。計画の承認は文章で聞かず、必ず showMenu（kind=plan）を呼んで「承認して始める」「手直しする」のボタンで選んでもらう。承認のボタンが押されたら startStudy を呼ぶ。');
+    };
+  }
+  // 初期診断：どの分野から何問出すかを先に見せ、問題はAIが作って画面に出す（採点と結果はエンジン）
+  var diagSid = null;
+  function diagAsk(prefix, nx){
+    app.insertAdjacentHTML('beforeend', '<div class="notice"><b>次は' + esc(nx.label) + '（' + esc(nx.fieldName) + '）です。</b>問題はこの下のチャットに出ます。下へスクロールしてください。</div>');
+    ask(prefix + nx.label + '（分野：' + nx.fieldName + '）の確認問題をお願いします。');
+  }
+  function diagIntro(d){
+    diagSid = studyLearner;
+    app.innerHTML = '<h2>初期診断</h2><div class="stem">次の' + d.fields.length + '分野から各' + d.per + '問、<b>全' + d.total + '問</b>の確認問題を出します。</div>' +
+      '<ol class="ov-l">' + d.fields.map(function(f){ return '<li>' + esc(f) + '（' + d.per + '問）</li>'; }).join('') + '</ol>' +
+      '<div class="notice">問題はAIが作ったものです。答えの正誤から苦手な分野を調べ（暫定評価）、学習する分野の順を決め直します。</div>';
+    scrollUp();
+    diagAsk('初期診断を始めます。', d.next);
+  }
+  function diagQuestion(data){
+    var q = data.question; diagSid = data.sessionId || diagSid || state.sessionId || input().sessionId;
+    var h = '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '</div><div class="notice">AIが作った確認問題です。</div><div class="stem">' + esc(q.stem) + '</div>';
+    h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
+    h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
+    app.innerHTML = h;
+    scrollUp();
+    var chosen = null, sent = false;
+    app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){ chosen = r.value; document.getElementById('decrow').style.display = 'flex'; }; });
+    document.getElementById('decide').onclick = async function(){
+      if (!chosen || sent) return;
+      sent = true;
+      app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
+      try {
+        var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen) }));
+        var g = r && r.grade;
+        if (!g) throw new Error('grade');
+        var line = esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）';
+        if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>'); return; }
+        app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>';
+        scrollUp();
+        diagAsk(g.label + ' は ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。次の', r.next);
+      } catch (e) {
+        sent = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
+        app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
+      }
     };
   }
   async function startStudyNow(name, learner){
