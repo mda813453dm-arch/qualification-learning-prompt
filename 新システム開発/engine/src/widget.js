@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v23.html';
+export const WIDGET_URI = 'ui://qlp/question-v24.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.22';
+export const WIDGET_VERSION = '2026-10-19.23';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -282,11 +282,8 @@ a{color:inherit}
     app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>' + (g.checkSuggested ? '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>下のボタンで確認問題も選べます。</div>' : '');
     scrollUp();
     var stem = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
-    ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。\\n'
-      + '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。'
-      + '③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、下の「詳しい解説の書き方」で書き、最後に showMenu（kind=next）を呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。'
-      + (g.checkSuggested ? '⑤同じ分野で3問続けて間違えたので、②のあとに「確認問題で基本を確かめる」も選べるようにしたい。選ばれたらAIが作った確認問題（そうと明示）を出し、答え合わせのあと showMenu（kind=next）を呼ぶ。' : '')
-      + '\\n' + stem + (g.explainHow ? '\\n\\n詳しい解説の書き方（エンジンの指定）：\\n' + g.explainHow : ''));
+    ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。\\n'
+      + '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n'));
   }
   window.addEventListener('message', function(e){
     if (e.source !== window.parent) return;

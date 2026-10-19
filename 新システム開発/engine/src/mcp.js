@@ -1,3 +1,4 @@
+import { explainHow } from './explain.js';
 /**
  * MCP の入口（Claude・Perplexity・Gemini などの「カスタムコネクタ」から呼ばれる）。
  * Streamable HTTP の最小構成：POST /mcp に JSON-RPC を受け、JSON で返す（セッションは持たない）。
@@ -163,7 +164,20 @@ export const TOOLS = [
       return menu ? { status: 'menu', menu, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
     },
   },
+  {
+    name: 'explainSpec',
+    appOnly: true,
+    description: '採点された問題の解説の書き方を、エンジンから受け取る。利用者が「○年度 問○に…と答え、正解／不正解でした。解説をお願いします」と送ってきたら、解説を書く前に必ずこのツールを呼ぶ（correct＝正解なら true、selected＝利用者の答えの番号、correctAnswer＝正答の番号、fieldName＝分野）。返った explainHow と order のとおりに解説を書き、最後に showMenu（kind=review）を呼ぶ。',
+    inputSchema: { type: 'object', required: ['correct', 'selected', 'correctAnswer'], properties: { correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' } } },
+    local: (a) => ({
+      status: 'explainSpec',
+      explainHow: explainHow({ grade: { correct: !!a.correct, selected: String(a.selected ?? ''), correctAnswer: String(a.correctAnswer ?? '') }, fieldName: a.fieldName ?? null }),
+      order: REVIEW_ORDER,
+    }),
+  },
 ];
+
+const REVIEW_ORDER = '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、explainHow の書き方で書き、最後に showMenu（kind=next）を呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。';
 
 const APP_MENUS = {
   exempt: { kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices] },
@@ -178,7 +192,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
