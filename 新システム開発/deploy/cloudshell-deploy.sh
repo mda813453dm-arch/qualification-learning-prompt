@@ -52,11 +52,26 @@ done
 gcloud storage buckets add-iam-policy-binding "gs://$BUCKET" --member="serviceAccount:$RUNTIME_SA" --role=roles/storage.objectAdmin >/dev/null
 
 echo "== 6/7 分解サーバー（qlp-parser）を配置（初回は10分ほどかかります）"
-gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
-  --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
-  --set-env-vars "QLP_OCR=vision,OCR_CACHE_BUCKET=$BUCKET" \
-  --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
+# 分解サーバーのプログラムが前回の配置から変わっていなければ、組み立て直さない（時間と費用を使わないため）
+PARSER_SRC="$(cd "$ROOT/parser" && find qlp_parser Dockerfile requirements.txt -type f -not -name '*.pyc' | sort | xargs sha1sum | sha1sum | cut -c1-16)"
+PARSER_MARK="gs://$BUCKET/deploy/parser-src.txt"
+DEPLOYED_SRC="$(gcloud storage cat "$PARSER_MARK" 2>/dev/null || true)"
+if [ -z "$DEPLOYED_SRC" ] && gcloud run services describe qlp-parser --region "$REGION" >/dev/null 2>&1; then
+  # 印がまだ無いとき（2026-10-19 導入）：動いている分解サーバーを今のプログラムのものとして印を付ける
+  echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
+  DEPLOYED_SRC="$PARSER_SRC"
+fi
+if [ "$DEPLOYED_SRC" = "$PARSER_SRC" ]; then
+  echo "分解サーバーのプログラムは変わっていないので、配置し直しません"
+else
+  gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
+    --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
+    --set-env-vars "QLP_OCR=vision,OCR_CACHE_BUCKET=$BUCKET" \
+    --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
+  echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
+fi
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
+echo "分解サーバーの応答：$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$PARSER_URL/healthz" || true)"
 
 echo "== 7/7 学習エンジン（qlp-engine）を配置"
 gcloud run deploy qlp-engine --source "$ROOT/engine" --region "$REGION" --allow-unauthenticated \
