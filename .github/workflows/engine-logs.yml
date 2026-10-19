@@ -29,12 +29,12 @@ jobs:
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=WARNING' \
             --project qualification-learning --freshness=2h --limit=40 \
-            --format='value(timestamp,severity,httpRequest.status,httpRequest.requestMethod,httpRequest.requestUrl,textPayload,jsonPayload.message)' || true
+            --format='value(timestamp,severity,httpRequest.status,httpRequest.requestMethod,httpRequest.requestUrl,textPayload,jsonPayload.message,jsonPayload.event,jsonPayload.code,jsonPayload.path)' || true
       - name: アプリ・コネクタの呼び出し（方法とツール名だけ。直近3時間）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="mcp_rpc"' \
             --project qualification-learning --freshness=3h --limit=80 \
-            --format='value(timestamp,jsonPayload.route,jsonPayload.method,jsonPayload.tool,jsonPayload.kind)' || true
+            --format='value(timestamp,jsonPayload.route,jsonPayload.method,jsonPayload.tool,jsonPayload.kind,jsonPayload.status,jsonPayload.error)' || true
       - name: 画面の通信・描画の到達点（学習内容・識別子なし）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="widget_ui"' \
