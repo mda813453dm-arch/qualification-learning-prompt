@@ -107,8 +107,8 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v3.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v3.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v4.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v4.html');
   assert.equal(tools.find((t) => t.name === 'startSession')._meta, undefined);
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '始めます');
@@ -239,4 +239,15 @@ test('宅建は試験概要の直下に免除→学習状況のボタン、免�
   assert.ok(overviewFor('q041').lines.some((l) => /免除制度：登録講習/.test(l)));
   assert.deepEqual(onboardingSteps('q063').map((x) => x.kind), ['status']);
   assert.ok(!overviewFor('q063').lines.some((l) => /免除制度/.test(l)));
+});
+
+test('アプリ：宅建を始めると nextQuestion の画面データに試験概要と免除ボタンが入る', async () => {
+  const env = makeEnv();
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const s = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
+  const sid = (s.structuredContent ?? JSON.parse(s.content[0].text)).sessionId;
+  const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: sid } });
+  assert.equal(n._meta.qlp.status, 'needPlan');
+  assert.deepEqual(n._meta.qlp.onboarding.map((x) => x.kind), ['exempt', 'status']);
+  assert.match(n._meta.qlp.overview.title, /宅建/);
 });
