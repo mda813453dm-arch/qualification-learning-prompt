@@ -4,6 +4,21 @@ AIアプリから呼ばれる学習エンジン。出題順・正誤・復習・
 （AI裁量排除、文書61）。Google Cloud の Cloud Run で動き、保存は Firestore（分解結果・セッション）と
 Cloud Storage（図のPNG）を使う（方針7：2026年10月15日、Cloudflare から Google へ統一）。
 
+## ChatGPT アプリの空白画面の切り分け（2026-10-19）
+
+- `src/widget.js` の UI 通信は MCP Apps の `ui/initialize`（`2026-01-26`）→応答→`ui/notifications/initialized`→結果受信の順。MCP サーバー自体の `initialize` のバージョンとは別である。
+- `window.openai.toolOutput` に要約・空オブジェクトだけが入っていても UI 初期化を省かない。旧 `window.openai` API は互換経路として残す。
+- MIME は公式仕様の `text/html;profile=mcp-app` を維持。`text/html+skybridge` への変更は未実施。CSP の通信先を広げていない（ツールはホストブリッジを通り、図はエンジンのオリジンから取得）。
+- 静的HTMLに見出しと読み込み案内を置く。初期化は5秒、データ待ちは10秒で案内へ移行する。後から正常な結果が届けば描画する。操作の通信期限は20秒で、自動再送しない。
+- 診断は画面専用の `reportUiEvent`。固定の到達点と画面版だけを記録し、利用コード・学習内容・セッションIDは送らない。画面を再生成するテンプレートも付けない。
+- 旧診断 `showMenu(kind=diag_*)` は公開スキーマの列挙値に無いため、ホスト側で拒否され得る。旧ログが0件という事実だけで JavaScript 未実行とは断定できない。
+- `widget_ui.bridge_ready` は標準通信初期化の完了、`legacy_ready` は旧ブリッジ経路、`render_*` は描画処理への到達を表す。診断失敗は学習画面の描画を止めない。
+- 回帰試験：`test/widget-bridge.test.js` は厳格なホスト模擬、`test/widget-browser.mjs` は Chromium / WebKit の375px実DOMで、免除→状況→文面送信→回答→採点→メニュー→引継ぎ全文を確認する。後者は `.github/workflows/widget-browser-test.yml` で実行。本番依存は増やさない。
+- **これらは iPhone の ChatGPT アプリ内部での実機試験ではない。** 配置後に接続情報を更新し、新しい会話で確認する。まだ灰色なら、同版のWeb表示との比較と到達点ログでクライアント描画・通信・データの層を分ける。静的HTMLすら見えない場合も、アプリ側不具合と即断しない。
+- 画面なしの代替（未実装案）：エンジンが現在の質問・固定番号一覧・ステップIDを返し、回答番号とIDをサーバーで照合してから次へ進む。範囲外・古いステップ・独自の選択肢は拒否する。モデルの表示文そのものの完全な固定は保証できないが、仕様外の回答で学習が進むことをエンジンで防げる。
+
+公式資料：[UI quickstart](https://developers.openai.com/plugins/build/app-quickstart)、[UI bridge](https://developers.openai.com/plugins/build/chatgpt-ui)、[metadata](https://developers.openai.com/plugins/reference)。
+
 ## 合格条件との対応（設計計画 82_T1 §7）
 
 | 条件 | 確かめているテスト |
