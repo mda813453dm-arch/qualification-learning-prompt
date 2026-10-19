@@ -51,4 +51,5 @@ jobs:
             u="$(gcloud run services describe "$s" --project qualification-learning --region asia-northeast1 --format='value(status.url)' || true)"
             echo "$s ready=$(gcloud run services describe "$s" --project qualification-learning --region asia-northeast1 --format='value(status.conditions[0].status,status.latestReadyRevisionName,status.traffic[0].revisionName)' || true) http=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$u/robots.txt" || true)"
           done
-          gcloud billing projects describe qualification-learning --format='value(billingEnabled,billingAccountName)' || true
+          gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='yaml(status.conditions)' || true
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND resource.labels.revision_name="qlp-engine-00282-75j"' --project qualification-learning --freshness=1h --limit=8 --format='value(timestamp,severity,httpRequest.status,textPayload)' || true
