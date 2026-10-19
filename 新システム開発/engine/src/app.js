@@ -15,7 +15,7 @@ import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { SET_SIZE, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
@@ -779,7 +779,9 @@ async function route(request, env, url, now) {
     const fid = Object.entries(cat?.fields ?? {}).find(([, n]) => n === String(b.fieldName ?? ''))?.[0] ?? null;
     const mode = ['explain', 'check', 'practice'].includes(b.mode) ? b.mode : null;
     if (!fid || !mode) throw new HttpError(400, 'ITEM_INVALID');
-    await saveSession(env, id, { ...state, focusField: fid, itemMode: mode }, now);
+    // 選んだ分野から1まとまり（3問）を出す。そのあとは学習計画の順に戻る（同じ分野に固定しない）
+    const set = state.set?.fieldId === fid && state.set.count < SET_SIZE ? state.set : { fieldId: fid, count: 0, years: [] };
+    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode });
   }
 

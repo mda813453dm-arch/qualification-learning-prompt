@@ -53,3 +53,14 @@ test('分野名でも番号でもない言葉（「方向角の問題を出し�
   assert.equal(findWanted(done, items, '方向角の問題を出して', {}).item.packet.questionNumber, 8);
   assert.equal(findWanted(state, items, '三角網の問題', {}), null);
 });
+
+test('重みの高い分野で3問のまとまりを終えたら、学習計画の次の分野へ進む（同じ分野に固定しない）', () => {
+  const items = [
+    item(2025, 1, 'a'), item(2024, 1, 'a'), item(2023, 1, 'a'), item(2022, 1, 'a'),
+    item(2025, 20, 'b'), item(2024, 20, 'b'),
+  ];
+  const state = newState({ qualificationId: 'q041', plan: { fieldWeights: { a: 2, b: 1 } }, now: 0 });
+  const history = Object.fromEntries(items.slice(0, 3).map((x) => [x.packet.questionId, { fieldId: 'a' }]));
+  const p = pickNext({ ...state, history, set: { fieldId: 'a', count: 3, years: [2025, 2024, 2023] } }, items, { today: '2026-10-19', job: null });
+  assert.equal(p.item.packet.fieldId, 'b');
+});

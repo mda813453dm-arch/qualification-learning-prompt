@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v30.html';
+export const WIDGET_URI = 'ui://qlp/question-v31.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.29';
+export const WIDGET_VERSION = '2026-10-19.30';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -113,6 +113,12 @@ a{color:inherit}
     }
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
       app.innerHTML = '<div class="stem">' + esc(data.screen || data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
+      return;
+    }
+    if (data.fieldChanged && !data.repeated && data.question.kind === 'new' && !data.itemAsked && (studyLid || state.sessionId)) {
+      app.innerHTML = '<div class="notice"><b>' + esc(data.fieldNotice || '分野が変わります') + '</b></div>';
+      var moved = Object.assign({}, data, { itemAsked: true });
+      itemMenu(data.question.fieldName || '', studyLid || state.sessionId, function(){ studyField = data.question.fieldName || studyField; render(moved); });
       return;
     }
     var q = data.question; state.question = q; state.answered = false;
@@ -280,25 +286,32 @@ a{color:inherit}
       h += '<div class="stem">📍今回の位置：' + esc(field) + '<br>🎯今回の目的：' + esc(field) + 'の要点をつかみ、過去問で得点できるか確かめる<br>🧭始める理由：' + esc(reason) + '</div>';
       if (!r.resumed && fields.length) h += '<div class="stem"><b>【全体の進捗】</b></div><ul class="ov-l"><li>学習中：' + esc(field) + '</li>' + (fields.length > 1 ? '<li>未着手：' + esc(fields.slice(1).join('、')) + '</li>' : '') + '</ul>';
     }
-    var modes = [['explain', '解説あり（解説→確認問題→実践問題）'], ['check', '確認問題から（解説なし）'], ['practice', '実践問題から（解説も確認問題もなし）']];
-    h += '<h2>📍' + esc(field || '最初の分野') + '</h2><div class="stem"><b>■この項目はどう進めますか？</b></div><div class="choices">' + modes.map(function(m, i){ return '<button data-mode="' + m[0] + '"><b>' + (i + 1) + '</b><span>' + esc(m[1]) + '</span></button>'; }).join('') + '</div>';
     app.innerHTML = h;
+    itemMenu(field, learner, async function(){ render(await callTool('nextQuestion', { sessionId: learner })); });
+  }
+  // 項目開始A（U07）：この分野の進め方をボタンで選ぶ。「以後も同じ」にしたら、次の分野からは聞かずにその進め方で進む
+  var itemAlways = null;
+  function itemMenu(field, learner, proceed){
+    var go = async function(mode){
+      try { if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode }); } catch (e) {}
+      if (mode === 'practice') { await proceed(); return; }
+      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'はこの下のチャットに出ます。終えたら下のボタンで過去問へ進んでください。</div><div class="choices"><button id="toPractice"><b>▶</b><span>' + esc(field) + 'の過去問へ</span></button></div>' + endBar();
+      scrollUp(true); bindEnd();
+      document.getElementById('toPractice').onclick = function(){ this.disabled = true; proceed(); };
+      ask(mode === 'explain'
+        ? field + 'の解説をお願いします。解説のあと、確認問題（AIが作った問題）を出してください。'
+        : field + 'の確認問題（AIが作った問題）をお願いします。');
+    };
+    if (itemAlways) { go(itemAlways); return; }
+    var modes = [['explain', '解説あり（解説→確認問題→実践問題）'], ['check', '確認問題から（解説なし）'], ['practice', '実践問題から（解説も確認問題もなし）']];
+    app.insertAdjacentHTML('beforeend', '<h2>📍' + esc(field || '最初の分野') + '</h2><div class="stem"><b>■この項目はどう進めますか？</b></div><div class="choices" id="itemModes">' + modes.map(function(m, i){ return '<button data-mode="' + m[0] + '"><b>' + (i + 1) + '</b><span>' + esc(m[1]) + '</span></button>'; }).join('') + '</div><div class="row"><label><input type="checkbox" id="itemKeep"> 以後も同じ進め方にする</label></div>');
     scrollUp();
-    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = async function(){
+    app.querySelectorAll('#itemModes button').forEach(function(b){ b.onclick = function(){
+      app.querySelectorAll('#itemModes button').forEach(function(x){ x.disabled = true; });
       var mode = b.getAttribute('data-mode');
-      app.querySelectorAll('button').forEach(function(x){ x.disabled = true; });
-      try {
-        if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode });
-        if (mode === 'practice') { render(await callTool('nextQuestion', { sessionId: learner, question: field || undefined })); return; }
-        app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説' : '確認問題') + 'はこの下に出ます。</div>';
-        scrollUp(true);
-        ask(mode === 'explain'
-          ? field + 'の解説をお願いします。解説のあと、確認問題（AIが作った問題）を出し、そのあと過去問へ進みます。'
-          : field + 'の確認問題（AIが作った問題）をお願いします。答え合わせのあと、過去問へ進みます。');
-      } catch (e) {
-        app.querySelectorAll('button').forEach(function(x){ x.disabled = false; });
-        app.insertAdjacentHTML('beforeend', '<div class="notice">選べませんでした。もう一度押してください。</div>');
-      }
+      var keep = document.getElementById('itemKeep');
+      if (keep && keep.checked) itemAlways = mode;
+      go(mode);
     }; });
   }
   function onboard(steps, got){

@@ -111,7 +111,8 @@ export function pickNext(state, items, { today, job }) {
     for (const h of Object.values(state.history)) if (h.fieldId) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
     // 重み（学習計画の指定）→ これまでに解いた数が少ない分野 → 取り込んだ過去問での出題数が多い（頻出の）分野
     const counts = fieldCountsOf(usable);
-    const score = (x) => [Number(state.plan.fieldWeights?.[x.packet.fieldId] ?? 0), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
+    // 3問のまとまりを終えた分野は後に回し、学習計画の順に次の分野へ進む（全分野を一巡したら、また計画の順に戻る）
+    const score = (x) => [-Math.floor((solved[x.packet.fieldId] ?? 0) / SET_SIZE), Number(state.plan.fieldWeights?.[x.packet.fieldId] ?? 0), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
     const higher = (x, y) => { // x が y より先に出すべきなら true
       const a = score(x);
       const b = score(y);
