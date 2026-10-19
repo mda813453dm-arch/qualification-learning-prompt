@@ -157,7 +157,7 @@ export const TOOLS = [
     name: 'showMenu',
     appOnly: true,
     description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
-    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review'] } } },
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review', 'check'] } } },
     local: (a) => {
       const menu = APP_MENUS[a.kind];
       const NEXT = { exempt: ' 答えが届いたら、次に showMenu（kind=status）を呼ぶ。', status: ' 答えが届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
@@ -167,12 +167,14 @@ export const TOOLS = [
   {
     name: 'explainSpec',
     appOnly: true,
-    description: '採点された問題の解説の書き方を、エンジンから受け取る。利用者が「○年度 問○に…と答え、正解／不正解でした。解説をお願いします」と送ってきたら、解説を書く前に必ずこのツールを呼ぶ（correct＝正解なら true、selected＝利用者の答えの番号、correctAnswer＝正答の番号、fieldName＝分野）。返った explainHow と order のとおりに解説を書き、最後に showMenu（kind=review）を呼ぶ。',
-    inputSchema: { type: 'object', required: ['correct', 'selected', 'correctAnswer'], properties: { correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' } } },
+    description: '採点された問題の解説の書き方を、エンジンから受け取る。利用者が「○年度 問○に…と答え、正解／不正解でした。解説をお願いします」と送ってきたら、解説を書く前に必ずこのツールを呼ぶ（correct＝正解なら true、selected＝利用者の答えの番号、correctAnswer＝正答の番号、fieldName＝分野。文に「同じ分野で3問続けて不正解」があれば checkSuggested を true）。返った explainHow と order のとおりに解説を書き、最後に showMenu（kind=review）を呼ぶ。checkPlan があれば、それにも従う。',
+    inputSchema: { type: 'object', required: ['correct', 'selected', 'correctAnswer'], properties: { correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' }, checkSuggested: { type: 'boolean' } } },
     local: (a) => ({
       status: 'explainSpec',
       explainHow: explainHow({ grade: { correct: !!a.correct, selected: String(a.selected ?? ''), correctAnswer: String(a.correctAnswer ?? '') }, fieldName: a.fieldName ?? null }),
       order: REVIEW_ORDER,
+      // 同じ分野で3問続けて間違えたときは、解説のあとに確認問題を選べるようにする。確認問題はAIが作り、分野と問数を先に示す
+      ...(a.checkSuggested ? { checkPlan: `同じ分野（${a.fieldName ?? '今の分野'}）で3問続けて間違えたので、解説のあと showMenu（kind=check）を呼ぶ。「確認問題で基本を確かめる」が押されたら、まず『${a.fieldName ?? '今の分野'}の確認問題を3問出します（AIが作った問題です）』と書き、その分野の確認問題を1問ずつ出す。3問の答え合わせのあと showMenu（kind=next）を呼ぶ。` } : {}),
     }),
   },
 ];
@@ -186,13 +188,14 @@ const APP_MENUS = {
   item: { kind: 'item', prompt: 'この項目はどう進めますか？', choices: ['解説あり（解説→確認問題→実践問題）', '確認問題から（解説なし）', '実践問題から（解説も確認問題もなし）'], notice: '以後も同じにするときは「2 以後も」のように入力してください。' },
   resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
   review: { kind: 'review', prompt: 'この問題はどうしますか？', choices: ['詳しい解説（法的根拠つき）', '次の問題へ'] },
+  check: { kind: 'check', prompt: '同じ分野で3問続けて間違えました。弱点を確かめる確認問題を出しますか？', choices: ['確認問題で基本を確かめる', '次の問題へ'] },
   next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '総復習（間違えた問題）'] },
 };
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
