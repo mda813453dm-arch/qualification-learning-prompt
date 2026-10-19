@@ -222,7 +222,7 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'diagQuestion']);
-const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。「画面の選択肢を押して答えてください」とだけ伝える。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
+const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
 export function forModel(body) {
@@ -235,7 +235,7 @@ export function forModel(body) {
   // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
   if (Array.isArray(body.onboarding)) {
     const { onboarding, overview, planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
-    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、利用者が答えるまで待つ。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。【初期診断】利用者が「初期診断 n/N（分野：○○）の確認問題をお願いします」と送ってきたら、その分野の確認問題を1問作り、必ず diagQuestion（sessionId はこの学習の sessionId）を呼んで画面に出す。問題文・選択肢はチャットに書かない。diagQuestion を呼ばずに「接続できない」などと答えて止めない。呼んで失敗したときだけ、返ったエラーをそのまま伝える。' };
+    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、画面のあとのチャットの文は「画面のボタンで選んでください」の1行だけにする（長く書くと画面が上に押し出されて見えなくなる）。利用者が答えるまで待つ。答え（「免除：…／学習状況：…」）がチャットに届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。【初期診断】利用者が「初期診断 n/N（分野：○○）の確認問題をお願いします」と送ってきたら、その分野の確認問題を1問作り、必ず diagQuestion（sessionId はこの学習の sessionId）を呼んで画面に出す。問題文・選択肢はチャットに書かない。diagQuestion を呼ばずに「接続できない」などと答えて止めない。呼んで失敗したときだけ、返ったエラーをそのまま伝える。' };
   }
   const slim = (v) => {
     if (!v?.question) return v;
