@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v21.html';
+export const WIDGET_URI = 'ui://qlp/question-v22.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.20';
+export const WIDGET_VERSION = '2026-10-19.21';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -206,9 +206,8 @@ a{color:inherit}
     document.getElementById('revise').onclick = function(){ var b = document.getElementById('reviseBox'); b.style.display = b.style.display === 'none' ? 'block' : 'none'; };
     document.getElementById('sendWish').onclick = function(){
       var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
-      app.querySelectorAll('button,textarea').forEach(function(b){ b.disabled = true; });
-      app.insertAdjacentHTML('beforeend', '<div class="notice">希望を送りました。作り直した計画をチャットに示します。</div>');
-      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。最後に showMenu（kind=plan）を呼び、「承認して始める」か「手直しする」を選んでもらう。承認されたら startStudy を呼ぶ。');
+      app.insertAdjacentHTML('beforeend', '<div class="notice"><b>希望をチャットに送りました。</b>作り直した計画は、この画面の下のチャットに出ます。下へスクロールして、承認か手直しを選んでください。</div>');
+      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。計画の承認は文章で聞かず、必ず showMenu（kind=plan）を呼んで「承認して始める」「手直しする」のボタンで選んでもらう。承認のボタンが押されたら startStudy を呼ぶ。');
     };
   }
   async function startStudyNow(name, learner){
