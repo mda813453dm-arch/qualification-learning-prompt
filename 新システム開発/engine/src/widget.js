@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v10.html';
+export const WIDGET_URI = 'ui://qlp/question-v11.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.9';
+export const WIDGET_VERSION = '2026-10-19.10';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -31,10 +31,14 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .notice{font-size:15px;color:var(--sub);white-space:pre-wrap}
 .result{font-weight:700;font-size:19px;margin:10px 0 4px}.result.ok{color:var(--ok)}.result.ng{color:var(--ng)}
 .ov{margin:0 0 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
-.ov-h{background:var(--accbg);color:var(--acc);font-size:19px;font-weight:700;padding:10px 14px;line-height:1.4}
+.ov-h{background:var(--accbg);color:var(--acc);font-size:20px;font-weight:700;padding:10px 14px;line-height:1.4}
 .ov-b{padding:6px 14px 10px}
 .ov-r{padding:8px 0;border-bottom:1px solid var(--line)}.ov-r:last-child{border-bottom:0}
-.ov-r.major .ov-v{font-size:19px;font-weight:700;line-height:1.5}
+.ov-r{display:grid;grid-template-columns:6.2em 1fr;gap:2px 10px;align-items:baseline}
+.ov-r .ov-k{display:block}
+.ov-r.major .ov-v{font-size:18px;font-weight:700;line-height:1.5}
+.ov-r.tone-date .ov-k{color:#1557b0}.ov-r.tone-score .ov-k{color:#0a7d32}.ov-r.tone-fee .ov-k{color:#b45309}.ov-r.tone-note .ov-k{color:#6b5b95}
+.ov-r.tone-date .ov-k,.ov-r.tone-score .ov-k,.ov-r.tone-fee .ov-k,.ov-r.tone-note .ov-k{font-size:15px}
 .ov-r.minor .ov-k{font-size:13px;font-weight:600;color:var(--sub)}.ov-r.minor .ov-v{font-size:14px;color:var(--sub);line-height:1.6}
 .ov-k{display:block;color:var(--acc);font-weight:700;font-size:15px}
 .ov-v{display:block;font-size:17px;line-height:1.65}
@@ -154,6 +158,8 @@ a{color:inherit}
   // 概要の強弱：大事な項目（日時・試験時間・方式・合格基準）は大きく太く、そこまで必要でない項目（手数料・申込・発表など）は小さく控えめに
   var OV_MAJOR = /^(試験日|試験日時|試験日及び時間|試験時間|試験の方法|試験方法|出題形式|合格基準|合格基準点|実施方式|試験方式)/;
   var OV_MINOR = /^(受験手数料|受験申込|実施公告|試験の基準|合格後|試験地|試験場所|合格発表|登録|試験の一部|法令基準日|出題基準日|対象年度|実施|資格名|受験資格|試験科目|試験の対象|試験科目・出題範囲)/;
+  // 色は項目の種類ごとに分ける（日時＝青、合格基準＝緑、費用＝橙、補足＝紫）
+  function ovTone(k){ return /日|時間|期間|申込|発表/.test(k) ? 'tone-date' : /合格基準|配点|点/.test(k) ? 'tone-score' : /手数料|料/.test(k) ? 'tone-fee' : /基準日|対象年度|実施|資格名|試験地|受験資格/.test(k) ? 'tone-note' : ''; }
   function ovHtml(){
     if (!onboardOv) return '';
     var rows = '', list = null, note = '';
@@ -166,7 +172,7 @@ a{color:inherit}
       if (i < 0) { rows += '<div class="ov-r"><span class="ov-v">' + esc(l) + '</span></div>'; return; }
       var k = l.slice(0, i), v = l.slice(i + 1);
       if (!v) { list = []; rows += '<div class="ov-r"><span class="ov-k">' + esc(k) + '</span>@@LIST@@</div>'; return; }
-      rows += '<div class="ov-r ' + (OV_MAJOR.test(k) ? 'major' : OV_MINOR.test(k) ? 'minor' : '') + '"><span class="ov-k">' + esc(k) + '</span><span class="ov-v">' + esc(v) + '</span></div>';
+      rows += '<div class="ov-r ' + (OV_MAJOR.test(k) ? 'major' : OV_MINOR.test(k) ? 'minor' : '') + ' ' + ovTone(k) + '"><span class="ov-k">' + esc(k) + '</span><span class="ov-v">' + esc(v) + '</span></div>';
     });
     if (list) rows = rows.replace('@@LIST@@', '<ol class="ov-l">' + list.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>');
     var link = safeUrl(onboardOv.source) ? '<a class="ov-a" href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページを開く ›</a>' : '';
