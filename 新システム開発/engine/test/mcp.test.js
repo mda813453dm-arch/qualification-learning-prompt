@@ -242,6 +242,27 @@ test('宅建は試験概要の直下に免除→学習状況のボタン、免�
   assert.ok(!overviewFor('q063').lines.some((l) => /免除制度/.test(l)));
 });
 
+test('アプリ：前回の学習の記録があっても、新しいセッションは学習の開始（startStudy）をするまで出題しない', async () => {
+  let t = T0;
+  const env = makeEnv();
+  env.clock = () => t;
+  const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
+  const content = (r) => r.structuredContent ?? JSON.parse(r.content[0].text);
+  const first = content(await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } }));
+  const learnerId = first.learnerId;
+  await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId } });
+  t += 60_000;
+  // 同じ引継ぎIDで、新しいチャット（新しいセッション）を始める。学習の開始はまだ
+  const again = content(await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [], learnerId } }));
+  const n1 = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: again.sessionId } });
+  assert.equal(n1._meta.qlp.status, 'needPlan');
+  assert.equal(n1._meta.qlp.question, undefined);
+  t += 60_000;
+  await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId } });
+  const n2 = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: again.sessionId } });
+  assert.notEqual(n2._meta.qlp.status, 'needPlan');
+});
+
 test('アプリ：宅建を始めると nextQuestion の画面データに試験概要と免除ボタンが入る', async () => {
   const env = makeEnv();
   const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
