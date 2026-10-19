@@ -23,3 +23,4 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-19T09:52:40Z diag-error-2
 2026-10-19T10:30:04Z diag-error-3
 2026-10-19T12:50:06Z parser-start
+2026-10-19T12:51:17Z parser-start-json

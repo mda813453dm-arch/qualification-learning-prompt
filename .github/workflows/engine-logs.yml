@@ -43,5 +43,5 @@ jobs:
       - name: 分解サーバーの起動の記録（直近1時間）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-parser" AND (severity>=WARNING OR textPayload:"Traceback" OR textPayload:"Error")' \
-            --project qualification-learning --freshness=1h --limit=40 \
-            --format='value(timestamp,severity,resource.labels.revision_name,textPayload,jsonPayload.message)' || true
+            --project qualification-learning --freshness=1h --limit=4 \
+            --format='json(timestamp,severity,resource.labels.revision_name,textPayload,jsonPayload,protoPayload.status,protoPayload.response.status)' || true
