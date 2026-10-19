@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v15.html';
+export const WIDGET_URI = 'ui://qlp/question-v16.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.14';
+export const WIDGET_VERSION = '2026-10-19.15';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -20,10 +20,10 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:17px;line-height:1.75}
 .fig{margin:10px 0}.fig img{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
-.choices{display:flex;flex-direction:column;gap:8px;margin:12px 0}
+.choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
 .choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
-.choices .opt{display:flex;gap:10px;align-items:flex-start;background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}.choices .opt input{margin-top:6px}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
-.choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:15px;flex:none}.choices .opt{font-size:17px}
+.choices .opt{display:flex;gap:8px;align-items:center;background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}.choices .opt input{margin:0}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
+.choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:16px;line-height:1.4}
 .choices button:disabled{opacity:.6;cursor:default}
 .choices button.correct{border-color:var(--ok);border-width:2px}.choices button.picked{outline:2px solid var(--sub)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
