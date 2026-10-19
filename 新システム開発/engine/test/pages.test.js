@@ -359,16 +359,16 @@ test('宅建で免除を利用すると、問46〜50は出題しない', async (
   assert.equal(new Set(seen).size, 45);
 });
 
-test('過去問は学習者ごとに取り込み、期限なしで持つ（ほかの学習者とは共有しない）', async () => {
+test('過去問は学習者ごとに期限なしで持つ。2人目は分解済みを自分の分として写し、分解し直さない', async () => {
   const { env, counts } = makeEnv();
   const a = await toPractice(env, 'surveyor');
   assert.equal(counts.parse, 1, '資格を選んだ時点で取り込んでいる');
   const b = await onboard(env, 'surveyor');
-  assert.equal(counts.parse, 2, '2人目は自分の分を取り込む');
+  assert.equal(counts.parse, 1, '2人目は分解済みを写す（分解し直さない）');
   env.now += 30 * 24 * 60 * 60 * 1000; // 30日後
   const r = await get(env, answerPick(a.page, 3));
   const q2 = await get(env, link(r, '2 以後も'));
-  assert.equal(counts.parse, 2, '30日たっても取り込み直さない');
+  assert.equal(counts.parse, 1, '30日たっても取り込み直さない');
   const fig = /図：(\S+)/.exec(q2)[1];
   assert.match(fig, new RegExp(`/v1/figure/own/${a.lid}/`));
   const img = await handle(new Request(fig), env);

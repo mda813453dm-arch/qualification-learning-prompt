@@ -7,7 +7,7 @@
  * 取り込みは「1回の呼び出しで時間の許す分だけ進める」形にしている（1回の応答を長く待たせない
  * ため）。残りは次の呼び出しで続きから進む。
  */
-import { readResult, readSource, writeResult, writeSource } from './cache.js';
+import { readFigure, readResult, readSource, writeResult, writeSource } from './cache.js';
 import { sha256Hex } from './store.js';
 
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
@@ -119,6 +119,16 @@ export async function ingestSource(src, deps) {
   if (src.expectedQuestionSha256 && src.expectedQuestionSha256 !== q.sha256) throw new IngestError('PDF_HASH_MISMATCH', { url: src.questionUrl });
   const cached = await readResult(store, keyParts, now);
   if (cached.hit) return { from: 'cache', keyParts, result: cached.result };
+  // 学習者ごとの取り込み：同じ公式PDF・同じ分解プログラムの版で分解済みの控えがあれば、それを写す（分解し直さない。費用を抑えるため）
+  const tplKey = keyParts.owner ? { ...keyParts, owner: SHARED_OWNER } : null;
+  if (tplKey) {
+    const tpl = await readResult(store, tplKey, now);
+    const assets = tpl.hit ? await readAssets(store, tplKey, tpl.result) : null;
+    if (assets) {
+      await writeResult(store, keyParts, tpl.result, assets, now);
+      return { from: 'copy', keyParts, result: tpl.result };
+    }
+  }
 
   // 保存が無い・期限切れ：分解する。控えのSHAで判断したときはPDF本体を取り直す
   // （経路Aは分解がアプリ側なのでPDF本体は要らない。届いた結果のSHAを控えと照合する）
@@ -151,7 +161,23 @@ export async function ingestSource(src, deps) {
   const used = new Set(result.packets.flatMap((p) => (p.figures ?? []).flatMap((f) => (f.svgFile ? [f.file, f.svgFile] : [f.file]))));
   const assets = Object.fromEntries(Object.entries(parsed.assets ?? {}).filter(([f]) => used.has(f)));
   await writeResult(store, keyParts, result, assets, now);
+  if (tplKey) await writeResult(store, tplKey, result, assets, now);
   return { from: 'parsed', keyParts, result };
+}
+
+/** 分解結果を写すときの控えの持ち主（学習者の引継ぎIDとは重ならない名前）。期限なしで残す */
+const SHARED_OWNER = '_shared';
+
+/** 控えの図をすべて読む。1つでも欠けていたら null（そのときは分解し直す） */
+async function readAssets(store, keyParts, result) {
+  const files = new Set((result.packets ?? []).flatMap((p) => (p.figures ?? []).flatMap((f) => (f.svgFile ? [f.file, f.svgFile] : [f.file]))));
+  const out = {};
+  for (const f of files) {
+    const b = await readFigure(store, keyParts.questionSha256, keyParts.parserVersion, f, keyParts.owner);
+    if (b == null) return null;
+    out[f] = b instanceof ArrayBuffer ? new Uint8Array(b) : b;
+  }
+  return out;
 }
 
 function pick(src) {

@@ -27,6 +27,17 @@ test('24時間以内の2回目は公式PDFを取りに行かず、分解もし�
   assert.deepEqual(second.result.packets.map((p) => p.correctAnswer), [3, 1, 4]);
 });
 
+test('学習者ごとの取り込みは、ほかの学習者が分解済みなら写して使い、分解し直さない（保存は学習者ごと）', async () => {
+  const { parse, store, deps } = setup();
+  const a = await ingestSource({ ...SRC, owner: 'learnera1' }, deps(T0));
+  assert.equal(a.from, 'parsed');
+  const b = await ingestSource({ ...SRC, owner: 'learnerb2' }, deps(T0 + 3 * DAY));
+  assert.equal(b.from, 'copy');
+  assert.equal(parse.count, 1, '分解し直していない');
+  assert.equal(b.keyParts.owner, 'learnerb2');
+  assert.deepEqual((await readResult(store, b.keyParts, T0 + 3 * DAY)).result.packets.map((p) => p.correctAnswer), [3, 1, 4]);
+});
+
 test('24時間を過ぎたら公式PDFを取り直して、分解し直す', async () => {
   const { web, parse, store, deps } = setup();
   const first = await ingestSource(SRC, deps(T0));
