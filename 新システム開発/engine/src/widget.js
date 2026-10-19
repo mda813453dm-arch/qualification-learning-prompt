@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v11.html';
+export const WIDGET_URI = 'ui://qlp/question-v12.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.10';
+export const WIDGET_VERSION = '2026-10-19.11';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -28,8 +28,11 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .choices button.correct{border-color:var(--ok);border-width:2px}.choices button.picked{outline:2px solid var(--sub)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
-.notice{font-size:15px;color:var(--sub);white-space:pre-wrap}
-.result{font-weight:700;font-size:19px;margin:10px 0 4px}.result.ok{color:var(--ok)}.result.ng{color:var(--ng)}
+.row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+.notice{font-size:14px;color:var(--sub);white-space:pre-wrap;line-height:1.6;margin:6px 0}
+.notice b{color:var(--fg);font-size:15px}
+.result{font-weight:700;font-size:20px;margin:10px 0 6px;line-height:1.5;padding:8px 12px;border-radius:10px}.result.ok{color:var(--ok);background:#e7f6ec}.result.ng{color:var(--ng);background:#fdecec}
+@media (prefers-color-scheme:dark){.result.ok{background:#16301f}.result.ng{background:#3a1d1d}}
 .ov{margin:0 0 14px;border:1px solid var(--line);border-radius:12px;overflow:hidden}
 .ov-h{background:var(--accbg);color:var(--acc);font-size:20px;font-weight:700;padding:10px 14px;line-height:1.4}
 .ov-b{padding:6px 14px 10px}
