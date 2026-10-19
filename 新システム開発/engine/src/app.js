@@ -17,6 +17,7 @@ import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
+import { DIAG_PER_FIELD, fieldCounts, planOrder } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
@@ -195,6 +196,7 @@ export const INLINE_SVG_MAX = 8000;
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const REVIEW_WANT = /総復習|間違えた問題/;
+const DIAG_WANT = /初期診断/;
 
 /** 利用者が「図をもう一度」「図を表示して」などと言った（nextQuestion の question）。直前の問の公式の図だけを付け直す。 */
 const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
@@ -418,7 +420,35 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let want = want0;
   let state = state0;
   // アプリでは、学習の開始（startStudy）の前に出題しない（学習計画の確認を飛ばさせない）。再開した学習者は、前の学習の記録があるので通る
-  if (env.QLP_WIDGET && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
+  // 初期診断：分野ごとに数問ずつ出し、その結果で学習の順を決める（学習を始める前に受けられる）。結果は計画に反映し、承認は利用者が行う
+  let diagItem = null;
+  if (env.QLP_WIDGET && (state.diag?.status === 'running' || (want && DIAG_WANT.test(String(want).normalize('NFKC'))))) {
+    const job0 = await progress(env, sessionJobId(state), now);
+    const items0 = await availablePackets(env.STORE, job0, now);
+    const cat0 = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
+    const fieldIds = Object.keys(cat0?.fields ?? {});
+    if (state.diag?.status !== 'running') {
+      const queue = fieldIds.flatMap((f) => items0
+        .filter((x) => x.packet.fieldId === f && !state.history[x.packet.questionId])
+        .sort((a, b) => b.packet.year - a.packet.year)
+        .slice(0, DIAG_PER_FIELD)
+        .map((x) => x.packet.questionId));
+      state = { ...state, diag: { status: 'running', queue } };
+    }
+    const nextId = state.diag.queue.find((qid) => !state.history[qid] && items0.some((x) => x.packet.questionId === qid));
+    if (nextId) {
+      diagItem = items0.find((x) => x.packet.questionId === nextId);
+    } else {
+      const answers = state.diag.queue.filter((qid) => state.history[qid]).map((qid) => ({ fieldId: state.history[qid].fieldId, result: state.history[qid].result }));
+      const plan = planOrder({ diag: { status: 'done', answers } }, fieldIds, fieldCounts(items0, fieldIds));
+      const weights = Object.fromEntries(plan.order.map((f, i) => [f, plan.order.length - i]));
+      state = { ...state, diag: { ...state.diag, status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
+      await saveSession(env, id, state, now);
+      const note = plan.basis === 'diagnosis' ? '初期診断の結果で、誤答の多い分野から並べました。' : '出題数と公式の分野順で並べました。';
+      return { status: 'needPlan', planReady: true, plan: { fields: plan.order.map((f) => cat0.fields[f]), note }, overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
+    }
+  }
+  if (env.QLP_WIDGET && !diagItem && state.learnerId && !(await env.STORE.get(lastStudyKey(state.learnerId)))) {
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
   }
   const job = await progress(env, sessionJobId(state), now);
@@ -449,7 +479,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const wrongPool = reviewWant ? items.filter((x) => state.history[x.packet.questionId]?.result === 'wrong') : [];
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
-  const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
+  const wanted = diagItem ? { item: diagItem, kind: 'diag' } : reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
   // 間違えた問題が無いときは止めず、いつもの次の問題を出す（総復習を押して画面が止まるのを防ぐ）
   const reviewNotice = reviewWant && !wanted ? '間違えた問題はまだありません。いつもどおり次の問題を出します。' : null;
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
