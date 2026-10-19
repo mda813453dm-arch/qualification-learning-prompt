@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v18.html';
+export const WIDGET_URI = 'ui://qlp/question-v19.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.17';
+export const WIDGET_VERSION = '2026-10-19.18';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -189,11 +189,20 @@ a{color:inherit}
       '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
       '<div class="notice">公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。</div>' +
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
-      '<div class="notice">この計画で始めるか、手直ししてください。</div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="revise" data-n="2"><b>2</b><span>手直しする（免除・学習状況を選び直す）</span></button></div>';
+      '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>この計画で始めます</span></button><button id="revise" data-n="2"><b>2</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
+      '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
+      '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
     scrollUp();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
-    document.getElementById('revise').onclick = function(){ onboard(onboardSteps, []); };
+    document.getElementById('revise').onclick = function(){ var b = document.getElementById('reviseBox'); b.style.display = b.style.display === 'none' ? 'block' : 'none'; };
+    document.getElementById('sendWish').onclick = function(){
+      var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
+      app.querySelectorAll('button,textarea').forEach(function(b){ b.disabled = true; });
+      app.insertAdjacentHTML('beforeend', '<div class="notice">希望を送りました。作り直した計画をチャットに示します。</div>');
+      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野と進め方を示す。最後に showMenu（kind=plan）を呼び、「承認して始める」か「手直しする」を選んでもらう。承認されたら startStudy を呼ぶ。');
+    };
   }
   async function startStudyNow(name, learner){
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
