@@ -1,9 +1,8 @@
 /**
- * 24時間保存（方針4・設計計画§4）。
+ * 共有分解結果は永続保存、個人別分解結果も保存。
  *
- * - 期限の判定はプログラム側で行う：保存した時刻から24時間を過ぎたものは「無い」として扱う。
- *   保存先の自動削除（expirationTtl。Firestore の TTL・Cloud Storage のライフサイクル）は掃除用の補助（少し長めの26時間）。
- * - キーに利用者IDを入れない（資格単位で共有するかは未決定。共有しないなら利用者IDを足すだけ）。
+ * - owner がない（共有）：資格・年度ごとの過去問分解結果。新規入手の度に蓄積される。
+ * - owner がある（個人）：引き継ぎID付き。その学習者だけが使う保存（2026-10-15 方針4の改定）。
  * - 保存するのは分解結果（パケットJSON）・図のPNG・公式PDFのSHA-256の控え。PDF本体は保存しない。
  */
 import { sha256Hex } from './store.js';
@@ -51,7 +50,7 @@ export async function readResult(store, keyParts, now) {
 
 /** 図を先に書き、最後にパケットを書く（途中で止まっても、図の欠けたパケットが見えないように）。 */
 export async function writeResult(store, keyParts, result, assets, now) {
-  const opts = keyParts.owner ? {} : { expirationTtl: CLEANUP_TTL_S };
+  const opts = {};
   for (const [file, bytes] of Object.entries(assets)) {
     await store.put(figureKey(keyParts.questionSha256, keyParts.parserVersion, file, keyParts.owner), bytes, opts);
   }
