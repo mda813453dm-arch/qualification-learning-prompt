@@ -1028,6 +1028,13 @@ async function mcp(request, env, url, now, widget = false) {
   for (const m of batch ? msg : [msg]) console.log(JSON.stringify({ event: 'mcp_rpc', route: widget ? 'app' : 'mcp', method: m?.method, tool: m?.params?.name, ...(m?.params?.name === 'showMenu' && typeof m?.params?.arguments?.kind === 'string' ? { kind: m.params.arguments.kind.slice(0, 24) } : {}) }));
   const opts = { widget, baseUrl: env.PUBLIC_BASE_URL ?? url.origin };
   const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi, opts)))).filter(Boolean);
+  // 診断用：ツールが失敗したときは、ツール名と理由のコードだけを残す（引数・学習内容は残さない）
+  for (const [i, r] of out.entries()) {
+    if (!r?.result?.isError && !r?.error) continue;
+    const m = batch ? msg[i] : msg;
+    const code = r.error?.message ?? String(r.result?.content?.[0]?.text ?? '').match(/"error":"([A-Z_]+)"/)?.[1] ?? null;
+    console.warn(JSON.stringify({ event: 'mcp_tool_error', tool: m?.params?.name ?? null, code: String(code ?? '').slice(0, 80) }));
+  }
   if (!out.length) return new Response(null, { status: 202 });
   return json(200, batch ? out : out[0]);
 }

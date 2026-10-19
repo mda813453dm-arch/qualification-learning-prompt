@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v26.html';
+export const WIDGET_URI = 'ui://qlp/question-v27.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.25';
+export const WIDGET_VERSION = '2026-10-19.26';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -228,7 +228,7 @@ a{color:inherit}
     app.innerHTML = '<h2>初期診断</h2><div class="stem">次の' + d.fields.length + '分野から各' + d.per + '問、<b>全' + d.total + '問</b>の確認問題を出します。</div>' +
       '<ol class="ov-l">' + d.fields.map(function(f){ return '<li>' + esc(f) + '（' + d.per + '問）</li>'; }).join('') + '</ol>' +
       '<div class="notice">問題はAIが作ったものです。答えの正誤から苦手な分野を調べ（暫定評価）、学習する分野の順を決め直します。</div>';
-    scrollUp();
+    scrollUp(true);
     diagAsk('初期診断を始めます。', d.next);
   }
   function diagQuestion(data){
@@ -251,7 +251,7 @@ a{color:inherit}
         var line = esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）';
         if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>'); return; }
         app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + line + '</div>';
-        scrollUp();
+        scrollUp(true);
         diagAsk(g.label + ' は ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。次の', r.next);
       } catch (e) {
         sent = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
@@ -344,8 +344,10 @@ a{color:inherit}
   // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
   // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
-  function scrollUp(){
+  // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
+  function scrollUp(noMark){
     try { window.scrollTo(0, 0); } catch (e) {}
+    if (noMark) return;
     app.insertAdjacentHTML('afterbegin', '<div class="latest">▼ ここが最新の表示です</div>');
   }
   // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
