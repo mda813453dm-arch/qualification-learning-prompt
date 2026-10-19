@@ -53,3 +53,18 @@ jobs:
           done
           gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='yaml(status.conditions)' || true
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND resource.labels.revision_name="qlp-engine-00282-75j"' --project qualification-learning --freshness=1h --limit=8 --format='value(timestamp,severity,httpRequest.status,textPayload)' || true
+      - name: 稼働時間（課金対象のインスタンス時間・サービスごと・1時間ごと。直近36時間）
+        run: |
+          TOKEN="$(gcloud auth print-access-token)"
+          END="$(date -u +%Y-%m-%dT%H:%M:%SZ)"; START="$(date -u -d '-36 hours' +%Y-%m-%dT%H:%M:%SZ)"
+          for m in run.googleapis.com/container/billable_instance_time run.googleapis.com/request_count; do
+            echo "== $m"
+            curl -s -G -H "Authorization: Bearer $TOKEN" "https://monitoring.googleapis.com/v3/projects/qualification-learning/timeSeries" \
+              --data-urlencode "filter=metric.type=\"$m\" AND resource.type=\"cloud_run_revision\"" \
+              --data-urlencode "interval.startTime=$START" --data-urlencode "interval.endTime=$END" \
+              --data-urlencode "aggregation.alignmentPeriod=3600s" --data-urlencode "aggregation.perSeriesAligner=ALIGN_SUM" \
+              --data-urlencode "aggregation.crossSeriesReducer=REDUCE_SUM" --data-urlencode "aggregation.groupByFields=resource.label.service_name" \
+              | jq -r '.timeSeries[]? | .resource.labels.service_name as $s | .points[] | "\($s)\t\(.interval.endTime)\t\(.value.doubleValue // .value.int64Value)"' | sort -k2 || true
+          done
+          echo "== Cloud Build（直近36時間）"
+          gcloud builds list --project qualification-learning --region asia-northeast1 --filter="createTime>=\"$START\"" --format='value(createTime,duration,status)' --limit=100 2>/dev/null || gcloud builds list --project qualification-learning --filter="createTime>=\"$START\"" --format='value(createTime,duration,status)' --limit=100 || true
