@@ -220,6 +220,7 @@ function widgetResource(baseUrl) {
     _meta: {
       ui: { prefersBorder: true, csp },
       'openai/widgetPrefersBorder': true,
+      ...(origin ? { 'openai/widgetDomain': origin } : {}),
       'openai/widgetCSP': { connect_domains: [], resource_domains: csp.resourceDomains },
       'openai/widgetDescription': '過去問の問題文・公式PDFの図・選択肢を表示し、選択肢を押すと採点する画面。',
     },
