@@ -482,7 +482,7 @@ a{color:inherit}
     var waitMore = function(msg){
       var eb = document.getElementById('endStudy'); if (eb && eb.parentNode) eb.parentNode.remove();
       app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="retryDisplay">出ないときは再表示</button></div>';
-      document.getElementById('retryDisplay').onclick = function(){ this.disabled = true; ask(lastDisplayRequest); };
+      document.getElementById('retryDisplay').onclick = async function(){ this.disabled = true; await ask(lastDisplayRequest); this.disabled = false; };
     };
     document.getElementById('exp').onclick = function(){
       waitMore('解説はこの下に出ます。読み終えると、その下に進むためのボタンが出ます。');
@@ -526,8 +526,7 @@ a{color:inherit}
   // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
   // 今の枠は1行に縮め、次の問題はチャットの一番下の新しい枠に出す（出ないときは fallback の枠内表示で進める）
   function nextBelow(fallback, say){
-    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。</div><div class="row"><button id="nextHere">出ないときは再表示</button></div>';
-    document.getElementById('nextHere').onclick = function(){ this.disabled = true; fallback(); };
+    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。表示されない場合は、同じ問題の取得状態を確認してください。</div>';
     scrollUp(true);
     ask(say || '次の問題へ');
   }
