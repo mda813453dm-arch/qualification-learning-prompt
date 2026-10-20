@@ -340,6 +340,53 @@ a{color:inherit}
       }
     };
   }
+  function planEditMenu(){
+    var options = ['分野・優先順位','学習方法・配分','復習頻度・タイミング','その他','変更をやめて計画へ戻る'];
+    app.innerHTML = '<h2>学習計画を見直す</h2><div class="choices">' + options.map(function(t,i){
+      return '<button data-edit="' + (i+1) + '"><b>' + (i+1) + '</b><span>' + esc(t) + '</span></button>';
+    }).join('') + '</div>';
+    scrollUp();
+    app.querySelectorAll('[data-edit]').forEach(function(b){ b.onclick = function(){
+      var n = Number(b.getAttribute('data-edit'));
+      if (n===1) planEditFields();
+      else if(n===2) planEditMethods();
+      else if(n===3) planEditReview();
+      else if(n===4) planEditOther();
+      else planPanel([]);
+    }; });
+  }
+  function planEditFields(){
+    var fields = (onboardOv && onboardOv.fields || []).slice();
+    if(!fields.length){ app.innerHTML='<div class="notice">公式の分野を確認できないため変更できません。</div><button id="backPlan">戻る</button>'; document.getElementById('backPlan').onclick=planEditMenu; return; }
+    app.innerHTML = '<h2>分野・優先順位</h2><div class="notice">優先する分野を選ぶか、公式の分野名を全て順番に指定してください。</div>' +
+      '<div class="choices">' + fields.map(function(f,i){return '<button data-field="' + i + '"><b>' + (i+1) + '</b><span>' + esc(f) + 'を優先する</span></button>';}).join('') +
+      '<button id="fieldDiag"><b>' + (fields.length+1) + '</b><span>診断問題で苦手分野を確認</span></button>' +
+      '<button id="fieldCustom"><b>' + (fields.length+2) + '</b><span>分野順を自由指定</span></button>' +
+      '<button id="fieldBack"><b>' + (fields.length+3) + '</b><span>戻る</span></button></div><div id="fieldInput"></div>';
+    scrollUp();
+    app.querySelectorAll('[data-field]').forEach(function(b){ b.onclick=function(){
+      var top=fields[Number(b.getAttribute('data-field'))];
+      draftPlan().orderedFields=[top].concat(fields.filter(function(x){return x!==top;}));
+      planRevised('優先分野：'+top);
+    };});
+    document.getElementById('fieldBack').onclick=planEditMenu;
+    document.getElementById('fieldDiag').onclick=async function(){
+      this.disabled=true;
+      try {var r=await callTool('diagStep',{sessionId:studyLearner,action:'preview'});if(!r?.diag)throw Error();diagPreview(r.diag);}
+      catch(e){this.disabled=false;app.insertAdjacentHTML('beforeend','<div class="notice">診断問題を取得できませんでした。</div>');}
+    };
+    document.getElementById('fieldCustom').onclick=function(){
+      document.getElementById('fieldInput').innerHTML='<div class="notice">分野名を「、」区切りで全て入力してください。公式分野以外や重複がある場合は変更しません。</div><textarea id="fieldOrder" rows="3"></textarea><button id="fieldConfirm">この順番を確認する</button>';
+      document.getElementById('fieldOrder').value=draftPlan().orderedFields.join('、');
+      document.getElementById('fieldConfirm').onclick=function(){
+        var entered=document.getElementById('fieldOrder').value.split(/[、,\n]/).map(function(x){return x.trim();}).filter(Boolean);
+        if(entered.length!==fields.length||new Set(entered).size!==fields.length||entered.some(function(x){return fields.indexOf(x)<0;})){
+          app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">登録済みの全分野を重複なく指定してください。変更していません。</div>');return;
+        }
+        draftPlan().orderedFields=entered;planRevised('指定した分野順を反映しました。');
+      };
+    };
+  }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
     var h = '<h2>初期診断の確認</h2><div class="notice">公式過去問で分野ごとの理解度を調べます。結果は少数問による暫定評価です。</div>' +
