@@ -112,7 +112,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -139,6 +139,37 @@ a{color:inherit}
       var fh = '<div class="notice">' + esc(data.screen || '') + '</div>';
       data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
       app.innerHTML = fh; return;
+    }
+    if (data.status === 'remediation_question') {
+      showRemediationQuestion(data);
+      return;
+    }
+    if (data.status === 'remediation_retry') {
+      app.innerHTML = '<h2>AI作成確認問題の結果</h2><div class="result ng">不正解</div>' +
+        (data.correctAnswer ? '<div class="stem">正答：' + esc(data.correctAnswer) + '</div>' : '') +
+        '<div class="notice">' + esc(data.notice || '同じ分野をもう一度確認します。') + '</div>' +
+        '<div class="row"><button id="retryRemediation">別の確認問題を出す</button></div>' + endBar();
+      document.getElementById('retryRemediation').onclick = function(){
+        this.disabled = true;
+        ask('先ほどのAI作成確認問題は不正解でした。公式過去問はまだ再開しません。別のAI作成確認問題を1問作り、本文・全選択肢・確定した正答番号をregisterRemediationQuestionへ登録してから画面で出してください。');
+      };
+      bindEnd();
+      return;
+    }
+    if (data.status === 'remediation_complete') {
+      app.innerHTML = '<h2>確認問題の結果</h2><div class="result ok">正解</div><div class="notice">' +
+        esc(data.notice || '確認問題に正解しました。') +
+        '</div><div class="row"><button id="resumeAfterRemediation">同じ分野の公式過去問に戻る</button></div>' + endBar();
+      document.getElementById('resumeAfterRemediation').onclick = async function(){
+        this.disabled = true;
+        try { render(await callTool('nextQuestion', { sessionId: state.sessionId })); }
+        catch (e) {
+          this.disabled = false;
+          app.insertAdjacentHTML('beforeend','<div class="notice">公式過去問を取得できませんでした。このボタンで再試行してください。</div>');
+        }
+      };
+      bindEnd();
+      return;
     }
     if (data.status === 'remediation') {
       app.innerHTML = '<div class="notice" role="alert">' + esc(data.notice || 'この分野の確認問題に正解するまで次の公式過去問へ進めません。') + '</div><div class="row"><button id="mandatoryCheck">AI作成確認問題を始める</button></div>' + endBar();
@@ -192,6 +223,36 @@ a{color:inherit}
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
+  }
+  // 正答はツールの結果にもチャットにも含めず、登録済み問題IDと利用者回答だけをエンジンに渡す。
+  function showRemediationQuestion(d){
+    if (d.sessionId) state.sessionId = d.sessionId;
+    var h = '<h2>AI作成確認問題</h2><div class="notice">公式過去問ではありません。出題前に正答を固定した確認問題です。</div>' +
+      '<div class="stem">' + esc(d.question || '') + '</div><div class="choices" id="remediationChoices">' +
+      (d.choices || []).map(function(c,i){
+        var n = String(i+1);
+        return '<label class="opt"><input type="radio" name="remediationAnswer" value="'+n+'"><b>'+n+'</b><span>'+esc(c)+'</span></label>';
+      }).join('') + '</div>' +
+      '<div class="row"><button id="submitRemediation" disabled>解答する</button></div>' + endBar();
+    app.innerHTML=h; scrollUp(); bindEnd();
+    app.querySelectorAll('input[name=remediationAnswer]').forEach(function(el){ el.onchange=function(){
+      var b = document.getElementById('submitRemediation'); if(b)b.disabled=false;
+    };});
+    document.getElementById('submitRemediation').onclick=async function(){
+      var choice=app.querySelector('input[name=remediationAnswer]:checked');
+      if(!choice)return;
+      this.disabled=true;
+      try {
+        var out=await callTool('completeRemediation',{
+          sessionId:state.sessionId,challengeId:d.challengeId,selected:choice.value
+        });
+        if(!out||out.error||!['remediation_retry','remediation_complete'].includes(out.status))throw new Error('REMEDIATION_RESULT_MISSING');
+        render(out);
+      }catch(e){
+        var b=document.getElementById('submitRemediation');if(b)b.disabled=false;
+        app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">答え合わせできませんでした。同じ解答ボタンで再試行してください。</div>');
+      }
+    };
   }
   // 学習の終了：終了ログと引継ぎデータの全文を、そのまま出す（コピーできる）
   function showEnd(d){
@@ -686,7 +747,7 @@ a{color:inherit}
       var mandatory = document.getElementById('check');
       mandatory.onclick = function(){
         this.disabled = true;
-        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。利用者が正解した場合のみcompleteRemediationを呼んで同じ分野の公式実践問題へ戻してください。');
+        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。確認問題をregisterRemediationQuestionへ先に登録し、利用者の回答を画面側で採点してください。正解時だけ同じ分野の公式実践問題へ戻してください。');
       };
       bindEnd();
       return;
