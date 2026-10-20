@@ -67,7 +67,7 @@ export function frequencyOrder(fieldIds, counts) {
 /** 診断は採点確定した問題だけ集計する。確信度未回答は denominator に入れない。 */
 export function diagnosisRows(fieldIds, answers, counts = {}) {
   return fieldIds.map((f, index) => {
-    const mine = answers.filter((a) => a.fieldId === f && ['wrong', 'correct'].includes(a.result));
+    const mine = answers.filter((a) => a.fieldId === f && ['wrong', 'correct', 'confident_correct', 'guess_correct', 'hinted_correct'].includes(a.result));
     const n = mine.length;
     const w = mine.filter((a) => a.result === 'wrong').length;
     const confirmed = mine.filter((a) => ['sure', 'unsure', 'guess'].includes(a.confidence));
