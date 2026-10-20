@@ -969,11 +969,23 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'study' && parts[3] === 'end' && parts.length === 4) {
     // studyId の代わりに引継ぎIDが来たときは、その引継ぎIDで最後に始めた学習を終える
     const lid = validLearnerId(parts[2]);
-    const studyId = lid ? await env.STORE.get(lastStudyKey(lid)) : parts[2];
-    if (!/^[0-9a-f-]{36}$/.test(studyId ?? '')) throw new HttpError(404, 'STUDY_NOT_FOUND');
-    const b = await body(request);
-    const study = await env.STORE.get(studyKey(studyId), 'json');
+    let studyId = lid ? await env.STORE.get(lastStudyKey(lid)) : parts[2];
+    let study = /^[0-9a-f-]{36}$/.test(studyId ?? '') ? await env.STORE.get(studyKey(studyId), 'json') : null;
+    // 新しいメニュー枠に学習IDが渡らず、出題セッションIDだけが残った場合も復旧する。
+    // UUIDのセッションIDを学習IDと誤認せず、紐付く引継ぎIDから最後の学習を引く。
+    if (!study && !lid) {
+      try {
+        const { state: session } = await resolveSession(env, parts[2], now);
+        const learner = validLearnerId(session.learnerId);
+        const currentId = learner ? await env.STORE.get(lastStudyKey(learner)) : null;
+        if (currentId) {
+          const stored = await env.STORE.get(studyKey(currentId), 'json');
+          if (stored && stored.learnerId === learner) { studyId = currentId; study = stored; }
+        }
+      } catch { /* 見つからない場合は正式な404を返す */ }
+    }
     if (!study) throw new HttpError(404, 'STUDY_NOT_FOUND');
+    const b = await body(request);
     const saved = (await env.STORE.get(timeKey(study.learnerId), 'json')) ?? { minutes: 0, studies: [] };
     // 同じ学習を二度終了しても累計を二重に足さない
     const before = study.endedAt == null ? saved.minutes : saved.minutes - (study.minutes ?? 0);
