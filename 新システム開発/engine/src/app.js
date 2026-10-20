@@ -1130,6 +1130,24 @@ async function route(request, env, url, now) {
         if (!(input.contents ?? []).length && graded.length) {
           input = { ...input, contents: graded.map((h) => `${h.source?.year ?? '年度未確認'}年度 問${h.source?.number ?? '?'}：${h.result === 'wrong' ? '不正解' : h.result === 'recall_failure' ? '分からない（正答を確認）' : '正解'}`) };
         }
+        // 利用者が本文を手入力しなくても、実際の回答・復習予定から引継ぎを構成する。
+        const fieldNames = cat?.fields ?? {};
+        const reviewed = Object.values(st.review ?? {});
+        if (!(input.review ?? []).length && reviewed.length) {
+          input = { ...input, review: reviewed.map((r) => {
+            const field = fieldNames[r.topicId] ?? '分野未確認';
+            if (r.mastered) return `${field}：習得済み（定期復習から卒業）`;
+            return `${field}：次回復習 ${r.dueAt ? new Date(r.dueAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' }) : r.dueDate ?? '未定'}`;
+          }) };
+        }
+        if (!(input.studiedAreas ?? []).length && graded.length) {
+          const used = [...new Set(graded.map((h) => h.fieldId).filter(Boolean))];
+          input = { ...input, studiedAreas: used.map((f) => fieldNames[f] ?? '分野未確認') };
+        }
+        if (!(input.plan ?? []).length && st.plan?.orderedFields?.length) {
+          input = { ...input, plan: ['学習分野順：' + st.plan.orderedFields.map((f) => fieldNames[f] ?? '分野未確認').join(' → '),
+            '復習方式：' + (st.plan.reviewPreset ?? '標準')] };
+        }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
           const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
