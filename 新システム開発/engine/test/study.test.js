@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { newState, pickNext } from '../src/engine.js';
+import { newState, pickNext, pin, grade } from '../src/engine.js';
 import { updateReviewItem, selectDueReviews } from '../src/review.js';
 import { FIXED_UI_CHOICES } from '../src/fixed-ui.js';
 import { chooseField, dueReview, frequencyOrder, pickInField, reviewTurn } from '../src/study.js';
@@ -130,4 +130,36 @@ test('同じ検証済み論点の別問題を優先して復習し、異なる�
   assert.equal(picked.status,'question');
   assert.equal(picked.kind,'review');
   assert.equal(picked.item.packet.questionId, alternate.packet.questionId);
+});
+
+test('期限復習は開始時最大5問、以降は新規問題2問ごとに復習1問に制限する', () => {
+  const today = '2026-10-20', now = Date.parse('2026-10-20T09:00:00Z');
+  const reviewPackets = Array.from({length: 7}, (_, i) => ({
+    packet: { questionId: `r:2025:main:${i+1}`, year: 2025, section: 'main',
+      questionNumber: i+1, fieldId: 'a', correctAnswer: 1, choices: ['a', 'b'] },
+    keyParts: {},
+  }));
+  const freshPackets = Array.from({length: 4}, (_, i) => ({
+    packet: { questionId: `n:2024:main:${i+1}`, year: 2024, section: 'main',
+      questionNumber: i+1, fieldId: 'b', correctAnswer: 1, choices: ['a', 'b'] },
+    keyParts: {},
+  }));
+  let state = newState({ qualificationId: 'q1', now });
+  state.review = Object.fromEntries(reviewPackets.map(({packet}) => [packet.questionId, {
+    unitId: packet.questionId, topicId: 'a', dueDate: today, step: 0, recallSuccesses: 0,
+  }]));
+  const kinds = [];
+  for (let i = 0; i < 8; i++) {
+    const picked = pickNext(state, [...reviewPackets, ...freshPackets], { today, now });
+    assert.equal(picked.status, 'question');
+    kinds.push(picked.kind);
+    state = pin(state, picked.item, picked.kind, now);
+    const result = grade(state, {questionId: picked.item.packet.questionId, value: '1'}, {today, now});
+    assert.equal(result.ok, true);
+    state = result.state;
+  }
+  assert.deepEqual(kinds, ['review','review','review','review','review','new','new','review']);
+  assert.equal(state.reviewPacing.initialServed, 5);
+  assert.equal(state.reviewPacing.newAnswered, 2);
+  assert.equal(state.reviewPacing.sinceReview, 0);
 });
