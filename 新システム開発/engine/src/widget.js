@@ -308,7 +308,7 @@ a{color:inherit}
   function itemMenu(field, learner, proceed){
     var go = async function(mode){
       try { if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode }); } catch (e) {}
-      if (mode === 'practice') { await proceed(); return; }
+      if (mode === 'practice') { nextBelow(proceed, field ? field + 'を実践問題から始めます。' : '実践問題から始めます。'); return; }
       // 続きのボタンは、解説・確認問題の「下」に出る（AIが最後に showMenu を呼ぶ）。ここには押すボタンを置かない（上まで戻らせない）
       app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar();
       scrollUp(true); bindEnd();
@@ -379,11 +379,13 @@ a{color:inherit}
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
     if (g.checkSuggested) h += '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめますか？</div><div class="row"><button id="check">確認問題で基本を確かめる</button></div>';
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
-    var nextBtn = function(){
-      document.getElementById('next').onclick = async function(){
-        if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
-        render(await callTool('nextQuestion', { sessionId: state.sessionId }));
-      };
+    // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
+    var nextInPlace = async function(){
+      if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
+      render(await callTool('nextQuestion', { sessionId: state.sessionId }));
+    };
+    var nextBtn = function(inPlace){
+      document.getElementById('next').onclick = inPlace ? nextInPlace : function(){ nextBelow(nextInPlace); };
     };
     if (g.skipped) {
       app.insertAdjacentHTML('beforeend', h + '<div class="row"><button id="next">次の問題へ</button></div>');
@@ -411,15 +413,15 @@ a{color:inherit}
     nextBtn(); bindEnd();
     var qtext = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
     var waitMore = function(msg){
-      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="choices"><button id="next"><b>▶</b><span>次の問題へ</span></button></div>';
-      nextBtn();
+      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="next">出ないときは、ここで次の問題へ</button></div>';
+      nextBtn(true);
     };
     document.getElementById('exp').onclick = function(){
-      waitMore('解説はこの下のチャットに出ます。読み終えたら「次の問題へ」を押してください。');
+      waitMore('解説はこの下に出ます。読み終えると、その下に進むためのボタンが出ます。');
       ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。\\n' + qtext);
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
-      waitMore('確認問題はこの下のチャットに出ます。答え合わせのあと「次の問題へ」を押してください。');
+      waitMore('確認問題はこの下に出ます。答え合わせのあと、その下に進むためのボタンが出ます。');
       ask((q.fieldName || 'この分野') + 'を続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。');
     };
   }
@@ -452,6 +454,13 @@ a{color:inherit}
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
   // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
   // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
+  // 今の枠は1行に縮め、次の問題はチャットの一番下の新しい枠に出す（出ないときは fallback の枠内表示で進める）
+  function nextBelow(fallback, say){
+    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。</div><div class="row"><button id="nextHere">出ないときは、ここで次の問題へ</button></div>';
+    document.getElementById('nextHere').onclick = function(){ this.disabled = true; fallback(); };
+    scrollUp(true);
+    ask(say || '次の問題へ');
+  }
   function scrollUp(noMark){
     try { window.scrollTo(0, 0); } catch (e) {}
     if (noMark) return;

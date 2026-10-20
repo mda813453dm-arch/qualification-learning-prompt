@@ -440,4 +440,9 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   // 短い文に対するAIの手順は、アプリのツールの説明にある
   assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
   assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));
+  // 次の問題・過去問の枠は、AIが呼ぶ新しい枠でチャットの一番下に出す。出ないときの逃げ道（枠の中で進むボタン）も残す
+  assert.ok(html.includes('function nextBelow(fallback, say)'));
+  assert.ok(html.includes("ask(say || '次の問題へ')"));
+  assert.ok(html.includes('出ないときは、ここで次の問題へ'));
+  assert.ok(mcp.includes('「○○を実践問題から始めます。」「次の問題へ」と送ってきたら'));
 });
