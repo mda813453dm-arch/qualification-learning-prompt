@@ -196,6 +196,23 @@ async function shindanSources(links, years, fetchText) {
   return out;
 }
 
+/**
+ * マンション管理士（マンション管理センター）：問題は /pdf/RN_shiken.pdf、正解は /pdf/RN_answer.pdf（N は令和の年度。
+ * 元年は R01、2〜9年は R2 / R02 の両方の書き方がある）。掲載ページで確かめたのは令和元〜7年度（2026-10-20）。
+ */
+export function mankanSources(links, years = 10) {
+  const q = new Map();
+  const a = new Map();
+  for (const l of links) {
+    const m = /\/pdf\/R0?([0-9]{1,2})_(shiken|answer[0-9]?)\.pdf$/i.exec(l.href);
+    if (!m) continue;
+    const year = 2018 + Number(m[1]);
+    (m[2].startsWith('shiken') ? q : a).set(year, l.href);
+  }
+  const out = [...q].filter(([y]) => a.has(y)).map(([year, questionUrl]) => ({ adapter: 'mankan', year, section: 'main', questionUrl, answerUrl: a.get(year) }));
+  return latest(out, years);
+}
+
 export const LISTINGS = {
   takken: { url: 'https://www.retio.or.jp/exam/past_ques_ans/other/', sources: takkenSources },
   surveyor: { url: 'https://www.gsi.go.jp/LAW/SHIKEN/past.html', sources: surveyorSources },
@@ -204,6 +221,7 @@ export const LISTINGS = {
   fp3: { url: 'https://www.jafp.or.jp/exam/mohan/', sources: fp3Sources },
   gyosei: { url: 'https://gyosei-shiken.or.jp/doc/exam/index.html', sources: gyoseiSources },
   shindan: { url: 'https://www.jf-cmca.jp/contents/010_c_/shikenmondai.html', sources: shindanSources },
+  mankan: { url: 'https://www.mankan.org/kakomondai.html', sources: mankanSources },
 };
 
 /** 掲載ページを開いて、直近 years 年度分の取り込み元を返す。fetchText(url) は HTML の文字列を返す関数。 */

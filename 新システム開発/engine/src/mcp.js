@@ -15,7 +15,7 @@ const source = {
   type: 'object',
   required: ['adapter', 'year', 'section', 'questionUrl'],
   properties: {
-    adapter: { type: 'string', enum: ['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'gyosei', 'shindan'], description: 'takken＝宅建、surveyor＝測量士補、chintai＝賃管、fp2＝FP2級学科、fp3＝FP3級学科、itpass＝ITパスポート、gyosei＝行政書士、shindan＝中小企業診断士（第1次試験。区分は科目名）' },
+    adapter: { type: 'string', enum: ['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'gyosei', 'shindan', 'mankan'], description: 'takken＝宅建、surveyor＝測量士補、chintai＝賃管、fp2＝FP2級学科、fp3＝FP3級学科、itpass＝ITパスポート、gyosei＝行政書士、shindan＝中小企業診断士（第1次試験。区分は科目名）、mankan＝マンション管理士' },
     year: { type: 'integer', description: '西暦の試験年度' },
     section: { type: 'string', description: '区分。分からなければ main' },
     questionUrl: { type: 'string', description: '公式の問題PDFのURL（https）' },

@@ -326,6 +326,29 @@ export const CATALOG = {
       { adapter: 'shindan', year: 2026, section: '中小企業経営・中小企業政策', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/G1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026G.pdf' },
     ],
   },
+  mankan: {
+    qualificationId: 'q018',
+    name: 'マンション管理士',
+    aliases: ['マンション管理士', 'マンション管理士試験'],
+    org: '公益財団法人 マンション管理センター',
+    officialSite: 'https://www.mankan.org/',
+    // 過去問の問題・正解PDFに書かれている内容（令和7年度。2026-10-20に確認）。試験案内の他の項目は、確かめてから書く
+    overviewSource: 'https://www.mankan.org/kakomondai.html',
+    overview: [
+      ['出題形式', '50問・四肢択一式（各問題とも正解は1つ）'],
+    ],
+    pastExamPage: 'https://www.mankan.org/kakomondai.html',
+    // 学習用の分野分け（parser/qlp_parser/fields.py）。問46〜50はマンション管理適正化法の問題
+    fields: {
+      k1: 'マンションの管理に関する法令及び実務',
+      k2: '管理組合の運営の円滑化',
+      k3: 'マンションの建物及び附属施設の構造及び設備',
+      k4: 'マンション管理適正化法',
+    },
+    sources: [
+      { adapter: 'mankan', year: 2025, section: 'main', questionUrl: 'https://www.mankan.org/pdf/R7_shiken.pdf', answerUrl: 'https://www.mankan.org/pdf/R7_answer.pdf' },
+    ],
+  },
 };
 
 /**

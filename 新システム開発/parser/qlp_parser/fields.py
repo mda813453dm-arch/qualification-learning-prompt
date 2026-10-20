@@ -238,7 +238,7 @@ def classify_shindan(question):
     return {"fieldId": fid, "unitId": name, "method": "official_subject", "evidence": f"問題冊子の表紙（{name}）", "verified": True}
 
 
-# マンション管理士：試験の内容（マンション管理センターの試験案内の4項目）
+# マンション管理士：学習用の分野（過去問の問題の並びと内容から。公式の区分ではない）
 MANKAN_FIELDS = {
     "k1": "マンションの管理に関する法令及び実務",
     "k2": "管理組合の運営の円滑化",
@@ -264,5 +264,5 @@ MANKAN_RULES = [
 def classify_mankan(question):
     if 46 <= question.number <= 50:
         return {"fieldId": "k4", "unitId": MANKAN_FIELDS["k4"], "method": "official_number_range",
-                "evidence": "問46〜50（マンション管理適正化法。管理業務主任者試験の合格者は免除）", "verified": True}
+                "evidence": "問46〜50（マンション管理適正化法）", "verified": True}
     return classify_by_rules(MANKAN_RULES, question.stem, question.choices)

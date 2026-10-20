@@ -86,3 +86,15 @@ test('中小企業診断士は、科目ごとの問題PDFと、年度ごとの�
   ]);
   assert.ok(s.every((x) => x.adapter === 'shindan'));
 });
+
+test('マンション管理士は、問題PDF（RN_shiken）と正解PDF（RN_answer）を年度ごとに組にする', async () => {
+  const { mankanSources, pdfLinks } = await import('../src/discover.js');
+  const html = ['R7', 'R6', 'R01'].map((r) => `<a href="/pdf/${r}_shiken.pdf">問題</a><a href="/pdf/${r}_answer.pdf">正解一覧</a>`).join('')
+    + '<a href="/pdf/R8_moushikomijokyo.pdf">状況</a><a href="/pdf/R3_shiken.pdf">問題</a>';
+  const s = mankanSources(pdfLinks(html, 'https://www.mankan.org/kakomondai.html'), 99);
+  assert.deepEqual(s.map((x) => [x.year, x.questionUrl.split('/').pop(), x.answerUrl.split('/').pop()]), [
+    [2025, 'R7_shiken.pdf', 'R7_answer.pdf'],
+    [2024, 'R6_shiken.pdf', 'R6_answer.pdf'],
+    [2019, 'R01_shiken.pdf', 'R01_answer.pdf'],
+  ]);
+});
