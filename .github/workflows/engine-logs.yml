@@ -52,6 +52,9 @@ jobs:
             echo "$s ready=$(gcloud run services describe "$s" --project qualification-learning --region asia-northeast1 --format='value(status.conditions[0].status,status.latestReadyRevisionName,status.traffic[0].revisionName)' || true) http=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$u/robots.txt" || true)"
           done
           gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='yaml(status.conditions)' || true
+          gcloud run services describe qlp-parser --project qualification-learning --region asia-northeast1 --format='yaml(status.conditions,status.latestCreatedRevisionName,status.latestReadyRevisionName)' || true
+          gcloud run revisions list --service qlp-parser --project qualification-learning --region asia-northeast1 --limit=3 --format='table(metadata.name,status.conditions[0].status,status.conditions[0].reason,status.conditions[0].message,metadata.creationTimestamp)' || true
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-parser" AND severity>=WARNING' --project qualification-learning --freshness=30h --limit=10 --format='value(timestamp,severity,resource.labels.revision_name,textPayload,jsonPayload.message)' || true
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND resource.labels.revision_name="qlp-engine-00282-75j"' --project qualification-learning --freshness=1h --limit=8 --format='value(timestamp,severity,httpRequest.status,textPayload)' || true
       - name: 稼働時間（課金対象のインスタンス時間・サービスごと・1時間ごと。直近36時間）
         run: |
