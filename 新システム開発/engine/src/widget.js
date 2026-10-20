@@ -549,7 +549,7 @@ a{color:inherit}
         var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen), confidence: certainty ? certainty.value : undefined }));
         var g = r && r.grade;
         if (!g) throw new Error('grade');
-        var line = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
+        var line = '<div class="result ' + (g.skipped ? '' : g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.skipped ? '未回答（正誤集計には含めません）' : (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）') + '</div>';
         if (r.status === 'diagResult') { render(r); return; }
         if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', line); return; }
         diagQuestion(r.question, line);
