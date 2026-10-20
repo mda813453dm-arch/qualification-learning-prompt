@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v36.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v36.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v37.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v37.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v36.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v37.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
@@ -464,4 +464,10 @@ test('解説の本文は showMenu の body に入れ、画面のボタンの上�
   assert.ok(html.includes('function md(src)') && html.includes("var body = m.body ? '<div class=\"md\">'"));
   // 待ち画面（解説は下に出ます）に「終了」ボタンを置かない
   assert.ok(!html.includes("は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar()"));
+});
+
+test('問題文は文ごとに段落へ分けて表示する', () => {
+  const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.ok(h.includes('function stemHtml'));
+  assert.ok(h.includes('stemHtml(q.stem)'));
 });

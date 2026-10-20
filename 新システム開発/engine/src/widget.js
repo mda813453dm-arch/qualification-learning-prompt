@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v36.html';
+export const WIDGET_URI = 'ui://qlp/question-v37.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-20.35';
+export const WIDGET_VERSION = '2026-10-20.36';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -18,12 +18,12 @@ body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-se
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
-.stem{white-space:pre-wrap;margin:10px 0;font-size:17px;line-height:1.75}
+.stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
 .fig{margin:10px 0}.fig img{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
 .choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
 .choices .opt{display:flex;gap:8px;align-items:center;background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}.choices .opt input{margin:0}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
-.choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:16px;line-height:1.4}
+.choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:15px;line-height:1.5;padding:8px 10px}.choices{gap:8px;margin:14px 0 8px}
 .choices button:disabled{opacity:.6;cursor:default}
 .choices button.correct{border-color:var(--ok);border-width:2px}.choices button.picked{outline:2px solid var(--sub)}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
@@ -64,6 +64,7 @@ a{color:inherit}
   }); }
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function stemHtml(t){ return String(t == null ? '' : t).replace(/([。？！])[ \u3000]*(?=[^\\s」』）)])/g, '$1\\n').replace(/ ([a-eａ-ｅ]\\. )/g, '\\n$1').split(/\\n+/).filter(Boolean).map(function(l){ return '<p>' + esc(l) + '</p>'; }).join(''); }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   async function callTool(name, args){
     var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
@@ -138,7 +139,7 @@ a{color:inherit}
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
-    if (q.stem) h += '<div class="stem">' + esc(q.stem) + '</div>';
+    if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
@@ -281,7 +282,7 @@ a{color:inherit}
     if (!q) return;
     var h = (head || '') + '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '　' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</div>';
     (q.notices || []).forEach(function(n){ h += '<div class="notice">' + esc(n) + '</div>'; });
-    h += '<div class="stem">' + esc(q.stem) + '</div>';
+    h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
