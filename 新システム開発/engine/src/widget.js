@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v35.html';
+export const WIDGET_URI = 'ui://qlp/question-v36.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-20.34';
+export const WIDGET_VERSION = '2026-10-20.35';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -44,6 +44,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-r.minor .ov-k{font-weight:600}.ov-r.minor .ov-v{color:var(--sub)}
 .ov-k{display:block;color:var(--acc);font-weight:700;font-size:16px}
 .ov-v{display:block;font-size:16px;line-height:1.65;overflow-wrap:anywhere}.ov-r>*{min-width:0}
+.md p{margin:8px 0;line-height:1.75;overflow-wrap:anywhere}.md h3{font-size:17px;margin:14px 0 6px}.md ul,.md ol{margin:6px 0;padding-left:1.4em;line-height:1.75}.md-t{overflow-x:auto;margin:8px 0}.md table{border-collapse:collapse;width:100%;font-size:15px}.md th,.md td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.md code{background:#f1f3f4;padding:0 4px;border-radius:4px}
 .ov-l{margin:4px 0 0;padding-left:1.6em;font-size:16px}.ov-l li{margin:3px 0}
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
@@ -168,13 +169,41 @@ a{color:inherit}
     };
   }
   // 番号で選ぶ確認は、押せるボタンで出す（押したら結果の1行に縮め、選んだ内容をチャットに送る）
+  // 簡易の Markdown 表示（見出し・太字・箇条書き・表）。解説の本文を、ボタンと同じ枠に出すために使う
+  function md(src){
+    var lines = String(src == null ? '' : src).split('\\n'), out = [], i = 0, list = null;
+    var inl = function(t){ return esc(t).replace(/\\*\\*(.+?)\\*\\*/g, '<b>$1</b>').replace(/\\x60(.+?)\\x60/g, '<code>$1</code>'); };
+    var closeList = function(){ if (list) { out.push('</' + list + '>'); list = null; } };
+    var cells = function(r){ return r.trim().replace(/^\\|/, '').replace(/\\|$/, '').split('|').map(function(c){ return c.trim(); }); };
+    while (i < lines.length) {
+      var l = lines[i];
+      if (/^\\s*\\|/.test(l) && i + 1 < lines.length && /^\\s*\\|?\\s*:?-{2,}/.test(lines[i + 1])) {
+        closeList();
+        var head = cells(l), rows = []; i += 2;
+        while (i < lines.length && /^\\s*\\|/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+        out.push('<div class="md-t"><table><thead><tr>' + head.map(function(c){ return '<th>' + inl(c) + '</th>'; }).join('') + '</tr></thead><tbody>' + rows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + inl(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>');
+        continue;
+      }
+      var hd = /^#{1,4}\\s+(.*)$/.exec(l);
+      if (hd) { closeList(); out.push('<h3>' + inl(hd[1]) + '</h3>'); i++; continue; }
+      var li = /^\\s*(?:[-*・]|\\d+[.)．])\\s+(.*)$/.exec(l);
+      if (li) { var kind = /^\\s*\\d/.test(l) ? 'ol' : 'ul'; if (list !== kind) { closeList(); list = kind; out.push('<' + kind + '>'); } out.push('<li>' + inl(li[1]) + '</li>'); i++; continue; }
+      closeList();
+      if (l.trim()) out.push('<p>' + inl(l) + '</p>');
+      i++;
+    }
+    closeList();
+    return out.join('');
+  }
   function showMenu(m){
-    var h = '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
+    var h = body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
-      app.innerHTML = '<div class="notice">' + esc(m.prompt) + '</div><div class="result ok">' + esc(n + '：' + c) + '</div>';
+      // 解説の本文は、ボタンを押したあとも枠に残す（選んだ内容だけ1行にする）
+      app.innerHTML = body + '<div class="notice">' + esc(m.prompt) + '</div><div class="result ok">' + esc(n + '：' + c) + '</div>';
       ask(n + '：' + c);
     }; });
   }
@@ -310,8 +339,8 @@ a{color:inherit}
       try { if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode }); } catch (e) {}
       if (mode === 'practice') { nextBelow(proceed, field ? field + 'を実践問題から始めます。' : '実践問題から始めます。'); return; }
       // 続きのボタンは、解説・確認問題の「下」に出る（AIが最後に showMenu を呼ぶ）。ここには押すボタンを置かない（上まで戻らせない）
-      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar();
-      scrollUp(true); bindEnd();
+      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>';
+      scrollUp(true);
       // チャットに出る文は短い普通の言葉だけにする（AIへの手順は、アプリのツールの説明に書いてある）
       ask(mode === 'explain'
         ? field + 'を解説から始めます。'
@@ -413,6 +442,7 @@ a{color:inherit}
     nextBtn(); bindEnd();
     var qtext = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
     var waitMore = function(msg){
+      var eb = document.getElementById('endStudy'); if (eb && eb.parentNode) eb.parentNode.remove();
       app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="next">出ないときは、ここで次の問題へ</button></div>';
       nextBtn(true);
     };

@@ -173,12 +173,13 @@ export const TOOLS = [
   {
     name: 'showMenu',
     appOnly: true,
-    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。',
-    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review', 'check'] } } },
+    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。【解説・答え合わせの文章は body に入れる】チャットに書いてからこのツールを呼ぶと、ChatGPTの画面ではボタンが文章の上に出てしまい、利用者が見つけられない。解説・答え合わせ・理由の文章（Markdown。表・箇条書き可）は、チャットには書かず、このツールの body に入れる。body は、ボタンと同じ枠のボタンの上に表示される。body を入れたら、チャットには何も書かない。',
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review', 'check'] }, body: { type: 'string', maxLength: 8000, description: 'ボタンの上に出す解説・答え合わせの文章（Markdown）' } } },
     local: (a) => {
       const menu = APP_MENUS[a.kind];
       const NEXT = { exempt: ' 答えが届いたら、次に showMenu（kind=status）を呼ぶ。', status: ' 答えが届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
-      return menu ? { status: 'menu', menu, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
+      const body = typeof a.body === 'string' && a.body.trim() ? a.body.slice(0, 8000) : null;
+      return menu ? { status: 'menu', menu: body ? { ...menu, body } : menu, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
     },
   },
   {
@@ -191,7 +192,7 @@ export const TOOLS = [
       explainHow: explainHow({ grade: { correct: !!a.correct, selected: String(a.selected ?? ''), correctAnswer: String(a.correctAnswer ?? '') }, fieldName: a.fieldName ?? null }),
       order: REVIEW_ORDER,
       // 同じ分野で3問続けて間違えたときは、解説のあとに確認問題を選べるようにする。確認問題はAIが作り、分野と問数を先に示す
-      ...(a.checkSuggested ? { checkPlan: `同じ分野（${a.fieldName ?? '今の分野'}）で3問続けて間違えたので、解説のあと showMenu（kind=check）を呼ぶ。「確認問題で基本を確かめる」が押されたら、まず『${a.fieldName ?? '今の分野'}の確認問題を3問出します（AIが作った問題です）』と書き、その分野の確認問題を1問ずつ出す。3問の答え合わせのあと showMenu（kind=next）を呼ぶ。` } : {}),
+      ...(a.checkSuggested ? { checkPlan: `同じ分野（${a.fieldName ?? '今の分野'}）で3問続けて間違えたので、解説は、チャットには書かず showMenu（kind=check）の body に入れて呼ぶ。「確認問題で基本を確かめる」が押されたら、まず『${a.fieldName ?? '今の分野'}の確認問題を3問出します（AIが作った問題です）』と書き、その分野の確認問題を1問ずつ出す。3問の答え合わせは、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。` } : {}),
     }),
   },
   {
@@ -220,7 +221,7 @@ export const TOOLS = [
   },
 ];
 
-const REVIEW_ORDER = '【順番】①まず、なぜその答えになるのかの簡単な理由を2〜3文で書く（正解でも不正解でも。図は新しく出さない・探さない）。②書いたら最後に showMenu（kind=review）を呼び、ボタンが押されるまで待つ（選択肢をチャットに書かない）。③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、explainHow の書き方で書き、最後に showMenu（kind=next）を呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。';
+const REVIEW_ORDER = '【順番】①なぜその答えになるのかの簡単な理由を2〜3文でまとめる（正解でも不正解でも。図は新しく出さない・探さない）。②その文章はチャットに書かず、showMenu（kind=review）の body に入れて呼ぶ。チャットには何も書かず、ボタンが押されるまで待つ（選択肢をチャットに書かない）。③「詳しい解説」が押されたら、法的根拠（条文・判例など）を示した詳しい解説を、explainHow の書き方でまとめ、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。④「次の問題へ」が押されたら nextQuestion を呼ぶ。';
 
 const APP_MENUS = {
   exempt: { kind: 'exempt', prompt: FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.prompt, choices: [...FIXED_UI_CHOICES.EXEMPTION_USE_CONFIRM.choices] },
@@ -236,7 +237,7 @@ const APP_MENUS = {
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
-const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html', 'ui://qlp/question-v32.html', 'ui://qlp/question-v33.html', 'ui://qlp/question-v34.html'];
+const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html', 'ui://qlp/question-v32.html', 'ui://qlp/question-v33.html', 'ui://qlp/question-v34.html', 'ui://qlp/question-v35.html'];
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -279,7 +280,7 @@ export function appInstructions() {
 const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、まず答え合わせと解説を書き、最後に showMenu（kind=next）を呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説を書いたあと、最後に showMenu（kind=next）を呼んで返事を待つ（「1：次の問題へ」をチャットに書かない）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説を書き、続けて確認問題（AIが作った問題）を出す。「○○を確認問題から始めます。」と送ってきたら、確認問題から出す。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。確認問題の答えを受けたら、答え合わせと解説を書いて、最後に showMenu（kind=next）を呼ぶ。解説だけで終わるときも、最後に必ず showMenu（kind=next）を呼ぶ（続きのボタンが解説の下に出る。画面の上のほうには、押すボタンがない）。',
+  nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、答え合わせと解説は、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説はチャットに書かず、showMenu（kind=next）の body に入れて呼び、返事を待つ（「1：次の問題へ」をチャットに書かない。チャットに書いてから呼ぶと、ボタンが解説の上に出てしまう）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説を書き、続けて確認問題（AIが作った問題）を出す。「○○を確認問題から始めます。」と送ってきたら、確認問題から出す。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。確認問題の答えを受けたら、答え合わせと解説は、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。解説だけで終わるときも同じ（解説の本文と続きのボタンが、同じ枠にまとまって出る。画面の上のほうには、押すボタンがない）。',
   startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②試験概要はエンジンが画面に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。③このツールの結果として、エンジンが画面に試験概要を出し、その直下に免除（制度がある資格だけ）と学習状況のボタンを出す（nextQuestion は呼ばない）。AIは showMenu（kind=exempt / status）を呼ばず、ChatGPT標準の質問・選択肢の画面も使わず、押されるまで待つ。④答え（「免除：…/学習状況：…」）がチャットに届いてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。⑤利用者が「学習計画の希望：…」と送ってきたら、その希望と、試験概要・出題数・学習状況を踏まえて学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は希望に合わせ、無ければAI調整型）。承認は文章で聞かず、必ず showMenu（kind=plan）を呼び、承認のボタンが押されたら startStudy を呼ぶ。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };

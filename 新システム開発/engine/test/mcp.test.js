@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v35.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v35.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v36.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v36.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v35.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v36.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
@@ -448,4 +448,20 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(html.includes("ask(say || '次の問題へ')"));
   assert.ok(html.includes('出ないときは、ここで次の問題へ'));
   assert.ok(mcp.includes('「○○を実践問題から始めます。」「次の問題へ」と送ってきたら'));
+});
+
+test('解説の本文は showMenu の body に入れ、画面のボタンの上（同じ枠）に出る', async () => {
+  const mcp = readFileSync(new URL('../src/mcp.js', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  const show = TOOLS.find((t) => t.name === 'showMenu');
+  assert.ok(show.inputSchema.properties.body, 'body を受け付ける');
+  const r = show.local({ kind: 'next', body: '## 解説\n- 要点' });
+  assert.equal(r.menu.body, '## 解説\n- 要点');
+  assert.equal(show.local({ kind: 'next' }).menu.body, undefined);
+  assert.equal(show.local({ kind: 'next', body: 'あ'.repeat(9000) }).menu.body.length, 8000);
+  assert.ok(mcp.includes('の body に入れて呼ぶ'));
+  assert.ok(!mcp.includes('まず答え合わせと解説を書き、最後に showMenu'));
+  assert.ok(html.includes('function md(src)') && html.includes("var body = m.body ? '<div class=\"md\">'"));
+  // 待ち画面（解説は下に出ます）に「終了」ボタンを置かない
+  assert.ok(!html.includes("は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar()"));
 });
