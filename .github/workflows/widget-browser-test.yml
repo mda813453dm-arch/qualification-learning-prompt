@@ -5,6 +5,8 @@ on:
     paths:
       - '新システム開発/engine/src/widget.js'
       - '新システム開発/engine/src/mcp.js'
+      - '新システム開発/engine/src/app.js'
+      - '新システム開発/engine/test/*.test.js'
       - '新システム開発/engine/test/widget*'
       - '.github/workflows/widget-browser-test.yml'
 permissions:
