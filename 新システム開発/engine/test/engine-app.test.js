@@ -783,3 +783,23 @@ test('3問連続誤答で公式過去問をロックし、確認問題の正解�
   assert.equal(right.body.status, 'remediation_complete');
   assert.notEqual((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'remediation');
 });
+
+test('終了時の出題セッション取得失敗は引継ぎ成功と扱わず、復旧後に一度だけ終了できる', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const ses = await startSession(env);
+  const study = (await call(env, 'POST', '/v1/study/start',
+    { qualificationName: '測量士補', learnerId: ses.learnerId })).body;
+  env.now += 20 * 60000;
+  const bad = await call(env, 'POST', `/v1/study/${study.studyId}/end`,
+    { sessionId: 'invalid_session_that_does_not_exist' });
+  assert.equal(bad.status, 409);
+  assert.equal(bad.body.error, 'STUDY_SESSION_UNAVAILABLE');
+  const good = await call(env, 'POST', `/v1/study/${study.studyId}/end`,
+    { sessionId: ses.sessionId });
+  assert.equal(good.status, 200, JSON.stringify(good.body));
+  assert.match(good.body.handoff, /【学習引き継ぎデータ】/);
+  assert.equal(good.body.totalMinutes, 20, '失敗時に時間を二重計上しない');
+  const again = await call(env, 'POST', `/v1/study/${study.studyId}/end`,
+    { sessionId: ses.sessionId });
+  assert.equal(again.body.totalMinutes, 20);
+});
