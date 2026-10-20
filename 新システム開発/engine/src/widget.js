@@ -72,13 +72,14 @@ a{color:inherit}
   }
   async function ask(text){
     try {
-      if (bridgeReady) return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] });
+      // ChatGPT固有のフォローアップ経路を優先し、ウィジェットの内部制御文を発言欄に書き込まない。
       if (window.openai && window.openai.sendFollowUpMessage) return await window.openai.sendFollowUpMessage({ prompt: text });
-      await ready;
-      return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] });
+      if (!bridgeReady) await ready;
+      // 標準MCP Appsではモデル向け情報を文脈更新に置き、会話には短い操作合図だけを送る。
+      await rpc('ui/update-model-context', { content: [{ type: 'text', text: text }] });
+      return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: '学習画面の操作を続ける' }] });
     } catch (e) {
-      // 送信を勝手に再試行しない。選択済みの正確な文をコピーして続行できる。
-      app.insertAdjacentHTML('beforeend', '<div class="notice">選択内容を送信できませんでした。次の文をチャットに入力してください。</div><div class="stem">' + esc(text) + '</div>');
+      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">操作を続けられませんでした。もう一度ボタンを押してください。</div>');
     }
   }
   // 画面用の全文は _meta.qlp（AIには渡らない）、無ければ structuredContent
