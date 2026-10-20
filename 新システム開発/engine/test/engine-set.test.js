@@ -66,14 +66,14 @@ test('同じ分野で3問連続不正解なら、第4実践問題は出さず確
     kinds.push([r.kind, !!g.grade.checkSuggested]);
     state = g.state;
   }
-  assert.deepEqual(kinds, [['new', false], ['new', false], ['reinforce', true]]);
+  assert.deepEqual(kinds, [['new', false], ['new', false], ['new', true]]);
   assert.equal(state.wrongStreak.count, 3);
   assert.equal(state.remediation.required, true);
   assert.equal(state.remediation.fieldId, 'a');
   assert.equal(pickNext(state, items, { today: TODAY }).status, 'remediation', '確認問題の正解前は次の公式問題を許さない');
 });
 
-test('補強の問に正解したら、補強を終えて通常の出題に戻る', () => {
+test('2問連続不正解でも新しい公式実践問題を通常どおり継続する', () => {
   const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a')];
   let state = newState({ qualificationId: 'q1', now: NOW });
   const kinds = [];
@@ -83,7 +83,7 @@ test('補強の問に正解したら、補強を終えて通常の出題に戻�
     state = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW }).state;
     kinds.push(r.kind);
   }
-  assert.deepEqual(kinds, ['new', 'new', 'reinforce', 'new']);
+  assert.deepEqual(kinds, ['new', 'new', 'new', 'new']);
 });
 
 test('同一分野の3連続誤答を超えて別分野へ自動移動しない', () => {
