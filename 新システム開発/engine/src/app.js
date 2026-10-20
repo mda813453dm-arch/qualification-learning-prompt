@@ -514,6 +514,28 @@ async function diagStep(env, id, state0, now, b) {
     };
   };
   const d0 = state.aiDiag;
+  if (b.action === 'result' || b.action === 'apply') {
+    if (d0?.status !== 'done') throw new HttpError(409, 'DIAG_NOT_FINISHED');
+    const counts = fieldCounts(items, fieldIds);
+    const result = diagnosisOrder(fieldIds, d0.answers, counts);
+    const rows = result.rows.map((r) => ({
+      fieldId: r.fieldId, name: name(r.fieldId), answered: r.n, correct: r.n - r.w, wrong: r.w,
+      wrongRate: r.rate, confidenceCount: r.c, uncertaintyCount: r.u, uncertaintyRate: r.uncertaintyRate,
+    }));
+    const note = result.allRight ? '今回の診断では誤答なし。弱点がないとは断定しません。'
+      : result.allWrong ? '回答した全分野が要強化（暫定）。診断上の優劣はつきません。'
+      : '少数問による暫定評価です。同率の分野は診断上同程度です。';
+    if (b.action === 'apply') {
+      const weights = Object.fromEntries(result.order.map((f, i) => [f, result.order.length - i]));
+      await saveSession(env, id, { ...state, plan: { ...state.plan, fieldWeights: weights } }, now);
+      return { status: 'needPlan', planReady: true, diagResult: rows.map((r) => `${r.name}：${r.answered}問中${r.correct}問正解`),
+        plan: { fields: result.order.map(name), note }, overview: overviewFor(state.qualificationId),
+        learnerId: state.learnerId, sessionId: id };
+    }
+    return { status: 'diagResult', sessionId: id, diagResult: rows, order: result.order.map(name),
+      rankingReasons: result.rankingReasons.map((x) => ({ fields: x.fields.map(name), reason: x.reason })),
+      ties: result.ties.map((x) => x.map(name)), note };
+  }
   if (b.action === 'preview') {
     const existing = new Set((d0?.answers ?? []).map((x) => x.questionId));
     const queue = d0?.status === 'running' ? d0.queue.slice(d0.answers.length) : fieldIds.flatMap((f) => {
