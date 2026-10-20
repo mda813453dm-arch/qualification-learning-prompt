@@ -78,12 +78,12 @@ function recentYearsPending(job) {
  * 次の問を決める。出題中で未採点の問があれば、それをもう一度返す（別の問に差し替えない）。
  * 返り値 {status, question?, notice?}。status: question | waiting | finished
  */
-export function pickNext(state, items, { today, job }) {
+export function pickNext(state, items, { today, now=null, job }) {
   if (state.remediation?.required) return { status: 'remediation', fieldId: state.remediation.fieldId };
   const withheld = new Set([...state.withheld.map((w) => w.questionId), ...(state.skipped ?? []).map((x) => x.questionId)]);
   const usable = items.filter((x) => !withheld.has(x.packet.questionId));
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
-  const due = selectDueReviews({ today, items: Object.values(state.review), sessionStart: true });
+  const due = selectDueReviews({ today, now, items: Object.values(state.review), sessionStart: true });
   // 採点の応答に付けて先に控えた問（まだ利用者に見せていない）は、期限の来た復習があれば出し直す
   const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byId.has(r.unitId));
   if (state.current && !state.current.grade && !unseenPrefetch) {
