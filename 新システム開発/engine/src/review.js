@@ -25,15 +25,18 @@ export function updateReviewItem(previous,event,{today,examDate=null,intervals=I
  const result=event.result;
  if(!['wrong','recall_failure','confident_correct','guess_correct','hinted_correct','skip','exposed','invalid'].includes(result))throw Error('INVALID_REVIEW_RESULT');
  if(!p&&!['wrong','recall_failure','guess_correct'].includes(result)&&event.explicitReview!==true)return {status:'not_registered',item:null};
- if(result==='wrong'||result==='recall_failure'){step=0;stage=steps[0];successes=0;due=add(today,stage);}
- else if(result==='guess_correct'){
-   successes=0;
-   if(!due||due<=today)due=add(today,stage);
- }else if(result==='confident_correct'&&!event.hintShown){
-   if(!due)due=add(today,stage);
-   else if(due<=today){step=Math.min(step+1,steps.length-1);stage=steps[step];successes++;due=add(today,stage);}
- }
- let comprehensive=false;
+ if(result==='wrong'||result==='recall_failure'){
+    step=0;stage=steps[0];successes=0;mastered=false;nextDue();
+  }else if(result==='guess_correct'||event.hintShown){
+    if(!mastered){successes=0;if(!due||isDue())nextDue();}
+  }else if(result==='confident_correct'&&!mastered){
+    if(!due)nextDue();
+    else if(isDue()){
+      if(step===steps.length-1&&successes>=steps.length-1){mastered=true;due=null;dueAt=null;}
+      else{step=Math.min(step+1,steps.length-1);stage=steps[step];successes++;nextDue();}
+    }
+  }
+  let comprehensive=false;
  if(due&&examDate&&due>=examDate){
    const gap=days(today,examDate);
    if(gap<=1){due=null;comprehensive=true;}
