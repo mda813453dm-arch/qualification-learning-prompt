@@ -1148,6 +1148,25 @@ async function route(request, env, url, now) {
           input = { ...input, plan: ['学習分野順：' + st.plan.orderedFields.map((f) => fieldNames[f] ?? '分野未確認').join(' → '),
             '復習方式：' + (st.plan.reviewPreset ?? '標準')] };
         }
+        const dueList = reviewed.filter((r) => !r.mastered && (r.dueDate || r.dueAt))
+          .sort((a,b) => String(a.dueAt ?? a.dueDate).localeCompare(String(b.dueAt ?? b.dueDate)));
+        if (!(input.nextPriority ?? []).length) {
+          const verified = dueList.slice(0, 4).map((r) => `復習：${fieldNames[r.topicId] ?? '分野未確認'}`);
+          input = { ...input, nextPriority: verified.length ? verified : (input.weaknesses ?? []).slice(0, 4) };
+        }
+        if (!(input.nextPurpose ?? []).length && (input.nextPriority ?? []).length) {
+          input = { ...input, nextPurpose: ['優先対象を理解してから、公式過去問で正答できるか確かめる'] };
+        }
+        if (!input.progress && Object.keys(fieldNames).length) {
+          const touched = new Set(Object.values(st.history ?? {}).map((h) => h.fieldId).filter(Boolean));
+          const reviewFields = new Set(dueList.map((x) => x.topicId));
+          input = { ...input, progress: {
+            done: reviewed.filter((r) => r.mastered).map((r) => fieldNames[r.topicId]).filter(Boolean).join('、') || '確定なし',
+            inProgress: [...touched].map((f) => fieldNames[f] ?? '分野未確認').join('、') || 'なし',
+            notStarted: Object.keys(fieldNames).filter((f) => !touched.has(f)).map((f) => fieldNames[f]).join('、') || 'なし',
+            needReview: [...reviewFields].map((f) => fieldNames[f] ?? '分野未確認').join('、') || 'なし',
+          } };
+        }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
           const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
