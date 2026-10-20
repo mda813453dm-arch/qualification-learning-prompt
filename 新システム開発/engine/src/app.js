@@ -947,22 +947,62 @@ async function route(request, env, url, now) {
     return json(200, await redisplayView(env, id, state, now));
   }
 
-  // AI作成確認問題の正答を検証してから元分野へ戻す。誤答時と未回答時はブロックを保持する。
+  // AI確認問題は出題時に本文・全選択肢・正答を固定してから利用者に表示する。
+  // 回答時には正答を再送させず、保存した正答だけと照合する。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'remediation' && parts[4] === 'register' && parts.length === 5) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    if (!state.remediation?.required) throw new HttpError(409, 'REMEDIATION_NOT_REQUIRED');
+    const existing = state.remediation.challenge;
+    if (existing?.id) return json(200, {
+      status: 'remediation_question', sessionId: id, challengeId: existing.id,
+      question: existing.question, choices: existing.choices, notice: 'AI作成確認問題（出題時の正答で採点）',
+      repeated: true,
+    });
+    const question = typeof b.question === 'string' ? b.question.trim() : '';
+    const choices = Array.isArray(b.choices) ? b.choices.map((v) => typeof v === 'string' ? v.trim() : '') : [];
+    const correct = Number(b.correctAnswer);
+    if (question.length < 10 || question.length > 2000 ||
+      choices.length < 2 || choices.length > 5 ||
+      choices.some((v) => !v || v.length > 500) ||
+      !Number.isInteger(correct) || correct < 1 || correct > choices.length) {
+      throw new HttpError(400, 'CONFIRMATION_QUESTION_INVALID');
+    }
+    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, createdAt: now };
+    await saveSession(env, id, { ...state, remediation: { ...state.remediation, challenge } }, now);
+    return json(200, {
+      status: 'remediation_question', sessionId: id, challengeId: challenge.id,
+      question, choices, notice: 'AI作成確認問題（出題時の正答で採点）',
+    });
+  }
+
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'remediation' && parts[4] === 'complete' && parts.length === 5) {
     const b = (await body(request).catch(() => ({}))) ?? {};
     const { id, state } = await resolveSession(env, parts[2], now);
     if (!state.remediation?.required) throw new HttpError(409, 'REMEDIATION_NOT_REQUIRED');
-    const question = typeof b.checkQuestion === 'string' ? b.checkQuestion.trim() : '';
-    const selected = String(b.selected ?? '').trim();
-    const answer = String(b.correctAnswer ?? '').trim();
-    if (!question || question.length < 10 || question.length > 2000 || !selected || !answer) {
-      throw new HttpError(400, 'CONFIRMATION_EVIDENCE_REQUIRED');
+    const challenge = state.remediation.challenge;
+    if (!challenge?.id) throw new HttpError(409, 'CONFIRMATION_NOT_REGISTERED');
+    if (String(b.challengeId ?? '') !== challenge.id) throw new HttpError(409, 'CONFIRMATION_ID_MISMATCH');
+    const selected = Number(b.selected);
+    if (!Number.isInteger(selected) || selected < 1 || selected > challenge.choices.length) {
+      throw new HttpError(400, 'CONFIRMATION_ANSWER_INVALID');
     }
-    if (selected !== answer) return json(200, { status: 'remediation_retry', notice: '確認問題が不正解でした。同じ分野の別の確認問題で復習してください。' });
+    if (selected !== challenge.correctAnswer) {
+      const again = { ...state, remediation: {
+        ...state.remediation, challenge: null, attempts: (state.remediation.attempts ?? 0) + 1,
+      } };
+      await saveSession(env, id, again, now);
+      return json(200, {
+        status: 'remediation_retry', sessionId: id, correctAnswer: String(challenge.correctAnswer),
+        notice: '不正解でした。同じ分野の別のAI作成確認問題で復習します。公式実践問題はまだ再開しません。',
+      });
+    }
     const fld = state.remediation.fieldId;
-    const cleared = { ...state, remediation: null, reinforce: null, wrongStreak: { fieldId: fld, count: 0 }, set: { fieldId: fld, count: 0 } };
+    const cleared = { ...state, remediation: null, reinforce: null,
+      wrongStreak: { fieldId: fld, count: 0 }, set: { fieldId: fld, count: 0 } };
     await saveSession(env, id, cleared, now);
-    return json(200, { status: 'remediation_complete', sessionId: id, notice: '確認問題の正解を記録しました。同じ分野の公式過去問を再開できます。' });
+    return json(200, { status: 'remediation_complete', sessionId: id,
+      notice: '確認問題の正解を記録しました。同じ分野の公式過去問を再開できます。' });
   }
 
   // 初期診断（アプリ）：各分野から決まった数の過去問を出し、正誤から苦手分野の順に計画を作り直す。
