@@ -1,11 +1,11 @@
 name: 中小企業診断士の公式過去問ページを調べる（開発用・読み取りのみ）
-# 合図：新システム開発/parser/tools/shindan_survey.py か新システム開発/deploy/shindan-survey-request.txt を更新して push する。
+# 合図：新システム開発/parser/tools/shindan_probe.py か新システム開発/deploy/shindan-survey-request.txt を更新して push する。
 # request.txt の最後の行に PDF の URL を空白区切りで書くと、その PDF の中身を表示する。
 on:
   push:
     branches: [ai-learning-system]
     paths:
-      - '新システム開発/parser/tools/shindan_survey.py'
+      - '新システム開発/parser/tools/shindan_probe.py'
       - '新システム開発/deploy/shindan-survey-request.txt'
 jobs:
   survey:
@@ -16,4 +16,4 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.12' }
       - run: pip install pymupdf==1.24.10
-      - run: python 新システム開発/parser/tools/shindan_survey.py $(tail -n 1 新システム開発/deploy/shindan-survey-request.txt 2>/dev/null | grep -o 'https://[^ ]*' || true)
+      - run: python 新システム開発/parser/tools/shindan_probe.py $(tail -n 1 新システム開発/deploy/shindan-survey-request.txt 2>/dev/null | grep -o 'https://[^ ]*' || true)
