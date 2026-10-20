@@ -7,6 +7,7 @@ import { MemoryStore } from '../src/store.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
+import { WIDGET_URI } from '../src/widget.js';
 import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -108,10 +109,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v38.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v38.html');
+  assert.equal(nq._meta['openai/outputTemplate'], WIDGET_URI);
+  assert.equal(nq._meta.ui.resourceUri, WIDGET_URI);
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v38.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], WIDGET_URI);
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
