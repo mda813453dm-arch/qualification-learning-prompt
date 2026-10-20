@@ -531,8 +531,10 @@ async function diagStep(env, id, state0, now, b) {
   if (b.action === 'start' || !d0 || d0.status !== 'running') {
     if (b.action !== 'start') throw new HttpError(409, 'DIAG_NOT_STARTED');
     // 各分野から、年度の違う問を新しい年度から選ぶ（同じ年度ばかりにしない）
+    const earlier = d0?.status === 'done' ? d0.answers : [];
+    const previouslyUsed = new Set(earlier.map((x) => x.questionId));
     const queue = fieldIds.flatMap((f) => {
-      const pool = items.filter((x) => x.packet.fieldId === f).sort((x, y) => y.packet.year - x.packet.year || x.packet.questionNumber - y.packet.questionNumber);
+      const pool = items.filter((x) => x.packet.fieldId === f && !previouslyUsed.has(x.packet.questionId)).sort((x, y) => y.packet.year - x.packet.year || x.packet.questionNumber - y.packet.questionNumber);
       const picked = [];
       const years = new Set();
       for (const x of pool) { if (picked.length < DIAG_PER_FIELD && !years.has(x.packet.year)) { picked.push(x); years.add(x.packet.year); } }
@@ -540,7 +542,7 @@ async function diagStep(env, id, state0, now, b) {
       return picked.map((x) => x.packet.questionId);
     });
     if (!queue.length) throw new HttpError(409, 'DIAG_NO_PAST_EXAMS');
-    state = { ...state, aiDiag: { status: 'running', queue, answers: [] } };
+    state = { ...state, aiDiag: { status: 'running', queue, answers: [], previousAnswers: earlier } };
     await saveSession(env, id, state, now);
     const fields = fieldIds.map((f) => ({ name: name(f), count: queue.filter((q) => byId.get(q)?.packet.fieldId === f).length })).filter((f) => f.count);
     return { status: 'diagIntro', sessionId: id, diag: { total: queue.length, fields }, question: view(state.aiDiag) };
