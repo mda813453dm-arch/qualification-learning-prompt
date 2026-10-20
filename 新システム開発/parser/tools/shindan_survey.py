@@ -17,9 +17,10 @@ for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', html, re.S):
     links.append((urljoin(PAGE, href), text))
 pdfs = [(u, t) for u, t in links if u.lower().endswith('.pdf')]
 print('links', len(links), 'pdfs', len(pdfs))
-for u, t in pdfs:
-    if '1ji' in u or re.search('正|解答|seigo|kaito', u + t):
-        print('PDF', u, '|', t)
+rest = [(u, t) for u, t in pdfs if not re.search(r'/(1ji|2ji)[^/]*/[a-gA-G][12]j', u)]
+for u, t in rest:
+    print('OTHER', u, '|', t)
+answers = [u for u, t in rest if '1' in u]
 others = [(u, t) for u, t in links if not u.lower().endswith('.pdf') and ('shiken' in u or '過去' in t or '正' in t or '解答' in t)]
 for u, t in others[:40]:
     print('LINK', u, '|', t)
@@ -50,8 +51,13 @@ for u in sys.argv[1:]:
         show(u, pages=range(0, 60))
     except Exception as e:
         print('ERR', u, e)
-# 設問が分かれた問題の形を見る（企業経営理論の中ほど）
+for u in [x for x in answers if '2025' in x or '2026' in x][:2] + answers[-1:]:
+    try:
+        show(u, pages=range(0, 3))
+    except Exception as e:
+        print('ERR', u, e)
+# 設問が分かれた問題の形を見る（財務・会計の後ろ）
 try:
-    show('https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2025/C1JI2025.pdf', pages=range(18, 24))
+    show('https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2025/B1JI2025.pdf', pages=range(14, 18))
 except Exception as e:
     print('ERR', e)
