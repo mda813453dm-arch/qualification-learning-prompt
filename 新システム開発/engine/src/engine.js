@@ -273,6 +273,12 @@ export function findWanted(state, items, want, fields = {}) {
   return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new' };
 }
 
+/** 問題データの検証済み論点IDがある場合は同じ論点を1復習単位にまとめる。無ければ問題単位を維持し、分野全体を同じ論点と推測しない。 */
+function reviewKeyOf(p){
+  return typeof p.reviewUnitId === 'string' && p.reviewUnitId.trim()
+    ? p.reviewUnitId.trim() : p.questionId;
+}
+
 export function pin(state, item, kind, now) {
   const p = item.packet;
   if (state.current && !state.current.grade && state.current.questionId === p.questionId) return state;
@@ -288,6 +294,8 @@ export function pin(state, item, kind, now) {
     set,
     current: {
       questionId: p.questionId,
+      reviewUnitId: reviewKeyOf(p),
+      topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
       kind,
       correctAnswer: p.correctAnswer,
       choiceCount: p.choices.length,
@@ -353,9 +361,10 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   // 「分からない」：想起できなかった問（B15）。採点には数えず、正答を見せ、復習に登録する（同じ分野の連続誤答にも数えない）
   if (/^(分からない|わからない|分かりません|わかりません|dontknow)$/i.test(String(value ?? '').trim())) {
     const g = { questionId, dontKnow: true, result: 'recall_failure', correctAnswer: cur.correctAnswer, answerPdfUrl: cur.source.answerPdfUrl };
-    const upd = updateReviewItem(state.review[questionId] ?? null, { unitId: questionId, topicId: cur.fieldId ?? 'unclassified', qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
+    const reviewId = cur.reviewUnitId || questionId;
+    const upd = updateReviewItem(state.review[reviewId] ?? null, { unitId: reviewId, topicId: cur.topicId ?? cur.fieldId ?? 'unclassified', sourceQuestionId: questionId, qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
     const review = { ...state.review };
-    if (upd.status === 'updated') review[questionId] = upd.item;
+    if (upd.status === 'updated') review[reviewId] = upd.item;
     const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
     return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g } };
   }
@@ -364,15 +373,17 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   const correct = n === cur.correctAnswer;
   const result = !correct ? 'wrong' : confidence === 'guess' ? 'guess_correct' : 'confident_correct';
   const g = { questionId, selected: n, correctAnswer: cur.correctAnswer, correct, result, answerPdfUrl: cur.source.answerPdfUrl };
-  const upd = updateReviewItem(state.review[questionId] ?? null, {
-    unitId: questionId,
-    topicId: cur.fieldId ?? 'unclassified',
+  const reviewId = cur.reviewUnitId || questionId;
+  const upd = updateReviewItem(state.review[reviewId] ?? null, {
+    unitId: reviewId,
+    topicId: cur.topicId ?? cur.fieldId ?? 'unclassified',
+    sourceQuestionId: questionId,
     qualificationId: state.qualificationId,
     result,
     source: correct ? 'self_report' : 'wrong',
   }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
   const review = { ...state.review };
-  if (upd.status === 'updated') review[questionId] = upd.item;
+  if (upd.status === 'updated') review[reviewId] = upd.item;
   // 同じ分野で続けて間違えた数（正解で0に戻る）。3に届いたら確認問題を勧め、数え直す
   const fid = cur.fieldId ?? null;
   const prev = state.wrongStreak && state.wrongStreak.fieldId === fid ? state.wrongStreak.count : 0;
