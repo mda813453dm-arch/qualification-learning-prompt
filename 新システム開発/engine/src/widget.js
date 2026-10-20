@@ -319,6 +319,7 @@ a{color:inherit}
       '<div class="stem"><b>学習方法：</b>' + esc({explain:'解説重視',check:'確認問題重視',practice:'公式過去問重視',balanced:'バランス型'}[d.methodChoice] || d.methodChoice) +
       (d.methodDistribution ? '（解説・確認・実践 ' + d.methodDistribution.join('：') + '%）' : '') + '</div>' +
       '<div class="stem"><b>復習：</b>' + esc(d.reviewLabel || '標準（1→3→7→14→30日）') + '</div>' +
+      (d.otherNote ? '<div class="stem"><b>その他の希望：</b>' + esc(d.otherNote) + '</div>' : '') +
       '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
       '<div class="choices"><button id="startStudy"><b>1</b><span>この学習計画で始める</span></button>' +
       '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
@@ -461,15 +462,20 @@ a{color:inherit}
     document.getElementById('rBack').onclick=planEditReview;
   }
   function planEditOther(){
-    app.innerHTML = '<h2>その他の見直し</h2><div class="notice">変更を確実に反映できる項目は分野順・学習方法・復習間隔です。その他の希望は未対応の場合、勝手に計画へ反映しません。</div><div class="choices">' +
-      '<button id="otherFields"><b>1</b><span>分野・優先順位を変更</span></button>' +
-      '<button id="otherMethods"><b>2</b><span>学習方法を変更</span></button>' +
-      '<button id="otherReview"><b>3</b><span>復習間隔を変更</span></button>' +
-      '<button id="otherBack"><b>4</b><span>戻る</span></button></div>';
-    document.getElementById('otherFields').onclick = planEditFields;
-    document.getElementById('otherMethods').onclick = planEditMethods;
-    document.getElementById('otherReview').onclick = planEditReview;
-    document.getElementById('otherBack').onclick = planEditMenu;
+    app.innerHTML = '<h2>その他の希望</h2><div class="notice">その他の学習希望を記録できます。採点規則の変更や、チャットを閉じている間の自動通知など、未対応の機能は設定できません。</div>' +
+      '<textarea id="otherText" maxlength="300" rows="3" style="width:100%;box-sizing:border-box"></textarea>' +
+      '<div class="choices"><button id="otherOk"><b>1</b><span>希望を確認する</span></button><button id="otherBack"><b>2</b><span>戻る</span></button></div>';
+    document.getElementById('otherText').value=draftPlan().otherNote || '';
+    document.getElementById('otherBack').onclick=planEditMenu;
+    document.getElementById('otherOk').onclick=function(){
+      var text=document.getElementById('otherText').value.trim();
+      if(text.length>300 || /自動通知|自動出題|無断|省略して採点|正答を変更|免除を無視/.test(text)){
+        app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">その希望は現在の機能では受け付けられません。未対応の機能を実装済みとして扱うことはできません。</div>');
+        return;
+      }
+      draftPlan().otherNote=text;
+      planRevised(text ? 'その他の学習上の希望を計画案に追加しました。' : 'その他の希望は設定しません。');
+    };
   }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
@@ -572,6 +578,7 @@ a{color:inherit}
         sessionId: learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
         reviewPreset: draft.reviewPreset, reviewIntervalsMinutes: draft.reviewIntervalsMinutes || undefined,
+        otherNote: draft.otherNote || undefined,
       });
       if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
