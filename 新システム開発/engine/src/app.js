@@ -654,6 +654,32 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   };
 }
 
+/** 表示だけの再試行。出題位置・採点結果・履歴・分野の連続問数は一切書き換えない。 */
+async function redisplayView(env, id, state, now) {
+  const cur = state.current;
+  if (!cur?.questionId || cur.grade) throw new HttpError(409, 'NO_UNANSWERED_QUESTION');
+  const job = await progress(env, sessionJobId(state), now);
+  const items = withoutExempt(state, await availablePackets(env.STORE, job, now));
+  const item = items.find((x) => x.packet.questionId === cur.questionId);
+  if (!item) throw new HttpError(404, 'CURRENT_QUESTION_NOT_FOUND');
+  const shown = present(item, cur.kind || 'new', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const { keyParts } = item;
+  const svgs = await Promise.all(shown.figures.map(async (f) => {
+    if (!f.svgFile) return null;
+    const bytes = await readFigure(env.STORE, item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
+    const svg = bytes ? new TextDecoder().decode(bytes) : null;
+    return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
+  }));
+  const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
+  const fieldName = cur.fieldId ? names[cur.fieldId] ?? null : null;
+  const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
+  const display = questionDisplay(shown, svgs, { attached: false });
+  return {
+    status: 'question', sessionId: id, repeated: true, redisplayed: true,
+    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName },
+  };
+}
+
 /** 図をもう一度見せる応答（図の無い問は、そのことを伝える文だけ）。 */
 function figureAgain(env, item) {
   const shown = present(item, 'review', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
@@ -814,6 +840,11 @@ async function route(request, env, url, now) {
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
     return json(200, await nextView(env, id, state, now, { want }));
+  }
+
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'redisplay' && parts.length === 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    return json(200, await redisplayView(env, id, state, now));
   }
 
   // 初期診断（アプリ）：各分野から決まった数の過去問を出し、正誤から苦手分野の順に計画を作り直す。
