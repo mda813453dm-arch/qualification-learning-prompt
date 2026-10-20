@@ -302,9 +302,13 @@ test('アプリ：初期診断は、分野と問数を先に示し、過去問�
     q = last.question;
   }
   assert.deepEqual(seen, [1, 2, 3]);
-  assert.equal(last.planReady, true);
-  assert.equal(last.plan.fields[0], start.diag.fields[0].name);
-  assert.match(last.diagResult[0], /2問中0問正解/);
+  assert.equal(last.status, 'diagResult');
+  assert.equal(last.order[0], start.diag.fields[0].name);
+  assert.equal(last.diagResult[0].answered, 2);
+  assert.equal(last.diagResult[0].correct, 0);
+  const applied = content(await app('tools/call', { name: 'diagStep', arguments: { sessionId: s.learnerId, action: 'apply' } }));
+  assert.equal(applied.planReady, true);
+  assert.equal(applied.plan.fields[0], start.diag.fields[0].name);
   // 診断のあとも、学習の開始（startStudy）までは実践問題を出さない
   const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: s.sessionId } });
   assert.equal(n._meta.qlp.status, 'needPlan');
@@ -434,7 +438,8 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(!html.includes('【順番】'), '画面の送信文に手順を入れない');
   assert.ok(!html.includes('kind='), '画面の送信文に内部のツール名・引数を入れない');
   assert.ok(html.includes("field + 'を解説から始めます。'"));
-  assert.ok(html.includes("ask('学習計画の希望：' + wish)"));
+  assert.ok(html.includes('function planEditMenu()'));
+  assert.ok(html.includes("callTool('saveStudyPlan'"), '計画確定は学習開始の承認後だけ');
   // 続きのボタンは解説・確認問題の「下」に出す（画面の上に押すボタンを置かない）
   assert.ok(!html.includes('id="toPractice"'));
   // 根拠のない「おすすめ」は付けない／長いURLは枠からはみ出さず折り返す
