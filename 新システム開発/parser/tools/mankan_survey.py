@@ -20,13 +20,13 @@ for url in ['https://www.mankan.org/kakomondai.html', 'https://www.mankan.org/']
 
 # 試験の概要（令和8年度ガイド）から、基準になる行を表示する（読み取りのみ）
 import fitz
-for u in ['https://www.mankan.org/pdf/guide.pdf']:
+for u in ['https://www.mankan.org/pdf/2026_webannai.pdf']:
     try:
         d = fitz.open(stream=urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=120).read(), filetype='pdf')
-        print('GUIDE', u, 'pages', d.page_count)
-        for i in range(min(d.page_count, 4)):
+        print('ANNAI', u, 'pages', d.page_count)
+        for i in range(min(d.page_count, 3)):
             text = unicodedata.normalize('NFKC', d[i].get_text())
-            print('--- guide page', i + 1, 'chars', len(text))
+            print('--- annai page', i + 1, 'chars', len(text))
             print(re.sub(r'\s+', ' ', text)[:2500])
     except Exception as e:
         print('ERR guide', e)
