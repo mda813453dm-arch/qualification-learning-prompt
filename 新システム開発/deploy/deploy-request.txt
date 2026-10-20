@@ -151,3 +151,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-20T08:58:11Z deploy widget v34: short chat sentences, next question and menus in a new frame at the bottom
 2026-10-20T09:05:54Z deploy widget v35: wrap long URLs, drop the unsupported おすすめ label
 2026-10-20T09:18:09Z deploy widget v36: explanation text in the same frame as the next buttons
+cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画面の無効化・終了ボタン (v37)
