@@ -460,6 +460,17 @@ a{color:inherit}
     document.getElementById('rRetry').onclick=reviewCustomInput;
     document.getElementById('rBack').onclick=planEditReview;
   }
+  function planEditOther(){
+    app.innerHTML = '<h2>その他の見直し</h2><div class="notice">変更を確実に反映できる項目は分野順・学習方法・復習間隔です。その他の希望は未対応の場合、勝手に計画へ反映しません。</div><div class="choices">' +
+      '<button id="otherFields"><b>1</b><span>分野・優先順位を変更</span></button>' +
+      '<button id="otherMethods"><b>2</b><span>学習方法を変更</span></button>' +
+      '<button id="otherReview"><b>3</b><span>復習間隔を変更</span></button>' +
+      '<button id="otherBack"><b>4</b><span>戻る</span></button></div>';
+    document.getElementById('otherFields').onclick = planEditFields;
+    document.getElementById('otherMethods').onclick = planEditMethods;
+    document.getElementById('otherReview').onclick = planEditReview;
+    document.getElementById('otherBack').onclick = planEditMenu;
+  }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
     var h = '<h2>初期診断の確認</h2><div class="notice">公式過去問で分野ごとの理解度を調べます。結果は少数問による暫定評価です。</div>' +
