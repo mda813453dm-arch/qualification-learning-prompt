@@ -907,11 +907,14 @@ async function route(request, env, url, now) {
       raw.some((v, i) => !Number.isInteger(v) || v < 1 || v > 525600 || (i > 0 && v <= raw[i-1])))) {
       throw new HttpError(400, 'PLAN_REVIEW_INTERVAL_INVALID');
     }
+    const otherNote = typeof b.otherNote === 'string' ? b.otherNote.trim() : '';
+    if (otherNote.length > 300 || /自動通知|自動出題|無断|省略して採点|正答を変更|免除を無視/.test(otherNote)) throw new HttpError(400, 'PLAN_OTHER_UNSUPPORTED');
     const nextPlan = { ...state.plan,
       fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
       methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
       reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
       orderedFields: ordered,
+      otherNote,
     };
     await saveSession(env, id, { ...state, plan: nextPlan }, now);
     return json(200, { status: 'planSaved', sessionId: id, orderedFields: ordered.map((f) => cat.fields[f]),
