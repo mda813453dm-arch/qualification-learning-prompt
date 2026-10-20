@@ -260,8 +260,8 @@ export const TOOLS = [
     appOnly: true,
     uiOnly: true,
     description: '初期診断。previewは出題せず問題数表示、startは明示承認後の開始、answerは採点、resultは集計表示、applyは結果で計画を組み直す。画面だけが呼ぶ。',
-    inputSchema: { type: 'object', required: ['sessionId', 'action'], properties: { sessionId, action: { type: 'string', enum: ['preview', 'start', 'answer', 'result', 'apply'] }, value: { type: 'string' }, confidence: { type: 'string', enum: ['sure', 'unsure', 'guess'] } } },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/diag`, { action: a.action, value: a.value, confidence: a.confidence }],
+    inputSchema: { type: 'object', required: ['sessionId', 'action'], properties: { sessionId, action: { type: 'string', enum: ['preview', 'start', 'answer', 'result', 'apply'] }, value: { type: 'string' }, questionId: { type: 'string' }, confidence: { type: 'string', enum: ['sure', 'unsure', 'guess'] } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/diag`, { action: a.action, questionId: a.questionId, value: a.value, confidence: a.confidence }],
   },
 ];
 
