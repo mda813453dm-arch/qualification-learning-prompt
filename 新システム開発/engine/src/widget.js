@@ -387,6 +387,31 @@ a{color:inherit}
       };
     };
   }
+  function planEditMethods(){
+    var opts = [['explain','解説重視',[60,20,20]],['check','確認問題重視',[20,60,20]],
+      ['practice','公式過去問重視',[10,10,80]],['balanced','バランス型',[34,33,33]]];
+    app.innerHTML='<h2>学習方法・配分</h2><div class="choices">'+opts.map(function(x,i){
+      return '<button data-method="'+x[0]+'"><b>'+(i+1)+'</b><span>'+esc(x[1])+'</span></button>';
+    }).join('')+'<button id="methodCustom"><b>5</b><span>割合を自由指定</span></button><button id="methodBack"><b>6</b><span>戻る</span></button></div><div id="methodInput"></div>';
+    scrollUp();
+    app.querySelectorAll('[data-method]').forEach(function(b){b.onclick=function(){
+      var x=opts.find(function(t){return t[0]===b.getAttribute('data-method');});
+      draftPlan().methodChoice=x[0]; draftPlan().methodDistribution=x[2];planRevised(x[1]);
+    };});
+    document.getElementById('methodBack').onclick=planEditMenu;
+    document.getElementById('methodCustom').onclick=function(){
+      document.getElementById('methodInput').innerHTML='<div class="notice">解説・確認問題・公式過去問の順に百分率を入力してください。合計100%のみ受け付けます。</div>'+
+        '<input id="mExp" inputmode="numeric" placeholder="解説%" style="width:28%"><input id="mCheck" inputmode="numeric" placeholder="確認%" style="width:28%">'+
+        '<input id="mPractice" inputmode="numeric" placeholder="実践%" style="width:28%"><button id="mSave">内容を確認する</button>';
+      document.getElementById('mSave').onclick=function(){
+        var v=['mExp','mCheck','mPractice'].map(function(id){return Number(document.getElementById(id).value.trim());});
+        if(v.some(function(n){return !Number.isInteger(n)||n<0||n>100;})||v.reduce(function(a,b){return a+b;},0)!==100){
+          app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">0～100の整数で、合計100%にしてください。変更していません。</div>');return;
+        }
+        draftPlan().methodChoice='balanced';draftPlan().methodDistribution=v;planRevised('学習方法の配分を変更しました。');
+      };
+    };
+  }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
     var h = '<h2>初期診断の確認</h2><div class="notice">公式過去問で分野ごとの理解度を調べます。結果は少数問による暫定評価です。</div>' +
