@@ -39,10 +39,18 @@ export function updateReviewItem(previous,event,{today,examDate=null,intervals=I
   let comprehensive=false;
  if(due&&examDate&&due>=examDate){
    const gap=days(today,examDate);
-   if(gap<=1){due=null;comprehensive=true;}
-   else due=add(today,Math.max(1,Math.floor(gap/2)));
+   if(gap<=1){due=null;dueAt=null;comprehensive=true;}
+   else{due=add(today,Math.max(1,Math.floor(gap/2)));dueAt=null;}
  }
- return {status:'updated',item:Object.freeze({qualificationId:event.qualificationId??p?.qualificationId??null,topicId:event.topicId,unitId:event.unitId,pointId:event.pointId??p?.pointId??null,source:event.source??p?.source??'self_report',intervalDays:stage,step,recallSuccesses:successes,lastJudgedDate:today,dueDate:due,lastResult:result,comprehensive,exemptStopped:p?.exemptStopped??false})};
+ return {status:'updated',item:Object.freeze({
+    qualificationId:event.qualificationId??p?.qualificationId??null,
+    topicId:event.topicId,unitId:event.unitId,topicUnitId:event.topicUnitId??p?.topicUnitId??null,
+    sourceQuestionId:event.sourceQuestionId??p?.sourceQuestionId??null,
+    pointId:event.pointId??p?.pointId??null,source:event.source??p?.source??'self_report',
+    intervalDays:minuteBased?null:stage,intervalMinutes:minuteBased?stage:null,
+    step,recallSuccesses:successes,lastJudgedDate:today,dueDate:due,dueAt,mastered,
+    lastResult:result,comprehensive,exemptStopped:p?.exemptStopped??false
+  })};
 }
 export function selectDueReviews({today,items=[],explicitTopic=false,defer=false,practiceSinceReview=0,sessionStart=true}={}){
  if(!date(today))return {status:'date_unverified',items:[]};
