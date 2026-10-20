@@ -567,6 +567,13 @@ a{color:inherit}
   async function startStudyNow(name, learner){
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
     try {
+      var draft = draftPlan();
+      var saved = await callTool('saveStudyPlan', {
+        sessionId: learner, orderedFields: draft.orderedFields,
+        methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
+        reviewPreset: draft.reviewPreset, reviewIntervalsMinutes: draft.reviewIntervalsMinutes || undefined,
+      });
+      if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
       if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
       itemStart(r, learner);
