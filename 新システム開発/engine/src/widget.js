@@ -112,7 +112,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -390,6 +390,7 @@ a{color:inherit}
     h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
+    h += '<div class="stem"><b>回答の確信度（任意）</b><label><input type="radio" name="confidence" value="sure"> 確信あり</label> <label><input type="radio" name="confidence" value="unsure"> 迷った</label> <label><input type="radio" name="confidence" value="guess"> 勘</label></div><div class="row"><button id="dSkip">未回答で次へ</button></div>';
     h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     app.innerHTML = h;
     scrollUp();
@@ -400,16 +401,23 @@ a{color:inherit}
       sent = true;
       app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
       try {
-        var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen) }));
+        var certainty = app.querySelector('input[name=confidence]:checked');
+        var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen), confidence: certainty ? certainty.value : undefined }));
         var g = r && r.grade;
         if (!g) throw new Error('grade');
         var line = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
+        if (r.status === 'diagResult') { render(r); return; }
         if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', line); return; }
         diagQuestion(r.question, line);
       } catch (e) {
         sent = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
         app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
       }
+    };
+    document.getElementById('dSkip').onclick = function(){
+      chosen = 'スキップ';
+      document.getElementById('decrow').style.display = 'flex';
+      document.getElementById('decide').click();
     };
   }
   async function startStudyNow(name, learner){
