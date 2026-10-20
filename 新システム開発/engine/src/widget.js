@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v39.html';
+export const WIDGET_URI = 'ui://qlp/question-v40.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-20.39';
+export const WIDGET_VERSION = '2026-10-21.40';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -365,6 +365,31 @@ a{color:inherit}
   function planRevised(reason){
     planPanel([reason || '変更後の学習計画を再表示しました。開始する前にもう一度確認してください。']);
   }
+  // 学習段階の最終ボタンを押した直後、同じタップから遅れて届く互換 click が
+  // 新しく描画された学習計画の別ボタン（特に「4 今は学習しない」）を押さないようにする。
+  // 画面内で新たに pointer/touch/mouse down したボタンの click のみ操作として受け付ける。
+  // detail=0 はキーボード・支援技術による正当なクリックとして受け付ける。
+  function guardNewPlanActions(){
+    ['startStudy', 'revise', 'diag', 'notNow'].forEach(function(id){
+      var b = document.getElementById(id);
+      if (!b) return;
+      var pressed = false;
+      function arm(){ pressed = true; }
+      function disarm(){ pressed = false; }
+      b.addEventListener('pointerdown', arm);
+      b.addEventListener('touchstart', arm, { passive: true });
+      b.addEventListener('mousedown', arm);
+      b.addEventListener('pointercancel', disarm);
+      b.addEventListener('touchcancel', disarm);
+      b.addEventListener('click', function(e){
+        if (e.detail > 0 && !pressed) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+        }
+        pressed = false;
+      }, true);
+    });
+  }
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
     var ov = onboardOv || {}, d = draftPlan();
@@ -387,6 +412,7 @@ a{color:inherit}
       '<button id="diag"><b>3</b><span>初期診断で苦手分野を調べる</span></button>' +
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
+    guardNewPlanActions();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
     document.getElementById('revise').onclick = planEditMenu;
     document.getElementById('notNow').onclick = function(){ app.innerHTML='<div class="notice">学習は開始していません。次回、学習計画を確認してから開始できます。</div>'; };

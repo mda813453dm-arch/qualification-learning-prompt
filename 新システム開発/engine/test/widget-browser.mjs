@@ -73,7 +73,16 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
-    await ui.getByRole('button', { name: '4 過去問演習中' }).click();
+    await ui.getByRole('button', { name: '4 過去問演習中' }).tap();
+    await ui.getByRole('button', { name: /この学習計画で始める/ }).waitFor();
+    // 実機の回帰：学習段階4の1タップが、描画し直した計画の「4 今は学習しない」を
+    // 触っていないのに押した扱いになって学習計画を閉じないようにする。
+    await ui.locator('#notNow').evaluate(b => {
+      b.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+    });
+    assert.match(await ui.locator('#app').innerText(), /学習計画/);
+    assert.equal(await ui.getByRole('button', { name: /この学習計画で始める/ }).count(), 1);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
     await ui.getByRole('button', { name: /この学習計画で始める/ }).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     await page.waitForFunction(() => window.followups.length >= 1);
@@ -120,6 +129,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
     const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
     assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
+    // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
+    await page.evaluate(r => window.deliver(r), result(onboarding));
+    await ui.getByRole('button', { name: '2 免除を利用しない' }).tap();
+    await ui.getByRole('button', { name: '4 過去問演習中' }).tap();
+    await ui.getByRole('button', { name: '4 今は学習しない' }).tap();
+    assert.match(await ui.locator('#app').innerText(), /学習は開始していません。/);
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
