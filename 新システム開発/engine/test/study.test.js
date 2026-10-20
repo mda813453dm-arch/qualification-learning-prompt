@@ -2,8 +2,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { newState } from '../src/engine.js';
-import { updateReviewItem } from '../src/review.js';
+import { newState, pickNext } from '../src/engine.js';
+import { updateReviewItem, selectDueReviews } from '../src/review.js';
 import { FIXED_UI_CHOICES } from '../src/fixed-ui.js';
 import { chooseField, dueReview, frequencyOrder, pickInField, reviewTurn } from '../src/study.js';
 
@@ -96,4 +96,38 @@ test('解説の書き方：学習段階・苦手な分野・正誤に合わせ�
   assert.match(h, /法規（3問中2問まちがい）/);
   // 段階が分からないときは、4つの段階をすべて示して、利用者が答えた段階に合わせさせる
   assert.match(explainHow({}), /利用者が答えた学習段階に合わせる[\s\S]*未着手[\s\S]*過去問演習中/);
+});
+
+test('復習予定は分・時間の期限を正確に判定し、反復定着で卒業・再誤答で復帰', () => {
+  const now = Date.parse('2026-10-20T01:00:00Z');
+  const args = { today: '2026-10-20', now, intervalsMinutes: [3, 60] };
+  const event = { unitId: 'unit1', topicId: 'field1', result: 'wrong' };
+  const first = updateReviewItem(null, event, args).item;
+  assert.equal(first.dueAt, '2026-10-20T01:03:00.000Z');
+  assert.equal(selectDueReviews({ today: '2026-10-20', now: now + 179999, items: [first] }).items.length, 0);
+  assert.equal(selectDueReviews({ today: '2026-10-20', now: now + 180000, items: [first] }).items.length, 1);
+  const second = updateReviewItem(first, { ...event, result: 'confident_correct' },
+    { ...args, now: now + 180000 }).item;
+  assert.equal(second.dueAt, '2026-10-20T02:03:00.000Z');
+  const mastered = updateReviewItem(second, { ...event, result: 'confident_correct' },
+    { ...args, now: now + 3780000 }).item;
+  assert.equal(mastered.mastered, true);
+  assert.equal(selectDueReviews({ today: '2026-10-21', now: now + 86400000, items: [mastered] }).items.length, 0);
+  const resumed = updateReviewItem(mastered, event, { ...args, now: now + 86400000 }).item;
+  assert.equal(resumed.mastered, false);
+  assert.equal(resumed.step, 0);
+});
+
+test('同じ検証済み論点の別問題を優先して復習し、異なる論点と混同しない', () => {
+  const state = newState({ qualificationId: 'survey', now: 0 });
+  state.review = { 'field1:topicA': { unitId: 'field1:topicA', topicId: 'field1',
+    sourceQuestionId: 'q:2025:1', dueDate: '2026-10-20' } };
+  const old = item(2025,1,'field1'), alternate = item(2024,2,'field1'), other = item(2024,3,'field1');
+  old.packet.reviewUnitId = 'field1:topicA';
+  alternate.packet.reviewUnitId = 'field1:topicA';
+  other.packet.reviewUnitId = 'field1:topicB';
+  const picked = pickNext(state, [old,alternate,other], { today:'2026-10-20', now:Date.parse('2026-10-20T12:00:00Z') });
+  assert.equal(picked.status,'question');
+  assert.equal(picked.kind,'review');
+  assert.equal(picked.item.packet.questionId, alternate.packet.questionId);
 });
