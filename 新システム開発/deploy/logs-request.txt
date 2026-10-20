@@ -28,3 +28,4 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-19T13:01:46Z conditions
 2026-10-19T13:16:25Z cost-breakdown
 2026-10-19T14:48:00Z after cap raise to 1000
+2026-10-20T04:30:45Z parser-health-check
