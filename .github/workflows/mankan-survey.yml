@@ -4,6 +4,7 @@ on:
     branches: [ai-learning-system]
     paths:
       - '新システム開発/parser/tools/mankan_survey.py'
+      - '.github/workflows/mankan-survey.yml'
 jobs:
   survey:
     runs-on: ubuntu-latest
