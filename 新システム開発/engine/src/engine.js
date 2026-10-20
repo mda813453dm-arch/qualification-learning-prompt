@@ -48,12 +48,6 @@ export const SET_SIZE = 3;
 /** 同じ分野で続けて間違えたら、確認問題へ移ることを勧める回数（仕様：3問連続不正解）。 */
 export const WRONG_STREAK = 3;
 
-/** 実践問題で同じ分野を続けて間違えたら、次の問より先に補強の問を出す回数（仕様 B15 分岐5：連続誤答2以上）。 */
-export const REINFORCE_STREAK = 2;
-
-/** 補強の問を続けて間違えたら、補強を止めて確認問題（AI作成）を勧める回数（仕様 U21：補強確認で3回以上不正解）。 */
-export const REINFORCE_TRIES = 3;
-
 /** 分野ごとの、取り込んだ過去問での出題数。 */
 function fieldCountsOf(items) {
   const counts = {};
@@ -96,15 +90,6 @@ export function pickNext(state, items, { today, now=null, job }) {
   if (state.current && !state.current.grade && !unseenPrefetch) {
     const same = items.find((x) => x.packet.questionId === state.current.questionId);
     if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
-  }
-  // 0) 補強：実践問題で同じ分野を2問続けて間違えたら、ほかの問より先に、同じ分野の過去問で補強する（仕様 B15 分岐5）
-  if (state.reinforce?.fieldId) {
-    const f = state.reinforce.fieldId;
-    const lastId = state.lastGrade?.questionId ?? null;
-    const freshIn = usable.filter((x) => x.packet.fieldId === f && !state.history[x.packet.questionId]);
-    const wrongIn = usable.filter((x) => x.packet.fieldId === f && state.history[x.packet.questionId]?.result === 'wrong' && x.packet.questionId !== lastId);
-    const hit = freshIn[0] ?? wrongIn[0];
-    if (hit) return { status: 'question', item: hit, kind: 'reinforce' };
   }
   // 1) 期限の来た復習
   for (const r of due.items ?? []) {
@@ -397,29 +382,16 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   const fid = cur.fieldId ?? null;
   const prev = state.wrongStreak && state.wrongStreak.fieldId === fid ? state.wrongStreak.count : 0;
   const streak = result === 'wrong' ? prev + 1 : 0;
-  // 補強（B15 分岐5）：通常の問で2問続けて間違えたら、次は同じ分野の補強の問。補強の問に正解したら終える。
-  // 補強を3回続けて間違えたら補強を止め、確認問題（AI作成）を勧める
-  let reinforce = state.reinforce ?? null;
-  // 3問目（補強の公式過去問を含む）を間違えた瞬間に、確認問題を必須にする。
-  // 先に補強へ入っていても、同一fieldIdの連続誤答をリセットしない。
+  // 3問連続不正解が成立した時点でだけAI確認問題へ強制遷移する。
   const checkSuggested = result === 'wrong' && !!fid && streak >= WRONG_STREAK;
-  if (checkSuggested) {
-    reinforce = null;
-  } else if (cur.kind === 'reinforce') {
-    const tries = (reinforce?.tries ?? 0) + (result === 'wrong' ? 1 : 0);
-    if (result !== 'wrong') reinforce = null;
-    else reinforce = { fieldId: fid, tries };
-  } else if (result === 'wrong' && fid && streak >= REINFORCE_STREAK) {
-    reinforce = { fieldId: fid, tries: 0 };
-  }
   return {
     ok: true,
-    grade: { ...g, wrongStreak: streak, checkSuggested, ...(reinforce ? { reinforceNext: true } : {}) },
+    grade: { ...g, wrongStreak: streak, checkSuggested },
     state: {
       ...state,
       wrongStreak: { fieldId: fid, count: checkSuggested ? WRONG_STREAK : streak },
       remediation: checkSuggested ? { required: true, fieldId: fid, triggerQuestionId: questionId } : (state.remediation ?? null),
-      reinforce,
+      reinforce: null,
       // 3問連続で間違えたら、確認問題のあとも同じ分野に戻る（次の3問を同じ分野から出す）
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
