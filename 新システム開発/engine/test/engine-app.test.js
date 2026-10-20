@@ -774,12 +774,38 @@ test('3問連続誤答で公式過去問をロックし、確認問題の正解�
   assert.equal(last.next.status, 'remediation');
   const held = await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '2026年度 問1' });
   assert.equal(held.body.status, 'remediation', '問番号指定でも強制補強を迂回できない');
-  const missing = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { selected: '2', correctAnswer: '2' });
-  assert.equal(missing.status, 400);
-  const wrong = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { checkQuestion: '説明を理解したか答えてください。', selected: '1', correctAnswer: '2' });
-  assert.equal(wrong.body.status, 'remediation_retry');
+  // 回答時に正答だけ送っても、出題時の登録なしでは進行を解除できない。
+  const missing = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`,
+    { selected: '2', correctAnswer: '2' });
+  assert.equal(missing.status, 409);
+  assert.equal(missing.body.error, 'CONFIRMATION_NOT_REGISTERED');
+  const register = (question = 'この分野の基礎事項として正しい説明を選んでください。', correctAnswer = 2) =>
+    call(env, 'POST', `/v1/sessions/${sessionId}/remediation/register`,
+      { question, choices: ['正しくない説明', '正しい説明', '別の説明'], correctAnswer });
+  const created = await register();
+  assert.equal(created.status, 200, JSON.stringify(created.body));
+  assert.equal(created.body.status, 'remediation_question');
+  assert.ok(created.body.challengeId);
+  assert.equal(created.body.correctAnswer, undefined, '問題表示前に正答を渡さない');
+  assert.equal(created.body.question.includes('基礎事項'), true);
+  const repeated = await register('異なる問題を生成しました。試しに出題してください。', 1);
+  assert.equal(repeated.body.challengeId, created.body.challengeId, '再試行では未回答の同一問題を維持する');
+  const forged = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`,
+    { challengeId: 'forged', selected: '2', correctAnswer: '2' });
+  assert.equal(forged.status, 409);
+  assert.equal(forged.body.error, 'CONFIRMATION_ID_MISMATCH');
+  const wrong = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`,
+    { challengeId: created.body.challengeId, selected: '1', correctAnswer: '1' });
+  assert.equal(wrong.body.status, 'remediation_retry', '回答時に送られた偽の正答を採用しない');
+  assert.equal(wrong.body.correctAnswer, '2', '登録時に固定した正答で採点する');
   assert.equal((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'remediation');
-  const right = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { checkQuestion: '説明を理解したか答えてください。', selected: '2', correctAnswer: '2' });
+  const stale = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`,
+    { challengeId: created.body.challengeId, selected: '2' });
+  assert.equal(stale.status, 409, '誤答後に同じ問題IDで正解に書き換えられない');
+  const second = await register('次の新しい確認問題です。理解できた内容を選んでください。', 3);
+  assert.notEqual(second.body.challengeId, created.body.challengeId);
+  const right = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`,
+    { challengeId: second.body.challengeId, selected: '3' });
   assert.equal(right.body.status, 'remediation_complete');
   assert.notEqual((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'remediation');
 });
