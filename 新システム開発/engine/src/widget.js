@@ -379,7 +379,7 @@ a{color:inherit}
       document.getElementById('fieldInput').innerHTML='<div class="notice">分野名を「、」区切りで全て入力してください。公式分野以外や重複がある場合は変更しません。</div><textarea id="fieldOrder" rows="3"></textarea><button id="fieldConfirm">この順番を確認する</button>';
       document.getElementById('fieldOrder').value=draftPlan().orderedFields.join('、');
       document.getElementById('fieldConfirm').onclick=function(){
-        var entered=document.getElementById('fieldOrder').value.split(/[、,\n]/).map(function(x){return x.trim();}).filter(Boolean);
+        var entered=document.getElementById('fieldOrder').value.split(/[、,\\n]/).map(function(x){return x.trim();}).filter(Boolean);
         if(entered.length!==fields.length||new Set(entered).size!==fields.length||entered.some(function(x){return fields.indexOf(x)<0;})){
           app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">登録済みの全分野を重複なく指定してください。変更していません。</div>');return;
         }
