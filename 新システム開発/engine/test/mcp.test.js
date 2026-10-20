@@ -532,3 +532,25 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
   assert.equal(r.menu.studyId, 'st1');
   assert.equal(r.menu.learnerId, 'l1');
 });
+
+test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
+  const { forModel } = await import('../src/mcp.js');
+  const { WIDGET_URI } = await import('../src/widget.js');
+  const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
+  const answer = TOOLS.find((t) => t.name === 'completeRemediation');
+  assert.ok(reg && reg.appOnly && !reg.uiOnly);
+  assert.ok(answer && answer.appOnly && answer.uiOnly);
+  assert.deepEqual(reg.api({ sessionId: 'abc', question: '確認問題の長い本文です。どれが適切ですか？',
+    choices: ['選択肢1','選択肢2'], correctAnswer: 2 }),
+    ['POST', '/v1/sessions/abc/remediation/register',
+      { question: '確認問題の長い本文です。どれが適切ですか？', choices: ['選択肢1','選択肢2'], correctAnswer: 2 }]);
+  assert.deepEqual(answer.api({ sessionId: 'abc', challengeId: 'id1', selected: '2' }),
+    ['POST', '/v1/sessions/abc/remediation/complete', { challengeId: 'id1', selected: '2' }]);
+  const result = forModel({ status: 'remediation_question', question: '問題本文', choices: ['A','B'],
+    sessionId: 'abc', challengeId: 'id1', correctAnswer: 2 });
+  assert.equal(result.question, undefined);
+  assert.equal(result.choices, undefined);
+  assert.equal(result.correctAnswer, undefined);
+  assert.equal(result.challengeId, 'id1');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v39.html');
+});
