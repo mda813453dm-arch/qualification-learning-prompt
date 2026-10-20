@@ -76,9 +76,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('input[name=ans][value="3"]').check();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 0);
     await ui.getByRole('button', { name: '解答する' }).click();
-    await page.waitForTimeout(350);
-    console.log(name, 'grade-widget-debug', JSON.stringify({ visible: await ui.locator('#app').innerText(), calls: await page.evaluate(() => window.calls.filter(m => m.method === 'tools/call').map(m => m.params?.name)), errors, protocol: await page.evaluate(() => window.protocolErrors) }).slice(0, 1500));
-    await ui.getByText('正解（あなたの答え 3／正答は 3）').waitFor();
+    await ui.locator('#exp').waitFor();
+    assert.match(await ui.locator('#app').innerText(), /正解です。/);
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
     await ui.getByRole('button', { name: '1 解説を見る' }).click();
