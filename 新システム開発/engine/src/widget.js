@@ -439,8 +439,8 @@ a{color:inherit}
       if(/通知|自動出題|リマインド|メール|知らせ|プッシュ|アラーム/.test(raw)){
         reviewReject('チャットを閉じた状態の自動通知・自動出題には対応していません。予定記録としての変更は選択後に行ってください。');return;
       }
-      var tokens=raw.split(/[、,，\n]+/).map(function(x){return x.trim();}).filter(Boolean);
-      var vals=tokens.map(function(x){var m=/^(\d+)\s*(分|時間|日)(後)?$/.exec(x);return m?Number(m[1])*(m[2]==='日'?1440:m[2]==='時間'?60:1):NaN;});
+      var tokens=raw.split(/[、,，\\n]+/).map(function(x){return x.trim();}).filter(Boolean);
+      var vals=tokens.map(function(x){var m=/^(\\d+)\\s*(分|時間|日)(後)?$/.exec(x);return m?Number(m[1])*(m[2]==='日'?1440:m[2]==='時間'?60:1):NaN;});
       if(!vals.length||vals.length>8||vals.some(function(x,i){return !Number.isInteger(x)||x<1||x>525600||(i>0&&x<=vals[i-1]);})){
         reviewReject('間隔は「3分後、1時間後」のように、正の値を昇順・重複なしで入力してください。');return;
       }
