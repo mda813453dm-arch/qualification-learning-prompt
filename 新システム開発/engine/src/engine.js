@@ -328,7 +328,7 @@ function sameQuestion(given, current) {
  * 回答を採点する。confidence: 'sure'（自信あり・既定）| 'guess'（勘で当てた）
  * 返り値 {ok, state, grade} / {ok:false, reason}
  */
-export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals }) {
+export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals, intervalsMinutes }) {
   const cur = state.current;
   if (!cur) return { ok: false, reason: 'NO_QUESTION_PRESENTED' };
   // 採点の応答で次の問を先に控えたあと、同じ回答がもう一度届いても（再送）、同じ結果を返す
@@ -353,7 +353,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   // 「分からない」：想起できなかった問（B15）。採点には数えず、正答を見せ、復習に登録する（同じ分野の連続誤答にも数えない）
   if (/^(分からない|わからない|分かりません|わかりません|dontknow)$/i.test(String(value ?? '').trim())) {
     const g = { questionId, dontKnow: true, result: 'recall_failure', correctAnswer: cur.correctAnswer, answerPdfUrl: cur.source.answerPdfUrl };
-    const upd = updateReviewItem(state.review[questionId] ?? null, { unitId: questionId, topicId: cur.fieldId ?? 'unclassified', qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, examDate: state.plan.examDate, intervals });
+    const upd = updateReviewItem(state.review[questionId] ?? null, { unitId: questionId, topicId: cur.fieldId ?? 'unclassified', qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
     const review = { ...state.review };
     if (upd.status === 'updated') review[questionId] = upd.item;
     const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
@@ -370,7 +370,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     qualificationId: state.qualificationId,
     result,
     source: correct ? 'self_report' : 'wrong',
-  }, { today, examDate: state.plan.examDate, intervals });
+  }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
   const review = { ...state.review };
   if (upd.status === 'updated') review[questionId] = upd.item;
   // 同じ分野で続けて間違えた数（正解で0に戻る）。3に届いたら確認問題を勧め、数え直す
