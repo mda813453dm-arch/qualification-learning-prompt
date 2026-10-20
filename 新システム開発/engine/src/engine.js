@@ -22,7 +22,8 @@ export function newState({ qualificationId, learnerId = null, plan = {}, now }) 
     createdAt: now,
     plan: { examDate: plan.examDate ?? null, fieldWeights: plan.fieldWeights ?? {} },
     history: {}, // questionId -> {result, selected, answeredAt, source}
-    review: {}, // questionId -> 復習の予定（review.js の item）
+    review: {}, // 論点ID（未分類なら問題ID） -> 復習の予定
+    reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 }, // 今回の学習の復習と実践の配分
     current: null, // 出題中の問（正答はここに控え、AIには渡さない）
     remediation: null, // 同一分野3連続誤答：AI作成確認問題に正解するまで新たな公式問題を禁止
     withheld: [], // 引継ぎ時に出題を止めた問と理由
@@ -84,7 +85,10 @@ export function pickNext(state, items, { today, now=null, job }) {
     if(!byUnit.has(key))byUnit.set(key,[]);
     byUnit.get(key).push(x);
   }
-  const due = selectDueReviews({ today, now, items: Object.values(state.review), sessionStart: true });
+  const pace = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+  const initialReview = pace.newAnswered === 0 && pace.initialServed < 5;
+  const due = selectDueReviews({ today, now, items: Object.values(state.review),
+    sessionStart: initialReview, practiceSinceReview: pace.sinceReview });
   // 採点の応答に付けて先に控えた問（まだ利用者に見せていない）は、期限の来た復習があれば出し直す
   const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byUnit.has(r.unitId));
   if (state.current && !state.current.grade && !unseenPrefetch) {
@@ -330,6 +334,20 @@ function sameQuestion(given, current) {
  * 回答を採点する。confidence: 'sure'（自信あり・既定）| 'guess'（勘で当てた）
  * 返り値 {ok, state, grade} / {ok:false, reason}
  */
+/** 学習開始時の最大5復習、その後は新しい問題2問ごとに1復習。採点確定時だけ進む。 */
+function completedPace(state, kind) {
+  const p = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+  if (kind === 'review') return {
+    initialServed: p.initialServed + (p.newAnswered === 0 ? 1 : 0),
+    newAnswered: p.newAnswered, sinceReview: 0,
+  };
+  if (kind === 'new') return {
+    initialServed: p.initialServed, newAnswered: p.newAnswered + 1,
+    sinceReview: p.sinceReview + 1,
+  };
+  return p;
+}
+
 export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals, intervalsMinutes }) {
   const cur = state.current;
   if (!cur) return { ok: false, reason: 'NO_QUESTION_PRESENTED' };
@@ -348,6 +366,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
         ...state,
         current: { ...cur, grade: g },
         lastGrade: g,
+        reviewPacing: cur.kind === 'review' ? completedPace(state, cur.kind) : state.reviewPacing,
         skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, questionNumber: cur.source?.number ?? null }],
       },
     };
@@ -360,7 +379,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     const review = { ...state.review };
     if (upd.status === 'updated') review[reviewId] = upd.item;
     const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
-    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g } };
+    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind) } };
   }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
@@ -396,6 +415,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
       lastGrade: g,
+      reviewPacing: completedPace(state, cur.kind),
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },
