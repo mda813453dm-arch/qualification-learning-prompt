@@ -92,6 +92,9 @@ a{color:inherit}
     callTool('reportUiEvent', args).catch(function(){});
   }
   var diagged = false;
+  // 学習の番号（sessionId・学習ID）を、同じ学習の別の枠（解説・次へのメニュー）でも使えるよう控える。終了ボタンをAIに任せず、枠から確実に押せるようにするため
+  function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId) cur.sid = state.sessionId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
+  function loadIds(){ try { return JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) { return {}; } }
   // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
   var myAt = 0, locked = false, bc = null;
   function lockOld(){
@@ -109,6 +112,7 @@ a{color:inherit}
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure'].includes(data.status))) return;
     stamp(data);
+    saveIds();
     hasView = true;
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
     if (data.grade && data.next) {
@@ -217,7 +221,20 @@ a{color:inherit}
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
     var em = document.getElementById('endMenu');
-    if (em) em.onclick = function(){
+    if (em) em.onclick = async function(){
+      em.disabled = true;
+      var ids = loadIds(), lid = ids.lid || ids.sid;
+      if (lid) {
+        try {
+          var r = await callTool('endStudy', { studyId: lid, sessionId: ids.sid || lid, area: ids.field || undefined, item: ids.field || undefined, purpose: ids.field ? ids.field + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
+          if (r && !r.error && typeof r.display === 'string') {
+            app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
+            scrollUp(true);
+            return;
+          }
+        } catch (e) {}
+      }
+      // 番号が分からない・終了に失敗したときだけ、AIに頼む（AIが endStudy を呼ぶ）
       app.innerHTML = body + '<div class="result ok">今日はここまで（学習を終了）</div><div class="notice">終了ログと引継ぎデータは、この下に出ます。</div>';
       ask('今日はここまで。学習を終了します。');
     };
@@ -343,7 +360,7 @@ a{color:inherit}
     var ov = onboardOv || {};
     var fields = ov.fields || [];
     var field = fields[0] || '';
-    studyLid = learner; studyField = field || null;
+    studyLid = learner; studyField = field || null; saveIds();
     var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
     var h = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
     if (field) {

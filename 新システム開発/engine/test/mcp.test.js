@@ -489,3 +489,9 @@ test('「今日はここまで」は問題の画面に出さず、解説・次�
   assert.ok(h.includes('id="endMenu"'));
   assert.ok(!/h \+= endBar\(\);\s*app\.innerHTML = h;\s*scrollUp\(\);/.test(h));
 });
+
+test('メニューの「今日はここまで」は、画面から直接 endStudy を呼んで終了する', () => {
+  const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.ok(h.includes('function saveIds') && h.includes('function loadIds'));
+  assert.ok(h.includes("callTool('endStudy', { studyId: lid, sessionId: ids.sid || lid"));
+});
