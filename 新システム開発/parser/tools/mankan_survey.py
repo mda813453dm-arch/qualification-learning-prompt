@@ -30,3 +30,19 @@ for u in ['https://www.mankan.org/pdf/guide.pdf']:
             print(re.sub(r'\s+', ' ', text)[:2500])
     except Exception as e:
         print('ERR guide', e)
+
+# 試験のご案内（HTML）の本文から、試験の概要の行を表示する（読み取りのみ）
+for u in ['https://www.mankan.org/index.html']:
+    try:
+        raw = urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=60).read()
+        m = re.search(rb'charset=["\']?([A-Za-z0-9_-]+)', raw[:3000])
+        enc = (m.group(1).decode() if m else 'utf-8').lower()
+        h = raw.decode('cp932' if enc in ('shift_jis', 'sjis', 'x-sjis') else enc, 'ignore')
+        text = unicodedata.normalize('NFKC', re.sub(r'<script.*?</script>|<style.*?</style>|<[^>]+>', ' ', h, flags=re.S))
+        text = re.sub(r'\s+', ' ', text)
+        print('INDEX', u, len(text))
+        for k in ['試験', '合格', '受験資格', '試験日', '出題', '手数料', '免除']:
+            for mm in list(re.finditer(k, text))[:3]:
+                print('  [%s] %s' % (k, text[max(0, mm.start() - 40):mm.start() + 120]))
+    except Exception as e:
+        print('ERR index', e)
