@@ -571,17 +571,12 @@ async function diagStep(env, id, state0, now, b) {
       await saveSession(env, id, state, now);
       return { status: 'diagGraded', sessionId: id, grade, question: view(state.aiDiag) };
     }
-    // 全問を答えたら、誤答率の高い順（同じなら出題数、次に公式の分野順）に計画を並べ直す
-    const counts = fieldCounts(items, fieldIds);
-    const res = diagnosisOrder(fieldIds, answers, counts);
-    const weights = Object.fromEntries(res.order.map((f, i) => [f, res.order.length - i]));
-    state = { ...state, aiDiag: { ...d, status: 'done', answers }, diag: { status: 'done', answers }, plan: { ...(state.plan ?? {}), fieldWeights: weights } };
+    // 診断結果はまず表示する。利用者の「計画作成」承認まで学習計画を変更しない。
+    const allAnswers = [...(d.previousAnswers ?? []), ...answers];
+    state = { ...state, aiDiag: { ...d, status: 'done', answers: allAnswers }, diag: { status: 'done', answers: allAnswers } };
     await saveSession(env, id, state, now);
-    const rows = res.rows.filter((r) => r.n > 0).map((r) => `${name(r.fieldId)}：${r.n}問中${r.n - r.w}問正解`);
-    const note = res.allRight ? '初期診断では誤答がありませんでした（弱点がないとは断定しません）。出題数と公式の分野順で並べました。'
-      : res.allWrong ? '初期診断は全問不正解でした。分野の間に差はないため、出題数と公式の分野順で並べました。'
-      : '初期診断の結果（暫定評価）で、誤答の多い分野から並べました。';
-    return { status: 'needPlan', planReady: true, grade, diagResult: rows, plan: { fields: res.order.map(name), note }, overview: overviewFor(state.qualificationId), learnerId: state.learnerId, sessionId: id };
+    const report = await diagStep(env, id, state, now, { action: 'result' });
+    return { ...report, grade };
   }
   throw new HttpError(400, 'DIAG_ACTION_INVALID');
 }
