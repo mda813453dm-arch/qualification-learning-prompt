@@ -757,3 +757,29 @@ test('終了メニューが学習IDを失ってもセッションIDから同一�
   assert.equal(bySession.body.totalMinutes, byStudy.body.totalMinutes, '同じ終了を二重計上しない');
   assert.equal(bySession.body.handoff, byStudy.body.handoff, '終了後も同一の引継ぎデータを返す');
 });
+
+test('3問連続誤答で公式過去問をロックし、確認問題の正解を記録したときだけ解除', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  let last = null;
+  for (let i = 0; i < 3; i++) {
+    const q = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+    assert.ok(q);
+    const g = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: '5' });
+    assert.equal(g.status, 200, JSON.stringify(g.body));
+    assert.equal(g.body.grade.correct, false);
+    last = g.body;
+  }
+  assert.equal(last.grade.checkSuggested, true);
+  assert.equal(last.next.status, 'remediation');
+  const held = await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '2026年度 問1' });
+  assert.equal(held.body.status, 'remediation', '問番号指定でも強制補強を迂回できない');
+  const missing = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { selected: '2', correctAnswer: '2' });
+  assert.equal(missing.status, 400);
+  const wrong = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { checkQuestion: '説明を理解したか答えてください。', selected: '1', correctAnswer: '2' });
+  assert.equal(wrong.body.status, 'remediation_retry');
+  assert.equal((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'remediation');
+  const right = await call(env, 'POST', `/v1/sessions/${sessionId}/remediation/complete`, { checkQuestion: '説明を理解したか答えてください。', selected: '2', correctAnswer: '2' });
+  assert.equal(right.body.status, 'remediation_complete');
+  assert.notEqual((await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.status, 'remediation');
+});
