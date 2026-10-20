@@ -24,10 +24,9 @@ for u in ['https://www.mankan.org/pdf/guide.pdf']:
     try:
         d = fitz.open(stream=urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=120).read(), filetype='pdf')
         print('GUIDE', u, 'pages', d.page_count)
-        for i in range(min(d.page_count, 12)):
-            for line in d[i].get_text().splitlines():
-                t = unicodedata.normalize('NFKC', line).strip()
-                if re.search(r'合格|試験日|時間|出題|問題数|受験資格|手数料|科目|免除|方式|配点|基準', t):
-                    print('  p%d | %s' % (i + 1, t[:120]))
+        for i in range(min(d.page_count, 4)):
+            text = unicodedata.normalize('NFKC', d[i].get_text())
+            print('--- guide page', i + 1, 'chars', len(text))
+            print(re.sub(r'\s+', ' ', text)[:2500])
     except Exception as e:
         print('ERR guide', e)
