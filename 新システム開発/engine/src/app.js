@@ -1063,6 +1063,16 @@ async function route(request, env, url, now) {
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(studyStartKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
+    // 復習の順番だけを新しい学習時間に合わせてリセット。復習予定と過去の採点は保持する。
+    const activeSessionId = await env.STORE.get(lastSessionKey(learnerId));
+    if (activeSessionId) {
+      try {
+        const active = await loadSession(env, activeSessionId, now);
+        await saveSession(env, activeSessionId, {
+          ...active, reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 },
+        }, now);
+      } catch { /* セッション未作成・期限切れのときは、学習開始を妨げない */ }
+    }
     const total = (await env.STORE.get(timeKey(learnerId), 'json'))?.minutes ?? 0;
     // 前回答えていない問があれば、その問から続けるかを利用者に選んでもらう（勝手には出さない）
     const savedState = given ? await env.STORE.get(learnerStateKey(learnerId), 'json') : null;
