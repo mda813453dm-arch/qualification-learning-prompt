@@ -148,3 +148,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-19T18:30:00Z implement shared past exam storage: persist indefinitely by qualification/year
 2026-10-20T05:54:29Z add 中小企業診断士 1st-stage past exams (parser adapter shindan + engine catalog/discovery)
 2026-10-20T08:19:40Z deploy 行政書士 令和2〜5年度 reading fix (parser gyosei: implicit 1-40 section)
+2026-10-20T08:58:11Z deploy widget v34: short chat sentences, next question and menus in a new frame at the bottom
