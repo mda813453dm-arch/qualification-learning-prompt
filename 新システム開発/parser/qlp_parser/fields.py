@@ -216,3 +216,23 @@ def classify_gyosei(question):
             return {"fieldId": field_id, "unitId": GYOSEI_FIELDS[field_id], "method": "official_number_range",
                     "evidence": f"問題{lo}〜{hi}", "verified": True}
     return {"fieldId": None, "unitId": None, "method": "unclassified", "evidence": None, "verified": False}
+
+
+# 中小企業診断士 第1次試験：試験科目（7科目）。1冊が1科目なので、分野は表紙の科目名で決まる
+SHINDAN_FIELDS = {
+    "d1": "経済学・経済政策",
+    "d2": "財務・会計",
+    "d3": "企業経営理論",
+    "d4": "運営管理（オペレーション・マネジメント）",
+    "d5": "経営法務",
+    "d6": "経営情報システム",
+    "d7": "中小企業経営・中小企業政策",
+}
+
+
+def classify_shindan(question):
+    name = next((x.split(":", 1)[1] for x in question.notes if x.startswith("subject:")), None)
+    fid = next((k for k, v in SHINDAN_FIELDS.items() if v == name), None)
+    if not fid:
+        return {"fieldId": None, "unitId": None, "method": "official_subject", "evidence": None, "verified": False}
+    return {"fieldId": fid, "unitId": name, "method": "official_subject", "evidence": f"問題冊子の表紙（{name}）", "verified": True}

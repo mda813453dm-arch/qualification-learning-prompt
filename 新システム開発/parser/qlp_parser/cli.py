@@ -50,6 +50,9 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
             adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
             if hasattr(adapter, "check_year"):
                 adapter.check_year(adoc, year)
+            if hasattr(adapter, "check_question"):
+                # 1冊に1科目の資格（中小企業診断士）：問題と正解の年度・科目がそろっているか
+                adapter.check_question(qdoc, adoc, year, section)
             raw = adapter.parse_questions(qdoc)
             answers = adapter.parse_answers(adoc)
     except ParseError as e:

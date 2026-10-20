@@ -1,1 +1,1 @@
-probe https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026C.pdf https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026B.pdf
+check 2026 2023 2020
