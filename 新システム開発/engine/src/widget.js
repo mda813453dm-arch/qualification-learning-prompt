@@ -138,6 +138,15 @@ a{color:inherit}
       data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
       app.innerHTML = fh; return;
     }
+    if (data.status === 'remediation') {
+      app.innerHTML = '<div class="notice" role="alert">' + esc(data.notice || 'この分野の確認問題に正解するまで次の公式過去問へ進めません。') + '</div><div class="row"><button id="mandatoryCheck">AI作成確認問題を始める</button></div>' + endBar();
+      document.getElementById('mandatoryCheck').onclick = function(){
+        this.disabled = true;
+        ask((data.fieldName || '今の分野') + 'で同一分野3問連続不正解です。次の公式過去問へ進まず、AI作成の確認問題を出題し、回答後に正答を照合してください。正解時だけcompleteRemediationで確認結果を記録して同じ分野の実践問題へ戻してください。不正解時は別の確認問題で補強してください。');
+      };
+      bindEnd();
+      return;
+    }
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
       // 待つ間・解き終えたときも、次にできることをボタンで出す（番号の選択肢の文は出さない）
       var waiting = data.status === 'waiting';
@@ -456,6 +465,17 @@ a{color:inherit}
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
     if (g.checkSuggested) h += '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめますか？</div><div class="row"><button id="check">確認問題で基本を確かめる</button></div>';
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
+    // 強制補強中は「次の問題へ」ボタンを一切出さない。
+    if (g.checkSuggested) {
+      app.innerHTML = h + endBar();
+      var mandatory = document.getElementById('check');
+      mandatory.onclick = function(){
+        this.disabled = true;
+        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。利用者が正解した場合のみcompleteRemediationを呼んで同じ分野の公式実践問題へ戻してください。');
+      };
+      bindEnd();
+      return;
+    }
     // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
     var nextInPlace = async function(){
       if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
