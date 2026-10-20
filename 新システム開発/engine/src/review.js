@@ -6,14 +6,22 @@ const date=(v)=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&new Date(v+'
 const add=(day,n)=>new Date(Date.parse(day+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);
 const days=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/86400000);
 /** intervals：復習の間隔（日）。学習計画の「復習頻度・タイミング」で選んだ型。既定は 1→3→7→14→30日。 */
-export function updateReviewItem(previous,event,{today,examDate=null,intervals=INTERVALS}={}){
+export function updateReviewItem(previous,event,{today,examDate=null,intervals=INTERVALS,intervalsMinutes=null,now=null}={}){
  if(!date(today))return {status:'date_unverified',item:previous??null};
  if(examDate!==null&&!date(examDate))throw Error('INVALID_EXAM_DATE');
  if(!event?.unitId||!event.topicId)throw Error('REVIEW_UNIT_REQUIRED');
  const p=previous??null;
- const steps=intervals.length?intervals:INTERVALS;
+ const minuteBased=Array.isArray(intervalsMinutes)&&intervalsMinutes.length>0;
+ if(minuteBased&&intervalsMinutes.some((m,i)=>!Number.isInteger(m)||m<0||m>525600||(i>0&&m<=intervalsMinutes[i-1])))throw Error('INVALID_REVIEW_INTERVALS');
+ const steps=minuteBased?intervalsMinutes:(intervals.length?intervals:INTERVALS);
+ const current=Number.isFinite(now)?now:Date.parse(today+'T00:00:00+09:00');
+ const dueTime=(m)=>new Date(current+m*60000).toISOString();
+ const dueDay=(iso)=>new Date(Date.parse(iso)+9*3600000).toISOString().slice(0,10);
  let step=Number.isInteger(p?.step)&&p.step<steps.length?p.step:Math.max(0,steps.indexOf(p?.intervalDays));
  let stage=steps[step], successes=p?.recallSuccesses??0, due=p?.dueDate??null;
+ let dueAt=p?.dueAt??null, mastered=p?.mastered??false;
+ const nextDue=()=>{ if(minuteBased){dueAt=dueTime(stage);due=dueDay(dueAt);}else{due=add(today,stage);dueAt=null;} };
+ const isDue=()=>dueAt?Date.parse(dueAt)<=current:!!due&&due<=today;
  const result=event.result;
  if(!['wrong','recall_failure','confident_correct','guess_correct','hinted_correct','skip','exposed','invalid'].includes(result))throw Error('INVALID_REVIEW_RESULT');
  if(!p&&!['wrong','recall_failure','guess_correct'].includes(result)&&event.explicitReview!==true)return {status:'not_registered',item:null};
