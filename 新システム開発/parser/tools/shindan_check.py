@@ -33,15 +33,39 @@ for year in YEARS:
             continue
         subj = subject_of(t)
         a = answers.get(subj)
-        r = run('shindan', year, PdfSource(get(u), u), PdfSource(get(a), a) if a else None, subj)
+        qb, ab = get(u), (get(a) if a else None)
+        r = run('shindan', year, PdfSource(qb, u), PdfSource(ab, a) if a else None, subj)
+        if r['status'] == 'unavailable' and ab:
+            import fitz
+            d = fitz.open(stream=ab, filetype='pdf')
+            print('    answer pdf', a, 'pages', d.page_count, [w[4] for w in d[0].get_text('words')][:60])
+        if r['status'] == 'unavailable':
+            import fitz
+            print('    question cover', fitz.open(stream=qb, filetype='pdf')[0].get_text()[:200].replace('\n', ' / '))
         reasons = collections.Counter(e['reason'] for e in r.get('excluded', []))
         total.update(reasons)
         total['packets'] += r.get('packetCount', 0)
         print(year, subj, r['status'], r.get('reason', ''), r.get('detail', ''), 'packets', r.get('packetCount'), dict(reasons))
+        raw = {}
+        if r['status'] != 'unavailable':
+            import fitz
+            from qlp_parser.adapters import shindan
+            raw = {q.number: q for q in shindan.parse_questions(fitz.open(stream=qb, filetype='pdf'))}
+        notes = collections.Counter(n for q in raw.values() for n in q.notes if not n.startswith('subject:'))
+        print('    notes', dict(notes))
         for e in r.get('excluded', []):
-            if e['reason'] not in ('FIGURE_REQUIRED_NOT_AVAILABLE',):
-                print('    excluded', e)
+            q = raw.get(e['questionNumber'])
+            if not q or 'subquestions' not in q.notes:
+                print('    excluded', e, q and q.notes, q and q.stem[:80], q and len(q.choices))
         ps = r.get('packets', [])
-        for p in ps[:1] + [x for x in ps if len(x['choices']) == 5][:1]:
+        for p in [x for x in ps if 'table_by_layout' in x['evidence']['notes']][:2]:
+            print('    table', p['questionNumber'], p['stem'][:100])
+        for p in ps[:1]:
             print('    sample', json.dumps({k: p[k] for k in ('questionNumber', 'stem', 'choices', 'correctAnswer', 'fieldId', 'diagramRequired')}, ensure_ascii=False)[:700])
 print('TOTAL', dict(total))
+import fitz
+d = fitz.open(stream=get('https://www.jf-cmca.jp/attach/test/r08/r08_1ji_annai.pdf'), filetype='pdf')
+print('ANNAI pages', d.page_count)
+for i in range(min(d.page_count, 6)):
+    print('--- annai page', i + 1)
+    print(d[i].get_text()[:3000])

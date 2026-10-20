@@ -53,3 +53,36 @@ test('discover は掲載ページを開いて取り込み元を返す', async ()
   assert.equal(s.length, 2);
   assert.deepEqual(await discover('unknown', async () => ''), []);
 });
+
+test('中小企業診断士は、科目ごとの問題PDFと、年度ごとの正解ページにある科目名のリンクを組にする', async () => {
+  const list = `
+<a href="/attach/test/shikenmondai/1ji2026/A1JC2026.pdf">Ａ 経済学・経済政策</a>
+<a href="/attach/test/shikenmondai/1ji2026/D1JC2026.pdf">Ｄ 運営管理（オペレーション・マネジメント）</a>
+<a href="/attach/test/shikenmondai/1ji2026/G1JC2026.pdf">Ｇ 中小企業経営・中小企業政策</a>
+<a href="/attach/test/shikenmondai/1ji(sai)2023/A1JI2023-2.pdf">Ａ 経済学・経済政策</a>
+<a href="/attach/test/shikenmondai/1ji2023/A1JI2023.pdf">Ａ 経済学・経済政策</a>
+<a href="/attach/test/shikenmondai/1ji2018/a1ji2018.pdf">Ａ 経済学・経済政策</a>
+<a href="/attach/test/r03/seigohyo.pdf">正誤表</a>`;
+  const pages = {
+    'https://www.jf-cmca.jp/contents/010_c_/shikenmondai.html': list,
+    'https://www.jf-cmca.jp/contents/010_c_/010_c_r08_shiken/R08_1ji_shiken_kaitou.html': `
+<a href="../../../attach/test/r08/1ji_seikai/2026A.pdf">経済学・経済政策</a>
+<a href="../../../attach/test/r08/1ji_seikai/2026D.pdf">運営管理（オペレーション・マネジメント）</a>
+<a href="../../../attach/test/r08/seikai_teisei.pdf">※正解の訂正について（運営管理）</a>
+<a href="../../../attach/test/r08/1ji_seikai/2026G.pdf">中小企業経営・中小企業政策</a>`,
+    'https://www.jf-cmca.jp/contents/010_c_/010_c_r05_shiken/R05_1ji_shiken_kaitou.html': `
+<a href="/attach/test/r05/1ji_seikai/2023a.pdf">経済学・経済政策</a>`,
+  };
+  const fetchText = async (url) => {
+    if (!(url in pages)) throw new Error('404');
+    return pages[url];
+  };
+  const s = await discover('shindan', fetchText, 99);
+  assert.deepEqual(s.map((x) => [x.year, x.section, x.questionUrl.split('/').pop(), x.answerUrl.split('/').pop()]), [
+    [2026, '経済学・経済政策', 'A1JC2026.pdf', '2026A.pdf'],
+    [2026, '運営管理（オペレーション・マネジメント）', 'D1JC2026.pdf', '2026D.pdf'],
+    [2026, '中小企業経営・中小企業政策', 'G1JC2026.pdf', '2026G.pdf'],
+    [2023, '経済学・経済政策', 'A1JI2023.pdf', '2023a.pdf'],
+  ]);
+  assert.ok(s.every((x) => x.adapter === 'shindan'));
+});

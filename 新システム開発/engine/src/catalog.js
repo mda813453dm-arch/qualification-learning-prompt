@@ -275,6 +275,47 @@ export const CATALOG = {
       { adapter: 'gyosei', year: 2025, section: '年度共通', questionUrl: 'https://gyosei-shiken.or.jp/pdf/r7_mondai.pdf', answerUrl: 'https://gyosei-shiken.or.jp/doc/exam/r7ans.html' },
     ],
   },
+  shindan: {
+    qualificationId: 'q021',
+    name: '中小企業診断士',
+    aliases: ['中小企業診断士', '診断士', '中小企業診断士試験', '中小企業診断士第1次試験', '中小企業診断士1次試験'],
+    org: '一般社団法人 中小企業診断協会',
+    officialSite: 'https://www.jf-cmca.jp/',
+    // 概要の文言は公式ページでまだ確かめていない（書かれていない項目は「未確認」と出る）
+    overview: [],
+    subjects: [
+      '経済学・経済政策',
+      '財務・会計',
+      '企業経営理論',
+      '運営管理（オペレーション・マネジメント）',
+      '経営法務',
+      '経営情報システム',
+      '中小企業経営・中小企業政策',
+    ],
+    pastExamPage: 'https://www.jf-cmca.jp/contents/010_c_/shikenmondai.html',
+    // 科目合格・他資格による科目免除は科目ごとで、問番号の免除ではない
+    exemption: null,
+    // 分野は第1次試験の科目（1冊が1科目。parser/qlp_parser/fields.py）。出題するのは択一式の第1次試験だけ（第2次試験は記述式で公式の正解が無い）
+    fields: {
+      d1: '経済学・経済政策',
+      d2: '財務・会計',
+      d3: '企業経営理論',
+      d4: '運営管理（オペレーション・マネジメント）',
+      d5: '経営法務',
+      d6: '経営情報システム',
+      d7: '中小企業経営・中小企業政策',
+    },
+    // 区分は科目名。正解は年度ごとの正解ページから科目ごとのPDFを探す（discover.js）。ここは掲載ページが開けないときの控え（令和8年度）
+    sources: [
+      { adapter: 'shindan', year: 2026, section: '経済学・経済政策', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/A1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026A.pdf' },
+      { adapter: 'shindan', year: 2026, section: '財務・会計', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/B1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026B.pdf' },
+      { adapter: 'shindan', year: 2026, section: '企業経営理論', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/C1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026C.pdf' },
+      { adapter: 'shindan', year: 2026, section: '運営管理（オペレーション・マネジメント）', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/D1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026D.pdf' },
+      { adapter: 'shindan', year: 2026, section: '経営法務', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/E1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026E.pdf' },
+      { adapter: 'shindan', year: 2026, section: '経営情報システム', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/F1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026F.pdf' },
+      { adapter: 'shindan', year: 2026, section: '中小企業経営・中小企業政策', questionUrl: 'https://www.jf-cmca.jp/attach/test/shikenmondai/1ji2026/G1JC2026.pdf', answerUrl: 'https://www.jf-cmca.jp/attach/test/r08/1ji_seikai/2026G.pdf' },
+    ],
+  },
 };
 
 /**

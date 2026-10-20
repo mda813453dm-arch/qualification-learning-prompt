@@ -13,6 +13,7 @@ import re
 import unicodedata
 
 from .. import fields
+from .. import ocr
 from ..core import ANSWER_SPECIAL, ParseError, RawQuestion, clean_text, is_page_number_line, to_int
 from .takken import _graphics_in, _lines, _template_drawings
 
@@ -96,13 +97,57 @@ def check_year(doc, year):
         raise ParseError("ANSWER_YEAR_MISMATCH", stated=stated, requested=year)
 
 
+GAP = 12  # 同じ行の文字の切れ目がこれ（pt）より広ければ、表の列や2列の選択肢の区切りとみなす
+
+
+def _rows(page):
+    """ページの行を (y0, y1, text, x0, cols) で返す。cols は行の中の、間の空いた塊の数（表の列を見分けるため）。
+
+    宅建の読み方（takken._lines）と同じく同じ高さの断片を1行にまとめるが、間の空いた断片の間には全角空白を入れる
+    （「①：e-SATA　②：SCSI」のように、2列に並んだ語がつながらないように）。OCRで読むページは宅建の読み方のまま。
+    """
+    if ocr.needs_ocr(page):
+        return [ln + (1,) for ln in _lines(page)]
+    d = page.get_text("dict", sort=True)
+    sizes = sorted(sp["size"] for b in d["blocks"] for ln in b.get("lines", []) for sp in ln["spans"] if sp["text"].strip())
+    body_size = sizes[len(sizes) // 2] if sizes else 0
+    pieces = []
+    for b in d["blocks"]:
+        for ln in b.get("lines", []):
+            spans = [sp for sp in ln["spans"] if sp["size"] >= body_size * 0.7 and sp["text"].strip()]
+            if spans:
+                t = "".join(sp["text"] for sp in spans).strip()
+                pieces.append((ln["bbox"][1], ln["bbox"][3], t, spans[0]["bbox"][0], spans[-1]["bbox"][2]))
+    pieces.sort(key=lambda x: x[0])
+    rows = []
+    for pc in pieces:
+        if rows and abs(pc[0] - rows[-1][0][0]) <= 3:
+            rows[-1].append(pc)
+        else:
+            rows.append([pc])
+    out = []
+    for row in rows:
+        row.sort(key=lambda x: x[3])
+        text, cols = row[0][2], 1
+        for prev, pc in zip(row, row[1:]):
+            if pc[3] - prev[4] > GAP:
+                text += "　" + pc[2]
+                cols += 1
+            else:
+                text += pc[2]
+        out.append((min(x[0] for x in row), max(x[1] for x in row), text, row[0][3], cols))
+    return out
+
+
 def parse_questions(doc):
     subject = cover_subject(doc)
     items = []  # (page_index, y0, y1, text, x0)
+    columns = {}  # 行 -> 間の空いた塊の数
     for i in range(1, doc.page_count):  # 1ページ目は表紙
-        for y0, y1, t, x0 in _lines(doc[i]):
+        for y0, y1, t, x0, cols in _rows(doc[i]):
             if not is_page_number_line(t):
                 items.append((i, y0, y1, t, x0))
+                columns[(i, y0)] = cols
 
     template = _template_drawings(doc)
     starts = [k for k, it in enumerate(items) if HEADING.match(it[3])]
@@ -133,13 +178,20 @@ def parse_questions(doc):
                 if n < last:
                     notes.append("trailing_text_dropped")
                 last = n
-            choices.append(clean_text("\n".join([CHOICE.sub("", body[j][3], count=1)] + [b[3] for b in body[j + 1:last]])))
+            text = CHOICE.sub("", body[j][3], count=1)
+            for b in body[j + 1:last]:
+                # 記号と同じ位置から始まる行は、解答群の2行目（「　　ｄ：歩留り」）。折り返しではないので空白でつなぐ
+                text += ("　" if b[4] <= body[j][4] + 1 else "\n") + b[3]
+            choices.append(clean_text(text))
 
         pages = sorted({b[0] + 1 for b in body})
-        has_graphics, crops = False, []
+        # 罫線のない表（列が空白で並ぶだけの表）は、文字にすると読めないので、図と同じく公式PDFの画像で見せる
+        has_graphics, crops = sum(1 for b in body[:stem_end] if columns[(b[0], b[1])] >= 2) >= 2, []
+        if has_graphics:
+            notes.append("table_by_layout")
         for p in pages:
             on_page = [b for b in body if b[0] + 1 == p]
-            if _graphics_in(doc[p - 1], min(b[1] for b in on_page), max(b[2] for b in on_page), template):
+            if not has_graphics and _graphics_in(doc[p - 1], min(b[1] for b in on_page), max(b[2] for b in on_page), template):
                 has_graphics = True
         if has_graphics:
             # 表・図・空欄の枠のある問題は、問題の範囲を公式PDFからそのまま切り出して見せる
