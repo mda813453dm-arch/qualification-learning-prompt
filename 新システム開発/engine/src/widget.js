@@ -313,10 +313,10 @@ a{color:inherit}
     if (document.getElementById('diag')) document.getElementById('diag').onclick = async function(){
       app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
       try {
-        var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'start' }));
+        var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'preview' }));
         if (r && r.error === 'DIAG_NO_PAST_EXAMS') { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">過去問の取り込みがまだ終わっていません。少し待ってから、もう一度押してください。</div>'); return; }
-        if (!r || !r.diag || !r.question) throw new Error('diag');
-        diagIntro(r.diag, r.question);
+        if (!r || !r.diag) throw new Error('diag');
+        diagPreview(r.diag);
       }
       catch (e) { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">初期診断を始められませんでした。もう一度押してください。</div>'); }
     };
