@@ -1,10 +1,13 @@
 # 運営者が添付した公式PDF（公式URL ファイル名）。ファイルは一時ブランチ src-in に置く
-# 2021〜2026年度（12件）と2018〜2020年度（10件）は保管済み。今回は2016〜2017年度の8件
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28a_ip_qs.pdf 2016h28a_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28a_ip_ans.pdf 2016h28a_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28h_ip_qs.pdf 2016h28h_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28h_ip_ans.pdf 2016h28h_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29a_ip_qs.pdf 2017h29a_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29a_ip_ans.pdf 2017h29a_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29h_ip_qs.pdf 2017h29h_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29h_ip_ans.pdf 2017h29h_ip_ans.pdf
+# 測量士補（国土地理院の掲載分）。ITパスポートは保管済み
+https://www.gsi.go.jp/common/000240138.pdf 000240138.pdf
+https://www.gsi.go.jp/common/000241388.pdf 000241388.pdf
+https://www.gsi.go.jp/common/000249818.pdf 000249818.pdf
+https://www.gsi.go.jp/common/000250866.pdf 000250866.pdf
+https://www.gsi.go.jp/common/000257605.pdf 000257605.pdf
+https://www.gsi.go.jp/common/000258686.pdf 000258686.pdf
+https://www.gsi.go.jp/common/000270177.pdf 000270177.pdf
+https://www.gsi.go.jp/common/000270178.pdf 000270178.pdf
+https://www.gsi.go.jp/common/000270180.pdf 000270180.pdf
+https://www.gsi.go.jp/common/000278974.pdf 000278974.pdf
+https://www.gsi.go.jp/common/000278975.pdf 000278975.pdf
