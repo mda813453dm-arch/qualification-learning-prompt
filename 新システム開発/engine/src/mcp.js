@@ -102,6 +102,14 @@ export const TOOLS = [
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.question ? { question: a.question } : undefined],
   },
   {
+    name: 'redisplayQuestion',
+    appOnly: true,
+    uiOnly: true,
+    description: '表示失敗時に、出題中の同じ公式問題だけを読み取り直す。次の問題への進行・採点・記録変更は行わない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/redisplay`],
+  },
+  {
     name: 'submitAnswer',
     description: '回答を採点する。questionId は出題時に受け取ったものをそのまま渡す。',
     inputSchema: {
