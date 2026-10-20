@@ -1,12 +1,10 @@
 # 運営者が添付した公式PDF（公式URL ファイル名）。ファイルは一時ブランチ src-in に置く
-# 2021〜2026年度（12件）は保管済み（run 39378073173）。今回は2018〜2020年度の10件
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30a_ip_qs.pdf 2018h30a_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30a_ip_ans.pdf 2018h30a_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30h_ip_qs.pdf 2018h30h_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30h_ip_ans.pdf 2018h30h_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2019h31h_ip_qs.pdf 2019h31h_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2019h31h_ip_ans.pdf 2019h31h_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2019r01a_ip_qs.pdf 2019r01a_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2019r01a_ip_ans.pdf 2019r01a_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2020r02o_ip_qs.pdf 2020r02o_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2020r02o_ip_ans.pdf 2020r02o_ip_ans.pdf
+# 2021〜2026年度（12件）と2018〜2020年度（10件）は保管済み。今回は2016〜2017年度の8件
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28a_ip_qs.pdf 2016h28a_ip_qs.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28a_ip_ans.pdf 2016h28a_ip_ans.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28h_ip_qs.pdf 2016h28h_ip_qs.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2016h28h_ip_ans.pdf 2016h28h_ip_ans.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29a_ip_qs.pdf 2017h29a_ip_qs.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29a_ip_ans.pdf 2017h29a_ip_ans.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29h_ip_qs.pdf 2017h29h_ip_qs.pdf
+https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2017h29h_ip_ans.pdf 2017h29h_ip_ans.pdf
