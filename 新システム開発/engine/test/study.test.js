@@ -163,3 +163,16 @@ test('期限復習は開始時最大5問、以降は新規問題2問ごとに復
   assert.equal(state.reviewPacing.newAnswered, 2);
   assert.equal(state.reviewPacing.sinceReview, 0);
 });
+
+test('日付が変わった場合は復習ペースを再開始し、翌日期限の復習を先に出す', () => {
+  const today = '2026-10-21', now = Date.parse('2026-10-21T08:00:00Z');
+  const q = item(2025, 1, 'a'), newQ = item(2025, 2, 'b');
+  const state = newState({ qualificationId: 'q1', now });
+  state.review = { [q.packet.questionId]: {
+    unitId: q.packet.questionId, topicId: 'a', dueDate: today,
+  } };
+  state.reviewPacing = { initialServed: 0, newAnswered: 1, sinceReview: 1, lastDate: '2026-10-20' };
+  const picked = pickNext(state, [q, newQ], { today, now });
+  assert.equal(picked.kind, 'review');
+  assert.equal(picked.item.packet.questionId, q.packet.questionId);
+});
