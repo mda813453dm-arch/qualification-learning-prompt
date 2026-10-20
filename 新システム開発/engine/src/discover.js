@@ -154,7 +154,7 @@ export function shindanQuestions(links) {
   const out = [];
   for (const l of links) {
     const m = /\/shikenmondai\/1ji(20[0-9]{2})\/[A-Ga-g][^/]*\.pdf$/.exec(l.href);
-    const section = shindanSubject(l.text);
+    const section = /正誤|訂正/.test(l.text) ? null : shindanSubject(l.text);
     if (m && section && !out.some((s) => s.year === Number(m[1]) && s.section === section)) {
       out.push({ adapter: 'shindan', year: Number(m[1]), section, questionUrl: l.href, answerUrl: null });
     }

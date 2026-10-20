@@ -31,7 +31,9 @@ for year in YEARS:
     for u, t in listing:
         if f'/1ji{year}/' not in u:
             continue
-        subj = subject_of(t)
+        subj = None if re.search('正誤|訂正', t) else subject_of(t)
+        if not subj:
+            continue
         a = answers.get(subj)
         qb, ab = get(u), (get(a) if a else None)
         r = run('shindan', year, PdfSource(qb, u), PdfSource(ab, a) if a else None, subj)
@@ -57,6 +59,12 @@ for year in YEARS:
             q = raw.get(e['questionNumber'])
             if not q or 'subquestions' not in q.notes:
                 print('    excluded', e, q and q.notes, q and q.stem[:80], q and len(q.choices))
+            if e['reason'] == 'OFFICIAL_ANSWER_NOT_FOUND':
+                import fitz
+                ws = fitz.open(stream=ab, filetype='pdf')[0].get_text('words')
+                hit = [w for w in ws if f"{e['questionNumber']}" in unicodedata.normalize('NFKC', w[4])]
+                for h in hit[:3]:
+                    print('      answer row', [(round(w[0]), round(w[1]), w[4]) for w in ws if abs(w[1] - h[1]) < 8])
         ps = r.get('packets', [])
         for p in [x for x in ps if 'table_by_layout' in x['evidence']['notes']][:2]:
             print('    table', p['questionNumber'], p['stem'][:100])
@@ -66,6 +74,6 @@ print('TOTAL', dict(total))
 import fitz
 d = fitz.open(stream=get('https://www.jf-cmca.jp/attach/test/r08/r08_1ji_annai.pdf'), filetype='pdf')
 print('ANNAI pages', d.page_count)
-for i in range(min(d.page_count, 6)):
+for i in range(6, min(d.page_count, 16)):
     print('--- annai page', i + 1)
-    print(d[i].get_text()[:3000])
+    print(d[i].get_text()[:2500])

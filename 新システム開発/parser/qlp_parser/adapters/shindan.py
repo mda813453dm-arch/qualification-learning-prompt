@@ -245,7 +245,7 @@ def parse_answers(doc):
         raise ParseError("ANSWER_TABLE_NOT_FOUND")
     answers = {}
     for x, y, t in words:
-        m = re.fullmatch(r"第([0-9]{1,2})問", t)
+        m = re.match(r"第([0-9]{1,2})問", t)
         if not m:
             continue
         left = max((c for c in cols if c <= x + 15), default=cols[0])
@@ -259,7 +259,8 @@ def parse_answers(doc):
             continue
         v = cells[1] if cells[0] in ("-", "－", "ー", "―") else cells[0]
         answers[n] = KANA.index(v) + 1 if len(v) == 1 and v in KANA else ANSWER_SPECIAL
-    if len([v for v in answers.values() if v != ANSWER_SPECIAL]) < 10:
+    # 設問に分かれる問の多い科目（中小企業経営・中小企業政策）は、1つの正解の問が10に満たない年度がある
+    if len([v for v in answers.values() if v != ANSWER_SPECIAL]) < 5:
         raise ParseError("ANSWER_TABLE_NOT_FOUND")
     return answers
 
