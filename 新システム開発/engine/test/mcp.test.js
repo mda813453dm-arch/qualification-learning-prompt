@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v34.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v34.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v35.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v35.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v34.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v35.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
@@ -437,6 +437,9 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(html.includes("ask('学習計画の希望：' + wish)"));
   // 続きのボタンは解説・確認問題の「下」に出す（画面の上に押すボタンを置かない）
   assert.ok(!html.includes('id="toPractice"'));
+  // 根拠のない「おすすめ」は付けない／長いURLは枠からはみ出さず折り返す
+  assert.ok(!html.includes('苦手分野を調べる（おすすめ）'));
+  assert.ok(html.includes('overflow-wrap:anywhere'));
   // 短い文に対するAIの手順は、アプリのツールの説明にある
   assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
   assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));

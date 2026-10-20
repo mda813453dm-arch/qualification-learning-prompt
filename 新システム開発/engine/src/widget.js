@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v34.html';
+export const WIDGET_URI = 'ui://qlp/question-v35.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-20.33';
+export const WIDGET_VERSION = '2026-10-20.34';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -43,7 +43,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-r.tone-date .ov-k{color:#1557b0}.ov-r.tone-score .ov-k{color:#0a7d32}.ov-r.tone-fee .ov-k{color:#b45309}.ov-r.tone-note .ov-k{color:#6b5b95}
 .ov-r.minor .ov-k{font-weight:600}.ov-r.minor .ov-v{color:var(--sub)}
 .ov-k{display:block;color:var(--acc);font-weight:700;font-size:16px}
-.ov-v{display:block;font-size:16px;line-height:1.65}
+.ov-v{display:block;font-size:16px;line-height:1.65;overflow-wrap:anywhere}.ov-r>*{min-width:0}
 .ov-l{margin:4px 0 0;padding-left:1.6em;font-size:16px}.ov-l li{margin:3px 0}
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
@@ -216,7 +216,7 @@ a{color:inherit}
       '<div class="stem"><b>学習する分野の順</b></div>' + order +
       '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
       '<div class="stem"><b>学習を開始しますか？</b></div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる（おすすめ）</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
+      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
       '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
       '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
       '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
