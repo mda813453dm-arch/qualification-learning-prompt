@@ -53,6 +53,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'submitAnswer') reply({ structuredContent: { grade: { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
+          else if (op === 'completeRemediation') {
+            const answer = m.params.arguments.selected;
+            reply({ structuredContent: answer === '2'
+              ? { status: 'remediation_complete', sessionId: 'test-session', notice: '正解。実践問題へ戻れます。' }
+              : { status: 'remediation_retry', sessionId: 'test-session', correctAnswer: '2', notice: '不正解。再確認してください。' } });
+          }
           else window.protocolErrors.push('unexpected tool ' + op);
         } else if (m.method === 'ui/update-model-context') {
           window.internal.push(m.params.content[0].text);
@@ -92,8 +98,30 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
     assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文');
     assert.equal(await ui.getByRole('button', { name: '引継ぎデータをコピー' }).count(), 1);
+    // 強制補強のAI作成問題でも正答を利用者の回答に混ぜないことを模擬ホストで検証する。
+    await page.evaluate(r => window.deliver(r), result({
+      status: 'remediation_question', sessionId, challengeId: 'test-check-1',
+      question: 'この分野の基本事項として適切な説明はどれですか。',
+      choices: ['不適切な説明', '適切な説明', '無関係な説明'],
+    }));
+    await ui.getByText('AI作成確認問題', { exact: true }).waitFor();
+    await ui.locator('input[name=remediationAnswer][value="1"]').check();
+    await ui.getByRole('button', { name: '解答する' }).click();
+    await ui.getByText('不正解', { exact: true }).waitFor();
+    const wrongCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
+    assert.deepEqual(wrongCheck, { sessionId, challengeId: 'test-check-1', selected: '1' }, '回答に正答・問題本文を混ぜない');
+    await page.evaluate(r => window.deliver(r), result({
+      status: 'remediation_question', sessionId, challengeId: 'test-check-2',
+      question: 'もう一度同じ分野の理解を確かめます。適切な説明はどれですか。',
+      choices: ['不適切な説明', '適切な説明', '無関係な説明'],
+    }));
+    await ui.locator('input[name=remediationAnswer][value="2"]').check();
+    await ui.getByRole('button', { name: '解答する' }).click();
+    await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
+    const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
+    assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
-    console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff (375px)`);
+    console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
   } finally { await browser.close(); }
 }
