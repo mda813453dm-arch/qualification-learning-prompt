@@ -536,10 +536,20 @@ async function diagStep(env, id, state0, now, b) {
     const item = byId.get(d.queue[d.answers.length]);
     if (!item) throw new HttpError(409, 'DIAG_NO_QUESTION');
     const selected = String(b.value ?? '').trim();
-    const correct = Number(selected) === item.packet.correctAnswer;
+    const skipped = selected === 'スキップ' || selected.toLowerCase() === 'skip';
+    const numeric = Number(selected);
+    if (!skipped && (!Number.isInteger(numeric) || numeric < 1 || numeric > item.packet.choices.length)) {
+      throw new HttpError(400, 'DIAG_ANSWER_INVALID');
+    }
+    const correct = !skipped && numeric === item.packet.correctAnswer;
+    const confidence = ['sure', 'unsure', 'guess'].includes(b.confidence) ? b.confidence : null;
     const label = `初期診断 ${d.answers.length + 1}/${d.queue.length}`;
-    const answers = [...d.answers, { fieldId: item.packet.fieldId, questionId: item.packet.questionId, result: correct ? 'correct' : 'wrong' }];
-    const grade = { diag: true, label, fieldName: name(item.packet.fieldId), correct, selected, correctAnswer: String(item.packet.correctAnswer) };
+    const answers = [...d.answers, {
+      fieldId: item.packet.fieldId, questionId: item.packet.questionId,
+      result: skipped ? 'unanswered' : correct ? 'correct' : 'wrong',
+      ...(confidence && !skipped ? { confidence } : {}),
+    }];
+    const grade = { diag: true, label, fieldName: name(item.packet.fieldId), correct: skipped ? null : correct, skipped, selected, correctAnswer: String(item.packet.correctAnswer) };
     if (answers.length < d.queue.length) {
       state = { ...state, aiDiag: { ...d, answers } };
       await saveSession(env, id, state, now);
