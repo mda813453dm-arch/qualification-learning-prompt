@@ -483,3 +483,9 @@ test('解説の依頼に問題文を載せない／新しい画面が出たら�
   assert.ok(!h.includes('qtext'));
   assert.ok(h.includes('function lockOld') && h.includes("BroadcastChannel('qlp-widget')") && h.includes('stamp(data);'));
 });
+
+test('「今日はここまで」は問題の画面に出さず、解説・次へのメニューと一緒に出す', () => {
+  const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.ok(h.includes('id="endMenu"'));
+  assert.ok(!/h \+= endBar\(\);\s*app\.innerHTML = h;\s*scrollUp\(\);/.test(h));
+});

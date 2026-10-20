@@ -160,7 +160,6 @@ a{color:inherit}
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
-    h += endBar();
     app.innerHTML = h;
     scrollUp();
     bindEnd();
@@ -215,7 +214,13 @@ a{color:inherit}
     var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
     var h = body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
+    if (['next', 'review', 'check'].indexOf(m.kind) >= 0) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
+    var em = document.getElementById('endMenu');
+    if (em) em.onclick = function(){
+      app.innerHTML = body + '<div class="result ok">今日はここまで（学習を終了）</div><div class="notice">終了ログと引継ぎデータは、この下に出ます。</div>';
+      ask('今日はここまで。学習を終了します。');
+    };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
       // 解説の本文は、ボタンを押したあとも枠に残す（選んだ内容だけ1行にする）
