@@ -83,9 +83,16 @@ export function pickNext(state, items, { today, now=null, job }) {
   const withheld = new Set([...state.withheld.map((w) => w.questionId), ...(state.skipped ?? []).map((x) => x.questionId)]);
   const usable = items.filter((x) => !withheld.has(x.packet.questionId));
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
+  const byUnit = new Map();
+  for(const x of usable){
+    const key = typeof x.packet.reviewUnitId === 'string' && x.packet.reviewUnitId.trim()
+      ? x.packet.reviewUnitId.trim() : x.packet.questionId;
+    if(!byUnit.has(key))byUnit.set(key,[]);
+    byUnit.get(key).push(x);
+  }
   const due = selectDueReviews({ today, now, items: Object.values(state.review), sessionStart: true });
   // 採点の応答に付けて先に控えた問（まだ利用者に見せていない）は、期限の来た復習があれば出し直す
-  const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byId.has(r.unitId));
+  const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byUnit.has(r.unitId));
   if (state.current && !state.current.grade && !unseenPrefetch) {
     const same = items.find((x) => x.packet.questionId === state.current.questionId);
     if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
@@ -101,7 +108,9 @@ export function pickNext(state, items, { today, now=null, job }) {
   }
   // 1) 期限の来た復習
   for (const r of due.items ?? []) {
-    const hit = byId.get(r.unitId);
+    const variants = byUnit.get(r.unitId) ?? [];
+    const alt = variants.find((x) => x.packet.questionId !== r.sourceQuestionId);
+    const hit = alt ?? variants[0] ?? byId.get(r.unitId);
     if (hit) return { status: 'question', item: hit, kind: 'review' };
   }
   // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
