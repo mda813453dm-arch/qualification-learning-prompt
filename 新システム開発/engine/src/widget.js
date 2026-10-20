@@ -73,7 +73,7 @@ a{color:inherit}
   async function ask(text){
     try {
       // ChatGPT固有のフォローアップ経路を優先し、ウィジェットの内部制御文を発言欄に書き込まない。
-      if (window.openai && window.openai.sendFollowUpMessage) return await window.openai.sendFollowUpMessage({ prompt: text });
+      // 利用者に見える sendFollowUpMessage へ内部依頼文を渡さない。
       if (!bridgeReady) await ready;
       // 標準MCP Appsではモデル向け情報を文脈更新に置き、会話には短い操作合図だけを送る。
       await rpc('ui/update-model-context', { content: [{ type: 'text', text: text }] });
