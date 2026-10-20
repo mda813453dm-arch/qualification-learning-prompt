@@ -223,20 +223,20 @@ a{color:inherit}
     var em = document.getElementById('endMenu');
     if (em) em.onclick = async function(){
       em.disabled = true;
-      var ids = loadIds(), lid = ids.lid || ids.sid;
+      var ids = loadIds(), lid = ids.lid || studyLid || ids.sid || state.sessionId;
       if (lid) {
         try {
           var r = await callTool('endStudy', { studyId: lid, sessionId: ids.sid || lid, area: ids.field || undefined, item: ids.field || undefined, purpose: ids.field ? ids.field + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
-          if (r && !r.error && typeof r.display === 'string') {
+          if (r && !r.error && typeof r.display === 'string' && r.display.includes('引継ぎ')) {
             app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
             scrollUp(true);
             return;
           }
         } catch (e) {}
       }
-      // 番号が分からない・終了に失敗したときだけ、AIに頼む（AIが endStudy を呼ぶ）
-      app.innerHTML = body + '<div class="result ok">今日はここまで（学習を終了）</div><div class="notice">終了ログと引継ぎデータは、この下に出ます。</div>';
-      ask('今日はここまで。学習を終了します。');
+      // 失敗時に終了成功と表示しない。次の押下で同じ学習を再試行する。
+      em.disabled = false;
+      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">終了データを取得できませんでした。同じ「今日はここまで」を押して再試行してください。学習状態は次へ進めません。</div>');
     };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
@@ -478,18 +478,21 @@ a{color:inherit}
       (g.checkSuggested ? '<button id="check"><b>3</b><span>確認問題で基本を確かめる</span></button>' : '') + '</div>' + endBar();
     scrollUp();
     nextBtn(); bindEnd();
+    var lastDisplayRequest = '';
     var waitMore = function(msg){
       var eb = document.getElementById('endStudy'); if (eb && eb.parentNode) eb.parentNode.remove();
-      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="next">出ないときは、ここで次の問題へ</button></div>';
-      nextBtn(true);
+      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="retryDisplay">出ないときは再表示</button></div>';
+      document.getElementById('retryDisplay').onclick = function(){ this.disabled = true; ask(lastDisplayRequest); };
     };
     document.getElementById('exp').onclick = function(){
       waitMore('解説はこの下に出ます。読み終えると、その下に進むためのボタンが出ます。');
-      ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。');
+      lastDisplayRequest = label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。';
+      ask(lastDisplayRequest);
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
       waitMore('確認問題はこの下に出ます。答え合わせのあと、その下に進むためのボタンが出ます。');
-      ask((q.fieldName || 'この分野') + 'を続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。');
+      lastDisplayRequest = (q.fieldName || 'この分野') + 'を続けて間違えたので、基本を確かめる確認問題（AIが作った問題）をお願いします。';
+      ask(lastDisplayRequest);
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
@@ -499,9 +502,9 @@ a{color:inherit}
     b.onclick = async function(){
       b.disabled = true;
       try {
-        var lid = studyLid || state.sessionId;
+        var ids = loadIds(); var lid = studyLid || ids.lid || state.sessionId || ids.sid;
         var r = await callTool('endStudy', { studyId: lid, sessionId: state.sessionId || lid, area: studyField || undefined, item: studyField || undefined, purpose: studyField ? studyField + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
-        if (!r || r.error || typeof r.display !== 'string') throw new Error('end');
+        if (!r || r.error || typeof r.display !== 'string' || !r.display.includes('引継ぎ')) throw new Error('end');
         app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
         scrollUp(true);
       } catch (e) {
@@ -523,7 +526,7 @@ a{color:inherit}
   // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
   // 今の枠は1行に縮め、次の問題はチャットの一番下の新しい枠に出す（出ないときは fallback の枠内表示で進める）
   function nextBelow(fallback, say){
-    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。</div><div class="row"><button id="nextHere">出ないときは、ここで次の問題へ</button></div>';
+    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。</div><div class="row"><button id="nextHere">出ないときは再表示</button></div>';
     document.getElementById('nextHere').onclick = function(){ this.disabled = true; fallback(); };
     scrollUp(true);
     ask(say || '次の問題へ');
