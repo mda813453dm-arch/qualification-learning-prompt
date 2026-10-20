@@ -110,6 +110,22 @@ export const TOOLS = [
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/redisplay`],
   },
   {
+    name: 'completeRemediation',
+    appOnly: true,
+    description: '同一分野の公式実践3問連続不正解後、AI作成確認問題を出して利用者の回答を採点した後にのみ呼ぶ。checkQuestion=実際に出題したAI確認問題の本文、selected=実際の回答、correctAnswer=出題時に固定した正答。誤答・未回答時は解放しない。正解時に同じ分野の実践へ復帰する。',
+    inputSchema: {
+      type: 'object',
+      required: ['sessionId', 'checkQuestion', 'selected', 'correctAnswer'],
+      properties: {
+        sessionId,
+        checkQuestion: { type: 'string', minLength: 10, maxLength: 2000 },
+        selected: { type: 'string' },
+        correctAnswer: { type: 'string' },
+      },
+    },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/remediation/complete`, { checkQuestion: a.checkQuestion, selected: a.selected, correctAnswer: a.correctAnswer }],
+  },
+  {
     name: 'submitAnswer',
     description: '回答を採点する。questionId は出題時に受け取ったものをそのまま渡す。',
     inputSchema: {
