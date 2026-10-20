@@ -477,3 +477,9 @@ test('解説の本文のURLは、押して開けるリンクにする', () => {
   assert.ok(h.includes('target=\\"_blank\\"') || h.includes('target=\\\\"_blank\\\\"') || h.includes('_blank'));
   assert.ok(h.includes('.md a{'));
 });
+
+test('解説の依頼に問題文を載せない／新しい画面が出たら古い画面のボタンを押せなくする', () => {
+  const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.ok(!h.includes('qtext'));
+  assert.ok(h.includes('function lockOld') && h.includes("BroadcastChannel('qlp-widget')") && h.includes('stamp(data);'));
+});

@@ -185,7 +185,7 @@ export const TOOLS = [
   {
     name: 'explainSpec',
     appOnly: true,
-    description: '採点された問題の解説の書き方を、エンジンから受け取る。利用者が「○年度 問○に…と答え、正解／不正解でした。解説をお願いします」と送ってきたら、解説を書く前に必ずこのツールを呼ぶ（correct＝正解なら true、selected＝利用者の答えの番号、correctAnswer＝正答の番号、fieldName＝分野。文に「同じ分野で3問続けて不正解」があれば checkSuggested を true）。返った explainHow と order のとおりに解説を書き、最後に showMenu（kind=review）を呼ぶ。checkPlan があれば、それにも従う。',
+    description: '採点された問題の解説の書き方を、エンジンから受け取る。利用者が「○年度 問○に…と答え、正解／不正解でした。解説をお願いします」と送ってきたら（問題文と選択肢は、直前の nextQuestion の結果にある。利用者は送ってこない。チャットに問題を書き直さない）、解説を書く前に必ずこのツールを呼ぶ（correct＝正解なら true、selected＝利用者の答えの番号、correctAnswer＝正答の番号、fieldName＝分野。文に「同じ分野で3問続けて不正解」があれば checkSuggested を true）。返った explainHow と order のとおりに解説を書き、最後に showMenu（kind=review）を呼ぶ。checkPlan があれば、それにも従う。',
     inputSchema: { type: 'object', required: ['correct', 'selected', 'correctAnswer'], properties: { correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' }, checkSuggested: { type: 'boolean' } } },
     local: (a) => ({
       status: 'explainSpec',
@@ -354,7 +354,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         const out = tool.local(args);
         if (!out) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_INVALID', argument: tool.uiOnly ? 'stage/version' : 'kind' }) }] });
         if (tool.uiOnly) return ok(id, { content: [], structuredContent: out });
-        return ok(id, { content: [{ type: 'text', text: JSON.stringify({ status: out.status, howToProceed: out.howToProceed }) }], structuredContent: { status: out.status, howToProceed: out.howToProceed }, _meta: { qlp: out } });
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify({ status: out.status, howToProceed: out.howToProceed }) }], structuredContent: { status: out.status, howToProceed: out.howToProceed }, _meta: { qlp: { ...out, at: Date.now() } } });
       }
       const [m, path, body] = tool.api(args);
       const res = await callApi(m, path, body);
@@ -364,12 +364,12 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         if (nx.status < 400 && Array.isArray(nx.body?.onboarding)) {
           const merged = { ...nx.body, sessionId: res.body.sessionId, learnerId: res.body.learnerId ?? nx.body.learnerId, job: res.body.job };
           const view = forModel(merged);
-          return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: merged } });
+          return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
         }
       }
       if (widget && WIDGET_TOOLS.has(tool.name) && res.status < 400) {
         const view = forModel(res.body);
-        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: res.body } });
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
       }
       return ok(id, {
         isError: res.status >= 400,

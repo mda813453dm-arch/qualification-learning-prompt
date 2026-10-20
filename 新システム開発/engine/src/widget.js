@@ -92,8 +92,23 @@ a{color:inherit}
     callTool('reportUiEvent', args).catch(function(){});
   }
   var diagged = false;
+  // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
+  var myAt = 0, locked = false, bc = null;
+  function lockOld(){
+    if (locked) return; locked = true;
+    app.querySelectorAll('button,input,a.btn').forEach(function(b){ b.disabled = true; });
+    app.style.opacity = '.55';
+    app.insertAdjacentHTML('beforeend', '<div class="notice">この画面の操作は終わっています。いちばん下の画面で進めてください。</div>');
+  }
+  function stamp(data){
+    var at = Number(data && data.at) || 0; if (!at || locked) return;
+    if (at > myAt) myAt = at;
+    try { var last = Number(localStorage.getItem('qlp_at')) || 0; if (last > myAt) { lockOld(); return; } if (myAt > last) localStorage.setItem('qlp_at', String(myAt)); } catch (e) {}
+    try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
+  }
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure'].includes(data.status))) return;
+    stamp(data);
     hasView = true;
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
     if (data.grade && data.next) {
@@ -441,7 +456,6 @@ a{color:inherit}
       (g.checkSuggested ? '<button id="check"><b>3</b><span>確認問題で基本を確かめる</span></button>' : '') + '</div>' + endBar();
     scrollUp();
     nextBtn(); bindEnd();
-    var qtext = '問題文：' + (q.stem || '（公式の問題の画面を参照）') + '\\n' + (q.choices || []).map(function(c, i){ return (i + 1) + ' ' + c; }).join('\\n');
     var waitMore = function(msg){
       var eb = document.getElementById('endStudy'); if (eb && eb.parentNode) eb.parentNode.remove();
       app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="next">出ないときは、ここで次の問題へ</button></div>';
@@ -449,7 +463,7 @@ a{color:inherit}
     };
     document.getElementById('exp').onclick = function(){
       waitMore('解説はこの下に出ます。読み終えると、その下に進むためのボタンが出ます。');
-      ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。\\n' + qtext);
+      ask(label + '（' + (q.fieldName || '') + '）に ' + g.selected + ' と答え、' + (g.correct ? '正解' : '不正解（正答は ' + g.correctAnswer + '）') + 'でした。解説をお願いします。');
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
       waitMore('確認問題はこの下に出ます。答え合わせのあと、その下に進むためのボタンが出ます。');
