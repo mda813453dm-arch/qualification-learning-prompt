@@ -131,7 +131,7 @@ a{color:inherit}
     }
     if (data.status === 'diagPreview') { diagPreview(data.diag); return; }
     if (data.status === 'diagResult') { diagResultScreen(data); return; }
-    if (data.planReady) { onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
+    if (data.planReady) { planDraft = null; onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
@@ -290,6 +290,19 @@ a{color:inherit}
     if (list) rows = rows.replace('@@LIST@@', '<ol class="ov-l">' + list.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>');
     var link = safeUrl(onboardOv.source) ? '<a class="ov-a" href="' + esc(safeUrl(onboardOv.source)) + '" target="_blank" rel="noopener">公式ページを開く ›</a>' : '';
     return '<div class="ov"><div class="ov-h">' + esc(onboardOv.title || '') + '</div><div class="ov-b">' + rows + (note ? '<div class="ov-n">' + esc(note) + '</div>' : '') + link + '</div></div>';
+  }
+  // 変更途中の計画はこの画面だけに保持。再承認前にサーバーへ確定保存しない。
+  var planDraft = null;
+  function draftPlan(){
+    if (!planDraft) planDraft = {
+      orderedFields: (onboardOv && onboardOv.fields || []).slice(),
+      methodChoice: 'balanced', methodDistribution: null,
+      reviewPreset: 'ai', reviewIntervalsMinutes: null, reviewLabel: '標準（1→3→7→14→30日）',
+    };
+    return planDraft;
+  }
+  function planRevised(reason){
+    planPanel([reason || '変更後の学習計画を再表示しました。開始する前にもう一度確認してください。']);
   }
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
