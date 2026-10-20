@@ -650,7 +650,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
   const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
-  const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), job });
+  const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), now, job });
   if (pick.status !== 'question') {
     // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
     const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
