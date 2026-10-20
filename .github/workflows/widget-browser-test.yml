@@ -3,11 +3,10 @@ on:
   push:
     branches: [ai-learning-system]
     paths:
-      - '新システム開発/engine/src/widget.js'
-      - '新システム開発/engine/src/mcp.js'
-      - '新システム開発/engine/src/app.js'
-      - '新システム開発/engine/test/*.test.js'
-      - '新システム開発/engine/test/widget*'
+      - '新システム開発/engine/src/**'
+      - '新システム開発/engine/test/**'
+      - '新システム開発/engine/package.json'
+      - '新システム開発/engine/package-lock.json'
       - '.github/workflows/widget-browser-test.yml'
 permissions:
   contents: read
