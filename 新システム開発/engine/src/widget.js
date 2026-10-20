@@ -412,6 +412,54 @@ a{color:inherit}
       };
     };
   }
+  function planEditReview(){
+    var options=[['focus','集中型（当日・翌日・3日後・7日後）',[0,1440,4320,10080]],
+      ['ai','標準型（1日→3日→7日→14日→30日）',[1440,4320,10080,20160,43200]],
+      ['slow','ゆっくり型（3日後・7日後・14日後）',[4320,10080,20160]],
+      ['ai','AI調整型（正誤と復習期限に応じて間隔を延長）',[1440,4320,10080,20160,43200]]];
+    app.innerHTML='<h2>復習頻度・タイミング</h2><div class="choices">'+options.map(function(x,i){
+      return '<button data-r="'+i+'"><b>'+(i+1)+'</b><span>'+esc(x[1])+'</span></button>';
+    }).join('')+'<button id="rCustom"><b>5</b><span>自由指定</span></button><button id="rBack"><b>6</b><span>戻る</span></button></div><div id="rInput"></div>';
+    scrollUp();
+    app.querySelectorAll('[data-r]').forEach(function(b){b.onclick=function(){
+      var x=options[Number(b.getAttribute('data-r'))];
+      draftPlan().reviewPreset=x[0];draftPlan().reviewIntervalsMinutes=x[2];draftPlan().reviewLabel=x[1];
+      planRevised(x[1]);
+    };});
+    document.getElementById('rBack').onclick=planEditMenu;
+    document.getElementById('rCustom').onclick=reviewCustomInput;
+  }
+  function reviewCustomInput(){
+    app.innerHTML='<h2>復習間隔を自由指定</h2><div class="notice">ここで設定できるのは復習予定の記録と、次回学習画面を開いた際の期限判定です。チャットを閉じた状態で指定時刻に自動通知・自動出題する機能は提供していません。</div>'+
+      '<div class="stem">例：3分後、1時間後、1日後</div><textarea id="reviewText" rows="3" style="width:100%" placeholder="3分後、1時間後、"></textarea>'+
+      '<div class="choices"><button id="reviewCheck"><b>1</b><span>この間隔を確認する</span></button><button id="reviewBack"><b>2</b><span>戻る</span></button></div>';
+    document.getElementById('reviewBack').onclick=planEditReview;
+    document.getElementById('reviewCheck').onclick=function(){
+      var raw=document.getElementById('reviewText').value.normalize('NFKC').replace(/三/g,'3').replace(/一/g,'1').replace(/二/g,'2').replace(/五/g,'5').replace(/十/g,'10');
+      if(/通知|自動出題|リマインド|メール|知らせ|プッシュ|アラーム/.test(raw)){
+        reviewReject('チャットを閉じた状態の自動通知・自動出題には対応していません。予定記録としての変更は選択後に行ってください。');return;
+      }
+      var tokens=raw.split(/[、,，\n]+/).map(function(x){return x.trim();}).filter(Boolean);
+      var vals=tokens.map(function(x){var m=/^(\d+)\s*(分|時間|日)(後)?$/.exec(x);return m?Number(m[1])*(m[2]==='日'?1440:m[2]==='時間'?60:1):NaN;});
+      if(!vals.length||vals.length>8||vals.some(function(x,i){return !Number.isInteger(x)||x<1||x>525600||(i>0&&x<=vals[i-1]);})){
+        reviewReject('間隔は「3分後、1時間後」のように、正の値を昇順・重複なしで入力してください。');return;
+      }
+      app.innerHTML='<h2>復習予定の確認</h2><div class="stem">'+esc(tokens.join(' → '))+'</div>'+
+        '<div class="notice">予定を記録します。自動通知・自動出題はしません。確定済みの復習履歴は削除しません。</div>'+
+        '<div class="choices"><button id="rAgree"><b>1</b><span>この予定を計画案に反映</span></button><button id="rRetry"><b>2</b><span>入力し直す</span></button><button id="rGoBack"><b>3</b><span>戻る</span></button></div>';
+      document.getElementById('rAgree').onclick=function(){var d=draftPlan();d.reviewPreset='custom';d.reviewIntervalsMinutes=vals;d.reviewLabel=tokens.join(' → ')+'（自動通知なし）';planRevised('復習予定を変更しました。');};
+      document.getElementById('rRetry').onclick=reviewCustomInput;
+      document.getElementById('rGoBack').onclick=planEditReview;
+    };
+  }
+  function reviewReject(why){
+    app.innerHTML='<h2>この復習設定は受け付けられません</h2><div class="notice" role="alert">'+esc(why)+'</div>'+
+      '<div class="choices"><button id="rRecord"><b>1</b><span>予定の記録として設定し直す</span></button>'+
+      '<button id="rRetry"><b>2</b><span>別の間隔を入力</span></button><button id="rBack"><b>3</b><span>復習メニューへ戻る</span></button></div>';
+    document.getElementById('rRecord').onclick=reviewCustomInput;
+    document.getElementById('rRetry').onclick=reviewCustomInput;
+    document.getElementById('rBack').onclick=planEditReview;
+  }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
     var h = '<h2>初期診断の確認</h2><div class="notice">公式過去問で分野ごとの理解度を調べます。結果は少数問による暫定評価です。</div>' +
