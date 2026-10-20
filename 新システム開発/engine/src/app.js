@@ -1167,6 +1167,58 @@ async function route(request, env, url, now) {
             needReview: [...reviewFields].map((f) => fieldNames[f] ?? '分野未確認').join('、') || 'なし',
           } };
         }
+        // 学習終了画面が補足情報を送れない場合も、確定済みの状態から引継ぎを自動で埋める。
+        const fields = cat?.fields ?? {};
+        const allHistory = Object.values(st.history ?? {});
+        const learnedFields = [...new Set(allHistory.map((h) => h.fieldId).filter((f) => f && fields[f]))];
+        const studiedFields = [...new Set(graded.map((h) => h.fieldId).filter((f) => f && fields[f]))];
+        if (!(input.studiedAreas ?? []).length && studiedFields.length) {
+          input = { ...input, studiedAreas: studiedFields.map((f) => fields[f]) };
+        }
+        const dueReviews = Object.values(st.review ?? {}).filter((r) => r && !r.mastered && !r.exemptStopped);
+        const masteredReviews = Object.values(st.review ?? {}).filter((r) => r?.mastered);
+        if (!(input.review ?? []).length) {
+          const descriptions = dueReviews.slice(0, 30).map((r) => {
+            const areaName = fields[r.topicId] ?? '対象分野';
+            const when = r.dueAt ? `${jst(Date.parse(r.dueAt)).date} ${jst(Date.parse(r.dueAt)).time}` : r.dueDate ?? '期限未定';
+            return `${areaName}：次回復習 ${when}`;
+          });
+          input = { ...input, review: descriptions.length ? descriptions : ['復習待ちの記録なし'] };
+        }
+        const pendingCurrent = st.current && !st.current.grade ? st.current : null;
+        const pendingText = pendingCurrent?.source?.year && pendingCurrent?.source?.number
+          ? `${pendingCurrent.source.year}年度 問${pendingCurrent.source.number}（未回答）` : null;
+        const weak = weakFields(st.history ?? {}, fields);
+        if (!(input.nextPriority ?? []).length) {
+          const priority = [];
+          if (dueReviews.length) priority.push(`期限到来の復習：${dueReviews.length}件`);
+          if (pendingText) priority.push(`前回の続き：${pendingText}`);
+          if (weak.length) priority.push(`苦手分野の補強：${weak[0]}`);
+          input = { ...input, nextPriority: priority.length ? priority : ['学習計画の次の分野を確認して開始する'] };
+        }
+        if (!(input.nextPurpose ?? []).length) {
+          input = { ...input, nextPurpose: dueReviews.length ? ['期限が来た復習で理解を確認する'] : ['学習計画に沿って公式過去問を続ける'] };
+        }
+        const ordered = st.plan?.orderedFields?.length ? st.plan.orderedFields
+          : Object.keys(st.plan?.fieldWeights ?? {}).sort((a,b) => (st.plan.fieldWeights[b]??0) - (st.plan.fieldWeights[a]??0));
+        if (!(input.plan ?? []).length) {
+          input = { ...input, plan: [
+            ordered.length ? `学習分野順：${ordered.map((f) => fields[f] ?? f).join(' → ')}` : '学習分野順：未確認',
+            `復習：未習得${dueReviews.length}件／習得済み${masteredReviews.length}件`,
+            `学習方法：${st.plan?.methodChoice ?? '未確認'}／復習設定：${st.plan?.reviewPreset ?? '未確認'}`,
+          ] };
+        }
+        if (!input.progress?.done && learnedFields.length) {
+          input = { ...input, progress: { ...(input.progress ?? {}), done: learnedFields.map((f) => fields[f]).join('、'),
+            inProgress: fields[st.current?.fieldId] ?? input.progress?.inProgress ?? '未確認',
+            notStarted: Object.keys(fields).filter((f) => !learnedFields.includes(f)).map((f) => fields[f]).join('、') || 'なし',
+            needReview: `${dueReviews.length}件`,
+          } };
+        }
+        if (!input.qualification?.settings && st.plan) {
+          input = { ...input, qualification: { ...(input.qualification ?? {}), settings:
+            `学習方法=${st.plan.methodChoice ?? '未確認'}、復習=${st.plan.reviewPreset ?? '未確認'}` } };
+        }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
           const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
