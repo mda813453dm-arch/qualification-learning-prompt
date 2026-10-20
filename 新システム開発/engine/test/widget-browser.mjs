@@ -48,6 +48,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           if (!ready) window.protocolErrors.push('tool before initialized');
           const op = m.params.name;
           if (op === 'reportUiEvent' || op === 'saveProfile' || op === 'chooseItem') reply({ structuredContent: { status: 'recorded' } });
+          else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
           else if (op === 'submitAnswer') reply({ structuredContent: { grade: { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
@@ -67,7 +68,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
     await ui.getByRole('button', { name: '4 過去問演習中' }).click();
-    await ui.getByRole('button', { name: /始めます/ }).click();
+    await ui.getByRole('button', { name: /この学習計画で始める/ }).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     await page.waitForFunction(() => window.followups.length >= 1);
     assert.deepEqual(await page.evaluate(() => window.followups), ['学習画面の操作を続ける']);
