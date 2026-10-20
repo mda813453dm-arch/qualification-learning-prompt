@@ -327,6 +327,53 @@ a{color:inherit}
       ask('学習計画の希望：' + wish);
     };
   }
+  // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
+  function diagPreview(d){
+    var h = '<h2>初期診断の確認</h2><div class="notice">公式過去問で分野ごとの理解度を調べます。結果は少数問による暫定評価です。</div>' +
+      '<div class="stem">全' + esc(d.total) + '問</div><ol class="ov-l">' +
+      (d.fields || []).map(function(f){ return '<li>' + esc(f.name) + '：' + esc(f.count) + '問</li>'; }).join('') + '</ol>' +
+      '<div class="choices"><button id="dGo"><b>1</b><span>この問題数で診断を開始する</span></button><button id="dBack"><b>2</b><span>計画に戻る</span></button></div>';
+    app.innerHTML = h; scrollUp();
+    document.getElementById('dBack').onclick = function(){ planPanel([]); };
+    document.getElementById('dGo').onclick = async function(){
+      this.disabled = true;
+      try {
+        var r = await callTool('diagStep', { sessionId: studyLearner, action: 'start' });
+        if (!r || !r.diag || !r.question) throw new Error('DIAG_UNAVAILABLE');
+        diagIntro(r.diag, r.question);
+      } catch(e) {
+        this.disabled = false;
+        app.insertAdjacentHTML('beforeend','<div class="notice">初期診断の問題を取得できませんでした。同じ開始ボタンで再試行してください。</div>');
+      }
+    };
+  }
+  function diagResultScreen(data){
+    var rows = (data.diagResult || []).map(function(r){
+      var rate = r.wrongRate == null ? '未診断' : Math.round(r.wrongRate * 100) + '%';
+      var certainty = r.confidenceCount ? '迷い・勘 ' + r.uncertaintyCount + '/' + r.confidenceCount : '確信度：未確認';
+      return '<li>' + esc(r.name) + '：' + esc(r.answered) + '問中' + esc(r.correct) + '問正解／誤答率' + esc(rate) + '（' + esc(certainty) + '）</li>';
+    }).join('');
+    app.innerHTML = '<h2>初期診断の結果（暫定評価）</h2>' +
+      (data.grade ? '<div class="result">' + esc(data.grade.label) + '：' + (data.grade.skipped ? '未回答' : data.grade.correct ? '正解' : '不正解') + '</div>' : '') +
+      '<div class="notice">' + esc(data.note || '') + '</div><ul class="ov-l">' + rows + '</ul>' +
+      '<div class="stem">学習する分野の順：' + esc((data.order || []).join(' → ')) + '</div>' +
+      '<div class="stem">順位の根拠：' + esc((data.rankingReasons || []).map(function(r){return r.fields.join('・') + '：' + r.reason;}).join('／')) + '</div>' +
+      '<div class="choices"><button id="dApply"><b>1</b><span>この結果で計画を作る</span></button><button id="dMore"><b>2</b><span>追加診断</span></button><button id="dManual"><b>3</b><span>分野順を自分で指定</span></button><button id="dEdit"><b>4</b><span>計画の見直しへ戻る</span></button></div>';
+    scrollUp();
+    document.getElementById('dApply').onclick = async function(){
+      this.disabled = true;
+      try { var r = await callTool('diagStep', { sessionId: studyLearner, action: 'apply' });
+        if (!r || !r.planReady) throw new Error('PLAN_APPLY_FAILED'); render(r);
+      } catch(e){ this.disabled = false; app.insertAdjacentHTML('beforeend','<div class="notice">診断結果を計画へ反映できませんでした。もう一度押してください。</div>'); }
+    };
+    document.getElementById('dMore').onclick = async function(){
+      this.disabled = true;
+      try { var r = await callTool('diagStep', { sessionId: studyLearner, action: 'preview' }); if (!r || !r.diag) throw new Error('NO_MORE_DIAG'); diagPreview(r.diag); }
+      catch(e){ this.disabled = false; app.insertAdjacentHTML('beforeend','<div class="notice">追加診断に利用できる別の公式過去問がありません。</div>'); }
+    };
+    document.getElementById('dManual').onclick = function(){ planEditFields(); };
+    document.getElementById('dEdit').onclick = function(){ planEditMenu(); };
+  }
   // 初期診断：どの分野から何問出すかを先に見せ、過去問をこの画面で続けて出す（出題・採点・結果はエンジン。AIに頼らない）
   var diagSid = null;
   function diagIntro(d, q){
