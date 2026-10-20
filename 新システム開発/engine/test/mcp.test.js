@@ -299,6 +299,11 @@ test('アプリ：初期診断は、分野と問数を先に示し、過去問�
     // 測量の分野（s1）は間違え、s2 だけ正解する
     const right = { 1: '3', 2: '1', 3: '4', 4: '2' }[q.questionNumber];
     last = content(await app('tools/call', { name: 'diagStep', arguments: { sessionId: s.learnerId, action: 'answer', questionId: q.questionId, value: q.fieldName === start.diag.fields[1].name ? right : '5' } }));
+    if (i === 0) {
+      const duplicate = content(await app('tools/call', { name: 'diagStep', arguments: { sessionId: s.learnerId, action: 'answer', questionId: q.questionId, value: '1' } }));
+      assert.equal(duplicate.grade.alreadyGraded, true, '同じ問の再送は採点し直さない');
+      assert.equal(duplicate.question.questionId, last.question.questionId, '再送で次問へ進まない');
+    }
     q = last.question;
   }
   assert.deepEqual(seen, [1, 2, 3]);
