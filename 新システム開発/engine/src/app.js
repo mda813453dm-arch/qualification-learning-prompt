@@ -1003,7 +1003,14 @@ async function route(request, env, url, now) {
     const { id, state } = await resolveSession(env, parts[2], now);
     const acc = await gateUse(env, state.learnerId, now, { answering: true });
     // 採点は出題時に控えた正答だけで行う（公式PDF・保存データは読み直さない）
-    const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence }, { today: jstToday(now), now });
+    const schedule = state.plan?.reviewIntervalsMinutes;
+    const validSchedule = Array.isArray(schedule) && schedule.length > 0 && schedule.every((v, i) =>
+      Number.isInteger(v) && v >= 0 && (i === 0 || v > schedule[i-1]));
+    const policy = validSchedule ? (schedule.every((v) => v % 1440 === 0)
+      ? { intervals: schedule.map((v) => v / 1440) }
+      : { intervalsMinutes: schedule }) : {};
+    const r = grade(state, { questionId: b.questionId, value: b.value, confidence: b.confidence },
+      { today: jstToday(now), now, ...policy });
     if (!r.ok) {
       // 原因を後から確かめられるよう、送られた番号と出題中の番号だけを残す（回答の中身は残さない）
       console.warn(JSON.stringify({ event: 'answer_rejected', reason: r.reason, given: String(b.questionId ?? '').slice(0, 80), current: state.current?.questionId ?? null }));
