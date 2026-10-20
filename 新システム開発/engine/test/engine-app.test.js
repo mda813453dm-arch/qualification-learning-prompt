@@ -721,3 +721,39 @@ test('図をもう一度：公式の図のファイルだけを付け直し、�
   const n = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
   assert.equal(n.questionId, g.next.question.questionId);
 });
+
+test('再表示は同じ未回答問題を返し、学習の記録と次問位置を変更しない', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const q = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  const before = JSON.stringify(await env.STORE.get(`ses/${sessionId}`, 'json'));
+  for (let i = 0; i < 2; i++) {
+    const again = await call(env, 'GET', `/v1/sessions/${sessionId}/redisplay`);
+    assert.equal(again.status, 200, JSON.stringify(again.body));
+    assert.equal(again.body.question.questionId, q.questionId);
+    assert.equal(again.body.redisplayed, true);
+    assert.equal(JSON.stringify(await env.STORE.get(`ses/${sessionId}`, 'json')), before, '再表示で履歴・順番を変更しない');
+  }
+  const graded = (await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: '3' })).body;
+  const current = graded.next?.question;
+  assert.ok(current);
+  const again = (await call(env, 'GET', `/v1/sessions/${sessionId}/redisplay`)).body;
+  assert.equal(again.question.questionId, current.questionId, '採点後の先取り済み問題を再表示する');
+  assert.notEqual(again.question.questionId, q.questionId, '直前に回答済みの問題に戻さない');
+});
+
+test('終了メニューが学習IDを失ってもセッションIDから同一の引継ぎデータを取得', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const session = await startSession(env);
+  const study = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: session.learnerId })).body;
+  assert.ok(study.studyId);
+  const bySession = await call(env, 'POST', `/v1/study/${session.sessionId}/end`, { sessionId: session.sessionId });
+  assert.equal(bySession.status, 200, JSON.stringify(bySession.body));
+  assert.ok(bySession.body.log);
+  assert.match(bySession.body.handoff, /引継ぎID/);
+  assert.match(bySession.body.display, /引継ぎ/);
+  const byStudy = await call(env, 'POST', `/v1/study/${study.studyId}/end`, { sessionId: session.sessionId });
+  assert.equal(byStudy.status, 200);
+  assert.equal(bySession.body.totalMinutes, byStudy.body.totalMinutes, '同じ終了を二重計上しない');
+  assert.equal(bySession.body.handoff, byStudy.body.handoff, '終了後も同一の引継ぎデータを返す');
+});
