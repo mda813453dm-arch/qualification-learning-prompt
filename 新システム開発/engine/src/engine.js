@@ -85,7 +85,10 @@ export function pickNext(state, items, { today, now=null, job }) {
     if(!byUnit.has(key))byUnit.set(key,[]);
     byUnit.get(key).push(x);
   }
-  const pace = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+  const oldPace = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+  // 再開操作が省略された互換経路でも、学習日が変わったら開始時の期限復習を優先する。
+  const pace = oldPace.lastDate && today > oldPace.lastDate
+    ? { initialServed: 0, newAnswered: 0, sinceReview: 0, lastDate: today } : oldPace;
   const initialReview = pace.newAnswered === 0 && pace.initialServed < 5;
   const due = selectDueReviews({ today, now, items: Object.values(state.review),
     sessionStart: initialReview, practiceSinceReview: pace.sinceReview });
@@ -335,17 +338,19 @@ function sameQuestion(given, current) {
  * 返り値 {ok, state, grade} / {ok:false, reason}
  */
 /** 学習開始時の最大5復習、その後は新しい問題2問ごとに1復習。採点確定時だけ進む。 */
-function completedPace(state, kind) {
-  const p = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+function completedPace(state, kind, today) {
+  const old = state.reviewPacing ?? { initialServed: 0, newAnswered: 0, sinceReview: 0 };
+  const p = old.lastDate && today > old.lastDate
+    ? { initialServed: 0, newAnswered: 0, sinceReview: 0 } : old;
   if (kind === 'review') return {
     initialServed: p.initialServed + (p.newAnswered === 0 ? 1 : 0),
-    newAnswered: p.newAnswered, sinceReview: 0,
+    newAnswered: p.newAnswered, sinceReview: 0, lastDate: today,
   };
   if (kind === 'new') return {
     initialServed: p.initialServed, newAnswered: p.newAnswered + 1,
-    sinceReview: p.sinceReview + 1,
+    sinceReview: p.sinceReview + 1, lastDate: today,
   };
-  return p;
+  return { ...p, lastDate: today };
 }
 
 export function grade(state, { questionId, value, confidence = 'sure' }, { today, now, intervals, intervalsMinutes }) {
@@ -366,7 +371,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
         ...state,
         current: { ...cur, grade: g },
         lastGrade: g,
-        reviewPacing: cur.kind === 'review' ? completedPace(state, cur.kind) : state.reviewPacing,
+        reviewPacing: cur.kind === 'review' ? completedPace(state, cur.kind, today) : state.reviewPacing,
         skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, questionNumber: cur.source?.number ?? null }],
       },
     };
@@ -379,7 +384,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     const review = { ...state.review };
     if (upd.status === 'updated') review[reviewId] = upd.item;
     const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
-    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind) } };
+    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind, today) } };
   }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
@@ -415,7 +420,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
       current: { ...cur, grade: g },
       lastGrade: g,
-      reviewPacing: completedPace(state, cur.kind),
+      reviewPacing: completedPace(state, cur.kind, today),
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },
