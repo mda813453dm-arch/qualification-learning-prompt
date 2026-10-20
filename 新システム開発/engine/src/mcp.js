@@ -173,13 +173,13 @@ export const TOOLS = [
   {
     name: 'showMenu',
     appOnly: true,
-    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。【解説・答え合わせの文章は body に入れる】チャットに書いてからこのツールを呼ぶと、ChatGPTの画面ではボタンが文章の上に出てしまい、利用者が見つけられない。解説・答え合わせ・理由の文章（Markdown。表・箇条書き可）は、チャットには書かず、このツールの body に入れる。body は、ボタンと同じ枠のボタンの上に表示される。body を入れたら、チャットには何も書かない。',
-    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review', 'check'] }, body: { type: 'string', maxLength: 8000, description: 'ボタンの上に出す解説・答え合わせの文章（Markdown）' } } },
+    description: '番号で選んでもらう確認を、選択ボタンの画面に出す。「1：始めます」などの番号の選択肢をチャットの文字で書く代わりに、必ずこのツールを呼ぶ。kind＝exempt（免除制度を使うか）／status（学習状況）／plan（学習計画を示したあと「学習を開始しますか？」）／item（項目の進め方）／resume（続きから始めるか）／next（解説のあと「次の問題へ」）／review（採点後の簡単な理由のあと「詳しい解説／次の問題へ」）。呼んだら、画面のボタンが押されるまで返事を待つ（選択肢をチャットに書かない）。【解説・答え合わせの文章は body に入れる】チャットに書いてからこのツールを呼ぶと、ChatGPTの画面ではボタンが文章の上に出てしまい、利用者が見つけられない。解説・答え合わせ・理由の文章（Markdown。表・箇条書き可）は、チャットには書かず、このツールの body に入れる。body は、ボタンと同じ枠のボタンの上に表示される。body を入れたら、チャットには何も書かない。学習中のメニュー（next/review/check）には startStudy で返された studyId と learnerId、および startSession の sessionId を引数に含め、終了ボタンが直接エンジンから引継ぎデータを取得できるようにする。',
+    inputSchema: { type: 'object', required: ['kind'], properties: { kind: { type: 'string', enum: ['exempt', 'status', 'plan', 'item', 'resume', 'next', 'review', 'check'] }, body: { type: 'string', maxLength: 8000, description: 'ボタンの上に出す解説・答え合わせの文章（Markdown）' }, sessionId: { type: 'string', description: '学習中のセッションID。終了操作のため必ず渡す' }, studyId: { type: 'string', description: 'startStudyで受け取った学習ID。終了操作のため必ず渡す' }, learnerId: { type: 'string', description: 'startStudyで受け取った引継ぎID' } } },
     local: (a) => {
       const menu = APP_MENUS[a.kind];
       const NEXT = { exempt: ' 答えが届いたら、次に showMenu（kind=status）を呼ぶ。', status: ' 答えが届いたら、学習計画を示し、最後に showMenu（kind=plan）を呼ぶ。' };
       const body = typeof a.body === 'string' && a.body.trim() ? a.body.slice(0, 8000) : null;
-      return menu ? { status: 'menu', menu: body ? { ...menu, body } : menu, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
+      return menu ? { status: 'menu', menu: { ...menu, ...(body ? { body } : {}), ...(a.sessionId ? { sessionId: a.sessionId } : {}), ...(a.studyId ? { studyId: a.studyId } : {}), ...(a.learnerId ? { learnerId: a.learnerId } : {}) }, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
     },
   },
   {
