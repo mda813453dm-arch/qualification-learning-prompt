@@ -73,7 +73,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
+    await ui.locator('body').evaluate(() => {
+      window.__stageEvents = [];
+      ['pointerdown', 'pointerup', 'touchstart', 'touchend', 'mousedown', 'mouseup', 'click'].forEach(type => document.addEventListener(type, e => {
+        if (window.__stageEvents.length < 24) window.__stageEvents.push({
+          type, text: e.target.closest('button')?.textContent?.trim().slice(0, 45),
+          detail: e.detail, trusted: e.isTrusted
+        });
+      }, true));
+    });
     await ui.getByRole('button', { name: '4 過去問演習中' }).tap();
+    console.log(name + ': AFTER stage tap: ' + (await ui.locator('#app').innerText()).slice(-500));
+    console.log(name + ': EVENT TRACE ' + JSON.stringify(await ui.locator('body').evaluate(() => window.__stageEvents)));
     await ui.getByRole('button', { name: /この学習計画で始める/ }).waitFor();
     // 実機の回帰：学習段階4の1タップが、描画し直した計画の「4 今は学習しない」を
     // 触っていないのに押した扱いになって学習計画を閉じないようにする。
