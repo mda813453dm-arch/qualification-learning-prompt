@@ -24,6 +24,7 @@ export function newState({ qualificationId, learnerId = null, plan = {}, now }) 
     history: {}, // questionId -> {result, selected, answeredAt, source}
     review: {}, // questionId -> 復習の予定（review.js の item）
     current: null, // 出題中の問（正答はここに控え、AIには渡さない）
+    remediation: null, // 同一分野3連続誤答：AI作成確認問題に正解するまで新たな公式問題を禁止
     withheld: [], // 引継ぎ時に出題を止めた問と理由
   };
 }
@@ -78,6 +79,7 @@ function recentYearsPending(job) {
  * 返り値 {status, question?, notice?}。status: question | waiting | finished
  */
 export function pickNext(state, items, { today, job }) {
+  if (state.remediation?.required) return { status: 'remediation', fieldId: state.remediation.fieldId };
   const withheld = new Set([...state.withheld.map((w) => w.questionId), ...(state.skipped ?? []).map((x) => x.questionId)]);
   const usable = items.filter((x) => !withheld.has(x.packet.questionId));
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
@@ -378,23 +380,25 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   // 補強（B15 分岐5）：通常の問で2問続けて間違えたら、次は同じ分野の補強の問。補強の問に正解したら終える。
   // 補強を3回続けて間違えたら補強を止め、確認問題（AI作成）を勧める
   let reinforce = state.reinforce ?? null;
-  let checkSuggested = false;
-  if (cur.kind === 'reinforce') {
+  // 3問目（補強の公式過去問を含む）を間違えた瞬間に、確認問題を必須にする。
+  // 先に補強へ入っていても、同一fieldIdの連続誤答をリセットしない。
+  const checkSuggested = result === 'wrong' && !!fid && streak >= WRONG_STREAK;
+  if (checkSuggested) {
+    reinforce = null;
+  } else if (cur.kind === 'reinforce') {
     const tries = (reinforce?.tries ?? 0) + (result === 'wrong' ? 1 : 0);
     if (result !== 'wrong') reinforce = null;
-    else if (tries >= REINFORCE_TRIES) { reinforce = null; checkSuggested = true; }
     else reinforce = { fieldId: fid, tries };
   } else if (result === 'wrong' && fid && streak >= REINFORCE_STREAK) {
     reinforce = { fieldId: fid, tries: 0 };
-  } else if (!reinforce) {
-    checkSuggested = streak >= WRONG_STREAK;
   }
   return {
     ok: true,
     grade: { ...g, wrongStreak: streak, checkSuggested, ...(reinforce ? { reinforceNext: true } : {}) },
     state: {
       ...state,
-      wrongStreak: { fieldId: fid, count: checkSuggested || cur.kind === 'reinforce' ? 0 : streak },
+      wrongStreak: { fieldId: fid, count: checkSuggested ? WRONG_STREAK : streak },
+      remediation: checkSuggested ? { required: true, fieldId: fid, triggerQuestionId: questionId } : (state.remediation ?? null),
       reinforce,
       // 3問連続で間違えたら、確認問題のあとも同じ分野に戻る（次の3問を同じ分野から出す）
       set: checkSuggested && fid ? { fieldId: fid, count: 0 } : state.set,
