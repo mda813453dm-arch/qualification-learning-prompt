@@ -568,6 +568,11 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
   }
+  // 3連続誤答では分野・年度の指定を含めて新問を出さない（確認問題正解による復帰待ち）。
+  if (state.remediation?.required) {
+    const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
+    return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
+  }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
   const prevField = state.current?.fieldId ?? null;
@@ -845,6 +850,24 @@ async function route(request, env, url, now) {
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'redisplay' && parts.length === 4) {
     const { id, state } = await resolveSession(env, parts[2], now);
     return json(200, await redisplayView(env, id, state, now));
+  }
+
+  // AI作成確認問題の正答を検証してから元分野へ戻す。誤答時と未回答時はブロックを保持する。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'remediation' && parts[4] === 'complete' && parts.length === 5) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    if (!state.remediation?.required) throw new HttpError(409, 'REMEDIATION_NOT_REQUIRED');
+    const question = typeof b.checkQuestion === 'string' ? b.checkQuestion.trim() : '';
+    const selected = String(b.selected ?? '').trim();
+    const answer = String(b.correctAnswer ?? '').trim();
+    if (!question || question.length < 10 || question.length > 2000 || !selected || !answer) {
+      throw new HttpError(400, 'CONFIRMATION_EVIDENCE_REQUIRED');
+    }
+    if (selected !== answer) return json(200, { status: 'remediation_retry', notice: '確認問題が不正解でした。同じ分野の別の確認問題で復習してください。' });
+    const fld = state.remediation.fieldId;
+    const cleared = { ...state, remediation: null, reinforce: null, wrongStreak: { fieldId: fld, count: 0 }, set: { fieldId: fld, count: 0 } };
+    await saveSession(env, id, cleared, now);
+    return json(200, { status: 'remediation_complete', sessionId: id, notice: '確認問題の正解を記録しました。同じ分野の公式過去問を再開できます。' });
   }
 
   // 初期診断（アプリ）：各分野から決まった数の過去問を出し、正誤から苦手分野の順に計画を作り直す。
