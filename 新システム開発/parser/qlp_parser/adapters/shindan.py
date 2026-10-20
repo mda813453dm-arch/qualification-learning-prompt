@@ -245,7 +245,8 @@ def parse_answers(doc):
         raise ParseError("ANSWER_TABLE_NOT_FOUND")
     answers = {}
     for x, y, t in words:
-        m = re.match(r"第([0-9]{1,2})問", t)
+        # 「＊第33問」は、注記で「すべての受験者の解答を正解として扱う」とされた問（正解の欄は「－」）
+        m = re.fullmatch(r"[＊*]?第([0-9]{1,2})問", t)
         if not m:
             continue
         left = max((c for c in cols if c <= x + 15), default=cols[0])

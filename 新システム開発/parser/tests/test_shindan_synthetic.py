@@ -96,7 +96,7 @@ def make_answer_pdf(rows_left, rows_right, subject="Ｃ　企業経営理論", y
 
 LEFT = [("第1問", "-", "イ", "3"), ("第2問", "-", "オ", "3"), ("第3問", "設問1", "ア", "2"), (None, "設問2", "ウ", "2"),
         ("第4問", "-", "エ", "3")] + [(f"第{n}問", "-", "ア", "2") for n in range(5, 12)]
-RIGHT = [(f"第{n}問", "-", "ウ", "2") for n in range(12, 20)] + [("第20問", "-", "全員正解", "2")]
+RIGHT = [(f"第{n}問", "-", "ウ", "2") for n in range(12, 20)] + [("第20問", "-", "全員正解", "2"), ("＊第21問", "-", "－", "2")]
 
 
 class Answers(unittest.TestCase):
@@ -110,6 +110,7 @@ class Answers(unittest.TestCase):
         self.assertEqual(a[12], 3)
         self.assertEqual(a[19], 3)
         self.assertEqual(a[20], ANSWER_SPECIAL)
+        self.assertEqual(a[21], ANSWER_SPECIAL)  # 注記で全員正解とされた問
 
     def test_year_from_title(self):
         doc = fitz.open(stream=make_answer_pdf(LEFT, RIGHT), filetype="pdf")

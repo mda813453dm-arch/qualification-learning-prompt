@@ -146,3 +146,4 @@ Fri Oct 16 11:50:25 UTC 2026
 2026-10-19T15:41:00Z redeploy engine after billing recovery
 2026-10-19T16:13:00Z refresh ChatGPT app after widget fixes (v32)
 2026-10-19T18:30:00Z implement shared past exam storage: persist indefinitely by qualification/year
+2026-10-20T05:54:29Z add 中小企業診断士 1st-stage past exams (parser adapter shindan + engine catalog/discovery)
