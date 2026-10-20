@@ -44,7 +44,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-r.minor .ov-k{font-weight:600}.ov-r.minor .ov-v{color:var(--sub)}
 .ov-k{display:block;color:var(--acc);font-weight:700;font-size:16px}
 .ov-v{display:block;font-size:16px;line-height:1.65;overflow-wrap:anywhere}.ov-r>*{min-width:0}
-.md p{margin:8px 0;line-height:1.75;overflow-wrap:anywhere}.md h3{font-size:17px;margin:14px 0 6px}.md ul,.md ol{margin:6px 0;padding-left:1.4em;line-height:1.75}.md-t{overflow-x:auto;margin:8px 0}.md table{border-collapse:collapse;width:100%;font-size:15px}.md th,.md td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.md code{background:#f1f3f4;padding:0 4px;border-radius:4px}
+.md p{margin:8px 0;line-height:1.75;overflow-wrap:anywhere}.md h3{font-size:17px;margin:14px 0 6px}.md ul,.md ol{margin:6px 0;padding-left:1.4em;line-height:1.75}.md-t{overflow-x:auto;margin:8px 0}.md table{border-collapse:collapse;width:100%;font-size:15px}.md th,.md td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.md a{color:var(--acc);text-decoration:underline;overflow-wrap:anywhere}.md code{background:#f1f3f4;padding:0 4px;border-radius:4px}
 .ov-l{margin:4px 0 0;padding-left:1.6em;font-size:16px}.ov-l li{margin:3px 0}
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
@@ -173,7 +173,7 @@ a{color:inherit}
   // 簡易の Markdown 表示（見出し・太字・箇条書き・表）。解説の本文を、ボタンと同じ枠に出すために使う
   function md(src){
     var lines = String(src == null ? '' : src).split('\\n'), out = [], i = 0, list = null;
-    var inl = function(t){ return esc(t).replace(/\\*\\*(.+?)\\*\\*/g, '<b>$1</b>').replace(/\\x60(.+?)\\x60/g, '<code>$1</code>'); };
+    var inl = function(t){ return esc(t).replace(/\\*\\*(.+?)\\*\\*/g, '<b>$1</b>').replace(/\\x60(.+?)\\x60/g, '<code>$1</code>').replace(/\\[([^\\]]+)\\]\\((https:\\/\\/[^\\s)]+)\\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>').replace(/(^|[^"=>])(https:\\/\\/[^\\s<)"]+)/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>'); };
     var closeList = function(){ if (list) { out.push('</' + list + '>'); list = null; } };
     var cells = function(r){ return r.trim().replace(/^\\|/, '').replace(/\\|$/, '').split('|').map(function(c){ return c.trim(); }); };
     while (i < lines.length) {

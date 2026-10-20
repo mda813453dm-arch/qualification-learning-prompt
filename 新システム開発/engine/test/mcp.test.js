@@ -471,3 +471,9 @@ test('問題文は文ごとに段落へ分けて表示する', () => {
   assert.ok(h.includes('function stemHtml'));
   assert.ok(h.includes('stemHtml(q.stem)'));
 });
+
+test('解説の本文のURLは、押して開けるリンクにする', () => {
+  const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.ok(h.includes('target=\\"_blank\\"') || h.includes('target=\\\\"_blank\\\\"') || h.includes('_blank'));
+  assert.ok(h.includes('.md a{'));
+});
