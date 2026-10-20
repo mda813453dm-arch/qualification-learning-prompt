@@ -54,24 +54,23 @@ test('分類できていない問は新しい問として出さない', () => {
   assert.equal(pickNext(state, items, { today: TODAY }).item.packet.questionId, 'q2');
 });
 
-test('同じ分野を2問続けて間違えたら、次は同じ分野の補強の問。補強を3回間違えたら確認問題を勧める（B15 分岐5・U21）', () => {
-  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'a'), item(7, 'b')];
+test('同じ分野で3問連続不正解なら、第4実践問題は出さず確認問題を必須にする', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'b')];
   let state = newState({ qualificationId: 'q1', now: NOW });
-  const log = [];
-  for (const answer of [2, 2, 2, 2, 2]) { // 1が正解
+  const kinds = [];
+  for (const answer of [2, 2, 2]) {
     const r = pickNext(state, items, { today: TODAY });
+    assert.equal(r.status, 'question');
     state = pin(state, r.item, r.kind, NOW);
     const g = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW });
+    kinds.push([r.kind, !!g.grade.checkSuggested]);
     state = g.state;
-    log.push([r.kind, r.item.packet.fieldId, !!g.grade.reinforceNext, g.grade.checkSuggested]);
   }
-  assert.deepEqual(log, [
-    ['new', 'a', false, false],
-    ['new', 'a', true, false], // 2問続けて誤答 → 次は補強
-    ['reinforce', 'a', true, false],
-    ['reinforce', 'a', true, false],
-    ['reinforce', 'a', false, true], // 補強を3回誤答 → 補強を止め、確認問題を勧める
-  ]);
+  assert.deepEqual(kinds, [['new', false], ['new', false], ['reinforce', true]]);
+  assert.equal(state.wrongStreak.count, 3);
+  assert.equal(state.remediation.required, true);
+  assert.equal(state.remediation.fieldId, 'a');
+  assert.equal(pickNext(state, items, { today: TODAY }).status, 'remediation', '確認問題の正解前は次の公式問題を許さない');
 });
 
 test('補強の問に正解したら、補強を終えて通常の出題に戻る', () => {
@@ -87,18 +86,17 @@ test('補強の問に正解したら、補強を終えて通常の出題に戻�
   assert.deepEqual(kinds, ['new', 'new', 'reinforce', 'new']);
 });
 
-test('3問連続で間違えたあとは、同じ分野に戻って次の3問を出す', () => {
-  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'b'), item(7, 'b'), item(8, 'b'), item(9, 'b')];
+test('同一分野の3連続誤答を超えて別分野へ自動移動しない', () => {
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'b'), item(5, 'b')];
   let state = newState({ qualificationId: 'q1', now: NOW, plan: { fieldWeights: { a: 1 } } });
-  const seen = [];
-  for (let i = 0; i < 5; i += 1) {
+  for (let i = 0; i < 3; i++) {
     const r = pickNext(state, items, { today: TODAY });
+    assert.equal(r.item.packet.fieldId, 'a');
     state = pin(state, r.item, r.kind, NOW);
-    seen.push(r.item.packet.fieldId);
     state = grade(state, { questionId: r.item.packet.questionId, value: 2 }, { today: TODAY, now: NOW }).state;
   }
-  // 誤答3問で確認問題を勧めたあとも、aの残り2問を続けて出す（3問ごとに別の分野へ移さない）
-  assert.deepEqual(seen, ['a', 'a', 'a', 'a', 'a']);
+  assert.equal(pickNext(state, items, { today: TODAY }).status, 'remediation');
+  assert.equal(state.remediation.fieldId, 'a');
 });
 
 test('「分からない」は採点に数えず、正答を見せて復習に登録し、連続誤答にも数えない', () => {
