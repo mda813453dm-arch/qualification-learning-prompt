@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v33.html';
+export const WIDGET_URI = 'ui://qlp/question-v34.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-19.32';
+export const WIDGET_VERSION = '2026-10-20.33';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -236,7 +236,7 @@ a{color:inherit}
     document.getElementById('sendWish').onclick = function(){
       var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
       app.insertAdjacentHTML('beforeend', '<div class="notice"><b>希望をチャットに送りました。</b>作り直した計画は、この画面の下のチャットに出ます。下へスクロールして、承認か手直しを選んでください。</div>');
-      ask('学習計画の希望：' + wish + '\\n【順番】この希望と、試験概要・出題数・学習状況を踏まえて、学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は利用者の希望に合わせ、無ければAI調整型）。計画の承認は文章で聞かず、必ず showMenu（kind=plan）を呼んで「承認して始める」「手直しする」のボタンで選んでもらう。承認のボタンが押されたら startStudy を呼ぶ。');
+      ask('学習計画の希望：' + wish);
     };
   }
   // 初期診断：どの分野から何問出すかを先に見せ、過去問をこの画面で続けて出す（出題・採点・結果はエンジン。AIに頼らない）
@@ -309,12 +309,13 @@ a{color:inherit}
     var go = async function(mode){
       try { if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode }); } catch (e) {}
       if (mode === 'practice') { await proceed(); return; }
-      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'はこの下のチャットに出ます。終えたら下のボタンで過去問へ進んでください。</div><div class="choices"><button id="toPractice"><b>▶</b><span>' + esc(field) + 'の過去問へ</span></button></div>' + endBar();
+      // 続きのボタンは、解説・確認問題の「下」に出る（AIが最後に showMenu を呼ぶ）。ここには押すボタンを置かない（上まで戻らせない）
+      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar();
       scrollUp(true); bindEnd();
-      document.getElementById('toPractice').onclick = function(){ this.disabled = true; proceed(); };
+      // チャットに出る文は短い普通の言葉だけにする（AIへの手順は、アプリのツールの説明に書いてある）
       ask(mode === 'explain'
-        ? field + 'の解説をお願いします。解説のあと、確認問題（AIが作った問題）を出してください。'
-        : field + 'の確認問題（AIが作った問題）をお願いします。');
+        ? field + 'を解説から始めます。'
+        : field + 'を確認問題から始めます。');
     };
     if (itemAlways) { go(itemAlways); return; }
     var modes = [['explain', '解説あり（解説→確認問題→実践問題）'], ['check', '確認問題から（解説なし）'], ['practice', '実践問題から（解説も確認問題もなし）']];

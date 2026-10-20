@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v33.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v33.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v34.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v34.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v33.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v34.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
@@ -425,4 +425,19 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   // 年度が無いときは受け取らない
   const noYear = await app('tools/call', { name: 'attachPdf', arguments: { sessionId: sid, year: 0, questionPdf: { download_url: 'https://files.example/q.pdf' } } });
   assert.equal(noYear.structuredContent.error, 'ATTACH_YEAR_REQUIRED');
+});
+
+test('画面からチャットに送る文は短い普通の言葉だけ。AIへの手順はアプリのツールの説明にある', () => {
+  const html = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  const mcp = readFileSync(new URL('../src/mcp.js', import.meta.url), 'utf8');
+  // 利用者のチャットに「AIへの指示」が見えないこと
+  assert.ok(!html.includes('【順番】'), '画面の送信文に手順を入れない');
+  assert.ok(!html.includes('kind='), '画面の送信文に内部のツール名・引数を入れない');
+  assert.ok(html.includes("field + 'を解説から始めます。'"));
+  assert.ok(html.includes("ask('学習計画の希望：' + wish)"));
+  // 続きのボタンは解説・確認問題の「下」に出す（画面の上に押すボタンを置かない）
+  assert.ok(!html.includes('id="toPractice"'));
+  // 短い文に対するAIの手順は、アプリのツールの説明にある
+  assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
+  assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));
 });
