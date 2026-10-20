@@ -64,40 +64,50 @@ export function frequencyOrder(fieldIds, counts) {
   return { basis: 'official_overview_order', order: [...fieldIds], total };
 }
 
-/** 診断の分野別集計。n=有効回答数、w=誤答数、rate=誤答率（n=0 は評価不能で null）。 */
+/** 診断は採点確定した問題だけ集計する。確信度未回答は denominator に入れない。 */
 export function diagnosisRows(fieldIds, answers, counts = {}) {
-  return fieldIds.map((f, i) => {
-    const mine = answers.filter((a) => a.fieldId === f);
+  return fieldIds.map((f, index) => {
+    const mine = answers.filter((a) => a.fieldId === f && ['wrong', 'correct'].includes(a.result));
     const n = mine.length;
     const w = mine.filter((a) => a.result === 'wrong').length;
-    return { fieldId: f, index: i, n, w, rate: n ? w / n : null, count: counts[f] ?? 0 };
+    const confirmed = mine.filter((a) => ['sure', 'unsure', 'guess'].includes(a.confidence));
+    const c = confirmed.length;
+    const u = confirmed.filter((a) => a.confidence !== 'sure').length;
+    return { fieldId: f, index, n, w, rate: n ? w / n : null,
+      c, u, uncertaintyRate: c ? u / c : null, count: counts[f] ?? 0 };
   });
 }
 
-/**
- * 初期診断から学習順を決める（初期診断_苦手分野判定と同率順位決定_20261014.md）。
- * 1. 誤答率の高い順（誤答数ではなく率で比べる）
- * 2. 同率なら、検証済みの出題数の多い順
- * 3. なお同率なら、公式の分野順
- * 回答のない分野は「未診断」として順位を付けず、最後に公式の分野順で置く。
- * 確信度（迷った／勘）は「勘」と言われたときしか記録できず比べられないため、順位には使わない。
- */
+/** 同率はあくまで診断上同程度。確信度を双方で測定できた場合のみタイブレークに使う。 */
 export function diagnosisOrder(fieldIds, answers, counts = {}) {
   const rows = diagnosisRows(fieldIds, answers, counts);
-  const done = rows.filter((r) => r.n > 0).sort((a, b) => b.rate - a.rate || b.count - a.count || a.index - b.index);
-  const undiagnosed = rows.filter((r) => r.n === 0);
-  const answered = done.reduce((n, r) => n + r.n, 0);
-  const wrong = done.reduce((n, r) => n + r.w, 0);
-  const ties = [];
-  for (const r of done) {
-    const same = done.filter((x) => x.rate === r.rate);
-    if (same.length > 1 && !ties.some((t) => t.includes(r.fieldId))) ties.push(same.map((x) => x.fieldId));
+  const groups = new Map();
+  for (const r of rows.filter((x) => x.n > 0)) {
+    const key = String(r.rate);
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(r);
   }
+  const rates = [...groups.keys()].sort((a, b) => Number(b) - Number(a));
+  const ties = [], rankingReasons = [];
+  const ordered = [];
+  for (const rate of rates) {
+    const group = groups.get(rate);
+    if (group.length > 1) ties.push(group.map((r) => r.fieldId));
+    const canCompareConfidence = group.every((r) => r.c > 0);
+    group.sort((a, b) =>
+      (canCompareConfidence ? b.uncertaintyRate - a.uncertaintyRate : 0) ||
+      b.count - a.count || a.index - b.index);
+    ordered.push(...group);
+    const reason = group.length === 1 ? '誤答率' : canCompareConfidence ? '同率・確信度（迷い／勘）→確認済み出題数→公式分野順' : '同率・確認済み出題数→公式分野順（確信度は比較不可）';
+    rankingReasons.push({ fields: group.map((r) => r.fieldId), reason });
+  }
+  const undiagnosed = rows.filter((r) => r.n === 0);
+  const answered = ordered.reduce((n, r) => n + r.n, 0);
+  const wrong = ordered.reduce((n, r) => n + r.w, 0);
   return {
-    order: [...done, ...undiagnosed].map((r) => r.fieldId),
-    rows,
+    order: [...ordered, ...undiagnosed].map((r) => r.fieldId),
+    rows, ties, rankingReasons,
     undiagnosed: undiagnosed.map((r) => r.fieldId),
-    ties,
     allWrong: answered > 0 && wrong === answered,
     allRight: answered > 0 && wrong === 0,
   };
