@@ -232,18 +232,18 @@ a{color:inherit}
     var em = document.getElementById('endMenu');
     if (em) em.onclick = async function(){
       em.disabled = true;
-      var ids = loadIds(), lid = ids.lid || studyLid || ids.sid || state.sessionId;
+      var ids = loadIds(), lid = currentStudyId || ids.studyId || studyLid || ids.lid || state.sessionId || ids.sid;
       if (lid) {
         try {
           var r = await callTool('endStudy', { studyId: lid, sessionId: ids.sid || lid, area: ids.field || undefined, item: ids.field || undefined, purpose: ids.field ? ids.field + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
-          if (r && !r.error && typeof r.display === 'string' && r.display.includes('引継ぎ')) {
-            app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
+          if (r && !r.error && typeof r.handoff === 'string' && typeof r.log === 'string' && typeof r.display === 'string') {
+            showEnd(r);
             scrollUp(true);
             return;
           }
         } catch (e) {}
       }
-      // 失敗時に終了成功と表示しない。次の押下で同じ学習を再試行する。
+      // 終了に失敗した場合、現在の学習を終了成功と表示しない。
       em.disabled = false;
       app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">終了データを取得できませんでした。同じ「今日はここまで」を押して再試行してください。学習状態は次へ進めません。</div>');
     };
@@ -511,10 +511,10 @@ a{color:inherit}
     b.onclick = async function(){
       b.disabled = true;
       try {
-        var ids = loadIds(); var lid = studyLid || ids.lid || state.sessionId || ids.sid;
+        var ids = loadIds(); var lid = currentStudyId || ids.studyId || studyLid || ids.lid || state.sessionId || ids.sid;
         var r = await callTool('endStudy', { studyId: lid, sessionId: state.sessionId || lid, area: studyField || undefined, item: studyField || undefined, purpose: studyField ? studyField + 'の要点をつかみ、過去問で得点できるか確かめる' : undefined });
-        if (!r || r.error || typeof r.display !== 'string' || !r.display.includes('引継ぎ')) throw new Error('end');
-        app.innerHTML = '<h2>学習を終了しました</h2><div class="stem" style="white-space:pre-wrap">' + esc(r.display) + '</div>';
+        if (!r || r.error || typeof r.handoff !== 'string' || typeof r.log !== 'string' || typeof r.display !== 'string') throw new Error('end');
+        showEnd(r);
         scrollUp(true);
       } catch (e) {
         b.disabled = false;
