@@ -52,10 +52,10 @@ export function updateReviewItem(previous,event,{today,examDate=null,intervals=I
     lastResult:result,comprehensive,exemptStopped:p?.exemptStopped??false
   })};
 }
-export function selectDueReviews({today,items=[],explicitTopic=false,defer=false,practiceSinceReview=0,sessionStart=true}={}){
+export function selectDueReviews({today,now=null,items=[],explicitTopic=false,defer=false,practiceSinceReview=0,sessionStart=true}={}){
  if(!date(today))return {status:'date_unverified',items:[]};
- const due=items.filter(x=>!x.exemptStopped&&x.dueDate&&x.dueDate<=today);
- due.sort((a,b)=>a.dueDate.localeCompare(b.dueDate) || Number(b.source==='wrong'||b.source==='self_report')-Number(a.source==='wrong'||a.source==='self_report'));
+ const due=items.filter(x=>!x.exemptStopped&&!x.mastered&&x.dueDate&&x.dueDate<=today&&(!x.dueAt||(Number.isFinite(now)&&Date.parse(x.dueAt)<=now)));
+ due.sort((a,b)=>(a.dueAt??a.dueDate).localeCompare(b.dueAt??b.dueDate) || Number(b.source==='wrong'||b.source==='self_report')-Number(a.source==='wrong'||a.source==='self_report'));
  if(defer)return {status:'deferred',items:[]};
  if(!explicitTopic&&sessionStart)return {status:'due',items:due.slice(0,5)};
  return {status:'due',items:practiceSinceReview>=2?due.slice(0,1):[]};
