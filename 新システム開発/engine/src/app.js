@@ -895,6 +895,11 @@ async function route(request, env, url, now) {
     if (ordered.some((x) => !x) || new Set(ordered).size !== fieldIds.length) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
     const methodChoice = b.methodChoice ?? 'balanced';
     if (!['explain','check','practice','balanced'].includes(methodChoice)) throw new HttpError(400, 'PLAN_METHOD_INVALID');
+    const dist = b.methodDistribution;
+    if (dist !== undefined && (!Array.isArray(dist) || dist.length !== 3 ||
+      dist.some((x) => !Number.isInteger(x) || x < 0 || x > 100) || dist.reduce((a, x) => a+x, 0) !== 100)) {
+      throw new HttpError(400, 'PLAN_METHOD_DISTRIBUTION_INVALID');
+    }
     const preset = b.reviewPreset ?? 'ai';
     if (!['focus','standard','slow','ai','custom'].includes(preset)) throw new HttpError(400, 'PLAN_REVIEW_INVALID');
     const raw = b.reviewIntervalsMinutes;
@@ -904,7 +909,7 @@ async function route(request, env, url, now) {
     }
     const nextPlan = { ...state.plan,
       fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
-      methodChoice, reviewPreset: preset,
+      methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
       reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
       orderedFields: ordered,
     };
