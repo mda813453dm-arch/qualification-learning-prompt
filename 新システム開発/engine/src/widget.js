@@ -536,7 +536,19 @@ a{color:inherit}
   // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
   // 今の枠は1行に縮め、次の問題はチャットの一番下の新しい枠に出す（出ないときは fallback の枠内表示で進める）
   function nextBelow(fallback, say){
-    app.innerHTML = '<div class="notice">次の問題を、この下に出します。少し待つと出ます。表示されない場合は、同じ問題の取得状態を確認してください。</div>';
+    app.innerHTML = '<div class="notice">次の問題を、この下に出します。表示されない場合は「再表示」を押してください。</div><div class="row"><button id="nextHere">再表示</button></div>';
+    document.getElementById('nextHere').onclick = async function(){
+      if (locked) return;
+      this.disabled = true;
+      try {
+        var same = state.next && state.next.question ? state.next : await callTool('redisplayQuestion', { sessionId: state.sessionId || studyLid || loadIds().sid });
+        if (!same || !same.question || same.error) throw new Error('no pinned question');
+        render(same);
+      } catch (e) {
+        var btn = document.getElementById('nextHere'); if (btn) btn.disabled = false;
+        app.insertAdjacentHTML('beforeend', '<div class="notice">同じ問題をまだ取得できません。少し待ってから再表示してください。</div>');
+      }
+    };
     scrollUp(true);
     ask(say || '次の問題へ');
   }
