@@ -74,7 +74,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
     await ui.getByRole('button', { name: '4 過去問演習中' }).click();
+    // 押下結果が同じ位置に可視表示され、直後の二度押しも旧画面では無視される。
+    await ui.locator('#stageAck').waitFor();
+    assert.match(await ui.locator('#stageAck').innerText(), /もう一度押す必要はありません/);
+    assert.equal(await ui.getByRole('button', { name: '4 過去問演習中' }).isDisabled(), true);
+    await ui.locator('[data-n="4"]').evaluate(b => b.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
     await ui.getByRole('button', { name: /この学習計画で始める/ }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /画面は「学習計画」に切り替わりました/);
     // 実機の回帰：学習段階4の1タップが、描画し直した計画の「4 今は学習しない」を
     // 触っていないのに押した扱いになって学習計画を閉じないようにする。
     await ui.locator('#notNow').evaluate(b => {
@@ -134,6 +140,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
     await ui.getByRole('button', { name: '4 過去問演習中' }).click();
     await ui.getByRole('button', { name: '4 今は学習しない' }).click();
+    // 間違えて計画の4を押しても、学習計画を即座に破棄せず戻れる。
+    assert.match(await ui.locator('#app').innerText(), /学習計画の確認画面から離れますか/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
+    await ui.getByRole('button', { name: '1 学習計画に戻る' }).click();
+    await ui.getByRole('button', { name: '4 今は学習しない' }).click();
+    await ui.getByRole('button', { name: '2 今は学習しない（終了を確認）' }).click();
     assert.match(await ui.locator('#app').innerText(), /学習は開始していません。/);
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);

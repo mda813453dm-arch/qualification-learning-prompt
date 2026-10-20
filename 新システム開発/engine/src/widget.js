@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v40.html';
+export const WIDGET_URI = 'ui://qlp/question-v41.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.40';
+export const WIDGET_VERSION = '2026-10-21.41';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -26,6 +26,9 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:15px;line-height:1.5;padding:8px 10px}.choices{gap:8px;margin:14px 0 8px}
 .choices button:disabled{opacity:.6;cursor:default}
 .choices button.correct{border-color:var(--ok);border-width:2px}.choices button.picked{outline:2px solid var(--sub)}
+.choices button.chosen{border:2px solid var(--acc);background:var(--accbg);opacity:1}
+.stage-ack{color:var(--acc);font-weight:700;padding:8px 12px;border-left:3px solid var(--acc);margin:4px 0 10px}
+.stage-arrived{font-weight:700;border-left:3px solid var(--acc);padding:8px 12px;margin:8px 0 12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
@@ -398,7 +401,9 @@ a{color:inherit}
       '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' +
       ov.diagResult.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
     var changes = (got || []).filter(Boolean).join('／');
+    var stageArrival = (got || []).some(function(t){ return /^学習状況：/.test(t); });
     app.innerHTML = '<h2>学習計画</h2>' +
+      (stageArrival ? '<div class="stage-arrived" role="status">✓ 選択を受け付けました。画面は「学習計画」に切り替わりました。次の操作は計画の確認後に行ってください。</div>' : '') +
       (changes ? '<div class="notice">' + esc(changes) + '</div>' : '') + dr +
       '<div class="stem"><b>学習する分野の順</b><ol class="ov-l">' +
       order.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol></div>' +
@@ -415,7 +420,16 @@ a{color:inherit}
     guardNewPlanActions();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
     document.getElementById('revise').onclick = planEditMenu;
-    document.getElementById('notNow').onclick = function(){ app.innerHTML='<div class="notice">学習は開始していません。次回、学習計画を確認してから開始できます。</div>'; };
+    document.getElementById('notNow').onclick = function(){
+      // 番号4が学習段階の番号4と同じでも、二度押しだけで終了させない。
+      app.innerHTML = '<h2>今は学習しない</h2><div class="stem">学習計画の確認画面から離れますか？ 学習はまだ開始していません。</div>' +
+        '<div class="choices"><button id="backToPlan"><b>1</b><span>学習計画に戻る</span></button><button id="confirmNotNow"><b>2</b><span>今は学習しない（終了を確認）</span></button></div>';
+      scrollUp();
+      document.getElementById('backToPlan').onclick = function(){ planPanel([]); };
+      document.getElementById('confirmNotNow').onclick = function(){
+        app.innerHTML = '<div class="notice">学習は開始していません。次回、学習計画を確認してから開始できます。</div>';
+      };
+    };
     document.getElementById('diag').onclick = async function(){
       this.disabled = true;
       try {
@@ -728,11 +742,23 @@ a{color:inherit}
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     app.innerHTML = h;
     scrollUp();
+    var decided = false;
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
+      if (decided) return;
+      decided = true;
       var n = Number(b.getAttribute('data-n')), c = m.choices[n - 1];
       if (m.kind === 'exempt') onboardProfile.exemption = ['confirmed', 'no', 'pending'][n - 1];
       else onboardProfile.stage = n;
-      onboard(steps, got.concat([(m.kind === 'exempt' ? '免除：' : '学習状況：') + c]));
+      var completed = got.concat([(m.kind === 'exempt' ? '免除：' : '学習状況：') + c]);
+      if (m.kind === 'status' && completed.length === steps.length) {
+        // ボタンの反応を指の位置に明示し、旧画面の残存タップを受け付けない。
+        app.querySelectorAll('.choices button').forEach(function(x){ x.disabled = true; });
+        b.classList.add('chosen');
+        b.insertAdjacentHTML('afterend', '<div id="stageAck" class="stage-ack" role="status">✓ 「' + esc(c) + '」を選択しました。学習計画へ進みます。もう一度押す必要はありません。</div>');
+        setTimeout(function(){ if (!locked) onboard(steps, completed); }, 750);
+      } else {
+        onboard(steps, completed);
+      }
     }; });
   }
   async function answer(v){
