@@ -514,6 +514,20 @@ async function diagStep(env, id, state0, now, b) {
     };
   };
   const d0 = state.aiDiag;
+  if (b.action === 'preview') {
+    const existing = new Set((d0?.answers ?? []).map((x) => x.questionId));
+    const queue = d0?.status === 'running' ? d0.queue.slice(d0.answers.length) : fieldIds.flatMap((f) => {
+      const pool = items.filter((x) => x.packet.fieldId === f && !existing.has(x.packet.questionId))
+        .sort((x,y) => y.packet.year - x.packet.year || x.packet.questionNumber - y.packet.questionNumber);
+      return pool.slice(0, DIAG_PER_FIELD).map((x) => x.packet.questionId);
+    });
+    if (!queue.length) throw new HttpError(409, 'DIAG_NO_PAST_EXAMS');
+    const fields = fieldIds.map((f) => ({ name: name(f), count: queue.filter((q) => byId.get(q)?.packet.fieldId === f).length })).filter((x) => x.count);
+    return { status: 'diagPreview', sessionId: id, diag: { total: queue.length, fields, source: '公式過去問', provisional: true } };
+  }
+  if (b.action === 'start' && d0?.status === 'running') {
+    return { status: 'diagIntro', sessionId: id, resumed: true, diag: { total: d0.queue.length, fields: fieldIds.map((f) => ({ name: name(f), count: d0.queue.filter((q) => byId.get(q)?.packet.fieldId === f).length })).filter((x) => x.count) }, question: view(d0) };
+  }
   if (b.action === 'start' || !d0 || d0.status !== 'running') {
     if (b.action !== 'start') throw new HttpError(409, 'DIAG_NOT_STARTED');
     // 各分野から、年度の違う問を新しい年度から選ぶ（同じ年度ばかりにしない）
