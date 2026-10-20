@@ -93,7 +93,8 @@ a{color:inherit}
   }
   var diagged = false;
   // 学習の番号（sessionId・学習ID）を、同じ学習の別の枠（解説・次へのメニュー）でも使えるよう控える。終了ボタンをAIに任せず、枠から確実に押せるようにするため
-  function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId) cur.sid = state.sessionId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
+  var currentStudyId = null;
+  function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId) cur.sid = state.sessionId; if (currentStudyId) cur.studyId = currentStudyId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
   function loadIds(){ try { return JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) { return {}; } }
   // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
   var myAt = 0, locked = false, bc = null;
@@ -111,7 +112,13 @@ a{color:inherit}
   }
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure'].includes(data.status))) return;
+    if (locked) return;
     stamp(data);
+    if (locked) return;
+    if (data.sessionId) state.sessionId = data.sessionId;
+    if (data.studyId) currentStudyId = data.studyId;
+    if (data.learnerId) studyLid = data.learnerId;
+    if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     saveIds();
     hasView = true;
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
@@ -125,8 +132,6 @@ a{color:inherit}
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
-    if (data.sessionId) state.sessionId = data.sessionId;
-    if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     if (data.status === 'figure' && (data.figureUrls || []).length) {
       var fh = '<div class="notice">' + esc(data.screen || '') + '</div>';
       data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
@@ -215,6 +220,10 @@ a{color:inherit}
     return out.join('');
   }
   function showMenu(m){
+    if (m.sessionId) state.sessionId = m.sessionId;
+    if (m.studyId) currentStudyId = m.studyId;
+    if (m.learnerId) studyLid = m.learnerId;
+    saveIds();
     var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
     var h = body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
@@ -360,7 +369,7 @@ a{color:inherit}
     var ov = onboardOv || {};
     var fields = ov.fields || [];
     var field = fields[0] || '';
-    studyLid = learner; studyField = field || null; saveIds();
+    studyLid = r.learnerId || learner; currentStudyId = r.studyId || currentStudyId; studyField = field || null; saveIds();
     var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
     var h = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
     if (field) {
