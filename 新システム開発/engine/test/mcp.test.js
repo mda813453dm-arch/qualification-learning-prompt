@@ -443,10 +443,12 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   // 短い文に対するAIの手順は、アプリのツールの説明にある
   assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
   assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));
-  // 次の問題・過去問の枠は、AIが呼ぶ新しい枠でチャットの一番下に出す。出ないときの逃げ道（枠の中で進むボタン）も残す
+  // 新しい枠が出ないときのボタンは、次へ進まず、出題中の同一問題を再表示する
   assert.ok(html.includes('function nextBelow(fallback, say)'));
   assert.ok(html.includes("ask(say || '次の問題へ')"));
-  assert.ok(html.includes('出ないときは、ここで次の問題へ'));
+  assert.ok(html.includes('id="nextHere">再表示'));
+  assert.ok(!html.includes('出ないときは、ここで次の問題へ'));
+  assert.ok(html.includes("callTool('redisplayQuestion', { sessionId:"));
   assert.ok(mcp.includes('「○○を実践問題から始めます。」「次の問題へ」と送ってきたら'));
 });
 
@@ -494,4 +496,28 @@ test('メニューの「今日はここまで」は、画面から直接 endStud
   const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
   assert.ok(h.includes('function saveIds') && h.includes('function loadIds'));
   assert.ok(h.includes("callTool('endStudy', { studyId: lid, sessionId: ids.sid || lid"));
+});
+
+test('再表示は読み取り専用で、内部指示を利用者の発言として送らず、終了時には引継ぎ本文を描画する', () => {
+  const html = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  const app = readFileSync(new URL('../src/app.js', import.meta.url), 'utf8');
+  const again = TOOLS.find((t) => t.name === 'redisplayQuestion');
+  assert.ok(again && again.appOnly && again.uiOnly);
+  assert.deepEqual(again.api({ sessionId: 'abc' }), ['GET', '/v1/sessions/abc/redisplay']);
+  assert.ok(app.includes('async function redisplayView('));
+  const fn = app.split('async function redisplayView(')[1].split('/** 図をもう一度')[0];
+  assert.ok(!fn.includes('saveSession(') && !fn.includes('nextView(') && !fn.includes('pin('));
+  assert.ok(html.includes("rpc('ui/update-model-context'"));
+  assert.ok(html.includes('window.openai.sendFollowUpMessage'));
+  assert.ok(!html.includes("rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] })"));
+  assert.ok(html.includes('showEnd(r);'));
+  assert.ok(html.includes("typeof r.handoff === 'string'"));
+  assert.ok(!html.includes("ask('今日はここまで。学習を終了します。')"));
+});
+test('解説・次へのメニューには学習ID等を渡せる', () => {
+  const show = TOOLS.find((t) => t.name === 'showMenu');
+  const r = show.local({ kind: 'next', body: '解説', sessionId: 's1', studyId: 'st1', learnerId: 'l1' });
+  assert.equal(r.menu.sessionId, 's1');
+  assert.equal(r.menu.studyId, 'st1');
+  assert.equal(r.menu.learnerId, 'l1');
 });
