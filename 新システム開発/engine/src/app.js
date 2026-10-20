@@ -509,7 +509,7 @@ async function diagStep(env, id, state0, now, b) {
     const shown = present(item, 'diag', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
     const label = `初期診断 ${i + 1}/${d.queue.length}`;
     return {
-      diag: true, label, fieldName: name(item.packet.fieldId), year: shown.year, questionNumber: shown.questionNumber,
+      diag: true, questionId: item.packet.questionId, label, fieldName: name(item.packet.fieldId), year: shown.year, questionNumber: shown.questionNumber,
       stem: shown.stem, choices: shown.choices, notices: shown.notices, figureUrls: shown.figures.map((f) => f.url),
     };
   };
@@ -571,6 +571,18 @@ async function diagStep(env, id, state0, now, b) {
   }
   const d = d0;
   if (b.action === 'answer') {
+    const submittedId = typeof b.questionId === 'string' ? b.questionId : null;
+    if(!submittedId) throw new HttpError(400, 'DIAG_QUESTION_ID_REQUIRED');
+    const prior = d.answers.find((a) => a.questionId === submittedId);
+    if(prior) {
+      const itemDone = byId.get(submittedId);
+      const grade = { diag: true, alreadyGraded: true,
+        label: '採点済みの初期診断', fieldName: name(prior.fieldId),
+        correct: prior.result === 'correct', skipped: prior.result === 'unanswered',
+        selected: prior.selected ?? '', correctAnswer: String(itemDone?.packet.correctAnswer ?? '') };
+      return { status: 'diagGraded', sessionId: id, grade, question: view(d) };
+    }
+    if(d.queue[d.answers.length] !== submittedId) throw new HttpError(409, 'DIAG_QUESTION_BINDING_MISMATCH');
     const item = byId.get(d.queue[d.answers.length]);
     if (!item) throw new HttpError(409, 'DIAG_NO_QUESTION');
     const selected = String(b.value ?? '').trim();
@@ -584,6 +596,7 @@ async function diagStep(env, id, state0, now, b) {
     const label = `初期診断 ${d.answers.length + 1}/${d.queue.length}`;
     const answers = [...d.answers, {
       fieldId: item.packet.fieldId, questionId: item.packet.questionId,
+      selected, 
       result: skipped ? 'unanswered' : correct ? 'correct' : 'wrong',
       ...(confidence && !skipped ? { confidence } : {}),
     }];
