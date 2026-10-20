@@ -552,7 +552,7 @@ a{color:inherit}
       app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
       try {
         var certainty = app.querySelector('input[name=confidence]:checked');
-        var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', value: String(chosen), confidence: certainty ? certainty.value : undefined }));
+        var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', questionId: q.questionId, value: String(chosen), confidence: certainty ? certainty.value : undefined }));
         var g = r && r.grade;
         if (!g) throw new Error('grade');
         var line = '<div class="result ' + (g.skipped ? '' : g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.skipped ? '未回答（正誤集計には含めません）' : (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）') + '</div>';
