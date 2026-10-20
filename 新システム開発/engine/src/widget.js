@@ -95,7 +95,7 @@ a{color:inherit}
   var diagged = false;
   // 学習の番号（sessionId・学習ID）を、同じ学習の別の枠（解説・次へのメニュー）でも使えるよう控える。終了ボタンをAIに任せず、枠から確実に押せるようにするため
   var currentStudyId = null;
-  function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId) cur.sid = state.sessionId; if (currentStudyId) cur.studyId = currentStudyId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
+  function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId && cur.sid && cur.sid !== state.sessionId) cur = {}; if (state.sessionId) cur.sid = state.sessionId; if (currentStudyId) cur.studyId = currentStudyId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
   function loadIds(){ try { return JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) { return {}; } }
   // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
   var myAt = 0, locked = false, bc = null;
