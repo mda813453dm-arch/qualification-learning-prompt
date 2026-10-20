@@ -508,7 +508,7 @@ test('再表示は読み取り専用で、内部指示を利用者の発言と�
   const fn = app.split('async function redisplayView(')[1].split('/** 図をもう一度')[0];
   assert.ok(!fn.includes('saveSession(') && !fn.includes('nextView(') && !fn.includes('pin('));
   assert.ok(html.includes("rpc('ui/update-model-context'"));
-  assert.ok(html.includes('window.openai.sendFollowUpMessage'));
+  assert.ok(!html.includes('window.openai.sendFollowUpMessage({ prompt: text })'), '内部依頼文を利用者のチャットへ送らない');
   assert.ok(!html.includes("rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] })"));
   assert.ok(html.includes('showEnd(r);'));
   assert.ok(html.includes("typeof r.handoff === 'string'"));
