@@ -1103,7 +1103,8 @@ async function route(request, env, url, now) {
     const before = study.endedAt == null ? saved.minutes : saved.minutes - (study.minutes ?? 0);
     let engineHandoff = null;
     let input = b;
-    const sesRef = typeof b.sessionId === 'string' && b.sessionId ? b.sessionId : study.learnerId;
+    const explicitSession = typeof b.sessionId === 'string' && b.sessionId.trim().length > 0;
+    const sesRef = explicitSession ? b.sessionId.trim() : study.learnerId;
     if (sesRef) {
       try {
         const { state: st } = await resolveSession(env, sesRef, now);
@@ -1224,7 +1225,10 @@ async function route(request, env, url, now) {
           const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
           input = { ...input, results: { ...(input.results ?? {}), skipped: skipped.length, skippedDetail: detail } };
         }
-      } catch {
+      } catch (e) {
+        // 明示された学習セッションから記録を取得できない場合、空の引継ぎを「成功」として保存しない。
+        // 時刻・累計はこの段階では未確定なので、終了ボタンの再試行が安全に行える。
+        if (explicitSession) throw new HttpError(409, 'STUDY_SESSION_UNAVAILABLE');
         engineHandoff = null;
       }
     }
