@@ -306,38 +306,38 @@ a{color:inherit}
   }
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
-    var ov = onboardOv || {};
-    var first = (ov.fields || [])[0] || '';
-    var order = '<ol class="ov-l">' + (ov.fields || []).map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol>';
-    var dr = (ov.diagResult || []).length ? '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' + ov.diagResult.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
-    app.innerHTML = '<h2>学習計画</h2><div class="notice">' + esc(got.join('／')) + '</div>' + dr +
-      '<div class="stem"><b>最初に学習する分野：</b>' + esc(first) + '</div>' +
-      (ov.review ? '<div class="notice"><b>復習の間隔：</b>' + esc(ov.review) + '（希望を伝えると変えられます）</div>' : '') +
-      '<div class="notice">' + ((ov.diagResult || []).length ? esc(got[0] || '') : '公式の出題分野の順です。過去問の取り込みが進むと、出題数の多い順に並べ直します。') + '</div>' +
-      '<div class="stem"><b>学習する分野の順</b></div>' + order +
-      '<div class="notice">この計画で始めるか、希望を伝えて作り直せます。</div>' +
-      '<div class="stem"><b>学習を開始しますか？</b></div>' +
-      '<div class="choices"><button id="startStudy" data-n="1"><b>1</b><span>始めます</span></button>' + ((ov.diagResult || []).length ? '' : '<button id="diag" data-n="2"><b>2</b><span>初期診断：過去問で苦手分野を調べる</span></button>') + '<button id="revise" data-n="3"><b>' + ((ov.diagResult || []).length ? 2 : 3) + '</b><span>希望を伝えて作り直す</span></button></div>' +
-      '<div id="reviseBox" style="display:none"><div class="notice">復習の間隔、学習する分野の順、その他の希望を書いてください（空のままなら、おまかせで作り直します）。</div>' +
-      '<textarea id="wish" rows="3" style="width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea>' +
-      '<div class="row"><button id="sendWish">この希望で作り直す</button></div></div>';
+    var ov = onboardOv || {}, d = draftPlan();
+    var order = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
+    var dr = (ov.diagResult || []).length ?
+      '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' +
+      ov.diagResult.map(function(t){ return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : '';
+    var changes = (got || []).filter(Boolean).join('／');
+    app.innerHTML = '<h2>学習計画</h2>' +
+      (changes ? '<div class="notice">' + esc(changes) + '</div>' : '') + dr +
+      '<div class="stem"><b>学習する分野の順</b><ol class="ov-l">' +
+      order.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol></div>' +
+      '<div class="stem"><b>学習方法：</b>' + esc({explain:'解説重視',check:'確認問題重視',practice:'公式過去問重視',balanced:'バランス型'}[d.methodChoice] || d.methodChoice) +
+      (d.methodDistribution ? '（解説・確認・実践 ' + d.methodDistribution.join('：') + '%）' : '') + '</div>' +
+      '<div class="stem"><b>復習：</b>' + esc(d.reviewLabel || '標準（1→3→7→14→30日）') + '</div>' +
+      '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
+      '<div class="choices"><button id="startStudy"><b>1</b><span>この学習計画で始める</span></button>' +
+      '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
+      '<button id="diag"><b>3</b><span>初期診断で苦手分野を調べる</span></button>' +
+      '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
     document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
-    if (document.getElementById('diag')) document.getElementById('diag').onclick = async function(){
-      app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+    document.getElementById('revise').onclick = planEditMenu;
+    document.getElementById('notNow').onclick = function(){ app.innerHTML='<div class="notice">学習は開始していません。次回、学習計画を確認してから開始できます。</div>'; };
+    document.getElementById('diag').onclick = async function(){
+      this.disabled = true;
       try {
-        var r = full(await callTool('diagStep', { sessionId: studyLearner, action: 'preview' }));
-        if (r && r.error === 'DIAG_NO_PAST_EXAMS') { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">過去問の取り込みがまだ終わっていません。少し待ってから、もう一度押してください。</div>'); return; }
-        if (!r || !r.diag) throw new Error('diag');
+        var r = await callTool('diagStep', { sessionId: studyLearner, action: 'preview' });
+        if (!r || !r.diag) throw new Error('NO_DIAG');
         diagPreview(r.diag);
+      } catch(e){
+        var b = document.getElementById('diag'); if(b)b.disabled = false;
+        app.insertAdjacentHTML('beforeend','<div class="notice">公式過去問で診断できません。取り込み後に再試行してください。</div>');
       }
-      catch (e) { app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); app.insertAdjacentHTML('beforeend', '<div class="notice">初期診断を始められませんでした。もう一度押してください。</div>'); }
-    };
-    document.getElementById('revise').onclick = function(){ var b = document.getElementById('reviseBox'); b.style.display = b.style.display === 'none' ? 'block' : 'none'; };
-    document.getElementById('sendWish').onclick = function(){
-      var wish = (document.getElementById('wish').value || '').trim() || 'おまかせ';
-      app.insertAdjacentHTML('beforeend', '<div class="notice"><b>希望をチャットに送りました。</b>作り直した計画は、この画面の下のチャットに出ます。下へスクロールして、承認か手直しを選んでください。</div>');
-      ask('学習計画の希望：' + wish);
     };
   }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
