@@ -108,10 +108,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v37.html');
-  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v37.html');
+  assert.equal(nq._meta['openai/outputTemplate'], 'ui://qlp/question-v38.html');
+  assert.equal(nq._meta.ui.resourceUri, 'ui://qlp/question-v38.html');
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
-  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v37.html');
+  assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], 'ui://qlp/question-v38.html');
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
