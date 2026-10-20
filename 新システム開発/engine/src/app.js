@@ -882,6 +882,37 @@ async function route(request, env, url, now) {
     return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(), planMenu: undefined } : {}) });
   }
 
+  // 計画の編集はウィジェット側で一時保存し、利用者が「始めます」と承認した時点だけ確定させる。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'plan' && parts.length === 4) {
+    const b = await body(request);
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
+    const fieldIds = Object.keys(cat?.fields ?? {});
+    const byName = new Map(fieldIds.map((id) => [cat.fields[id], id]));
+    const picked = b?.orderedFields ?? fieldIds;
+    if (!Array.isArray(picked) || picked.length !== fieldIds.length) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    const ordered = picked.map((x) => fieldIds.includes(x) ? x : byName.get(x));
+    if (ordered.some((x) => !x) || new Set(ordered).size !== fieldIds.length) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    const methodChoice = b.methodChoice ?? 'balanced';
+    if (!['explain','check','practice','balanced'].includes(methodChoice)) throw new HttpError(400, 'PLAN_METHOD_INVALID');
+    const preset = b.reviewPreset ?? 'ai';
+    if (!['focus','standard','slow','ai','custom'].includes(preset)) throw new HttpError(400, 'PLAN_REVIEW_INVALID');
+    const raw = b.reviewIntervalsMinutes;
+    if (preset === 'custom' && (!Array.isArray(raw) || !raw.length || raw.length > 8 ||
+      raw.some((v, i) => !Number.isInteger(v) || v < 1 || v > 525600 || (i > 0 && v <= raw[i-1])))) {
+      throw new HttpError(400, 'PLAN_REVIEW_INTERVAL_INVALID');
+    }
+    const nextPlan = { ...state.plan,
+      fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
+      methodChoice, reviewPreset: preset,
+      reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
+      orderedFields: ordered,
+    };
+    await saveSession(env, id, { ...state, plan: nextPlan }, now);
+    return json(200, { status: 'planSaved', sessionId: id, orderedFields: ordered.map((f) => cat.fields[f]),
+      methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes });
+  }
+
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
