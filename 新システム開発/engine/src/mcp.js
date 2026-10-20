@@ -113,11 +113,12 @@ export const TOOLS = [
         methodChoice: { type: 'string', enum: ['explain','check','practice','balanced'] },
         reviewPreset: { type: 'string', enum: ['focus','standard','slow','ai','custom'] },
         reviewIntervalsMinutes: { type: 'array', items: { type: 'integer', minimum: 1 } },
+        methodDistribution: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 100 } },
       },
     },
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/plan`,
       { orderedFields: a.orderedFields, methodChoice: a.methodChoice,
-        reviewPreset: a.reviewPreset, reviewIntervalsMinutes: a.reviewIntervalsMinutes }],
+        reviewPreset: a.reviewPreset, reviewIntervalsMinutes: a.reviewIntervalsMinutes, methodDistribution: a.methodDistribution }],
   },
   {
     name: 'redisplayQuestion',
