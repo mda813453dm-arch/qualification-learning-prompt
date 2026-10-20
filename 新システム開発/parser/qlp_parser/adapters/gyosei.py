@@ -39,6 +39,11 @@ def _banner_kind(text):
     return "other"
 
 
+def _is_early_heading(text):
+    m = HEADING.match(text)
+    return bool(m) and to_int(m.group(1)) <= 40
+
+
 def parse_questions(doc):
     """5肢択一式の区分にある問題を取り出す。"""
     items = []  # (page_index, y0, y1, text, x0)
@@ -49,6 +54,9 @@ def parse_questions(doc):
                 kind = _banner_kind(t)
                 items.append((i, y0, y1, None, x0))  # 区分の切れ目（前の問題の終わり）
                 continue
+            if kind is None and i > 0 and _is_early_heading(t):
+                # 令和2〜5年度は「問題1〜40」の区分の見出しがPDFにない（問題2から直接始まる）。1ページ目は注意事項なので、そこを除いて5肢択一式とみなす
+                kind = "single"
             if kind != "single" or is_page_number_line(t):
                 continue
             items.append((i, y0, y1, t, x0))
