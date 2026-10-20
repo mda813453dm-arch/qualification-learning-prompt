@@ -1,16 +1,5 @@
 # 運営者が添付した公式PDF（公式URL ファイル名）。ファイルは一時ブランチ src-in に置く
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2021r03_ip_qs.pdf 2021r03_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2021r03_ip_ans.pdf 2021r03_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2022r04_ip_qs.pdf 2022r04_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2022r04_ip_ans.pdf 2022r04_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2023r05_ip_qs.pdf 2023r05_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2023r05_ip_ans.pdf 2023r05_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2024r06_ip_qs.pdf 2024r06_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2024r06_ip_ans.pdf 2024r06_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2025r07_ip_qs.pdf 2025r07_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2025r07_ip_ans.pdf 2025r07_ip_ans.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.pdf 2026r08_ip_qs.pdf
-https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_ans.pdf 2026r08_ip_ans.pdf
+# 2021〜2026年度（12件）は保管済み（run 39378073173）。今回は2018〜2020年度の10件
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30a_ip_qs.pdf 2018h30a_ip_qs.pdf
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30a_ip_ans.pdf 2018h30a_ip_ans.pdf
 https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2018h30h_ip_qs.pdf 2018h30h_ip_qs.pdf
