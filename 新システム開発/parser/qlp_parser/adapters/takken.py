@@ -9,6 +9,9 @@
 
 import re
 import unicodedata
+import json
+from functools import lru_cache
+from pathlib import Path
 
 from .. import fields
 from .. import ocr
@@ -18,6 +21,31 @@ QUALIFICATION_ID = "q041"
 SECTION = "年度共通"
 CHOICE_COUNT = 4
 QUESTION_COUNT = 50
+
+
+@lru_cache(maxsize=1)
+def _verified_key_documents():
+    """提供されたRETIO公式PDF最終ページから照合した正答表。原本SHA一致時だけ使用。"""
+    source = Path(__file__).with_name("takken_official_answers.json")
+    return json.loads(source.read_text(encoding="utf-8"))["documents"]
+
+
+def verified_answers(year, section, question_sha, answer_sha):
+    """年度・区分・問題PDF・正答PDFをすべて固定し、異なる原本には適用しない。"""
+    for record in _verified_key_documents():
+        if (record["year"] == year and record["section"] == section
+                and record["sha256"] == question_sha == answer_sha):
+            vals = record["answers"]
+            if len(vals) != QUESTION_COUNT or any(
+                not (x == "all" or
+                     (type(x) is int and 1 <= x <= CHOICE_COUNT) or
+                     (isinstance(x, list) and len(x) > 1 and len(set(x)) == len(x)
+                      and all(type(n) is int and 1 <= n <= CHOICE_COUNT for n in x)))
+                for x in vals
+            ):
+                raise ParseError("VERIFIED_OFFICIAL_KEY_INVALID", year=year, section=section)
+            return dict(enumerate(vals, 1))
+    return None
 
 # OCRでは「【」が「{」「[」に、「問」が「間」に、「】」が「]】」に読まれることがある。行頭の汚れ（記号3字まで）も許す
 HEADING = re.compile(r"^(?:[^\w【\[［〔{｛]|_){0,4}[【\[［〔{｛]\s*[問間]\s*([0-9０-９]{1,2})\s*[】\]］〕}｝]{1,2}")
@@ -160,15 +188,26 @@ def parse_questions(doc):
                 has_graphics = True
         first = [b for b in body if b[0] + 1 == pages[0]]
         rect = (round(min(b[1] for b in first), 1), round(max(b[2] for b in first), 1)) if first else None
-        mode, crops = "text", []
+        mode, crops, classification_text = "text", [], None
         if read_by_ocr:
-            # OCRは読み違いがありうるので、問題の範囲を公式PDFの画像でも見せる（図の有無も画像で伝わる）
-            mode, has_graphics = "ocr", True
+            # スキャン問題の字・選択肢の誤認を出題内容に混ぜない。
+            # OCR文字は分野分類の補助にだけ使い、ユーザーには原本PDFの画像を表示する。
+            classification_text = clean_text("\n".join(b[3] for b in body))
+            mode, has_graphics = "official_image", True
+            stem_lines, choices = [], [str(n) for n in range(1, CHOICE_COUNT + 1)]
+            notes.append("official_original_image_question")
             notes.append("read_by_ocr")
             for p in pages:
                 on_page = [b for b in body if b[0] + 1 == p]
                 pr = doc[p - 1].rect
-                crops.append((p, (pr.x0 + 20, min(b[1] for b in on_page) - 6, pr.x1 - 20, max(b[2] for b in on_page) + 6)))
+                # 次問見出しを下端とし、OCRで選択肢の末尾を読み落としても原本の字を欠かさない。
+                following = items[end] if end < len(items) else None
+                bottom = (following[1] - 9 if following and following[0] == p - 1
+                          else pr.y1 - 24)
+                top = min(b[1] for b in on_page) - 12 if p == pages[0] else pr.y0 + 22
+                if bottom <= top + 25:
+                    bottom = max(b[2] for b in on_page) + 10
+                crops.append((p, (pr.x0 + 16, max(pr.y0, top), pr.x1 - 16, min(pr.y1, bottom))))
 
         questions.append(RawQuestion(
             number=number,
@@ -181,6 +220,8 @@ def parse_questions(doc):
             stem_mode=mode,
             choice_mode=mode,
             crops=crops,
+            preserve_aspect=read_by_ocr,
+            classification_text=classification_text,
         ))
     return mark_out_of_order(questions)
 
