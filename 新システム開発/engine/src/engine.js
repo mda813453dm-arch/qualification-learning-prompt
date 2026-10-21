@@ -302,6 +302,8 @@ export function pin(state, item, kind, now) {
       choiceCount: p.choices.length,
       fieldId: p.fieldId ?? null,
       source: sourceOf(p),
+      // UI内で出題・採点しても、後からモデルが同じ本文を取得できるよう固定する。
+      question: present(item, kind),
       presentedAt: now,
       grade: null,
     },

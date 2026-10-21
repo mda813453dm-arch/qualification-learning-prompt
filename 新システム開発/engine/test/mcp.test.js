@@ -70,6 +70,42 @@ test('トークンはヘッダーか URL で受け取り、どちらも無けれ
   assert.equal(get.status, 405);
 });
 
+test('従来の解説方針呼出しもAIが読めるcontentで返し、UI専用メタデータに隠さない', async () => {
+  const r = await rpc(makeEnv(), 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
+  const value = r.body.result;
+  assert.match(JSON.parse(value.content[0].text).explainHow, /マークダウンの表/);
+  assert.match(value.structuredContent.order, /showMenu/);
+  assert.equal(value._meta, undefined);
+});
+
+test('画面の非表示文脈がなくても、既知のsessionIdだけで解説対象を取得して解説画面へ渡せる', async () => {
+  const env = makeEnv();
+  const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
+  const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [source] });
+  const { sessionId } = s.structuredContent;
+  const q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+  await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: '3' });
+  // AI役に与える入力は「2026年度 問1の解説を見る」と最初に返ったsessionIdのみ。
+  // 画面内のtools/call結果・ui/update-model-contextはAI役に渡さない。
+  const spec = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { sessionId } }, { path: '/app' })).body.result;
+  assert.equal(spec.isError, false);
+  const context = spec.structuredContent;
+  assert.equal(context.question.questionId, q.questionId);
+  assert.equal(context.question.stem, q.stem);
+  assert.deepEqual(context.question.choices, q.choices);
+  assert.equal(context.grade.correctAnswer, 3);
+  assert.equal(context.status, 'explanationContext');
+  assert.ok(JSON.parse(spec.content[0].text).question.stem, 'AIに読めるcontentにも本文がある');
+  assert.equal(spec._meta, undefined, '解説資料をUI専用の非表示領域に閉じ込めない');
+  const body = `AIによる解説（結合試験用）\n\n対象は${context.question.year}年度 問${context.question.questionNumber}。\n正答は${context.grade.correctAnswer}です。\n\n|選択肢|確認|\n|---|---|\n|3|正答|`;
+  const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body, sessionId: context.sessionId, learnerId: context.learnerId } }, { path: '/app' })).body.result;
+  assert.equal(menu._meta.qlp.menu.body, body);
+  assert.equal(menu._meta.qlp.menu.sessionId, sessionId);
+  const stale = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { sessionId, questionId: 'surveyor:2026:main:2' } }, { path: '/app' })).body.result;
+  assert.equal(stale.isError, true);
+  assert.equal(stale.structuredContent.error, 'EXPLANATION_BINDING_MISMATCH');
+});
+
 test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ まで通る', async () => {
   const env = makeEnv();
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
@@ -554,5 +590,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v43.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v44.html');
 });

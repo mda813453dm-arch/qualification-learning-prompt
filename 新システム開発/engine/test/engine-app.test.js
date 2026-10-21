@@ -96,6 +96,71 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
   assert.equal(web.calls.length, fetchesBefore);
 });
 
+test('解説は次問先取り後も採点済み問題を返し、再表示で出題・採点・取得・記録を変更しない', async () => {
+  const { env, web } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId, learnerId } = await startSession(env);
+  const root = `/v1/sessions/${sessionId}`;
+  assert.equal((await call(env, 'GET', `${root}/explanation`)).body.error, 'NO_GRADED_EXPLANATION');
+  await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId });
+  const q = (await call(env, 'POST', `${root}/next`)).body.question;
+  const g = (await call(env, 'POST', `${root}/answer`, { questionId: q.questionId, value: '3' })).body;
+  assert.notEqual(g.next.question.questionId, q.questionId, '次問が先取りされている');
+  const before = await env.STORE.get(`ses/${sessionId}`);
+  const writes = env.STORE.writes, fetches = web.calls.length;
+  const a = await call(env, 'GET', `${root}/explanation?questionId=${encodeURIComponent(q.questionId)}`);
+  const b = await call(env, 'GET', `${root}/explanation`);
+  assert.equal(a.status, 200);
+  assert.deepEqual(a.body, b.body, '一時的なUI文脈がなくても同じ結果');
+  assert.equal(a.body.question.questionId, q.questionId);
+  assert.equal(a.body.question.stem, q.stem);
+  assert.deepEqual(a.body.question.choices, q.choices);
+  assert.equal(a.body.grade.correctAnswer, g.grade.correctAnswer);
+  assert.equal(a.body.grade.selected, g.grade.selected);
+  assert.equal(a.body.learnerId, learnerId);
+  assert.ok(a.body.studyId);
+  assert.match(a.body.howToProceed, /showMenu\(kind=next/);
+  assert.equal(env.STORE.writes, writes);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
+  assert.equal(web.calls.length, fetches);
+  const mismatch = await call(env, 'GET', `${root}/explanation?questionId=${encodeURIComponent(g.next.question.questionId)}`);
+  assert.equal(mismatch.status, 409, '未回答の次問と正答を誤結合しない');
+  assert.equal(mismatch.body.error, 'EXPLANATION_BINDING_MISMATCH');
+  // 図付きの第2問：本文・図・採点結果を一緒に保持する。
+  await call(env, 'POST', `${root}/answer`, { questionId: g.next.question.questionId, value: '分からない' });
+  const diagram = (await call(env, 'GET', `${root}/explanation`)).body;
+  assert.equal(diagram.question.questionNumber, 2);
+  assert.equal(diagram.grade.dontKnow, true);
+  assert.match(diagram.question.figures[0].url, /^https:\/\/engine.example\/v1\/figure\//);
+  assert.match(diagram.grade.explainHow, /図の取得のためにnextQuestionを呼ばない/);
+  assert.equal((await call(env, 'GET', `${root}/explanation?questionId=${encodeURIComponent(q.questionId)}`)).status, 409);
+  // スキップは未採点として扱い、正答や解説対象を誤って公開しない。
+  const next = (await call(env, 'POST', `${root}/next`)).body.question;
+  await call(env, 'POST', `${root}/answer`, { questionId: next.questionId, value: 'スキップ' });
+  assert.equal((await call(env, 'GET', `${root}/explanation`)).body.error, 'NO_GRADED_EXPLANATION');
+});
+
+test('配置前の採点済み学習も保存済みパケットから解説対象を復元し、別の学習と混ぜない', async () => {
+  const { env, web } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const root = `/v1/sessions/${sessionId}`;
+  const q = (await call(env, 'POST', `${root}/next`)).body.question;
+  await call(env, 'POST', `${root}/answer`, { questionId: q.questionId, value: '1' });
+  const state = await env.STORE.get(`ses/${sessionId}`, 'json');
+  delete state.lastExplanation;
+  await env.STORE.put(`ses/${sessionId}`, JSON.stringify(state));
+  const before = await env.STORE.get(`ses/${sessionId}`), fetches = web.calls.length;
+  const old = await call(env, 'GET', `${root}/explanation`);
+  assert.equal(old.status, 200);
+  assert.equal(old.body.question.questionId, q.questionId);
+  assert.equal(old.body.question.stem, q.stem);
+  assert.equal(old.body.grade.selected, 1);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
+  assert.equal(web.calls.length, fetches);
+  const other = await startSession(env);
+  assert.equal((await call(env, 'GET', `/v1/sessions/${other.sessionId}/explanation`)).body.error, 'NO_GRADED_EXPLANATION');
+  assert.equal((await call(env, 'GET', '/v1/sessions/not-a-session/explanation')).status, 404);
+});
+
 test('出題中と違う問番号の回答は採点しない（誤結合の防止）', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const { sessionId } = await startSession(env);

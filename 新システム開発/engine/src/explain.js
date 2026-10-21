@@ -49,9 +49,10 @@ const ALWAYS = [
  * stage：学習段階（分からなければ、会話で利用者が答えた段階に合わせるよう書く）
  * grade：採点結果（あれば、正誤に合わせた入り方を足す）
  */
-export function explainHow({ stage = null, weak = [], grade = null, fieldName = null } = {}) {
+export function explainHow({ stage = null, weak = [], grade = null, fieldName = null, savedFigures = false } = {}) {
   const n = stageNumber(stage);
   const lines = [ALWAYS];
+  if (savedFigures) lines[0] = ALWAYS.replace('まず、その問題に公式PDFの写真・図が付いていれば、それを使う（nextQuestion の question に「〔年度〕年度 問〔番号〕の図をもう一度」と入れて呼ぶ。Pythonは使わない）。', 'question.figures に公式図のURLがあれば、その同じ図を参照して説明する。図の取得のためにnextQuestionを呼ばない。');
   if (n) {
     lines.push(`利用者の学習段階は「${STAGE_GUIDES[n].split('：')[0]}」。${STAGE_GUIDES[n]}`);
   } else {

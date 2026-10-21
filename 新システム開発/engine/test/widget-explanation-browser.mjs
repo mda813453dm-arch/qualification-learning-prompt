@@ -1,0 +1,106 @@
+// 実エンジン＋実MCP＋実DOMを結合する。モデル役の生成本文だけは固定の試験文。
+// ChatGPTホスト・実モデル自体の試験ではない。
+import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+import { handle } from '../src/app.js';
+import { MemoryStore } from '../src/store.js';
+import { widgetHtml } from '../src/widget.js';
+import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
+const require = createRequire(import.meta.url);
+const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
+
+for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
+  const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
+  const parser = fakeParser(web);
+  const env = { STORE: new MemoryStore(), API_TOKEN: 'browser-test', fetchPdf: web.fetchPdf, clock: () => T0, PARSER_URL: 'https://parser.example' };
+  env.parserFetch = async (_, init) => {
+    const b = JSON.parse(init.body);
+    const bytes = x => Uint8Array.from(atob(x.base64), c => c.charCodeAt(0));
+    const parsed = await parser({ question: { bytes: bytes(b.question) }, answer: { bytes: bytes(b.answer) } });
+    return new Response(JSON.stringify({ result: parsed.result, assets: assetsB64(parsed.assets) }));
+  };
+  const request = async (path, body, method = 'POST') => {
+    const response = await handle(new Request(`https://engine.example${path}`, { method,
+      headers: { authorization: 'Bearer browser-test', 'content-type': 'application/json' },
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}) }), env);
+    return response.json();
+  };
+  let id = 1;
+  const toolCalls = [];
+  const tool = async (name, args) => {
+    toolCalls.push({ name, args });
+    const response = await request('/app', { jsonrpc: '2.0', id: id++, method: 'tools/call', params: { name, arguments: args } });
+    assert.equal(response.error, undefined, JSON.stringify(response));
+    return response.result;
+  };
+  const session = await request('/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const knownSessionId = session.sessionId; // AIが最初のstartSessionから知る値。UI文脈からは受け取らない。
+  const study = await request('/v1/study/start', { qualificationName: '測量士補', learnerId: session.learnerId });
+  const first = await request(`/v1/sessions/${knownSessionId}/next`);
+  const browser = await engine.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
+    const errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.exposeFunction('engineTool', tool);
+    await page.exposeFunction('modelStep', async () => {
+      // ui/update-model-contextとsetWidgetStateを両方破棄した状況でも復旧できるか。
+      const spec = await tool('explainSpec', { sessionId: knownSessionId });
+      assert.equal(spec.isError, false);
+      const context = spec.structuredContent;
+      assert.equal(context.question.questionId, first.question.questionId);
+      const snapshot = await env.STORE.get(`ses/${knownSessionId}`);
+      const again = await tool('explainSpec', { sessionId: knownSessionId });
+      assert.deepEqual(again.structuredContent, context);
+      assert.equal(await env.STORE.get(`ses/${knownSessionId}`), snapshot);
+      const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((c, i) => `|${i + 1}|${c}|`).join('\n')}`;
+      return tool('showMenu', { kind: 'next', body, sessionId: context.sessionId, studyId: context.studyId, learnerId: context.learnerId });
+    });
+    await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
+    await page.goto('https://qlp.test/');
+    await page.evaluate(({ html, first, study, session }) => {
+      window.messages = []; window.droppedContext = 0; window.droppedWidgetState = 0;
+      const iframe = document.createElement('iframe');
+      iframe.style.cssText = 'width:100%;height:650px;border:0';
+      const send = data => iframe.contentWindow.postMessage(data, '*');
+      const deliver = result => send({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: result });
+      window.addEventListener('message', async event => {
+        if (event.source !== iframe.contentWindow) return;
+        const m = event.data; if (!m || m.jsonrpc !== '2.0') return;
+        const reply = result => send({ jsonrpc: '2.0', id: m.id, result });
+        if (m.method === 'ui/initialize') reply({ protocolVersion: '2026-01-26', hostCapabilities: {} });
+        else if (m.method === 'ui/notifications/initialized') deliver({ _meta: { qlp: { ...first, learnerId: session.learnerId, studyId: study.studyId } } });
+        else if (m.method === 'tools/call') reply(await window.engineTool(m.params.name, m.params.arguments));
+        else if (m.method === 'ui/update-model-context') { window.droppedContext++; reply({}); }
+        else if (m.method === 'ui/message') {
+          window.messages.push(m.params.content[0].text); reply({});
+          // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
+          if (window.messages.length > 1) deliver(await window.modelStep());
+        }
+      });
+      iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
+      document.body.appendChild(iframe);
+    }, { html: widgetHtml(), first, study, session });
+    const ui = page.frameLocator('iframe');
+    await ui.locator('input[name=ans][value="3"]').check();
+    await ui.getByRole('button', { name: '解答する', exact: true }).click();
+    await ui.getByRole('button', { name: '1 解説を見る', exact: true }).click();
+    await page.waitForFunction(() => window.messages.length === 1);
+    await ui.locator('#retryDisplay:not([disabled])').waitFor();
+    await ui.getByRole('button', { name: '出ないときは再表示', exact: true }).click();
+    await ui.getByText('AIによる解説（結合試験用）', { exact: true }).waitFor();
+    assert.equal(await ui.locator('table tbody tr').count(), 5);
+    assert.equal(await ui.locator('h2').innerText(), '次はどうしますか？');
+    assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
+    assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
+    assert.equal(await page.evaluate(() => window.droppedContext), 2);
+    assert.equal(await page.evaluate(() => window.droppedWidgetState), 2);
+    assert.deepEqual(await page.evaluate(() => window.messages), ['2026年度 問1の解説を見る', '2026年度 問1の解説を見る']);
+    await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
+    await ui.getByText('問2の本文', { exact: true }).waitFor();
+    assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
+    assert.equal(await page.evaluate(() => window.messages.length), 2, '解説後の次問表示はAIへの依頼に依存しない');
+    assert.deepEqual(errors, []);
+    console.log(`${name}: PASS real engine/MCP/DOM, dropped hidden context, retry, exact explanation, next question (375px; fixed model fixture)`);
+  } finally { await browser.close(); }
+}

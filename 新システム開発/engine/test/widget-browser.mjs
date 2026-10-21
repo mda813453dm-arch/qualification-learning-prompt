@@ -127,7 +127,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForFunction(() => window.followups.length === 2);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '再表示で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
-    assert.ok((await page.evaluate(() => window.followups)).every(x => x === '解説を見る'), '会話には操作名だけを送る');
+    assert.ok((await page.evaluate(() => window.followups)).every(x => x === '2025年度 問1の解説を見る'), '会話には問題を識別できる操作名だけを送る');
     const contexts = await page.evaluate(() => window.internal);
     assert.equal(contexts[0], contexts[1], '再表示は同じ問題と採点結果を送る');
     const payload = JSON.parse(contexts[0].split('\nQLP_EXPLANATION_CONTEXT=')[1]);

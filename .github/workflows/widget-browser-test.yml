@@ -27,5 +27,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
           node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install --with-deps chromium webkit
       - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
-        run: PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
+        run: |
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
 # 2026-10-20T08:44:38Z rerun: the app showed no buttons after the 行政書士 deploy
