@@ -3,12 +3,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { CATALOG } from '../src/catalog.js';
-import { MemoryStore } from '../src/store.js';
+import { MemoryStore, sha256Hex } from '../src/store.js';
+import { writeResult } from '../src/cache.js';
+import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
-import { WIDGET_URI } from '../src/widget.js';
-import { SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
+import { WIDGET_URI, widgetHtml } from '../src/widget.js';
+import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
 
@@ -769,6 +771,8 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
   assert.equal(view.status, 'sourceUnavailable');
   assert.equal(view.fieldName, afternoon[0]);
   assert.match(view.notice, /添付すると原本を照合/);
+  assert.deepEqual(view.sharedLibrary.stored, [], '未保存の年度を保存済みと表示しない');
+  assert.equal(view.sharedLibrary.missing.length, 8);
   assert.doesNotMatch(view.notice, /準備していま/);
   const restored = (await app('restoreStudyView', { sessionId: sid }))._meta.qlp;
   assert.equal(restored.status, 'sourceUnavailable');
@@ -835,4 +839,98 @@ test('土地家屋調査士2022〜2025：添付の部・年度・正答を確認
   const again = await callUi('restoreStudyView', { sessionId });
   assert.equal(again._meta.qlp.status, 'restoredGrade', '復元時に再採点しない');
   }
+});
+
+test('共有公式過去問：同じ検証済み原本を別の学習者が再添付なしで解き、未保存の年度だけ表示する', async () => {
+  const env = makeEnv();
+  const cat = CATALOG.land_surveyor;
+  const pins = cat.officialPdfPins[2025];
+  const qsha = pins['午後の部'];
+  const p = {
+    qualificationId: cat.qualificationId, year: 2025, section: '午後の部',
+    questionSha256: qsha, answerSha256: pins.answer,
+    parserVersion: '0.8.2', owner: '_shared',
+  };
+  const figureSha = await sha256Hex(PNG);
+  const packets = Array.from({ length: 20 }, (_, i) => ({
+    questionId: `land_surveyor:2025:午後の部:${i + 1}`,
+    qualificationId: 'land_surveyor', year: 2025, section: '午後の部',
+    questionNumber: i + 1, fieldId: 'l3', stemMode: 'official_image',
+    choiceMode: 'official_image', stem: '原本問題の画像を読んでください。',
+    choices: ['1','2','3','4','5'], correctAnswer: 1,
+    questionPdfSha256: qsha, answerPdfSha256: pins.answer,
+    questionPdfUrl: 'https://moj.go.jp/paper/2025/afternoon.pdf',
+    answerPdfUrl: 'https://moj.go.jp/paper/2025/answer.pdf',
+    figures: [{ file: 'q.png', sha256: figureSha, width: 10, height: 10 }],
+    evidence: { questionPdfPages: [i + 4] },
+  }));
+  const parsed = { status: 'ready', qualificationId: 'land_surveyor',
+    year: 2025, section: '午後の部', parserVersion: '0.8.2',
+    questionPdfSha256: qsha, answerPdfSha256: pins.answer,
+    packetCount: 20, excluded: [], packets };
+  const empty = await officialLibrary(env.STORE, cat, '0.8.2', T0);
+  assert.deepEqual(empty.stored, []);
+  assert.equal(empty.missing.length, 8, '対応年度と共通保存済みは異なる');
+
+  // SHAが異なる保存内容は共有の年度一覧に出さない。
+  await writeResult(env.STORE, { ...p, questionSha256: 'a'.repeat(64) },
+    parsed, { 'q.png': PNG }, T0);
+  assert.equal((await officialLibrary(env.STORE, cat, '0.8.2', T0)).stored.length, 0);
+  await writeResult(env.STORE, p, parsed, { 'q.png': PNG }, T0);
+  const shared = await officialLibrary(env.STORE, cat, '0.8.2', T0);
+  assert.deepEqual(shared.stored, [{ year: 2025, section: '午後の部', questions: 20 }]);
+  assert.equal(shared.completeYears.length, 0, '午前が未保存なら年度全体は保存済みと呼ばない');
+  assert.equal(shared.missing.length, 7);
+
+  let fetched = 0;
+  env.fetchAttached = async () => { fetched += 1; throw new Error('SHOULD_NOT_FETCH_ATTACHMENT'); };
+  const app = async (name,args) => (await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
+  for (let n = 0; n < 2; n++) {
+    const started = await app('startSession', { qualificationId: '土地家屋調査士', sources: [] });
+    const { sessionId, learnerId, overview } = started._meta.qlp;
+    assert.equal(overview.sharedLibrary.totalQuestions, 20);
+    assert.deepEqual(overview.sharedLibrary.missing.filter(x=>x.year===2025),
+      [{ year: 2025, section: '午前の部' }]);
+    const published = await app('getOfficialLibrary', { sessionId });
+    assert.equal(published._meta.qlp.sharedLibrary.totalQuestions,20);
+    assert.equal(published.structuredContent.sharedLibrary, undefined, '画面用データをAIに重複掲示させない');
+    const duplicate = await app('attachPdf', {
+      sessionId, year: 2025, section: '午後の部',
+      questionPdf: { download_url:'https://bad.example/no.pdf' },
+      answerPdf: { download_url:'https://bad.example/none.pdf' },
+    });
+    assert.equal(duplicate.structuredContent.status,'attachedAlready');
+    assert.equal(fetched,0);
+    await app('saveProfile', { sessionId, exemption:'confirmed', stage: 4 });
+    const plan = await app('saveStudyPlan', { sessionId, orderedFields: Object.values(cat.fields).slice(2),
+      methodChoice:'practice', reviewPreset:'standard' });
+    assert.equal(plan.structuredContent.status,'planSaved');
+    const startedStudy = await app('startStudy',{qualificationName:'土地家屋調査士',learnerId});
+    assert.equal(startedStudy.structuredContent.learnerId,learnerId);
+    const chosen = await app('chooseItem',{sessionId,fieldName:cat.fields.l3,mode:'practice'});
+    assert.equal(chosen.structuredContent.status,'item');
+    const q = await app('nextQuestion', { sessionId });
+    assert.equal(q._meta.qlp.status,'question');
+    assert.equal(q._meta.qlp.question.year,2025);
+    assert.equal(q._meta.qlp.question.questionNumber,1);
+    assert.ok(q._meta.qlp.question.figures.length, '全員に共有図が表示される');
+    assert.equal(fetched,0);
+    const grade = await app('submitAnswer',{
+      sessionId, questionId:q._meta.qlp.question.questionId,value:'1'
+    });
+    assert.equal(grade._meta.qlp.grade.correct,true);
+  }
+  const clean = await officialLibrary(env.STORE,cat,'0.8.2',T0);
+  assert.equal(clean.stored.length,1,'個人の問題進捗で共有の数を変更しない');
+});
+
+test('PDF未添付のボタンはAIへの会話メッセージを起動せず、未保存の部だけ案内する', () => {
+  const html = widgetHtml();
+  const a = html.indexOf("document.getElementById('sourceAttach').onclick");
+  const b = html.indexOf("document.getElementById('sourceAiCheck').onclick",a);
+  assert.ok(a > 0 && b > a);
+  const block = html.slice(a,b);
+  assert.ok(!block.includes("ask("), '空の取り込み依頼を会話へ送信してはいけない');
+  assert.ok(block.includes("以前に別のチャットへ添付しただけのPDF"), '共有保存と別チャットの添付を区別する');
+  assert.ok(html.includes('共有保存済み（'), '共有保存済みの年度を利用者へ表示する');
 });
