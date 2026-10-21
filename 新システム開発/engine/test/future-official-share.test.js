@@ -38,8 +38,15 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
     const lib=await officialLibrary(new MemoryStore(),cat,'0.8.2',Date.now());
     assert.equal(lib.totalQuestions,0);
     assert.deepEqual(lib.stored,[]);
-    assert.deepEqual(lib.missing,target.qualificationKey==='takken'
-      ? [{year:2025,section:'年度共通'}] : []);
+    if (target.qualificationKey === 'takken') {
+      assert.equal(lib.missing.length, 12);
+      assert.deepEqual(lib.missing.filter(x => x.year === 2020),
+        [{year:2020,section:'10月'}, {year:2020,section:'12月'}]);
+      assert.deepEqual(lib.missing.filter(x => x.year === 2021),
+        [{year:2021,section:'10月'}, {year:2021,section:'12月'}]);
+    } else {
+      assert.deepEqual(lib.missing, []);
+    }
   }
   assert.equal(futureOfficialShareTarget('invalid'),null);
 });
