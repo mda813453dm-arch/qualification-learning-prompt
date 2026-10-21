@@ -773,6 +773,8 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
   assert.match(view.notice, /添付すると原本を照合/);
   assert.deepEqual(view.sharedLibrary.stored, [], '未保存の年度を保存済みと表示しない');
   assert.equal(view.sharedLibrary.missing.length, 8);
+  assert.equal((await app('nextQuestion', { sessionId: sid })).structuredContent.sharedLibrary, undefined,
+    '保存状況の詳細や内部照会情報をAIの会話へ流さない');
   assert.doesNotMatch(view.notice, /準備していま/);
   const restored = (await app('restoreStudyView', { sessionId: sid }))._meta.qlp;
   assert.equal(restored.status, 'sourceUnavailable');
