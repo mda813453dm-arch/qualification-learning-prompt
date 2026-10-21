@@ -206,7 +206,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
     await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
-    assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\\n省略しない全文', '復元後でも学習終了できる');
+    assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文', '復元後でも学習終了できる');
     // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
     await page.evaluate(r => window.deliver(r), result(onboarding));
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
