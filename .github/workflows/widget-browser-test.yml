@@ -6,6 +6,7 @@ on:
       - '新システム開発/engine/src/**'
       - '新システム開発/parser/qlp_parser/**'
       - '新システム開発/parser/test_land_surveyor*.py'
+      - '新システム開発/parser/test_parser_status.py'
       - '新システム開発/deploy/cloudshell-deploy.sh'
       - '新システム開発/engine/test/**'
       - '新システム開発/engine/package.json'
@@ -33,7 +34,7 @@ jobs:
       - name: 土地家屋調査士 午前・午後のPDFパーサー単体テスト（合成ページ）
         run: |
           python -m pip install -r 新システム開発/parser/requirements.txt
-          PYTHONPATH=新システム開発/parser python -m unittest discover -s 新システム開発/parser -p 'test_land_surveyor*.py' -v
+          PYTHONPATH=新システム開発/parser python -m unittest discover -s 新システム開発/parser -p 'test_*.py' -v
       - name: 試験専用ブラウザを準備（本番依存には追加しない）
         run: |
           npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
