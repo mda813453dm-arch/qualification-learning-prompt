@@ -89,3 +89,23 @@ test('Cloud Run の入口が起動し、トークンの無い呼び出しを断�
     child.kill();
   }
 });
+
+test('公式PDFの添付原本は1MiB超でもCloud Storageへ保存し、出題元として読み直せる', async () => {
+  const { firestore, storage, store } = make();
+  const sha = 'a'.repeat(64);
+  const key = `att/${sha}.pdf`;
+  const pdf = new Uint8Array(2 * 1024 * 1024 + 18);
+  pdf.set(new TextEncoder().encode('%PDF-1.7\n'), 0);
+  pdf.fill(0x41, 12);
+  await store.put(key, pdf);
+  assert.equal(firestore.docs.size, 0, '1MiBを超える原本PDFはFirestoreへ書かない');
+  const obj = storage.objects.get(`figs/${key}`);
+  assert.ok(obj, '添付PDFはバケットに永続保存される');
+  assert.equal(obj.opts.contentType, 'application/pdf');
+  assert.deepEqual(new Uint8Array(await store.get(key, 'arrayBuffer')), pdf);
+  await store.delete(key);
+  assert.equal(await store.get(key, 'arrayBuffer'), null);
+
+  await store.put('src/source-hash.pdf', pdf);
+  assert.equal(storage.objects.get('figs/src/source-hash.pdf').opts.contentType, 'application/pdf');
+});
