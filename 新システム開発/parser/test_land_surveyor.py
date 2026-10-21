@@ -1,5 +1,5 @@
 """土地家屋調査士の午前／午後の正答列と、問題単位の安全な切抜範囲。
-合成Docは原本での検証結果ではない。実PDFの2024・2025年度検証は作業環境で別途行う。
+合成Docは原本での検証結果ではない。実PDFの2022～2025年度検証は作業環境で別途行う。
 """
 import unittest
 from types import SimpleNamespace
@@ -81,8 +81,8 @@ class LandSurveyorTest(unittest.TestCase):
         with self.assertRaises(ParseError):
             adapter.check_question(question_pdf("午前の部", 10), ans, 2024, "午前の部")
 
-    def test_2024_morning_afternoon_pin_year_and_answer_are_independent(self):
-        for year in (2024, 2025):
+    def test_all_years_morning_afternoon_pin_year_and_answer_are_independent(self):
+        for year in (2022, 2023, 2024, 2025):
             source = adapter.PIN_BY_YEAR[year]
             for section, count in (("午前の部", 10), ("午後の部", 20)):
                 with self.subTest(year=year, section=section):
@@ -91,7 +91,7 @@ class LandSurveyorTest(unittest.TestCase):
                     answers = adapter.parse_answers(answer_pdf(year), section, year)
                     self.assertEqual([answers[i] for i in range(1, count + 1)],
                                      adapter.EXPECTED_BY_YEAR[year][section])
-                    wrong_year = 2024 if year == 2025 else 2025
+                    wrong_year = 2022 if year == 2025 else year + 1
                     with self.assertRaises(ParseError) as ctx:
                         adapter.check_source_hashes(year, section,
                             adapter.PIN_BY_YEAR[wrong_year][section], source["正答"])
@@ -100,10 +100,40 @@ class LandSurveyorTest(unittest.TestCase):
                         adapter.check_question(question_pdf(section, count, wrong_year),
                                                answer_pdf(year), year, section)
             with self.assertRaises(ParseError):
-                adapter.parse_answers(answer_pdf(year), "午後の部", 2023)
+                adapter.parse_answers(answer_pdf(year), "午後の部", 2021)
         with self.assertRaises(ParseError) as ctx:
-            adapter.check_source_hashes(2023, "午後の部", "any", "any")
+            adapter.check_source_hashes(2021, "午後の部", "any", "any")
         self.assertEqual(ctx.exception.code, "YEAR_NOT_VALIDATED")
+
+
+
+    def test_2022_afternoon_question_18_keeps_continuation_and_five_choices(self):
+        doc = question_pdf("午後の部", 20, 2022)
+        doc[18]._text = "第18 問 問題文の続きがあります。\\nア 説明\\nイ 説明\\nエ 説明"
+        doc.insert(19, Page("オ 残る説明\\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"))
+        questions = adapter.parse_questions(doc, "午後の部")
+        q18 = next(q for q in questions if q.number == 18)
+        q19 = next(q for q in questions if q.number == 19)
+        self.assertEqual(q18.pages, [19, 20])
+        self.assertEqual([p for p, _ in q18.crops], [19, 20])
+        self.assertEqual(q19.pages, [21])
+        self.assertIn("verified_continuation_page", q18.notes)
+        # 選択肢がないまま記述式や別の問へ進むのは許可しない。
+        doc[19]._text = "第19 問 別問題です。\\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"
+        with self.assertRaises(ParseError) as ctx:
+            adapter.parse_questions(doc, "午後の部")
+        self.assertEqual(ctx.exception.code, "CHOICE_SEQUENCE_NOT_VERIFIED")
+
+    def test_2022_2023_answer_tables_reject_other_year_keys(self):
+        for year in (2022, 2023):
+            for section in ("午前の部", "午後の部"):
+                with self.subTest(year=year, section=section):
+                    values = adapter.parse_answers(answer_pdf(year), section, year)
+                    self.assertEqual(
+                        [values[n] for n in range(1, len(values) + 1)],
+                        adapter.EXPECTED_BY_YEAR[year][section])
+                    with self.assertRaises(ParseError):
+                        adapter.parse_answers(answer_pdf(2024), section, year)
 
 
 
