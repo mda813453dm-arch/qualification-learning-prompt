@@ -1,4 +1,4 @@
-"""土地家屋調査士の公式PDFを取り込む（2024・2025年度の検証済みPDFのみ）。
+"""土地家屋調査士の公式PDFを取り込む（2022～2025年度の検証済みPDFのみ）。
 
 既存の integration/verify_surveyor_2025.py・morning_complete_question_audit.py
 で確認したSHAと正答を出典とする。図の抽出は既存の共通
@@ -19,6 +19,24 @@ CHOICE_COUNT = 5
 BY_SECTION = True
 
 # 利用者から受領した原本PDFを検査した固定SHA。PDF本体はGitHubに置かない。
+PIN_2022 = {
+    "午前の部": "d887e2ed774496f08f51b096bb17536ab0dda8a14b70ff8de4b4ad5e3c63d111",
+    "午後の部": "51e76d44ad29a22c5200cf6e27afad8361c3c77c7060df6293d225bfa04509cf",
+    "正答": "b4aa4746393b2def52a470add31f30ed95116bb4b507173f354a7cd00c3c8d4a",
+}
+EXPECTED_2022 = {
+    "午前の部": [5, 2, 4, 4, 1, 3, 2, 5, 3, 1],
+    "午後の部": [4, 1, 4, 1, 3, 4, 5, 3, 1, 2, 2, 5, 4, 3, 1, 2, 2, 4, 5, 3],
+}
+PIN_2023 = {
+    "午前の部": "169a59ba74696f19ec129e4acf97be3b3929ff5e97618b08640d520eef21428e",
+    "午後の部": "30e8955bb1b0ed70b6f5d37084242d000958b75d30a9f2e69c9d9ec804772da2",
+    "正答": "608059db36e15b81c4d43fb76319919059486dd255d7e1b2c2c4739b836c706a",
+}
+EXPECTED_2023 = {
+    "午前の部": [4, 2, 2, 5, 3, 4, 1, 1, 4, 3],
+    "午後の部": [2, 1, 4, 3, 5, 2, 3, 1, 4, 1, 4, 4, 4, 2, 3, 5, 2, 5, 3, 1],
+}
 PIN_2024 = {
     "午前の部": "ebba5878f9cf02e0c48da6311029441d27f30a4a46bb8956fbc408939755f999",
     "午後の部": "3d1aaab12057e4423c33cd19a412ce4dc3a6037d7cbc2f997925f41965ff4889",
@@ -39,8 +57,8 @@ EXPECTED_2025 = {
     "午前の部": [5, 4, 4, 3, 2, 4, 2, 1, 2, 3],
     "午後の部": [1, 5, 2, 1, 4, 5, 3, 1, 5, 4, 3, 5, 5, 2, 2, 3, 3, 4, 3, 4],
 }
-PIN_BY_YEAR = {2024: PIN_2024, 2025: PIN_2025}
-EXPECTED_BY_YEAR = {2024: EXPECTED_2024, 2025: EXPECTED_2025}
+PIN_BY_YEAR = {2022: PIN_2022, 2023: PIN_2023, 2024: PIN_2024, 2025: PIN_2025}
+EXPECTED_BY_YEAR = {2022: EXPECTED_2022, 2023: EXPECTED_2023, 2024: EXPECTED_2024, 2025: EXPECTED_2025}
 SECTIONS = {"午前の部": (10, "l1"), "午後の部": (20, "l3")}
 HEADING = re.compile(r"^第\s*([0-9]+)\s*問(?:\s|$)")
 OPTION = re.compile(r"(?<!\w)([1-5])\s+\S")
@@ -152,22 +170,35 @@ def parse_questions(doc, section):
         if n in found:
             raise ParseError("QUESTION_NUMBER_DUPLICATED", number=n)
         choices = [int(m.group(1)) for m in OPTION.finditer("\n".join(lines))]
+        crops = [(page_index + 1, _question_crop(page))]
+        # 実原本2022年度・午後問18は、問題文と図・選択肢が2ページに
+        # 分かれている。直後ページに別問の見出しがなく、選択肢の
+        # 番号1～5が完全に確認できる場合のみ、続きページを追加する。
         if "12345" not in "".join(map(str, choices)):
-            raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
-        # 文字や図を再生成せず、元のPDFの問題・表・選択肢が全て
-        # 同じ順番で入る問単位の原本画像を共通切抜器に渡す。
-        crop = _question_crop(page)
+            following = page_index + 1
+            if following >= len(doc):
+                raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
+            next_page = doc[following]
+            next_lines = [_norm(v).strip() for v in next_page.get_text("text", sort=True).splitlines() if v.strip()]
+            if not next_lines or HEADING.match(next_lines[0]):
+                raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
+            next_choices = [int(m.group(1)) for m in OPTION.finditer("\n".join(next_lines))]
+            if "12345" not in "".join(map(str, choices + next_choices)):
+                raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
+            crops.append((following + 1, _question_crop(next_page)))
+        # 原本のページ順で表示。記述式や付録の表を取り込まない。
+        first_crop = crops[0][1]
         found[n] = RawQuestion(
             number=n,
             stem="公式試験問題の本文・図表・選択肢を、下の原本画像で確認してください。拡大して読めます。",
             choices=[str(j) for j in range(1, 6)],
-            pages=[page_index + 1],
-            rect=(crop[1], crop[3]),
+            pages=[p for p, _ in crops],
+            rect=(first_crop[1], first_crop[3]),
             has_graphics=True,
-            notes=["original_question_image", "no_generated_figure"],
+            notes=["original_question_image", "no_generated_figure"] + (["verified_continuation_page"] if len(crops) > 1 else []),
             stem_mode="official_image",
             choice_mode="official_image",
-            crops=[(page_index + 1, crop)],
+            crops=crops,
             preserve_aspect=True,
         )
     if sorted(found) != list(range(1, count + 1)):
