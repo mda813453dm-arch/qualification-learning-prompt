@@ -109,8 +109,8 @@ class LandSurveyorTest(unittest.TestCase):
 
     def test_2022_afternoon_question_18_keeps_continuation_and_five_choices(self):
         doc = question_pdf("午後の部", 20, 2022)
-        doc[18]._text = "第18 問 問題文の続きがあります。\\nア 説明\\nイ 説明\\nエ 説明"
-        doc.insert(19, Page("オ 残る説明\\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"))
+        doc[18]._text = "第18 問 問題文の続きがあります。\nア 説明\nイ 説明\nエ 説明"
+        doc.insert(19, Page("オ 残る説明\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"))
         questions = adapter.parse_questions(doc, "午後の部")
         q18 = next(q for q in questions if q.number == 18)
         q19 = next(q for q in questions if q.number == 19)
@@ -119,7 +119,7 @@ class LandSurveyorTest(unittest.TestCase):
         self.assertEqual(q19.pages, [21])
         self.assertIn("verified_continuation_page", q18.notes)
         # 選択肢がないまま記述式や別の問へ進むのは許可しない。
-        doc[19]._text = "第19 問 別問題です。\\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"
+        doc[19]._text = "第19 問 別問題です。\n1 アウ 2 アオ 3 イウ 4 イオ 5 ウオ"
         with self.assertRaises(ParseError) as ctx:
             adapter.parse_questions(doc, "午後の部")
         self.assertEqual(ctx.exception.code, "CHOICE_SEQUENCE_NOT_VERIFIED")
