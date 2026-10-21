@@ -93,6 +93,14 @@ function packetProblem(src, shas, p, seen, assetSha) {
   if (p.questionPdfSha256 !== shas.question || p.answerPdfSha256 !== shas.answer) return 'PACKET_SHA_MISMATCH';
   if (!Array.isArray(p.choices) || p.choices.length < 2 || p.choices.some((c) => typeof c !== 'string' || !c.trim())) return 'CHOICES_INCOMPLETE';
   if (!Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > p.choices.length) return 'OFFICIAL_ANSWER_OUT_OF_RANGE';
+  if (p.acceptedAnswers !== undefined) {
+    if (!Array.isArray(p.acceptedAnswers) || p.acceptedAnswers.length < 2
+      || new Set(p.acceptedAnswers).size !== p.acceptedAnswers.length
+      || p.acceptedAnswers.some((n) => !Number.isInteger(n) || n < 1 || n > p.choices.length)
+      || !p.acceptedAnswers.includes(p.correctAnswer)
+      || (p.allCorrect === true && p.acceptedAnswers.length !== p.choices.length)
+      || typeof p.correctAnswerLabel !== 'string' || !p.correctAnswerLabel.trim()) return 'OFFICIAL_SPECIAL_ANSWER_INVALID';
+  } else if (p.allCorrect !== undefined || p.correctAnswerLabel !== undefined) return 'OFFICIAL_SPECIAL_ANSWER_INVALID';
   if (p.stemMode !== 'official_image' && (typeof p.stem !== 'string' || !p.stem.trim())) return 'STEM_EMPTY';
   const figures = Array.isArray(p.figures) ? p.figures : [];
   if (figures.some((f) => !f?.file || assetSha[f.file] !== f.sha256)) return 'FIGURE_ASSET_MISMATCH';
