@@ -27,13 +27,19 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
     assert.ok(target.requirements.length>10, '資格ごとの確認要件が記載されている');
     assert.deepEqual(futureOfficialShareTarget(cat.qualificationId),target);
     assert.deepEqual(futureOfficialShareTarget(target.qualificationKey),target);
-    assert.equal(cat.officialPdfPins,undefined,
-      '原本PDF未検証の資格で、SHA固定済みだと誤表示しない');
+    if (target.qualificationKey === 'takken') {
+      assert.match(cat.officialShared.officialPdfPins[2025]['年度共通'],/^[a-f0-9]{64}$/,
+        '2025年度宅建の公式原本は既にSHA照合済み。ただし保存済みとは限らない');
+    } else {
+      assert.equal(cat.officialPdfPins,undefined,
+        '原本PDF未検証の資格で、SHA固定済みだと誤表示しない');
+    }
     // 未登録年度から共有される問題を生成しない。
     const lib=await officialLibrary(new MemoryStore(),cat,'0.8.2',Date.now());
     assert.equal(lib.totalQuestions,0);
     assert.deepEqual(lib.stored,[]);
-    assert.deepEqual(lib.missing,[]);
+    assert.deepEqual(lib.missing,target.qualificationKey==='takken'
+      ? [{year:2025,section:'年度共通'}] : []);
   }
   assert.equal(futureOfficialShareTarget('invalid'),null);
 });
