@@ -95,6 +95,31 @@ export const CATALOG = {
     uploadAdapter: 'land_surveyor',
     uploadSections: ['午前の部', '午後の部'],
     validatedUploadYears: [2022, 2023, 2024, 2025],
+    // 公式原本に一致する共有キャッシュだけを「保存済み」として表示する。
+    // カタログ上の対応年度が、Cloud Runの保存済み年度を意味するわけではない。
+    uploadQuestionCounts: { '午前の部': 10, '午後の部': 20 },
+    officialPdfPins: {
+      2022: {
+        '午前の部': 'd887e2ed774496f08f51b096bb17536ab0dda8a14b70ff8de4b4ad5e3c63d111',
+        '午後の部': '51e76d44ad29a22c5200cf6e27afad8361c3c77c7060df6293d225bfa04509cf',
+        answer: 'b4aa4746393b2def52a470add31f30ed95116bb4b507173f354a7cd00c3c8d4a',
+      },
+      2023: {
+        '午前の部': '169a59ba74696f19ec129e4acf97be3b3929ff5e97618b08640d520eef21428e',
+        '午後の部': '30e8955bb1b0ed70b6f5d37084242d000958b75d30a9f2e69c9d9ec804772da2',
+        answer: '608059db36e15b81c4d43fb76319919059486dd255d7e1b2c2c4739b836c706a',
+      },
+      2024: {
+        '午前の部': 'ebba5878f9cf02e0c48da6311029441d27f30a4a46bb8956fbc408939755f999',
+        '午後の部': '3d1aaab12057e4423c33cd19a412ce4dc3a6037d7cbc2f997925f41965ff4889',
+        answer: '2e161533cab70baad285275c7758fe0a703e089f6fc267ba875b69bd6013f4ce',
+      },
+      2025: {
+        '午前の部': '4a90ae3875c14c1eeda4b3ac9a32c6387b69b5cc15d0f5b62a99514af78267d0',
+        '午後の部': '928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c',
+        answer: '3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad',
+      },
+    },
     sources: [],
   },
   surveyor: {
