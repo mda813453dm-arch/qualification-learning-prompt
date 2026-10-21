@@ -1104,6 +1104,7 @@ async function route(request, env, url, now) {
     const saved = state.lastExplanation;
     const grade = saved?.grade ?? state.lastGrade;
     if (!grade?.questionId || grade.skipped) throw new HttpError(409, 'NO_GRADED_EXPLANATION');
+    if (saved && saved.questionId !== grade.questionId) throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');
     const wanted = url.searchParams.get('questionId');
     if (wanted && wanted !== grade.questionId) throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
@@ -1113,6 +1114,11 @@ async function route(request, env, url, now) {
       const job = await readJob(env.STORE, sessionJobId(state));
       const item = (await availablePackets(env.STORE, job, now)).find((x) => x.packet.questionId === grade.questionId);
       if (!item) throw new HttpError(404, 'EXPLANATION_QUESTION_NOT_FOUND');
+      const source = state.history?.[grade.questionId]?.source;
+      if (!source?.questionPdfSha256 || !source?.answerPdfSha256 ||
+          source.questionPdfSha256 !== item.packet.questionPdfSha256 || source.answerPdfSha256 !== item.packet.answerPdfSha256) {
+        throw new HttpError(409, 'EXPLANATION_SOURCE_MISMATCH');
+      }
       question = present(item, 'review', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
     }
     if (question.questionId !== grade.questionId) throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');

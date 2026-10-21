@@ -146,7 +146,7 @@ test('配置前の採点済み学習も保存済みパケットから解説対�
   const q = (await call(env, 'POST', `${root}/next`)).body.question;
   await call(env, 'POST', `${root}/answer`, { questionId: q.questionId, value: '1' });
   const state = await env.STORE.get(`ses/${sessionId}`, 'json');
-  delete state.lastExplanation;
+  delete state.state.lastExplanation;
   await env.STORE.put(`ses/${sessionId}`, JSON.stringify(state));
   const before = await env.STORE.get(`ses/${sessionId}`), fetches = web.calls.length;
   const old = await call(env, 'GET', `${root}/explanation`);
@@ -159,6 +159,9 @@ test('配置前の採点済み学習も保存済みパケットから解説対�
   const other = await startSession(env);
   assert.equal((await call(env, 'GET', `/v1/sessions/${other.sessionId}/explanation`)).body.error, 'NO_GRADED_EXPLANATION');
   assert.equal((await call(env, 'GET', '/v1/sessions/not-a-session/explanation')).status, 404);
+  state.state.history[q.questionId].source.questionPdfSha256 = 'f'.repeat(64);
+  await env.STORE.put(`ses/${sessionId}`, JSON.stringify(state));
+  assert.equal((await call(env, 'GET', `${root}/explanation`)).body.error, 'EXPLANATION_SOURCE_MISMATCH', '同じ問番号でも公式資料の版が違えば結合しない');
 });
 
 test('出題中と違う問番号の回答は採点しない（誤結合の防止）', async () => {
