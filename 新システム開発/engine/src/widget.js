@@ -1099,10 +1099,10 @@ a{color:inherit}
     if (document.hidden) { wasHidden = true; return; }
     if (!wasHidden) return;
     wasHidden = false;
-    if (!locked && hasView && state.sessionId && (state.question || currentStudyId)) restoreFromServer(false);
+    if (!locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
   window.addEventListener('pageshow', function(e){
-    if (e.persisted && !locked && hasView && state.sessionId && (state.question || currentStudyId)) restoreFromServer(false);
+    if (e.persisted && !locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
   window.addEventListener('message', function(e){
     if (e.source !== window.parent) return;
@@ -1181,7 +1181,8 @@ a{color:inherit}
     goFull();
     // 同じセッションの画面が再生成された場合、現在の回答待ち・採点画面へ復元する。
     var stored = loadIds();
-    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked && !(openaiOutput() || {}).onboarding) restoreFromServer(false);
+    if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
+    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked && !app.querySelector('button:not([disabled])') && !(openaiOutput() || {}).onboarding) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
