@@ -810,8 +810,11 @@ a{color:inherit}
     }
     // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
     var nextInPlace = async function(){
-      if (state.next) { var n = state.next; state.next = null; render(n); window.scrollTo(0, 0); return; }
-      render(await callTool('nextQuestion', { sessionId: state.sessionId }));
+      var n = state.next || await callTool('nextQuestion', { sessionId: state.sessionId });
+      if (!n || n.error || !['question','waiting','finished','remediation'].includes(n.status)) throw new Error('NEXT_UNAVAILABLE');
+      if (state.next === n) state.next = null;
+      render(n);
+      window.scrollTo(0, 0);
     };
     var nextBtn = function(inPlace){
       document.getElementById('next').onclick = inPlace ? nextInPlace : function(){ nextBelow(nextInPlace); };
@@ -886,32 +889,37 @@ a{color:inherit}
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
   // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
   // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
-  // 今の枠は1行に縮め、次の問題はチャットの一番下の新しい枠に出す（出ないときは fallback の枠内表示で進める）
+  // 初回の過去問は学習画面が直接 nextQuestion を取得する。
+  // 再試行も同じ要求を使い、まだ出題されていない問題へ redisplayQuestion を呼ばない。
   function nextBelow(fallback, say){
-    app.innerHTML = '<div class="notice">次の問題を、この下に出します。表示されない場合は「再表示」を押してください。</div><div class="row"><button id="nextHere">再表示</button></div>';
-    document.getElementById('nextHere').onclick = async function(){
-      if (locked) return;
-      this.disabled = true;
-      try {
-        var same = state.next && state.next.question ? state.next : await callTool('redisplayQuestion', { sessionId: state.sessionId || studyLid || loadIds().sid });
-        if (!same || !same.question || same.error) throw new Error('no pinned question');
-        render(same);
-      } catch (e) {
-        var btn = document.getElementById('nextHere'); if (btn) btn.disabled = false;
-        var notice = document.getElementById('redisplayError');
-        if (!notice) {
-          notice = document.createElement('div');
-          notice.id = 'redisplayError';
-          notice.className = 'notice';
-          notice.setAttribute('role', 'alert');
-          if (btn && btn.parentNode) btn.parentNode.insertAdjacentElement('afterend', notice);
-          else app.appendChild(notice);
-        }
-        notice.textContent = '同じ問題を取得できません。学習状況は変更していません。接続または問題データの確認が必要です。';
-      }
-    };
+    app.innerHTML = '<div id="nextStatus" class="notice" role="status">公式過去問を取得しています…</div>' +
+      '<div class="row"><button id="nextHere" disabled>取得中…</button></div>';
     scrollUp(true);
-    ask(say || '次の問題へ');
+    var busy = false;
+    async function requestSame(){
+      if (locked || busy) return;
+      busy = true;
+      var btn = document.getElementById('nextHere');
+      if (btn) { btn.disabled = true; btn.textContent = '取得中…'; }
+      var status = document.getElementById('nextStatus');
+      if (status) status.textContent = '公式過去問を取得しています…';
+      try {
+        if (typeof fallback !== 'function') throw new Error('MISSING_NEXT_REQUEST');
+        await fallback();
+      } catch (e) {
+        var retry = document.getElementById('nextHere');
+        if (retry) { retry.disabled = false; retry.textContent = '再試行'; }
+        var note = document.getElementById('nextStatus');
+        if (note) {
+          note.setAttribute('role', 'alert');
+          note.textContent = '公式過去問の取得に失敗しました。学習記録は変更していません。「再試行」で同じ問題の取得を試してください。';
+        }
+      } finally {
+        busy = false;
+      }
+    }
+    document.getElementById('nextHere').onclick = requestSame;
+    requestSame();
   }
   function scrollUp(noMark){
     try { window.scrollTo(0, 0); } catch (e) {}
