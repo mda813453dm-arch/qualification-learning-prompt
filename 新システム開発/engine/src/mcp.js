@@ -294,7 +294,7 @@ const APP_MENUS = {
   resume: { kind: 'resume', prompt: '続きから始めますか？', choices: ['始めます'] },
   review: { kind: 'review', prompt: 'この問題はどうしますか？', choices: ['詳しい解説（法的根拠つき）', '次の問題へ'] },
   check: { kind: 'check', prompt: '同じ分野で3問続けて間違えました。弱点を確かめる確認問題を出しますか？', choices: ['確認問題で基本を確かめる', '次の問題へ'] },
-  next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '総復習（間違えた問題）'] },
+  next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）'], actions: ['next', 'explain', 'end'] },
 };
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
@@ -302,6 +302,7 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
 const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html', 'ui://qlp/question-v32.html', 'ui://qlp/question-v33.html', 'ui://qlp/question-v34.html', 'ui://qlp/question-v35.html', 'ui://qlp/question-v36.html', 'ui://qlp/question-v37.html', 'ui://qlp/question-v38.html', 'ui://qlp/question-v39.html', 'ui://qlp/question-v40.html', 'ui://qlp/question-v41.html', 'ui://qlp/question-v42.html'];
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v43.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v44.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -422,7 +423,20 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       }
       if (tool.appOnly && !widget) return fail(id, -32602, `Unknown tool: ${params.name}`);
       if (tool.local && !(tool.name === 'explainSpec' && args.sessionId)) {
-        const out = tool.local(args);
+        let out = tool.local(args);
+        if (tool.name === 'showMenu' && args.kind === 'next' && args.sessionId && out) {
+          // 分野の切替はサーバーに保存された採点済みの問と先取りした次問だけから確定する。
+          const context = await callApi('GET', `/v1/sessions/${encodeURIComponent(args.sessionId)}/explanation`);
+          if (context.status < 400 && context.body?.nextChoice) {
+            const change = context.body.nextChoice.fieldChange;
+            const menu = { ...out.menu,
+              choices: [change ? '次の分野の問題へ' : '次の問題へ', '解説を見る',
+                ...(change ? ['総復習（間違えた問題）'] : []), '今日はここまで（学習を終了）'],
+              actions: ['next', 'explain', ...(change ? ['review'] : []), 'end'],
+              ...(change && context.body.nextChoice.nextFieldName ? { nextFieldName: context.body.nextChoice.nextFieldName } : {}) };
+            out = { ...out, menu };
+          }
+        }
         if (!out) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_INVALID', argument: tool.uiOnly ? 'stage/version' : 'kind' }) }] });
         if (tool.uiOnly) return ok(id, { content: [], structuredContent: out });
         // 解説方針はAIが使用する。showMenuと同じUI専用メタデータに隠してはいけない。

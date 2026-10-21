@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v44.html';
+export const WIDGET_URI = 'ui://qlp/question-v45.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.44';
+export const WIDGET_VERSION = '2026-10-21.45';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -53,6 +53,11 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
 .latest{font-size:13px;font-weight:700;color:var(--acc);background:var(--accbg);border-radius:8px;padding:4px 10px;margin-bottom:8px}
+.study-progress{padding:8px 10px 10px;margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--accbg)}
+.study-progress .progress-head{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:700;color:var(--acc)}
+.study-progress .progress-track{height:9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:6px 0}
+.study-progress .progress-fill{height:100%;background:var(--acc)}
+.study-progress .progress-detail{font-size:13px;color:var(--sub);line-height:1.5}
 </style></head><body><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
 <script>
 (function(){
@@ -216,7 +221,15 @@ a{color:inherit}
       return;
     }
     var q = data.question; state.question = q; state.answered = false;
-    var h = '<h2>' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</h2>';
+    var h = '';
+    var p = q.progress;
+    if (p && Number.isInteger(p.position) && Number.isInteger(p.total) && p.total > 0) {
+      h += '<div class="study-progress"><div class="progress-head"><span>全分野の初回演習</span><span>' + esc(p.position) + ' / ' + esc(p.total) + '問の位置</span></div>' +
+        '<div class="progress-track" role="progressbar" aria-label="全分野の初回演習の位置" aria-valuemin="0" aria-valuemax="' + esc(p.total) + '" aria-valuenow="' + esc(p.position) + '"><div class="progress-fill" style="width:' + esc(Math.max(0, Math.min(100, p.percent))) + '%"></div></div>' +
+        '<div class="progress-detail">' + (p.review ? '復習中／' : '') + '解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問 ・ ' + esc(p.fieldIndex) + ' / ' + esc(p.fieldTotal) + '分野' +
+        (p.fieldQuestion ? ' ・ この分野 ' + esc(p.fieldQuestion) + ' / 3問目' : '') + '（習得率ではありません）</div></div>';
+    }
+    h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</h2>';
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
@@ -314,10 +327,9 @@ a{color:inherit}
     var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
     var h = body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
-    if (['next', 'review', 'check'].indexOf(m.kind) >= 0) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
+    if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
-    var em = document.getElementById('endMenu');
-    if (em) em.onclick = async function(){
+    var endAction = async function(em){
       em.disabled = true;
       var ids = loadIds(), lid = currentStudyId || ids.studyId || studyLid || ids.lid || state.sessionId || ids.sid;
       if (lid) {
@@ -334,11 +346,20 @@ a{color:inherit}
       em.disabled = false;
       app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">終了データを取得できませんでした。同じ「今日はここまで」を押して再試行してください。学習状態は次へ進めません。</div>');
     };
+    var em = document.getElementById('endMenu');
+    if (em) em.onclick = function(){ endAction(em); };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
-      if (state.sessionId && ((m.kind === 'next' && (n === '1' || n === '2')) || (m.kind === 'review' && n === '2'))) {
+      var action = m.kind === 'next' && m.actions ? m.actions[Number(n) - 1] : null;
+      if (action === 'end') { endAction(b); return; }
+      if (action === 'explain') {
+        if (m.body) { scrollUp(true); return; }
+        ask('解説を表示してください。', '解説を見る'); return;
+      }
+      if (state.sessionId && ((m.kind === 'next' && (action === 'next' || action === 'review')) || (m.kind === 'review' && n === '2'))) {
         var sameRequest = function(){ return callTool('nextQuestion', { sessionId: state.sessionId,
-          ...(m.kind === 'next' && n === '2' ? { question: '総復習（間違えた問題）' } : {}) }).then(function(r){
+          ...(action === 'review' ? { question: '総復習（間違えた問題）' } : {}) }).then(function(r){
+            if (r?.status === 'reviewEmpty') { showMenu({ ...m, notice: r.notice }); return; }
             if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
             render(r);
           }); };
@@ -861,12 +882,16 @@ a{color:inherit}
     }
     // 採点のあと：■採点（固定4行）→ ■解説の確認（U14）。次へ進むボタンは画面に置き、AIに任せない
     var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
+    var fieldChange = state.next?.status === 'question' && state.next.question?.kind === 'new' &&
+      q.fieldName && state.next.question.fieldName && q.fieldName !== state.next.question.fieldName;
     app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
       (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
-      '<div class="stem"><b>■解説の確認</b></div><div class="choices"><button id="exp"><b>1</b><span>解説を見る</span></button><button id="next"><b>2</b><span>解説を省略して学習を続ける</span></button>' +
-      (g.checkSuggested ? '<button id="check"><b>3</b><span>確認問題で基本を確かめる</span></button>' : '') + '</div>' + endBar();
+      '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
+      '<button id="exp"><b>2</b><span>解説を見る</span></button>' +
+      (fieldChange ? '<button id="review"><b>3</b><span>総復習（間違えた問題）</span></button>' : '') +
+      '<button id="endStudy"><b>' + (fieldChange ? '4' : '3') + '</b><span>今日はここまで（学習を終了）</span></button></div>';
     scrollUp();
     nextBtn(); bindEnd();
     var lastDisplayRequest = '';
@@ -878,13 +903,22 @@ a{color:inherit}
       if (!locked && b.isConnected) b.disabled = false;
     };
     var waitMore = function(msg){
-      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="retryDisplay">出ないときは再表示</button></div>';
+      app.querySelector('.choices').outerHTML = '<div class="notice">' + msg + '</div><div class="row"><button id="retryDisplay">出ないときは再表示</button></div>' + endBar();
       document.getElementById('retryDisplay').onclick = sendDisplay;
+      bindEnd();
     };
     document.getElementById('exp').onclick = function(){
       waitMore('解説はこの下に出ます。読み終えると、その下に進むためのボタンが出ます。');
       lastDisplayRequest = explanationRequest(q, g);
       sendDisplay();
+    };
+    if (fieldChange) document.getElementById('review').onclick = function(){
+      nextBelow(async function(){
+        var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習（間違えた問題）' });
+        if (r?.status === 'reviewEmpty') { showGrade(g); app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
+        if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE');
+        render(r);
+      });
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
       waitMore('確認問題はこの下に出ます。答え合わせのあと、その下に進むためのボタンが出ます。');

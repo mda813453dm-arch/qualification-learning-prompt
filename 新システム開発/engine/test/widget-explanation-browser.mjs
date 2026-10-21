@@ -11,7 +11,7 @@ const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'play
 
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
-  const parser = fakeParser(web);
+  const parser = fakeParser(web, { answers: [3, 1, 4, 2], fieldIds: ['s1', 's1', 's1', 's2'] });
   const env = { STORE: new MemoryStore(), API_TOKEN: 'browser-test', fetchPdf: web.fetchPdf, clock: () => T0, PARSER_URL: 'https://parser.example' };
   env.parserFetch = async (_, init) => {
     const b = JSON.parse(init.body);
@@ -82,6 +82,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first, study, session });
     const ui = page.frameLocator('iframe');
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の初回演習の位置' }).getAttribute('aria-valuenow'), '1');
+    assert.match(await ui.locator('.study-progress').innerText(), /この分野 1 \/ 3問目/);
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
     await ui.getByRole('button', { name: '1 解説を見る', exact: true }).click();
@@ -91,6 +93,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByText('AIによる解説（結合試験用）', { exact: true }).waitFor();
     assert.equal(await ui.locator('table tbody tr').count(), 5);
     assert.equal(await ui.locator('h2').innerText(), '次はどうしますか？');
+    assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）']);
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
     assert.equal(await page.evaluate(() => window.droppedContext), 2);
@@ -100,6 +103,24 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
     assert.equal(await page.evaluate(() => window.messages.length), 2, '解説後の次問表示はAIへの依頼に依存しない');
+    for (const [number, answer] of [[2, '1'], [3, '4']]) {
+      await ui.locator(`input[name=ans][value="${answer}"]`).check();
+      await ui.getByRole('button', { name: '解答する', exact: true }).click();
+      await ui.getByText(`${session.job?.year ?? 2026}年度 問${number}：あなたの答え ${answer}`, { exact: false }).waitFor();
+      if (number === 2) {
+        assert.equal(await ui.locator('#review').count(), 0);
+        await ui.locator('#next').click();
+        await ui.getByText('問3の本文', { exact: true }).waitFor();
+      }
+    }
+    assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(),
+      ['次の分野の問題へ', '解説を見る', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+    await ui.locator('#review').click();
+    await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
+    assert.equal(await ui.locator('#next').count(), 1, '復習対象がなくても次の分野への選択を保持する');
+    await ui.locator('#next').click();
+    await ui.getByText('問4の本文', { exact: true }).waitFor();
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の初回演習の位置' }).getAttribute('aria-valuenow'), '4');
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS real engine/MCP/DOM, dropped hidden context, retry, exact explanation, next question (375px; fixed model fixture)`);
   } finally { await browser.close(); }

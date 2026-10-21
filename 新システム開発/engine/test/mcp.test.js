@@ -12,9 +12,9 @@ import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
 
-function makeEnv() {
+function makeEnv(parserOptions = {}) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
-  const parse = fakeParser(web);
+  const parse = fakeParser(web, parserOptions);
   const env = { STORE: new MemoryStore(), API_TOKEN: TOKEN, fetchPdf: web.fetchPdf, clock: () => T0, PARSER_URL: 'https://parser.example' };
   env.parserFetch = async (u, init) => {
     const b = JSON.parse(init.body);
@@ -104,6 +104,35 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   const stale = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { sessionId, questionId: 'surveyor:2026:main:2' } }, { path: '/app' })).body.result;
   assert.equal(stale.isError, true);
   assert.equal(stale.structuredContent.error, 'EXPLANATION_BINDING_MISMATCH');
+});
+
+test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空の総復習は進行しない', async () => {
+  const env = makeEnv({ answers: [3, 1, 4, 2], fieldIds: ['s1', 's1', 's1', 's2'], figureOn: [] });
+  const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const { sessionId } = s.structuredContent;
+  let q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+  assert.deepEqual([q.progress.position, q.progress.done, q.progress.total, q.progress.fieldQuestion], [1, 0, 24, 1]);
+  for (let i = 0; i < 3; i += 1) {
+    const grade = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: String([3, 1, 4][i]) })).structuredContent;
+    assert.equal(grade.grade.correct, true);
+    const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body: '解説本文', sessionId } }, { path: '/app' })).body.result._meta.qlp.menu;
+    assert.deepEqual(menu.actions, i < 2 ? ['next', 'explain', 'end'] : ['next', 'explain', 'review', 'end']);
+    assert.deepEqual(menu.choices, i < 2 ? ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）'] :
+      ['次の分野の問題へ', '解説を見る', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+    if (i < 2) {
+      q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+      assert.equal(q.progress.position, i + 2);
+      assert.equal(q.progress.fieldQuestion, i + 2);
+    }
+  }
+  const before = await env.STORE.get(`ses/${sessionId}`);
+  const empty = (await call(env, 'nextQuestion', { sessionId, question: '総復習（間違えた問題）' })).structuredContent;
+  assert.equal(empty.status, 'reviewEmpty');
+  assert.match(empty.notice, /間違えた問題はまだありません/);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
+  const next = (await call(env, 'nextQuestion', { sessionId })).structuredContent;
+  assert.equal(next.question.questionNumber, 4);
+  assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex], [4, 3, 2]);
 });
 
 test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ まで通る', async () => {
@@ -590,5 +619,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v44.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v45.html');
 });

@@ -201,6 +201,24 @@ export const INLINE_SVG_MAX = 8000;
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const REVIEW_WANT = /総復習|間違えた問題/;
 
+/** 全分野の初回演習（各分野3問）の位置。合格率・習得率とは混同しない。 */
+function learningProgress(state) {
+  const fields = Object.keys((Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {});
+  if (!fields.length || !fields.includes(state.current?.fieldId)) return null;
+  const counts = Object.fromEntries(fields.map((f) => [f, 0]));
+  for (const h of Object.values(state.history ?? {})) {
+    if (h.kind === 'new' && h.fieldId in counts && h.result && h.result !== 'skipped') counts[h.fieldId] += 1;
+  }
+  const total = fields.length * SET_SIZE;
+  const done = Object.values(counts).reduce((sum, n) => sum + Math.min(n, SET_SIZE), 0);
+  const practice = state.current.kind === 'new';
+  const position = Math.min(total, done + (practice && counts[state.current.fieldId] < SET_SIZE ? 1 : 0));
+  return { total, done, position, percent: Math.round(position * 100 / total),
+    fieldIndex: fields.indexOf(state.current.fieldId) + 1, fieldTotal: fields.length,
+    fieldQuestion: practice ? Math.min(state.set?.count ?? 1, SET_SIZE) : null,
+    review: !practice };
+}
+
 /** 利用者が「図をもう一度」「図を表示して」などと言った（nextQuestion の question）。直前の問の公式の図だけを付け直す。 */
 const FIGURE_WANT = /図.*(もう一度|再表示|表示|出し|見せ|見え)|(もう一度|再表示).*図|^\s*図\s*$/;
 
@@ -651,15 +669,16 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     want = null;
   }
   // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
-  const fieldNames = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
+  const fieldNames = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
   // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
   const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
   const wrongPool = reviewWant ? items.filter((x) => ['wrong', 'recall_failure'].includes(state.history[x.packet.questionId]?.result)) : [];
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
   const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
-  // 間違えた問題が無いときは止めず、いつもの次の問題を出す（総復習を押して画面が止まるのを防ぐ）
-  const reviewNotice = reviewWant && !wanted ? '間違えた問題はまだありません。いつもどおり次の問題を出します。' : null;
+  // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
+  if (reviewWant && !wanted) return { status: 'reviewEmpty', sessionId: id,
+    notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
   const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
@@ -683,7 +702,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
   else if (!prefetched && state.current?.prefetched) state = { ...state, current: { ...state.current, prefetched: false } };
   await saveSession(env, id, state, now);
-  const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
+  const names = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
   const fid = pick.item.packet.fieldId ?? null;
   const shown = present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
   const { keyParts } = pick.item;
@@ -703,11 +722,12 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
   const changed = !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
-  const screen = [wantNotice, reviewNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
+  const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
   const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;
-  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName, ...(attach ? { figureCount: shown.figures.length } : {}) };
+  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName,
+    progress: learningProgress(state), ...(attach ? { figureCount: shown.figures.length } : {}) };
   return {
     status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
     // ChatGPT はこの欄のURLのファイルを取り込み、回答に添付として表示する（最大10個）
@@ -737,7 +757,7 @@ async function redisplayView(env, id, state, now) {
   const display = questionDisplay(shown, svgs, { attached: false });
   return {
     status: 'question', sessionId: id, repeated: true, redisplayed: true,
-    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName },
+    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state) },
   };
 }
 
@@ -1127,7 +1147,12 @@ async function route(request, env, url, now) {
     const prof = state.learnerId ? await env.STORE.get(learnerProfileKey(state.learnerId), 'json') : null;
     const fieldName = cat?.fields?.[fieldId] ?? null;
     const how = explainHow({ stage: prof?.stage, weak: weakFields(state.history, cat?.fields ?? {}), grade, fieldName, savedFigures: true });
-    return json(200, { status: 'explanationContext', sessionId: id, studyId, learnerId: state.learnerId,
+    // 採点時に先取りした次問を使う。AIの推測や現在画面の文字列で分野移動を判断しない。
+    const next = state.current?.prefetched && state.current.questionId !== grade.questionId ? state.current : null;
+    const nextChoice = { fieldChange: !!(next?.kind === 'new' && fieldId && next.fieldId && fieldId !== next.fieldId),
+      nextFieldName: next?.fieldId ? cat?.fields?.[next.fieldId] ?? null : null,
+      reviewAvailable: Object.values(state.history ?? {}).some((h) => ['wrong', 'recall_failure'].includes(h.result)) };
+    return json(200, { status: 'explanationContext', sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
       qualificationName: cat?.name ?? null, question: { ...question,
         figures: (question.figures ?? []).map((f) => ({ ...f, url: f.url?.startsWith('/') ? `${env.PUBLIC_BASE_URL || url.origin}${f.url}` : f.url })),
         fieldName }, grade: { ...grade, explainHow: how },
