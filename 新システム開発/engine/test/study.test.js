@@ -88,8 +88,9 @@ test('解説の書き方：学習段階・苦手な分野・正誤に合わせ�
   assert.deepEqual(weakFields(history, { s1: '法規', s2: '基準点測量' }), ['法規（3問中2問まちがい）', '基準点測量（2問中1問まちがい）']);
   const h = explainHow({ stage: 1, weak: ['法規（3問中2問まちがい）'], grade: { result: 'wrong', selected: 2, correctAnswer: 4 }, fieldName: '法規' });
   assert.match(h, /マークダウンの表/);
-  assert.match(h, /SVG/);
-  assert.match(h, /写真があれば写真、無ければ図解/);
+  assert.match(h, /SVG・HTML・XMLなどのタグを生成したり/);
+  assert.match(h, /Markdownの比較表や番号付き手順/);
+  assert.match(h, /図がなくても読みやすい日本語の表と文章/);
   assert.match(h, /未着手/);
   assert.doesNotMatch(h, /過去問演習中/);
   assert.match(h, /選んだのは2、正答は4/);
