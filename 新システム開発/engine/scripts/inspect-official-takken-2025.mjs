@@ -18,7 +18,8 @@ const work = await mkdtemp(join(tmpdir(), 'qlp-takken-2025-readonly-'));
 const pdf = join(work, 'takken-2025.pdf');
 try {
   const store = new GcpStore({bucket:'qualification-learning-qlp-figures'});
-  const existing = await store.get(await sourceKey(url),'arrayBuffer');
+  const existing = await store.get(await sourceKey(url),'arrayBuffer') ||
+    await store.get(`att/${expectedSha}.pdf`,'arrayBuffer');
   if (existing?.byteLength) {
     await writeFile(pdf,new Uint8Array(existing));
     console.log('SOURCE_FROM_STORED_OFFICIAL_COPY');
