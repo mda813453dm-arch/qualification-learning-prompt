@@ -754,7 +754,7 @@ test('解説の書き方（explainHow）：学習開始と採点の応答に付�
   const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE] })).body;
   const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId })).body;
   assert.equal(st.learnerStage, null);
-  assert.match(st.explainHow, /マークダウンの表[\s\S]*SVG[\s\S]*利用者が答えた学習段階に合わせる/);
+  assert.match(st.explainHow, /マークダウンの表[\s\S]*SVGを描画しない[\s\S]*利用者が答えた学習段階に合わせる/);
   await call(env, 'POST', `/v1/study/${st.studyId}/end`, { qualification: { stage: '2：基礎学習中' } });
   const st2 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: s.learnerId })).body;
   assert.equal(st2.learnerStage, 2);
