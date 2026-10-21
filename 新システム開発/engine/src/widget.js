@@ -350,7 +350,7 @@ a{color:inherit}
     if (em) em.onclick = function(){ endAction(em); };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), c = m.choices[n - 1];
-      var action = m.kind === 'next' && m.actions ? m.actions[Number(n) - 1] : null;
+      var action = m.kind === 'next' ? (m.actions ? m.actions[Number(n) - 1] : n === '1' ? 'next' : n === '2' ? 'review' : null) : null;
       if (action === 'end') { endAction(b); return; }
       if (action === 'explain') {
         if (m.body) { scrollUp(true); return; }
@@ -819,7 +819,7 @@ a{color:inherit}
         app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(String(r.hint || '').replace(/（.*$/, '')) + '</div>');
         return;
       }
-      showGrade(r && r.grade); state.next = r && r.next;
+      state.next = r && r.next; showGrade(r && r.grade);
     } catch (e) {
       state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
       app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
