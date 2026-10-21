@@ -9,7 +9,20 @@ export const CATALOG = {
     // 利用者が自由に入力した資格名と照らし合わせるための呼び方
     aliases: ['宅建', '宅建士', '宅地建物取引士', '宅地建物取引主任者', '宅建試験'],
     shareOnVerifiedUpload: true,
-    sharedLibrarySections: ['main'],
+    sharedLibrarySections: ['年度共通'],
+    // 共通保存の検証済み原本だけをここに固定。個人が別年度を添付する経路は制限しない。
+    officialShared: {
+      uploadAdapter: 'takken',
+      uploadSections: ['年度共通'],
+      validatedUploadYears: [2025],
+      uploadQuestionCounts: { '年度共通': 50 },
+      officialPdfPins: {
+        2025: {
+          '年度共通': '829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed',
+          answer: '829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed',
+        },
+      },
+    },
     org: '一般財団法人 不動産適正取引推進機構（RETIO）',
     officialSite: 'https://www.retio.or.jp/exam/index.html',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -54,7 +67,7 @@ export const CATALOG = {
       t6: '価格の評定（地価公示・鑑定評価）',
     },
     sources: [
-      { adapter: 'takken', year: 2025, section: 'main', questionUrl: 'https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf', answerUrl: null },
+      { adapter: 'takken', year: 2025, section: '年度共通', questionUrl: 'https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf', answerUrl: null },
     ],
   },
   land_surveyor: {
