@@ -39,7 +39,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'gyosei', 'shindan', 'mankan']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'land_surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'gyosei', 'shindan', 'mankan']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
@@ -514,7 +514,8 @@ function withoutExempt(state, items) {
   if (state.exemption !== 'confirmed') return items;
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
   const skip = new Set(cat?.exemption?.numbers ?? []);
-  return skip.size ? items.filter((x) => !skip.has(x.packet.questionNumber)) : items;
+  const skipFields = new Set(cat?.exemption?.excludeFields ?? []);
+  return skip.size || skipFields.size ? items.filter((x) => !skip.has(x.packet.questionNumber) && !skipFields.has(x.packet.fieldId)) : items;
 }
 
 /** いまのチャット（startSession のあと）で学習を開始（startStudy）したか。前回の学習の記録では通さない */
