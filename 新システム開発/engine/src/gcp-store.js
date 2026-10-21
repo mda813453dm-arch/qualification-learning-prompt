@@ -9,7 +9,7 @@
 const FIG = 'fig/';
 // 運営者が添付した公式PDFの控え（source-store.js）も Cloud Storage に置く
 const SRC = 'src/';
-const inBucket = (key) => key.startsWith(FIG) || key.startsWith(SRC);
+const inBucket = (key) => key.startsWith(FIG) || key.startsWith(SRC) || key.startsWith('att/');
 
 export class GcpStore {
   /**
@@ -70,7 +70,7 @@ export class GcpStore {
   async put(key, value, { expirationTtl } = {}) {
     if (inBucket(key)) {
       const body = typeof value === 'string' ? Buffer.from(value, 'utf8') : Buffer.from(value instanceof ArrayBuffer ? new Uint8Array(value) : value);
-      await (await this.#bucket()).file(key).save(body, { contentType: key.startsWith(SRC) ? 'application/pdf' : 'image/png', resumable: false });
+      await (await this.#bucket()).file(key).save(body, { contentType: key.startsWith(SRC) || key.startsWith('att/') ? 'application/pdf' : 'image/png', resumable: false });
       return;
     }
     const v = typeof value === 'string' ? value : Buffer.from(value instanceof ArrayBuffer ? new Uint8Array(value) : value);
