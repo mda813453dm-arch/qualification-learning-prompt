@@ -135,6 +135,40 @@ test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空�
   assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex], [4, 3, 2]);
 });
 
+test('通常の確認問題は1問目から全3問と全分野の位置を固定し、3問終了後に同じ分野の実践問題へ進む', async () => {
+  const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [] });
+  const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const sessionId = s.structuredContent.sessionId;
+  const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const fieldName = CATALOG[SRC.qualificationId].fields.s1;
+  const choice = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  assert.deepEqual(choice.journey, { fieldIndex: 1, fieldTotal: Object.keys(CATALOG[SRC.qualificationId].fields).length });
+  for (let i = 1; i <= 3; i++) {
+    const args = { sessionId, question: `確認問題の第${i}問の本文です。`, choices: ['A', 'B', 'C'], correctAnswer: 2 };
+    const q = (await app('registerConfirmationQuestion', args))._meta.qlp;
+    assert.equal(q.position, i);
+    assert.equal(q.total, 3);
+    assert.deepEqual(q.journey, choice.journey);
+    assert.equal(q.correctAnswer, undefined, '画面とモデルには正答を先渡ししない');
+    const repeated = (await app('registerConfirmationQuestion', { ...args, question: '別の問題を上書きしようとする' }))._meta.qlp;
+    assert.equal(repeated.challengeId, q.challengeId);
+    const answer = (await app('answerConfirmationQuestion', { sessionId, challengeId: q.challengeId, selected: i === 2 ? '1' : '2' })).structuredContent;
+    assert.equal(answer.position, i);
+    assert.equal(answer.complete, i === 3);
+    assert.equal(answer.correctCount, i === 3 ? 2 : 1);
+  }
+  const after = await app('registerConfirmationQuestion', { sessionId, question: '4問目を登録しないための文章です。', choices: ['A', 'B'], correctAnswer: 1 });
+  assert.equal(after.structuredContent.error, 'CONFIRMATION_NOT_ACTIVE');
+  const html = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
+  assert.match(html, /同じ分野の実践問題へ/);
+  assert.match(html, /localBar\('この分野の確認問題', d.position, 3\)/);
+  assert.match(html, /journeyBar\(j.fieldIndex, j.fieldTotal, 'check' \+ d.position/);
+  const practice = (await app('chooseItem', { sessionId, fieldName, mode: 'practice' })).structuredContent;
+  assert.equal(practice.mode, 'practice');
+  const official = (await call(env, 'nextQuestion', { sessionId })).structuredContent;
+  assert.equal(official.question.fieldName, fieldName);
+});
+
 test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ まで通る', async () => {
   const env = makeEnv();
   const source = { adapter: 'surveyor', year: SRC.year, section: SRC.section, questionUrl: SRC.questionUrl, answerUrl: SRC.answerUrl };
@@ -619,5 +653,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v45.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v46.html');
 });

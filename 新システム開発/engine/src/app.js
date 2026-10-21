@@ -647,6 +647,13 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
     return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
   }
+  if (state.confirmation && state.confirmation.count < 3) {
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    return { status: 'confirmation_pending', sessionId: id,
+      fieldName: cat?.fields?.[state.confirmation.fieldId] ?? '今の分野',
+      position: state.confirmation.count + 1, total: 3,
+      notice: 'この分野の確認問題3問が終了していません。確認問題の画面で続けてください。' };
+  }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
   const prevField = state.current?.fieldId ?? null;
@@ -967,6 +974,50 @@ async function route(request, env, url, now) {
     return json(200, await redisplayView(env, id, state, now));
   }
 
+  // 通常の確認問題は、3問の位置と正答をセッションに固定する。AIは問題を作るが、進行と採点はエンジンが行う。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'confirmation' && parts[4] === 'register' && parts.length === 5) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const check = state.confirmation;
+    if (!check || check.count >= 3) throw new HttpError(409, 'CONFIRMATION_NOT_ACTIVE');
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    const fieldName = cat?.fields?.[check.fieldId] ?? '今の分野';
+    const fieldIndex = Object.keys(cat?.fields ?? {}).indexOf(check.fieldId) + 1;
+    const journey = { fieldIndex, fieldTotal: Object.keys(cat?.fields ?? {}).length };
+    if (check.challenge?.id) return json(200, { status: 'confirmation_question', sessionId: id,
+      challengeId: check.challenge.id, question: check.challenge.question, choices: check.challenge.choices,
+      position: check.count + 1, total: 3, fieldName, journey, repeated: true });
+    const question = typeof b.question === 'string' ? b.question.trim() : '';
+    const choices = Array.isArray(b.choices) ? b.choices.map((v) => typeof v === 'string' ? v.trim() : '') : [];
+    const correct = Number(b.correctAnswer);
+    if (question.length < 10 || question.length > 2000 || choices.length < 2 || choices.length > 5 ||
+      choices.some((v) => !v || v.length > 500) || !Number.isInteger(correct) || correct < 1 || correct > choices.length) {
+      throw new HttpError(400, 'CONFIRMATION_QUESTION_INVALID');
+    }
+    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, createdAt: now };
+    await saveSession(env, id, { ...state, confirmation: { ...check, challenge } }, now);
+    return json(200, { status: 'confirmation_question', sessionId: id, challengeId: challenge.id,
+      question, choices, position: check.count + 1, total: 3, fieldName, journey });
+  }
+
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'confirmation' && parts[4] === 'answer' && parts.length === 5) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const check = state.confirmation;
+    if (!check?.challenge?.id || String(b.challengeId ?? '') !== check.challenge.id) throw new HttpError(409, 'CONFIRMATION_ID_MISMATCH');
+    const selected = Number(b.selected);
+    if (!Number.isInteger(selected) || selected < 1 || selected > check.challenge.choices.length) throw new HttpError(400, 'CONFIRMATION_ANSWER_INVALID');
+    const correct = selected === check.challenge.correctAnswer;
+    const count = check.count + 1;
+    await saveSession(env, id, { ...state, confirmation: { ...check, count, challenge: null,
+      correct: (check.correct ?? 0) + Number(correct) } }, now);
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    return json(200, { status: 'confirmation_result', sessionId: id, fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      position: count, total: 3, correct, correctAnswer: check.challenge.correctAnswer,
+      correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
+      journey: { fieldIndex: Object.keys(cat?.fields ?? {}).indexOf(check.fieldId) + 1, fieldTotal: Object.keys(cat?.fields ?? {}).length } });
+  }
+
   // AI確認問題は出題時に本文・全選択肢・正答を固定してから利用者に表示する。
   // 回答時には正答を再送させず、保存した正答だけと照合する。
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'remediation' && parts[4] === 'register' && parts.length === 5) {
@@ -1067,8 +1118,10 @@ async function route(request, env, url, now) {
     if (!fid || !mode) throw new HttpError(400, 'ITEM_INVALID');
     // 選んだ分野から1まとまり（3問）を出す。そのあとは学習計画の順に戻る（同じ分野に固定しない）
     const set = state.set?.fieldId === fid && state.set.count < SET_SIZE ? state.set : { fieldId: fid, count: 0, years: [] };
-    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode }, now);
-    return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode });
+    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
+      confirmation: mode === 'practice' ? null : { fieldId: fid, count: 0, correct: 0, challenge: null } }, now);
+    return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
+      journey: { fieldIndex: Object.keys(cat.fields).indexOf(fid) + 1, fieldTotal: Object.keys(cat.fields).length } });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {

@@ -130,6 +130,28 @@ export const TOOLS = [
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/redisplay`],
   },
   {
+    name: 'registerConfirmationQuestion',
+    appOnly: true,
+    description: '解説あり／確認問題からを選んだ通常の同一分野3問に使う。AIが作った各問の本文・全選択肢・正答を出題前に登録する。エンジンが1/3から問数と進捗バーを表示し、採点・3問完了時の実践問題への移動を画面で行う。チャットに問題や選択肢を直接書かない。3連続誤答による強制補強にはregisterRemediationQuestionを使う。',
+    inputSchema: { type: 'object', required: ['sessionId', 'question', 'choices', 'correctAnswer'], properties: {
+      sessionId, question: { type: 'string', minLength: 10, maxLength: 2000 },
+      choices: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'string' } },
+      correctAnswer: { type: 'integer', description: '出題前に確定した正答の選択肢番号（1から）' },
+    } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/confirmation/register`,
+      { question: a.question, choices: a.choices, correctAnswer: a.correctAnswer }],
+  },
+  {
+    name: 'answerConfirmationQuestion',
+    appOnly: true, uiOnly: true,
+    description: '通常のAI作成確認問題の画面で押された番号を、保存済みの正答と採点する。',
+    inputSchema: { type: 'object', required: ['sessionId', 'challengeId', 'selected'], properties: {
+      sessionId, challengeId: { type: 'string' }, selected: { type: 'string' },
+    } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/confirmation/answer`,
+      { challengeId: a.challengeId, selected: a.selected }],
+  },
+  {
     name: 'registerRemediationQuestion',
     appOnly: true,
     description: '【同じ分野で公式過去問3連続不正解の後だけ】AI作成の完全な確認問題を出題する前に、その本文・選択肢・正答番号をエンジンへ1回登録し、正答を固定する。AI作成と表示し、返ったremediation_questionの画面で回答してもらう。既に出題中ならその同じ問題が返る。出題の前に必ず呼び、確認問題本文をチャットに直接生成しない。',
@@ -303,8 +325,9 @@ const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.html', 'ui://qlp/question-v3.html', 'ui://qlp/question-v4.html', 'ui://qlp/question-v5.html', 'ui://qlp/question-v6.html', 'ui://qlp/question-v7.html', 'ui://qlp/question-v8.html', 'ui://qlp/question-v9.html', 'ui://qlp/question-v10.html', 'ui://qlp/question-v11.html', 'ui://qlp/question-v12.html', 'ui://qlp/question-v13.html', 'ui://qlp/question-v14.html', 'ui://qlp/question-v15.html', 'ui://qlp/question-v16.html', 'ui://qlp/question-v17.html', 'ui://qlp/question-v18.html', 'ui://qlp/question-v19.html', 'ui://qlp/question-v20.html', 'ui://qlp/question-v21.html', 'ui://qlp/question-v22.html', 'ui://qlp/question-v23.html', 'ui://qlp/question-v24.html', 'ui://qlp/question-v25.html', 'ui://qlp/question-v26.html', 'ui://qlp/question-v27.html', 'ui://qlp/question-v28.html', 'ui://qlp/question-v29.html', 'ui://qlp/question-v30.html', 'ui://qlp/question-v31.html', 'ui://qlp/question-v32.html', 'ui://qlp/question-v33.html', 'ui://qlp/question-v34.html', 'ui://qlp/question-v35.html', 'ui://qlp/question-v36.html', 'ui://qlp/question-v37.html', 'ui://qlp/question-v38.html', 'ui://qlp/question-v39.html', 'ui://qlp/question-v40.html', 'ui://qlp/question-v41.html', 'ui://qlp/question-v42.html'];
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v43.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v44.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v45.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion']);
+const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -316,6 +339,10 @@ export function forModel(body) {
     return { minutes: body.minutes, totalMinutes: body.totalMinutes, ...(id ? { handoffId: id } : {}), howToShow: '終了ログと引継ぎデータの全文は、この下の画面に表示している。チャットに書き直したり、要約したり、省いたりしない。「引継ぎデータは画面のコピーボタンでコピーできます。次のチャットで貼り付けるか、引継ぎIDを伝えてください」とだけ伝える。' };
   }
   // 強制補強はAIが出題前にエンジンに正答を固定する。問題文・選択肢の再掲はせず画面へ渡す。
+  if (body.status === 'confirmation_question') {
+    return { status: 'confirmation_question', sessionId: body.sessionId, position: body.position, total: body.total,
+      howToProceed: 'AI作成確認問題は下の学習画面に表示済み。チャットに書き直さず画面の回答を待つ。画面が採点し、次の確認問題または同じ分野の実践問題への選択肢を表示する。' };
+  }
   if (body.status === 'remediation_question') {
     return { status: 'remediation_question', sessionId: body.sessionId,
       challengeId: body.challengeId, repeated: !!body.repeated,
@@ -344,15 +371,16 @@ export function appInstructions() {
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
   const noInvent = '\n**強制補強：同一分野の公式実践3問連続誤答後は、短い補強説明のあとAI作成確認問題を1問作る。必ず登録前に本文・全選択肢・正答番号を固定し、registerRemediationQuestion を呼ぶ。返った画面が出題するので、AIは問題をチャットへ書き直さない。採点・誤答時の再出題・正解時の公式問題再開は画面とエンジンが制御する。未登録の確認問題で実践問題へ進まない。**\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDF（公式の問題PDF・正答PDF）を添付したら、`attachPdf` を呼んでエンジンに渡す。** PDFの中身をAIが書き写して出題・採点しない。';
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
+  const confirmationFlow = '\n【通常の確認問題】解説あり／確認問題からの選択後は、同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
   const explanationFlow = '\n【採点後の解説表示】「解説を見る」「再表示」「詳しい解説」はAIの処理開始の合図です。まずexplainSpec({sessionId: startSessionのsessionId})を呼び、返ったquestionとgradeの同じ問題を解説し、showMenu(kind=next, body=解説本文, sessionId, studyId, learnerId)で表示します。画面内の採点は会話に見えないため、本文・正答が不明でもexplainSpecを省略しません。資格名や回答を聞き直さず、nextQuestion・再採点・startSessionは呼びません。初期画面の「画面のボタンで選んでください」はこの合図の後には適用しません。\n';
-  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + explanationFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
+  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
 const APP_START_DESC = '資格の過去問の取り込みを始める。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（エンジンが公式サイトから集める）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  nextQuestion: '【順番：確認問題（AIが作った問題）の答えを受けたら、答え合わせと解説は、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。利用者が「次の問題へ」を押すまで、このツールを呼ばない。解説より先に呼ぶと、実践問題が解説の上に出て分からなくなる】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説はチャットに書かず、showMenu（kind=next）の body に入れて呼び、返事を待つ（「1：次の問題へ」をチャットに書かない。チャットに書いてから呼ぶと、ボタンが解説の上に出てしまう）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）を1問出して番号で答えを待つ。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、確認問題から出す。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。確認問題の答えを受けたら、答え合わせと解説は、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。解説だけで終わるときも同じ（解説の本文と続きのボタンが、同じ枠にまとまって出る。画面の上のほうには、押すボタンがない）。',
+  nextQuestion: '【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】利用者が問題の画面の「解説を聞く」から解説を頼んだときは、解説はチャットに書かず、showMenu（kind=next）の body に入れて呼び、返事を待つ（「1：次の問題へ」をチャットに書かない。チャットに書いてから呼ぶと、ボタンが解説の上に出てしまう）。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）の本文・全選択肢・固定した正答を registerConfirmationQuestion に登録して、第1問/全3問の画面で答えを待つ。確認問題をチャット本文に書かない。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、解説を省き、registerConfirmationQuestion で第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式問題の解説だけで終わるときは同じ（解説の本文と続きのボタンが、同じ枠にまとまって出る。画面の上のほうには、押すボタンがない）。',
   startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールを呼んだら、過去問の取り込みは裏で進む（取り込みの進み具合は nextQuestion の notice で見る。「セッション」という言葉は利用者に言わない）。②試験概要はエンジンが画面に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。③このツールの結果として、エンジンが画面に試験概要を出し、その直下に免除（制度がある資格だけ）と学習状況のボタンを出す（nextQuestion は呼ばない）。AIは showMenu（kind=exempt / status）を呼ばず、ChatGPT標準の質問・選択肢の画面も使わず、押されるまで待つ。④答え（「免除：…/学習状況：…」）がチャットに届いてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。⑤利用者が「学習計画の希望：…」と送ってきたら、その希望と、試験概要・出題数・学習状況を踏まえて学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は希望に合わせ、無ければAI調整型）。承認は文章で聞かず、必ず showMenu（kind=plan）を呼び、承認のボタンが押されたら startStudy を呼ぶ。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };

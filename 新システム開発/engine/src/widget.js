@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v45.html';
+export const WIDGET_URI = 'ui://qlp/question-v46.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.45';
+export const WIDGET_VERSION = '2026-10-21.46';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -116,6 +116,20 @@ a{color:inherit}
   var currentStudyId = null;
   function saveIds(){ try { var cur = {}; try { cur = JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) {} if (state.sessionId && cur.sid && cur.sid !== state.sessionId) cur = {}; if (state.sessionId) cur.sid = state.sessionId; if (currentStudyId) cur.studyId = currentStudyId; if (studyLid) cur.lid = studyLid; if (studyField) cur.field = studyField; localStorage.setItem('qlp_ids', JSON.stringify(cur)); } catch (e) {} }
   function loadIds(){ try { return JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) { return {}; } }
+  function journeyBar(fieldIndex, fieldTotal, stage, fieldName){
+    if (!Number.isInteger(fieldIndex) || !Number.isInteger(fieldTotal) || fieldIndex < 1 || fieldTotal < fieldIndex) return '';
+    var step = stage === 'explain' ? 1 : stage === 'check1' ? 2 : stage === 'check2' ? 3 : stage === 'check3' ? 4 : stage === 'practice2' ? 6 : stage === 'practice3' ? 7 : 5;
+    var total = fieldTotal * 7, position = (fieldIndex - 1) * 7 + step;
+    var label = stage === 'explain' ? '解説' : stage.indexOf('check') === 0 ? '確認問題' : '実践問題';
+    return '<div class="study-progress"><div class="progress-head"><span>全分野の学習ルート</span><span>' + esc(fieldIndex) + ' / ' + esc(fieldTotal) + '分野</span></div>' +
+      '<div class="progress-track" role="progressbar" aria-label="全分野の学習ルートの位置" aria-valuemin="0" aria-valuemax="' + esc(total) + '" aria-valuenow="' + esc(position) + '"><div class="progress-fill" style="width:' + esc(Math.round(100 * position / total)) + '%"></div></div>' +
+      '<div class="progress-detail">今：' + esc(fieldName || 'この分野') + '・' + label + ' ／ 全' + esc(total) + '段階中 ' + esc(position) + '段階目（解説1・確認3・実践3を各分野の目安とした位置。習得率ではありません）</div></div>';
+  }
+  function localBar(label, position, total){
+    return '<div class="study-progress"><div class="progress-head"><span>' + esc(label) + '</span><span>' + esc(position) + ' / ' + esc(total) + '問</span></div>' +
+      '<div class="progress-track" role="progressbar" aria-label="' + esc(label) + 'の位置" aria-valuemin="0" aria-valuemax="' + esc(total) + '" aria-valuenow="' + esc(position) + '"><div class="progress-fill" style="width:' + esc(Math.round(100 * position / total)) + '%"></div></div>' +
+      '<div class="progress-detail">この問題を含めて残り ' + esc(total - position + 1) + '問</div></div>';
+  }
   // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
   var myAt = 0, locked = false, bc = null;
   function lockOld(){
@@ -131,7 +145,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -162,6 +176,13 @@ a{color:inherit}
     if (data.status === 'remediation_question') {
       showRemediationQuestion(data);
       return;
+    }
+    if (data.status === 'confirmation_question') { showConfirmationQuestion(data); return; }
+    if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
+    if (data.status === 'confirmation_pending') {
+      app.innerHTML = '<h2>確認問題 ' + esc(data.position) + ' / 3問</h2><div class="notice">' + esc(data.notice) + '</div><div class="row"><button id="continueConfirmation">確認問題を続ける</button></div>' + endBar();
+      document.getElementById('continueConfirmation').onclick = function(){ this.disabled = true; ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', '確認問題を続ける'); };
+      bindEnd(); return;
     }
     if (data.status === 'remediation_retry') {
       app.innerHTML = '<h2>AI作成確認問題の結果</h2><div class="result ng">不正解</div>' +
@@ -224,10 +245,9 @@ a{color:inherit}
     var h = '';
     var p = q.progress;
     if (p && Number.isInteger(p.position) && Number.isInteger(p.total) && p.total > 0) {
-      h += '<div class="study-progress"><div class="progress-head"><span>全分野の初回演習</span><span>' + esc(p.position) + ' / ' + esc(p.total) + '問の位置</span></div>' +
-        '<div class="progress-track" role="progressbar" aria-label="全分野の初回演習の位置" aria-valuemin="0" aria-valuemax="' + esc(p.total) + '" aria-valuenow="' + esc(p.position) + '"><div class="progress-fill" style="width:' + esc(Math.max(0, Math.min(100, p.percent))) + '%"></div></div>' +
-        '<div class="progress-detail">' + (p.review ? '復習中／' : '') + '解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問 ・ ' + esc(p.fieldIndex) + ' / ' + esc(p.fieldTotal) + '分野' +
-        (p.fieldQuestion ? ' ・ この分野 ' + esc(p.fieldQuestion) + ' / 3問目' : '') + '（習得率ではありません）</div></div>';
+      h += journeyBar(p.fieldIndex, p.fieldTotal, 'practice' + Math.min(3, p.fieldQuestion || 1), q.fieldName);
+      if (p.fieldQuestion) h += localBar('この分野の実践問題', Math.min(3, p.fieldQuestion), 3);
+      h += '<div class="notice">全分野の実践問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
     }
     h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</h2>';
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
@@ -252,6 +272,59 @@ a{color:inherit}
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
   }
   // 正答はツールの結果にもチャットにも含めず、登録済み問題IDと利用者回答だけをエンジンに渡す。
+  function showConfirmationQuestion(d){
+    var j = d.journey || {};
+    app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
+      localBar('この分野の確認問題', d.position, 3) +
+      '<h2>' + esc(d.fieldName) + '｜AI作成確認問題・第' + esc(d.position) + '問</h2>' +
+      '<div class="stem">' + esc(d.question) + '</div><div class="choices">' +
+      (d.choices || []).map(function(c,i){ return '<label class="opt"><input type="radio" name="confirmationAnswer" value="' + (i+1) + '"><b>' + (i+1) + '</b><span>' + esc(c) + '</span></label>'; }).join('') +
+      '</div><div class="row"><button id="submitConfirmation" disabled>解答する</button></div>' + endBar();
+    scrollUp(); bindEnd();
+    app.querySelectorAll('input[name=confirmationAnswer]').forEach(function(x){ x.onchange = function(){ document.getElementById('submitConfirmation').disabled = false; }; });
+    document.getElementById('submitConfirmation').onclick = async function(){
+      var picked = app.querySelector('input[name=confirmationAnswer]:checked'); if (!picked) return;
+      this.disabled = true;
+      try {
+        var out = await callTool('answerConfirmationQuestion', { sessionId: state.sessionId, challengeId: d.challengeId, selected: picked.value });
+        if (!out || out.error || out.status !== 'confirmation_result') throw new Error('CONFIRMATION_RESULT_MISSING');
+        render(out);
+      } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">採点できませんでした。このボタンで再試行してください。</div>'); }
+    };
+  }
+  function showConfirmationResult(d){
+    var j = d.journey || {};
+    app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
+      '<h2>確認問題 ' + esc(d.position) + ' / 3問の結果</h2><div class="result ' + (d.correct ? 'ok' : 'ng') + '">' + (d.correct ? '正解' : '不正解') + '</div>' +
+      '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>' +
+      (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>同じ分野の実践問題へ</span></button><button id="confirmationReview"><b>2</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>3</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
+        '<div class="row"><button id="confirmationNext">次の確認問題へ（残り ' + esc(3-d.position) + '問）</button></div>' + endBar());
+    scrollUp(); bindEnd();
+    if (!d.complete) document.getElementById('confirmationNext').onclick = function(){
+      this.disabled = true;
+      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + (d.position+1) + '問/全3問が出るまで待ってください。', '次の確認問題を見る');
+    };
+    else {
+      document.getElementById('confirmationPractice').onclick = async function(){
+        this.disabled = true;
+        try {
+          var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: d.fieldName, mode: 'practice' });
+          if (!chosen || chosen.error) throw new Error('ITEM_UNAVAILABLE');
+          var next = await callTool('nextQuestion', { sessionId: state.sessionId });
+          if (!next || next.error || !['question','waiting','finished','remediation'].includes(next.status)) throw new Error('NEXT_UNAVAILABLE');
+          render(next);
+        } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">実践問題へ進めませんでした。このボタンで再試行してください。</div>'); }
+      };
+      document.getElementById('confirmationReview').onclick = function(){ ask(d.fieldName + 'を詳しく復習します。解説を表示してください。', '今回の分野を詳しく復習'); };
+      document.getElementById('confirmationWrong').onclick = async function(){
+        this.disabled = true;
+        try { var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習（間違えた問題）' });
+          if (r?.status === 'reviewEmpty') { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
+          if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE'); render(r);
+        } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">総復習を開始できませんでした。このボタンで再試行してください。</div>'); }
+      };
+    }
+  }
   function showRemediationQuestion(d){
     if (d.sessionId) state.sessionId = d.sessionId;
     var h = '<h2>AI作成確認問題</h2><div class="notice">公式過去問ではありません。出題前に正答を固定した確認問題です。</div>' +
@@ -754,10 +827,21 @@ a{color:inherit}
   var itemAlways = null;
   function itemMenu(field, learner, proceed){
     var go = async function(mode){
-      try { if (field) await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode }); } catch (e) {}
+      var chosen = null;
+      try {
+        if (field) chosen = await callTool('chooseItem', { sessionId: learner, fieldName: field, mode: mode });
+        if (field && (!chosen || chosen.error || chosen.status !== 'item')) throw new Error('ITEM_UNAVAILABLE');
+      } catch (e) {
+        app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">進め方を保存できませんでした。もう一度選んでください。</div>');
+        app.querySelectorAll('#itemModes button').forEach(function(x){ x.disabled = false; });
+        return;
+      }
       if (mode === 'practice') { nextBelow(proceed, field ? field + 'を実践問題から始めます。' : '実践問題から始めます。'); return; }
       // 続きのボタンは、解説・確認問題の「下」に出る（AIが最後に showMenu を呼ぶ）。ここには押すボタンを置かない（上まで戻らせない）
-      app.innerHTML = '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>';
+      var j = chosen?.journey || {};
+      app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, mode === 'explain' ? 'explain' : 'check1', field) +
+        (mode === 'check' ? localBar('この分野の確認問題', 1, 3) : '') +
+        '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。確認問題は全3問です。</div>';
       scrollUp(true);
       // チャットに出る文は短い普通の言葉だけにする（AIへの手順は、アプリのツールの説明に書いてある）
       ask(mode === 'explain'

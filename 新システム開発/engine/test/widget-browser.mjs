@@ -47,7 +47,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         } else if (m.method === 'tools/call') {
           if (!ready) window.protocolErrors.push('tool before initialized');
           const op = m.params.name;
-          if (op === 'reportUiEvent' || op === 'saveProfile' || op === 'chooseItem') reply({ structuredContent: { status: 'recorded' } });
+          if (op === 'chooseItem') reply({ structuredContent: { status: 'item', journey: { fieldIndex: 1, fieldTotal: 8 } } });
+          else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
           else if (op === 'nextQuestion') {

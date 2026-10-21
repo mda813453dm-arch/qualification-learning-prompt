@@ -82,8 +82,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first, study, session });
     const ui = page.frameLocator('iframe');
-    assert.equal(await ui.getByRole('progressbar', { name: '全分野の初回演習の位置' }).getAttribute('aria-valuenow'), '1');
-    assert.match(await ui.locator('.study-progress').innerText(), /この分野 1 \/ 3問目/);
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5');
+    assert.match(await ui.locator('.study-progress').first().innerText(), /実践問題/);
+    assert.match(await ui.getByRole('progressbar', { name: 'この分野の実践問題の位置' }).getAttribute('aria-valuenow'), /1/);
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
     await ui.getByRole('button', { name: '2 解説を見る', exact: true }).click();
@@ -122,7 +123,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 新分野では既存仕様の「この項目の進め方」を選ぶ。実践問題を選ぶと先取り済みの問4を表示する。
     await ui.locator('#itemModes button[data-mode="practice"]').click();
     await ui.getByText('問4の本文', { exact: true }).waitFor();
-    assert.equal(await ui.getByRole('progressbar', { name: '全分野の初回演習の位置' }).getAttribute('aria-valuenow'), '4');
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '12');
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS real engine/MCP/DOM, dropped hidden context, retry, exact explanation, next question (375px; fixed model fixture)`);
   } finally { await browser.close(); }

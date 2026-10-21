@@ -30,4 +30,5 @@ jobs:
         run: |
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-confirmation-browser.mjs
 # 2026-10-20T08:44:38Z rerun: the app showed no buttons after the 行政書士 deploy
