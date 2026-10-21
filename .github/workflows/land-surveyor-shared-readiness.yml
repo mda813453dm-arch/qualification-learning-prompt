@@ -1,0 +1,34 @@
+name: 共通過去問のCloud保存権限を事前確認（読取のみ）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/land-surveyor-readiness-request.txt'
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: npm ci --prefix 新システム開発/engine
+      - name: Cloud StorageバケットとFirestore共有データの読み取り権限を検査
+        shell: bash
+        run: |
+          gcloud storage buckets describe gs://qualification-learning-qlp-figures >/dev/null
+          cd 新システム開発/engine
+          node --input-type=module <<'JS'
+          import {GcpStore} from './src/gcp-store.js';
+          import {officialLibrary} from './src/official-library.js';
+          import {CATALOG} from './src/catalog.js';
+          const store = new GcpStore({bucket:'qualification-learning-qlp-figures'});
+          const state = await officialLibrary(store,CATALOG.land_surveyor,'0.8.2',Date.now());
+          console.log('READ_ACCESS_OK', 'sharedSections='+state.stored.length,'missingSections='+state.missing.length);
+          JS
