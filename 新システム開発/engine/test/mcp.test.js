@@ -149,7 +149,8 @@ test('画面復帰：未回答・採点後・スキップ後・AI確認問題を
   const pending = await restore();
   assert.equal(pending.structuredContent.status, 'question');
   assert.equal(pending.structuredContent.question.questionId, q.questionId);
-  assert.deepEqual(pending.structuredContent.question.figureUrls.length, q.figures.length);
+  assert.equal(pending._meta.qlp.question.figureUrls.length, q.figures.length, '図は画面専用の完全なデータに保持する');
+  assert.equal(pending.structuredContent.question.figureCount, q.figures.length, 'モデルへ図URLを配布しない');
   assert.equal(await env.STORE.get(`ses/${sessionId}`), original, '表示復元でセッションを変更しない');
   assert.equal(pending.structuredContent.question.stem, q.stem, 'アプリ専用ツールは内部表示と別経路でも動く');
 
