@@ -69,6 +69,57 @@ def check_question(doc, answer_doc, year, section):
         raise ParseError("ANSWER_YEAR_MISMATCH")
 
 
+def _question_crop(page):
+    """問題の本文・図・選択肢を同じ原本位置関係で切り出す。
+
+    ヘッダーとページ番号は切ってよいが、本文・図・表を外す場合は
+    安全側としてページ全体を返す。原本にない図を追加しない。
+    """
+    original = page.rect
+    full = (original.x0 + 18, original.y0 + 30, original.x1 - 18, original.y1 - 42)
+    try:
+        import fitz
+        blocks = page.get_text("blocks")
+        if not isinstance(blocks, (list, tuple)):
+            return full
+        text_boxes = []
+        footer = re.compile(r"^[\s─ー‐－-]*[（(]\s*\d+\s*[）)][\s─ー‐－-]*$")
+        for block in blocks:
+            if len(block) < 7 or block[6] != 0 or not str(block[4]).strip():
+                continue
+            t = _norm(block[4]).strip()
+            if footer.fullmatch(t):
+                continue
+            box = fitz.Rect(block[:4])
+            # 他の本文がページ下端に来ている場合、切り捨てず全体を残す。
+            if box.y0 > original.height * 0.90:
+                return full
+            text_boxes.append(box)
+        if not text_boxes:
+            return full
+        region = fitz.Rect(text_boxes[0])
+        for b in text_boxes[1:]:
+            region |= b
+        for d in page.get_drawings():
+            box = fitz.Rect(d.get("rect") or (0, 0, 0, 0))
+            if not box.is_empty and box.y0 <= original.height * 0.91:
+                region |= box
+        for img in page.get_images(full=True):
+            for box in page.get_image_rects(img):
+                if box.y0 <= original.height * 0.91:
+                    region |= box
+                else:
+                    return full
+        candidate = fitz.Rect(region.x0 - 14, region.y0 - 14,
+                              region.x1 + 14, region.y1 + 14) & original
+        if candidate.is_empty or candidate.width < 100 or candidate.height < 70:
+            return full
+        # 切抜がページ全体よりも広い場合は、元の安全な領域に戻す。
+        return tuple(candidate)
+    except (TypeError, ValueError, AttributeError, IndexError):
+        return full
+
+
 def parse_questions(doc, section):
     if section not in SECTIONS:
         raise ParseError("SECTION_NOT_SUPPORTED")
@@ -91,8 +142,7 @@ def parse_questions(doc, section):
             raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
         # 文字や図を再生成せず、元のPDFの問題・表・選択肢が全て
         # 同じ順番で入る問単位の原本画像を共通切抜器に渡す。
-        rect = page.rect
-        crop = (rect.x0 + 18, rect.y0 + 30, rect.x1 - 18, rect.y1 - 42)
+        crop = _question_crop(page)
         found[n] = RawQuestion(
             number=n,
             stem="公式試験問題の本文・図表・選択肢を、下の原本画像で確認してください。拡大して読めます。",
@@ -104,6 +154,7 @@ def parse_questions(doc, section):
             stem_mode="official_image",
             choice_mode="official_image",
             crops=[(page_index + 1, crop)],
+            preserve_aspect=True,
         )
     if sorted(found) != list(range(1, count + 1)):
         raise ParseError("QUESTION_SET_INCOMPLETE", found=sorted(found), expected=count)
