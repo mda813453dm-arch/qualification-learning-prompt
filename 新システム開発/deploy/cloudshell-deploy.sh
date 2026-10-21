@@ -72,20 +72,49 @@ fi
 # 明示的な公開入口。/v1/parse はアプリ内Bearerトークン必須（健康検査は公開）。
 gcloud run services update qlp-parser --region "$REGION" --ingress all --quiet >/dev/null
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
-# 新しい解析器の公開前検査。404や接続失敗を無視してエンジンだけ配置すると、
-# 学習画面で「問題を準備しています」を繰り返すので、この段階で止める。
+# Google フロントエンドで /healthz がHTML 404になる環境がある。
+# プログラムが実際に返す /v1/status のJSONを検証し、単なるHTTP 200だけを成功扱いしない。
 PARSER_HEALTH_STATUS=""
+PARSER_HEALTH_VALID="false"
+PARSER_HEALTH_FILE="$(mktemp)"
 for TRY in 1 2 3; do
-  PARSER_HEALTH_STATUS="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$PARSER_URL/healthz" || true)"
-  if [ "$PARSER_HEALTH_STATUS" = "200" ]; then break; fi
-  echo "分解サーバー待機：HTTP ${PARSER_HEALTH_STATUS:-unknown}（${TRY}/3）"
+  PARSER_HEALTH_STATUS="$(curl --silent --show-error --output "$PARSER_HEALTH_FILE" \
+    --write-out '%{http_code}' --max-time 45 "$PARSER_URL/v1/status" || true)"
+  if [ "$PARSER_HEALTH_STATUS" = "200" ] && \
+     python3 - "$PARSER_HEALTH_FILE" <<'PY'
+import json
+import sys
+try:
+    with open(sys.argv[1], encoding="utf-8") as fp:
+        data = json.load(fp)
+    if data.get("ok") is True and isinstance(data.get("parserVersion"), str) and data["parserVersion"]:
+        print("parser status confirmed: " + data["parserVersion"])
+        sys.exit(0)
+except (OSError, ValueError, AttributeError):
+    pass
+sys.exit(1)
+PY
+  then
+    PARSER_HEALTH_VALID="true"
+    break
+  fi
+  echo "分解サーバーの /v1/status は未確認：HTTP ${PARSER_HEALTH_STATUS:-unknown}（${TRY}/3）"
   sleep 5
 done
-if [ "$PARSER_HEALTH_STATUS" != "200" ]; then
-  echo "ERROR: 分解サーバーの/healthzが成功しません（HTTP ${PARSER_HEALTH_STATUS:-unknown}）。学習エンジンは配置しません。" >&2
+rm -f "$PARSER_HEALTH_FILE"
+if [ "$PARSER_HEALTH_VALID" != "true" ]; then
+  echo "ERROR: 分解サーバーの /v1/status が正常なJSONを返さないため学習エンジンは配置しません（HTTP ${PARSER_HEALTH_STATUS:-unknown}）。" >&2
   exit 1
 fi
-echo "分解サーバーの健康状態：HTTP 200"
+# 正常なJSONでなくても200になり得るため、検査成功の印を確実に保持する。
+# コード改修時は必ず再検証し、パーサーの認証ゲートも公開HTTPで確認する。
+PARSER_AUTH_STATUS="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+  --max-time 30 --request POST --header 'content-type: application/json' --data '{}' "$PARSER_URL/v1/parse" || true)"
+if [ "$PARSER_AUTH_STATUS" != "401" ]; then
+  echo "ERROR: 分解APIの認証検査が失敗しました（期待401、結果 ${PARSER_AUTH_STATUS:-unknown}）。学習エンジンは配置しません。" >&2
+  exit 1
+fi
+echo "分解サーバーの状態検査：JSON ok=true／分解APIの認証ゲート：401（ともに確認済み）"
 # 新しい分解サーバーを確認できた後だけ、配置済みコードの印を更新する。
 if [ "$DEPLOYED_SRC" != "$PARSER_SRC" ]; then
   echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
