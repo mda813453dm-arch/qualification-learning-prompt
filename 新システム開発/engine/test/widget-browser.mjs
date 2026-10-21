@@ -62,6 +62,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
+           else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: {
+             status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
+           } } });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
             reply({ structuredContent: answer === '2'
@@ -219,6 +222,31 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '4 今は学習しない' }).click();
     await ui.getByRole('button', { name: '2 今は学習しない（終了を確認）' }).click();
     assert.match(await ui.locator('#app').innerText(), /学習は開始していません。/);
+    const library = { supportedYears: [2025, 2024], stored: [],
+      missing: [
+        { year: 2025, section: '午前の部' }, { year: 2025, section: '午後の部' },
+        { year: 2024, section: '午前の部' }, { year: 2024, section: '午後の部' },
+      ], totalQuestions: 0, completeYears: [] };
+    await page.evaluate(({ library, sessionId }) => {
+      window.sharedLibrary = library;
+      window.deliver({ _meta: { qlp: { status:'sourceUnavailable', sessionId, fieldName:'午後の部',
+        sourceAttachmentSupported:true, sharedLibrary:library, notice:'未保存の公式問題を確認しています。' } } });
+    }, { library, sessionId });
+    await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /2025年度/);
+    assert.match(await ui.locator('#app').innerText(), /共有保存済みの問題がありません/);
+    const previousMessageCount = await page.evaluate(() => window.followups.length);
+    const priorAttachCount = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
+    await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).click();
+    assert.match(await ui.locator('#app').innerText(), /PDFが添付されるまでは、取り込みは始まりません/);
+    assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
+      '添付がないボタンで新しい会話を送らない');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), priorAttachCount,
+      '空のPDFの取り込みを始めない');
+    await ui.getByRole('button', { name: /共有保存状況を更新/ }).click();
+    await page.waitForFunction(() => window.calls.some(m => m.params?.name === 'getOfficialLibrary'));
+    assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
+      '保存済み年度の照会も利用者チャットに内部内容を送信しない');
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
