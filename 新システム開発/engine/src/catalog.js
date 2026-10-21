@@ -79,7 +79,7 @@ export const CATALOG = {
     ],
     pastExamPage: 'https://www.moj.go.jp/MINJI/minji05_00732.html',
     // 午前の部全体の免除。午後の部の問番号を除外してはならない。
-    exemption: { label: '午前の部の免除（測量士・測量士補・一級／二級建築士の資格を有する方等。申請による適用）', numbers: [] },
+    exemption: { label: '午前の部の免除（測量士・測量士補・一級／二級建築士の資格を有する方等。申請による適用）', numbers: [], excludeFields: ['l1', 'l2'] },
     fields: {
       l1: '午前の部（測量・択一）',
       l2: '午前の部（測量・記述）',
