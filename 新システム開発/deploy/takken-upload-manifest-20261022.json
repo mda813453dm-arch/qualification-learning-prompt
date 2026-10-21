@@ -1,0 +1,141 @@
+{
+  "schema": "qlp-takken-official-upload-v1",
+  "qualificationId": "q041",
+  "source": "user-supplied-official-pdf",
+  "files": [
+    {
+      "file": "H28-q_a.pdf",
+      "year": 2016,
+      "section": "年度共通",
+      "bytes": 988788,
+      "sha256": "87923a2870184f9a0a26c76c056255aa94fa50242ff9aeda0a61eadf64699983",
+      "gitBlobs": [
+        "313b00b715dc97e5e4ed7045adec6ce888813401",
+        "dbd2e5f5e01500feeee1b8986f3b6b6577964055"
+      ]
+    },
+    {
+      "file": "H29-q_a.pdf",
+      "year": 2017,
+      "section": "年度共通",
+      "bytes": 1002623,
+      "sha256": "8dea64d2b2eef90b99fc5c2e00c1bab86ec59aa16a8619d179df20ca215f162c",
+      "gitBlobs": [
+        "96f28e5b847f61ca9f956fdf0d128541313c3748",
+        "03522bf577def9d1629be46beb259e20a36b3b05"
+      ]
+    },
+    {
+      "file": "H30-q_a.pdf",
+      "year": 2018,
+      "section": "年度共通",
+      "bytes": 1039211,
+      "sha256": "f2fb8a79c7c6394b6a397383df5551b898e03aa684d162073b291a22fbe3ed72",
+      "gitBlobs": [
+        "90f19bbf4a4e9f86b2a855970a4bc8c32bb6d86d",
+        "75d5bc74fa65100e6ab67bf965fa90a60dd0afc0"
+      ]
+    },
+    {
+      "file": "R1-q_a.pdf",
+      "year": 2019,
+      "section": "年度共通",
+      "bytes": 1877410,
+      "sha256": "c0fe7658da533768c01904ce1aa298b204f6c6309cee6c475ff5e3d46a97b772",
+      "gitBlobs": [
+        "45070b2ca551aed78520b919cd62d5d893b14923",
+        "48405aaa17b82ccd2033cae590336cd48ed4be13",
+        "66a5781f742e4b0d55a20be9148cefeb6f1e5e6e",
+        "1866cb5541383f0188cf6566381a3d80e1496bfd"
+      ]
+    },
+    {
+      "file": "R2-question.pdf",
+      "year": 2020,
+      "section": "10月",
+      "bytes": 1086641,
+      "sha256": "a6dd351660b249a88c9d641bc3f82f2e13c06f9edc429b50b179c90efac61af4",
+      "gitBlobs": [
+        "c143fab2417db51a29f0ad4d9091efa249372b63",
+        "5dbfec30abdf7663d2eefeddf05fe0b4db547118"
+      ]
+    },
+    {
+      "file": "R2-question_002.pdf",
+      "year": 2020,
+      "section": "12月",
+      "bytes": 997445,
+      "sha256": "3e771375cee071c58baf64f51d5ca344163a45f1df00ef18abf2402c7bf24104",
+      "gitBlobs": [
+        "5d701ad73cafade6b64ba39848f8560c257317cc",
+        "f380914918b43fad7e786878aec4ab7f04387030"
+      ]
+    },
+    {
+      "file": "R3-question.pdf",
+      "year": 2021,
+      "section": "10月",
+      "bytes": 966409,
+      "sha256": "ad436ace2388e21860ea59b7bbd9482a0b4d15422737f3fc1b44291764569219",
+      "gitBlobs": [
+        "5a8a7acba7892e2622a8c710f54aa3edcb40be6d",
+        "4b96238e880eff666994eafc76cc1936300e02fe"
+      ]
+    },
+    {
+      "file": "R3-question_002.pdf",
+      "year": 2021,
+      "section": "12月",
+      "bytes": 1027012,
+      "sha256": "88beed8b5280e76b35b57c2894ed3be35453ccf3dfc76dbc2d8f6ff195b74e45",
+      "gitBlobs": [
+        "ec05518c7edf5805ebd76a074353835b579ea47e",
+        "18b6c3861fe42bc1d885b3f00c10dbd3dd7ff9f2"
+      ]
+    },
+    {
+      "file": "R4-q_a.pdf",
+      "year": 2022,
+      "section": "年度共通",
+      "bytes": 1859333,
+      "sha256": "44baadbfaf0c5b3a872f107a4bc476d9c5a6516b3a6a0ca68678220c2271cf50",
+      "gitBlobs": [
+        "504233b48329e4c49a8e067449231c3fd614e806",
+        "65e5737786df3e77c404aa44ca5faa4e89139e94",
+        "85bf37ccd1cc4b4a3794398dcdc5241c55de8756",
+        "47b7c86984089cd5209d09348b359c6383fca942"
+      ]
+    },
+    {
+      "file": "R5_qestion_answer　.pdf",
+      "year": 2023,
+      "section": "年度共通",
+      "bytes": 423190,
+      "sha256": "b956e03f4079fce4507923131315e4444c25e351f6437afc68744d0a2561d10b",
+      "gitBlobs": [
+        "f3b4b81ea67ce0bc2991a44528ad74ae422ca9ef"
+      ]
+    },
+    {
+      "file": "R6_question_answer(1).pdf",
+      "year": 2024,
+      "section": "年度共通",
+      "bytes": 408959,
+      "sha256": "82a95815f991567ebc4982b05a15a71f6ec942bd6794c3bafe3bcf9c2e985bae",
+      "gitBlobs": [
+        "39817692e81d80765e2726e01014ff45d5cd9acf"
+      ]
+    },
+    {
+      "file": "R7_question_answer(2).pdf",
+      "year": 2025,
+      "section": "年度共通",
+      "bytes": 1071555,
+      "sha256": "829cde5778e22d1a8f0050ce2ff8b4b8089749bcab5456fbde6d1d843a3ed8ed",
+      "gitBlobs": [
+        "4006b1cf56c78c4809fe4abac551bb5912aceb26",
+        "4bd3cea291d515e9ded1204c93e532c648dcbc80"
+      ]
+    }
+  ]
+}
