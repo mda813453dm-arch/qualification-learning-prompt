@@ -591,6 +591,14 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
   const listed = (await app('tools/list', {})).tools.find((t) => t.name === 'attachPdf');
   assert.deepEqual(listed._meta['openai/fileParams'], ['questionPdf', 'answerPdf']);
+  // ChatGPT のファイル受渡し規約。file_id のrequired欠落は登録時INVALID_ARGUMENTになる。
+  for (const name of listed._meta['openai/fileParams']) {
+    const schema = listed.inputSchema.properties[name];
+    assert.equal(schema.type, 'object');
+    assert.deepEqual([...schema.required].sort(), ['download_url', 'file_id'],
+      `${name}: download_url と file_id の両方を必須とする`);
+    assert.deepEqual(Object.keys(schema.properties).sort(), ['download_url', 'file_id', 'file_name', 'mime_type'].sort());
+  }
   const s = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   const sid = (s.structuredContent ?? JSON.parse(s.content[0].text)).sessionId;
   const bytes = new TextEncoder().encode('%PDF-1.7 attached question 2019');
