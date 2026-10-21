@@ -61,6 +61,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
+          else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
             reply({ structuredContent: answer === '2'
@@ -179,6 +180,30 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), beforeSkip + 1);
     assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 0, 'スキップ後に余分なボタンを挟まない');
+    // 別画面に移り古い枠が無効化されても、サーバーの同じ採点結果へ戻して終了できる。
+    const answersBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
+    const nextBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
+    await page.evaluate(({ question, nextQuestion, sessionId }) => {
+      window.restorePayload = { status: 'restoredGrade', sessionId, studyId: 'test-study',
+        question: question.question, next: nextQuestion,
+        grade: { correct: true, selected: '3', correctAnswer: '3' }, at: Date.now() + 12000 };
+      window.deliver({ ...nextQuestion, at: Date.now() - 5000 });
+    }, { question, nextQuestion, sessionId });
+    await ui.locator('input[name=ans]').first().waitFor();
+    await ui.locator('#app').evaluate(() => {
+      const bc = new BroadcastChannel('qlp-widget');
+      bc.postMessage({ at: Date.now() + 1000 });
+      bc.close();
+    });
+    await ui.getByRole('button', { name: '今の学習画面を再開' }).waitFor();
+    await ui.getByRole('button', { name: '今の学習画面を再開' }).click();
+    await ui.getByRole('button', { name: '2 解説を見る' }).waitFor();
+    assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'restoreStudyView').length), 1);
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
+    await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
+    assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\\n省略しない全文', '復元後でも学習終了できる');
     // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
     await page.evaluate(r => window.deliver(r), result(onboarding));
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
