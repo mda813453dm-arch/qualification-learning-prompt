@@ -1850,7 +1850,9 @@ export function overviewFor(qid) {
       // U18：公式ページで確かめられなかった項目は「未確認」と示す（推測で埋めない）
       ...OVERVIEW_REQUIRED.filter(([, re]) => !(c.overview ?? []).some(([k]) => re.test(k))).map(([k]) => `${k}：未確認`),
       `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
-      ...(c.overviewOnly ? ['※公式の過去問PDFは公開されていますが、この資格の自動取込・出題・採点・PDF添付解析は現状未対応です。AI作成確認問題と公式PDFの閲覧を区別して学習できます。'] : []),
+      ...(c.overviewOnly ? [c.uploadAdapter
+        ? '※公式PDFのサイトからの自動取得はできません。システムに共有保存済みの年度・部は全利用者が再添付なしで利用でき、未保存分は問題・正答PDFの検証が必要です。記述式は自動採点しません。'
+        : '※公式過去問の自動解析・出題は未対応です。AI作成確認問題は公式問題と区別します。'] : []),
       ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),
       ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
       `公式：${c.org}（${c.overviewSource ?? c.officialSite}）`,
