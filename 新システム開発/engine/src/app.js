@@ -694,7 +694,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         validatedUploadYears: cat.validatedUploadYears ?? [],
         notice: existing?.state === 'failed'
           ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
-          : 'サイトからの自動取得はできません。2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
+          : 'サイトからの自動取得はできません。2024・2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
     }
   }
   const job = await progress(env, sessionJobId(state), now);
