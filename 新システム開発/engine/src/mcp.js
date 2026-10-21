@@ -219,11 +219,12 @@ export const TOOLS = [
       properties: {
         sessionId,
         year: { type: 'integer', description: '添付PDFの実施年度（西暦）' },
+        section: { type: 'string', enum: ['午前の部', '午後の部'], description: '土地家屋調査士のとき必須。問の部と公式正答PDFの列の結合を固定する。' },
         questionPdf: { type: 'object', description: '添付された問題PDF', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url'] },
         answerPdf: { type: 'object', description: '添付された正答PDF（問題PDFに正答が入っていれば省く）', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url'] },
       },
     },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/attach`, { year: a.year, question: a.questionPdf, answer: a.answerPdf }],
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/attach`, { year: a.year, section: a.section, question: a.questionPdf, answer: a.answerPdf }],
   },
   {
     name: 'getHandoff',
