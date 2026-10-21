@@ -8,6 +8,8 @@ export const CATALOG = {
     name: '宅地建物取引士（宅建）',
     // 利用者が自由に入力した資格名と照らし合わせるための呼び方
     aliases: ['宅建', '宅建士', '宅地建物取引士', '宅地建物取引主任者', '宅建試験'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['main'],
     org: '一般財団法人 不動産適正取引推進機構（RETIO）',
     officialSite: 'https://www.retio.or.jp/exam/index.html',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -126,6 +128,8 @@ export const CATALOG = {
     qualificationId: 'q063',
     name: '測量士補',
     aliases: ['測量士補', '測量士補試験', '測量士補の国家試験'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['main'],
     org: '国土地理院',
     officialSite: 'https://www.gsi.go.jp/LAW/SHIKEN/SHIKEN-top.htm',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -160,7 +164,9 @@ export const CATALOG = {
   chintai: {
     qualificationId: 'q097',
     name: '賃貸不動産経営管理士（賃管）',
-    aliases: ['賃管', '賃貸不動産経営管理士', '賃貸管理士', '賃貸不動産管理士'],
+    aliases: ['賃管', '賃貸不動産経営管理士', '賃貸管理士', '賃貸不動産管理士', '賃貸不動産管理経営士'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['main'],
     org: '一般社団法人 賃貸不動産経営管理士協議会',
     officialSite: 'https://www.chintaikanrishi.jp/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -284,6 +290,8 @@ export const CATALOG = {
     qualificationId: 'q006',
     name: 'ITパスポート試験',
     aliases: ['ITパスポート', 'ＩＴパスポート', 'iパス', 'アイパス', 'ITパス', 'ITパスポート試験'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['公開問題'],
     org: '独立行政法人情報処理推進機構（IPA）',
     officialSite: 'https://www3.jitec.ipa.go.jp/JitesCbt/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -311,6 +319,8 @@ export const CATALOG = {
     qualificationId: 'q090',
     name: '行政書士',
     aliases: ['行政書士', '行政書士試験', '行書'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['年度共通'],
     org: '一般財団法人 行政書士試験研究センター',
     officialSite: 'https://gyosei-shiken.or.jp/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -397,6 +407,8 @@ export const CATALOG = {
     qualificationId: 'q018',
     name: 'マンション管理士',
     aliases: ['マンション管理士', 'マンション管理士試験'],
+    shareOnVerifiedUpload: true,
+    sharedLibrarySections: ['main'],
     org: '公益財団法人 マンション管理センター',
     officialSite: 'https://www.mankan.org/',
     // 令和8年度の公式の受験案内（PDF）に書かれている概要（文言は公式のまま。2026-10-20に確認。書かれていない項目は載せない）
