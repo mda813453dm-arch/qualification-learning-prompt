@@ -56,10 +56,10 @@ echo "== 6/7 分解サーバー（qlp-parser）を配置（初回は10分ほど�
 PARSER_SRC="$(cd "$ROOT/parser" && find qlp_parser Dockerfile requirements.txt -type f -not -name '*.pyc' | sort | xargs sha1sum | sha1sum | cut -c1-16)"
 PARSER_MARK="gs://$BUCKET/deploy/parser-src.txt"
 DEPLOYED_SRC="$(gcloud storage cat "$PARSER_MARK" 2>/dev/null || true)"
-if [ -z "$DEPLOYED_SRC" ] && gcloud run services describe qlp-parser --region "$REGION" >/dev/null 2>&1; then
-  # 印がまだ無いとき（2026-10-19 導入）：動いている分解サーバーを今のプログラムのものとして印を付ける
-  echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
-  DEPLOYED_SRC="$PARSER_SRC"
+# 追跡印がなければ、古いサーバーを現行コードと推定せず必ずビルドする。
+# 偽の印を先に記録すると原本PDFを処理できない旧解析器が残るため、印はヘルス検査後だけ更新する。
+if [ -z "$DEPLOYED_SRC" ]; then
+  echo "分解サーバーの配置履歴がないため、必ず現在のコードを配置します"
 fi
 if [ "$DEPLOYED_SRC" = "$PARSER_SRC" ]; then
   echo "分解サーバーのプログラムは変わっていないので、配置し直しません"
