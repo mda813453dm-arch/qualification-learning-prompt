@@ -973,7 +973,9 @@ a{color:inherit}
     var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
     var fieldChange = state.next?.status === 'question' && state.next.question?.kind === 'new' &&
       q.fieldName && state.next.question.fieldName && q.fieldName !== state.next.question.fieldName;
-    app.innerHTML = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
+    var progress = q.progress || {};
+    app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice' + Math.min(3, progress.fieldQuestion || 1), q.fieldName) +
+      '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
       (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
