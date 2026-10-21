@@ -121,7 +121,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
-    await ui.getByRole('button', { name: '1 解説を見る' }).click();
+    await ui.getByRole('button', { name: '2 解説を見る' }).click();
     await page.waitForFunction(() => window.followups.length === 1);
     await ui.getByRole('button', { name: /再表示/ }).click();
     await page.waitForFunction(() => window.followups.length === 2);

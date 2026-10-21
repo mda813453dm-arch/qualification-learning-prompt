@@ -86,7 +86,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('.study-progress').innerText(), /この分野 1 \/ 3問目/);
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
-    await ui.getByRole('button', { name: '1 解説を見る', exact: true }).click();
+    await ui.getByRole('button', { name: '2 解説を見る', exact: true }).click();
     await page.waitForFunction(() => window.messages.length === 1);
     await ui.locator('#retryDisplay:not([disabled])').waitFor();
     await ui.getByRole('button', { name: '出ないときは再表示', exact: true }).click();
