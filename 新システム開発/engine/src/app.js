@@ -203,7 +203,8 @@ const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const REVIEW_WANT = /総復習|間違えた問題/;
 const CONTINUE_FIELD_WANT = 'この分野の未出題の実践問題を続ける';
 function studyFieldOrder(state, cat) {
-  const fields = Object.keys(cat?.fields ?? {});
+  const exclude = state.exemption === 'confirmed' ? (cat?.exemption?.excludeFields ?? []) : [];
+  const fields = Object.keys(cat?.fields ?? {}).filter((f) => !exclude.includes(f));
   const ordered = state.plan?.orderedFields;
   return Array.isArray(ordered) && ordered.length === fields.length &&
     ordered.every((f) => fields.includes(f)) && new Set(ordered).size === fields.length ? ordered : fields;
@@ -1029,12 +1030,17 @@ async function route(request, env, url, now) {
     const b = await body(request);
     const { id, state } = await resolveSession(env, parts[2], now);
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
-    const fieldIds = Object.keys(cat?.fields ?? {});
-    const byName = new Map(fieldIds.map((id) => [cat.fields[id], id]));
+    const fieldIds = studyFieldOrder({ ...state, plan: {} }, cat);
+    const allIds = Object.keys(cat?.fields ?? {});
+    const byName = new Map(allIds.map((id) => [cat.fields[id], id]));
     const picked = b?.orderedFields ?? fieldIds;
-    if (!Array.isArray(picked) || picked.length !== fieldIds.length) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
-    const ordered = picked.map((x) => fieldIds.includes(x) ? x : byName.get(x));
-    if (ordered.some((x) => !x) || new Set(ordered).size !== fieldIds.length) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    if (!Array.isArray(picked)) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    const converted = picked.map((x) => allIds.includes(x) ? x : byName.get(x));
+    // v50以前の画面で午前免除を選んだ場合も、全分野から午前部分を除く。
+    const ordered = converted.filter((f) => fieldIds.includes(f));
+    if (converted.some((x) => !x) || new Set(converted).size !== converted.length ||
+      ordered.length !== fieldIds.length || new Set(ordered).size !== fieldIds.length ||
+      ![fieldIds.length, allIds.length].includes(converted.length)) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
     const methodChoice = b.methodChoice ?? 'balanced';
     if (!['explain','check','practice','balanced'].includes(methodChoice)) throw new HttpError(400, 'PLAN_METHOD_INVALID');
     const dist = b.methodDistribution;
@@ -1770,6 +1776,7 @@ export function overviewFor(qid) {
       '参考（非公式）：なし',
     ],
     source: c.overviewSource ?? c.officialSite,
+    ...(c.exemption?.excludeFields?.length ? { exemptionExcludeFields: c.exemption.excludeFields.map((id) => c.fields[id]).filter(Boolean) } : {}),
     ...(c.overviewOnly ? { overviewOnly: true, pastExamPage: c.pastExamPage } : {}),
   };
 }
