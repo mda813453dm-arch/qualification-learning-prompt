@@ -743,7 +743,21 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v55.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v56.html');
+});
+
+test('解説の表示：旧SVGコードは除去し、正誤は大きな結果見出しで表示する', () => {
+  const menu = TOOLS.find((t) => t.name === 'showMenu').local({
+    kind: 'next', body: '結論：国土交通大臣です。\n<svg xmlns="http://www.w3.org/2000/svg"><rect width="40"/></svg>\n| 項目 | 担当 |\n| --- | --- |\n| 承認 | 大臣 |',
+  });
+  assert.doesNotMatch(menu.menu.body, /<svg|<rect|<\/svg>/);
+  assert.match(menu.menu.body, /国土交通大臣/);
+  assert.match(menu.menu.body, /\| 承認 \| 大臣 \|/);
+  const html = widgetHtml();
+  assert.match(html, /grade-word.*正解！/);
+  assert.match(html, /✕ 不正解/);
+  assert.match(html, /gradeBanner\(g, label\)/);
+  assert.match(html, /result-grade/);
 });
 
 // 土地家屋調査士の過去実装（PDF検証・図抽出）は現行エンジンに未接続。
