@@ -342,6 +342,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v49.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v50.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v51.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v52.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v53.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
