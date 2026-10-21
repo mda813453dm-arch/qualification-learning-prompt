@@ -197,7 +197,7 @@ function chooseQualification(base, lid, lead = []) {
     ],
     show: [...lead, '資格学習を始めます。学びたい資格の名前を入力してください。'],
     links: [
-      ...Object.entries(CATALOG).map(([slug, c]) => [`${c.name}［呼び方：${(c.aliases ?? []).join('、')}］`, `${base}/p/${lid}/go/${slug}`]),
+      ...Object.entries(CATALOG).filter(([, c]) => !c.overviewOnly).map(([slug, c]) => [`${c.name}［呼び方：${(c.aliases ?? []).join('、')}］`, `${base}/p/${lid}/go/${slug}`]),
       ['上にない資格', `${base}/p/${lid}/other`],
     ],
   });
@@ -1006,7 +1006,7 @@ async function route(env, base, parts, now, advance, kick) {
   let rec = await load(env, lid);
   const [, , action, a1, a2, a3] = parts;
 
-  if (action === 'go' && parts.length === 4 && CATALOG[a1]) {
+  if (action === 'go' && parts.length === 4 && CATALOG[a1] && !CATALOG[a1].overviewOnly) {
     if (rec && rec.fixed.slug !== a1) return { res: chooseQualification(base, newLearnerId(), [`この引継ぎIDは${CATALOG[rec.fixed.slug].name}の記録です。別の資格は新しい引継ぎIDで始めます。`]) };
     const isNew = !rec;
     if (isNew) rec = newRecord(lid, a1, now);
