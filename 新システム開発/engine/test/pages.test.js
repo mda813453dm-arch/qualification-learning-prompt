@@ -18,7 +18,7 @@ function srcOf(slug) {
 
 function makeEnv() {
   const files = {};
-  for (const slug of Object.keys(CATALOG)) {
+  for (const slug of Object.keys(CATALOG).filter((key) => !CATALOG[key].overviewOnly)) {
     const s = CATALOG[slug].sources[0];
     files[s.questionUrl] = pdf(`${slug}-q-v1`);
     if (s.answerUrl) files[s.answerUrl] = pdf(`${slug}-a-v1`);
