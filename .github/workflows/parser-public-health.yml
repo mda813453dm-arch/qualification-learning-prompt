@@ -17,7 +17,7 @@ jobs:
             https://qlp-parser-774945236720.asia-northeast1.run.app \
             https://qlp-parser-ojsw3j46qa-an.a.run.app; do
             echo "===== URL $url ====="
-            for path in /healthz /; do
+            for path in /healthz /healthz?probe=1 /healthz/ /health%7a /ready /; do
               curl --silent --show-error --max-time 25 \
                 --output /tmp/parser-body --dump-header /tmp/parser-headers \
                 --write-out "path=$path HTTP=%{http_code} location=%{redirect_url} content_type=%{content_type}\n" \
@@ -25,5 +25,13 @@ jobs:
               grep -iE '^(HTTP/|content-type:|location:)' /tmp/parser-headers || true
               head -c 260 /tmp/parser-body || true
               echo
-            done
+              echo "POST /v1/parse without credentials (expect application JSON 401):"
+            curl --silent --show-error --max-time 25 \
+              -X POST -H 'Content-Type: application/json' -d '{}' \
+              --output /tmp/parser-body --dump-header /tmp/parser-headers \
+              --write-out 'POST HTTP=%{http_code} content_type=%{content_type}\n' \
+              "$url/v1/parse" || true
+            head -c 250 /tmp/parser-body || true
+            echo
+          done
           done
