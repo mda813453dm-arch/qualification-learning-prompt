@@ -41,7 +41,7 @@ export const TOOLS = [
   },
   {
     name: 'startSession',
-    description: '資格の過去問の取り込みを始め、学習セッションを作る。qualificationId は q041＝宅建、q063＝測量士補、q097＝賃管（賃貸不動産経営管理士）、q002＝FP2級、q003＝FP3級、q006＝ITパスポート、q090＝行政書士。資格名をそのまま入れてもよい。エンジンの資格は sources を空の配列にしてよい（エンジンが公式サイトから集める）。',
+    description: '資格の学習セッションを作る。自動取り込み可能な資格は取り込みを始め、土地家屋調査士は公式概要・免除・学習状況の画面を表示し、既存の別実装のPDF確認機能は未統合として明示する。qualificationId は q041＝宅建、q063＝測量士補、q097＝賃管（賃貸不動産経営管理士）、q002＝FP2級、q003＝FP3級、q006＝ITパスポート、q090＝行政書士。資格名をそのまま入れてもよい。エンジンの資格は sources を空の配列にしてよい（エンジンが公式サイトから集める）。',
     inputSchema: {
       type: 'object',
       required: ['qualificationId', 'sources'],
@@ -338,6 +338,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v46.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v47.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v48.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v49.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v50.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
