@@ -442,7 +442,7 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   const mcp = readFileSync(new URL('../src/mcp.js', import.meta.url), 'utf8');
   // 利用者のチャットに「AIへの指示」が見えないこと
   assert.ok(!html.includes('【順番】'), '画面の送信文に手順を入れない');
-  assert.ok(!html.includes('kind='), '画面の送信文に内部のツール名・引数を入れない');
+  assert.ok(html.includes("text: actionLabel || '学習画面の操作を続ける'"), '会話には操作名だけを渡す。詳細は非表示文脈へ分離');
   assert.ok(html.includes("field + 'を解説から始めます。'"));
   assert.ok(html.includes('function planEditMenu()'));
   assert.ok(html.includes("callTool('saveStudyPlan'"), '計画確定は学習開始の承認後だけ');
@@ -554,5 +554,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v42.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v43.html');
 });
