@@ -92,6 +92,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#retryDisplay:not([disabled])').waitFor();
     await ui.getByRole('button', { name: '出ないときは再表示', exact: true }).click();
     await ui.getByText('AIによる解説（結合試験用）', { exact: true }).waitFor();
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '解説の冒頭にも全体位置を示す');
     assert.equal(await ui.locator('table tbody tr').count(), 5);
     assert.equal(await ui.locator('h2').innerText(), '次はどうしますか？');
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）']);
@@ -115,7 +116,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       }
     }
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(),
-      ['次の分野の問題へ', '解説を見る', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+      ['次の分野の問題へ', '解説を見る', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '7');
     await ui.locator('#review').click();
     await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
     assert.equal(await ui.locator('#next').count(), 1, '復習対象がなくても次の分野への選択を保持する');

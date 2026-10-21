@@ -326,6 +326,7 @@ const LEGACY_WIDGET_URIS = ['ui://qlp/question-v1.html', 'ui://qlp/question-v2.h
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v43.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v44.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v45.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v46.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -459,8 +460,9 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
             const change = context.body.nextChoice.fieldChange;
             const menu = { ...out.menu,
               choices: [change ? '次の分野の問題へ' : '次の問題へ', '解説を見る',
-                ...(change ? ['総復習（間違えた問題）'] : []), '今日はここまで（学習を終了）'],
-              actions: ['next', 'explain', ...(change ? ['review'] : []), 'end'],
+                ...(change ? ['この分野の実践問題を続ける', '総復習（間違えた問題）'] : []), '今日はここまで（学習を終了）'],
+              actions: ['next', 'explain', ...(change ? ['continueField', 'review'] : []), 'end'],
+              ...(context.body.journey ? { journey: context.body.journey } : {}),
               ...(change && context.body.nextChoice.nextFieldName ? { nextFieldName: context.body.nextChoice.nextFieldName } : {}) };
             out = { ...out, menu };
           }

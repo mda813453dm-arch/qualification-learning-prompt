@@ -200,10 +200,18 @@ export const INLINE_SVG_MAX = 8000;
 /** 再開のとき「新しい問題から」と選ばれた（nextQuestion の question）。 */
 const FRESH_WANT = /^\s*(新しい問題|新しい問|別の問題)/;
 const REVIEW_WANT = /総復習|間違えた問題/;
+const CONTINUE_FIELD_WANT = 'この分野の未出題の実践問題を続ける';
+function studyFieldOrder(state, cat) {
+  const fields = Object.keys(cat?.fields ?? {});
+  const ordered = state.plan?.orderedFields;
+  return Array.isArray(ordered) && ordered.length === fields.length &&
+    ordered.every((f) => fields.includes(f)) && new Set(ordered).size === fields.length ? ordered : fields;
+}
 
 /** 全分野の初回演習（各分野3問）の位置。合格率・習得率とは混同しない。 */
 function learningProgress(state) {
-  const fields = Object.keys((Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {});
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  const fields = studyFieldOrder(state, cat);
   if (!fields.length || !fields.includes(state.current?.fieldId)) return null;
   const counts = Object.fromEntries(fields.map((f) => [f, 0]));
   for (const h of Object.values(state.history ?? {})) {
@@ -677,12 +685,21 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   // 利用者が問を指定したとき（マスタープロンプトの「直接問題指定」）は、その問を出す。見つからなければ知らせて通常の次の問
   const fieldNames = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
+  let continuePick = null;
+  if (want === CONTINUE_FIELD_WANT) {
+    const fid = state.lastExplanation?.fieldId ?? state.lastGrade?.fieldId ?? state.current?.fieldId;
+    const remaining = items.find((x) => x.packet.fieldId === fid && !state.history?.[x.packet.questionId] &&
+      !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId));
+    if (!remaining) return { status: 'fieldExhausted', sessionId: id,
+      notice: `${fieldNames[fid] ?? 'この分野'}の未出題の実践問題はありません。次の分野へ進むか、復習を選んでください。` };
+    continuePick = { item: remaining, kind: 'new', fieldId: fid };
+  }
   // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
   const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
   const wrongPool = reviewWant ? items.filter((x) => ['wrong', 'recall_failure'].includes(state.history[x.packet.questionId]?.result)) : [];
   const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
-  const wanted = reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null;
+  const wanted = continuePick ?? (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
   if (reviewWant && !wanted) return { status: 'reviewEmpty', sessionId: id,
     notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
@@ -727,7 +744,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const display = questionDisplay(shown, attach ? [] : svgs, { attached: attach });
   const fieldName = fid ? names[fid] ?? null : null;
   // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
-  const changed = !pick.repeated && prevField && fid && prevField !== fid;
+  const changed = !continuePick && !pick.repeated && prevField && fid && prevField !== fid;
   const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
   const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
   // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
@@ -982,8 +999,9 @@ async function route(request, env, url, now) {
     if (!check || check.count >= 3) throw new HttpError(409, 'CONFIRMATION_NOT_ACTIVE');
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     const fieldName = cat?.fields?.[check.fieldId] ?? '今の分野';
-    const fieldIndex = Object.keys(cat?.fields ?? {}).indexOf(check.fieldId) + 1;
-    const journey = { fieldIndex, fieldTotal: Object.keys(cat?.fields ?? {}).length };
+    const fieldOrder = studyFieldOrder(state, cat);
+    const fieldIndex = fieldOrder.indexOf(check.fieldId) + 1;
+    const journey = { fieldIndex, fieldTotal: fieldOrder.length };
     if (check.challenge?.id) return json(200, { status: 'confirmation_question', sessionId: id,
       challengeId: check.challenge.id, question: check.challenge.question, choices: check.challenge.choices,
       position: check.count + 1, total: 3, fieldName, journey, repeated: true });
@@ -1012,10 +1030,13 @@ async function route(request, env, url, now) {
     await saveSession(env, id, { ...state, confirmation: { ...check, count, challenge: null,
       correct: (check.correct ?? 0) + Number(correct) } }, now);
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    const fieldIds = studyFieldOrder(state, cat);
+    const nextFieldName = cat?.fields?.[fieldIds[fieldIds.indexOf(check.fieldId) + 1]] ?? null;
     return json(200, { status: 'confirmation_result', sessionId: id, fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       position: count, total: 3, correct, correctAnswer: check.challenge.correctAnswer,
       correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
-      journey: { fieldIndex: Object.keys(cat?.fields ?? {}).indexOf(check.fieldId) + 1, fieldTotal: Object.keys(cat?.fields ?? {}).length } });
+      nextFieldName,
+      journey: { fieldIndex: fieldIds.indexOf(check.fieldId) + 1, fieldTotal: fieldIds.length } });
   }
 
   // AI確認問題は出題時に本文・全選択肢・正答を固定してから利用者に表示する。
@@ -1121,7 +1142,7 @@ async function route(request, env, url, now) {
     await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
       confirmation: mode === 'practice' ? null : { fieldId: fid, count: 0, correct: 0, challenge: null } }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
-      journey: { fieldIndex: Object.keys(cat.fields).indexOf(fid) + 1, fieldTotal: Object.keys(cat.fields).length } });
+      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length } });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
@@ -1205,7 +1226,10 @@ async function route(request, env, url, now) {
     const nextChoice = { fieldChange: !!(next?.kind === 'new' && fieldId && next.fieldId && fieldId !== next.fieldId),
       nextFieldName: next?.fieldId ? cat?.fields?.[next.fieldId] ?? null : null,
       reviewAvailable: Object.values(state.history ?? {}).some((h) => ['wrong', 'recall_failure'].includes(h.result)) };
+    const fields = studyFieldOrder(state, cat);
+    const answeredInField = Object.values(state.history ?? {}).filter((h) => h.fieldId === fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
     return json(200, { status: 'explanationContext', sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
+      journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length, stage: `practice${Math.min(3, Math.max(1, answeredInField))}`, fieldName },
       qualificationName: cat?.name ?? null, question: { ...question,
         figures: (question.figures ?? []).map((f) => ({ ...f, url: f.url?.startsWith('/') ? `${env.PUBLIC_BASE_URL || url.origin}${f.url}` : f.url })),
         fieldName }, grade: { ...grade, explainHow: how },

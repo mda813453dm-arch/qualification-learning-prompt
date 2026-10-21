@@ -116,9 +116,10 @@ test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空�
     const grade = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: String([3, 1, 4][i]) })).structuredContent;
     assert.equal(grade.grade.correct, true);
     const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body: '解説本文', sessionId } }, { path: '/app' })).body.result._meta.qlp.menu;
-    assert.deepEqual(menu.actions, i < 2 ? ['next', 'explain', 'end'] : ['next', 'explain', 'review', 'end']);
+    assert.deepEqual(menu.actions, i < 2 ? ['next', 'explain', 'end'] : ['next', 'explain', 'continueField', 'review', 'end']);
     assert.deepEqual(menu.choices, i < 2 ? ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）'] :
-      ['次の分野の問題へ', '解説を見る', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+      ['次の分野の問題へ', '解説を見る', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+    assert.equal(menu.journey.fieldIndex, 1);
     if (i < 2) {
       q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
       assert.equal(q.progress.position, i + 2);
@@ -130,6 +131,9 @@ test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空�
   assert.equal(empty.status, 'reviewEmpty');
   assert.match(empty.notice, /間違えた問題はまだありません/);
   assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
+  const exhausted = (await call(env, 'nextQuestion', { sessionId, question: 'この分野の未出題の実践問題を続ける' })).structuredContent;
+  assert.equal(exhausted.status, 'fieldExhausted');
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), before, '未出題が無いときは次の分野を進めない');
   const next = (await call(env, 'nextQuestion', { sessionId })).structuredContent;
   assert.equal(next.question.questionNumber, 4);
   assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex], [4, 3, 2]);
@@ -156,6 +160,7 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
     assert.equal(answer.position, i);
     assert.equal(answer.complete, i === 3);
     assert.equal(answer.correctCount, i === 3 ? 2 : 1);
+    if (i === 3) assert.equal(answer.nextFieldName, CATALOG[SRC.qualificationId].fields.s2);
   }
   const after = await app('registerConfirmationQuestion', { sessionId, question: '4問目を登録しないための文章です。', choices: ['A', 'B'], correctAnswer: 1 });
   assert.equal(after.structuredContent.error, 'CONFIRMATION_NOT_ACTIVE');
@@ -167,6 +172,23 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
   assert.equal(practice.mode, 'practice');
   const official = (await call(env, 'nextQuestion', { sessionId })).structuredContent;
   assert.equal(official.question.fieldName, fieldName);
+});
+
+test('3問後に同じ分野の未出題の実践問題を続けると、先取りした次分野を飛ばさず元の分野の4問目を出す', async () => {
+  const env = makeEnv({ answers: [3, 1, 4, 2, 3], fieldIds: ['s1', 's1', 's1', 's1', 's2'], figureOn: [] });
+  const { sessionId } = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
+  let q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+  for (const answer of ['3', '1', '4']) {
+    const graded = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: answer })).structuredContent;
+    if (answer !== '4') q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+    else assert.equal(graded.next.question.fieldName !== q.fieldName, true);
+  }
+  const continued = (await call(env, 'nextQuestion', { sessionId, question: 'この分野の未出題の実践問題を続ける' })).structuredContent;
+  assert.equal(continued.status, 'question');
+  assert.equal(continued.question.questionNumber, 4);
+  assert.equal(continued.question.fieldName, q.fieldName);
+  assert.equal(continued.fieldChanged, false);
+  assert.equal(continued.question.progress.fieldQuestion, 1, '同じ分野で新しい3問セットを始める');
 });
 
 test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ まで通る', async () => {
@@ -653,5 +675,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v46.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v47.html');
 });

@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v46.html';
+export const WIDGET_URI = 'ui://qlp/question-v47.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.46';
+export const WIDGET_VERSION = '2026-10-21.47';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -297,7 +297,9 @@ a{color:inherit}
     app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
       '<h2>確認問題 ' + esc(d.position) + ' / 3問の結果</h2><div class="result ' + (d.correct ? 'ok' : 'ng') + '">' + (d.correct ? '正解' : '不正解') + '</div>' +
       '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>' +
-      (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>同じ分野の実践問題へ</span></button><button id="confirmationReview"><b>2</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>3</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
+      (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>この分野を続ける（同じ分野の実践問題へ）</span></button>' +
+        (d.nextFieldName ? '<button id="confirmationNextField"><b>2</b><span>次の分野の実践問題へ</span></button>' : '') +
+        '<button id="confirmationReview"><b>' + (d.nextFieldName ? 3 : 2) + '</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>' + (d.nextFieldName ? 4 : 3) + '</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
         '<div class="row"><button id="confirmationNext">次の確認問題へ（残り ' + esc(3-d.position) + '問）</button></div>' + endBar());
     scrollUp(); bindEnd();
     if (!d.complete) document.getElementById('confirmationNext').onclick = function(){
@@ -305,16 +307,18 @@ a{color:inherit}
       ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + (d.position+1) + '問/全3問が出るまで待ってください。', '次の確認問題を見る');
     };
     else {
-      document.getElementById('confirmationPractice').onclick = async function(){
-        this.disabled = true;
+      var openPractice = async function(b, target){
+        b.disabled = true;
         try {
-          var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: d.fieldName, mode: 'practice' });
-          if (!chosen || chosen.error) throw new Error('ITEM_UNAVAILABLE');
-          var next = await callTool('nextQuestion', { sessionId: state.sessionId });
+          var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: target, mode: 'practice' });
+          if (!chosen || chosen.error || chosen.status !== 'item') throw new Error('ITEM_UNAVAILABLE');
+          var next = await callTool('nextQuestion', { sessionId: state.sessionId, question: target });
           if (!next || next.error || !['question','waiting','finished','remediation'].includes(next.status)) throw new Error('NEXT_UNAVAILABLE');
           render(next);
-        } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">実践問題へ進めませんでした。このボタンで再試行してください。</div>'); }
+        } catch (e) { b.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">実践問題へ進めませんでした。このボタンで再試行してください。</div>'); }
       };
+      document.getElementById('confirmationPractice').onclick = function(){ openPractice(this, d.fieldName); };
+      if (d.nextFieldName) document.getElementById('confirmationNextField').onclick = function(){ openPractice(this, d.nextFieldName); };
       document.getElementById('confirmationReview').onclick = function(){ ask(d.fieldName + 'を詳しく復習します。解説を表示してください。', '今回の分野を詳しく復習'); };
       document.getElementById('confirmationWrong').onclick = async function(){
         this.disabled = true;
@@ -398,7 +402,8 @@ a{color:inherit}
     if (m.learnerId) studyLid = m.learnerId;
     saveIds();
     var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
-    var h = body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    var j = m.journey || {};
+    var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
@@ -429,10 +434,10 @@ a{color:inherit}
         if (m.body) { scrollUp(true); return; }
         ask('解説を表示してください。', '解説を見る'); return;
       }
-      if (state.sessionId && ((m.kind === 'next' && (action === 'next' || action === 'review')) || (m.kind === 'review' && n === '2'))) {
+      if (state.sessionId && ((m.kind === 'next' && (action === 'next' || action === 'review' || action === 'continueField')) || (m.kind === 'review' && n === '2'))) {
         var sameRequest = function(){ return callTool('nextQuestion', { sessionId: state.sessionId,
-          ...(action === 'review' ? { question: '総復習（間違えた問題）' } : {}) }).then(function(r){
-            if (r?.status === 'reviewEmpty') { showMenu({ ...m, notice: r.notice }); return; }
+          ...(action === 'review' ? { question: '総復習（間違えた問題）' } : action === 'continueField' ? { question: 'この分野の未出題の実践問題を続ける' } : {}) }).then(function(r){
+            if (r?.status === 'reviewEmpty' || r?.status === 'fieldExhausted') { showMenu({ ...m, notice: r.notice }); return; }
             if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
             render(r);
           }); };
@@ -974,8 +979,8 @@ a{color:inherit}
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
       '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
       '<button id="exp"><b>2</b><span>解説を見る</span></button>' +
-      (fieldChange ? '<button id="review"><b>3</b><span>総復習（間違えた問題）</span></button>' : '') +
-      '<button id="endStudy"><b>' + (fieldChange ? '4' : '3') + '</b><span>今日はここまで（学習を終了）</span></button></div>';
+      (fieldChange ? '<button id="continueField"><b>3</b><span>この分野の実践問題を続ける</span></button><button id="review"><b>4</b><span>総復習（間違えた問題）</span></button>' : '') +
+      '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>今日はここまで（学習を終了）</span></button></div>';
     scrollUp();
     nextBtn(); bindEnd();
     var lastDisplayRequest = '';
@@ -1003,6 +1008,15 @@ a{color:inherit}
         if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE');
         render(r);
       });
+    };
+    if (fieldChange) document.getElementById('continueField').onclick = async function(){
+      this.disabled = true;
+      try {
+        var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: 'この分野の未出題の実践問題を続ける' });
+        if (r?.status === 'fieldExhausted') { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
+        if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
+        render(r);
+      } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">同じ分野の問題を取得できませんでした。もう一度押してください。</div>'); }
     };
     if (g.checkSuggested) document.getElementById('check').onclick = function(){
       waitMore('確認問題はこの下に出ます。答え合わせのあと、その下に進むためのボタンが出ます。');
