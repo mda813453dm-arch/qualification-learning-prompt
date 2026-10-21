@@ -1,0 +1,1 @@
+2026-10-21 verify all 12 published official PDF URLs with SHA before any proposed shared import. Read-only, no storage changes.
