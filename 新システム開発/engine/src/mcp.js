@@ -374,6 +374,10 @@ export function forModel(body) {
       challengeId: body.challengeId, repeated: !!body.repeated,
       howToProceed: 'AI作成確認問題はこの下の学習画面にすべて表示済み。チャットで問題文や選択肢を書き直さず、画面での解答を待つ。採点・再試行は画面とエンジンが行う。' };
   }
+  if (body.status === 'sourceUnavailable') {
+    return { status: 'sourceUnavailable', sessionId: body.sessionId,
+      howToProceed: '共有保存済みの年度・部と未保存部分はこの下の学習画面に表示されている。PDFの検索・照合や内部処理の経過は会話に書かない。「画面のボタンで選んでください」とだけ伝え、実際のPDF添付が届くまで再取得やツール呼び出しはしない。' };
+  }
   if (body.status === 'officialLibrary') {
     return { status: 'officialLibrary', sessionId: body.sessionId,
       howToProceed: '共有保存済みの年度・部は下の学習画面に表示している。会話に転記したりファイルを検索したりしない。' };
