@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
-      - name: Compare both Cloud Run generated hostnames and their health responses
+      - name: Diagnose GET route aliases and authenticated parser POST entry
         shell: bash
         run: |
           set -uo pipefail
@@ -18,20 +18,20 @@ jobs:
             https://qlp-parser-ojsw3j46qa-an.a.run.app; do
             echo "===== URL $url ====="
             for path in /healthz /healthz?probe=1 /healthz/ /health%7a /ready /; do
-              curl --silent --show-error --max-time 25 \
+              curl --silent --show-error --max-time 20 \
                 --output /tmp/parser-body --dump-header /tmp/parser-headers \
-                --write-out "path=$path HTTP=%{http_code} location=%{redirect_url} content_type=%{content_type}\n" \
+                --write-out "path=$path HTTP=%{http_code} content_type=%{content_type}\n" \
                 "$url$path" || true
               grep -iE '^(HTTP/|content-type:|location:)' /tmp/parser-headers || true
-              head -c 260 /tmp/parser-body || true
+              head -c 110 /tmp/parser-body || true
               echo
-              echo "POST /v1/parse without credentials (expect application JSON 401):"
-            curl --silent --show-error --max-time 25 \
+            done
+            echo "POST /v1/parse without a token (expect 401 from parser):"
+            curl --silent --show-error --max-time 20 \
               -X POST -H 'Content-Type: application/json' -d '{}' \
               --output /tmp/parser-body --dump-header /tmp/parser-headers \
               --write-out 'POST HTTP=%{http_code} content_type=%{content_type}\n' \
               "$url/v1/parse" || true
-            head -c 250 /tmp/parser-body || true
+            head -c 150 /tmp/parser-body || true
             echo
-          done
           done
