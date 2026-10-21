@@ -130,6 +130,14 @@ export const TOOLS = [
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/redisplay`],
   },
   {
+    name: 'restoreStudyView',
+    appOnly: true,
+    uiOnly: true,
+    description: '画面復帰時に保存済みの現在の学習状態を表示し直す（読取専用）。出題・採点・学習記録に触れない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
+  },
+  {
     name: 'registerConfirmationQuestion',
     appOnly: true,
     description: '解説あり／確認問題からを選んだ通常の同一分野3問に使う。AIが作った各問の本文・全選択肢・正答を出題前に登録する。エンジンが1/3から問数と進捗バーを表示し、採点・3問完了時の実践問題への移動を画面で行う。チャットに問題や選択肢を直接書かない。3連続誤答による強制補強にはregisterRemediationQuestionを使う。',
@@ -329,8 +337,9 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v45.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v46.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v47.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v48.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v49.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion']);
+const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
