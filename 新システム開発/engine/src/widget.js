@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v50.html';
+export const WIDGET_URI = 'ui://qlp/question-v51.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.50';
+export const WIDGET_VERSION = '2026-10-21.51';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -149,7 +149,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -240,6 +240,32 @@ a{color:inherit}
       };
       bindEnd();
       return;
+    }
+    if (data.status === 'sourceUnavailable') {
+      // 公式の掲載資料があっても、出題・正答照合には資格固有の解析器が必要。
+      var name = data.fieldName || '今の分野';
+      var official = safeUrl(data.officialUrl);
+      app.innerHTML = '<h2>公式過去問の自動出題は未対応</h2><div class="notice" role="status">' +
+        esc(data.notice || '公式PDFの自動解析・採点に対応していません。') + '</div>' +
+        (official ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(official) + '">公式の過去問掲載ページを開く ›</a></div>' : '') +
+        '<div class="choices"><button id="sourceAiCheck"><b>1</b><span>同じ分野のAI作成確認問題を解く（3問）</span></button></div>' + endBar();
+      document.getElementById('sourceAiCheck').onclick = async function(){
+        this.disabled = true;
+        try {
+          var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: name, mode: 'check' });
+          if (!chosen || chosen.error || chosen.status !== 'item') throw new Error('ITEM_NOT_RECORDED');
+          app.innerHTML = journeyBar(chosen.journey && chosen.journey.fieldIndex, chosen.journey && chosen.journey.fieldTotal, 'check1', name) +
+            localBar('この分野のAI作成確認問題', 1, 3) +
+            '<div class="notice">AIが作成する問題です。公式過去問ではありません。</div>' + endBar();
+          bindEnd();
+          ask(name + 'を確認問題から始めます。');
+        } catch(e) {
+          var retry = document.getElementById('sourceAiCheck');
+          if (retry) retry.disabled = false;
+          app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">確認問題の開始に失敗しました。もう一度押してください。</div>');
+        }
+      };
+      bindEnd(); return;
     }
     if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
       // 待つ間・解き終えたときも、次にできることをボタンで出す（番号の選択肢の文は出さない）
@@ -348,7 +374,7 @@ a{color:inherit}
         this.disabled = true;
         try { var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習（間違えた問題）' });
           if (r?.status === 'reviewEmpty') { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
-          if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE'); render(r);
+          if (!r || r.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE'); render(r);
         } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">総復習を開始できませんでした。このボタンで再試行してください。</div>'); }
       };
     }
@@ -462,7 +488,7 @@ a{color:inherit}
         var sameRequest = function(){ return callTool('nextQuestion', { sessionId: state.sessionId,
           ...(action === 'review' ? { question: '総復習（間違えた問題）' } : action === 'continueField' ? { question: 'この分野の未出題の実践問題を続ける' } : {}) }).then(function(r){
             if (r?.status === 'reviewEmpty' || r?.status === 'fieldExhausted') { showMenu({ ...m, notice: r.notice }); return; }
-            if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
+            if (!r || r.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
             render(r);
           }); };
         nextBelow(sameRequest);
@@ -849,7 +875,7 @@ a{color:inherit}
     app.innerHTML = h;
     itemMenu(field, learner, async function(){
       var next = await callTool('nextQuestion', { sessionId: learner });
-      if (!next || next.error || !['question','waiting','finished','remediation'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
+      if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
       render(next);
     });
   }
@@ -1028,7 +1054,7 @@ a{color:inherit}
       nextBelow(async function(){
         var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: '総復習（間違えた問題）' });
         if (r?.status === 'reviewEmpty') { showGrade(g); app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
-        if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE');
+        if (!r || r.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE');
         render(r);
       });
     };
@@ -1037,7 +1063,7 @@ a{color:inherit}
       try {
         var r = await callTool('nextQuestion', { sessionId: state.sessionId, question: 'この分野の未出題の実践問題を続ける' });
         if (r?.status === 'fieldExhausted') { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(r.notice) + '</div>'); return; }
-        if (!r || r.error || !['question','waiting','finished','remediation'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
+        if (!r || r.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(r.status)) throw new Error('NEXT_UNAVAILABLE');
         render(r);
       } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">同じ分野の問題を取得できませんでした。もう一度押してください。</div>'); }
     };
