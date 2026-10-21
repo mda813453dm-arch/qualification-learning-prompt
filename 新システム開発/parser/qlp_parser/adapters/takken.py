@@ -47,6 +47,55 @@ def verified_answers(year, section, question_sha, answer_sha):
             return dict(enumerate(vals, 1))
     return None
 
+
+# 日本語OCRが見出しの一字だけを誤認した箇所を、原本画像で確認した座標から補う。
+# 一般的な推定補完はしない。原本SHA・年度・区分・前後の設問番号がすべて
+# 一致した場合に限る。ページ番号は1始まりで、座標はPDFのpt単位。
+_VERIFIED_IMAGE_HEADINGS = {
+    (2016, "年度共通", "87923a2870184f9a0a26c76c056255aa94fa50242ff9aeda0a61eadf64699983"):
+        ((16, 9, 599, 785, "都市計画法に関する次の記述のうち、正しいものはどれか。"),),
+    (2022, "年度共通", "44baadbfaf0c5b3a872f107a4bc476d9c5a6516b3a6a0ca68678220c2271cf50"):
+        ((44, 24, 385, 753, "宅地建物取引業法第37条の規定により交付すべき書面に関する問題"),),
+}
+
+
+def recover_verified_missing_questions(doc, questions, year, section, source_sha):
+    """原本の目視照合がある欠落見出しのみPNGの問題として復元する。"""
+    patches = _VERIFIED_IMAGE_HEADINGS.get((year, section, source_sha), ())
+    if not patches:
+        return questions
+    found = {q.number for q in questions}
+    recovered = list(questions)
+    for number, page_number, top, bottom, title in patches:
+        if number in found:
+            continue
+        if number - 1 not in found or number + 1 not in found or not (1 <= page_number <= doc.page_count):
+            continue
+        page = doc[page_number - 1]
+        if not (page.rect.y0 + 20 < top < bottom < page.rect.y1 - 15):
+            continue
+        previous = next(q for q in recovered if q.number == number - 1)
+        # 直前の問題画像に、見出しの認識失敗でこの設問が混入しないよう切り離す。
+        for i, (p, coords) in enumerate(previous.crops):
+            if p == page_number and coords[1] < top < coords[3]:
+                previous.crops[i] = (p, (coords[0], coords[1], coords[2], top - 10))
+        recovered.append(RawQuestion(
+            number=number,
+            stem="",
+            choices=["1", "2", "3", "4"],
+            pages=[page_number],
+            rect=(top, bottom),
+            has_graphics=True,
+            notes=["source_sha_pinned_image_heading_review"],
+            stem_mode="official_image",
+            choice_mode="official_image",
+            crops=[(page_number, (page.rect.x0 + 16, top, page.rect.x1 - 16, bottom))],
+            preserve_aspect=True,
+            classification_text=title,
+        ))
+        found.add(number)
+    return sorted(recovered, key=lambda q: q.number)
+
 # OCRでは「【」が「{」「[」に、「問」が「間」に、「】」が「]】」に読まれることがある。行頭の汚れ（記号3字まで）も許す
 HEADING = re.compile(r"^(?:[^\w【\[［〔{｛]|_){0,4}[【\[［〔{｛]\s*[問間]\s*([0-9０-９]{1,2})\s*[】\]］〕}｝]{1,2}")
 # OCRでは番号の後の空白が「。」「.」に読まれることがある
