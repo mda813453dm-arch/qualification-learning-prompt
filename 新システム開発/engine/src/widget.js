@@ -1101,13 +1101,13 @@ a{color:inherit}
       err.textContent = '学習状態を復元できませんでした。同じボタンで再試行できます。';
     } finally { restoring = false; }
   }
-  document.addEventListener('visibilitychange', function(){
+  if (typeof document.addEventListener === 'function') document.addEventListener('visibilitychange', function(){
     if (document.hidden) { wasHidden = true; return; }
     if (!wasHidden) return;
     wasHidden = false;
     if (!locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
-  window.addEventListener('pageshow', function(e){
+  if (typeof window.addEventListener === 'function') window.addEventListener('pageshow', function(e){
     if (e.persisted && !locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
   window.addEventListener('message', function(e){
