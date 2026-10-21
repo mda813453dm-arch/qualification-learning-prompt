@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v48.html';
+export const WIDGET_URI = 'ui://qlp/question-v49.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.48';
+export const WIDGET_VERSION = '2026-10-21.49';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -19,7 +19,8 @@ body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-se
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
-.fig{margin:10px 0}.fig img{width:100%;height:auto;background:#fff;border:1px solid var(--line);border-radius:6px}
+.fig{margin:10px 0}.fig-open{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:zoom-in}.fig-open img{display:block;width:100%;height:auto}.fig-hint{font-size:13px;color:var(--sub)}
+.fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
 .choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
 .choices .opt{display:flex;gap:8px;align-items:center;background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}.choices .opt input{margin:0}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
@@ -74,6 +75,16 @@ a{color:inherit}
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function stemHtml(t){ return String(t == null ? '' : t).replace(/([。？！])[ \u3000]*(?=[^\\s」』）)])/g, '$1\\n').replace(/ ([a-eａ-ｅ]\\. )/g, '\\n$1').split(/\\n+/).filter(Boolean).map(function(l){ return '<p>' + esc(l) + '</p>'; }).join(''); }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
+  function figureHtml(u, i){ return '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(safeUrl(u)) + '" aria-label="公式の問題の図' + (i + 1) + 'を拡大"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></button><div class="fig-hint">図をタップして拡大できます</div></div>'; }
+  function bindFigures(){ app.querySelectorAll('.fig-open').forEach(function(b){ b.onclick = function(){
+    var overlay = document.createElement('div'); overlay.className = 'fig-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-label', b.getAttribute('aria-label'));
+    overlay.innerHTML = '<div class="fig-controls"><button type="button" data-close>閉じる</button><button type="button" data-minus aria-label="縮小">−</button><button type="button" data-plus aria-label="拡大">＋</button></div><div class="fig-scroll"><img alt="拡大した公式の問題の図" src="' + esc(b.getAttribute('data-figure')) + '"></div>';
+    document.body.appendChild(overlay); var img = overlay.querySelector('img'), scroll = overlay.querySelector('.fig-scroll'), scale = 2;
+    function resize(){ img.style.width = Math.round(scroll.clientWidth * scale) + 'px'; }
+    resize(); overlay.querySelector('[data-close]').onclick = function(){ overlay.remove(); };
+    overlay.querySelector('[data-plus]').onclick = function(){ scale = Math.min(6, scale + 1); resize(); };
+    overlay.querySelector('[data-minus]').onclick = function(){ scale = Math.max(1, scale - 1); resize(); };
+  }; }); }
   async function callTool(name, args){
     var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
     return full(r);
@@ -161,8 +172,8 @@ a{color:inherit}
     if (typeof data.handoff === 'string' && typeof data.display === 'string') { showEnd(data); return; }
     if (data.status === 'figure' && (data.figureUrls || []).length) {
       var fh = '<div class="notice">' + esc(data.screen || '') + '</div>';
-      data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
-      app.innerHTML = fh; return;
+      data.figureUrls.forEach(function(u, i){ if (safeUrl(u)) fh += figureHtml(u, i); });
+      app.innerHTML = fh; bindFigures(); return;
     }
     if (data.status === 'remediation_question') {
       showRemediationQuestion(data);
@@ -245,12 +256,13 @@ a{color:inherit}
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
     if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
-    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
+    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
+    bindFigures();
     scrollUp();
     bindEnd();
     // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
@@ -749,11 +761,12 @@ a{color:inherit}
     var h = (head || '') + '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '　' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</div>';
     (q.notices || []).forEach(function(n){ h += '<div class="notice">' + esc(n) + '</div>'; });
     h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
-    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += '<div class="fig"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></div>'; });
+    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="stem"><b>回答の確信度（任意）</b><label><input type="radio" name="confidence" value="sure"> 確信あり</label> <label><input type="radio" name="confidence" value="unsure"> 迷った</label> <label><input type="radio" name="confidence" value="guess"> 勘</label></div><div class="row"><button id="dSkip">未回答で次へ</button></div>';
     h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     app.innerHTML = h;
+    bindFigures();
     scrollUp();
     var chosen = null, sent = false;
     app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){ chosen = r.value; document.getElementById('decrow').style.display = 'flex'; }; });
@@ -945,11 +958,7 @@ a{color:inherit}
     var nextBtn = function(inPlace){
       document.getElementById('next').onclick = inPlace ? nextInPlace : function(){ nextBelow(nextInPlace); };
     };
-    if (g.skipped) {
-      app.insertAdjacentHTML('beforeend', h + '<div class="row"><button id="next">次の問題へ</button></div>');
-      nextBtn();
-      return;
-    }
+    if (g.skipped) { nextBelow(nextInPlace); return; }
     // 「分からない」：採点に数えず、正答を見せて復習に回す（解説も頼める）
     if (g.dontKnow) {
       var ck = app.querySelector('.choices .opt[data-n="' + g.correctAnswer + '"]'); if (ck) ck.classList.add('correct');

@@ -57,7 +57,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               reply({ structuredContent: { status: 'error', error: 'TEMPORARY_UNAVAILABLE' } });
             } else reply({ structuredContent: question });
           }
-          else if (op === 'submitAnswer') reply({ structuredContent: { grade: { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+          else if (op === 'submitAnswer') reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
+            ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'completeRemediation') {
@@ -166,6 +167,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
     const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
     assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
+    await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
+    await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
+    await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
+    assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 375), '図を画面幅より大きくできる');
+    await ui.getByRole('button', { name: '拡大', exact: true }).click();
+    assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
+    await ui.getByRole('button', { name: '閉じる' }).click();
+    const beforeSkip = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
+    await ui.getByRole('button', { name: 'スキップ', exact: true }).click();
+    await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), beforeSkip + 1);
+    assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 0, 'スキップ後に余分なボタンを挟まない');
     // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
     await page.evaluate(r => window.deliver(r), result(onboarding));
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
