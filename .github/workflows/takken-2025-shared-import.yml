@@ -8,24 +8,16 @@ permissions:
   contents: read
 concurrency:
   group: qlp-takken-2025-shared-import
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   commit:
     runs-on: ubuntu-latest
-    timeout-minutes: 330
+    timeout-minutes: 35
     environment: production
     env:
       GOOGLE_CLOUD_PROJECT: qualification-learning
       QLP_IMPORT_ENV: official-shared-only
     steps:
-      - name: 公式サイトの定期保守終了まで登録を保留
-        shell: bash
-        run: |
-          # 2026-10-22 05:20 JST。保守中の通知PDFを誤登録しないため待つ。
-          resume_at=$(date -u -d '2026-10-21 20:20:00 UTC' +%s)
-          while [ "$(date -u +%s)" -lt "$resume_at" ]; do
-            sleep 300
-          done
       - uses: actions/checkout@v4
       - name: 承認対象の50問だけを厳密に確認
         shell: bash
