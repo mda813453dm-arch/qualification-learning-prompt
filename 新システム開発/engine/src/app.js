@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 33675)
-Total output lines: 1902
-
 /**
  * 学習エンジンのAPI（T4）。AIアプリはこのAPIを呼び、返ってきた問題と採点結果を表示するだけ。
  * Cloud Run では server.js がこの handle() を呼ぶ。
@@ -786,7 +783,351 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   if (reviewWant && !wanted) return { status: 'reviewEmpty', sessionId: id,
     notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
-  if (wanted?.fieldId) st…6675 tokens truncated…plan,
+  if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
+  const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
+  const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), now, job });
+  if (pick.status !== 'question') {
+    // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
+    const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
+    if (pick.status === 'waiting') {
+      // 待つ間にできることを番号で選べるようにし、解説や確認問題のあとにも、進み具合を確かめる選択肢を必ず出す
+      // 取り込みを待ったことを控え、そろって最初の問題を出すときに一言知らせる
+      if (!state.waitedForImport) await saveSession(env, id, { ...state, waitedForImport: true }, now);
+      return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
+    }
+    return { status: pick.status, notice, attachNotice: ATTACH_NOTICE, howToAttach: ATTACH_HOW, job: jobView(job) };
+  }
+  // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
+  const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
+  state = pin(state, pick.item, pick.kind, now);
+  if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
+  if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
+  // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
+  else if (!prefetched && state.current?.prefetched) state = { ...state, current: { ...state.current, prefetched: false } };
+  await saveSession(env, id, state, now);
+  const names = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
+  const fid = pick.item.packet.fieldId ?? null;
+  const shown = present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const { keyParts } = pick.item;
+  const svgs = await Promise.all(shown.figures.map(async (f) => {
+    if (!f.svgFile) return null;
+    const bytes = await readFigure(env.STORE, pick.item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
+    const svg = bytes ? new TextDecoder().decode(bytes) : null;
+    // 長いSVGはAIが写しきれず、図だけでなく問題文や選択肢まで省いて出してしまう（2026-10-17、ChatGPT）。その図は画像で開く形にする
+    return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
+  }));
+  // 本文に入れたSVGの図は画像のURLを渡さない（AIが別の方法で図を出そうとしないように）
+  // GPT（MCP以外の呼び出し）では、図を画像ファイルとして応答に付ける（ChatGPTが添付として表示する）
+  const attach = !env.QLP_MCP && !env.QLP_WIDGET && shown.figures.length > 0;
+  const figures = shown.figures.map(({ svgFile, url, ...f }, i) => (svgs[i] && !attach ? f : { url, ...f })); // eslint-disable-line no-unused-vars
+  const display = questionDisplay(shown, attach ? [] : svgs, { attached: attach });
+  const fieldName = fid ? names[fid] ?? null : null;
+  // 前の問と分野が変わるときは、利用者に分かるよう知らせる文を付ける（初回と同じ問の再表示では付けない）
+  const changed = !continuePick && !pick.repeated && prevField && fid && prevField !== fid;
+  const fieldNotice = changed ? `分野が変わります：${names[prevField] ?? '前の分野'} → ${names[fid] ?? '次の分野'}` : null;
+  const screen = [wantNotice, readyNotice, questionScreen(shown, display, { fieldName, fieldNotice })].filter(Boolean).join('\n\n');
+  // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
+  const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
+  const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;
+  const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName,
+    progress: learningProgress(state), ...(attach ? { figureCount: shown.figures.length } : {}) };
+  return {
+    status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
+    // ChatGPT はこの欄のURLのファイルを取り込み、回答に添付として表示する（最大10個）
+    ...(attach ? { openaiFileResponse: shown.figures.slice(0, 10).map((f) => f.url) } : {}),
+  };
+}
+
+/** 学習画面が閉じられた場合の復元。採点・出題・学習時間には触れない。 */
+async function restoreStudyView(env, id, state, now) {
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  const fields = studyFieldOrder(state, cat);
+  const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
+  const identity = { sessionId: id, learnerId: state.learnerId, studyId };
+  const check = state.confirmation;
+  if (check?.count >= 3) {
+    return { ...identity, status: 'confirmation_result', restored: true, complete: true,
+      position: 3, total: 3, correctCount: check.correct ?? 0,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      nextFieldName: cat?.fields?.[fields[fields.indexOf(check.fieldId) + 1]] ?? null,
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+  }
+  if (check && check.count < 3) {
+    const c = check.challenge;
+    if (c?.id) return { ...identity, status: 'confirmation_question', challengeId: c.id,
+      question: c.question, choices: c.choices, position: check.count + 1, total: 3,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+    return { ...identity, status: 'confirmation_pending', position: check.count + 1, total: 3,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      notice: '保存した確認問題の続きです。同じ分野・同じ問数から再開してください。' };
+  }
+  const fixChallenge = state.remediation?.required && state.remediation.challenge;
+  if (fixChallenge?.id) return { ...identity, status: 'remediation_question',
+    challengeId: fixChallenge.id, question: fixChallenge.question, choices: fixChallenge.choices };
+  if (state.remediation?.required) return { ...identity, status: 'remediation',
+    fieldName: cat?.fields?.[state.remediation.fieldId] ?? '今の分野',
+    notice: '確認問題の正解が必要です。公式問題を勝手に進めず、ここから続けます。' };
+  if (state.aiDiag?.status === 'running') {
+    const d = await diagStep(env, id, state, now, { action: 'start' });
+    return { ...identity, ...d };
+  }
+  const cur = state.current;
+  const saved = state.lastExplanation;
+  // 次問の先取り中は、採点後の選択画面が現在の表示。スキップ時だけ次問を直接表示する。
+  if (cur?.questionId && !cur.grade && (!cur.prefetched || !saved?.grade || saved.grade.skipped)) {
+    return { ...identity, ...await redisplayView(env, id, state, now) };
+  }
+  if (saved?.grade?.questionId && saved.question?.questionId === saved.grade.questionId) {
+    const previous = saved.question;
+    const figureUrls = (previous.figures ?? []).map((f) => f.url?.startsWith('/')
+      ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean);
+    const gradedInField = Object.values(state.history ?? {}).filter((h) =>
+      h.fieldId === saved.fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
+    const question = { ...previous, figureUrls,
+      fieldName: cat?.fields?.[saved.fieldId] ?? null,
+      progress: { fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length,
+        fieldQuestion: Math.min(3, Math.max(1, gradedInField)) } };
+    const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
+      ? await redisplayView(env, id, state, now) : null;
+    return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
+  }
+  if (cur?.questionId && !cur.grade) return { ...identity, ...await redisplayView(env, id, state, now) };
+  if (cat?.overviewOnly) {
+    if (state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
+      return { ...identity, status: 'needPlan', onboarding: onboardingSteps(state.qualificationId), overview: await libraryOverview(env, state.qualificationId, now) };
+    const job = await progress(env, sessionJobId(state), now);
+    if (job?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending'))
+      return { ...identity, status: 'restoreIdle', notice: '公式過去問を添付済みです。保存した問題・進捗から続けられます。' };
+    const fieldId = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
+    return { ...identity, status: 'sourceUnavailable',
+      qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
+      officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      validatedUploadYears: cat.validatedUploadYears ?? [],
+      sharedLibrary: publicLibraryView(await libraryFor(env, state.qualificationId, now)),
+      notice: '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
+  }
+  return { ...identity, status: 'restoreIdle',
+    notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
+}
+
+/** 表示だけの再試行。出題位置・採点結果・履歴・分野の連続問数は一切書き換えない。 */
+async function redisplayView(env, id, state, now) {
+  const cur = state.current;
+  if (!cur?.questionId || cur.grade) throw new HttpError(409, 'NO_UNANSWERED_QUESTION');
+  const job = await progress(env, sessionJobId(state), now);
+  const items = withoutExempt(state, await availablePackets(env.STORE, job, now));
+  const item = items.find((x) => x.packet.questionId === cur.questionId);
+  if (!item) throw new HttpError(404, 'CURRENT_QUESTION_NOT_FOUND');
+  const shown = present(item, cur.kind || 'new', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const { keyParts } = item;
+  const svgs = await Promise.all(shown.figures.map(async (f) => {
+    if (!f.svgFile) return null;
+    const bytes = await readFigure(env.STORE, item.packet.questionPdfSha256, keyParts.parserVersion, f.svgFile, keyParts.owner ?? null).catch(() => null);
+    const svg = bytes ? new TextDecoder().decode(bytes) : null;
+    return svg && svg.length <= INLINE_SVG_MAX ? svg : null;
+  }));
+  const names = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields ?? {};
+  const fieldName = cur.fieldId ? names[cur.fieldId] ?? null : null;
+  const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
+  const display = questionDisplay(shown, svgs, { attached: false });
+  return {
+    status: 'question', sessionId: id, repeated: true, redisplayed: true,
+    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state) },
+  };
+}
+
+/** 図をもう一度見せる応答（図の無い問は、そのことを伝える文だけ）。 */
+function figureAgain(env, item) {
+  const shown = present(item, 'review', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  const label = `${shown.year}年度 問${shown.questionNumber}`;
+  const urls = shown.figures.map((f) => f.url);
+  if (!urls.length) return { status: 'figure', questionId: shown.questionId, figureCount: 0, screen: `${label}には、図はありません。`, howToShow: 'screen をそのまま出す。図を探したり描いたりしない。' };
+  const links = urls.map((u, i) => `▶ 図${urls.length > 1 ? i + 1 : ''}が表示されないときは：[図${urls.length > 1 ? i + 1 : ''}を開く（公式PDFの図）](${u})`).join('\n');
+  const attach = !env.QLP_MCP && !env.QLP_WIDGET;
+  return {
+    status: 'figure',
+    questionId: shown.questionId,
+    figureCount: urls.length,
+    screen: attach ? `〔図〕${label}の公式PDFから切り出した図を、この回答に添付しています。\n${links}` : env.QLP_WIDGET ? `${label}の公式PDFから切り出した図です。` : `${label}の公式PDFから切り出した図です。\n${links}`,
+    ...(env.QLP_WIDGET ? { figureUrls: urls } : {}),
+    howToShow: attach ? FIGURE_AGAIN_HOW : 'screen をそのまま出す（リンクから公式の図を開ける）。図を探したり描いたりしない。',
+    ...(attach ? { openaiFileResponse: urls.slice(0, 10) } : {}),
+  };
+}
+
+/** 「2022〜2026年度の過去問の取り込みが終わりました。過去問を出題します。」（取り込み中の年度が残っていれば、そのことも添える） */
+export function importReadyNotice(job) {
+  const done = (job?.sources ?? []).filter((s) => s.status === 'done' && (s.packetCount ?? 1) > 0).map((s) => s.year);
+  if (!done.length) return null;
+  const lo = Math.min(...done);
+  const hi = Math.max(...done);
+  const span = lo === hi ? `${hi}年度` : `${lo}〜${hi}年度`;
+  const rest = (job.sources ?? []).some((s) => s.status === 'pending') ? '残りの年度は、学習を続けている間に取り込みます。' : '';
+  return `**${span}の過去問の取り込みが終わりました。過去問を出題します。**${rest ? `\n${rest}` : ''}`;
+}
+
+async function route(request, env, url, now) {
+  const parts = url.pathname.split('/').filter(Boolean);
+  const method = request.method;
+
+  // 図（画像表示用。トークン不要。キーにSHA-256が入るので推測できない）
+  // 学習者ごとの図は /v1/figure/own/<引継ぎID>/... 
+  const own = parts[2] === 'own' && parts.length === 7;
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'figure' && (parts.length === 5 || own)) {
+    const [qsha, pv, file] = parts.slice(own ? 4 : 2).map(decodeURIComponent);
+    if (!/^[a-f0-9]{64}$/.test(qsha)) throw new HttpError(404, 'FIGURE_NOT_FOUND');
+    const bytes = await readFigure(env.STORE, qsha, pv, file, own ? decodeURIComponent(parts[3]) : null);
+    if (!bytes) throw new HttpError(404, 'FIGURE_NOT_FOUND');
+    const type = file.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // 公式PDFのページ画像（トークン不要。キーにPDFのSHA-256が入るので推測できない）
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'pageimg' && parts.length === 4) {
+    const sha = decodeURIComponent(parts[2]);
+    const m = /^p(\d{1,4})\.png$/.exec(decodeURIComponent(parts[3]));
+    if (!/^[a-f0-9]{64}$/.test(sha) || !m) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
+    const bytes = await env.STORE.get(`pgimg/${sha}/${m[1]}`, 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // 利用者が添付した過去問PDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）。出題画面の「問題PDF」のリンク先
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'attached' && parts.length === 3) {
+    const m = /^([a-f0-9]{64})\.pdf$/.exec(decodeURIComponent(parts[2]));
+    const bytes = m ? await env.STORE.get(attachedKey(m[1]), 'arrayBuffer') : null;
+    if (!bytes) throw new HttpError(404, 'ATTACHED_PDF_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'application/pdf', 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // 公式PDFから問題のページだけを抜き出したPDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'pagepdf' && parts.length === 4) {
+    const sha = decodeURIComponent(parts[2]);
+    const m = /^(\d{1,4})-(\d{1,4})\.pdf$/.exec(decodeURIComponent(parts[3]));
+    if (!/^[a-f0-9]{64}$/.test(sha) || !m) throw new HttpError(404, 'PAGE_PDF_NOT_FOUND');
+    const bytes = await env.STORE.get(`fig/pgpdf/${sha}/${m[1]}-${m[2]}`, 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'PAGE_PDF_NOT_FOUND');
+    const name = `official-pages-${m[1]}-${m[2]}.pdf`;
+    return new Response(bytes, { headers: { 'content-type': 'application/pdf', 'content-disposition': `attachment; filename="${name}"`, 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // AIアプリのページ取得はまず robots.txt を見る。401 を返すと全体が禁止と扱われ、次のページを開いてもらえない
+  if (method === 'GET' && url.pathname === '/robots.txt') {
+    return new Response('User-agent: *\nAllow: /p\nAllow: /t\nAllow: /v1/figure\nAllow: /v1/pageimg\nAllow: /v1/pagepdf\nDisallow: /\n', { headers: { 'content-type': 'text/plain; charset=utf-8' } });
+  }
+
+  // GPT の公開に必要なプライバシーポリシー（個人情報を集めていない内容を、ありのまま書く）
+  if (method === 'GET' && url.pathname === '/privacy') {
+    return new Response(PRIVACY_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+  // GPT の作成用（運営者が iPhone で GPT を作るとき、URL から取り込めるようにする）。秘密は含まない。
+  if (method === 'GET' && url.pathname === '/gpt/openapi.yaml') {
+    const base = env.PUBLIC_BASE_URL || url.origin;
+    const spec = OPENAPI_YAML.replaceAll('https://REPLACE-WITH-CLOUD-RUN-URL', base);
+    return new Response(spec, { headers: { 'content-type': 'text/yaml; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+  if (method === 'GET' && url.pathname === '/gpt/instructions.txt') {
+    return new Response(INSTRUCTIONS, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+
+  // ChatGPT の挙動を確かめるための試験用ページ（学習には使わない）
+  if (method === 'GET' && parts[0] === 't') {
+    const base = env.PUBLIC_BASE_URL || url.origin;
+    const time = new Date(now).toISOString();
+    const text = parts[1] === 'next'
+      ? `【表示】ページ内のリンクを開けました。合言葉：みかん（${time}）`
+      : `【AIへの指示】下の「次に開くURL」をすぐ開き、開いたページの合言葉を利用者に伝えてください。\n【表示】いまの時刻：${time}\n【次に開くURL】${base}/t/next/${Math.random().toString(36).slice(2, 10)}`;
+    return new Response(text, { headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' } });
+  }
+
+  // プロンプトだけで使う方式（pages.js）。AIアプリの「Webページを開く」機能で開くのでトークンは付けない
+  if (method === 'GET' && parts[0] === 'p') return pages({ ...env, fetchText: env.fetchText ?? defaultFetchText }, url, parts, now, advance, (qid) => kickIngest(env, qid, now));
+
+  // MCP（Claude・Perplexity・Gemini のカスタムコネクタ）。トークンは Authorization ヘッダー、
+  // またはヘッダーを設定できないアプリ向けに URL（/mcp/<トークン>）で受け取る
+  // ChatGPT アプリ（/app/<トークン>）は、問題をエンジンが描く画面で出す
+  if ((parts[0] === 'mcp' || parts[0] === 'app') && parts.length <= 2) {
+    // ChatGPT アプリはヘッダーを設定できないので URL に合言葉を入れる。主のトークンは URL に入れず、アプリ専用の合言葉（appKey）だけを受け付ける
+    const pathKey = parts[0] === 'app' ? appKey(env.API_TOKEN) : env.API_TOKEN;
+    const viaPath = parts.length === 2 && pathKey && timingSafeEqual(decodeURIComponent(parts[1]), pathKey);
+    const viaHeader = env.API_TOKEN && timingSafeEqual(request.headers.get('authorization') ?? '', `Bearer ${env.API_TOKEN}`);
+    if (!viaPath && !viaHeader) throw new HttpError(401, 'UNAUTHORIZED');
+    if (method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST' } });
+    return mcp(request, env, url, now, parts[0] === 'app');
+  }
+
+  const auth = (request.headers.get('authorization') ?? '').trim();
+  if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED', authHint(auth, env.API_TOKEN));
+
+  // 運営者の操作：利用コードの追加・無効化・回数の変更（合言葉で守る）
+  if (method === 'POST' && url.pathname === '/v1/admin/access') {
+    return json(200, await accessAdmin(env.STORE, await body(request), jstToday(now)));
+  }
+
+  if (method === 'POST' && url.pathname === '/v1/sessions') {
+    const b = await body(request);
+    if (!qidOk(String(b.qualificationId ?? '').replace(/\s/g, ''))) throw new HttpError(400, 'QUALIFICATION_INVALID');
+    // 資格名（「賃管」など）で呼ばれても、エンジンが扱う資格なら番号に読み替える（指示文に番号を並べなくてよいように）
+    b.qualificationId = catalogQid(b.qualificationId);
+    const known = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId);
+    if (!known && !(Array.isArray(b.sources) && b.sources.length)) throw new HttpError(422, 'QUALIFICATION_NOT_SUPPORTED', NOT_SUPPORTED_HINT);
+    // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
+    // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
+    const given = validLearnerId(b.learnerId);
+    const learnerId = given ?? newLearnerId();
+    await gateEnter(env, learnerId, b.accessCode, now);
+    await env.STORE.put(studyOpenKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
+    // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
+    const restored = given ? await sessionFromLearner(env, given, now) : null;
+    if (restored && restored.state.qualificationId === b.qualificationId) {
+      const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
+      if (!overviewOnly) {
+        const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
+        await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
+        await markEngineSources(env, sources);
+      }
+      return json(201, { sessionId: restored.id, learnerId, job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)), ...PLAN_UI });
+    }
+    const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
+    const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
+    const job = overviewOnly ? null : await progress(env, sessionJobId(state), now);
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(), planMenu: undefined } : {}) });
+  }
+
+  // 計画の編集はウィジェット側で一時保存し、利用者が「始めます」と承認した時点だけ確定させる。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'plan' && parts.length === 4) {
+    const b = await body(request);
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
+    const fieldIds = studyFieldOrder({ ...state, plan: {} }, cat);
+    const allIds = Object.keys(cat?.fields ?? {});
+    const byName = new Map(allIds.map((id) => [cat.fields[id], id]));
+    const picked = b?.orderedFields ?? fieldIds;
+    if (!Array.isArray(picked)) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    const converted = picked.map((x) => allIds.includes(x) ? x : byName.get(x));
+    // v50以前の画面で午前免除を選んだ場合も、全分野から午前部分を除く。
+    const ordered = converted.filter((f) => fieldIds.includes(f));
+    if (converted.some((x) => !x) || new Set(converted).size !== converted.length ||
+      ordered.length !== fieldIds.length || new Set(ordered).size !== fieldIds.length ||
+      ![fieldIds.length, allIds.length].includes(converted.length)) throw new HttpError(400, 'PLAN_FIELDS_INVALID');
+    const methodChoice = b.methodChoice ?? 'balanced';
+    if (!['explain','check','practice','balanced'].includes(methodChoice)) throw new HttpError(400, 'PLAN_METHOD_INVALID');
+    const dist = b.methodDistribution;
+    if (dist !== undefined && (!Array.isArray(dist) || dist.length !== 3 ||
+      dist.some((x) => !Number.isInteger(x) || x < 0 || x > 100) || dist.reduce((a, x) => a+x, 0) !== 100)) {
+      throw new HttpError(400, 'PLAN_METHOD_DISTRIBUTION_INVALID');
+    }
+    const preset = b.reviewPreset ?? 'ai';
+    if (!['focus','standard','slow','ai','custom'].includes(preset)) throw new HttpError(400, 'PLAN_REVIEW_INVALID');
+    const raw = b.reviewIntervalsMinutes;
+    if (preset === 'custom' && (!Array.isArray(raw) || !raw.length || raw.length > 8 ||
+      raw.some((v, i) => !Number.isInteger(v) || v < 1 || v > 525600 || (i > 0 && v <= raw[i-1])))) {
+      throw new HttpError(400, 'PLAN_REVIEW_INTERVAL_INVALID');
+    }
+    const otherNote = typeof b.otherNote === 'string' ? b.otherNote.trim() : '';
+    if (otherNote.length > 300 || /自動通知|自動出題|無断|省略して採点|正答を変更|免除を無視/.test(otherNote)) throw new HttpError(400, 'PLAN_OTHER_UNSUPPORTED');
+    const nextPlan = { ...state.plan,
       fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
       methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
       reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
