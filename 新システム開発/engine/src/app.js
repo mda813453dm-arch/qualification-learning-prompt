@@ -803,8 +803,12 @@ async function restoreStudyView(env, id, state, now) {
     const previous = saved.question;
     const figureUrls = (previous.figures ?? []).map((f) => f.url?.startsWith('/')
       ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean);
+    const gradedInField = Object.values(state.history ?? {}).filter((h) =>
+      h.fieldId === saved.fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
     const question = { ...previous, figureUrls,
-      fieldName: cat?.fields?.[saved.fieldId] ?? null };
+      fieldName: cat?.fields?.[saved.fieldId] ?? null,
+      progress: { fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length,
+        fieldQuestion: Math.min(3, Math.max(1, gradedInField)) } };
     const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
       ? await redisplayView(env, id, state, now) : null;
     return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
