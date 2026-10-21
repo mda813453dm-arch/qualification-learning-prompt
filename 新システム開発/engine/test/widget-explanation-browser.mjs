@@ -119,6 +119,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
     assert.equal(await ui.locator('#next').count(), 1, '復習対象がなくても次の分野への選択を保持する');
     await ui.locator('#next').click();
+    // 新分野では既存仕様の「この項目の進め方」を選ぶ。実践問題を選ぶと先取り済みの問4を表示する。
+    await ui.locator('#itemModes button[data-mode="practice"]').click();
     await ui.getByText('問4の本文', { exact: true }).waitFor();
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の初回演習の位置' }).getAttribute('aria-valuenow'), '4');
     assert.deepEqual(errors, []);
