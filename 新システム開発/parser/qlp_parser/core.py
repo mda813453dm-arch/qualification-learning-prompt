@@ -47,6 +47,7 @@ class RawQuestion:
     stem_mode: str = "text"  # "text" | "ocr"（読み間違いがありうる） | "official_image"
     choice_mode: str = "text"  # "text" | "ocr" | "official_image"（選択肢は番号だけを持つ）
     crops: list = field(default_factory=list)  # 切り出す範囲 [(ページ番号, (x0, y0, x1, y1))]
+    preserve_aspect: bool = False  # MCP画面でタップ拡大できる原本ページは、左右余白を人工追加しない
 
     @property
     def needs_image(self):
@@ -134,7 +135,8 @@ def render_crops(doc, raw_questions, file_prefix):
             pix = page.get_pixmap(matrix=fitz.Matrix(CROP_ZOOM, CROP_ZOOM), clip=clip, alpha=False)
             if pix.is_unicolor:
                 continue
-            pix = _pad_landscape(pix)
+            if not q.preserve_aspect:
+                pix = _pad_landscape(pix)
             data = pix.tobytes("png")
             name = f"{file_prefix}-q{q.number}-p{page_no}.png"
             assets[name] = data
