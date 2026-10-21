@@ -733,5 +733,5 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v50.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v51.html');
 });
