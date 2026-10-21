@@ -454,12 +454,14 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   // 短い文に対するAIの手順は、アプリのツールの説明にある
   assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
   assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));
-  // 新しい枠が出ないときのボタンは、次へ進まず、出題中の同一問題を再表示する
+  // 最初の公式過去問は画面から直接取得し、取得失敗時も同じ要求で復旧する。
   assert.ok(html.includes('function nextBelow(fallback, say)'));
-  assert.ok(html.includes("ask(say || '次の問題へ')"));
-  assert.ok(html.includes('id="nextHere">再表示'));
+  assert.ok(html.includes('await fallback();'));
+  assert.ok(html.includes('id="nextHere" disabled'));
   assert.ok(!html.includes('出ないときは、ここで次の問題へ'));
-  assert.ok(html.includes("callTool('redisplayQuestion', { sessionId:"));
+  const nextBody = html.slice(html.indexOf('function nextBelow('), html.indexOf('function scrollUp('));
+  assert.ok(!nextBody.includes('ask('), '初回出題をChatGPTの再呼び出しに任せない');
+  assert.ok(!nextBody.includes("callTool('redisplayQuestion'"), '未出題の問に再表示APIを呼ばない');
   assert.ok(mcp.includes('「○○を実践問題から始めます。」「次の問題へ」と送ってきたら'));
 });
 
