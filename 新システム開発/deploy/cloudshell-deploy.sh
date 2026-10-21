@@ -68,10 +68,26 @@ else
     --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
     --set-env-vars "QLP_OCR=vision,OCR_CACHE_BUCKET=$BUCKET" \
     --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
-  echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
 fi
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
-echo "分解サーバーの応答：$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$PARSER_URL/healthz" || true)"
+# 新しい解析器の公開前検査。404や接続失敗を無視してエンジンだけ配置すると、
+# 学習画面で「問題を準備しています」を繰り返すので、この段階で止める。
+PARSER_HEALTH_STATUS=""
+for TRY in 1 2 3; do
+  PARSER_HEALTH_STATUS="$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$PARSER_URL/healthz" || true)"
+  if [ "$PARSER_HEALTH_STATUS" = "200" ]; then break; fi
+  echo "分解サーバー待機：HTTP ${PARSER_HEALTH_STATUS:-unknown}（${TRY}/3）"
+  sleep 5
+done
+if [ "$PARSER_HEALTH_STATUS" != "200" ]; then
+  echo "ERROR: 分解サーバーの/healthzが成功しません（HTTP ${PARSER_HEALTH_STATUS:-unknown}）。学習エンジンは配置しません。" >&2
+  exit 1
+fi
+echo "分解サーバーの健康状態：HTTP 200"
+# 新しい分解サーバーを確認できた後だけ、配置済みコードの印を更新する。
+if [ "$DEPLOYED_SRC" != "$PARSER_SRC" ]; then
+  echo "$PARSER_SRC" | gcloud storage cp - "$PARSER_MARK" >/dev/null
+fi
 
 echo "== 7/7 学習エンジン（qlp-engine）を配置"
 gcloud run deploy qlp-engine --source "$ROOT/engine" --region "$REGION" --allow-unauthenticated \
