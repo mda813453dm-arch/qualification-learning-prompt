@@ -299,6 +299,9 @@ export function pin(state, item, kind, now) {
       topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
       kind,
       correctAnswer: p.correctAnswer,
+      acceptedAnswers: p.acceptedAnswers ?? null,
+      allCorrect: p.allCorrect === true,
+      correctAnswerLabel: p.correctAnswerLabel ?? null,
       choiceCount: p.choices.length,
       fieldId: p.fieldId ?? null,
       source: sourceOf(p),
@@ -380,7 +383,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   }
   // 「分からない」：想起できなかった問（B15）。採点には数えず、正答を見せ、復習に登録する（同じ分野の連続誤答にも数えない）
   if (/^(分からない|わからない|分かりません|わかりません|dontknow)$/i.test(String(value ?? '').trim())) {
-    const g = { questionId, dontKnow: true, result: 'recall_failure', correctAnswer: cur.correctAnswer, answerPdfUrl: cur.source.answerPdfUrl };
+    const g = { questionId, dontKnow: true, result: 'recall_failure', correctAnswer: cur.correctAnswer, correctAnswerLabel: cur.correctAnswerLabel, acceptedAnswers: cur.acceptedAnswers, answerPdfUrl: cur.source.answerPdfUrl };
     const reviewId = cur.reviewUnitId || questionId;
     const upd = updateReviewItem(state.review[reviewId] ?? null, { unitId: reviewId, topicId: cur.topicId ?? cur.fieldId ?? 'unclassified', sourceQuestionId: questionId, qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
     const review = { ...state.review };
@@ -390,9 +393,9 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
   }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
-  const correct = n === cur.correctAnswer;
+  const correct = cur.allCorrect || (cur.acceptedAnswers?.includes(n) ?? (n === cur.correctAnswer));
   const result = !correct ? 'wrong' : confidence === 'guess' ? 'guess_correct' : 'confident_correct';
-  const g = { questionId, selected: n, correctAnswer: cur.correctAnswer, correct, result, answerPdfUrl: cur.source.answerPdfUrl };
+  const g = { questionId, selected: n, correctAnswer: cur.correctAnswer, correctAnswerLabel: cur.correctAnswerLabel, acceptedAnswers: cur.acceptedAnswers, correct, result, answerPdfUrl: cur.source.answerPdfUrl };
   const reviewId = cur.reviewUnitId || questionId;
   const upd = updateReviewItem(state.review[reviewId] ?? null, {
     unitId: reviewId,
