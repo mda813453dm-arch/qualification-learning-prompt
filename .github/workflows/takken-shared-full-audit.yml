@@ -1,0 +1,25 @@
+name: 宅建共通ライブラリ全600問の保存監査（読み取りのみ）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/takken-shared-full-audit-request.txt'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: 共有保存12区分と600問を一括照合
+        run: node 新システム開発/engine/scripts/audit-takken-shared-library.mjs
