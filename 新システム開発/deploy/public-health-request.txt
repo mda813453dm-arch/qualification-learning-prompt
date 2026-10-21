@@ -1,0 +1,1 @@
+2026-10-21 diagnose response headers and body for public qlp-parser /healthz after revision 00146-zrt. Read-only, no cloud credentials.
