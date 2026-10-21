@@ -68,13 +68,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           }
           else window.protocolErrors.push('unexpected tool ' + op);
         } else if (m.method === 'ui/update-model-context') {
-          if (window.rejectContext) {
-            iframe.contentWindow.postMessage({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: 'unsupported context' } }, '*');
-            return;
-          }
           window.internal.push(m.params.content[0].text);
           reply({});
         } else if (m.method === 'ui/message') {
+          if (window.rejectMessage) {
+            iframe.contentWindow.postMessage({ jsonrpc: '2.0', id: m.id, error: { code: -32601, message: 'unavailable' } }, '*');
+            return;
+          }
           window.followups.push(m.params.content[0].text);
           reply({});
         }
@@ -130,21 +130,16 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.ok((await page.evaluate(() => window.followups)).every(x => x === '2025年度 問1の解説を見る'), '会話には問題を識別できる操作名だけを送る');
     const contexts = await page.evaluate(() => window.internal);
-    assert.equal(contexts[0], contexts[1], '再表示は同じ問題と採点結果を送る');
-    const payload = JSON.parse(contexts[0].split('\nQLP_EXPLANATION_CONTEXT=')[1]);
-    assert.equal(payload.sessionId, sessionId);
-    assert.equal(payload.studyId, 'test-study');
-    assert.deepEqual(payload.question, question.question, '画面内で出題した問題本文・選択肢・IDを渡す');
-    assert.deepEqual(payload.grade, { correct: true, selected: '3', correctAnswer: '3' });
-    await page.evaluate(() => { window.rejectContext = true; });
+    assert.deepEqual(contexts, [], '解説や再表示で入力欄に内部文脈を添付しない');
+    await page.evaluate(() => { window.rejectMessage = true; });
     await ui.getByRole('button', { name: /再表示/ }).click();
     await ui.locator('#requestError').waitFor();
     await ui.getByRole('button', { name: /再表示/ }).click();
     await ui.locator('#retryDisplay:not([disabled])').waitFor();
     assert.equal(await ui.locator('#requestError').count(), 1, '通信失敗の表示を重複追加しない');
-    assert.equal(await page.evaluate(() => window.followups.length), 2, '文脈送信失敗時に操作名だけ送って再起動しない');
+    assert.equal(await page.evaluate(() => window.followups.length), 2, '送信失敗時に操作を重複送信しない');
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1, '失敗しても終了操作を残す');
-    await page.evaluate(() => { window.rejectContext = false; });
+    await page.evaluate(() => { window.rejectMessage = false; });
     await page.evaluate(r => window.deliver(r), result({ status: 'menu', menu: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '復習する'], studyId: 'test-study', sessionId } }));
     await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
     assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文');

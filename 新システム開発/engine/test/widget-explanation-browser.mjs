@@ -44,7 +44,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     page.on('pageerror', e => errors.push(e.message));
     await page.exposeFunction('engineTool', tool);
     await page.exposeFunction('modelStep', async () => {
-      // ui/update-model-contextとsetWidgetStateを両方破棄した状況でも復旧できるか。
+      // 画面文脈の添付を使わず、保存済みの採点結果から復旧できるか。
       const spec = await tool('explainSpec', { sessionId: knownSessionId });
       assert.equal(spec.isError, false);
       const context = spec.structuredContent;
@@ -98,8 +98,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）']);
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
-    assert.equal(await page.evaluate(() => window.droppedContext), 2);
-    assert.equal(await page.evaluate(() => window.droppedWidgetState), 2);
+    assert.equal(await page.evaluate(() => window.droppedContext), 0, '文脈添付を要求しない');
+    assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     assert.deepEqual(await page.evaluate(() => window.messages), ['2026年度 問1の解説を見る', '2026年度 問1の解説を見る']);
     await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();

@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v47.html';
+export const WIDGET_URI = 'ui://qlp/question-v48.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.47';
+export const WIDGET_VERSION = '2026-10-21.48';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -81,20 +81,11 @@ a{color:inherit}
   async function ask(text, actionLabel){
     try {
       var oldError = document.getElementById('requestError'); if (oldError) oldError.remove();
-      // ChatGPT固有のフォローアップ経路を優先し、ウィジェットの内部制御文を発言欄に書き込まない。
-      // 利用者に見える sendFollowUpMessage へ内部依頼文を渡さない。
-      // ChatGPTのウィジェット状態にも同じ情報を保持する。通信ACKだけを情報到達の証拠にしない。
-      var widgetPublished = false;
-      try {
-        if (window.openai && typeof window.openai.setWidgetState === 'function') {
-          window.openai.setWidgetState({ modelContent: text }); widgetPublished = true;
-        }
-      } catch (e) {}
+      // 入力欄への不要な添付を避けるため、操作の合図は短い自然文だけを送る。
+      // 詳細はツール説明とエンジンの保存記録から取得する。
       if (!bridgeReady) await ready;
-      // 標準MCP Appsではモデル向け情報を文脈更新に置き、会話には短い操作合図だけを送る。
-      try { await rpc('ui/update-model-context', { content: [{ type: 'text', text: text }] }); }
-      catch (e) { if (!widgetPublished) throw e; }
-      return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: actionLabel || '学習画面の操作を続ける' }] });
+      var visible = actionLabel || text;
+      return await rpc('ui/message', { role: 'user', content: [{ type: 'text', text: visible }] });
     } catch (e) {
       var err = document.getElementById('requestError');
       if (!err) { app.insertAdjacentHTML('beforeend', '<div id="requestError" class="notice" role="alert"></div>'); err = document.getElementById('requestError'); }
@@ -181,7 +172,7 @@ a{color:inherit}
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
     if (data.status === 'confirmation_pending') {
       app.innerHTML = '<h2>確認問題 ' + esc(data.position) + ' / 3問</h2><div class="notice">' + esc(data.notice) + '</div><div class="row"><button id="continueConfirmation">確認問題を続ける</button></div>' + endBar();
-      document.getElementById('continueConfirmation').onclick = function(){ this.disabled = true; ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', '確認問題を続ける'); };
+      document.getElementById('continueConfirmation').onclick = function(){ this.disabled = true; ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を見る'); };
       bindEnd(); return;
     }
     if (data.status === 'remediation_retry') {
@@ -191,7 +182,7 @@ a{color:inherit}
         '<div class="row"><button id="retryRemediation">別の確認問題を出す</button></div>' + endBar();
       document.getElementById('retryRemediation').onclick = function(){
         this.disabled = true;
-        ask('先ほどのAI作成確認問題は不正解でした。公式過去問はまだ再開しません。別のAI作成確認問題を1問作り、本文・全選択肢・確定した正答番号をregisterRemediationQuestionへ登録してから画面で出してください。');
+        ask('先ほどのAI作成確認問題は不正解でした。公式過去問はまだ再開しません。別のAI作成確認問題を1問作り、本文・全選択肢・確定した正答番号をregisterRemediationQuestionへ登録してから画面で出してください。', '同じ分野の確認問題をもう一度見る');
       };
       bindEnd();
       return;
@@ -215,7 +206,7 @@ a{color:inherit}
       app.innerHTML = '<div class="notice" role="alert">' + esc(data.notice || 'この分野の確認問題に正解するまで次の公式過去問へ進めません。') + '</div><div class="row"><button id="mandatoryCheck">AI作成確認問題を始める</button></div>' + endBar();
       document.getElementById('mandatoryCheck').onclick = function(){
         this.disabled = true;
-        ask((data.fieldName || '今の分野') + 'で同一分野3問連続不正解です。次の公式過去問へ進まず、AI作成の確認問題を出題し、回答後に正答を照合してください。正解時だけcompleteRemediationで確認結果を記録して同じ分野の実践問題へ戻してください。不正解時は別の確認問題で補強してください。');
+        ask((data.fieldName || '今の分野') + 'で同一分野3問連続不正解です。次の公式過去問へ進まず、AI作成の確認問題を出題し、回答後に正答を照合してください。正解時だけcompleteRemediationで確認結果を記録して同じ分野の実践問題へ戻してください。不正解時は別の確認問題で補強してください。', (data.fieldName || '今の分野') + 'の確認問題を始める');
       };
       bindEnd();
       return;
@@ -304,7 +295,7 @@ a{color:inherit}
     scrollUp(); bindEnd();
     if (!d.complete) document.getElementById('confirmationNext').onclick = function(){
       this.disabled = true;
-      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + (d.position+1) + '問/全3問が出るまで待ってください。', '次の確認問題を見る');
+      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + (d.position+1) + '問/全3問が出るまで待ってください。', d.fieldName + 'の確認問題・第' + (d.position+1) + '問を見る');
     };
     else {
       var openPractice = async function(b, target){
@@ -938,7 +929,7 @@ a{color:inherit}
       var mandatory = document.getElementById('check');
       mandatory.onclick = function(){
         this.disabled = true;
-        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。確認問題をregisterRemediationQuestionへ先に登録し、利用者の回答を画面側で採点してください。正解時だけ同じ分野の公式実践問題へ戻してください。');
+        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。確認問題をregisterRemediationQuestionへ先に登録し、利用者の回答を画面側で採点してください。正解時だけ同じ分野の公式実践問題へ戻してください。', (q.fieldName || 'この分野') + 'の確認問題で基本を確かめる');
       };
       bindEnd();
       return;
