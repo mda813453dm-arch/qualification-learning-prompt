@@ -733,7 +733,7 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v53.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v54.html');
 });
 
 // 土地家屋調査士の過去実装（PDF検証・図抽出）は現行エンジンに未接続。
