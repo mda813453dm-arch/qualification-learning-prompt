@@ -55,7 +55,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
                 adapter.check_source_hashes(year, fixed_section, qsha, asha)
                 adapter.check_question(qdoc, adoc, year, fixed_section)
                 raw = adapter.parse_questions(qdoc, fixed_section)
-                answers = adapter.parse_answers(adoc, fixed_section)
+                answers = adapter.parse_answers(adoc, fixed_section, year)
             else:
                 if hasattr(adapter, "check_year"):
                     adapter.check_year(adoc, year)
