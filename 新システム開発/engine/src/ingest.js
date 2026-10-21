@@ -120,7 +120,7 @@ export async function ingestSource(src, deps) {
   const cached = await readResult(store, keyParts, now);
   if (cached.hit) return { from: 'cache', keyParts, result: cached.result };
   // 学習者ごとの取り込み：同じ公式PDF・同じ分解プログラムの版で分解済みの控えがあれば、それを写す（分解し直さない。費用を抑えるため）
-  const tplKey = keyParts.owner ? { ...keyParts, owner: SHARED_OWNER } : null;
+  const tplKey = keyParts.owner && keyParts.owner !== SHARED_OWNER ? { ...keyParts, owner: SHARED_OWNER } : null;
   if (tplKey) {
     const tpl = await readResult(store, tplKey, now);
     const assets = tpl.hit ? await readAssets(store, tplKey, tpl.result) : null;
