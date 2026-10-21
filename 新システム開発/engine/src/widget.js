@@ -573,7 +573,9 @@ a{color:inherit}
     var stageArrival = (got || []).some(function(t){ return /^学習状況：/.test(t); });
     app.innerHTML = '<h2>学習計画</h2>' +
       (stageArrival ? '<div class="stage-arrived" role="status">✓ 選択を受け付けました。画面は「学習計画」に切り替わりました。次の操作は計画の確認後に行ってください。</div>' : '') +
-      (changes ? '<div class="notice">' + esc(changes) + '</div>' : '') + dr +
+      (changes ? '<div class="notice">' + esc(changes) + '</div>' : '') +
+      (onboardProfile.exemption === 'confirmed' && ov.exemptionExcludeFields && ov.exemptionExcludeFields.length
+        ? '<div class="notice">午前の部の免除を適用する学習計画として、午前の分野を除いています。</div>' : '') + dr +
       '<div class="stem"><b>学習する分野の順</b><ol class="ov-l">' +
       order.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ol></div>' +
       '<div class="stem"><b>学習方法：</b>' + esc({explain:'解説重視',check:'確認問題重視',practice:'公式過去問重視',balanced:'バランス型'}[d.methodChoice] || d.methodChoice) +
@@ -583,7 +585,7 @@ a{color:inherit}
       '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
       '<div class="choices"><button id="startStudy"><b>1</b><span>この学習計画で始める</span></button>' +
       '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
-      '<button id="diag"><b>3</b><span>初期診断で苦手分野を調べる</span></button>' +
+      '<button id="diag"' + (ov.overviewOnly ? ' disabled' : '') + '><b>3</b><span>' + (ov.overviewOnly ? '初期診断（公式過去問の解析が未対応）' : '初期診断で苦手分野を調べる') + '</span></button>' +
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
     guardNewPlanActions();
@@ -920,8 +922,25 @@ a{color:inherit}
     var m = steps[got.length];
     if (!m) {
       // 免除と学習段階の答えをエンジンに残す（免除が適用確定なら、その問は出さない。学習段階は解説の深さと引継ぎに使う）
-      if (studyLearner) callTool('saveProfile', { sessionId: studyLearner, exemption: onboardProfile.exemption || undefined, stage: onboardProfile.stage || undefined }).catch(function(){});
-      planPanel(got); return;
+      function showPlan(){
+        if (onboardProfile.exemption === 'confirmed' && onboardOv && Array.isArray(onboardOv.exemptionExcludeFields)) {
+          var excluded = onboardOv.exemptionExcludeFields;
+          onboardOv.fields = (onboardOv.fields || []).filter(function(f){ return excluded.indexOf(f) < 0; });
+          planDraft = null;
+        }
+        planPanel(got);
+      }
+      if (!studyLearner) { showPlan(); return; }
+      app.innerHTML = '<div class="notice" role="status">学習条件を保存しています…</div>';
+      callTool('saveProfile', { sessionId: studyLearner, exemption: onboardProfile.exemption || undefined, stage: onboardProfile.stage || undefined })
+        .then(function(result){
+          if (!result || result.error) throw new Error('PROFILE_SAVE_FAILED');
+          showPlan();
+        }).catch(function(){
+          app.innerHTML = '<div class="notice" role="alert">学習条件の保存に失敗しました。条件を変えずに再試行してください。</div><div class="row"><button id="retryProfile">再試行</button></div>';
+          document.getElementById('retryProfile').onclick = function(){ onboard(steps, got); };
+        });
+      return;
     }
     var h = ovHtml() + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
