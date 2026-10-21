@@ -7,7 +7,7 @@
     {pdf:{base64}, pages:[1始まりのページ番号, 最大4つ]}  または  {pdf:{base64}, find:"第11問", span:2}（見出しを含むページから）
   → 200 {pageCount, matchedPage, pages:{"p<番号>.png": <base64 PNG>}, excerpt:<base64 PDF>, tables:[{page, caption, rows}], figures:[{page, bbox}]}
     （どの資格の公式PDFでも、ページをそのまま画像にする。excerpt は図だけを切り出したPDF。図が無ければページ全体）
-  GET /healthz → 200 {"ok": true, "parserVersion", "ocr"}
+  GET /healthz または /v1/status → 200 {"ok": true, "parserVersion", "ocr"}
 
 公式PDFの取得はしない（取得とSHA-256の照合はエンジン側）。届いたPDFのSHA-256が sha256 と違えば分解しない。
 分解できなかったときも 200 で result.status=unavailable と理由コードを返す（エンジン側で取り込み元ごとに失敗にする）。
@@ -263,7 +263,9 @@ class Handler(BaseHTTPRequestHandler):
         return hmac.compare_digest(self.headers.get("authorization", ""), f"Bearer {token}")
 
     def do_GET(self):  # noqa: N802
-        if self.path == "/healthz":
+        # Cloud Run の公開経路で /healthz が Google 側のHTML 404になる環境向けに
+        # 同じ検査を /v1/status でも提供する。認証付き解析APIの権限は変えない。
+        if self.path in ("/healthz", "/v1/status"):
             self._send(200, {"ok": True, "parserVersion": PARSER_VERSION, "ocr": ocr.available()})
         else:
             self._send(404, {"error": "NOT_FOUND"})
