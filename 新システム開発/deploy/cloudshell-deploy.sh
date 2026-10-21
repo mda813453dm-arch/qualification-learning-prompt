@@ -145,4 +145,4 @@ echo "    gcloud secrets versions access latest --secret=qlp-api-token; echo"
 echo "  Claude・Perplexity に登録するURL（MCP）：次のコマンドで表示（トークン入りなのでチャットには貼らないでください）"
 echo "    echo $ENGINE_URL/mcp/\$(gcloud secrets versions access latest --secret=qlp-api-token)"
 echo
-echo "動作確認：curl -s $PARSER_URL/healthz   （\"ocr\": true なら日本語OCRが使えます）"
+echo "動作確認：curl -s $PARSER_URL/v1/status   （\"ocr\": true なら日本語OCRが使えます）"
