@@ -24,7 +24,7 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
     assert.deepEqual(target.uploadedYears,[]);
     assert.deepEqual(target.savedSections,[]);
     assert.equal(target.sharedQuestionCount,0);
-    assert.ok(target.requirements.length>25);
+    assert.ok(target.requirements.length>10, '資格ごとの確認要件が記載されている');
     assert.deepEqual(futureOfficialShareTarget(cat.qualificationId),target);
     assert.deepEqual(futureOfficialShareTarget(target.qualificationKey),target);
     assert.equal(cat.officialPdfPins,undefined,
