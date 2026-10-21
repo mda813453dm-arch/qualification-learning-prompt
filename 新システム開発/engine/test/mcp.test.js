@@ -8,7 +8,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
 import { WIDGET_URI } from '../src/widget.js';
-import { SRC, T0, assetsB64, fakeParser, fakeWeb, pdf } from './helpers.js';
+import { SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
 
@@ -768,7 +768,7 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
   const view = (await app('nextQuestion', { sessionId: sid }))._meta.qlp;
   assert.equal(view.status, 'sourceUnavailable');
   assert.equal(view.fieldName, afternoon[0]);
-  assert.match(view.notice, /自動解析/);
+  assert.match(view.notice, /添付すると原本を照合/);
   assert.doesNotMatch(view.notice, /準備していま/);
   const restored = (await app('restoreStudyView', { sessionId: sid }))._meta.qlp;
   assert.equal(restored.status, 'sourceUnavailable');
@@ -779,4 +779,58 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
     question: '土地家屋調査士の学習用に作成した確認問題です。', choices: ['選択肢1', '選択肢2', '選択肢3'], correctAnswer: 2 });
   assert.equal(question._meta.qlp.status, 'confirmation_question');
   assert.equal(question.structuredContent.question, undefined, 'AI作成確認問題はプライベート画面に表示する');
+});
+
+
+// エンジン・画面までの配線試験。パーサーの実際のPDF照合は別のPython単体試験と
+// 手元の2025年度の本物PDFのSHA確認で検査し、ここでは決して偽物を公式と認定しない。
+test('土地家屋調査士2025：添付の部・年度・正答を確認し、学習承認後に画面で出題／固定正答採点する', async () => {
+  const env = makeEnv();
+  const answer = pdf('land-surveyor-2025-answer');
+  const question = pdf('land-surveyor-2025-afternoon');
+  env.fetchAttached = async (url) => url.endsWith('answer.pdf') ? answer : question;
+  env.parserFetch = async (_url, init) => {
+    const b = JSON.parse(init.body);
+    const bytes = (part) => Uint8Array.from(atob(part.base64), (c) => c.charCodeAt(0));
+    const src = { qualificationId: 'land_surveyor', adapter: b.adapter, year: b.year, section: b.section,
+      questionUrl: b.question.url, answerUrl: b.answer.url };
+    const parsed = await fakeResult({ src, qBytes: bytes(b.question), aBytes: bytes(b.answer),
+      answers: [1, 5, 2], fieldIds: ['l3', 'l3', 'l3'], figureOn: [1] });
+    return new Response(JSON.stringify({ result: parsed.result, assets: assetsB64(parsed.assets) }));
+  };
+  const callUi = async (name, args) => (await rpc(env, 'tools/call',
+    { name, arguments: args }, { path: '/app' })).body.result;
+  const open = await callUi('startSession', { qualificationId: '土地家屋調査士', sources: [] });
+  const { sessionId, learnerId } = open._meta.qlp;
+  const profile = await callUi('saveProfile', { sessionId, exemption: 'confirmed', stage: 4 });
+  assert.equal(profile.structuredContent.status, 'profile');
+  const order = Object.values(CATALOG.land_surveyor.fields).slice(2);
+  assert.equal((await callUi('saveStudyPlan', { sessionId, orderedFields: order,
+    methodChoice: 'practice', reviewPreset: 'standard' })).structuredContent.status, 'planSaved');
+  assert.equal((await callUi('startStudy', { learnerId, qualificationName: '土地家屋調査士' })).structuredContent.learnerId, learnerId);
+  const before = await callUi('nextQuestion', { sessionId });
+  assert.equal(before._meta.qlp.status, 'sourceUnavailable');
+  const source = { download_url: 'https://attachment.example/afternoon.pdf' };
+  const key = { download_url: 'https://attachment.example/answer.pdf' };
+  const bad = await callUi('attachPdf', { sessionId, year: 2024, section: '午後の部', questionPdf: source, answerPdf: key });
+  assert.equal(bad.isError, true, '未照合年度を誤って取り込まない');
+  const noSection = await callUi('attachPdf', { sessionId, year: 2025, questionPdf: source, answerPdf: key });
+  assert.equal(noSection.isError, true, '午前午後の区分がない場合は取り込まない');
+  const noAnswer = await callUi('attachPdf', { sessionId, year: 2025, section: '午後の部', questionPdf: source });
+  assert.equal(noAnswer.isError, true, '正答PDFのない採点を始めない');
+  const imported = await callUi('attachPdf', { sessionId, year: 2025, section: '午後の部', questionPdf: source, answerPdf: key });
+  assert.equal(imported.structuredContent.status, 'attached', JSON.stringify(imported.structuredContent));
+  const choose = await callUi('chooseItem', { sessionId, fieldName: order[0], mode: 'practice' });
+  assert.equal(choose.structuredContent.status, 'item');
+  const pending = await callUi('nextQuestion', { sessionId });
+  const view = pending._meta.qlp;
+  assert.equal(view.status, 'question', JSON.stringify(view));
+  assert.equal(view.question.questionId, 'land_surveyor:2025:午後の部:1');
+  assert.equal(view.question.fieldName, order[0]);
+  assert.ok(view.question.figures.length >= 1, '公式図の画像を実践画面に結び付ける');
+  assert.equal(pending.structuredContent.question?.figureUrls, undefined, 'AIに図のURLを誤配布しない');
+  const result = await callUi('submitAnswer', { sessionId, questionId: view.question.questionId, value: '1' });
+  assert.equal(result._meta.qlp.grade.correct, true, '出題時の固定正答だけで採点する');
+  const again = await callUi('restoreStudyView', { sessionId });
+  assert.equal(again._meta.qlp.status, 'restoredGrade', '復元時に再採点しない');
 });
