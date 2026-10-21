@@ -89,12 +89,12 @@ export const CATALOG = {
       l6: '口述試験対策',
     },
     // 法務省のサイトからは自動取得できないため、本人添付のPDFだけで開始する。
-    // 2024・2025年度の原本SHAと正答の午前／午後列を検査するアダプタを利用。
+    // 2022～2025年度の原本SHAと正答の午前／午後列を検査するアダプタを利用。
     // 記述式問（午前11・午後21/22）は択一式の自動採点に入れない。
     overviewOnly: true,
     uploadAdapter: 'land_surveyor',
     uploadSections: ['午前の部', '午後の部'],
-    validatedUploadYears: [2024, 2025],
+    validatedUploadYears: [2022, 2023, 2024, 2025],
     sources: [],
   },
   surveyor: {
