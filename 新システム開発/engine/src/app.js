@@ -23,6 +23,7 @@ import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withN
 import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
 import { handleRpc } from './mcp.js';
 import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
+import { officialLibrary, publicLibraryView, combineWithSharedJob } from './official-library.js';
 import { findSources, newLearnerId, pages } from './pages.js';
 import { sha256Hex } from './store.js';
 import { LIMIT_MSG, NEED_CODE, admin as accessAdmin, checkCode, countUse, getConfig as accessConfig, grantLearner, learnerAccess } from './access.js';
@@ -164,6 +165,22 @@ function checkSources(sources, qualificationId, owner = null) {
  * 無い古い記録は資格ごとの共有の取り込み。
  */
 const sessionJobId = (state) => (state.learnerId ? `${state.qualificationId}~${state.learnerId}` : state.qualificationId);
+
+// 共通保存の結果だけ再利用。対応可能年度を、保存済み年度と取り違えない。
+function catalogFor(qualificationId) {
+  return Object.values(CATALOG).find((c) => c.qualificationId === qualificationId) ?? CATALOG[qualificationId];
+}
+async function libraryFor(env, qualificationId, now) {
+  const cat = catalogFor(qualificationId);
+  return cat?.officialPdfPins
+    ? officialLibrary(env.STORE, cat, env.PARSER_VERSION || DEFAULT_PARSER_VERSION, now)
+    : null;
+}
+async function libraryOverview(env, qualificationId, now) {
+  const ov = overviewFor(qualificationId);
+  const shared = await libraryFor(env, qualificationId, now);
+  return shared ? { ...ov, sharedLibrary: publicLibraryView(shared) } : ov;
+}
 
 const qidOk = (v) => typeof v === 'string' && v.length > 0 && v.length <= 100 && !/[/\s]/.test(v);
 const sesKey = (id) => `ses/${id}`;
@@ -442,6 +459,12 @@ async function attachPdf(env, id, state, b, url, now) {
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
   const jobId = sessionJobId(state);
   const job = await readJob(env.STORE, jobId);
+  // 他の利用者が登録済みなら、PDFを再取得せず共有済み結果を使う。
+  const global = await libraryFor(env, state.qualificationId, now);
+  if (global?.stored.some((x) => x.year === year && x.section === section))
+    return { status: 'attachedAlready', sessionId: id, year, section,
+      notice: `${year}年度・${section}は共有保存済みです。PDFの再添付は不要です。`,
+      sharedLibrary: publicLibraryView(global) };
   const have = (job?.sources ?? []).find((x) => x.year === year && x.section === section && x.status === 'done');
   if (have) return { status: 'attachedAlready', sessionId: id, year, section,
     notice: `${year}年度・${section}の過去問は既に取り込まれています。` };
@@ -484,11 +507,19 @@ async function kickIngest(env, qid, now) {
  * その場で待つとAIアプリが時間切れになって応答（sessionId など）を受け取れないため、本番では裏で進めて今の状況だけを返す。
  */
 async function progress(env, qid, now) {
-  if (!env.PUBLIC_BASE_URL || !env.API_TOKEN) return advance(env, qid, now, STEP_BUDGET_MS);
-  const job = await readJob(env.STORE, qid);
-  if (!job) return null;
-  if (job.state === 'running' || staleSources(job, deps(env).parserVersion).length) await kickIngest(env, qid, now);
-  return withNotice(job, now);
+  let job;
+  if (!env.PUBLIC_BASE_URL || !env.API_TOKEN) {
+    job = await advance(env, qid, now, STEP_BUDGET_MS);
+  } else {
+    job = await readJob(env.STORE, qid);
+    if (job && (job.state === 'running' || staleSources(job, deps(env).parserVersion).length))
+      await kickIngest(env, qid, now);
+    if (job) job = withNotice(job, now);
+  }
+  const qualificationId = String(qid).split('~')[0];
+  const shared = await libraryFor(env, qualificationId, now);
+  return combineWithSharedJob(job, shared, qualificationId, now);
+
 }
 
 // 利用者に見せる文（notice）と、AIへの案内（hint）を分ける。内部の話（セッションなど）は利用者に見せない
@@ -667,7 +698,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let state = state0;
   // アプリでは、このチャットで学習を開始（startStudy）するまで出題しない（学習計画の確認を飛ばさせない）
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
-    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId), learnerId: state.learnerId };
+    return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: await libraryOverview(env, state.qualificationId, now), learnerId: state.learnerId };
   }
   // 3連続誤答では分野・年度の指定を含めて新問を出さない（確認問題正解による復帰待ち）。
   if (state.remediation?.required) {
@@ -684,14 +715,16 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
   if (cat?.overviewOnly) {
     const existing = await readJob(env.STORE, sessionJobId(state));
-    const hasSource = existing?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending');
+    const shared = await libraryFor(env, state.qualificationId, now);
+    const hasSource = existing?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending') ||
+      (shared?.stored.length ?? 0) > 0;
     if (!hasSource) {
       const fields = studyFieldOrder(state, cat);
       const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
       return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
         fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
         officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
-        validatedUploadYears: cat.validatedUploadYears ?? [],
+        validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
         notice: existing?.state === 'failed'
           ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
           : 'サイトからの自動取得はできません。2022～2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
@@ -699,6 +732,17 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
+  // 午前免除などで、共有済みの問題が学習対象外なら未保存分だけ案内する。
+  if (cat?.overviewOnly && items.length === 0 && !job?.sources?.some((s) => s.status === 'pending')) {
+    const shared = await libraryFor(env, state.qualificationId, now);
+    const fields = studyFieldOrder(state, cat);
+    const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
+    return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
+      fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
+      officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
+      notice: '今回の学習対象の公式問題は共有保存されていません。未保存の部だけPDFを添付してください。' };
+  }
   const prevField = state.current?.fieldId ?? null;
   // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
   if (want && FRESH_WANT.test(want)) {
@@ -851,8 +895,8 @@ async function restoreStudyView(env, id, state, now) {
   if (cur?.questionId && !cur.grade) return { ...identity, ...await redisplayView(env, id, state, now) };
   if (cat?.overviewOnly) {
     if (state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
-      return { ...identity, status: 'needPlan', onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId) };
-    const job = await readJob(env.STORE, sessionJobId(state));
+      return { ...identity, status: 'needPlan', onboarding: onboardingSteps(state.qualificationId), overview: await libraryOverview(env, state.qualificationId, now) };
+    const job = await progress(env, sessionJobId(state), now);
     if (job?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending'))
       return { ...identity, status: 'restoreIdle', notice: '公式過去問を添付済みです。保存した問題・進捗から続けられます。' };
     const fieldId = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
@@ -860,7 +904,8 @@ async function restoreStudyView(env, id, state, now) {
       qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
       officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
       validatedUploadYears: cat.validatedUploadYears ?? [],
-      notice: '公式問題・正答のPDFを添付すると、検証済みの年度は出題できます。AI作成確認問題で学習を続けることもできます。' };
+      sharedLibrary: publicLibraryView(await libraryFor(env, state.qualificationId, now)),
+      notice: '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
   }
   return { ...identity, status: 'restoreIdle',
     notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
@@ -1249,6 +1294,16 @@ async function route(request, env, url, now) {
       await env.STORE.put(learnerProfileKey(state.learnerId), JSON.stringify({ ...prev, stage, updatedAt: now }));
     }
     return json(200, { status: 'profile', sessionId: id, exemption, stage });
+  }
+
+  // 共通保存済みの公式問題だけ表示（学習者の記録や添付元は返さない）。
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' &&
+      parts[3] === 'official-library' && parts.length === 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const shared = await libraryFor(env, state.qualificationId, now);
+    return json(200, { status: 'officialLibrary', sessionId: id,
+      sharedLibrary: publicLibraryView(shared),
+      notice: '共有保存済みの公式過去問だけを表示しています。' });
   }
 
   // 利用者が添付した過去問PDF（U06「公式の問題・正答資料をこのチャットに添付する」）。
