@@ -110,7 +110,7 @@ export function pickNext(state, items, { today, now=null, job }) {
   //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順（同じまとまりでは、まだ出していない年度を先に）。
   const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
   // 同じ分野の3問を複数の年度から出せるよう、直近3年度の取り込みが済むまで新しい問は待つ（残りの年度は裏で続ける）
-  if (fresh.length && recentYearsPending(job)) return { status: 'waiting' };
+  if (fresh.length && recentYearsPending(job) && !job?.sharedAvailable) return { status: 'waiting' };
   if (fresh.length) {
     // 利用者が移りたいと言った分野は、その分野の問が残っている間はそこから出す（3問ずつのまとまりも続ける）
     if (state.focusField && (!state.set || state.set.fieldId !== state.focusField || state.set.count >= SET_SIZE)) {
