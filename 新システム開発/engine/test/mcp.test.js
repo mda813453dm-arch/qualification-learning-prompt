@@ -784,8 +784,8 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
 
 // エンジン・画面までの配線試験。パーサーの実際のPDF照合は別のPython単体試験と
 // 手元の2025年度の本物PDFのSHA確認で検査し、ここでは決して偽物を公式と認定しない。
-test('土地家屋調査士2024・2025：添付の部・年度・正答を確認し、学習承認後に画面で出題／固定正答採点する', async () => {
-  for (const year of [2024, 2025]) {
+test('土地家屋調査士2022〜2025：添付の部・年度・正答を確認し、学習承認後に画面で出題／固定正答採点する', async () => {
+  for (const year of [2022, 2023, 2024, 2025]) {
   const env = makeEnv();
   const answer = pdf(`land-surveyor-${year}-answer`);
   const question = pdf(`land-surveyor-${year}-afternoon`);
@@ -796,7 +796,7 @@ test('土地家屋調査士2024・2025：添付の部・年度・正答を確認
     const src = { qualificationId: 'land_surveyor', adapter: b.adapter, year: b.year, section: b.section,
       questionUrl: b.question.url, answerUrl: b.answer.url };
     const parsed = await fakeResult({ src, qBytes: bytes(b.question), aBytes: bytes(b.answer),
-      answers: year === 2024 ? [4, 5, 2] : [1, 5, 2], fieldIds: ['l3', 'l3', 'l3'], figureOn: [1] });
+      answers: year === 2022 ? [4, 1, 4] : year === 2023 ? [2, 1, 4] : year === 2024 ? [4, 5, 2] : [1, 5, 2], fieldIds: ['l3', 'l3', 'l3'], figureOn: [1] });
     return new Response(JSON.stringify({ result: parsed.result, assets: assetsB64(parsed.assets) }));
   };
   const callUi = async (name, args) => (await rpc(env, 'tools/call',
@@ -813,7 +813,7 @@ test('土地家屋調査士2024・2025：添付の部・年度・正答を確認
   assert.equal(before._meta.qlp.status, 'sourceUnavailable');
   const source = { download_url: 'https://attachment.example/afternoon.pdf' };
   const key = { download_url: 'https://attachment.example/answer.pdf' };
-  const bad = await callUi('attachPdf', { sessionId, year: 2023, section: '午後の部', questionPdf: source, answerPdf: key });
+  const bad = await callUi('attachPdf', { sessionId, year: 2021, section: '午後の部', questionPdf: source, answerPdf: key });
   assert.equal(bad.isError, true, '未照合年度を誤って取り込まない');
   const noSection = await callUi('attachPdf', { sessionId, year, questionPdf: source, answerPdf: key });
   assert.equal(noSection.isError, true, '午前午後の区分がない場合は取り込まない');
@@ -830,7 +830,7 @@ test('土地家屋調査士2024・2025：添付の部・年度・正答を確認
   assert.equal(view.question.fieldName, order[0]);
   assert.ok(view.question.figures.length >= 1, '公式図の画像を実践画面に結び付ける');
   assert.equal(pending.structuredContent.question?.figureUrls, undefined, 'AIに図のURLを誤配布しない');
-  const result = await callUi('submitAnswer', { sessionId, questionId: view.question.questionId, value: String(year === 2024 ? 4 : 1) });
+  const result = await callUi('submitAnswer', { sessionId, questionId: view.question.questionId, value: String(year === 2022 ? 4 : year === 2023 ? 2 : year === 2024 ? 4 : 1) });
   assert.equal(result._meta.qlp.grade.correct, true, '出題時の固定正答だけで採点する');
   const again = await callUi('restoreStudyView', { sessionId });
   assert.equal(again._meta.qlp.status, 'restoredGrade', '復元時に再採点しない');
