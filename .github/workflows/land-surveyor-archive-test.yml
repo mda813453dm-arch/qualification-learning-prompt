@@ -1,0 +1,23 @@
+name: 法務省原本12PDF→共有120問の検証（保存しない）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/engine/scripts/seed-official-land-surveyor.mjs'
+      - '.github/workflows/land-surveyor-archive-test.yml'
+jobs:
+  dry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: 依存ライブラリを用意（本番には変更しない）
+        run: |
+          python -m pip install -r 新システム開発/parser/requirements.txt
+          npm ci --prefix 新システム開発/engine
+      - name: 公式原本12PDFのSHA・分解結果120問・図表・正答の完全性を検査
+        run: node 新システム開発/engine/scripts/seed-official-land-surveyor.mjs --dry-run
