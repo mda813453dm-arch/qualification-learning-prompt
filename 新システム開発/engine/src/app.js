@@ -683,12 +683,19 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
   if (cat?.overviewOnly) {
-    const fields = studyFieldOrder(state, cat);
-    const fid = state.set?.fieldId && cat.fields[state.set.fieldId] ? state.set.fieldId : fields[0];
-    return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
-      fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
-      officialUrl: cat.pastExamPage,
-      notice: '公式過去問の公開PDFはありますが、現在この資格の自動解析・出題・採点には対応していません。別資格の正答を流用せず、AI作成の確認問題で学習できます。PDF添付による自動採点も未対応です。' };
+    const existing = await readJob(env.STORE, sessionJobId(state));
+    const hasSource = existing?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending');
+    if (!hasSource) {
+      const fields = studyFieldOrder(state, cat);
+      const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
+      return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
+        fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
+        officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+        validatedUploadYears: cat.validatedUploadYears ?? [],
+        notice: existing?.state === 'failed'
+          ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
+          : 'サイトからの自動取得はできません。2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
+    }
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
@@ -845,11 +852,15 @@ async function restoreStudyView(env, id, state, now) {
   if (cat?.overviewOnly) {
     if (state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
       return { ...identity, status: 'needPlan', onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId) };
-    const fieldId = state.set?.fieldId && cat.fields[state.set.fieldId] ? state.set.fieldId : fields[0];
+    const job = await readJob(env.STORE, sessionJobId(state));
+    if (job?.sources?.some((entry) => entry.status === 'done' || entry.status === 'pending'))
+      return { ...identity, status: 'restoreIdle', notice: '公式過去問を添付済みです。保存した問題・進捗から続けられます。' };
+    const fieldId = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
     return { ...identity, status: 'sourceUnavailable',
       qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
-      officialUrl: cat.pastExamPage,
-      notice: '公式過去問の自動解析・出題・採点は未対応です。保存済みの学習状態を維持しています。AI作成の確認問題から続けられます。' };
+      officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      validatedUploadYears: cat.validatedUploadYears ?? [],
+      notice: '公式問題・正答のPDFを添付すると、検証済みの年度は出題できます。AI作成確認問題で学習を続けることもできます。' };
   }
   return { ...identity, status: 'restoreIdle',
     notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
