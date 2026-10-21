@@ -48,6 +48,7 @@ class RawQuestion:
     choice_mode: str = "text"  # "text" | "ocr" | "official_image"（選択肢は番号だけを持つ）
     crops: list = field(default_factory=list)  # 切り出す範囲 [(ページ番号, (x0, y0, x1, y1))]
     preserve_aspect: bool = False  # MCP画面でタップ拡大できる原本ページは、左右余白を人工追加しない
+    classification_text: str | None = None  # OCRからの分野推定にのみ利用。公式原本画像の出題本文としては扱わない
 
     @property
     def needs_image(self):
@@ -248,9 +249,13 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         elif q.number not in answers:
             reason = "OFFICIAL_ANSWER_NOT_FOUND"
         elif answers[q.number] == ANSWER_SPECIAL:
-            # 1つの正答で採点できないので出題しない（全員正解・複数解）
+            # 詳細不明の特殊正答は出題しない。公式資料と照合済みの複数解は下で処理する。
             reason = "OFFICIAL_ANSWER_SPECIAL_CASE"
-        elif not 1 <= answers[q.number] <= len(q.choices):
+        elif not (answers[q.number] == "all" or
+                  (type(answers[q.number]) is int and 1 <= answers[q.number] <= len(q.choices)) or
+                  (isinstance(answers[q.number], list) and len(answers[q.number]) >= 2
+                   and len(set(answers[q.number])) == len(answers[q.number])
+                   and all(type(n) is int and 1 <= n <= len(q.choices) for n in answers[q.number]))):
             reason = "OFFICIAL_ANSWER_OUT_OF_RANGE"
         elif q.needs_image and not figures.get(q.number):
             # 図が要るかもしれない問題・文字を画像で見せる問題は、画像を返せるまで出題しない（安全側）
@@ -262,7 +267,12 @@ def build_result(*, qualification_id, year, section, question_source, question_s
         if reason:
             excluded.append({"questionNumber": q.number, "reason": reason, "pages": q.pages})
             continue
-        packets.append({
+        official_answer = answers[q.number]
+        special = isinstance(official_answer, list) or official_answer == "all"
+        accepted = (list(range(1, len(q.choices) + 1)) if official_answer == "all"
+                    else list(official_answer) if isinstance(official_answer, list)
+                    else [official_answer])
+        packet = {
             "sourceMode": "runtime_official_pdf",
             "qualificationId": qualification_id,
             "year": year,
@@ -275,7 +285,7 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "stemMode": q.stem_mode,
             "choices": list(q.choices),
             "choiceMode": q.choice_mode,
-            "correctAnswer": answers[q.number],
+            "correctAnswer": accepted[0],
             "diagramRequired": bool(figures.get(q.number)),
             "figures": figures.get(q.number, []),
             "questionPdfUrl": question_source.url,
@@ -290,7 +300,13 @@ def build_result(*, qualification_id, year, section, question_source, question_s
                 "visual": "official_pdf_crop_rendered" if figures.get(q.number) else "question_level_pdf_graphics_checked",
                 "field": "verified" if cls.get("verified") else "unverified",
             },
-        })
+        }
+        if special:
+            packet["acceptedAnswers"] = accepted
+            packet["allCorrect"] = official_answer == "all"
+            packet["correctAnswerLabel"] = ("正解肢なし（全員正解）" if official_answer == "all"
+                                             else "または".join(str(n) for n in accepted))
+        packets.append(packet)
     status = "ready" if packets and not excluded else ("partial" if packets else "unavailable")
     return {
         "status": status,
