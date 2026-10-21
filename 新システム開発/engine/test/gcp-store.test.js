@@ -70,6 +70,15 @@ test('無いキーは null を返し、削除できる', async () => {
   assert.equal(await store.get('ses/x'), null);
 });
 
+test('以前の添付ファイルも読み込み可能', async () => {
+  const { firestore, store } = make();
+  const key = 'att/old.pdf';
+  const value = Buffer.from([37, 80, 68, 70, 45, 49, 46, 52]);
+  firestore.docs.set('qlp/' + encodeURIComponent(key), { v: value });
+  assert.deepEqual(Buffer.from(await store.get(key, 'arrayBuffer')), value);
+  assert.equal(await store.get('att/missing.pdf', 'arrayBuffer'), null);
+});
+
 test('バケット名が無いときは起動しない', () => {
   assert.throws(() => new GcpStore({}), /FIGURE_BUCKET_REQUIRED/);
 });
