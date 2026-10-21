@@ -259,8 +259,8 @@ a{color:inherit}
         try {
           var latest = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
           if (!latest || latest.error || latest.status !== 'officialLibrary') throw new Error('SHARED_LOOKUP_FAILED');
-          var previous = (library && library.totalQuestions) || 0;
-          if ((latest.sharedLibrary && latest.sharedLibrary.totalQuestions || 0) > previous) {
+          if (JSON.stringify(latest.sharedLibrary && latest.sharedLibrary.stored || []) !==
+              JSON.stringify(library && library.stored || [])) {
             var next = await callTool('nextQuestion', { sessionId: state.sessionId });
             if (next && !next.error && next.status !== 'sourceUnavailable') { render(next); return; }
           }
