@@ -1042,8 +1042,18 @@ async function route(request, env, url, now) {
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {
-    const { id, state } = await resolveSession(env, parts[2], now);
-    return json(200, await restoreStudyView(env, id, state, now));
+    let { id, state } = await resolveSession(env, parts[2], now);
+    // 古い画面のIDで戻ってきても、同じ学習者の最新の進行位置を優先する。
+    const latestId = state.learnerId ? await env.STORE.get(lastSessionKey(state.learnerId)) : null;
+    if (latestId && latestId !== id) {
+      try {
+        const latest = await loadSession(env, latestId, now);
+        if (latest.learnerId === state.learnerId && latest.qualificationId === state.qualificationId) {
+          id = latestId; state = latest;
+        }
+      } catch { /* 期限切れの新セッションなら既存の学習状態を使う */ }
+    }
+    return json(200, { ...await restoreStudyView(env, id, state, now), restored: true });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'redisplay' && parts.length === 4) {
