@@ -250,12 +250,12 @@ a{color:inherit}
         esc(data.notice || '公式PDFの自動解析・採点に対応していません。') + '</div>' +
         (official ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(official) + '">公式の過去問掲載ページを開く ›</a></div>' : '') +
         '<div class="choices">' +
-          (canAttach ? '<button id="sourceAttach"><b>1</b><span>2025年度の問題PDFと公式正答PDFを添付する</span></button>' : '') +
+          (canAttach ? '<button id="sourceAttach"><b>1</b><span>2024・2025年度の問題PDFと公式正答PDFを添付する</span></button>' : '') +
           '<button id="sourceAiCheck"><b>' + (canAttach ? '2' : '1') + '</b><span>同じ分野のAI作成確認問題を解く（3問）</span></button></div>' + endBar();
       if (canAttach) document.getElementById('sourceAttach').onclick = function(){
         this.disabled = true;
         app.insertAdjacentHTML('beforeend', '<div class="notice">ChatGPTの入力欄の「＋」から、2025年度の同じ部の問題PDFと公式正答PDFを添付して送信してください。取り込み状況は学習画面で確認できます。</div>');
-        ask('土地家屋調査士2025年度の公式過去問PDFと正答PDFを添付します。午前または午後の区分をPDFの表紙と照合してから取り込んでください。');
+        ask('土地家屋調査士の2024・2025年度の公式過去問PDFと正答PDFを添付します。年度と午前・午後の区分は添付したPDFの表紙から照合して取り込んでください。');
       };
       document.getElementById('sourceAiCheck').onclick = async function(){
         this.disabled = true;
