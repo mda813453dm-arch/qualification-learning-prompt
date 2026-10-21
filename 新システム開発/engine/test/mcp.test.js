@@ -139,6 +139,62 @@ test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空�
   assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex], [4, 3, 2]);
 });
 
+test('画面復帰：未回答・採点後・スキップ後・AI確認問題を保存済みの位置に読取専用で復元', async () => {
+  const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [1] });
+  const { sessionId } = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
+  const restore = async () => (await rpc(env, 'tools/call',
+    { name: 'restoreStudyView', arguments: { sessionId } }, { path: '/app' })).body.result;
+  const q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+  const original = await env.STORE.get(`ses/${sessionId}`);
+  const pending = await restore();
+  assert.equal(pending._meta.qlp.status, 'question');
+  assert.equal(pending._meta.qlp.question.questionId, q.questionId);
+  assert.deepEqual(pending._meta.qlp.question.figureUrls.length, q.figures.length);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), original, '表示復元でセッションを変更しない');
+  assert.equal(pending.structuredContent.question.stem, q.stem, 'アプリ専用ツールは内部表示と別経路でも動く');
+
+  const answered = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: '3' })).structuredContent;
+  assert.equal(answered.grade.correct, true);
+  const gradedSaved = await env.STORE.get(`ses/${sessionId}`);
+  const graded = await restore();
+  assert.equal(graded._meta.qlp.status, 'restoredGrade');
+  assert.equal(graded._meta.qlp.question.questionId, q.questionId);
+  assert.equal(graded._meta.qlp.grade.correctAnswer, 3);
+  assert.equal(graded._meta.qlp.next.question.questionId, answered.next.question.questionId);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), gradedSaved, '採点結果復元で次問を進めない');
+
+  const next = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
+  assert.equal(next.questionId, answered.next.question.questionId);
+  const nextSaved = await env.STORE.get(`ses/${sessionId}`);
+  const current = await restore();
+  assert.equal(current._meta.qlp.status, 'question');
+  assert.equal(current._meta.qlp.question.questionId, next.questionId);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), nextSaved);
+
+  const skip = (await call(env, 'submitAnswer', { sessionId, questionId: next.questionId, value: 'スキップ' })).structuredContent;
+  assert.equal(skip.grade.skipped, true);
+  const skippedSaved = await env.STORE.get(`ses/${sessionId}`);
+  const afterSkip = await restore();
+  assert.equal(afterSkip._meta.qlp.status, 'question', 'スキップ後に採点結果メニューを挟まない');
+  assert.notEqual(afterSkip._meta.qlp.question.questionId, next.questionId);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), skippedSaved);
+
+  const env2 = makeEnv();
+  const s2 = (await call(env2, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
+  const fieldName = CATALOG[SRC.qualificationId].fields.s1;
+  await rpc(env2, 'tools/call', { name: 'chooseItem', arguments: { sessionId: s2.sessionId, fieldName, mode: 'check' } }, { path: '/app' });
+  const ai = (await rpc(env2, 'tools/call', { name: 'registerConfirmationQuestion',
+    arguments: { sessionId: s2.sessionId, question: '確認問題として出題する十分な長さの本文です。', choices: ['A','B','C'], correctAnswer: 2 } },
+  { path: '/app' })).body.result._meta.qlp;
+  const aiSaved = await env2.STORE.get(`ses/${s2.sessionId}`);
+  const restoredAi = (await rpc(env2, 'tools/call', { name: 'restoreStudyView',
+    arguments: { sessionId: s2.sessionId } }, { path: '/app' })).body.result._meta.qlp;
+  assert.equal(restoredAi.status, 'confirmation_question');
+  assert.equal(restoredAi.challengeId, ai.challengeId, '同じ正答固定済みの問題へ復帰する');
+  assert.equal(restoredAi.correctAnswer, undefined, '復元で正答を先に公開しない');
+  assert.equal(await env2.STORE.get(`ses/${s2.sessionId}`), aiSaved);
+});
+
 test('通常の確認問題は1問目から全3問と全分野の位置を固定し、3問終了後に同じ分野の実践問題へ進む', async () => {
   const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [] });
   const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
