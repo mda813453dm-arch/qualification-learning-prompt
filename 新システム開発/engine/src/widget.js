@@ -149,7 +149,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'restoredGrade', 'restoreIdle'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -183,6 +183,7 @@ a{color:inherit}
       return;
     }
     if (data.status === 'diagPreview') { diagPreview(data.diag); return; }
+    if (data.status === 'diagIntro') { diagIntro(data.diag, data.question); return; }
     if (data.status === 'diagResult') { diagResultScreen(data); return; }
     if (data.planReady) { planDraft = null; onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
@@ -1163,7 +1164,7 @@ a{color:inherit}
   try { new ResizeObserver(fit).observe(app); } catch (e) {}
   fit();
   window.addEventListener('openai:set_globals', function(){ if (!bridgeReady && window.openai && !state.question) render(openaiOutput()); });
-  function openaiOutput(){ var o = window.openai; return (o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput; }
+  function openaiOutput(){ var o = window.openai; return o ? ((o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput) : null; }
   // MCP本体のバージョンとMCP Apps UIのバージョンは別。部分的なopenai.toolOutputがあっても初期化する。
   var ready = rpc('ui/initialize', { protocolVersion: '2026-01-26', appCapabilities: {}, appInfo: { name: 'qlp-question', version: '${WIDGET_VERSION}' } }).then(function(){
     bridgeReady = true;
