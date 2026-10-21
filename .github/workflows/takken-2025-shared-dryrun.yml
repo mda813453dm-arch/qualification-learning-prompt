@@ -1,0 +1,23 @@
+name: 宅建2025公式過去問50問検証（共有保存なし）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '.github/workflows/takken-2025-shared-dryrun.yml'
+      - '新システム開発/engine/scripts/inspect-official-takken-2025.mjs'
+      - '新システム開発/parser/**'
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: python -m pip install -r 新システム開発/parser/requirements.txt
+      - name: 50問の公式原本照合・解析・正答照合（書き込みなし）
+        run: node 新システム開発/engine/scripts/inspect-official-takken-2025.mjs
