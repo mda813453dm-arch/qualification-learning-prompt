@@ -1,0 +1,44 @@
+name: 土地家屋調査士公式過去問の共有保存（明示承認が必要）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/land-surveyor-import-request.txt'
+permissions:
+  contents: read
+concurrency:
+  group: qlp-land-surveyor-shared-import
+  cancel-in-progress: false
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_IMPORT_ENV: official-shared-only
+    steps:
+      - uses: actions/checkout@v4
+      - name: 承認指示を厳密に確認
+        shell: bash
+        run: |
+          if ! grep -qx 'APPROVE_OFFICIAL_SHARED_IMPORT_2022_2025' 新システム開発/deploy/land-surveyor-import-request.txt; then
+            echo '承認マーカーがありません。共有保存は実行しません。'
+            exit 1
+          fi
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: ファイル解析ツール（認証前にインストール）
+        run: |
+          python -m pip install -r 新システム開発/parser/requirements.txt
+          npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 承認済みの共有保存（先に12原本のSHA全部を検査し、各年度30問を保存）
+        env:
+          QLP_IMPORT_APPROVED: YES
+        run: node 新システム開発/engine/scripts/seed-official-land-surveyor.mjs --commit
