@@ -6,6 +6,7 @@ on:
       - '新システム開発/engine/src/**'
       - '新システム開発/parser/qlp_parser/**'
       - '新システム開発/parser/test_land_surveyor*.py'
+      - '新システム開発/deploy/cloudshell-deploy.sh'
       - '新システム開発/engine/test/**'
       - '新システム開発/engine/package.json'
       - '新システム開発/engine/package-lock.json'
@@ -21,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: 配置スクリプトの構文検査
+        run: bash -n 新システム開発/deploy/cloudshell-deploy.sh
       - name: エンジン・通信の回帰試験
         working-directory: 新システム開発/engine
         run: npm test
