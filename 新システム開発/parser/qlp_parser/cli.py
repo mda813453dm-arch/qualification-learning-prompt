@@ -48,13 +48,22 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
             answers = adapter.parse_answers_html(page)
         else:
             adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
-            if hasattr(adapter, "check_year"):
-                adapter.check_year(adoc, year)
-            if hasattr(adapter, "check_question"):
-                # 1冊に1科目の資格（中小企業診断士）：問題と正解の年度・科目がそろっているか
-                adapter.check_question(qdoc, adoc, year, section)
-            raw = adapter.parse_questions(qdoc)
-            answers = adapter.parse_answers(adoc)
+            if getattr(adapter, "BY_SECTION", False):
+                # 正答PDFに午前・午後など複数区分が載っている資格。
+                # 部ごとの列と、実PDFのハッシュ・年度・問題冊子を先に照合する。
+                fixed_section = section or adapter.SECTION
+                adapter.check_source_hashes(year, fixed_section, qsha, asha)
+                adapter.check_question(qdoc, adoc, year, fixed_section)
+                raw = adapter.parse_questions(qdoc, fixed_section)
+                answers = adapter.parse_answers(adoc, fixed_section)
+            else:
+                if hasattr(adapter, "check_year"):
+                    adapter.check_year(adoc, year)
+                if hasattr(adapter, "check_question"):
+                    # 1冊に1科目の資格（中小企業診断士）：問題と正解の年度・科目がそろうか照合
+                    adapter.check_question(qdoc, adoc, year, section)
+                raw = adapter.parse_questions(qdoc)
+                answers = adapter.parse_answers(adoc)
     except ParseError as e:
         return {"status": "unavailable", "reason": e.code, "detail": e.detail, "parserVersion": PARSER_VERSION}
     sec = section or adapter.SECTION
@@ -72,7 +81,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
         raw_questions=raw,
         answers=answers,
         choice_count=adapter.CHOICE_COUNT,
-        classify=adapter.classify,
+        classify=(lambda q: adapter.classify(q, sec)) if getattr(adapter, 'BY_SECTION', False) else adapter.classify,
         figures=figures,
     )
 
