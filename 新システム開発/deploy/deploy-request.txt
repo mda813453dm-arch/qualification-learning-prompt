@@ -160,3 +160,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-21 v45: field-bound next/review choices, empty review guard and first-pass progress; 159 Node tests and Chromium/WebKit PASS at 747e682b9ea362c337878ad98b78b2a239c46c4c; one deployment after verification
 2026-10-21 v46: engine-controlled three confirmation questions, overall study route and separate remaining question bars, same-field practice choice; 160 Node tests and Chromium/WebKit PASS at b6de6ca21d5705e592d6b41c522d20420313b995; one deployment after verification
 2026-10-21 v47: after each three-question set offer next field and same-field continuation, prevent exhausted-field advance, preserve overall progress on explanations and results; 161 Node tests and Chromium/WebKit PASS at 6a965d0f99998b410e2dd2ca6b2aa75c452f349d
+2026-10-21 v48: remove widget model-context attachment requests; 161 Node tests and Chromium/WebKit PASS at c4837c74d5b2631489bc64ed25eeb1c5c771c178; one deployment after verification
