@@ -64,11 +64,13 @@ fi
 if [ "$DEPLOYED_SRC" = "$PARSER_SRC" ]; then
   echo "分解サーバーのプログラムは変わっていないので、配置し直しません"
 else
-  gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated \
+  gcloud run deploy qlp-parser --source "$ROOT/parser" --region "$REGION" --allow-unauthenticated --ingress all \
     --cpu 2 --memory 2Gi --timeout 900 --max-instances 2 --concurrency 4 \
     --set-env-vars "QLP_OCR=vision,OCR_CACHE_BUCKET=$BUCKET" \
     --set-secrets PARSER_TOKEN=qlp-parser-token:latest --quiet
 fi
+# 明示的な公開入口。/v1/parse はアプリ内Bearerトークン必須（健康検査は公開）。
+gcloud run services update qlp-parser --region "$REGION" --ingress all --quiet >/dev/null
 PARSER_URL="$(gcloud run services describe qlp-parser --region "$REGION" --format='value(status.url)')"
 # 新しい解析器の公開前検査。404や接続失敗を無視してエンジンだけ配置すると、
 # 学習画面で「問題を準備しています」を繰り返すので、この段階で止める。
