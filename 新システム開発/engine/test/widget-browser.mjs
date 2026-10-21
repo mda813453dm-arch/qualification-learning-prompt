@@ -189,7 +189,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         grade: { correct: true, selected: '3', correctAnswer: '3' }, at: Date.now() + 12000 };
       window.deliver({ ...nextQuestion, at: Date.now() - 5000 });
     }, { question, nextQuestion, sessionId });
-    await ui.locator('input[name=ans]').first().waitFor();
+    await page.waitForFunction(() => {
+      const frame = document.querySelector('iframe');
+      return frame && Number(frame.contentWindow.localStorage.getItem('qlp_at')) > 0;
+    });
     await ui.locator('#app').evaluate(() => {
       const bc = new BroadcastChannel('qlp-widget');
       bc.postMessage({ at: Date.now() + 1000 });
