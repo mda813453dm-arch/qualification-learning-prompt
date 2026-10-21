@@ -281,6 +281,8 @@ a{color:inherit}
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
+    // 再開直後の未回答問では、その場から学習を終了できるようにする。
+    if (data.restored) app.insertAdjacentHTML('beforeend', endBar());
     bindFigures();
     scrollUp();
     bindEnd();
@@ -1074,6 +1076,11 @@ a{color:inherit}
     if (button) { button.disabled = true; button.textContent = '復元しています…'; }
     try {
       var restored = await callTool('restoreStudyView', { sessionId: state.sessionId });
+      if (!restored || restored.error || !restored.status || restored.status === 'error') {
+        var previous = loadIds(), backup = studyLid || previous.lid;
+        if (!backup || backup === state.sessionId) throw new Error('RESTORE_UNAVAILABLE');
+        restored = await callTool('restoreStudyView', { sessionId: backup });
+      }
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
       // 復元結果は新しい時刻で届く。古い画面を手動で開いたときだけロック解除する。
       if (locked && !manual) return;
