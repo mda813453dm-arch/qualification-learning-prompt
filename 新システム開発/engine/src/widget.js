@@ -1086,6 +1086,12 @@ a{color:inherit}
       if (locked && !manual) return;
       locked = false;
       app.style.opacity = '';
+      // 復旧した枠を最新として通知し、先に開かれた操作不能な枠と競合させない。
+      if (manual) {
+        myAt = Math.max(Date.now(), myAt + 1);
+        try { localStorage.setItem('qlp_at', String(myAt)); } catch (e) {}
+        try { if (bc) bc.postMessage({ at: myAt }); } catch (e) {}
+      }
       state.question = null; state.next = null; state.answered = false;
       render(restored);
     } catch (e) {
@@ -1182,7 +1188,10 @@ a{color:inherit}
     // 同じセッションの画面が再生成された場合、現在の回答待ち・採点画面へ復元する。
     var stored = loadIds();
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
-    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked && !app.querySelector('button:not([disabled])') && !(openaiOutput() || {}).onboarding) restoreFromServer(false);
+    var initial = openaiOutput() || {};
+    var staleEntry = Array.isArray(initial.onboarding) || initial.status === 'needPlan';
+    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked &&
+        (staleEntry || !app.querySelector('button:not([disabled])'))) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
