@@ -759,6 +759,61 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   };
 }
 
+/** 学習画面が閉じられた場合の復元。採点・出題・学習時間には触れない。 */
+async function restoreStudyView(env, id, state, now) {
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  const fields = studyFieldOrder(state, cat);
+  const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
+  const identity = { sessionId: id, learnerId: state.learnerId, studyId };
+  const check = state.confirmation;
+  if (check?.count >= 3) {
+    return { ...identity, status: 'confirmation_result', restored: true, complete: true,
+      position: 3, total: 3, correctCount: check.correct ?? 0,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      nextFieldName: cat?.fields?.[fields[fields.indexOf(check.fieldId) + 1]] ?? null,
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+  }
+  if (check && check.count < 3) {
+    const c = check.challenge;
+    if (c?.id) return { ...identity, status: 'confirmation_question', challengeId: c.id,
+      question: c.question, choices: c.choices, position: check.count + 1, total: 3,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+    return { ...identity, status: 'confirmation_pending', position: check.count + 1, total: 3,
+      fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
+      notice: '保存した確認問題の続きです。同じ分野・同じ問数から再開してください。' };
+  }
+  const fixChallenge = state.remediation?.required && state.remediation.challenge;
+  if (fixChallenge?.id) return { ...identity, status: 'remediation_question',
+    challengeId: fixChallenge.id, question: fixChallenge.question, choices: fixChallenge.choices };
+  if (state.remediation?.required) return { ...identity, status: 'remediation',
+    fieldName: cat?.fields?.[state.remediation.fieldId] ?? '今の分野',
+    notice: '確認問題の正解が必要です。公式問題を勝手に進めず、ここから続けます。' };
+  if (state.aiDiag?.status === 'running') {
+    const d = await diagStep(env, id, state, now, { action: 'start' });
+    return { ...identity, ...d };
+  }
+  const cur = state.current;
+  const saved = state.lastExplanation;
+  // 次問の先取り中は、採点後の選択画面が現在の表示。スキップ時だけ次問を直接表示する。
+  if (cur?.questionId && !cur.grade && (!cur.prefetched || !saved?.grade || saved.grade.skipped)) {
+    return { ...identity, ...await redisplayView(env, id, state, now) };
+  }
+  if (saved?.grade?.questionId && saved.question?.questionId === saved.grade.questionId) {
+    const previous = saved.question;
+    const figureUrls = (previous.figures ?? []).map((f) => f.url?.startsWith('/')
+      ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean);
+    const question = { ...previous, figureUrls,
+      fieldName: cat?.fields?.[saved.fieldId] ?? null };
+    const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
+      ? await redisplayView(env, id, state, now) : null;
+    return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
+  }
+  if (cur?.questionId && !cur.grade) return { ...identity, ...await redisplayView(env, id, state, now) };
+  return { ...identity, status: 'restoreIdle',
+    notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
+}
+
 /** 表示だけの再試行。出題位置・採点結果・履歴・分野の連続問数は一切書き換えない。 */
 async function redisplayView(env, id, state, now) {
   const cur = state.current;
@@ -984,6 +1039,11 @@ async function route(request, env, url, now) {
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
     return json(200, await nextView(env, id, state, now, { want }));
+  }
+
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    return json(200, await restoreStudyView(env, id, state, now));
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'redisplay' && parts.length === 4) {
