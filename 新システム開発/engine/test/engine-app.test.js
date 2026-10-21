@@ -510,8 +510,8 @@ test('sessionId の代わりに引継ぎIDや studyId が送られても、そ�
   assert.notEqual(real.questionId, q.questionId, '採点が本来のセッションに記録されている');
   const other = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
   const none = await call(env, 'POST', `/v1/sessions/${other.learnerId}/next`);
-  assert.equal(none.status, 404);
-  assert.match(none.body.hint, /startSession/);
+  assert.equal(none.status, 200);
+  assert.equal(none.body.status, 'sourceUnavailable', '土地家屋調査士は試験概要と学習計画を保持し、未接続のPDF解析を開始しない');
 });
 
 test('startSession の前に引継ぎIDで出題を求められても、学習の開始で決めた資格（測量士補）の取り込みをエンジンが始める', async () => {
