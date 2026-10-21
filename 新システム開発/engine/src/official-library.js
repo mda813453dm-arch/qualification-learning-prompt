@@ -11,13 +11,14 @@ import { readResult } from './cache.js';
 const SHARED_OWNER = '_shared';
 
 function expectedRows(cat) {
-  if (!cat?.officialPdfPins || !cat?.uploadSections || !cat?.validatedUploadYears) return [];
-  return cat.validatedUploadYears.flatMap((year) => {
-    const pins = cat.officialPdfPins[year];
+  const spec = cat?.officialShared ?? cat;
+  if (!spec?.officialPdfPins || !spec?.uploadSections || !spec?.validatedUploadYears) return [];
+  return spec.validatedUploadYears.flatMap((year) => {
+    const pins = spec.officialPdfPins[year];
     if (!pins) return [];
-    return cat.uploadSections.map((section) => {
+    return spec.uploadSections.map((section) => {
       const sha = pins[section];
-      const count = cat.uploadQuestionCounts?.[section];
+      const count = spec.uploadQuestionCounts?.[section];
       if (!/^[a-f0-9]{64}$/.test(String(sha || '')) ||
           !/^[a-f0-9]{64}$/.test(String(pins.answer || '')) ||
           !Number.isInteger(count) || count < 1) return null;
@@ -34,6 +35,7 @@ export function publicLibraryView(library) {
 
 /** 共有キャッシュの存在を実際に確認してから表示する。個人の学習記録は含めない。 */
 export async function officialLibrary(store, cat, parserVersion, now = Date.now()) {
+  const spec = cat?.officialShared ?? cat;
   const expected = expectedRows(cat);
   const stored = [];
   const missing = [];
@@ -57,11 +59,14 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
       new Set(packets.map((p) => p.questionNumber)).size === item.count &&
       packets.every((p) => p.questionPdfSha256 === item.questionSha256 &&
         p.answerPdfSha256 === item.answerSha256 &&
-        Array.isArray(p.figures) && p.figures.length > 0);
+        (Array.isArray(p.figures) && p.figures.length > 0 ||
+          (Array.isArray(p.figures) && !p.figures.length && p.diagramRequired === false &&
+            p.stemMode === 'text' && p.choiceMode === 'text' &&
+            p.verification?.visual === 'question_level_pdf_graphics_checked')));
     if (valid) {
       stored.push({ year: item.year, section: item.section, questions: item.count });
       sources.push({
-        qualificationId: cat.qualificationId, adapter: cat.uploadAdapter,
+        qualificationId: cat.qualificationId, adapter: spec.uploadAdapter,
         year: item.year, section: item.section, status: 'done',
         packetCount: item.count, excludedCount: 0, keyParts, from: 'shared',
       });
@@ -69,13 +74,13 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
       missing.push({ year: item.year, section: item.section });
     }
   }));
-  const order = (a, b) => b.year - a.year || cat.uploadSections.indexOf(a.section) - cat.uploadSections.indexOf(b.section);
+  const order = (a, b) => b.year - a.year || spec.uploadSections.indexOf(a.section) - spec.uploadSections.indexOf(b.section);
   stored.sort(order); missing.sort(order); sources.sort(order);
   const completeYears = [...new Set(stored.map((s) => s.year))]
-    .filter((year) => cat.uploadSections.every((section) => stored.some((s) => s.year === year && s.section === section)))
+    .filter((year) => spec.uploadSections.every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
   return {
-    supportedYears: [...(cat?.validatedUploadYears ?? [])].sort((a,b) => b - a),
+    supportedYears: [...(spec?.validatedUploadYears ?? [])].sort((a,b) => b - a),
     stored, missing, completeYears,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
     sources,
