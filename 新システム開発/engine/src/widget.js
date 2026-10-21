@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v49.html';
+export const WIDGET_URI = 'ui://qlp/question-v50.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.49';
+export const WIDGET_VERSION = '2026-10-21.50';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -137,8 +137,10 @@ a{color:inherit}
   function lockOld(){
     if (locked) return; locked = true;
     app.querySelectorAll('button,input,a.btn').forEach(function(b){ b.disabled = true; });
-    app.style.opacity = '.55';
-    app.insertAdjacentHTML('beforeend', '<div class="notice">この画面の操作は終わっています。いちばん下の画面で進めてください。</div>');
+    app.style.opacity = '.65';
+    // 古い画面から戻っても終了操作へ到達できるよう、復元ボタンだけは無効化しない。
+    app.insertAdjacentHTML('beforeend', '<div class="notice">別の学習画面が開かれています。今の学習をこの画面で再開できます。</div><div class="row"><button id="reopenStudy">今の学習画面を再開</button></div>');
+    document.getElementById('reopenStudy').onclick = function(){ restoreFromServer(true); };
   }
   function stamp(data){
     var at = Number(data && data.at) || 0; if (!at || locked) return;
@@ -147,7 +149,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'restoredGrade', 'restoreIdle'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -158,6 +160,22 @@ a{color:inherit}
     saveIds();
     hasView = true;
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
+    if (data.status === 'restoredGrade') {
+      // 採点済みの問を先に同一問題として描き、その上に正答と続きの操作を復元する。
+      render({ ...data, status: 'question', grade: undefined, next: undefined });
+      state.next = data.next || null;
+      state.answered = true;
+      showGrade(data.grade);
+      return;
+    }
+    if (data.status === 'restoreIdle') {
+      app.innerHTML = '<h2>学習を再開しました</h2><div class="notice">' + esc(data.notice || '') + '</div>' +
+        '<div class="row"><button id="restoreContinue">学習を続ける</button></div>' + endBar();
+      document.getElementById('restoreContinue').onclick = function(){
+        nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId }).then(render); });
+      };
+      bindEnd(); return;
+    }
     if (data.grade && data.next) {
       if (state.question && !state.answered) { state.answered = true; showGrade(data.grade); state.next = data.next; return; }
       var g = data.grade; render(data.next);
@@ -298,8 +316,8 @@ a{color:inherit}
   function showConfirmationResult(d){
     var j = d.journey || {};
     app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
-      '<h2>確認問題 ' + esc(d.position) + ' / 3問の結果</h2><div class="result ' + (d.correct ? 'ok' : 'ng') + '">' + (d.correct ? '正解' : '不正解') + '</div>' +
-      '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>' +
+      '<h2>確認問題 ' + esc(d.position) + ' / 3問の結果</h2>' + (d.restored ? '<div class="result ok">3問の回答を完了しています</div>' : '<div class="result ' + (d.correct ? 'ok' : 'ng') + '">' + (d.correct ? '正解' : '不正解') + '</div>') +
+      (d.restored ? '<div class="stem">3問中 ' + esc(d.correctCount) + '問正解。次の学習を選べます。</div>' : '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>') +
       (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>この分野を続ける（同じ分野の実践問題へ）</span></button>' +
         (d.nextFieldName ? '<button id="confirmationNextField"><b>2</b><span>次の分野の実践問題へ</span></button>' : '') +
         '<button id="confirmationReview"><b>' + (d.nextFieldName ? 3 : 2) + '</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>' + (d.nextFieldName ? 4 : 3) + '</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
@@ -1045,6 +1063,39 @@ a{color:inherit}
       }
     };
   }
+  // 学習データを会話に添付せず、保存済みの進行状態だけを学習エンジンから読む。
+  // 画面を行き来したときにも、採点・nextQuestion・startStudyは自動実行しない。
+  var restoring = false, wasHidden = false;
+  async function restoreFromServer(manual){
+    if (restoring || !state.sessionId) return;
+    restoring = true;
+    var button = document.getElementById('reopenStudy');
+    if (button) { button.disabled = true; button.textContent = '復元しています…'; }
+    try {
+      var restored = await callTool('restoreStudyView', { sessionId: state.sessionId });
+      if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
+      // 復元結果は新しい時刻で届く。古い画面を手動で開いたときだけロック解除する。
+      if (locked && !manual) return;
+      locked = false;
+      app.style.opacity = '';
+      state.question = null; state.next = null; state.answered = false;
+      render(restored);
+    } catch (e) {
+      if (button) { button.disabled = false; button.textContent = '今の学習画面を再開'; }
+      var err = document.getElementById('restoreError');
+      if (!err) { app.insertAdjacentHTML('beforeend', '<div id="restoreError" class="notice" role="alert"></div>'); err = document.getElementById('restoreError'); }
+      err.textContent = '学習状態を復元できませんでした。同じボタンで再試行できます。';
+    } finally { restoring = false; }
+  }
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) { wasHidden = true; return; }
+    if (!wasHidden) return;
+    wasHidden = false;
+    if (!locked && hasView && state.sessionId && (state.question || currentStudyId)) restoreFromServer(false);
+  });
+  window.addEventListener('pageshow', function(e){
+    if (e.persisted && !locked && hasView && state.sessionId && (state.question || currentStudyId)) restoreFromServer(false);
+  });
   window.addEventListener('message', function(e){
     if (e.source !== window.parent) return;
     var m = e.data; if (!m || m.jsonrpc !== '2.0') return;
@@ -1120,6 +1171,9 @@ a{color:inherit}
     fit();
     diag('bridge_ready');
     goFull();
+    // 同じセッションの画面が再生成された場合、現在の回答待ち・採点画面へ復元する。
+    var stored = loadIds();
+    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked && !(openaiOutput() || {}).onboarding) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
