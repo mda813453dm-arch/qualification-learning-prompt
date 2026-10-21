@@ -1243,6 +1243,7 @@ async function route(request, env, url, now) {
     const fid = Object.entries(cat?.fields ?? {}).find(([, n]) => n === String(b.fieldName ?? ''))?.[0] ?? null;
     const mode = ['explain', 'check', 'practice'].includes(b.mode) ? b.mode : null;
     if (!fid || !mode) throw new HttpError(400, 'ITEM_INVALID');
+    if (!studyFieldOrder(state, cat).includes(fid)) throw new HttpError(409, 'FIELD_EXEMPT', '免除対象の分野は今回の学習計画に含めません。');
     // 選んだ分野から1まとまり（3問）を出す。そのあとは学習計画の順に戻る（同じ分野に固定しない）
     const set = state.set?.fieldId === fid && state.set.count < SET_SIZE ? state.set : { fieldId: fid, count: 0, years: [] };
     await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
