@@ -894,7 +894,16 @@ a{color:inherit}
         render(same);
       } catch (e) {
         var btn = document.getElementById('nextHere'); if (btn) btn.disabled = false;
-        app.insertAdjacentHTML('beforeend', '<div class="notice">同じ問題をまだ取得できません。少し待ってから再表示してください。</div>');
+        var notice = document.getElementById('redisplayError');
+        if (!notice) {
+          notice = document.createElement('div');
+          notice.id = 'redisplayError';
+          notice.className = 'notice';
+          notice.setAttribute('role', 'alert');
+          if (btn && btn.parentNode) btn.parentNode.insertAdjacentElement('afterend', notice);
+          else app.appendChild(notice);
+        }
+        notice.textContent = '同じ問題を取得できません。学習状況は変更していません。接続または問題データの確認が必要です。';
       }
     };
     scrollUp(true);
