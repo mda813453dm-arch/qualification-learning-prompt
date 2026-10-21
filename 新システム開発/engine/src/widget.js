@@ -179,7 +179,7 @@ a{color:inherit}
     if (data.grade && data.next) {
       if (state.question && !state.answered) { state.answered = true; showGrade(data.grade); state.next = data.next; return; }
       var g = data.grade; render(data.next);
-      app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : g.dontKnow ? '分からない（正答は ' + esc(g.correctAnswer) + '）' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswer) + '）') + '</div>');
+      app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : g.dontKnow ? '分からない（正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）') + '</div>');
       return;
     }
     if (data.status === 'diagPreview') { diagPreview(data.diag); return; }
@@ -874,7 +874,7 @@ a{color:inherit}
         var r = full(await callTool('diagStep', { sessionId: diagSid, action: 'answer', questionId: q.questionId, value: String(chosen), confidence: certainty ? certainty.value : undefined }));
         var g = r && r.grade;
         if (!g) throw new Error('grade');
-        var line = '<div class="result ' + (g.skipped ? '' : g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.skipped ? '未回答（正誤集計には含めません）' : (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）') + '</div>';
+        var line = '<div class="result ' + (g.skipped ? '' : g.correct ? 'ok' : 'ng') + '">' + esc(g.label) + '：' + (g.skipped ? '未回答（正誤集計には含めません）' : (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）') + '</div>';
         if (r.status === 'diagResult') { render(r); return; }
         if (r.planReady) { studyLearner = r.learnerId || studyLearner; render(r); app.insertAdjacentHTML('afterbegin', line); return; }
         diagQuestion(r.question, line);
@@ -1041,8 +1041,8 @@ a{color:inherit}
     var h = '';
     if (g.skipped) h = '<div class="result">スキップしました。</div>';
     else {
-      var c = app.querySelector('.choices .opt[data-n="' + g.correctAnswer + '"]'); if (c) c.classList.add('correct');
-      h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswer) + '）</div>';
+      (g.acceptedAnswers || [g.correctAnswer]).forEach(function(n){ var c = app.querySelector('.choices .opt[data-n="' + n + '"]'); if (c) c.classList.add('correct'); });
+      h = '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '正解' : '不正解') + '（あなたの答え ' + esc(g.selected) + '／正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）</div>';
       if (safeUrl(g.answerPdfUrl)) h += '<div class="notice"><a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a></div>';
     }
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
@@ -1073,9 +1073,9 @@ a{color:inherit}
     if (g.skipped) { nextBelow(nextInPlace); return; }
     // 「分からない」：採点に数えず、正答を見せて復習に回す（解説も頼める）
     if (g.dontKnow) {
-      var ck = app.querySelector('.choices .opt[data-n="' + g.correctAnswer + '"]'); if (ck) ck.classList.add('correct');
+      (g.acceptedAnswers || [g.correctAnswer]).forEach(function(n){ var ck = app.querySelector('.choices .opt[data-n="' + n + '"]'); if (ck) ck.classList.add('correct'); });
       var dpdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
-      app.insertAdjacentHTML('beforeend', '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div><div class="stem">正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div><div class="row"><button id="dkExp">解説を見る</button><button id="next">次の問題へ</button></div>');
+      app.insertAdjacentHTML('beforeend', '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div><div class="stem">正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div><div class="row"><button id="dkExp">解説を見る</button><button id="next">次の問題へ</button></div>');
       nextBtn();
       var dkRequest = explanationRequest(q, g);
       document.getElementById('dkExp').onclick = async function(){ this.disabled = true; await ask(dkRequest, label + 'の解説を見る'); if (!locked) this.disabled = false; };
@@ -1088,7 +1088,7 @@ a{color:inherit}
     var progress = q.progress || {};
     app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice' + Math.min(3, progress.fieldQuestion || 1), q.fieldName) +
       '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + esc(label) + '：あなたの答え ' + esc(g.selected) + '</div>' +
-      '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
+      '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
       (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
       '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
