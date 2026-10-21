@@ -30,6 +30,11 @@ jobs:
           gcloud services enable cloudresourcemanager.googleapis.com iam.googleapis.com serviceusage.googleapis.com
       - name: 配置する（cloudshell-deploy.sh と同じ手順）
         run: bash 新システム開発/deploy/cloudshell-deploy.sh
+      - name: 解説の公開版・ツール仕様・読取経路を確認（学習記録は変更しない）
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          node 新システム開発/deploy/check-explanation.mjs
       - name: 学習者が貼るプロンプトを表示する（トークンは入っていない）
         run: |
           echo "===== 学習者が貼るプロンプト ここから ====="
