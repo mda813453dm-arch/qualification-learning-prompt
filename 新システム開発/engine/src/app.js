@@ -143,6 +143,7 @@ async function body(request) {
 async function catalogSources(env, qualificationId) {
   const slug = Object.keys(CATALOG).find((k) => CATALOG[k].qualificationId === qualificationId);
   if (!slug) return null;
+  if (CATALOG[slug].overviewOnly) return [];
   return findSources({ ...env, fetchText: env.fetchText ?? defaultFetchText }, slug, { years: 99, max: MAX_SOURCES });
 }
 
@@ -292,9 +293,12 @@ const NOT_SUPPORTED_HINT = 'この資格の過去問は、まだエンジンで�
 /** 新しい学習者のセッションを作り、過去問の取り込みを始める（startSession と同じ）。 */
 async function createSession(env, { qualificationId, learnerId, plan, sources }, now) {
   const state = newState({ qualificationId, learnerId, plan: plan ?? {}, now });
-  const checked = checkSources((await catalogSources(env, qualificationId)) ?? sources, qualificationId, learnerId);
-  await startJob(env.STORE, sessionJobId(state), checked, now, { persistent: true });
-  await markEngineSources(env, checked);
+  const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === qualificationId && c.overviewOnly);
+  const checked = overviewOnly ? [] : checkSources((await catalogSources(env, qualificationId)) ?? sources, qualificationId, learnerId);
+  if (!overviewOnly) {
+    await startJob(env.STORE, sessionJobId(state), checked, now, { persistent: true });
+    await markEngineSources(env, checked);
+  }
   const id = crypto.randomUUID();
   await saveSession(env, id, state, now);
   await env.STORE.put(lastSessionKey(learnerId), id, { expirationTtl: SESSION_TTL_S });
@@ -662,6 +666,15 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       position: state.confirmation.count + 1, total: 3,
       notice: 'この分野の確認問題3問が終了していません。確認問題の画面で続けてください。' };
   }
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
+  if (cat?.overviewOnly) {
+    const fields = studyFieldOrder(state, cat);
+    const fid = state.set?.fieldId && cat.fields[state.set.fieldId] ? state.set.fieldId : fields[0];
+    return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
+      fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
+      officialUrl: cat.pastExamPage,
+      notice: '公式過去問の公開PDFはありますが、現在この資格の自動解析・出題・採点には対応していません。別資格の正答を流用せず、AI作成の確認問題で学習できます。PDF添付による自動採点も未対応です。' };
+  }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
   const prevField = state.current?.fieldId ?? null;
@@ -814,6 +827,15 @@ async function restoreStudyView(env, id, state, now) {
     return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
   }
   if (cur?.questionId && !cur.grade) return { ...identity, ...await redisplayView(env, id, state, now) };
+  if (cat?.overviewOnly) {
+    if (state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
+      return { ...identity, status: 'needPlan', onboarding: onboardingSteps(state.qualificationId), overview: overviewFor(state.qualificationId) };
+    const fieldId = state.set?.fieldId && cat.fields[state.set.fieldId] ? state.set.fieldId : fields[0];
+    return { ...identity, status: 'sourceUnavailable',
+      qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
+      officialUrl: cat.pastExamPage,
+      notice: '公式過去問の自動解析・出題・採点は未対応です。保存済みの学習状態を維持しています。AI作成の確認問題から続けられます。' };
+  }
   return { ...identity, status: 'restoreIdle',
     notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
 }
@@ -988,13 +1010,17 @@ async function route(request, env, url, now) {
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
     const restored = given ? await sessionFromLearner(env, given, now) : null;
     if (restored && restored.state.qualificationId === b.qualificationId) {
-      const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
-      await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
-      await markEngineSources(env, sources);
-      return json(201, { sessionId: restored.id, learnerId, job: jobView(await progress(env, sessionJobId(restored.state), now)), ...PLAN_UI });
+      const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
+      if (!overviewOnly) {
+        const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
+        await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
+        await markEngineSources(env, sources);
+      }
+      return json(201, { sessionId: restored.id, learnerId, job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)), ...PLAN_UI });
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
-    const job = await progress(env, sessionJobId(state), now);
+    const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
+    const job = overviewOnly ? null : await progress(env, sessionJobId(state), now);
     return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(), planMenu: undefined } : {}) });
   }
 
@@ -1737,12 +1763,14 @@ export function overviewFor(qid) {
       // U18：公式ページで確かめられなかった項目は「未確認」と示す（推測で埋めない）
       ...OVERVIEW_REQUIRED.filter(([, re]) => !(c.overview ?? []).some(([k]) => re.test(k))).map(([k]) => `${k}：未確認`),
       `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
+      ...(c.overviewOnly ? ['※公式の過去問PDFは公開されていますが、この資格の自動取込・出題・採点・PDF添付解析は現状未対応です。AI作成確認問題と公式PDFの閲覧を区別して学習できます。'] : []),
       ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),
       ...(c.exemption ? [`免除制度：${c.exemption.label}`] : []),
       `公式：${c.org}（${c.overviewSource ?? c.officialSite}）`,
       '参考（非公式）：なし',
     ],
     source: c.overviewSource ?? c.officialSite,
+    ...(c.overviewOnly ? { overviewOnly: true, pastExamPage: c.pastExamPage } : {}),
   };
 }
 
