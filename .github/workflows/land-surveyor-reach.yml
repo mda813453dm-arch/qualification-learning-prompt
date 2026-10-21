@@ -1,0 +1,41 @@
+name: 法務省公式PDFの外部取得可能性（読取検査のみ）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/land-surveyor-reach-request.txt'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: 12件の原本SHAを再検証（GitHub Actionsには一切保存しない）
+        shell: bash
+        run: |
+          set -uo pipefail
+          while IFS=' ' read -r name expected; do
+            [ -z "$name" ] && continue
+            pdf="/tmp/qlp-official-$$.pdf"
+            code="$(curl --silent --show-error --location --max-time 35 --retry 1 \
+              --header 'User-Agent: Mozilla/5.0 (compatible; qualification-learning-verify/1.0)' \
+              --output "$pdf" --write-out '%{http_code}' \
+              "https://www.moj.go.jp/content/$name" || true)"
+            if [ "$code" = "200" ] && [ -s "$pdf" ]; then
+              got="$(sha256sum "$pdf" | cut -d' ' -f1)"
+              if [ "$got" = "$expected" ]; then echo "$name OK exact sha256"; else echo "$name HTTP 200 but checksum MISMATCH"; fi
+            else echo "$name UNAVAILABLE status=${code:-unknown}"; fi
+            rm -f "$pdf"
+          done <<'PDFS'
+          001383828.pdf b4aa4746393b2def52a470add31f30ed95116bb4b507173f354a7cd00c3c8d4a
+          001383834.pdf d887e2ed774496f08f51b096bb17536ab0dda8a14b70ff8de4b4ad5e3c63d111
+          001383847.pdf 51e76d44ad29a22c5200cf6e27afad8361c3c77c7060df6293d225bfa04509cf
+          001406404.pdf 608059db36e15b81c4d43fb76319919059486dd255d7e1b2c2c4739b836c706a
+          001408935.pdf 169a59ba74696f19ec129e4acf97be3b3929ff5e97618b08640d520eef21428e
+          001408936.pdf 30e8955bb1b0ed70b6f5d37084242d000958b75d30a9f2e69c9d9ec804772da2
+          001427198.pdf 2e161533cab70baad285275c7758fe0a703e089f6fc267ba875b69bd6013f4ce
+          001427201.pdf ebba5878f9cf02e0c48da6311029441d27f30a4a46bb8956fbc408939755f999
+          001427202.pdf 3d1aaab12057e4423c33cd19a412ce4dc3a6037d7cbc2f997925f41965ff4889
+          001450010.pdf 4a90ae3875c14c1eeda4b3ac9a32c6387b69b5cc15d0f5b62a99514af78267d0
+          001450011.pdf 928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c
+          001450015.pdf 3b6c2bbcb630b6ff6f989890f4e544e0eae7f8067fbefa86cad613fe5b659fad
+          PDFS
