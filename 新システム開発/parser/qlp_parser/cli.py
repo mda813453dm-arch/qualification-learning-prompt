@@ -63,7 +63,9 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
                     # 1冊に1科目の資格（中小企業診断士）：問題と正解の年度・科目がそろうか照合
                     adapter.check_question(qdoc, adoc, year, section)
                 raw = adapter.parse_questions(qdoc)
-                answers = adapter.parse_answers(adoc)
+                verified_key = (adapter.verified_answers(year, section or adapter.SECTION, qsha, asha)
+                                if hasattr(adapter, "verified_answers") else None)
+                answers = verified_key if verified_key is not None else adapter.parse_answers(adoc)
     except ParseError as e:
         return {"status": "unavailable", "reason": e.code, "detail": e.detail, "parserVersion": PARSER_VERSION}
     sec = section or adapter.SECTION
