@@ -1,0 +1,17 @@
+name: Read-only parser public health check
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/public-health-request.txt'
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Inspect public response to parser health route
+        run: |
+          curl -sS -D /tmp/parser-headers -o /tmp/parser-body -w 'HTTP=%{http_code}\n' --max-time 20 https://qlp-parser-774945236720.asia-northeast1.run.app/healthz
+          grep -iE '^(HTTP/|content-type:|server:|location:)' /tmp/parser-headers
+          head -c 250 /tmp/parser-body
+          echo
