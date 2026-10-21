@@ -95,5 +95,6 @@ export function combineWithSharedJob(job, shared, qualificationId, now) {
     startedAt: job?.startedAt ?? now,
     state: pending ? 'running' : all.some((s) => s.status === 'done') ? 'done' : 'failed',
     sources: all,
+    sharedAvailable: true,
   };
 }
