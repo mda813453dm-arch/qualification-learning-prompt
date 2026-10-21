@@ -114,7 +114,7 @@ def classify_by_rules(rules, stem, choices=()):
 
 
 def classify_takken(question):
-    return classify_by_rules(TAKKEN_RULES, question.stem, question.choices)
+    return classify_by_rules(TAKKEN_RULES, question.classification_text or question.stem, question.choices)
 
 
 def classify_surveyor(question):
