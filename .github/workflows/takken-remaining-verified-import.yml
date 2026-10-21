@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        file-index: [0, 8]
+        file-index: [4, 5, 6]
     env:
       GOOGLE_CLOUD_PROJECT: qualification-learning
       QLP_IMPORT_ENV: official-shared-only
@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: 対象区分の明示承認を検査
         run: |
-          grep -qx 'APPROVE_TAKKEN_VERIFIED_2016_2022_IMPORT' 新システム開発/deploy/takken-remaining-verified-import-request.txt
+          grep -qx 'APPROVE_TAKKEN_VERIFIED_2020_OCT_DEC_2021_OCT_IMPORT' 新システム開発/deploy/takken-remaining-verified-import-request.txt
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - uses: actions/setup-python@v5
