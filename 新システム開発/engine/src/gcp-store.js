@@ -51,8 +51,12 @@ export class GcpStore {
       try {
         [raw] = await (await this.#bucket()).file(key).download();
       } catch (e) {
-        if (e?.code === 404) return null;
-        throw e;
+        if (e?.code !== 404) throw e;
+        if (!key.startsWith('att/')) return null;
+        // 旧バージョンで小さなPDFをFirestoreに保存済みの場合、共有の原本リンクを壊さない。
+        const snap = await (await this.#db()).doc(this.#docId(key)).get();
+        if (!snap.exists) return null;
+        raw = snap.get('v');
       }
     } else {
       const snap = await (await this.#db()).doc(this.#docId(key)).get();
