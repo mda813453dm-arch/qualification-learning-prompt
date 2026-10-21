@@ -1,1 +1,2 @@
 2026-10-21 diagnose response headers and body for public qlp-parser /healthz after revision 00146-zrt. Read-only, no cloud credentials.
+2026-10-21 compare Cloud Run region project-number hostname to original hash-based hostname reported by console; read-only probe, no Cloud Run changes
