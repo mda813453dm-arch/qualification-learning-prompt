@@ -10,19 +10,24 @@ import { readResult } from './cache.js';
 
 const SHARED_OWNER = '_shared';
 
+function sectionsForYear(spec, year) {
+  return spec.sectionsByYear?.[year] ?? spec.uploadSections ?? [];
+}
+
 function expectedRows(cat) {
   const spec = cat?.officialShared ?? cat;
   if (!spec?.officialPdfPins || !spec?.uploadSections || !spec?.validatedUploadYears) return [];
   return spec.validatedUploadYears.flatMap((year) => {
     const pins = spec.officialPdfPins[year];
     if (!pins) return [];
-    return spec.uploadSections.map((section) => {
+    return sectionsForYear(spec, year).map((section) => {
       const sha = pins[section];
+      const answerSha = pins.answers?.[section] ?? pins.answer;
       const count = spec.uploadQuestionCounts?.[section];
       if (!/^[a-f0-9]{64}$/.test(String(sha || '')) ||
-          !/^[a-f0-9]{64}$/.test(String(pins.answer || '')) ||
+          !/^[a-f0-9]{64}$/.test(String(answerSha || '')) ||
           !Number.isInteger(count) || count < 1) return null;
-      return { year, section, questionSha256: sha, answerSha256: pins.answer, count };
+      return { year, section, questionSha256: sha, answerSha256: answerSha, count };
     }).filter(Boolean);
   });
 }
@@ -74,10 +79,10 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
       missing.push({ year: item.year, section: item.section });
     }
   }));
-  const order = (a, b) => b.year - a.year || spec.uploadSections.indexOf(a.section) - spec.uploadSections.indexOf(b.section);
+  const order = (a, b) => b.year - a.year || sectionsForYear(spec, a.year).indexOf(a.section) - sectionsForYear(spec, b.year).indexOf(b.section);
   stored.sort(order); missing.sort(order); sources.sort(order);
   const completeYears = [...new Set(stored.map((s) => s.year))]
-    .filter((year) => spec.uploadSections.every((section) => stored.some((s) => s.year === year && s.section === section)))
+    .filter((year) => sectionsForYear(spec, year).every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
   return {
     supportedYears: [...(spec?.validatedUploadYears ?? [])].sort((a,b) => b - a),
