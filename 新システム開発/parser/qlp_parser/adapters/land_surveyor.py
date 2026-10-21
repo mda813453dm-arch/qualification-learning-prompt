@@ -1,4 +1,4 @@
-"""土地家屋調査士の公式PDFを取り込む（2025年度の検証済みPDFのみ）。
+"""土地家屋調査士の公式PDFを取り込む（2024・2025年度の検証済みPDFのみ）。
 
 既存の integration/verify_surveyor_2025.py・morning_complete_question_audit.py
 で確認したSHAと正答を出典とする。図の抽出は既存の共通
@@ -18,7 +18,18 @@ SECTION = "午後の部"
 CHOICE_COUNT = 5
 BY_SECTION = True
 
-# 2025年度に利用者提供の公式PDFを検査した記録。PDF本体はGitHubに置かない。
+# 利用者から受領した原本PDFを検査した固定SHA。PDF本体はGitHubに置かない。
+PIN_2024 = {
+    "午前の部": "ebba5878f9cf02e0c48da6311029441d27f30a4a46bb8956fbc408939755f999",
+    "午後の部": "3d1aaab12057e4423c33cd19a412ce4dc3a6037d7cbc2f997925f41965ff4889",
+    "正答": "2e161533cab70baad285275c7758fe0a703e089f6fc267ba875b69bd6013f4ce",
+}
+EXPECTED_2024 = {
+    "午前の部": [2, 4, 1, 3, 3, 3, 5, 4, 2, 5],
+    "午後の部": [4, 5, 2, 2, 3, 4, 2, 1, 4, 2, 2, 3, 1, 4, 3, 3, 5, 4, 5, 2],
+}
+
+# 2025年度の既存検証値を変更しない。
 PIN_2025 = {
     "午前の部": "4a90ae3875c14c1eeda4b3ac9a32c6387b69b5cc15d0f5b62a99514af78267d0",
     "午後の部": "928c94f3d183788302bf7f9b7e70fb4d3ef40762761fa5e3d3f261a913920a6c",
@@ -28,6 +39,8 @@ EXPECTED_2025 = {
     "午前の部": [5, 4, 4, 3, 2, 4, 2, 1, 2, 3],
     "午後の部": [1, 5, 2, 1, 4, 5, 3, 1, 5, 4, 3, 5, 5, 2, 2, 3, 3, 4, 3, 4],
 }
+PIN_BY_YEAR = {2024: PIN_2024, 2025: PIN_2025}
+EXPECTED_BY_YEAR = {2024: EXPECTED_2024, 2025: EXPECTED_2025}
 SECTIONS = {"午前の部": (10, "l1"), "午後の部": (20, "l3")}
 HEADING = re.compile(r"^第\s*([0-9]+)\s*問(?:\s|$)")
 OPTION = re.compile(r"(?<!\w)([1-5])\s+\S")
@@ -41,10 +54,11 @@ def _norm(value):
 def check_source_hashes(year, section, question_sha, answer_sha):
     if section not in SECTIONS:
         raise ParseError("SECTION_NOT_SUPPORTED", section=section)
-    # 他年度は公式PDFと正答の原本を突合してから追加する。
-    if year != 2025:
+    # 未検証年度は出題しない。対応済年度の問題・正答の原本SHAだけ受け付ける。
+    pins = PIN_BY_YEAR.get(year)
+    if pins is None:
         raise ParseError("YEAR_NOT_VALIDATED", year=year)
-    if question_sha != PIN_2025[section] or answer_sha != PIN_2025["正答"]:
+    if question_sha != pins[section] or answer_sha != pins["正答"]:
         raise ParseError("SOURCE_PDF_PIN_MISMATCH", year=year, section=section)
 
 
@@ -161,10 +175,13 @@ def parse_questions(doc, section):
     return list(found.values())
 
 
-def parse_answers(doc, section):
+def parse_answers(doc, section, year):
     if section not in SECTIONS:
         raise ParseError("SECTION_NOT_SUPPORTED")
     count, _ = SECTIONS[section]
+    expected = EXPECTED_BY_YEAR.get(year)
+    if expected is None:
+        raise ParseError("YEAR_NOT_VALIDATED", year=year)
     answers = {}
     for page in doc:
         words = page.get_text("words", sort=True)
@@ -188,7 +205,7 @@ def parse_answers(doc, section):
         raise ParseError("ANSWER_TABLE_INCOMPLETE", found=sorted(answers), expected=count)
     # 他列の1問ズレや同年度の別資料と結合した場合は、検証済み正答と
     # 食い違うため全件を止める。
-    if [answers[i] for i in range(1, count + 1)] != EXPECTED_2025[section]:
+    if [answers[i] for i in range(1, count + 1)] != expected[section]:
         raise ParseError("ANSWER_KEY_DIFFERS_FROM_AUDITED_SOURCE")
     return answers
 
