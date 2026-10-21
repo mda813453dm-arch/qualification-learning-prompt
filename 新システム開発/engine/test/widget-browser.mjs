@@ -29,7 +29,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, question, nextQuestion }) => {
-      window.calls = []; window.followups = []; window.internal = []; window.protocolErrors = [];
+      window.calls = []; window.followups = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
       let ready = false;
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'width:100%;height:600px;border:0';
@@ -50,6 +50,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           if (op === 'reportUiEvent' || op === 'saveProfile' || op === 'chooseItem') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
+          else if (op === 'nextQuestion') {
+            if (window.failNextCalls > 0) {
+              window.failNextCalls--;
+              reply({ structuredContent: { status: 'error', error: 'TEMPORARY_UNAVAILABLE' } });
+            } else reply({ structuredContent: question });
+          }
           else if (op === 'submitAnswer') reply({ structuredContent: { grade: { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
@@ -91,10 +97,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
     await ui.getByRole('button', { name: /この学習計画で始める/ }).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
-    await page.waitForFunction(() => window.followups.length >= 1);
-    assert.deepEqual(await page.evaluate(() => window.followups), ['学習画面の操作を続ける']);
-    assert.match((await page.evaluate(() => window.internal[0])) || '', /実践問題から始めます/);
-    await page.evaluate(r => window.deliver(r), result(question));
+    // 最初の2回はエンジン呼び出し失敗。再表示専用APIでなく同じnextQuestionで復旧する。
+    await ui.locator('#nextHere:not([disabled])').waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 1);
+    assert.equal(await ui.locator('#nextStatus').count(), 1);
+    await ui.getByRole('button', { name: '再試行' }).click();
+    await ui.locator('#nextHere:not([disabled])').waitFor();
+    assert.equal(await ui.locator('#nextStatus').count(), 1, '2回失敗しても表示は1つ');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 2);
+    await ui.getByRole('button', { name: '再試行' }).click();
+    await ui.locator('input[name=ans][value="3"]').waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3);
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'redisplayQuestion').length), 0);
+    assert.deepEqual(await page.evaluate(() => window.followups), [], '実践問題の出題はChatGPT依存ではない');
     await ui.locator('input[name=ans][value="3"]').check();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 0);
     await ui.getByRole('button', { name: '解答する' }).click();
@@ -103,11 +118,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
     await ui.getByRole('button', { name: '1 解説を見る' }).click();
-    await page.waitForFunction(() => window.followups.length === 2);
+    await page.waitForFunction(() => window.followups.length === 1);
     await ui.getByRole('button', { name: /再表示/ }).click();
-    await page.waitForFunction(() => window.followups.length === 3);
+    await page.waitForFunction(() => window.followups.length === 2);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '再表示で再採点しない');
-    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 0, '再表示で次問へ進めない');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.ok((await page.evaluate(() => window.followups)).every(x => x === '学習画面の操作を続ける'), '内部文をチャットへ送らない');
     await page.evaluate(r => window.deliver(r), result({ status: 'menu', menu: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '復習する'], studyId: 'test-study', sessionId } }));
     await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
