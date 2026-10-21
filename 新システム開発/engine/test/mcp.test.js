@@ -189,7 +189,7 @@ test('画面復帰：未回答・採点後・スキップ後・AI確認問題を
   { path: '/app' })).body.result._meta.qlp;
   const aiSaved = await env2.STORE.get(`ses/${s2.sessionId}`);
   const restoredAi = (await rpc(env2, 'tools/call', { name: 'restoreStudyView',
-    arguments: { sessionId: s2.sessionId } }, { path: '/app' })).body.result.structuredContent;
+    arguments: { sessionId: s2.sessionId } }, { path: '/app' })).body.result._meta.qlp;
   assert.equal(restoredAi.status, 'confirmation_question');
   assert.equal(restoredAi.challengeId, ai.challengeId, '同じ正答固定済みの問題へ復帰する');
   assert.equal(restoredAi.correctAnswer, undefined, '復元で正答を先に公開しない');
