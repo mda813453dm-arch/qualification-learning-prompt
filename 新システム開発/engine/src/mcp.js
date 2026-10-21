@@ -209,9 +209,17 @@ export const TOOLS = [
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/answer`, { questionId: a.questionId, value: a.value, confidence: a.confidence }],
   },
   {
+    name: 'getOfficialLibrary',
+    appOnly: true,
+    uiOnly: true,
+    description: '学習画面で確認済み公式過去問の共有保存状況を読む。利用者ごとの学習記録は含めない。取り込み・ファイル検索・チャットへの依頼文送信を行わない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/official-library`],
+  },
+  {
     name: 'attachPdf',
     appOnly: true,
-    description: '利用者がこのチャットに添付した公式の問題PDFと正答PDFをエンジンに渡し、同一年度・同一区分の検証済み問題だけ出題に加える（正答同梱の資格は正答PDF省略可）。土地家屋調査士は2022～2025年度が原本検証済みで、午前・午後の区分をsectionに必ず指定し、正答PDFも必須。過去問がそろわないときや、利用者が手元の過去問を使いたいときに、利用者がPDFを添付したら呼ぶ。year は添付PDFの表紙にある実施年度（西暦。令和7年度なら2025）。PDFの中身をAIが書き写して問題を作らない（出題・採点はエンジンが行う）。返ってきた notice をそのまま伝え、次の問題は nextQuestion で受け取る。',
+    description: '利用者が現在のチャットで実際に新規添付した公式の問題PDFと正答PDFだけをエンジンに渡し、同一年度・同一区分の検証済み問題だけ出題に加える。既に共通保存されている部は再添付しない。PDFが添付されていない段階で以前のチャットやファイル保管庫を検索して取り込んだと報告しない。内部確認の途中経過・ファイル検索・照合手順を会話へ出さない（正答同梱の資格は正答PDF省略可）。土地家屋調査士は2022～2025年度が原本検証済みで、午前・午後の区分をsectionに必ず指定し、正答PDFも必須。過去問がそろわないときや、利用者が手元の過去問を使いたいときに、利用者がPDFを添付したら呼ぶ。year は添付PDFの表紙にある実施年度（西暦。令和7年度なら2025）。PDFの中身をAIが書き写して問題を作らない（出題・採点はエンジンが行う）。返ってきた notice をそのまま伝え、次の問題は nextQuestion で受け取る。',
     meta: { 'openai/fileParams': ['questionPdf', 'answerPdf'] },
     inputSchema: {
       type: 'object',
@@ -343,8 +351,9 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v50.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v51.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v52.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v53.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v54.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView']);
+const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -364,6 +373,10 @@ export function forModel(body) {
     return { status: 'remediation_question', sessionId: body.sessionId,
       challengeId: body.challengeId, repeated: !!body.repeated,
       howToProceed: 'AI作成確認問題はこの下の学習画面にすべて表示済み。チャットで問題文や選択肢を書き直さず、画面での解答を待つ。採点・再試行は画面とエンジンが行う。' };
+  }
+  if (body.status === 'officialLibrary') {
+    return { status: 'officialLibrary', sessionId: body.sessionId,
+      howToProceed: '共有保存済みの年度・部は下の学習画面に表示している。会話に転記したりファイルを検索したりしない。' };
   }
   // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
   if (Array.isArray(body.onboarding)) {
@@ -390,7 +403,8 @@ export function appInstructions() {
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
   const confirmationFlow = '\n【通常の確認問題】解説あり／確認問題からの選択後は、同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
   const explanationFlow = '\n【採点後の解説表示】「解説を見る」「再表示」「詳しい解説」はAIの処理開始の合図です。まずexplainSpec({sessionId: startSessionのsessionId})を呼び、返ったquestionとgradeの同じ問題を解説し、showMenu(kind=next, body=解説本文, sessionId, studyId, learnerId)で表示します。画面内の採点は会話に見えないため、本文・正答が不明でもexplainSpecを省略しません。資格名や回答を聞き直さず、nextQuestion・再採点・startSessionは呼びません。初期画面の「画面のボタンで選んでください」はこの合図の後には適用しません。\n';
-  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
+  const sharingFlow = '\\n【公式過去問の共有保存】システムに本当に保存されている年度・午前／午後だけを学習画面で表示する。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFファイルが添付されたときだけ、表紙の年度・部と正答の同一性を照合しattachPdfを使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。\\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\\n';
+  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow + sharingFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
