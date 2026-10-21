@@ -12,6 +12,7 @@
 import http from 'node:http';
 import { handle } from './app.js';
 import { GcpStore } from './gcp-store.js';
+import { publicOrigin } from './public-origin.js';
 
 const e = process.env;
 const env = {
@@ -38,12 +39,15 @@ const server = http.createServer(async (req, res) => {
       chunks.push(c);
     }
     const hasBody = !['GET', 'HEAD'].includes(req.method);
-    const request = new Request(`http://${req.headers.host ?? 'localhost'}${req.url}`, {
+    const origin = publicOrigin(req.headers, env.PUBLIC_BASE_URL);
+    if (!origin) throw new Error('PUBLIC_ORIGIN_UNAVAILABLE');
+    const request = new Request(`${origin}${req.url}`, {
       method: req.method,
       headers: Object.entries(req.headers).filter(([, v]) => typeof v === 'string'),
       body: hasBody ? Buffer.concat(chunks) : undefined,
     });
-    const response = await handle(request, env);
+    // URLだけから公式問題・図の公開位置を作る。Cloud Runの内部HTTPを外部へ漏らさない。
+    const response = await handle(request, { ...env, PUBLIC_BASE_URL: origin });
     res.writeHead(response.status, Object.fromEntries(response.headers));
     res.end(Buffer.from(await response.arrayBuffer()));
   } catch {
