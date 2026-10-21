@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v41.html';
+export const WIDGET_URI = 'ui://qlp/question-v42.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-21.41';
+export const WIDGET_VERSION = '2026-10-21.42';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -703,7 +703,11 @@ a{color:inherit}
       if (!r.resumed && fields.length) h += '<div class="stem"><b>【全体の進捗】</b></div><ul class="ov-l"><li>学習中：' + esc(field) + '</li>' + (fields.length > 1 ? '<li>未着手：' + esc(fields.slice(1).join('、')) + '</li>' : '') + '</ul>';
     }
     app.innerHTML = h;
-    itemMenu(field, learner, async function(){ render(await callTool('nextQuestion', { sessionId: learner })); });
+    itemMenu(field, learner, async function(){
+      var next = await callTool('nextQuestion', { sessionId: learner });
+      if (!next || next.error || !['question','waiting','finished','remediation'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
+      render(next);
+    });
   }
   // 項目開始A（U07）：この分野の進め方をボタンで選ぶ。「以後も同じ」にしたら、次の分野からは聞かずにその進め方で進む
   var itemAlways = null;
