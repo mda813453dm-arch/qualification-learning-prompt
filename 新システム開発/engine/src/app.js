@@ -425,18 +425,30 @@ async function keepAttached(env, bytes, origin) {
 async function attachPdf(env, id, state, b, url, now) {
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
   const base = cat?.sources?.[0];
-  if (!base) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED', 'この資格の過去問PDFは、まだエンジンで読み取れません。AIが作った問題と明示して進めてください。');
+  const adapter = cat?.uploadAdapter ?? base?.adapter;
+  if (!adapter || !ADAPTERS.has(adapter)) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED',
+    'この資格のPDF解析はまだ接続されていません。');
   const year = Number(b.year);
-  if (!Number.isInteger(year) || year < 1990 || year > 2100) throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', '添付された過去問の実施年度（西暦）を、PDFの表紙で確かめて year に入れてください。');
+  if (!Number.isInteger(year) || year < 1990 || year > 2100)
+    throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', 'PDFの表紙で実施年度（西暦）を確認してください。');
+  if (Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
+    throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
+  const section = cat?.uploadSections
+    ? String(b.section ?? '').trim()
+    : cat.sources.find((x) => x.year === year)?.section ?? base?.section;
+  if (cat?.uploadSections && !cat.uploadSections.includes(section))
+    throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '午前の部か午後の部を指定してください。');
+  if (cat?.uploadSections && !b.answer)
+    throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
   const jobId = sessionJobId(state);
-  const section = cat.sources.find((s) => s.year === year)?.section ?? base.section;
   const job = await readJob(env.STORE, jobId);
-  const have = (job?.sources ?? []).find((s) => s.year === year && s.section === section && s.status === 'done');
-  if (have) return { status: 'attachedAlready', sessionId: id, year, notice: `${year}年度の過去問は、すでに取り込んであります。` };
+  const have = (job?.sources ?? []).find((x) => x.year === year && x.section === section && x.status === 'done');
+  if (have) return { status: 'attachedAlready', sessionId: id, year, section,
+    notice: `${year}年度・${section}の過去問は既に取り込まれています。` };
   const origin = url.origin;
   const questionUrl = await keepAttached(env, await fetchAttached(env, b.question), origin);
   const answerUrl = b.answer ? await keepAttached(env, await fetchAttached(env, b.answer), origin) : null;
-  const sources = checkSources([{ adapter: base.adapter, year, section, questionUrl, answerUrl }], state.qualificationId, state.learnerId);
+  const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
   await markEngineSources(env, sources);
   const started = await progress(env, jobId, now);
@@ -444,7 +456,8 @@ async function attachPdf(env, id, state, b, url, now) {
     status: 'attached',
     sessionId: id,
     year,
-    notice: `添付の過去問（${year}年度）を取り込んでいます。読み取れた問題から出題に加えます。`,
+    section,
+    notice: `添付の過去問（${year}年度・${section}）を検証・取り込み中です。公式の問題と正答と図がそろった問だけ出題に加えます。`,
     job: jobView(started),
   };
 }
