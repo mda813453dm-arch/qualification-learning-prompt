@@ -735,3 +735,48 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.challengeId, 'id1');
   assert.equal(WIDGET_URI, 'ui://qlp/question-v51.html');
 });
+
+// 土地家屋調査士の過去実装（PDF検証・図抽出）は現行エンジンに未接続。
+// ただし試験概要からの導入・午前免除の分野除外・AI確認問題を先に進められることを確認する。
+test('土地家屋調査士：試験概要→免除と学習状況→午後中心の計画→開始→解析不可を明示→AI確認問題', async () => {
+  const env = makeEnv();
+  const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const started = await app('startSession', { qualificationId: '土地家屋調査士', sources: [] });
+  assert.equal(started.isError, undefined, '土地家屋調査士が開始時に未登録扱いされない');
+  const full = started._meta.qlp;
+  assert.equal(full.status, 'needPlan');
+  assert.equal(full.overview.title, '■試験概要');
+  assert.match(full.overview.lines.join('\n'), /午前の部/);
+  assert.deepEqual(full.onboarding.map((q) => q.kind), ['exempt', 'status']);
+  assert.equal(full.job, null, 'PDF解析ジョブを未対応なのに起動しない');
+  assert.equal(started.structuredContent.overview, undefined, '概要は表示専用に保持する');
+
+  const sid = full.sessionId, lid = full.learnerId;
+  assert.equal((await app('nextQuestion', { sessionId: sid }))._meta.qlp.status, 'needPlan', '開始承認を飛ばせない');
+  const profile = await app('saveProfile', { sessionId: sid, exemption: 'confirmed', stage: 4 });
+  assert.equal(profile.structuredContent.status, 'profile');
+  const afternoon = Object.values(CATALOG.land_surveyor.fields).slice(2);
+  const plan = await app('saveStudyPlan', { sessionId: sid, orderedFields: afternoon, methodChoice: 'balanced', reviewPreset: 'ai' });
+  assert.equal(plan.structuredContent.status, 'planSaved');
+  assert.deepEqual(plan.structuredContent.orderedFields, afternoon);
+  const begun = await app('startStudy', { qualificationName: '土地家屋調査士', learnerId: lid });
+  assert.equal(begun.structuredContent.learnerId, lid);
+  const skipped = await app('chooseItem', { sessionId: sid, fieldName: CATALOG.land_surveyor.fields.l1, mode: 'check' });
+  assert.equal(skipped.isError, true, '午前免除後は午前分野を選べない');
+  const choose = await app('chooseItem', { sessionId: sid, fieldName: afternoon[0], mode: 'practice' });
+  assert.equal(choose.structuredContent.status, 'item');
+  const view = (await app('nextQuestion', { sessionId: sid }))._meta.qlp;
+  assert.equal(view.status, 'sourceUnavailable');
+  assert.equal(view.fieldName, afternoon[0]);
+  assert.match(view.notice, /自動解析/);
+  assert.doesNotMatch(view.notice, /準備していま/);
+  const restored = (await app('restoreStudyView', { sessionId: sid }))._meta.qlp;
+  assert.equal(restored.status, 'sourceUnavailable');
+  assert.equal(restored.fieldName, afternoon[0]);
+  const ai = await app('chooseItem', { sessionId: sid, fieldName: afternoon[0], mode: 'check' });
+  assert.equal(ai.structuredContent.status, 'item');
+  const question = await app('registerConfirmationQuestion', { sessionId: sid,
+    question: '土地家屋調査士の学習用に作成した確認問題です。', choices: ['選択肢1', '選択肢2', '選択肢3'], correctAnswer: 2 });
+  assert.equal(question._meta.qlp.status, 'confirmation_question');
+  assert.equal(question.structuredContent.question, undefined, 'AI作成確認問題はプライベート画面に表示する');
+});
