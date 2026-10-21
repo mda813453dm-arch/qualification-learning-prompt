@@ -32,3 +32,4 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-20T04:31:58Z parser-conditions
 2026-10-20T08:41:56Z check why the app shows no buttons after 行政書士 start (mcp_rpc/widget_ui)
 2026-10-20T10:04:47Z check why the check question failed after the explanation (mcp_rpc errors)
+2026-10-21 22:05 JST read-only investigation: determine whether file attach INVALID_ARGUMENT reached server; do not modify Cloud Run or PDF storage
