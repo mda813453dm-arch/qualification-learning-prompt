@@ -75,7 +75,7 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
     .filter((year) => cat.uploadSections.every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
   return {
-    supportedYears: [...cat.validatedUploadYears].sort((a,b) => b - a),
+    supportedYears: [...(cat?.validatedUploadYears ?? [])].sort((a,b) => b - a),
     stored, missing, completeYears,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
     sources,
