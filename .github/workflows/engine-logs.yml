@@ -30,6 +30,14 @@ jobs:
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND severity>=WARNING' \
             --project qualification-learning --freshness=2h --limit=40 \
             --format='value(timestamp,severity,httpRequest.status,httpRequest.requestMethod,httpRequest.requestUrl,textPayload,jsonPayload.message,jsonPayload.event,jsonPayload.code,jsonPayload.path)' || true
+      - name: PDF登録失敗の種類だけを照合（ファイル・合言葉・アプリURLは出さない）
+        run: |
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="mcp_tool_error"' \
+            --project qualification-learning --freshness=3h --limit=100 \
+            --format='value(timestamp,jsonPayload.event,jsonPayload.tool,jsonPayload.code)' || true
+          gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND httpRequest.requestUrl:"/app/"' \
+            --project qualification-learning --freshness=3h --limit=100 \
+            --format='value(timestamp,httpRequest.status,httpRequest.latency)' || true
       - name: アプリ・コネクタの呼び出し（方法とツール名だけ。直近3時間）
         run: |
           gcloud logging read 'resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND jsonPayload.event="mcp_rpc"' \
