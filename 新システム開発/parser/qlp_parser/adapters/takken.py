@@ -54,14 +54,30 @@ def verified_answers(year, section, question_sha, answer_sha):
 _VERIFIED_IMAGE_HEADINGS = {
     (2016, "年度共通", "87923a2870184f9a0a26c76c056255aa94fa50242ff9aeda0a61eadf64699983"):
         ((16, 9, 599, 785, "都市計画法に関する次の記述のうち、正しいものはどれか。"),),
+    (2020, "10月", "a6dd351660b249a88c9d641bc3f82f2e13c06f9edc429b50b179c90efac61af4"):
+        ((49, 27, 347, 568, "土地に関する次の記述のうち、最も不適当なものはどれか。"),),
+    (2021, "10月", "ad436ace2388e21860ea59b7bbd9482a0b4d15422737f3fc1b44291764569219"):
+        ((20, 13, 60, 350, "土地区画整理法に関する次の記述のうち、誤っているものはどれか。"),
+         (37, 21, 315, 706, "宅地建物取引業法第35条及び第37条の書面に関する問題"),
+         (39, 22, 418, 789, "宅地建物取引業法第37条の2のクーリング・オフに関する問題")),
     (2022, "年度共通", "44baadbfaf0c5b3a872f107a4bc476d9c5a6516b3a6a0ca68678220c2271cf50"):
         ((44, 24, 385, 753, "宅地建物取引業法第37条の規定により交付すべき書面に関する問題"),),
+}
+
+_VERIFIED_FIELD_TOPICS = {
+    (2020, "12月", "3e771375cee071c58baf64f51d5ca344163a45f1df00ef18abf2402c7bf24104"):
+        {11: "借地借家法の規定及び判例に関する問題", 17: "建築基準法に関する問題"},
 }
 
 
 def recover_verified_missing_questions(doc, questions, year, section, source_sha):
     """原本の目視照合がある欠落見出しのみPNGの問題として復元する。"""
     patches = _VERIFIED_IMAGE_HEADINGS.get((year, section, source_sha), ())
+    field_topics = _VERIFIED_FIELD_TOPICS.get((year, section, source_sha), {})
+    for q in questions:
+        if q.number in field_topics:
+            q.classification_text = field_topics[q.number]
+            q.notes.append("source_sha_pinned_field_topic_review")
     if not patches:
         return questions
     found = {q.number for q in questions}
