@@ -154,3 +154,4 @@ Fri Oct 16 11:50:25 UTC 2026
 cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画面の無効化・終了ボタン (v37)
 2026-10-21 v39 approved deployment: ChatGPT app widget and engine fixes, source HEAD 59970fc3f9d8ff1e31c55d10c0b82a00bce729b1
 2026-10-21 v40 approved deployment: one-tap onboarding unintended-end guard, tested source HEAD 463dd97f094a112975607fa794a6ab3a93496d16
+2026-10-21 v42 approved deployment: direct question retrieval and retry, tested source 405617ad3599660bb44408688b359d82561e9271
