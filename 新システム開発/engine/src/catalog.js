@@ -55,6 +55,44 @@ export const CATALOG = {
       { adapter: 'takken', year: 2025, section: 'main', questionUrl: 'https://www.retio.or.jp/wp-content/uploads/2025/12/R7_question_answer.pdf', answerUrl: null },
     ],
   },
+  land_surveyor: {
+    qualificationId: 'land_surveyor',
+    name: '土地家屋調査士',
+    aliases: ['土地家屋調査士', '土地家屋調査士試験', '調査士'],
+    org: '法務省',
+    officialSite: 'https://www.moj.go.jp/MINJI/minji05_00768.html',
+    overviewSource: 'https://houmukyoku.moj.go.jp/chiba/page000356_00004.html',
+    overview: [
+      ['受験資格', '制限なし（どなたでも受験可能）'],
+      ['試験日', '令和8年度の筆記試験は2026年10月18日（日）'],
+      ['試験時間', '午前の部9時30分～11時30分／午後の部13時00分～15時30分（令和8年度）'],
+      ['試験の方法', '筆記試験（午前・午後の各部に多肢択一式と記述式）と、筆記試験合格者の口述試験'],
+      ['試験科目', '午前の部は土地・家屋の調査及び測量、午後の部は表示に関する登記の申請手続・審査請求等'],
+      ['合格基準', '年度ごとに発表。令和8年度の筆記試験基準点は未確認（令和7年度の基準点を流用しない）'],
+      ['受験手数料', '令和8年度8,300円（収入印紙）'],
+      ['対象年度', '令和8年度（2026年度）'],
+    ],
+    subjects: [
+      '午前の部：土地及び家屋の調査・測量（択一・記述）',
+      '午後の部：不動産の表示に関する登記・申請手続等（択一・土地記述・建物記述）',
+      '口述試験：筆記試験合格者を対象',
+    ],
+    pastExamPage: 'https://www.moj.go.jp/MINJI/minji05_00732.html',
+    // 午前の部全体の免除。午後の部の問番号を除外してはならない。
+    exemption: { label: '午前の部の免除（測量士・測量士補・一級／二級建築士の資格を有する方等。申請による適用）', numbers: [] },
+    fields: {
+      l1: '午前の部（測量・択一）',
+      l2: '午前の部（測量・記述）',
+      l3: '午後の部（不動産登記法・民法等の択一）',
+      l4: '午後の部（土地の記述）',
+      l5: '午後の部（建物の記述）',
+      l6: '口述試験対策',
+    },
+    // 公式問題PDFは公開されているが、現在のエンジンに専用解析器がない。
+    // 別資格用アダプタによる誤った問題・正答の結合は絶対に行わない。
+    overviewOnly: true,
+    sources: [],
+  },
   surveyor: {
     qualificationId: 'q063',
     name: '測量士補',
