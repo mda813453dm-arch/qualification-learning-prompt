@@ -57,7 +57,7 @@ def parse_request(body):
     question = _source(body.get("question"))
     answer = _source(body["answer"]) if body.get("answer") else None
     assets = {}
-    result = run(body.get("adapter"), year, question, answer, body.get("section"), assets)
+    result = run(body.get("adapter"), year, question, answer, body.get("section"), assets, body.get("qualificationId"))
     if result.get("status") not in ("ready", "partial"):
         assets = {}
     return {"result": result, "assets": {k: base64.b64encode(v).decode("ascii") for k, v in assets.items()}}
