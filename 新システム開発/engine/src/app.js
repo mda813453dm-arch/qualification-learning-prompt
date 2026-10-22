@@ -471,7 +471,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const officialAnswerHtml = cat?.officialAnswerHtml?.[year] ?? null;
   if (cat?.uploadSections && !b.answer && !officialAnswerHtml)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
-  if (cat?.privateLicensedUpload || adapter === 'generic_mc') {
+  if (cat?.privateLicensedUpload) {
     // PDF取得前に年度別・当該セッションの本人による権利確認を必須とする。
     const rights = await env.STORE.get(uploadRightsKey(id, year), 'json');
     if (rights?.confirmed !== true || rights?.learnerId !== state.learnerId)
