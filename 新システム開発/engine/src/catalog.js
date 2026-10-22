@@ -370,7 +370,93 @@ export const CATALOG = {
     name: 'ITパスポート試験',
     aliases: ['ITパスポート', 'ＩＴパスポート', 'iパス', 'アイパス', 'ITパス', 'ITパスポート試験'],
     shareOnVerifiedUpload: true,
-    sharedLibrarySections: ['公開問題'],
+    sharedLibrarySections: ['春期', '秋期', '公開問題'],
+    // ユーザー提出の15区分・公式問題PDFと公式正答PDFの原本SHAのみ固定。
+    // 問題として利用可能になるのは100問を解析し共有キャッシュに保存できた区分だけ。
+    officialShared: {
+      uploadAdapter: 'itpass',
+      uploadSections: ['公開問題'],
+      sectionsByYear: { 2016: ['春期','秋期'], 2017: ['春期','秋期'], 2018: ['春期','秋期'], 2019: ['春期','秋期'] },
+      validatedUploadYears: [2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026],
+      uploadQuestionCounts: { '春期':100, '秋期':100, '公開問題':100 },
+      officialPdfPins: {
+        2016: {
+          "春期": '776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc',
+          "秋期": '40dadf76068a4d84ff8d1e718f6db1cd938b40483a483ea103f52b35fbef8f58',
+          answers: {
+            "春期": '5238376b6eceda086a18646871f84cb75ee8338d06259b126753e9cefc8e1dc5',
+            "秋期": '813038d2ca78a49167b75ec54cca9952b2d8dac2ec74492c2a80746afc277d4b',
+          },
+        },
+        2017: {
+          "春期": '3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca',
+          "秋期": 'd592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114',
+          answers: {
+            "春期": 'bc14c6f2a665644ace9c44b92327a98d4e0d4e3f6d80080c219ed9633836a6c1',
+            "秋期": 'e19dc909d43654cf1bbd01f7d6df15ef654c4392060f2cd7bdb8410235936337',
+          },
+        },
+        2018: {
+          "春期": 'd107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13',
+          "秋期": '1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74',
+          answers: {
+            "春期": '8c32b454902b3ef0fde2f741d5670843f41ec2fb30b9f88845d4aca4563a0cd2',
+            "秋期": '8bc4747ee73ea34435e35e4a0677743278474d2483e7b75a116fed60037bbecf',
+          },
+        },
+        2019: {
+          "春期": 'cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335',
+          "秋期": 'c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db',
+          answers: {
+            "春期": '77b7445cda2fc2d4e1ae0489636bb82ffbc7478690c27c67f9e7498edc2ecbac',
+            "秋期": '8ede42b205addaba915fd53c2bc752d65748e395c4c8457039c06ddac5f936e6',
+          },
+        },
+        2020: {
+          "公開問題": '631fe215712475fae9f5e6ef81c02b30033f45a070dc8bae9d04c62283ac32f9',
+          answers: {
+            "公開問題": '4c241cabdf517ac30cc5191d88a63324ac972ee608ba602e9952e5ccb9fa0f3a',
+          },
+        },
+        2021: {
+          "公開問題": 'b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc',
+          answers: {
+            "公開問題": '482cbcc226df4212d45d8bfdf89da1fa3044c45ce43060f6384beaf9179a2e40',
+          },
+        },
+        2022: {
+          "公開問題": '6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026',
+          answers: {
+            "公開問題": '2096ec9295b2d598232547d9e19bcdb917cfa4eddad2d29917ffd283c4410ae0',
+          },
+        },
+        2023: {
+          "公開問題": 'b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca',
+          answers: {
+            "公開問題": '36081a36e99b42e2394bce9ee52c4974fedac3680cccddecec9ab5bf532e0c3d',
+          },
+        },
+        2024: {
+          "公開問題": 'e6771ec9506f385c5a07d22e261535ee82ff285c95cbd9ad08c4e8b941892f55',
+          answers: {
+            "公開問題": '8dd5c1f2a3f98228781c1cd18b1d855455091852c1bd681b4b2e932290dc20ee',
+          },
+        },
+        2025: {
+          "公開問題": '3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9',
+          answers: {
+            "公開問題": '669c7275b4146380e1b004c560bc93092d8cad4bd33a9e371d528e97f835f0d7',
+          },
+        },
+        2026: {
+          "公開問題": '16934af1ab515dac8756da05c7d80dec7d25afbe26bd1a20ebdf4b545922ab2e',
+          answers: {
+            "公開問題": 'd90ff38528d7911b94a207e5a2ba31a51d8f206b827377f1f5c8cd5b76a6f4f0',
+          },
+        },
+      },
+    },
+
     org: '独立行政法人情報処理推進機構（IPA）',
     officialSite: 'https://www3.jitec.ipa.go.jp/JitesCbt/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
