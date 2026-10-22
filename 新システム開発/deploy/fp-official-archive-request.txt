@@ -1,1 +1,2 @@
 APPROVE_JAFP_FP2_FP3_OFFICIAL_ARCHIVE_V1
+# Include g2/g3 academic and j2/j3 practical source PDFs
