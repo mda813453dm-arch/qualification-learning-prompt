@@ -32,6 +32,26 @@ function expectedRows(cat) {
   });
 }
 
+/** 原本とは別に、解析・検証と読み戻しを終えた区分だけ使用可能とする。 */
+async function ipaReadyRows(store, cat) {
+  const qualification = cat.qualificationId;
+  const codes = {
+    '科目A': 'a', '科目B': 'b',
+    '春期午前': 'spring-am', '秋期午前': 'autumn-am', '10月午前': 'october-am',
+  };
+  const result = await Promise.all(cat.sources.map(async ({ year, section }) => {
+    const code = codes[section];
+    if (!code) return null;
+    const row = await store.get(`ipa-source/${qualification}/${year}/${code}`, 'json').catch(() => null);
+    if (row?.status !== 'learning-ready' || !Number.isInteger(row.learningQuestionCount) ||
+        row.learningQuestionCount < 1 || !/^[a-f0-9]{64}$/.test(row.question?.sha256 ?? '') ||
+        !/^[a-f0-9]{64}$/.test(row.answer?.sha256 ?? '')) return null;
+    return { year, section, questionSha256: row.question.sha256,
+      answerSha256: row.answer.sha256, count: row.learningQuestionCount };
+  }));
+  return result.filter(Boolean);
+}
+
 export function publicLibraryView(library) {
   if (!library) return null;
   const { supportedYears, stored, missing, completeYears, totalQuestions } = library;
@@ -41,7 +61,7 @@ export function publicLibraryView(library) {
 /** 共有キャッシュの存在を実際に確認してから表示する。個人の学習記録は含めない。 */
 export async function officialLibrary(store, cat, parserVersion, now = Date.now()) {
   const spec = cat?.officialShared ?? cat;
-  const expected = expectedRows(cat);
+  const expected = cat?.ipaOfficialArchive ? await ipaReadyRows(store, cat) : expectedRows(cat);
   const stored = [];
   const missing = [];
   const sources = [];
@@ -85,7 +105,7 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
     .filter((year) => sectionsForYear(spec, year).every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
   return {
-    supportedYears: [...(spec?.validatedUploadYears ?? [])].sort((a,b) => b - a),
+    supportedYears: [...(cat?.ipaOfficialArchive ? new Set(cat.sources.map((s) => s.year)) : (spec?.validatedUploadYears ?? []))].sort((a,b) => b - a),
     stored, missing, completeYears,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
     sources,

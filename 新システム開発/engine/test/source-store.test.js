@@ -28,3 +28,24 @@ test('ITパスポートは、公式の出典URLのまま3分野で登録して�
   assert.ok(c.sources.every((s) => s.adapter === 'itpass' && s.questionUrl.startsWith('https://www3.jitec.ipa.go.jp/') && s.answerUrl));
   assert.equal(new Set(c.sources.map((s) => s.year)).size, c.sources.length);
 });
+
+test('基本・応用情報の保存済みIPA原本を公式出典URLで引き出せる', async () => {
+  const store = new MemoryStore();
+  const pair = CATALOG.fe.sources.find((s) => s.year === 2025 && s.section === '科目A');
+  const key = 'src/ipa/fe/2025/a/question.pdf';
+  await store.put(key, new TextEncoder().encode('%PDF-1.7 verified archive'));
+  const get = withStoredSources(store, async () => { throw Error('OFFICIAL_ACCESS_BLOCKED'); });
+  assert.equal(new TextDecoder().decode(await get(pair.questionUrl)), '%PDF-1.7 verified archive');
+});
+
+test('基本・応用情報の問題リストは年度と四択・記述式を区別する', () => {
+  assert.equal(CATALOG.fe.qualificationId, 'fe');
+  assert.equal(CATALOG.ap.qualificationId, 'ap');
+  assert.ok(CATALOG.fe.sources.some((s) => s.section === '科目B'));
+  assert.ok(CATALOG.ap.sources.every((s) => s.section.endsWith('午前')));
+  for (const c of [CATALOG.fe, CATALOG.ap]) {
+    assert.ok(c.sources.length > 0);
+    assert.ok(c.sources.every((s) => s.questionUrl.startsWith('https://www.ipa.go.jp/') && s.answerUrl));
+    assert.equal(new Set(c.sources.map((s) => `${s.year}:${s.section}`)).size, c.sources.length);
+  }
+});

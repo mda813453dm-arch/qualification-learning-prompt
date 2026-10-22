@@ -2,7 +2,57 @@
  * プロンプトだけで使う方式（pages.js）で扱う資格の台帳。
  * 公式PDFのURLはプログラムが持つ（AIに探させない）。URLは公式サイトで確認済みのものだけを書く。
  */
+import ipaManifest from '../data/ipa-official-source-manifest.json' with { type: 'json' };
+
+// 記述式の午後問題は、既存の四択エンジンで誤採点するため出題対象にしない。
+// 原本PDFは保存済み。午後の採点UI実装後に別途開放する。
+const ipaSources = (name, adapter) => ipaManifest.items
+  .filter((item) => item.sourceVerified && item.qualification === name &&
+    (adapter === 'fe' ? ['科目A', '科目B', '春期午前', '秋期午前'].includes(item.section)
+      : ['春期午前', '秋期午前', '10月午前'].includes(item.section)))
+  .map(({ year, section, questionUrl, answerUrl }) => ({ adapter, year, section, questionUrl, answerUrl }));
+
 export const CATALOG = {
+  fe: {
+    qualificationId: 'fe',
+    org: '独立行政法人情報処理推進機構（IPA）',
+    officialSite: 'https://www.ipa.go.jp/shiken/',
+    overviewSource: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
+    ipaOfficialArchive: true,
+    officialShared: { uploadAdapter: 'fe' },
+    name: '基本情報技術者試験',
+    aliases: ['基本情報技術者', '基本情報', '基本情報技術者試験', 'FE'],
+    exemption: null,
+    pastExamPage: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
+    fields: { fe_general: '科目A・B／旧午前の四肢択一' },
+    overview: [
+      ['過去問', 'IPAが公開した問題のみ。CBTの全問ではありません'],
+      ['問題形式', '2023年度以降は科目A・B、旧年度は春秋の午前を収録'],
+      ['実施方式', 'CBT方式（詳細は当該年度の公式試験案内を参照）'],
+      ['合格基準', '当該年度のIPA公式試験案内を参照'],
+    ],
+    sources: ipaSources('基本情報技術者', 'fe'),
+  },
+  ap: {
+    qualificationId: 'ap',
+    org: '独立行政法人情報処理推進機構（IPA）',
+    officialSite: 'https://www.ipa.go.jp/shiken/',
+    overviewSource: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
+    ipaOfficialArchive: true,
+    officialShared: { uploadAdapter: 'ap' },
+    name: '応用情報技術者試験',
+    aliases: ['応用情報技術者', '応用情報', '応用情報技術者試験', 'AP'],
+    exemption: null,
+    pastExamPage: 'https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html',
+    fields: { ap_morning: '午前（四肢択一）' },
+    overview: [
+      ['過去問', '公式問題と公式解答例の午前試験を使用'],
+      ['午後試験', '記述式のため、専用採点が実装されるまで出題しません'],
+      ['受験案内', '最新の実施方式・日程はIPA公式試験案内を参照'],
+      ['合格基準', '当該年度のIPA公式試験案内を参照'],
+    ],
+    sources: ipaSources('応用情報技術者', 'ap'),
+  },
   takken: {
     qualificationId: 'q041',
     name: '宅地建物取引士（宅建）',

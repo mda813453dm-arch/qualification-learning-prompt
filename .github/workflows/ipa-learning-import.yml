@@ -1,0 +1,34 @@
+name: IPA基本・応用情報 学習問題共有登録
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/ipa-learning-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-ipa-learning-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_IPA_LEARNING_APPROVED: YES
+      QLP_OCR: vision
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restrict to approved learning import
+        run: grep -qx 'APPROVE_IPA_FE_AP_MULTIPLE_CHOICE_VERIFIED_SHARED' 新システム開発/deploy/ipa-learning-request.txt
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - run: npm ci --prefix 新システム開発/engine
+      - run: pip install -r 新システム開発/parser/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-jpn potrace
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/seed-ipa-learning.mjs --commit
