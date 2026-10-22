@@ -1,3 +1,4 @@
 2026-10-22: guarded all-user shared import of official 2022-2026 surveyor assistant papers; require 28 verified questions for each year.
 2026-10-22: retry after continuation fix; copy 2026 already-verified official cache only with all image assets verified.
 2026-10-22: final retry for 2023 garbled native choice markers and cached 2026 OCR-only no-diagram packets.
+2026-10-22: import sole missing 2023 surveyor main after verifying PDF native choice marker recovery; preserve four saved years.
