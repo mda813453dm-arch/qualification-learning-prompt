@@ -1,0 +1,46 @@
+name: ITパスポート平成30春期77問の見出し診断
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['.github/workflows/itpass-2018-heading-diagnostic.yml']
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Install OCR
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr-jpn
+          python -m pip install -r 新システム開発/parser/requirements.txt
+      - name: Inspect exact question sequence and page positions without writing
+        env:
+          QLP_OCR: vision
+          PYTHONPATH: 新システム開発/parser
+        run: |
+          python - <<'PY'
+          import json
+          m=json.load(open('新システム開発/engine/intake/itpass-official-pdf-pins-2026-10-22.json'))
+          s=next(s for s in m['sources'] if s['year']==2018 and s['section']=='春期')
+          open('/tmp/qsha','w').write(s['questionSha256'])
+          PY
+          qsha="$(cat /tmp/qsha)"
+          gcloud storage cp "gs://qualification-learning-qlp-figures/att/$qsha.pdf" /tmp/ip-question.pdf
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
+          python - <<'PY'
+          import fitz
+          from qlp_parser.adapters import itpass
+          d=fitz.open('/tmp/ip-question.pdf')
+          qs=itpass.parse_questions(d)
+          print('IP2018_RAW_TOTAL',len(qs))
+          for i,q in enumerate(qs):
+              if 65<=q.number<=85 or 'question_number_out_of_order' in q.notes:
+                  print('IP2018_HEADING',i,q.number,q.pages,q.rect,q.notes,q.crops[:2])
+          PY
