@@ -56,8 +56,8 @@ async function ipaReadyRows(store, cat) {
 
 export function publicLibraryView(library) {
   if (!library) return null;
-  const { supportedYears, stored, missing, completeYears, totalQuestions } = library;
-  return { supportedYears, stored, missing, completeYears, totalQuestions };
+  const { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear } = library;
+  return { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear };
 }
 
 /** 共有キャッシュの存在を実際に確認してから表示する。個人の学習記録は含めない。 */
@@ -111,8 +111,12 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
       ? cat.sources.filter((s) => s.year === year).every((s) => stored.some((r) => r.year === year && r.section === s.section && !r.partial))
       : sectionsForYear(spec, year).every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
+  const supportedYears = [...(cat?.ipaOfficialArchive ? new Set(cat.sources.map((s) => s.year)) : (spec?.validatedUploadYears ?? []))].sort((a,b) => b - a);
+  // 資格ごとの試験区分をデータから返す。宅建に午前・午後という架空の区分を表示しない。
+  const sectionsByYear = Object.fromEntries(supportedYears.map((year) => [year,
+    cat?.ipaOfficialArchive ? cat.sources.filter((s) => s.year === year).map((s) => s.section) : sectionsForYear(spec, year)]));
   return {
-    supportedYears: [...(cat?.ipaOfficialArchive ? new Set(cat.sources.map((s) => s.year)) : (spec?.validatedUploadYears ?? []))].sort((a,b) => b - a),
+    supportedYears, sectionsByYear,
     stored, missing, completeYears,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
     sources,
