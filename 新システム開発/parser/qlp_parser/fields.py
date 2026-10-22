@@ -256,11 +256,13 @@ MANKAN_RULES = [
     (r"総会|理事会|理事長|役員|議決権行使書", "k2", "管理組合の運営"),
     (r"標準管理規約", "k2", "標準管理規約"),
     (r"長期修繕計画|大規模修繕|修繕積立金", "k3", "長期修繕計画・修繕"),
+    (r"設計図書", "k3", "建物・設備の設計図書"),
     (r"建築基準法|消防法|水道法|給水|排水|換気|電気設備|エレベーター|昇降機|防犯|耐震|劣化|外壁|コンクリート|防水|屋根|塗装|避難|構造|設備|断熱|遮音|バリアフリー", "k3", "建物・設備"),
     (r"被災区分所有|建替え等の円滑化|建替え等円滑化|マンション建替|マンションの建替え", "k1", "建替え・被災"),
     (r"不動産登記|登記", "k1", "不動産登記法"),
     (r"区分所有法|区分所有者|管理者|集会|規約|共用部分|専有部分|敷地利用権|管理組合法人|団地", "k1", "区分所有法"),
     (r"借地借家法|宅地建物取引業法|品確法|住宅の品質確保|個人情報|都市計画法|景品表示|消費者契約", "k1", "関係法令"),
+    (r"警備業法|警備業務", "k1", "警備に関する関係法令"),
     (r"民法|相続|遺言|賃貸借|売買|抵当権|時効|不法行為|委任|請負|保証|債務|債権|代理", "k1", "民法"),
 ]
 
@@ -269,4 +271,4 @@ def classify_mankan(question):
     if 46 <= question.number <= 50:
         return {"fieldId": "k4", "unitId": MANKAN_FIELDS["k4"], "method": "official_number_range",
                 "evidence": "問46〜50（マンション管理適正化法）", "verified": True}
-    return classify_by_rules(MANKAN_RULES, question.stem, question.choices)
+    return classify_by_rules(MANKAN_RULES, question.classification_text or question.stem, question.choices)

@@ -398,8 +398,26 @@ export const CATALOG = {
     qualificationId: 'q090',
     name: '行政書士',
     aliases: ['行政書士', '行政書士試験', '行書'],
-    shareOnVerifiedUpload: true,
-    sharedLibrarySections: ['年度共通'],
+    // 試験研究センターは問題の外部掲載に許諾を要求している。
+    // 運営者による保存・自動取得・全員への共有はしない。
+    // 許諾を確認した本人が自分の問題PDFを添付した場合だけ非公開で扱う。
+    overviewOnly: true,
+    privateLicensedUpload: true,
+    shareOnVerifiedUpload: false,
+    sharedLibrarySections: [],
+    uploadAdapter: 'gyosei',
+    uploadSections: ['年度共通'],
+    availableUploadYears: [2020, 2021, 2022, 2023, 2024, 2025],
+    validatedUploadYears: [2020, 2021, 2022, 2023, 2024, 2025],
+    // 公式の正解は PDF ではなく年度別のHTML。添付後に指定年度のURLを使い、AIは生成しない。
+    officialAnswerHtml: {
+      2020: 'https://gyosei-shiken.or.jp/doc/exam/r2ans.html',
+      2021: 'https://gyosei-shiken.or.jp/doc/exam/r3ans.html',
+      2022: 'https://gyosei-shiken.or.jp/doc/exam/r4ans.html',
+      2023: 'https://gyosei-shiken.or.jp/doc/exam/r5ans.html',
+      2024: 'https://gyosei-shiken.or.jp/doc/exam/r6ans.html',
+      2025: 'https://gyosei-shiken.or.jp/doc/exam/r7ans.html',
+    },
     org: '一般財団法人 行政書士試験研究センター',
     officialSite: 'https://gyosei-shiken.or.jp/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -426,10 +444,8 @@ export const CATALOG = {
       g5: '商法・会社法',
       g6: '基礎知識',
     },
-    // 正解はPDFがなく、正解ページ（HTML）の表から読む
-    sources: [
-      { adapter: 'gyosei', year: 2025, section: '年度共通', questionUrl: 'https://gyosei-shiken.or.jp/pdf/r7_mondai.pdf', answerUrl: 'https://gyosei-shiken.or.jp/doc/exam/r7ans.html' },
-    ],
+    // PDF原本は取り込まず、許諾済みユーザーが年度を選び添付するまでは保存ゼロ。
+    sources: [],
   },
   shindan: {
     qualificationId: 'q021',

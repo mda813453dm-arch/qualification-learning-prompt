@@ -99,3 +99,32 @@ test('年度別の本人による許諾確認を経ない限りPDFを取得も�
   assert.equal((await call(env, 'POST', '/v1/sessions/' + other.body.sessionId + '/attach', body)).status, 403,
     'ある利用者の許諾確認は別の利用者に継承しない');
 });
+
+test('行政書士は年度別許諾確認後、本人の問題PDFと当該年度の公式正答HTMLだけを結び付ける', async () => {
+  const { env, received } = envForTest();
+  const start = await call(env, 'POST', '/v1/sessions', { qualificationId: 'q090' });
+  assert.equal(start.status, 201);
+  assert.equal(await readJob(env.STORE, 'q090~' + start.body.learnerId), null);
+  const url = '/v1/sessions/' + start.body.sessionId;
+  const body = { year: 2025, question: files.question };
+  const blocked = await call(env, 'POST', url + '/attach', body);
+  assert.equal(blocked.status, 403);
+  assert.equal(received.length, 0);
+  const confirm = await call(env, 'POST', url + '/upload-permission', { year: 2025, confirmed: true });
+  assert.equal(confirm.status, 200);
+  assert.equal(received.length, 0, '同意のみでは公式過去問原本を取得しない');
+  const accepted = await call(env, 'POST', url + '/attach', body);
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  assert.equal(accepted.body.status, 'attached');
+  assert.equal(received.length, 1, '行政書士は正解HTMLの添付を要求しない');
+  const job = await readJob(env.STORE, 'q090~' + start.body.learnerId);
+  assert.equal(job.sources.length, 1);
+  assert.equal(job.sources[0].owner, start.body.learnerId);
+  assert.equal(job.sources[0].privateLicensedUpload, true);
+  assert.ok(job.sources[0].questionUrl.includes('/v1/private-source/'));
+  assert.equal(job.sources[0].answerUrl, CATALOG.gyosei.officialAnswerHtml[2025]);
+  assert.equal((await call(env, 'GET', new URL(job.sources[0].questionUrl).pathname)).status, 404);
+  const other = await call(env, 'POST', '/v1/sessions', { qualificationId: 'q090' });
+  const otherBlocked = await call(env, 'POST', '/v1/sessions/' + other.body.sessionId + '/attach', body);
+  assert.equal(otherBlocked.status, 403, '本人許諾を他の利用者へ引き継がない');
+});

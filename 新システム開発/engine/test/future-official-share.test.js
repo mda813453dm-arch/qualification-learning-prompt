@@ -49,6 +49,8 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
         [{year:2021,section:'10月'}, {year:2021,section:'12月'}]);
     } else if (target.qualificationKey === 'surveyor') {
       assert.deepEqual(lib.missing,[2026,2025,2024,2023,2022].map(year=>({year,section:'main'})));
+    } else if (target.qualificationKey === 'mankan') {
+      assert.deepEqual(lib.missing,[2025,2024,2023,2022,2021,2020,2019].map(year=>({year,section:'main'})));
     } else {
       assert.deepEqual(lib.missing, []);
     }

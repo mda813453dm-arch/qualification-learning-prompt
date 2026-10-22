@@ -1,0 +1,28 @@
+name: マンション管理士公式PDF 全7年度の無書込検査
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/engine/scripts/seed-official-mankan.mjs'
+      - '新システム開発/engine/src/catalog.js'
+      - '新システム開発/parser/qlp_parser/adapters/mankan.py'
+      - '新システム開発/parser/qlp_parser/fields.py'
+      - '.github/workflows/mankan-shared-verify.yml'
+permissions:
+  contents: read
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: 解析ツールをインストール
+        run: |
+          python -m pip install -r 新システム開発/parser/requirements.txt
+          npm ci --prefix 新システム開発/engine
+      - name: 本番に書き込まず全350問を検証
+        run: node 新システム開発/engine/scripts/seed-official-mankan.mjs --dry-run

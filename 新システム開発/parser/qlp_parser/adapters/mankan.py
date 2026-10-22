@@ -35,7 +35,30 @@ def _stated_year(text):
 
 
 def parse_questions(doc):
-    return takken.parse_questions(doc)
+    questions = takken.parse_questions(doc)
+    year = _stated_year(doc[0].get_text())
+    # 表の各列や枠線が文字抽出で失われる既知の公式問題。
+    # この3問だけ、原本PDFから問題範囲をそのままPNGに切り出して回答欄を4肢とする。
+    original_image_numbers = {2020: {3}, 2022: {50}, 2024: {24}}.get(year, set())
+    for q in questions:
+        if q.number not in original_image_numbers or len(q.pages) != 1 or not q.rect:
+            continue
+        page_no = q.pages[0]
+        page = doc[page_no - 1]
+        top, bottom = q.rect
+        if not (0 <= top < bottom <= page.rect.y1):
+            continue
+        q.classification_text = q.stem + "\n" + "\n".join(q.choices)
+        q.stem = ""
+        q.choices = ["1", "2", "3", "4"]
+        q.stem_mode = "official_image"
+        q.choice_mode = "official_image"
+        q.has_graphics = True
+        q.preserve_aspect = True
+        q.crops = [(page_no, (page.rect.x0 + 20, max(page.rect.y0, top - 15),
+                              page.rect.x1 - 20, min(page.rect.y1 - 25, bottom + 15)))]
+        q.notes.append("official_original_image_question")
+    return questions
 
 
 def check_year(doc, year):
@@ -62,7 +85,8 @@ def check_question(qdoc, adoc, year, section):
 def parse_answers(doc):
     """正解の表を読む。見出し「問題」の列ごとに、同じ高さの「問番号 正解」の組を取る。
 
-    正解が1〜4の数字1つでない問（「全員正解」「1又は3」など）は ANSWER_SPECIAL。
+    公式正答に明記された「正解なし」は全肢正解、複数の正解番号は許容肢の配列。
+    解釈できない特別な表記だけ ANSWER_SPECIAL として出題しない。
     """
     page = doc[0]
     words = [(w[0], (w[1] + w[3]) / 2, _norm(w[4])) for w in page.get_text("words") if w[4].strip()]
@@ -82,7 +106,15 @@ def parse_answers(doc):
             if len(cells) < 2 or not re.fullmatch(r"[0-9]{1,2}", cells[0]):
                 continue
             n, v = int(cells[0]), "".join(cells[1:])
-            answers[n] = int(v) if re.fullmatch(r"[1-4]", v) else ANSWER_SPECIAL
+            if re.fullmatch(r"[1-4]", v):
+                answers[n] = int(v)
+            elif v in ("正解なし", "全員正解", "全て正解", "すべて正解"):
+                answers[n] = "all"
+            elif re.fullmatch(r"[1-4](?:[,、又は]+[1-4])+", v):
+                nums = [int(s) for s in re.findall(r"[1-4]", v)]
+                answers[n] = nums if len(set(nums)) == len(nums) else ANSWER_SPECIAL
+            else:
+                answers[n] = ANSWER_SPECIAL
     if len([v for v in answers.values() if v != ANSWER_SPECIAL]) < 10:
         raise ParseError("ANSWER_TABLE_NOT_FOUND")
     return answers

@@ -156,7 +156,7 @@ a{color:inherit}
     if (locked) return;
     if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) state.privateLicensedUpload = false;
     if (data.sessionId) state.sessionId = data.sessionId;
-    if (data.permissionedUpload || (data.question && String(data.question.questionId || '').startsWith('q097:')))
+    if (data.permissionedUpload || (data.question && /^(q097|q090):/.test(String(data.question.questionId || ''))))
       state.privateLicensedUpload = true;
     if (data.studyId) currentStudyId = data.studyId;
     if (data.learnerId) studyLid = data.learnerId;
@@ -249,6 +249,9 @@ a{color:inherit}
       var years = Array.isArray(data.availableUploadYears) ? data.availableUploadYears : [];
       var validated = Array.isArray(data.validatedUploadYears) ? data.validatedUploadYears : [];
       var personal = Array.isArray(data.personalUploadedYears) ? data.personalUploadedYears : [];
+      var isHtmlAnswer = data.answerFormat === 'html';
+      var fileHint = isHtmlAnswer ? '公式問題PDFを1点添付してください。正答は公式サイトの同年度の正解ページと照合します。' :
+        '公式問題PDFと同年度の公式正答PDFを2点添付してください。';
       var officialLink = safeUrl(data.officialUrl);
       var choices = years.map(function(year){
         var ready = validated.indexOf(year) >= 0;
@@ -258,7 +261,8 @@ a{color:inherit}
       }).join('');
       var selected = years.find(function(year){ return validated.indexOf(year) >= 0 && personal.indexOf(year) < 0; });
       app.innerHTML = '<h2>過去問の年度別取り込み（本人専用）</h2>' +
-        '<div class="notice"><b>著作権・利用許諾の確認</b><div>当システムは賃貸不動産経営管理士の問題PDF・正答PDFを事前に保存・自動取得・共有配布しません。権利者から必要な許諾を得た方だけ、ご自身の学習用に年度ごとに添付できます。</div></div>' +
+        '<div class="notice"><b>著作権・利用許諾の確認</b><div>当システムは' + esc(data.qualificationName || 'この資格') +
+        'の過去問を事前に保存・自動取得・共有配布しません。権利者から必要な許諾を得た方だけ、ご自身の学習用に年度ごとに添付できます。</div></div>' +
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
         '<ul class="ov-l">' + years.map(function(year){
           return '<li>' + esc(year) + '年度：' + (personal.indexOf(year) >= 0 ? '本人用に取込済み' :
@@ -282,7 +286,8 @@ a{color:inherit}
           var r = await callTool('confirmUploadRights', { sessionId: state.sessionId, year: year, confirmed: true });
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed') throw new Error('RIGHTS_CONFIRM_FAILED');
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>' + esc(year) +
-            '年度の確認を受け付けました。</b><div>このチャットの「＋」から、該当年度の公式問題PDFと公式正答PDFを2点添付し、年度を指定して送信してください。PDFを添付するまでは取り込みません。他の利用者には共有されません。</div></div>';
+            '年度の確認を受け付けました。</b><div>このチャットの「＋」から、該当年度の' + esc(fileHint) +
+            'PDFを添付するまでは取り込みません。他の利用者には共有されません。</div></div>';
           ack.checked = false;
         } catch(e) {
           ack.checked = false;
