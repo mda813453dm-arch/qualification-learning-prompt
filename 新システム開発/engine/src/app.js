@@ -471,7 +471,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const officialAnswerHtml = cat?.officialAnswerHtml?.[year] ?? null;
   if (cat?.uploadSections && !b.answer && !officialAnswerHtml)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
-  if (cat?.privateLicensedUpload) {
+  if (cat?.privateLicensedUpload || adapter === 'generic_mc') {
     // PDF取得前に年度別・当該セッションの本人による権利確認を必須とする。
     const rights = await env.STORE.get(uploadRightsKey(id, year), 'json');
     if (rights?.confirmed !== true || rights?.learnerId !== state.learnerId)
@@ -490,7 +490,7 @@ async function attachPdf(env, id, state, b, url, now) {
   if (have) return { status: 'attachedAlready', sessionId: id, year, section,
     notice: `${year}年度・${section}の過去問は既に取り込まれています。` };
   const origin = url.origin;
-  const savePdf = cat?.privateLicensedUpload
+  const savePdf = (cat?.privateLicensedUpload || adapter === 'generic_mc')
     ? (bytes) => keepPrivateAttached(env, bytes, origin, state.learnerId)
     : (bytes) => keepAttached(env, bytes, origin);
   const questionUrl = await savePdf(await fetchAttached(env, b.question));
@@ -498,7 +498,7 @@ async function attachPdf(env, id, state, b, url, now) {
   // 任意の外部URLを利用者入力から取得しない（SSRF/偽正答対策）。
   const answerUrl = officialAnswerHtml || (b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null);
   const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl,
-    ...(cat?.privateLicensedUpload ? { privateLicensedUpload: true } : {}) }], state.qualificationId, state.learnerId);
+    ...((cat?.privateLicensedUpload || adapter === 'generic_mc') ? { privateLicensedUpload: true } : {}) }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
   await markEngineSources(env, sources);
   const started = await progress(env, jobId, now);
