@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v56.html';
+export const WIDGET_URI = 'ui://qlp/question-v57.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-22.56';
+export const WIDGET_VERSION = '2026-10-22.57';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -64,7 +64,7 @@ a{color:inherit}
 <script>
 (function(){
   var app = document.getElementById('app');
-  var state = { sessionId: null, question: null, answered: false };
+  var state = { sessionId: null, question: null, answered: false, privateLicensedUpload: false };
   var pending = {}, rid = 1, bridgeReady = false, hasView = false;
   function rpc(method, params){ return new Promise(function(res, rej){
     var id = rid++;
@@ -154,7 +154,10 @@ a{color:inherit}
     if (locked) return;
     stamp(data);
     if (locked) return;
+    if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) state.privateLicensedUpload = false;
     if (data.sessionId) state.sessionId = data.sessionId;
+    if (data.permissionedUpload || (data.question && String(data.question.questionId || '').startsWith('q097:')))
+      state.privateLicensedUpload = true;
     if (data.studyId) currentStudyId = data.studyId;
     if (data.learnerId) studyLid = data.learnerId;
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
@@ -1210,8 +1213,22 @@ a{color:inherit}
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
-  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
+  function endBar(){ return '<div class="row" style="margin-top:14px">' +
+    (state.privateLicensedUpload ? '<button id="addLicensedYear">別年度の過去問を取り込む</button>' : '') +
+    '<button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
   function bindEnd(){
+    var add = document.getElementById('addLicensedYear');
+    if (add) add.onclick = async function(){
+      this.disabled = true;
+      try {
+        var options = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
+        if (!options || options.error || !options.permissionedUpload) throw new Error('UPLOAD_OPTIONS_FAILED');
+        render({ ...options, status: 'sourceUnavailable' });
+      } catch(e) {
+        this.disabled = false;
+        app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">年度一覧を開けませんでした。もう一度押してください。</div>');
+      }
+    };
     var b = document.getElementById('endStudy'); if (!b) return;
     b.onclick = async function(){
       b.disabled = true;
