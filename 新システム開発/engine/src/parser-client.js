@@ -85,6 +85,7 @@ export function httpParser({ endpoint, token, fetch: doFetch = fetch, timeoutMs 
   return async (input) => {
     const body = {
       adapter: input.adapter,
+      qualificationId: input.qualificationId,
       year: input.year,
       section: input.section,
       question: { url: input.question.url, sha256: input.question.sha256, base64: toBase64(input.question.bytes) },
