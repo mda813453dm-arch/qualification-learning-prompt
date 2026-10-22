@@ -1,0 +1,23 @@
+name: 賃管4項目メタデータ全件独立監査
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/chintai-metadata-audit-request.txt']
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/audit-chintai-metadata.mjs
