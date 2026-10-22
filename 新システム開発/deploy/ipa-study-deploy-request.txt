@@ -1,1 +1,2 @@
 DEPLOY_VERIFIED_FE_AP_STUDY_ENGINE_V4
+# Deploy FP2/FP3 verified official academic session catalog and IPA heading repair
