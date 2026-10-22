@@ -23,15 +23,15 @@ jobs:
           parser_url="$(gcloud run services describe qlp-parser --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           parser_token="$(gcloud secrets versions access latest --secret qlp-parser-token --project qualification-learning)"
           PARSER_URL="$parser_url" PARSER_TOKEN="$parser_token" node --input-type=module <<'JS'
-          import {GcpStore} from './src/gcp-store.js';
+          import {Storage} from '@google-cloud/storage';
           import {sha256Hex} from './src/store.js';
           import {httpParser} from './src/parser-client.js';
           import {validateResult} from './src/ingest.js';
           import fs from 'node:fs/promises';
           const data=JSON.parse(await fs.readFile('./intake/itpass-official-pdf-pins-2026-10-22.json','utf8'));
-          const store=new GcpStore({bucket:'qualification-learning-qlp-figures'});
+          const bucket=new Storage().bucket('qualification-learning-qlp-figures');
           const get=async sha=>{
-            const bytes=await store.get('staging/itpass-20261022/'+sha+'.pdf','arrayBuffer');
+            const [bytes]=await bucket.file('staging/itpass-20261022/'+sha+'.pdf').download();
             if(!bytes)throw Error('STAGED_PDF_MISSING');
             const b=new Uint8Array(bytes);
             if(await sha256Hex(b)!==sha)throw Error('STAGED_PDF_HASH_MISMATCH');
