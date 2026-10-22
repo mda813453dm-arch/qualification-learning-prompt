@@ -26,7 +26,7 @@ PINS = {
     2024: ("4ec10ee8ae65c9ca36fed9f8e7a9a6b1cb89f16b89e488cd6abba632e7b2d939","3cd54c036d3c78c778a411f627d285ad71a7606a1712dcee4d3e8ec09c68826e"),
     2025: ("91848d63f04c36d03290264e72bac8a1a9e0e2e50c5d1619edee18c9db747fde","55b6d9593bd82e2d1232f019aced2c5236e51451ccb88152b9944279ca07db1d"),
 }
-EXCEPTIONS = {2017:{30:[1,3],31:[1,4]},2022:{32:None},2025:{9:[1,2,3,4]}}
+EXCEPTIONS = {2017:{30:[1,3],31:[1,4]},2022:{32:None},2023:{49:[1,2,3,4]},2025:{9:[1,2,3,4]}}
 
 class Links(html.parser.HTMLParser):
     def __init__(self):
