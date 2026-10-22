@@ -43,5 +43,5 @@ jobs:
       - uses: google-github-actions/setup-gcloud@v2
       - name: Discard PDF and problem text; persist four fields only and verify readback
         run: |
-          export QLP_VISION_TOKEN="$$(gcloud auth print-access-token)"
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
           node 新システム開発/engine/scripts/seed-chintai-metadata.mjs ${{ matrix.year }} --commit
