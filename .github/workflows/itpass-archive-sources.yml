@@ -1,0 +1,46 @@
+name: ITパスポート公式PDF30点の原本保存
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['.github/workflows/itpass-archive-sources.yml']
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: npm ci --prefix 新システム開発/engine
+      - name: 30件の原本SHA照合後に共通原本庫へ保存
+        working-directory: 新システム開発/engine
+        run: |
+          node --input-type=module <<'JS'
+          import {Storage} from '@google-cloud/storage';
+          import {sha256Hex} from './src/store.js';
+          import fs from 'node:fs/promises';
+          const src=JSON.parse(await fs.readFile('./intake/itpass-official-pdf-pins-2026-10-22.json','utf8'));
+          const bucket=new Storage().bucket('qualification-learning-qlp-figures');
+          const hashes=[...new Set(src.sources.flatMap(s=>[s.questionSha256,s.answerSha256]))];
+          let existed=0,copied=0;
+          for (const sha of hashes) {
+            const target=bucket.file('att/'+sha+'.pdf');
+            const [has]=await target.exists();
+            if (has) {
+              const [existing]=await target.download();
+              if(await sha256Hex(existing)!==sha)throw Error('ARCHIVE_HASH_MISMATCH');
+              existed++;continue;
+            }
+            const staged=bucket.file('staging/itpass-20261022/'+sha+'.pdf');
+            const [raw]=await staged.download();
+            if(await sha256Hex(raw)!==sha)throw Error('STAGED_HASH_MISMATCH');
+            await staged.copy(target);
+            const [check]=await target.download();
+            if(await sha256Hex(check)!==sha)throw Error('ARCHIVE_READBACK_MISMATCH');
+            copied++;
+          }
+          console.log('ITPASS_OFFICIAL_SOURCE_ARCHIVED total='+hashes.length+' copied='+copied+' already='+existed);
+          JS
