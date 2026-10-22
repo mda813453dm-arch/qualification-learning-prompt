@@ -82,7 +82,7 @@ def main():
         cls=fields.classify_chintai(q)
         fid=cls.get("fieldId")
         if fid not in ("c1","c2","c3","c4","c5","c6"):
-            raise RuntimeError(f"FIELD_UNVERIFIED_{year}_{n}")
+            fid="unclassified"  # 分類根拠が無い問は推測で6分野に割り当てない
         rows.append({"year":year,"questionNumber":n,"fieldId":fid,"correctAnswer":value})
     if len(rows)!=expected:
         raise RuntimeError("INCOMPLETE_METADATA")
