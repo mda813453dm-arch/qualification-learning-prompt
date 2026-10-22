@@ -118,7 +118,9 @@ def classify_by_rules(rules, stem, choices=()):
 
 
 def classify_takken(question):
-    return classify_by_rules(TAKKEN_RULES, question.stem, question.choices)
+    # 画像原本で出題する場合、OCR文字は表示用でなく分野判定にのみ用いる。
+    # stem は意図的に空欄のため、検証済み原本由来の classification_text を参照する。
+    return classify_by_rules(TAKKEN_RULES, question.classification_text or question.stem, question.choices)
 
 
 def classify_surveyor(question):
