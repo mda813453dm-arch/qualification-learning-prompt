@@ -97,16 +97,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '解説の冒頭にも全体位置を示す');
     assert.equal(await ui.locator('table tbody tr').count(), 5);
     assert.equal(await ui.locator('h2').innerText(), '次はどうしますか？');
-    assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）']);
+    assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '今日はここまで（学習を終了）'],
+      '解説済みなら無反応の「解説を見る」ボタンを出さない');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
     assert.equal(await page.evaluate(() => window.droppedContext), 0, '文脈添付を要求しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
-    assert.ok(messages.every(m => m.includes('学習セッションID：' + knownSessionId) &&
-      m.includes('問題ID：' + first.question.questionId) && m.includes('学習履歴')),
-      'モデルへ同じ問題の保存済み採点と学習履歴を確認する依頼が届く');
+    assert.ok(messages.every(m => m === '2026年度 問1の解説をお願いします。'),
+      'チャットに送るのは短い利用者向けの合図だけ');
+    assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
+      '内部識別子とAI処理指示をチャットに露出しない');
     await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
