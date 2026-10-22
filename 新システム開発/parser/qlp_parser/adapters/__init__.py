@@ -3,6 +3,7 @@
 from . import generic_mc, ap, chintai, fe, fp2, fp3, gyosei, itpass, land_surveyor, mankan, shindan, surveyor, takken
 
 ADAPTERS = {
+    "generic_mc": generic_mc,
     "takken": takken,
     "surveyor": surveyor,
     "land_surveyor": land_surveyor,
