@@ -1,0 +1,22 @@
+name: 共通過去問PDFの解析・回帰テスト
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/generic-upload-test-request.txt']
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - run: pip install -r 新システム開発/parser/requirements.txt pytest
+      - run: PYTHONPATH=新システム開発/parser python -m pytest 新システム開発/parser/tests/test_generic_mc.py 新システム開発/parser/tests/test_ipa_heading_recognition.py -q
+      - run: node --check 新システム開発/engine/src/app.js
+      - run: node --check 新システム開発/engine/src/ingest.js
+      - run: node --check 新システム開発/engine/src/parser-client.js
