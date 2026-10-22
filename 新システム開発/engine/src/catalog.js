@@ -373,6 +373,10 @@ export const CATALOG = {
     },
     sources: [
       { adapter: 'fp2', year: 2026, section: '2026年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202605_qa.pdf', answerUrl: null },
+      { adapter: 'fp2', year: 2025, section: '2025年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202505_qa.pdf', answerUrl: null },
+      { adapter: 'fp2', year: 2025, section: '2025年1月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202501_q.pdf', answerUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202501_a.pdf' },
+      { adapter: 'fp2', year: 2024, section: '2024年9月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202409_q.pdf', answerUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202409_a.pdf' },
+      { adapter: 'fp2', year: 2024, section: '2024年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202405_q.pdf', answerUrl: 'https://www.jafp.or.jp/exam/mohan/files/g2_202405_a.pdf' },
     ],
   },
   fp3: {
@@ -413,6 +417,8 @@ export const CATALOG = {
     },
     sources: [
       { adapter: 'fp3', year: 2026, section: '2026年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g3_202605_qa.pdf', answerUrl: null },
+      { adapter: 'fp3', year: 2025, section: '2025年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g3_202505_qa.pdf', answerUrl: null },
+      { adapter: 'fp3', year: 2024, section: '2024年5月', questionUrl: 'https://www.jafp.or.jp/exam/mohan/files/g3_202405_qa.pdf', answerUrl: null },
     ],
   },
   itpass: {
