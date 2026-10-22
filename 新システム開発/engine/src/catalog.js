@@ -488,6 +488,22 @@ export const CATALOG = {
     aliases: ['マンション管理士', 'マンション管理士試験'],
     shareOnVerifiedUpload: true,
     sharedLibrarySections: ['main'],
+    officialShared: {
+      uploadAdapter: 'mankan',
+      uploadSections: ['main'],
+      validatedUploadYears: [2019, 2020, 2021, 2022, 2023, 2024, 2025],
+      uploadQuestionCounts: { main: 50 },
+      // 運営者が提供した試験問題・正答PDFの原本SHA。検証済みキャッシュがなければ未登録と表示する。
+      officialPdfPins: {
+        2019: { main: '3fa1c30d4158ee45acffa3322784158b368896004136b79b8187002f65003cee', answer: '15861deb08f2cf5e57eece96ef170b351c6f36a26a8221f9f0e605638e1dbc70' },
+        2020: { main: 'bf2797d5386561e69234dd3bf485f97fa78042a322a509a9c4f008bc453fdd26', answer: 'e0b99d2f38ae2d2cce70016c3a78e40d60b2356a1a66b9d78cc5ecf955fef6f0' },
+        2021: { main: '999236d05de37906879429076b982a8e11c61513b6d9a77226b658fadb203dfc', answer: 'ed916a0e0b58aed6b1e263d95d9604642be9c6615607cf44da573663901bdbff' },
+        2022: { main: '7f5318271b33b7fb92c2ee56bea664b92dd3d68f87ac6e4eb7b6ce299a322848', answer: '047570c0c3647c931e04a6470161aefb8b08f865ab03d886e69f49297e9c4dc2' },
+        2023: { main: '28b80ec8cf37ba161743bcf33da6340a674bfe903ca093e125a003e8b0ddad41', answer: '1d664e20021a90a95388f70c8be25911016edae2e80fac2106d780122274bcde' },
+        2024: { main: 'd7b46c724924c0d49c389f1810669dcbf2f7b30af84726ef146500709a10c241', answer: '5d9fab95d051293f8afeb28a9c78aa8b189bf558b69ab845a1993425dda2fdc7' },
+        2025: { main: '990ba208b6e69651da4c739d719e4a74baa97629f864e89662f899bb9d6d9498', answer: '4ad7062facaa0ceb64eec29a79df543b500745e5b518d2490f3d547810a45735' },
+      },
+    },
     org: '公益財団法人 マンション管理センター',
     officialSite: 'https://www.mankan.org/',
     // 令和8年度の公式の受験案内（PDF）に書かれている概要（文言は公式のまま。2026-10-20に確認。書かれていない項目は載せない）
