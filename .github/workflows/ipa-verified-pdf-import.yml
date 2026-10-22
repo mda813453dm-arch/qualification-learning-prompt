@@ -1,0 +1,29 @@
+name: IPA公式過去問の検証済みPDF保存
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/ipa-import-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-ipa-verified-pdf-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_IPA_IMPORT_APPROVED: YES
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate approved source scope
+        run: grep -qx 'APPROVE_IPA_VERIFIED_3_PAIRS_ORIGINAL_PDFS' 新システム開発/deploy/ipa-import-request.txt
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/import-ipa-verified-pdfs.mjs --commit
