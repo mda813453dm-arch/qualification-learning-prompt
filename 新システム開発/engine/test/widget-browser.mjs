@@ -243,7 +243,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { library, sessionId });
     await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).waitFor();
     assert.match(await ui.locator('#app').innerText(), /2025年度/);
-    assert.match(await ui.locator('#app').innerText(), /共有保存済みの問題がありません/);
+    assert.match(await ui.locator('#app').innerText(), /共有保存済みと確認できた年度はありません/);
     const previousMessageCount = await page.evaluate(() => window.followups.length);
     const priorAttachCount = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).click();
