@@ -1,1 +1,2 @@
 APPROVE_KINZAI_FP2_FP3_OFFICIAL_ARCHIVE_V1
+# retry verified official-PDF extraction after path-matching fix
