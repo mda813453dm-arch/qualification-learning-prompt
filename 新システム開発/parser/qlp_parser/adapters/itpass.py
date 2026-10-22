@@ -21,7 +21,9 @@ SECTION = "公開問題"
 CHOICE_COUNT = 4
 QUESTION_COUNT = 100
 
-HEADING = re.compile(r"^問\s*([0-9０-９]{1,3})(?![0-9０-９])\s*")
+# OCR sometimes recognizes the printed 問 as 間; accept that glyph only in a heading position.
+# Subsequent duplicate/order checks and the official answer still gate registration.
+HEADING = re.compile(r"^[問間][\s　]*([0-9０-９]{1,3})(?![0-9０-９])(?:[\s　]|$)")
 MARKS = "アイウエ"
 # Vision は選択肢の記号「エ」を英字の「I」と読むことがある
 MARK_ALIASES = {"I": "エ", "H": "エ", "工": "エ"}
