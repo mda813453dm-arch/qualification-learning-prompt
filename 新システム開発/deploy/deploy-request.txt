@@ -168,3 +168,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-22 v56: Manabu approved deployment; eliminate raw SVG markup in explanations, emphasize correct/incorrect grade banners; verified regression tests, GitHub change e0885f244b966df5d7006134062166ce8ae1d0db.
 2026-10-22: deploy surveyor official-PDF full-question import and shared-library verification.
 2026-10-22: deploy OCR continuation correction for surveyor 2023 Q21 and 2024 Q8/Q21.
+2026-10-22: deploy legacy PDF corrupted-choice-marker recovery for surveyor 2023 No.21.
