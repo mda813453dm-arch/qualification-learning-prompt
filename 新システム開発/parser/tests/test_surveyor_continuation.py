@@ -12,7 +12,8 @@ class SurveyorContinuationTest(unittest.TestCase):
         doc = fitz.open()
         a = doc.new_page(width=595, height=842)
         a.insert_text((70, 95), "[No. 1]", fontname="helv", fontsize=12)
-        a.insert_text((80, 135), "測量法について次のページから選べ。", fontname="japan", fontsize=12)
+        # 続きページを示す文言がOCRで欠落しても、次問の直前までの5択は連結する。
+        a.insert_text((80, 135), "測量法について選べ。", fontname="japan", fontsize=12)
         a.draw_rect(fitz.Rect(80, 180, 350, 360))
         b = doc.new_page(width=595, height=842)
         for n in range(1, 6):
