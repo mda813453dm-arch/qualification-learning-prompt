@@ -27,7 +27,7 @@ for(const [session,pageUrl] of officialPages){
       if(!['www.kinzai.or.jp','www2.kinzai.or.jp'].includes(u.hostname)){summary.skipped++;continue;}
       if(!u.pathname.toLowerCase().includes('/fp')||!/\.pdf$/i.test(u.pathname)){summary.skipped++;continue;}
       const basename=u.pathname.split('/').pop();
-      const grade=/fp0?([23])[_-]/i.exec(basename)?.[1];
+      const grade=/(?:fp|g|j)[-_]?0?([23])(?:[-_]|\\.)/i.exec(basename)?.[1];
       if(!grade){summary.skipped++;continue;}
       if(fetched.has(u.href))continue;
       fetched.add(u.href);
