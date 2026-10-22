@@ -1,0 +1,61 @@
+name: ITパスポート公式15区分の全問Vision無書込検証
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['.github/workflows/itpass-all-vision-dryrun.yml']
+permissions:
+  contents: read
+jobs:
+  audit:
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      PYTHONPATH: 新システム開発/parser
+      QLP_OCR: vision
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Install OCR and parser
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr-jpn
+          python -m pip install -r 新システム開発/parser/requirements.txt
+      - name: Read archived originals and independently verify every source hash
+        env:
+          INDEX: ${{ matrix.index }}
+        run: |
+          python - <<'PY'
+          import json,os
+          d=json.load(open('新システム開発/engine/intake/itpass-official-pdf-pins-2026-10-22.json'))
+          s=d['sources'][int(os.environ['INDEX'])]
+          with open('/tmp/ip-spec.json','w') as f: json.dump(s,f)
+          print('ITPASS_SOURCE',s['year'],s['section'],s['expectedCount'])
+          PY
+          qsha="$(python -c 'import json;print(json.load(open("/tmp/ip-spec.json"))["questionSha256"])')"
+          asha="$(python -c 'import json;print(json.load(open("/tmp/ip-spec.json"))["answerSha256"])')"
+          gcloud storage cp "gs://qualification-learning-qlp-figures/att/$qsha.pdf" /tmp/ip-question.pdf
+          gcloud storage cp "gs://qualification-learning-qlp-figures/att/$asha.pdf" /tmp/ip-answer.pdf
+          sha256sum /tmp/ip-question.pdf /tmp/ip-answer.pdf
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
+          year="$(python -c 'import json;print(json.load(open("/tmp/ip-spec.json"))["year"])')"
+          section="$(python -c 'import json;print(json.load(open("/tmp/ip-spec.json"))["section"])')"
+          python -m qlp_parser.cli --adapter itpass --year "$year" --section "$section" --question-pdf /tmp/ip-question.pdf --question-sha256 "$qsha" --answer-pdf /tmp/ip-answer.pdf --answer-sha256 "$asha" --assets-dir /tmp/ip-assets > /tmp/ip-result.json
+          python - <<'PY'
+          import json,collections
+          d=json.load(open('/tmp/ip-result.json'))
+          s=json.load(open('/tmp/ip-spec.json'))
+          p=d.get('packets',[])
+          print('ITPASS_FULL_AUDIT',json.dumps({'year':s['year'],'section':s['section'],'status':d.get('status'),'count':len(p),'missing':sorted(set(range(1,101))-set(x['questionNumber'] for x in p)),'reasons':dict(collections.Counter(x['reason'] for x in d.get('excluded',[])))},ensure_ascii=False))
+          if len(p)!=100 or d.get('status')!='ready' or d.get('excluded') or [x['questionNumber'] for x in p]!=list(range(1,101)):
+              raise SystemExit('INCOMPLETE_YEAR_NOT_REGISTERED')
+          PY
