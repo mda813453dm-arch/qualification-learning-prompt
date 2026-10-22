@@ -24,7 +24,7 @@ jobs:
           node --input-type=module <<'JS'
           import {GcpStore} from './src/gcp-store.js';
           import {readJob} from './src/ingest.js';
-          import {readResult} from './src/cache.js';
+          import {readResult,readFigure} from './src/cache.js';
           import {officialLibrary} from './src/official-library.js';
           import {CATALOG} from './src/catalog.js';
           const store = new GcpStore({bucket:'qualification-learning-qlp-figures'});
@@ -40,6 +40,22 @@ jobs:
               answerSha256:key?.answerSha256,parserVersion:key?.parserVersion,
               excluded:result.excluded?.map(({questionNumber,reason})=>({questionNumber,reason}))||[]
             }));
+            if (s.year === 2026 && found.hit) {
+              const packets = result.packets || [];
+              const names = [...new Set(packets.flatMap(p=>(p.figures||[]).flatMap(f=>f.svgFile?[f.file,f.svgFile]:[f.file])))];
+              const missingAssets = [];
+              for (const f of names) {
+                if (!(await readFigure(store,key.questionSha256,key.parserVersion,f,key.owner))) missingAssets.push(f);
+              }
+              console.log('R8_CACHE_DIAG',JSON.stringify({
+                status:result.status,packetCount:packets.length,excluded:result.excluded?.length,
+                ownerPresent:!!key.owner,assetCount:names.length,missingAssetCount:missingAssets.length,
+                noFigure:packets.filter(p=>!p.figures?.length).map(p=>({
+                  number:p.questionNumber,stemMode:p.stemMode,choiceMode:p.choiceMode,
+                  visual:p.verification?.visual,diagramRequired:p.diagramRequired,
+                })),
+              }));
+            }
           }
           const lib = await officialLibrary(store,CATALOG.surveyor,'0.8.2',Date.now());
           console.log('CURRENT_SHARED',JSON.stringify({stored:lib.stored,missing:lib.missing,totalQuestions:lib.totalQuestions}));
