@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Validate approved source scope
-        run: grep -qx 'APPROVE_IPA_VERIFIED_12_PAIRS_ORIGINAL_PDFS' 新システム開発/deploy/ipa-import-request.txt
+        run: grep -qx 'APPROVE_IPA_VERIFIED_16_PAIRS_ORIGINAL_PDFS' 新システム開発/deploy/ipa-import-request.txt
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci --prefix 新システム開発/engine
