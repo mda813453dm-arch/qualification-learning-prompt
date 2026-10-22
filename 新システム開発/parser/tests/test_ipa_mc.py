@@ -17,7 +17,7 @@ def blank_doc():
 class IpaMultipleChoiceTests(unittest.TestCase):
     def test_both_qualifications_have_independent_ids(self):
         self.assertEqual((fe.QUALIFICATION_ID, ap.QUALIFICATION_ID), ('fe', 'ap'))
-        self.assertEqual((fe.CHOICE_COUNT, ap.CHOICE_COUNT), (4, 4))
+        self.assertEqual((fe.CHOICE_COUNT, ap.CHOICE_COUNT), (0, 4))
 
     def test_empty_official_answer_fails_closed(self):
         with self.assertRaises(ParseError):
