@@ -1,0 +1,28 @@
+name: きんざいFP2・3級公式PDF原本検証保存
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/kinzai-fp-archive-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-kinzai-fp-archive
+  cancel-in-progress: false
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_FP_ARCHIVE_APPROVED: YES
+    steps:
+      - uses: actions/checkout@v4
+      - run: grep -qx 'APPROVE_KINZAI_FP2_FP3_OFFICIAL_ARCHIVE_V1' 新システム開発/deploy/kinzai-fp-archive-request.txt
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/archive-kinzai-fp-official.mjs --commit
