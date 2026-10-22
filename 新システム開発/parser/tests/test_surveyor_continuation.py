@@ -1,6 +1,7 @@
 """公式の問題が次ページに続き、続きの直下に次問が載る配置の回帰試験。"""
 
 import unittest
+from types import SimpleNamespace
 
 import fitz
 
@@ -8,6 +9,16 @@ from qlp_parser.adapters import surveyor
 
 
 class SurveyorContinuationTest(unittest.TestCase):
+    def test_corrupted_native_number_markers(self):
+        # 古い公式PDFでは「1.」が文字コード上「1㸬」になっている。
+        words = [(80, 75 + k*21, 98, 88 + k*21, f"{k + 1}㸬", 0, k, 0)
+                 for k in range(5)]
+        page = SimpleNamespace(get_text=lambda *args, **kwargs: words)
+        region = SimpleNamespace(page=page, words=words, limit=700)
+        marks = surveyor._native_choice_markers(region)
+        self.assertEqual(len(marks), 5)
+        self.assertEqual([m[4] for m in marks], [f"{k}㸬" for k in range(1, 6)])
+
     def test_continuation_does_not_capture_next_heading(self):
         doc = fitz.open()
         a = doc.new_page(width=595, height=842)
