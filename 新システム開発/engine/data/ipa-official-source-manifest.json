@@ -195,6 +195,54 @@
       "sourceVerified": true,
       "questionAnswerParsed": false,
       "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2023,
+      "section": "春期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2023,
+      "section": "春期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05h_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2023,
+      "section": "秋期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2023,
+      "section": "秋期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/ps6vr70000010d6y-att/2023r05a_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
     }
   ]
 }
