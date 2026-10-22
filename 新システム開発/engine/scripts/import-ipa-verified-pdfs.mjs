@@ -51,5 +51,5 @@ for (const item of data.items) {
     question: saved.question.action, answer: saved.answer.action});
   console.log('IPA_SOURCE_SAVED_AND_READBACK_OK', JSON.stringify(outcome.at(-1)));
 }
-assert.equal(outcome.length, 12, 'VERIFIED_PAIR_COUNT_MISMATCH');
+assert.equal(outcome.length, 16, 'VERIFIED_PAIR_COUNT_MISMATCH');
 console.log('IPA_VERIFIED_SOURCE_IMPORT_OK', JSON.stringify({pairs:outcome.length, pdfs:outcome.length*2}));
