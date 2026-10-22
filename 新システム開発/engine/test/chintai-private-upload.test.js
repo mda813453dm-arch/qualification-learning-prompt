@@ -87,6 +87,7 @@ test('年度別の本人による許諾確認を経ない限りPDFを取得も�
   const job = await readJob(env.STORE, 'q097~' + start.body.learnerId);
   assert.equal(job.sources.length, 1);
   assert.equal(job.sources[0].owner, start.body.learnerId);
+  assert.equal(job.sources[0].privateLicensedUpload, true, '本人専用の問題は共通解析キャッシュを使わない');
   const source = job.sources[0];
   assert.ok(source.questionUrl.includes('/v1/private-source/'));
   assert.notEqual(source.questionUrl, source.answerUrl);
