@@ -1,3 +1,1 @@
-2026-10-22: verify uploaded surveyor 2022-2025 and official 2026, read-only metadata.
-2026-10-22: check current shared cache against new hash pins.
-2026-10-22: read-only inspect 2026 verified cache figures and fields; no body output.
+VERIFY_SURVEYOR_RECEIVED_2022_2026_20261022
