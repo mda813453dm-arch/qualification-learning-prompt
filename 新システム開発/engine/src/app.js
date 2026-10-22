@@ -453,7 +453,7 @@ const uploadRightsKey = (sessionId, year) => `upload-rights/${sessionId}/${year}
 async function attachPdf(env, id, state, b, url, now) {
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
   const base = cat?.sources?.[0];
-  const adapter = cat?.uploadAdapter ?? base?.adapter ?? 'generic_mc';
+  const adapter = b.genericMcq === true ? 'generic_mc' : (cat?.uploadAdapter ?? base?.adapter ?? 'generic_mc');
   if (!adapter || !ADAPTERS.has(adapter)) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED',
     'この資格のPDF解析はまだ接続されていません。');
   const year = Number(b.year);
