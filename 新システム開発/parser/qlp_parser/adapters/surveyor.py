@@ -183,7 +183,9 @@ def _choice_markers(pg):
             found.append(seq)
     if not found and pg.ocr:
         return _ocr_choice_markers(pg) or _native_choice_markers(pg) or _gap_markers(pg)
-    return found[-1] if found else None
+    # 数値だけの続きページは、本文が文字化けしていても OCR 不要と判定される
+    # 場合がある。PDFの選択番号を最後の根拠として使う。
+    return found[-1] if found else _native_choice_markers(pg)
 
 
 def _native_choice_markers(pg):
@@ -566,6 +568,9 @@ def _question(number, no, pg, text_heading):
             choices = [_tidy_ocr_choice(c) for c in choices]
             if _uneven(choices, labels):
                 choice_mode = "official_image"  # 読み落としのある選択肢は、公式PDFの画像で見せる
+        if any("㸬" in m[4] for m in markers):
+            # 文字化けした公式PDFの本文は採用せず、正確なページ画像で選択肢を見せる。
+            choice_mode = "official_image"
         if choice_mode == "text" and pg.ocr:
             choice_mode = "ocr"
         if choice_mode == "official_image":
