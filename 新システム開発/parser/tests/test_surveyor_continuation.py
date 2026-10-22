@@ -14,8 +14,9 @@ class SurveyorContinuationTest(unittest.TestCase):
         words = [(80, 75 + k*21, 98, 88 + k*21, f"{k + 1}㸬", 0, k, 0)
                  for k in range(5)]
         page = SimpleNamespace(get_text=lambda *args, **kwargs: words)
-        region = SimpleNamespace(page=page, words=words, limit=700)
-        marks = surveyor._native_choice_markers(region)
+        # 数字だけの続きページはOCR不要と判定されても復元する必要がある。
+        region = SimpleNamespace(page=page, words=words, limit=700, ocr=False)
+        marks = surveyor._choice_markers(region)
         self.assertEqual(len(marks), 5)
         self.assertEqual([m[4] for m in marks], [f"{k}㸬" for k in range(1, 6)])
 
