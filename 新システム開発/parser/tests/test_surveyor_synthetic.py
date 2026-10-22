@@ -177,7 +177,8 @@ class SurveyorOcr(unittest.TestCase):
         self.assertEqual(p1["verification"]["questionText"], "ocr_unverified")
         self.assertEqual((p1["choiceMode"], p1["choices"][0]), ("text", "101.10 m"))
         self.assertEqual((p3["choiceMode"], p3["choices"][1]), ("ocr", "103.20 mです"))
-        self.assertEqual(p1["figures"], [])  # 図のない問は画像を付けない
+        # OCRで本文が読めても公式PDF原本の画像を1枚残し、誤認識を検証可能にする。
+        self.assertEqual(p1["figures"][0]["kind"], "official_pdf_crop")
         self.assertEqual(p1["evidence"]["notes"], ["ocr"])
 
     def test_single_misread_is_corrected_by_majority(self):
@@ -212,7 +213,7 @@ class SurveyorOcr(unittest.TestCase):
         q = make_question_pdf(20, per_question={4: {"column_header": True, "choices": [f"{k} m      {k}0 s" for k in range(1, 6)]}})
         p = with_ocr(FakeOcr(), lambda: go(q))["packets"][3]
         self.assertEqual(p["choices"][0], "ア：1 m、イ：10 s")
-        self.assertEqual(p["figures"], [])
+        self.assertEqual(p["figures"][0]["kind"], "official_pdf_crop")
 
     def test_underline_is_marked(self):
         p = with_ocr(FakeOcr(), lambda: go(make_question_pdf(20, per_question={5: {"underline": True}})))["packets"][4]
