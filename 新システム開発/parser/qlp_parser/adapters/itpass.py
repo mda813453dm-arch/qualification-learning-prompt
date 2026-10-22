@@ -175,6 +175,11 @@ def parse_questions(doc):
             stem, choices = [b[3] for b in body[:first_a]], list(MARKS)
             notes.append("choice_text_outlined")
         choices = _fix_items(stem, choices)
+        # OCRで選択肢の本文が空になったときも、原本の問題画像で
+        # ア〜エを読む。空の選択肢を問題データとして登録しない。
+        if len(choices) != CHOICE_COUNT or any(not choice.strip() for choice in choices):
+            choices = list(MARKS)
+            notes.append("choice_text_outlined")
         stem = _keep_items(stem)
         pages = sorted({b[0] + 1 for b in body}) or [head[0] + 1]
         crops = []
