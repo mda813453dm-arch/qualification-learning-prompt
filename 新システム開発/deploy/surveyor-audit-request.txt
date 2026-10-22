@@ -1,1 +1,2 @@
 2026-10-22: verify uploaded surveyor 2022-2025 and official 2026, read-only metadata.
+2026-10-22: check current shared cache against new hash pins.
