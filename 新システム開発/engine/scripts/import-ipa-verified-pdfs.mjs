@@ -17,7 +17,7 @@ for (const item of data.items) {
   assert(qualification, 'UNEXPECTED_QUALIFICATION');
   assert(new URL(item.questionUrl).hostname === 'www.ipa.go.jp');
   assert(new URL(item.answerUrl).hostname === 'www.ipa.go.jp');
-  const section = item.section === '科目A' ? 'a' : item.section === '科目B' ? 'b' : item.section === '秋期午前' ? 'autumn-am' : item.section === '秋期午後' ? 'autumn-pm' : item.section === '春期午前' ? 'spring-am' : item.section === '春期午後' ? 'spring-pm' : null;
+  const section = item.section === '科目A' ? 'a' : item.section === '科目B' ? 'b' : item.section === '秋期午前' ? 'autumn-am' : item.section === '秋期午後' ? 'autumn-pm' : item.section === '春期午前' ? 'spring-am' : item.section === '春期午後' ? 'spring-pm' : item.section === '10月午前' ? 'october-am' : item.section === '10月午後' ? 'october-pm' : null;
   assert(section, 'UNRECOGNIZED_SECTION');
   const base = `ipa/${qualification}/${item.year}/${section}`;
   const saved = {};
@@ -51,5 +51,5 @@ for (const item of data.items) {
     question: saved.question.action, answer: saved.answer.action});
   console.log('IPA_SOURCE_SAVED_AND_READBACK_OK', JSON.stringify(outcome.at(-1)));
 }
-assert.equal(outcome.length, 20, 'VERIFIED_PAIR_COUNT_MISMATCH');
+assert.equal(outcome.length, 30, 'VERIFIED_PAIR_COUNT_MISMATCH');
 console.log('IPA_VERIFIED_SOURCE_IMPORT_OK', JSON.stringify({pairs:outcome.length, pdfs:outcome.length*2}));
