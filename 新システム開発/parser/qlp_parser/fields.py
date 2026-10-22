@@ -70,12 +70,16 @@ SURVEYOR_FIELDS = {
 
 SURVEYOR_RULES = [
     (r"測量法|測量計画機関|測量作業機関", "s1", "測量法"),
+    (r"世界測地系|地理学的経緯度|日本経緯度原点|日本水準原点|位置の基準|地心直交座標|楕円体高|ジオイド高", "s1", "測量の基準"),
     (r"水準測量|標高測量|レベル|標尺|水準点", "s4", "水準測量"),
     (r"GNSS|ＧＮＳＳ", "s3", "GNSS測量"),
     (r"細部測量|数値地形図|等高線|地形測量|地上レーザ", "s5", "地形測量"),
     (r"空中写真|写真測量|航空カメラ|航空レーザ|UAV|ＵＡＶ|空中三角|オルソ|ステレオ", "s6", "写真測量"),
+    (r"写真地図|正射変換|ブレークライン|モザイク", "s6", "写真地図作成"),
+    (r"三角形|ラジアン|角度の最確値|角の標準偏差", "s2", "測地の基礎計算"),
     (r"路線測量|河川測量|用地測量|円曲線|曲線半径|境界点|縦断|横断|面積", "s8", "応用測量"),
     (r"地図投影|地図編集|電子地形図|地形図|GIS|ＧＩＳ|ベクタ|ラスタ|地理院地図|平面直角座標", "s7", "地図編集"),
+    (r"基盤地図情報|地理空間情報活用推進基本法", "s7", "基盤地図情報"),
     (r"トータルステーション|TS|ＴＳ|多角|基準点測量|水平角|器械高|偏心", "s2", "多角測量"),
 ]
 
@@ -114,7 +118,7 @@ def classify_by_rules(rules, stem, choices=()):
 
 
 def classify_takken(question):
-    return classify_by_rules(TAKKEN_RULES, question.classification_text or question.stem, question.choices)
+    return classify_by_rules(TAKKEN_RULES, question.stem, question.choices)
 
 
 def classify_surveyor(question):
