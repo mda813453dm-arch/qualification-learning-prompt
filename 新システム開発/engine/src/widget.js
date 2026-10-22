@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v58.html';
+export const WIDGET_URI = 'ui://qlp/question-v59.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.58';
+export const WIDGET_VERSION = '2026-10-23.59';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -582,7 +582,7 @@ a{color:inherit}
       if (action === 'end') { endAction(b); return; }
       if (action === 'explain') {
         if (m.body) { scrollUp(true); return; }
-        loadExplanation((state.question && state.question.questionId) || null).catch(function(){
+        loadExplanation((state.question && state.question.questionId) || null, true).catch(function(){
           app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">解説を取得できませんでした。学習状態は保持しています。</div>');
         }); return;
       }
@@ -1118,8 +1118,16 @@ a{color:inherit}
       app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
     }
   }
-  // 解説の初回表示はAIへのチャット依頼に依存させない。必ず同じ問の保存済み採点をAPIから確認する。
-  async function loadExplanation(questionId){
+  // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
+  async function requestAdaptiveExplanation(ctx){
+    var q = ctx.question;
+    var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
+    // 画面内の採点情報はモデルに届かないため、対象を一意にするIDだけを添える。
+    // AIは必ず explainSpec で保存済みの学習段階・履歴・公式正答を読み、showMenu に動的解説を返す。
+    await ask(label + 'の解説を、私の理解度・学習履歴・苦手分野に合わせてお願いします。各選択肢の正誤理由と根拠も説明してください。' +
+      '（学習セッションID：' + ctx.sessionId + '、問題ID：' + q.questionId + '）');
+  }
+  async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
     var args = { sessionId: state.sessionId };
     if (questionId) args.questionId = questionId;
@@ -1129,6 +1137,7 @@ a{color:inherit}
         ctx.question.questionId !== ctx.grade.questionId ||
         (questionId && ctx.grade.questionId !== questionId)) throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
     renderVerifiedExplanation(ctx);
+    if (requestAi) await requestAdaptiveExplanation(ctx);
   }
   function renderVerifiedExplanation(ctx){
     var q = ctx.question, g = ctx.grade;
@@ -1142,13 +1151,13 @@ a{color:inherit}
         (correct ? '　<b>【公式正答】</b>' : '') + (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     var pdf = safeUrl(g.answerPdfUrl);
-    app.innerHTML = '<h2>' + esc(label) + 'の解説</h2>' +
+    app.innerHTML = '<h2>' + esc(label) + 'の公式正答照合</h2>' +
       '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '✓ 正解' : '✕ 不正解') + '</div>' +
       '<div class="stem"><b>公式正答：' + esc(ans) + '</b>　／　あなたの回答：' + esc(g.selected == null ? '分からない' : g.selected) + '</div>' +
-      (table ? '<div class="stem"><b>各選択肢の照合</b><ol class="ov-l">' + table + '</ol></div>' : '') +
+      (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
       (pdf ? '<div class="notice"><a href="' + esc(pdf) + '" target="_blank" rel="noopener">公式正答PDFを確認する ›</a></div>' : '') +
-      '<div class="notice">ここまでは採点時に保存した公式正答との照合結果です。各肢の法的根拠や理由は、次の詳しいAI解説で確認できます。</div>' +
-      '<div class="row"><button id="moreAiExplanation">詳しいAI解説を見る</button><button id="explanationRetry">同じ問題を再表示</button><button id="explanationNext">次の問題へ</button></div>' + endBar();
+      '<div class="notice">ここまでは公式正答との照合です。各選択肢の理由や根拠は、学習履歴に合わせてAIが解説します。</div>' +
+      '<div class="row"><button id="moreAiExplanation">AI解説をもう一度表示</button><button id="explanationRetry">公式正答を再表示</button><button id="explanationNext">次の問題へ</button></div>' + endBar();
     scrollUp(true); bindEnd();
     document.getElementById('explanationRetry').onclick = function(){
       this.disabled = true;
@@ -1167,9 +1176,7 @@ a{color:inherit}
     };
     document.getElementById('moreAiExplanation').onclick = async function(){
       this.disabled = true;
-      // セッション・問題の識別子をモデルに明示する。旧版では表示用ラベルだけ送り、AIが採点を復元できなかった。
-      await ask(label + 'の各選択肢の理由を詳しく解説してください。学習セッションID：' +
-        state.sessionId + '。問題ID：' + q.questionId + '。保存済みの採点記録をexplainSpecで確認してください。');
+      await requestAdaptiveExplanation(ctx);
       var b = document.getElementById('moreAiExplanation'); if (b) b.disabled = false;
     };
   }
@@ -1223,7 +1230,7 @@ a{color:inherit}
       nextBtn();
       document.getElementById('dkExp').onclick = async function(){
         this.disabled = true;
-        try { await loadExplanation(q.questionId); }
+        try { await loadExplanation(q.questionId, true); }
         catch(e){ this.disabled = false; app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">解説を取得できませんでした。同じ問題で再試行してください。</div>'); }
       };
       return;
@@ -1247,7 +1254,7 @@ a{color:inherit}
     var sendDisplay = async function(){
       var b = document.getElementById('retryDisplay'); if (!b || b.disabled) return;
       b.disabled = true;
-      try { await loadExplanation(q.questionId); }
+      try { await loadExplanation(q.questionId, true); }
       catch(e){
         if (b.isConnected) b.disabled = false;
         var msg = document.getElementById('explanationError');
