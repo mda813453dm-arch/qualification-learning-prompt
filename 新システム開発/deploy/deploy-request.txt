@@ -170,3 +170,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-22: deploy OCR continuation correction for surveyor 2023 Q21 and 2024 Q8/Q21.
 2026-10-22: deploy legacy PDF corrupted-choice-marker recovery for surveyor 2023 No.21.
 2026-10-22: deploy generic verified OCR-without-diagram shared library guard for already-parsed 2026 surveyor exam.
+2026-10-22: deploy final non-OCR numeric continuation page repair for surveyor 2023 No.21.
