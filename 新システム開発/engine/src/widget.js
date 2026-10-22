@@ -242,6 +242,67 @@ a{color:inherit}
       bindEnd();
       return;
     }
+    if (data.status === 'sourceUnavailable' && data.permissionedUpload) {
+      var years = Array.isArray(data.availableUploadYears) ? data.availableUploadYears : [];
+      var validated = Array.isArray(data.validatedUploadYears) ? data.validatedUploadYears : [];
+      var personal = Array.isArray(data.personalUploadedYears) ? data.personalUploadedYears : [];
+      var officialLink = safeUrl(data.officialUrl);
+      var choices = years.map(function(year){
+        var ready = validated.indexOf(year) >= 0;
+        var has = personal.indexOf(year) >= 0;
+        return '<option value="' + esc(year) + '"' + (!ready || has ? ' disabled' : '') + '>' +
+          esc(year) + '年度 — ' + (has ? '本人用に取込済み' : ready ? '取込準備済み' : '原本検証待ち') + '</option>';
+      }).join('');
+      var selected = years.find(function(year){ return validated.indexOf(year) >= 0 && personal.indexOf(year) < 0; });
+      app.innerHTML = '<h2>過去問の年度別取り込み（本人専用）</h2>' +
+        '<div class="notice"><b>著作権・利用許諾の確認</b><div>当システムは賃貸不動産経営管理士の問題PDF・正答PDFを事前に保存・自動取得・共有配布しません。権利者から必要な許諾を得た方だけ、ご自身の学習用に年度ごとに添付できます。</div></div>' +
+        (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
+        '<ul class="ov-l">' + years.map(function(year){
+          return '<li>' + esc(year) + '年度：' + (personal.indexOf(year) >= 0 ? '本人用に取込済み' :
+            validated.indexOf(year) >= 0 ? '未登録・取り込み準備済み' : '原本検証待ち（取り込み不可）') + '</li>';
+        }).join('') + '</ul>' +
+        (selected === undefined ? '<div class="notice">現在、追加可能な年度はありません。</div>' :
+          '<label for="licensedYear"><b>取り込む年度</b></label>' +
+          '<select id="licensedYear" style="display:block;width:100%;font:inherit;padding:9px;margin:8px 0">' + choices + '</select>' +
+          '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>私は選択した年度の問題・正答PDFをこのシステムに送信し、個人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
+          '<button id="licensedConfirm" disabled>この年度の取込を許可して添付へ進む</button>') +
+        '<div id="licensedHelp" role="status"></div><div class="row"><button id="licensedRefresh">取込済み年度を更新</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
+      var ack = document.getElementById('licensedAck');
+      if (ack) ack.onchange = function(){ document.getElementById('licensedConfirm').disabled = !this.checked; };
+      var confirm = document.getElementById('licensedConfirm');
+      if (confirm) confirm.onclick = async function(){
+        if (!ack.checked) return;
+        var year = Number(document.getElementById('licensedYear').value);
+        if (!validated.includes(year) || personal.includes(year)) return;
+        this.disabled = true;
+        try {
+          var r = await callTool('confirmUploadRights', { sessionId: state.sessionId, year: year, confirmed: true });
+          if (!r || r.error || r.status !== 'uploadPermissionConfirmed') throw new Error('RIGHTS_CONFIRM_FAILED');
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>' + esc(year) +
+            '年度の確認を受け付けました。</b><div>このチャットの「＋」から、該当年度の公式問題PDFと公式正答PDFを2点添付し、年度を指定して送信してください。PDFを添付するまでは取り込みません。他の利用者には共有されません。</div></div>';
+          ack.checked = false;
+        } catch(e) {
+          ack.checked = false;
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">許諾確認を記録できませんでした。もう一度確認してください。</div>';
+        }
+      };
+      document.getElementById('licensedRefresh').onclick = async function(){
+        this.disabled = true;
+        try {
+          var latest = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
+          if (!latest || latest.error || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
+          render({ ...data, ...latest, status: 'sourceUnavailable' });
+        } catch(e) {
+          this.disabled = false;
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">取込状況の更新に失敗しました。もう一度押してください。</div>';
+        }
+      };
+      document.getElementById('licensedAi').onclick = function(){
+        this.disabled = true;
+        ask((data.fieldName || '今の分野') + 'のAI作成確認問題を3問出してください。公式過去問ではないと明記してください。');
+      };
+      bindEnd(); return;
+    }
     if (data.status === 'sourceUnavailable') {
       var name = data.fieldName || '今の分野';
       var official = safeUrl(data.officialUrl);
