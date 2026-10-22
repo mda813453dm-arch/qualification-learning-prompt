@@ -56,7 +56,7 @@ for(const g of groups.values()){
     const qpath=join(tmp,'question.pdf'),apath=join(tmp,'answer.pdf'),assetsDir=join(tmp,'assets');
     await writeFile(qpath,q.bytes);await writeFile(apath,a.bytes);
     const args=['-m','qlp_parser.cli','--adapter',g.grade,'--year',String(Number(g.session.slice(0,4))),
-      '--section',g.session+'学科','--question-pdf',qpath,'--answer-pdf',apath,
+      '--section',g.session.slice(0,4)+'年'+Number(g.session.slice(4))+'月','--question-pdf',qpath,'--answer-pdf',apath,
       '--question-url',q.row.sourceUrl,'--answer-url',a.row.sourceUrl,
       '--question-sha256',q.row.sha256,'--answer-sha256',a.row.sha256,'--assets-dir',assetsDir];
     let stdout;
@@ -72,7 +72,7 @@ for(const g of groups.values()){
       &&p.correctAnswer>=1&&p.correctAnswer<=p.choices.length),'PACKET_INVALID');
     const assets={};for(const name of await readdir(assetsDir))assets[name]=new Uint8Array(await readFile(join(assetsDir,name)));
     const source={qualificationId:g.grade==='fp2'?'q002':'q003',adapter:g.grade,year:Number(g.session.slice(0,4)),
-      section:g.session+'学科',questionUrl:q.row.sourceUrl,answerUrl:a.row.sourceUrl,owner:'_shared'};
+      section:g.session.slice(0,4)+'年'+Number(g.session.slice(4))+'月',questionUrl:q.row.sourceUrl,answerUrl:a.row.sourceUrl,owner:'_shared'};
     const validated=await validateResult(source,{question:q.row.sha256,answer:a.row.sha256},'0.8.2',parsed,assets);
     assert(['ready','partial'].includes(validated.status)&&validated.packetCount===nums.length,'VALIDATION_FAILED');
     const parts={qualificationId:source.qualificationId,year:source.year,section:source.section,
