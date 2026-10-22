@@ -743,7 +743,7 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v57.html');
+  assert.match(WIDGET_URI, /^ui:\/\/qlp\/question-v\d+\.html$/, '画面版は変更ごとに更新でき、ツールと画面が同じURIを参照する');
 });
 
 test('解説の表示：旧SVGコードは除去し、正誤は大きな結果見出しで表示する', () => {
@@ -956,5 +956,17 @@ test('PDF未添付のボタンはAIへの会話メッセージを起動せず、
   const block = html.slice(a,b);
   assert.ok(!block.includes("ask("), '空の取り込み依頼を会話へ送信してはいけない');
   assert.ok(block.includes("以前に別のチャットへ添付しただけのPDF"), '共有保存と別チャットの添付を区別する');
-  assert.ok(html.includes('共有保存済み（'), '共有保存済みの年度を利用者へ表示する');
+  assert.ok(html.includes('共有利用可（'), '検証済みで共有利用できる年度を利用者へ表示する');
+});
+
+
+test('資格別の共有年度・試験区分の表示とAI個別解説の起動は固定', () => {
+  const html = widgetHtml();
+  assert.match(html, /sectionsByYear/, '資格ごとに保存している区分を使用する');
+  assert.doesNotMatch(html, /\['午前の部', '午後の部'\]\.map/, '全資格に午前・午後を一律に追加しない');
+  assert.match(html, /共有利用可（/, '本当に保存できている年度だけを表示する');
+  assert.match(html, /async function loadExplanation\(questionId, requestAi\)/);
+  assert.match(html, /await callTool\('explainSpec', args\)/, '採点済み問題をエンジンから確認する');
+  assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
+  assert.match(html, /loadExplanation\(q.questionId, true\)/, '解説ボタンは本人の問題IDを渡す');
 });
