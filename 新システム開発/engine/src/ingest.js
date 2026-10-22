@@ -159,6 +159,7 @@ export async function ingestSource(src, deps) {
   let parsed;
   try {
     parsed = await parse({
+      qualificationId: src.qualificationId,
       adapter: src.adapter,
       year: src.year,
       section: src.section,
