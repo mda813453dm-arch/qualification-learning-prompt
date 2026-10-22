@@ -25,6 +25,8 @@ jobs:
           import {GcpStore} from './src/gcp-store.js';
           import {readJob} from './src/ingest.js';
           import {readResult} from './src/cache.js';
+          import {officialLibrary} from './src/official-library.js';
+          import {CATALOG} from './src/catalog.js';
           const store = new GcpStore({bucket:'qualification-learning-qlp-figures'});
           const job = await readJob(store,process.env.IMPORT_JOB_KEY);
           if (!job) throw new Error('IMPORT_JOB_NOT_FOUND');
@@ -39,4 +41,6 @@ jobs:
               excluded:result.excluded?.map(({questionNumber,reason})=>({questionNumber,reason}))||[]
             }));
           }
+          const lib = await officialLibrary(store,CATALOG.surveyor,'0.8.2',Date.now());
+          console.log('CURRENT_SHARED',JSON.stringify({stored:lib.stored,missing:lib.missing,totalQuestions:lib.totalQuestions}));
           JS
