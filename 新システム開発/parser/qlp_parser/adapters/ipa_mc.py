@@ -13,7 +13,7 @@ from . import itpass
 MARKS = "アイウエオカキクケコ"
 ANSWER = {mark: i + 1 for i, mark in enumerate(MARKS)}
 ANSWER_ROW = re.compile(r"問\s*([0-9]{1,3})\s*([アイウエオカキクケコ])")
-QUESTION = re.compile(r"^問\s*([0-9０-９]{1,3})(?![0-9０-９])")
+QUESTION = re.compile(r"^[問間][\s　]*([0-9０-９]{1,3})(?![0-9０-９])(?:[\s　]|$)")
 LABEL = re.compile(r"(?<!\S)([アイウエオカキクケコ])(?=\s|$)")
 
 
