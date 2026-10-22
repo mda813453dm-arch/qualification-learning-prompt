@@ -188,6 +188,20 @@ export const CATALOG = {
     aliases: ['測量士補', '測量士補試験', '測量士補の国家試験'],
     shareOnVerifiedUpload: true,
     sharedLibrarySections: ['main'],
+    officialShared: {
+      uploadAdapter: 'surveyor',
+      uploadSections: ['main'],
+      validatedUploadYears: [2022, 2023, 2024, 2025, 2026],
+      uploadQuestionCounts: { main: 28 },
+      // 原本SHAだけで「登録済み」としない。全問検証済みキャッシュが無い年度はmissing。
+      officialPdfPins: {
+        2022: { main: '647c4ca1b2911a4d5b58d949841d84b8687d3858dfa91370e59dac70582b579d', answer: '63eeff43f650adef482a321febde970f93a728ef54e098ca33f1447b018e0bd0' },
+        2023: { main: '3513b442ace6bfc3212d0afe766e628b908c762917b50fcd5298e1b2f9bd1ebd', answer: 'ddc50a28976517f17d5c997789e115ed458239270f0355cd85b757bbf3037c7c' },
+        2024: { main: '7da3c3792182f71d753817d70e04b1c6c9dbb81077b478136ad1bc958a481af1', answer: '32099adaf7e5206fcc5f08381be1a65bd7572070b94df29f7e23046e585ac49d' },
+        2025: { main: 'b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac', answer: '1bf7c61223044a5a1ceee0a95a238594ca3cfae5ca2d84f34a8d0628728a75ea' },
+        2026: { main: '3b797566e6fbcfbf0fedc5a88e5983b82ac7b6676eceb2240043e43b283a60ac', answer: 'b513b25773b4e3e085169bd1500807eb7663b64e9853e7eb2b49fe72f8b134ef' },
+      },
+    },
     org: '国土地理院',
     officialSite: 'https://www.gsi.go.jp/LAW/SHIKEN/SHIKEN-top.htm',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
