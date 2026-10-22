@@ -237,8 +237,16 @@ export const CATALOG = {
     qualificationId: 'q097',
     name: '賃貸不動産経営管理士（賃管）',
     aliases: ['賃管', '賃貸不動産経営管理士', '賃貸管理士', '賃貸不動産管理士', '賃貸不動産管理経営士'],
-    shareOnVerifiedUpload: true,
-    sharedLibrarySections: ['main'],
+    // 権利者の許諾が必要なため、自動取得と全利用者向け共有保存を禁止。
+    // 許諾済みの学習者が年度ごとに明示確認した場合だけ、本人用に添付を取り込む。
+    overviewOnly: true,
+    privateLicensedUpload: true,
+    shareOnVerifiedUpload: false,
+    sharedLibrarySections: [],
+    uploadAdapter: 'chintai',
+    uploadSections: ['main'],
+    availableUploadYears: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
+    validatedUploadYears: [2015, 2016, 2018, 2019, 2021, 2022, 2023, 2025],
     org: '一般社団法人 賃貸不動産経営管理士協議会',
     officialSite: 'https://www.chintaikanrishi.jp/',
     // 公式ページに書かれている概要（文言は公式のまま。2026-10-19に確認。書かれていない項目は載せない）
@@ -274,9 +282,8 @@ export const CATALOG = {
       c5: '賃貸住宅管理業法に関する事項',
       c6: 'そのほかの賃貸住宅の管理の実務に関する事項',
     },
-    sources: [
-      { adapter: 'chintai', year: 2025, section: 'main', questionUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_question_2025.pdf', answerUrl: 'https://www.chintaikanrishi.jp/assets/common/else/past_answer_2025.pdf' },
-    ],
+    // 問題・正答PDFは事前登録しない。利用者自身が個別に添付する。
+    sources: [],
   },
   fp2: {
     qualificationId: 'q002',
