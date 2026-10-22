@@ -60,15 +60,16 @@ for (const cat of [CATALOG.fe, CATALOG.ap]) {
         stdout = error.stdout;
       }
       const parsed = JSON.parse(stdout);
-      // 公式公開数は科目Aが20、科目Bは年度により少数、従来の午前は80。
+      // 公式公開数は科目Aが20、科目Bが6、従来の午前は80。
       // 解答例の全行と問題番号の連続性が確認できない年度は利用不可。
-      const expected = section === '科目A' ? 20 : section.endsWith('午前') ? 80 : null;
+      const expected = section === '科目A' ? 20 : section === '科目B' ? 6 : 80;
       const nums = parsed.packets?.map((p) => p.questionNumber) ?? [];
       if (parsed.status !== 'ready' || parsed.excluded?.length ||
-          (expected !== null && nums.length !== expected) ||
+          nums.length !== expected ||
           !nums.length || nums.some((n, i) => n !== i + 1) ||
-          parsed.packets.some((p) => p.choices.length !== 4 || !p.fieldId ||
-            !Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > 4 ||
+          parsed.packets.some((p) => (section !== '科目B' && p.choices.length !== 4) ||
+            (section === '科目B' && (p.choices.length < 4 || p.choices.length > 10)) || !p.fieldId ||
+            !Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > p.choices.length ||
             p.verification?.answer !== 'same_year_official_answer_checked')) {
         throw new Error(`SOURCE_PARSING_INCOMPLETE:${parsed.status}:${nums.length}:${parsed.excluded?.length}`);
       }

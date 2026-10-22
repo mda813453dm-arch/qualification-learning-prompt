@@ -1,10 +1,17 @@
 """基本情報技術者：公開科目A/Bと旧午前の四肢択一式のみ。"""
 
-from .ipa_mc import parse_answers, parse_questions
+from .ipa_mc import parse_answers, parse_questions as parse_general, parse_fe_b_questions
 
 QUALIFICATION_ID = "fe"
 SECTION = "科目A"
-CHOICE_COUNT = 4
+CHOICE_COUNT = 0  # 科目Bは設問ごとに選択肢が4〜10個。科目A／旧午前は4個。
+
+
+def parse_questions(doc):
+    cover = "\n".join(doc[i].get_text() for i in range(min(2, doc.page_count)))
+    if "科目 B" in cover or "科目Ｂ" in cover or "科目B" in cover:
+        return parse_fe_b_questions(doc)
+    return parse_general(doc)
 
 
 def classify(question):
