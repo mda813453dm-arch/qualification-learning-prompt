@@ -31,9 +31,11 @@ def _verified_sha(source):
     return digest
 
 
-def run(adapter_name, year, question, answer=None, section=None, assets=None):
+def run(adapter_name, year, question, answer=None, section=None, assets=None, qualification_id=None):
     """assets に dict を渡すと、切り出したPNG（ファイル名 -> バイト列）をそこに入れる。"""
     adapter = ADAPTERS.get(adapter_name)
+    if adapter_name == 'generic_mc' and (not isinstance(qualification_id, str) or not qualification_id.strip() or len(qualification_id) > 100):
+        return {'status': 'unavailable', 'reason': 'GENERIC_QUALIFICATION_ID_REQUIRED', 'parserVersion': PARSER_VERSION}
     if adapter is None:
         return {"status": "unavailable", "reason": "ADAPTER_NOT_FOUND", "parserVersion": PARSER_VERSION}
     answer = answer or question
@@ -76,7 +78,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
     if assets is not None:
         assets.update(pngs)
     return build_result(
-        qualification_id=adapter.QUALIFICATION_ID,
+        qualification_id=qualification_id if adapter_name == 'generic_mc' else adapter.QUALIFICATION_ID,
         year=year,
         section=sec,
         question_source=question,
@@ -94,6 +96,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--adapter", required=True)
+    ap.add_argument("--qualification-id")
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--section")
     ap.add_argument("--question-pdf", required=True)
@@ -107,7 +110,7 @@ def main(argv=None):
     q = PdfSource(Path(a.question_pdf).read_bytes(), a.question_url, a.question_sha256)
     ans = PdfSource(Path(a.answer_pdf).read_bytes(), a.answer_url, a.answer_sha256) if a.answer_pdf else None
     pngs = {}
-    result = run(a.adapter, a.year, q, ans, a.section, pngs)
+    result = run(a.adapter, a.year, q, ans, a.section, pngs, a.qualification_id)
     if a.assets_dir:
         out = Path(a.assets_dir)
         out.mkdir(parents=True, exist_ok=True)
