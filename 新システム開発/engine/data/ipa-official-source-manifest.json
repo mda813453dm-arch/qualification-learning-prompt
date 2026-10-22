@@ -51,6 +51,78 @@
       "note": "公式HTMLに両方掲載。問題PDF本文の取得は未完了。",
       "questionAnswerParsed": false,
       "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2025,
+      "section": "科目A",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/tbl5kb0000005r9r-att/2025r07_fe_kamoku_a_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/tbl5kb0000005r9r-att/2025r07_fe_kamoku_a_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2025r07.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2025,
+      "section": "科目B",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/tbl5kb0000005r9r-att/2025r07_fe_kamoku_b_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/tbl5kb0000005r9r-att/2025r07_fe_kamoku_b_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2025r07.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2024,
+      "section": "科目A",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_a_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_a_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2024r06.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2024,
+      "section": "科目B",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/eid2eo0000007g1d-att/2024r06_fe_kamoku_b_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2024r06.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2023,
+      "section": "科目A",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_a_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_a_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "基本情報技術者",
+      "year": 2023,
+      "section": "科目B",
+      "publicationType": "公開問題（実際の全問ではない）",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_b_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_b_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
     }
   ]
 }
