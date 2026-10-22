@@ -243,12 +243,13 @@ export const TOOLS = [
       properties: {
         sessionId,
         year: { type: 'integer', description: '添付PDFの実施年度（西暦）' },
-        section: { type: 'string', enum: ['午前の部', '午後の部', 'main', '年度共通'], description: '土地家屋調査士は午前・午後を指定。賃管は main、行政書士は年度共通（いずれも省略可能）。' },
+        section: { type: 'string', maxLength: 50, description: '試験区分。例：午前の部、午後の部、main、年度共通。共通解析では必須。' },
+        genericMcq: { type: 'boolean', description: 'true の場合は資格別解析器を使わず、公式問題画像・明記された正答番号による共通択一解析を試す。検証できない問は出題しない。' },
         questionPdf: { type: 'object', description: '添付された問題PDF', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url', 'file_id'] },
         answerPdf: { type: 'object', description: '添付された正答PDF（問題PDFに正答が入っていれば省く）', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url', 'file_id'] },
       },
     },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/attach`, { year: a.year, section: a.section, question: a.questionPdf, answer: a.answerPdf }],
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/attach`, { year: a.year, section: a.section, genericMcq: a.genericMcq, question: a.questionPdf, answer: a.answerPdf }],
   },
   {
     name: 'getHandoff',
