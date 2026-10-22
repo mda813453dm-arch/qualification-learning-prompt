@@ -1,0 +1,48 @@
+name: IPA基本・応用情報 学習エンジン反映
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/ipa-study-deploy-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-ipa-study-deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - run: grep -qx 'DEPLOY_VERIFIED_FE_AP_STUDY_ENGINE' 新システム開発/deploy/ipa-study-deploy-request.txt
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Deploy the official PDF parser
+        run: |
+          gcloud run deploy qlp-parser --project qualification-learning \
+            --source 新システム開発/parser --region asia-northeast1 \
+            --allow-unauthenticated --ingress all --cpu 2 --memory 2Gi \
+            --timeout 900 --max-instances 2 --concurrency 4 \
+            --set-env-vars 'QLP_OCR=vision,OCR_CACHE_BUCKET=qualification-learning-qlp-figures' \
+            --set-secrets 'PARSER_TOKEN=qlp-parser-token:latest' --quiet
+      - name: Verify parser before updating engine
+        run: |
+          set -eu
+          PARSER_URL=$(gcloud run services describe qlp-parser --project qualification-learning --region asia-northeast1 --format='value(status.url)')
+          curl --fail --silent --show-error "$PARSER_URL/v1/status" | python3 -c 'import json,sys; x=json.load(sys.stdin); assert x.get("ok") is True'
+      - name: Deploy the updated study engine
+        run: |
+          set -eu
+          PARSER_URL=$(gcloud run services describe qlp-parser --project qualification-learning --region asia-northeast1 --format='value(status.url)')
+          gcloud run deploy qlp-engine --project qualification-learning \
+            --source 新システム開発/engine --region asia-northeast1 \
+            --allow-unauthenticated --cpu 1 --memory 512Mi --timeout 900 \
+            --max-instances 3 \
+            --set-env-vars "FIGURE_BUCKET=qualification-learning-qlp-figures,PARSER_URL=$PARSER_URL" \
+            --set-secrets 'API_TOKEN=qlp-api-token:latest,PARSER_TOKEN=qlp-parser-token:latest' --quiet
+          ENGINE_URL=$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')
+          gcloud run services update qlp-engine --project qualification-learning --region asia-northeast1 --update-env-vars "PUBLIC_BASE_URL=$ENGINE_URL" --quiet
+          curl --fail --silent --show-error "$ENGINE_URL/p" > /dev/null
