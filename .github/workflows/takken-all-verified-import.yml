@@ -1,0 +1,42 @@
+name: 宅建2016-2025全12区分600問を共有登録
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/takken-all-verified-import-request.txt'
+permissions:
+  contents: read
+concurrency:
+  group: qlp-takken-all-verified-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        file-index: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_IMPORT_ENV: official-shared-only
+      QLP_IMPORT_APPROVED: YES
+    steps:
+      - uses: actions/checkout@v4
+      - name: 利用者が指定した12区分のみに保存対象を固定
+        run: |
+          grep -qx 'APPROVE_TAKKEN_2016_2025_ALL_12_VERIFIED_SECTIONS_IMPORT' 新システム開発/deploy/takken-all-verified-import-request.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: 画像原本の日本語OCR環境
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq tesseract-ocr-jpn
+      - run: python -m pip install -r 新システム開発/parser/requirements.txt
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: 本番共有ライブラリへ50問ずつ保存して再読込
+        run: node 新システム開発/engine/scripts/seed-official-takken-batch.mjs ${{ matrix.file-index }} --commit
