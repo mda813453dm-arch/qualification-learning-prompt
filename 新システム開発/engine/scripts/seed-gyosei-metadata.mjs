@@ -38,8 +38,16 @@ const store=new GcpStore({bucket:'qualification-learning-qlp-figures'});
 const key='metadata/q090/'+year+'/main';
 const existing=await store.get(key,'json');
 if(existing){
-  assert.deepEqual(existing,rows,'EXISTING_METADATA_CONFLICT');
-  console.log('GYOSEI_METADATA_ALREADY_PRESENT',year,rows.length);
+  const classificationOnly=existing.length===60&&existing.every((x,i)=>
+    Object.keys(x).sort().join(',')==='fieldId,questionNumber,year'&&
+    x.year===rows[i].year&&x.questionNumber===rows[i].questionNumber&&x.fieldId===rows[i].fieldId);
+  if(classificationOnly){
+    await store.put(key,JSON.stringify(rows));
+    console.log('GYOSEI_METADATA_ANSWERS_ADDED',year,rows.length);
+  }else{
+    assert.deepEqual(existing,rows,'EXISTING_METADATA_CONFLICT');
+    console.log('GYOSEI_METADATA_ALREADY_PRESENT',year,rows.length);
+  }
 }else{
   await store.put(key,JSON.stringify(rows));
   console.log('GYOSEI_METADATA_WRITTEN',year,rows.length);
