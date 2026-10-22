@@ -1,0 +1,43 @@
+{
+  "schema": "qlp-fp-official-source-policy-v1",
+  "asOf": "2026-10-22",
+  "qualifications": [
+    "fp2",
+    "fp3"
+  ],
+  "sourceOrganizations": [
+    {
+      "id": "jafp",
+      "name": "日本FP協会",
+      "officialIndex": "https://www.jafp.or.jp/exam/mohan/",
+      "subjectTypes": [
+        "学科",
+        "実技・資産設計提案業務"
+      ],
+      "cbtRelease": "published sample only",
+      "usageRules": "https://www.jafp.or.jp/exam/mohan/files/exam_riyou.pdf"
+    },
+    {
+      "id": "kinzai",
+      "name": "金融財政事情研究会",
+      "officialIndex": "https://www.kinzai.or.jp/test-fp",
+      "subjectTypes": [
+        "学科",
+        "実技（団体指定科目）"
+      ],
+      "cbtRelease": "published sample only"
+    }
+  ],
+  "importPolicy": {
+    "verifyEachDocumentUrl": true,
+    "verifyPdfSha256": true,
+    "requireSameSessionOfficialAnswer": true,
+    "recordOrganizationYearMonthGradeSubject": true,
+    "skipNotPublished": true,
+    "protectMainAndMasterPrompt": true,
+    "forbidFabricatedQuestionsOrAnswers": true,
+    "requirePostSaveReadback": true,
+    "readyOnlyAfterEngineQuestionDisplayAndMarkingTest": true
+  },
+  "status": "source-policy-only; documents not imported"
+}
