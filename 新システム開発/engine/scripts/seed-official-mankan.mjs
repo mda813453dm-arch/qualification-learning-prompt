@@ -141,6 +141,7 @@ try {
     };
     const response = await ingestSource(source, {
       store, fetchPdf, parse: parseOfficial, parserVersion: VERSION, now: Date.now(),
+      forceReparsePartial: true,
     });
     assert.equal(response.result.status, 'ready');
     assert.equal(response.result.packetCount, 50);

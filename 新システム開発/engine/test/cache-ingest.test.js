@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { IngestError, ingestSource, startJob, stepJob, validateResult } from '../src/ingest.js';
-import { readResult } from '../src/cache.js';
+import { readResult, writeResult } from '../src/cache.js';
 import { exportHandoff, importHandoff } from '../src/handoff.js';
 import { grade, newState, pin, availablePackets, pickNext } from '../src/engine.js';
 import { DAY, PV, SRC, T0, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
@@ -25,6 +25,29 @@ test('24時間以内の2回目は公式PDFを取りに行かず、分解もし�
   assert.equal(web.calls.length, 2, '取り直していない');
   assert.equal(parse.count, 1, '分解し直していない');
   assert.deepEqual(second.result.packets.map((p) => p.correctAnswer), [3, 1, 4]);
+});
+
+test('明示した共有登録だけは旧版のpartialを再解析し、既存のreadyは再利用する', async () => {
+  const { store, parse, deps } = setup();
+  const shared = { ...SRC, owner: '_shared' };
+  const first = await ingestSource(shared, deps(T0));
+  const oldPartial = {
+    ...first.result, status: 'partial',
+    packets: first.result.packets.slice(1),
+    packetCount: first.result.packets.length - 1,
+    excluded: [{ questionNumber: 1, reason: 'CHOICES_INCOMPLETE' }],
+  };
+  await writeResult(store, first.keyParts, oldPartial, {}, T0);
+  const ordinary = await ingestSource(shared, deps(T0 + 100));
+  assert.equal(ordinary.from, 'cache');
+  assert.equal(ordinary.result.status, 'partial');
+  const updated = await ingestSource(shared, { ...deps(T0 + 101), forceReparsePartial: true });
+  assert.equal(updated.from, 'parsed');
+  assert.equal(updated.result.status, 'ready');
+  assert.equal(parse.count, 2);
+  const reusable = await ingestSource(shared, { ...deps(T0 + 102), forceReparsePartial: true });
+  assert.equal(reusable.from, 'cache');
+  assert.equal(parse.count, 2, '全問検証済みの結果は再解析しない');
 });
 
 test('学習者ごとの取り込みは、ほかの学習者が分解済みなら写して使い、分解し直さない（保存は学習者ごと）', async () => {
