@@ -167,3 +167,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-21 v54 recovery deployment: user previously approved deploy; parser health /v1/status JSON endpoint replaces Cloud Run-fronted /healthz HTTP 404; unauthenticated POST /v1/parse must remain HTTP 401; verified source 792882c2a060c4489c375376eff2da57247c0dcf, CI run 39596225132 completed success
 2026-10-22 v56: Manabu approved deployment; eliminate raw SVG markup in explanations, emphasize correct/incorrect grade banners; verified regression tests, GitHub change e0885f244b966df5d7006134062166ce8ae1d0db.
 2026-10-22: deploy surveyor official-PDF full-question import and shared-library verification.
+2026-10-22: deploy OCR continuation correction for surveyor 2023 Q21 and 2024 Q8/Q21.
