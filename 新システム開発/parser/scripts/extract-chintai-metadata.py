@@ -99,6 +99,9 @@ def main():
     for q in raw:
         counts[q.number]=counts.get(q.number,0)+1
     ocr_classes=extra_ocr_classes(qdoc,expected) if year in (2015,2016) else {}
+    if year==2015 and PINS[2015][0]==hashlib.sha256(question).hexdigest():
+        # 問12: 入居審査／問27: 管理業務のアウトソーシング（公式原本の内容確認済み）。
+        ocr_classes.update({12:'c6',27:'c6'})
     rows=[]
     for n in range(1,expected+1):
         found=[q for q in raw if q.number==n]
