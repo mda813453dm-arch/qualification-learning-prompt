@@ -12,7 +12,7 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - run: grep -qx 'READ_ONLY_IPA_SHARED_LIBRARY_AUDIT_V2' 新システム開発/deploy/ipa-learning-audit-request.txt
+      - run: grep -qx 'READ_ONLY_IPA_SHARED_LIBRARY_AUDIT_V3' 新システム開発/deploy/ipa-learning-audit-request.txt
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci --prefix 新システム開発/engine
