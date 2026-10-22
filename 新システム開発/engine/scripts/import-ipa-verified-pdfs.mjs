@@ -9,6 +9,13 @@ assert.equal(process.env.QLP_IPA_IMPORT_APPROVED, 'YES', 'APPROVAL_REQUIRED');
 assert.equal(process.env.GOOGLE_CLOUD_PROJECT, 'qualification-learning', 'PROJECT_MISMATCH');
 const data = JSON.parse(await readFile(new URL('../data/ipa-official-source-manifest.json', import.meta.url), 'utf8'));
 const store = new GcpStore({bucket: 'qualification-learning-qlp-figures'});
+try {
+  const { Storage } = await import('@google-cloud/storage');
+  const [meta] = await new Storage().bucket('qualification-learning-qlp-figures').getMetadata();
+  console.log('IPA_STORAGE_LIFECYCLE_AUDIT', JSON.stringify(meta.lifecycle?.rule ?? []));
+} catch (err) {
+  console.log('IPA_STORAGE_LIFECYCLE_AUDIT_UNAVAILABLE', err.code ?? err.message);
+}
 const ids = {'基本情報技術者': 'fe', '応用情報技術者': 'ap'};
 const outcome = [];
 for (const item of data.items) {
@@ -51,5 +58,5 @@ for (const item of data.items) {
     question: saved.question.action, answer: saved.answer.action});
   console.log('IPA_SOURCE_SAVED_AND_READBACK_OK', JSON.stringify(outcome.at(-1)));
 }
-assert.equal(outcome.length, 30, 'VERIFIED_PAIR_COUNT_MISMATCH');
+assert.equal(outcome.length, 54, 'VERIFIED_PAIR_COUNT_MISMATCH');
 console.log('IPA_VERIFIED_SOURCE_IMPORT_OK', JSON.stringify({pairs:outcome.length, pdfs:outcome.length*2}));
