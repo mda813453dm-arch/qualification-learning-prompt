@@ -243,6 +243,126 @@
       "sourceVerified": true,
       "questionAnswerParsed": false,
       "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2022,
+      "section": "春期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000009sgk-att/2022r04h_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000009sgk-att/2022r04h_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2022r04.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2022,
+      "section": "春期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000009sgk-att/2022r04h_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000009sgk-att/2022r04h_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2022r04.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2022,
+      "section": "秋期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000008smf-att/2022r04a_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000008smf-att/2022r04a_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2022r04.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2022,
+      "section": "秋期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000008smf-att/2022r04a_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt80000008smf-att/2022r04a_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2022r04.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2021,
+      "section": "春期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d5ru-att/2021r03h_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d5ru-att/2021r03h_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2021r03.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2021,
+      "section": "春期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d5ru-att/2021r03h_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d5ru-att/2021r03h_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2021r03.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2021,
+      "section": "秋期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000apad-att/2021r03a_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000apad-att/2021r03a_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2021r03.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2021,
+      "section": "秋期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000apad-att/2021r03a_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000apad-att/2021r03a_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2021r03.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2020,
+      "section": "10月午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d05l-att/2020r02o_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d05l-att/2020r02o_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2020r02.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2020,
+      "section": "10月午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d05l-att/2020r02o_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000d05l-att/2020r02o_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2020r02.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
     }
   ]
 }
