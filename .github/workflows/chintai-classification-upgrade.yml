@@ -1,0 +1,40 @@
+name: 賃管2015・2016メタデータ分類OCR補完
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/chintai-classification-upgrade-request.txt']
+permissions:
+  contents: read
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2015, 2016]
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_METADATA_ENV: chintai-metadata-only
+      QLP_METADATA_APPROVED: YES
+      QLP_OCR: vision
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr-jpn
+          python -m pip install -r 新システム開発/parser/requirements.txt
+          npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: OCR source transiently; upgrade verified classification only
+        run: |
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
+          node 新システム開発/engine/scripts/seed-chintai-metadata.mjs ${{ matrix.year }} --commit
