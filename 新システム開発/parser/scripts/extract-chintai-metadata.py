@@ -51,6 +51,34 @@ def pdf_url(hrefs, year, kind):
         raise RuntimeError("OFFICIAL_PDF_LINK_MISSING_OR_AMBIGUOUS_"+filename)
     return matches[0]
 
+
+def extra_ocr_classes(qdoc, expected):
+    """全ページのVision OCRを使って設問見出しごとに分類する。OCR原文は保存しない。"""
+    from qlp_parser import ocr
+    from qlp_parser.core import RawQuestion
+    ocr.prefetch([qdoc[i] for i in range(qdoc.page_count)],workers=4,force=True)
+    chunks={}
+    active=None
+    for i in range(qdoc.page_count):
+        for line in ocr.page_ocr(qdoc[i]):
+            t=line[2]
+            m=re.search(r"[【\[(]?\s*[問間]\s*([0-9０-９]{1,2})\s*[】\])]",t)
+            if m:
+                num=int(__import__("unicodedata").normalize("NFKC",m.group(1)))
+                if 1<=num<=expected:
+                    active=num
+                    chunks.setdefault(num,[])
+            if active is not None and len("".join(chunks[active]))<1800:
+                chunks[active].append(t)
+    classified={}
+    for n,lines in chunks.items():
+        body=" ".join(lines[:13])[:700]
+        q=RawQuestion(number=n,stem=body,choices=[],pages=[])
+        fid=fields.classify_chintai(q).get("fieldId")
+        if fid in ("c1","c2","c3","c4","c5","c6"):
+            classified[n]=fid
+    return classified
+
 def main():
     year=int(sys.argv[1])
     if year not in PINS or os.environ.get("QLP_METADATA_APPROVED")!="YES":
@@ -70,6 +98,7 @@ def main():
     counts={}
     for q in raw:
         counts[q.number]=counts.get(q.number,0)+1
+    ocr_classes=extra_ocr_classes(qdoc,expected) if year in (2015,2016) else {}
     rows=[]
     for n in range(1,expected+1):
         found=[q for q in raw if q.number==n]
@@ -80,7 +109,7 @@ def main():
         if n not in EXCEPTIONS.get(year,{}) and value not in (1,2,3,4):
             raise RuntimeError(f"OFFICIAL_ANSWER_UNVERIFIED_{year}_{n}")
         cls=fields.classify_chintai(q)
-        fid=cls.get("fieldId")
+        fid=cls.get("fieldId") or ocr_classes.get(n)
         if fid not in ("c1","c2","c3","c4","c5","c6"):
             fid="unclassified"  # 分類根拠が無い問は推測で6分野に割り当てない
         rows.append({"year":year,"questionNumber":n,"fieldId":fid,"correctAnswer":value})
