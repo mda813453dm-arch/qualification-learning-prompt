@@ -37,7 +37,8 @@ for (const source of [...(job.sources ?? [])].sort((a,b)=>a.year-b.year)) {
     const completePrior = previous.hit && v?.status === 'ready' && v.packetCount === 28 &&
       v.excluded?.length === 0 && v.packets?.length === 28 &&
       v.packets.every(p => p.figures?.length ||
-        (p.stemMode === 'text' && p.choiceMode === 'text' &&
+        (p.diagramRequired === false && ['text','ocr'].includes(p.stemMode) &&
+          ['text','ocr'].includes(p.choiceMode) &&
           p.verification?.visual === 'question_level_pdf_graphics_checked'));
     if (completePrior) {
       const originalFiles = new Set(v.packets.flatMap(p =>
