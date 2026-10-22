@@ -26,7 +26,7 @@ assert.deepEqual(rows.map(x=>x.questionNumber),Array.from({length:count},(_,i)=>
 for(const row of rows){
  assert.deepEqual(Object.keys(row).sort(),['correctAnswer','fieldId','questionNumber','year']);
  assert.equal(row.year,year);
- assert(['c1','c2','c3','c4','c5','c6'].includes(row.fieldId));
+ assert(['c1','c2','c3','c4','c5','c6','unclassified'].includes(row.fieldId));
  const a=row.correctAnswer;
  assert(a===null||(Number.isInteger(a)&&a>=1&&a<=4)||
    (Array.isArray(a)&&a.length>=2&&a.every(x=>Number.isInteger(x)&&x>=1&&x<=4)),
