@@ -435,6 +435,15 @@ async function keepAttached(env, bytes, origin) {
   return link;
 }
 
+/** 権利者の許諾が必要な資格では、添付PDFを公開URLに置かず学習者単位の内部控えだけに保存する。 */
+async function keepPrivateAttached(env, bytes, origin, learnerId) {
+  const link = `${env.PUBLIC_BASE_URL || origin}/v1/private-source/${encodeURIComponent(learnerId)}/${crypto.randomUUID()}.pdf`;
+  await env.STORE.put(await storedSourceKey(link), bytes);
+  // 公開GET経路を用意しない。問題PDFへの元リンクは表示されても公開取得できない。
+  return link;
+}
+const uploadRightsKey = (sessionId, year) => `upload-rights/${sessionId}/${year}`;
+
 /**
  * 利用者が添付した過去問PDFを取り込みに足す。エンジンが読める資格（読み方の決まっている資格）だけ。
  * 年度は添付PDFの表紙で確かめた年度を受け取り、分解のときに PDF の中の年度とも照合する（違えば取り込まない）
@@ -451,12 +460,19 @@ async function attachPdf(env, id, state, b, url, now) {
   if (Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
   const section = cat?.uploadSections
-    ? String(b.section ?? '').trim()
+    ? String(b.section ?? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : '')).trim()
     : cat.sources.find((x) => x.year === year)?.section ?? base?.section;
   if (cat?.uploadSections && !cat.uploadSections.includes(section))
     throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '午前の部か午後の部を指定してください。');
   if (cat?.uploadSections && !b.answer)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
+  if (cat?.privateLicensedUpload) {
+    // PDF取得前に年度別・当該セッションの本人による権利確認を必須とする。
+    const rights = await env.STORE.get(uploadRightsKey(id, year), 'json');
+    if (rights?.confirmed !== true || rights?.learnerId !== state.learnerId)
+      throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED',
+        'この年度の過去問を保存・解析する許諾の確認が必要です。学習画面から年度を選び、権利確認を行ってください。');
+  }
   const jobId = sessionJobId(state);
   const job = await readJob(env.STORE, jobId);
   // 他の利用者が登録済みなら、PDFを再取得せず共有済み結果を使う。
@@ -469,8 +485,11 @@ async function attachPdf(env, id, state, b, url, now) {
   if (have) return { status: 'attachedAlready', sessionId: id, year, section,
     notice: `${year}年度・${section}の過去問は既に取り込まれています。` };
   const origin = url.origin;
-  const questionUrl = await keepAttached(env, await fetchAttached(env, b.question), origin);
-  const answerUrl = b.answer ? await keepAttached(env, await fetchAttached(env, b.answer), origin) : null;
+  const savePdf = cat?.privateLicensedUpload
+    ? (bytes) => keepPrivateAttached(env, bytes, origin, state.learnerId)
+    : (bytes) => keepAttached(env, bytes, origin);
+  const questionUrl = await savePdf(await fetchAttached(env, b.question));
+  const answerUrl = b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null;
   const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
   await markEngineSources(env, sources);
@@ -725,9 +744,16 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
         officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
         validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
+        ...(cat.privateLicensedUpload ? {
+          permissionedUpload: true,
+          availableUploadYears: cat.availableUploadYears ?? [],
+          personalUploadedYears: (existing?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        } : {}),
         notice: existing?.state === 'failed'
           ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
-          : 'サイトからの自動取得はできません。2022～2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
+          : cat.privateLicensedUpload
+            ? 'この資格の問題・正答PDFは著作権の許諾が必要です。事前保存・自動取得・他ユーザーとの共有はしません。権利者から利用許諾を得た方だけ、年度ごとに確認した後にPDFを添付できます。'
+            : 'サイトからの自動取得はできません。2022～2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
     }
   }
   const job = await progress(env, sessionJobId(state), now);
@@ -741,7 +767,14 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
       officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
       validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
-      notice: '今回の学習対象の公式問題は共有保存されていません。未保存の部だけPDFを添付してください。' };
+      ...(cat.privateLicensedUpload ? {
+        permissionedUpload: true,
+        availableUploadYears: cat.availableUploadYears ?? [],
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+      } : {}),
+      notice: cat.privateLicensedUpload
+        ? 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題・正答PDFを添付してください。'
+        : '今回の学習対象の公式問題は共有保存されていません。未保存の部だけPDFを添付してください。' };
   }
   const prevField = state.current?.fieldId ?? null;
   // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
@@ -905,7 +938,14 @@ async function restoreStudyView(env, id, state, now) {
       officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
       validatedUploadYears: cat.validatedUploadYears ?? [],
       sharedLibrary: publicLibraryView(await libraryFor(env, state.qualificationId, now)),
-      notice: '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
+      ...(cat.privateLicensedUpload ? {
+        permissionedUpload: true,
+        availableUploadYears: cat.availableUploadYears ?? [],
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+      } : {}),
+      notice: cat.privateLicensedUpload
+        ? '許諾未確認のPDFは自動取得・共有保存しません。許諾を得た利用者本人だけ年度別に取り込めます。'
+        : '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
   }
   return { ...identity, status: 'restoreIdle',
     notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
@@ -1301,9 +1341,39 @@ async function route(request, env, url, now) {
       parts[3] === 'official-library' && parts.length === 4) {
     const { id, state } = await resolveSession(env, parts[2], now);
     const shared = await libraryFor(env, state.qualificationId, now);
+    const cat = catalogFor(state.qualificationId);
+    if (cat?.privateLicensedUpload) {
+      const job = await readJob(env.STORE, sessionJobId(state));
+      return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
+        availableUploadYears: cat.availableUploadYears ?? [],
+        validatedUploadYears: cat.validatedUploadYears ?? [],
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        sharedLibrary: null,
+        notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
+    }
     return json(200, { status: 'officialLibrary', sessionId: id,
       sharedLibrary: publicLibraryView(shared),
       notice: '共有保存済みの公式過去問だけを表示しています。' });
+  }
+
+  // 著作権の許諾を要する資格：年度別の本人確認後だけ、本人専用の保存・解析を認める。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' &&
+      parts[3] === 'upload-permission' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    const cat = catalogFor(state.qualificationId);
+    if (!cat?.privateLicensedUpload) throw new HttpError(422, 'UPLOAD_PERMISSION_NOT_APPLICABLE');
+    const year = Number(b.year);
+    if (!Number.isInteger(year) || !cat.validatedUploadYears?.includes(year))
+      throw new HttpError(422, 'UPLOAD_YEAR_UNAVAILABLE', 'この年度はまだ取込検証が完了していません。');
+    if (b.confirmed !== true)
+      throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED', '利用者自身の許諾確認が必要です。');
+    await env.STORE.put(uploadRightsKey(id, year),
+      JSON.stringify({ confirmed: true, learnerId: state.learnerId, year, confirmedAt: now }),
+      { expirationTtl: SESSION_TTL_S });
+    return json(200, { status: 'uploadPermissionConfirmed', sessionId: id, year,
+      notice: `${year}年度の利用許諾確認を受け付けました。問題PDFと同年度の正答PDFを添付した場合のみ、本人専用として取り込みます。` });
   }
 
   // 利用者が添付した過去問PDF（U06「公式の問題・正答資料をこのチャットに添付する」）。
@@ -1850,7 +1920,9 @@ export function overviewFor(qid) {
       // U18：公式ページで確かめられなかった項目は「未確認」と示す（推測で埋めない）
       ...OVERVIEW_REQUIRED.filter(([, re]) => !(c.overview ?? []).some(([k]) => re.test(k))).map(([k]) => `${k}：未確認`),
       `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
-      ...(c.overviewOnly ? [c.uploadAdapter
+      ...(c.privateLicensedUpload ? [
+        '※公式過去問の権利者による許諾は未取得です。自動取得・共有保存はせず、利用者が許諾を得た場合だけ年度を選び、本人専用として問題・正答PDFを添付できます。',
+      ] : c.overviewOnly ? [c.uploadAdapter
         ? '※公式PDFのサイトからの自動取得はできません。システムに共有保存済みの年度・部は全利用者が再添付なしで利用でき、未保存分は問題・正答PDFの検証が必要です。記述式は自動採点しません。'
         : '※公式過去問の自動解析・出題は未対応です。AI作成確認問題は公式問題と区別します。'] : []),
       ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),
