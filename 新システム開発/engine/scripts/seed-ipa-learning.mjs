@@ -65,9 +65,13 @@ for (const cat of [CATALOG.fe, CATALOG.ap]) {
       // 解答例の全行と問題番号の連続性が確認できない年度は利用不可。
       const expected = section === '科目A' ? 20 : section === '科目B' ? 6 : 80;
       const nums = parsed.packets?.map((p) => p.questionNumber) ?? [];
-      if (parsed.status !== 'ready' || parsed.excluded?.length ||
-          nums.length !== expected ||
-          !nums.length || nums.some((n, i) => n !== i + 1) ||
+      const complete = parsed.status === 'ready' && !parsed.excluded?.length &&
+        nums.length === expected && nums.every((n, i) => n === i + 1);
+      // 連続した問題番号を検証できなかった区分も、個々の問と正答・図を検証し、
+      // 取り込み不足を明示して安全な問題だけを共有できるようにする。
+      const safeSubset = parsed.status === 'partial' && nums.length >= Math.min(20, expected) &&
+        new Set(nums).size === nums.length && nums.every((n) => n >= 1 && n <= expected);
+      if ((!complete && !safeSubset) ||
           parsed.packets.some((p) => (section !== '科目B' && p.choices.length !== 4) ||
             (section === '科目B' && (p.choices.length < 4 || p.choices.length > 10)) || !p.fieldId ||
             !Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > p.choices.length ||
@@ -83,17 +87,21 @@ for (const cat of [CATALOG.fe, CATALOG.ap]) {
       const validated = await validateResult(sourceInfo, {
         question: row.question.sha256, answer: row.answer.sha256,
       }, '0.8.2', parsed, assets);
-      assert.equal(validated.status, 'ready', 'INGEST_VALIDATION_FAILED');
+      assert(['ready', 'partial'].includes(validated.status), 'INGEST_VALIDATION_FAILED');
       assert.equal(validated.packetCount, nums.length, 'INGEST_EXCLUDED_QUESTIONS');
+      assert(validated.packets.every((p) => p.figures?.length > 0 ||
+        (p.verification?.visual === 'question_level_pdf_graphics_checked' &&
+          p.stemMode !== 'official_image' && p.choiceMode !== 'official_image')),
+        'QUESTION_LEVEL_ORIGINAL_NOT_VERIFIED');
       const parts = { qualificationId: cat.qualificationId, year, section,
         questionSha256: row.question.sha256, answerSha256: row.answer.sha256,
         parserVersion: '0.8.2', owner: '_shared' };
       const already = await readResult(store, parts, Date.now());
-      if (!already.hit || already.result?.status !== 'ready' || already.result?.packetCount !== nums.length) {
+      if (!already.hit || already.result?.status !== validated.status || already.result?.packetCount !== nums.length) {
         await writeResult(store, parts, validated, assets, Date.now());
       }
       const back = await readResult(store, parts, Date.now());
-      assert.equal(back.result?.status, 'ready', 'SHARED_READBACK_FAILED');
+      assert.equal(back.result?.status, validated.status, 'SHARED_READBACK_FAILED');
       assert.equal(back.result.packetCount, nums.length, 'SHARED_COUNT_MISMATCH');
       for (const p of back.result.packets) {
         for (const f of p.figures ?? []) {
@@ -101,12 +109,16 @@ for (const cat of [CATALOG.fe, CATALOG.ap]) {
           assert(bytes && sha(Buffer.from(bytes)) === f.sha256, `IMAGE_READBACK_FAILED:${p.questionNumber}`);
         }
       }
-      await store.put(key, JSON.stringify({ ...row, status: 'learning-ready',
-        learningQuestionCount: nums.length, learningParserVersion: '0.8.2' }));
+      await store.put(key, JSON.stringify({ ...row,
+        status: complete ? 'learning-ready' : 'learning-partial',
+        learningQuestionCount: nums.length, learningExcludedCount: validated.excluded.length,
+        learningExpectedCount: expected, learningParserVersion: '0.8.2' }));
       const updated = await store.get(key, 'json');
       assert.equal(updated.learningQuestionCount, nums.length, 'READY_STATUS_READBACK_FAILED');
       summary.ready++;
-      console.log('IPA_LEARNING_READY', cat.qualificationId, year, section, nums.length);
+      console.log(complete ? 'IPA_LEARNING_READY' : 'IPA_LEARNING_PARTIAL',
+        cat.qualificationId, year, section, nums.length, '/', expected,
+        'excluded', validated.excluded.length);
     } catch (err) {
       summary.failed.push({ qualification: cat.qualificationId, year, section, error: String(err.message).slice(0, 200) });
       console.log('IPA_LEARNING_NOT_READY', cat.qualificationId, year, section, String(err.message).slice(0, 200));

@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Restrict to approved learning import
-        run: grep -qx 'APPROVE_IPA_FE_AP_MULTIPLE_CHOICE_VERIFIED_SHARED_V2' 新システム開発/deploy/ipa-learning-request.txt
+        run: grep -qx 'APPROVE_IPA_FE_AP_MULTIPLE_CHOICE_VERIFIED_SHARED_V3' 新システム開発/deploy/ipa-learning-request.txt
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - uses: actions/setup-python@v5

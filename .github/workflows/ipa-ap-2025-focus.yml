@@ -20,7 +20,7 @@ jobs:
       QLP_OCR: vision
     steps:
       - uses: actions/checkout@v4
-      - run: grep -qx 'FOCUSED_AP_2025_OFFICIAL_MORNING_IMPORT' 新システム開発/deploy/ipa-ap-focus-request.txt
+      - run: grep -qx 'FOCUSED_AP_2025_OFFICIAL_MORNING_IMPORT_V2' 新システム開発/deploy/ipa-ap-focus-request.txt
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - uses: actions/setup-python@v5

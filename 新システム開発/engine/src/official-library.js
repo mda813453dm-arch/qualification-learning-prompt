@@ -43,11 +43,13 @@ async function ipaReadyRows(store, cat) {
     const code = codes[section];
     if (!code) return null;
     const row = await store.get(`ipa-source/${qualification}/${year}/${code}`, 'json').catch(() => null);
-    if (row?.status !== 'learning-ready' || !Number.isInteger(row.learningQuestionCount) ||
+    if (!['learning-ready', 'learning-partial'].includes(row?.status) || !Number.isInteger(row.learningQuestionCount) ||
         row.learningQuestionCount < 1 || !/^[a-f0-9]{64}$/.test(row.question?.sha256 ?? '') ||
         !/^[a-f0-9]{64}$/.test(row.answer?.sha256 ?? '')) return null;
     return { year, section, questionSha256: row.question.sha256,
-      answerSha256: row.answer.sha256, count: row.learningQuestionCount };
+      answerSha256: row.answer.sha256, count: row.learningQuestionCount,
+      partial: row.status === 'learning-partial',
+      excludedCount: row.learningExcludedCount ?? 0 };
   }));
   return result.filter(Boolean);
 }
@@ -76,11 +78,13 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
     const found = await readResult(store, keyParts, now);
     const r = found.hit ? found.result : null;
     const packets = r?.packets ?? [];
-    const valid = r?.status === 'ready' &&
+    const valid = (r?.status === 'ready' || cat?.ipaOfficialArchive && item.partial && r?.status === 'partial') &&
       r.qualificationId === cat.qualificationId && r.year === item.year &&
       r.section === item.section && r.parserVersion === parserVersion &&
       r.questionPdfSha256 === item.questionSha256 && r.answerPdfSha256 === item.answerSha256 &&
-      (r.excluded ?? []).length === 0 && packets.length === item.count &&
+      (cat?.ipaOfficialArchive && item.partial
+        ? (r.excluded ?? []).length === item.excludedCount
+        : (r.excluded ?? []).length === 0) && packets.length === item.count &&
       new Set(packets.map((p) => p.questionNumber)).size === item.count &&
       packets.every((p) => p.questionPdfSha256 === item.questionSha256 &&
         p.answerPdfSha256 === item.answerSha256 &&
@@ -89,11 +93,12 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
             ['text', 'ocr'].includes(p.stemMode) && ['text', 'ocr'].includes(p.choiceMode) &&
             p.verification?.visual === 'question_level_pdf_graphics_checked')));
     if (valid) {
-      stored.push({ year: item.year, section: item.section, questions: item.count });
+      stored.push({ year: item.year, section: item.section, questions: item.count,
+        ...(item.partial ? { partial: true, excludedQuestions: item.excludedCount } : {}) });
       sources.push({
         qualificationId: cat.qualificationId, adapter: spec.uploadAdapter,
         year: item.year, section: item.section, status: 'done',
-        packetCount: item.count, excludedCount: 0, keyParts, from: 'shared',
+        packetCount: item.count, excludedCount: item.excludedCount ?? 0, keyParts, from: 'shared',
       });
     } else {
       missing.push({ year: item.year, section: item.section });
@@ -102,7 +107,9 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
   const order = (a, b) => b.year - a.year || sectionsForYear(spec, a.year).indexOf(a.section) - sectionsForYear(spec, b.year).indexOf(b.section);
   stored.sort(order); missing.sort(order); sources.sort(order);
   const completeYears = [...new Set(stored.map((s) => s.year))]
-    .filter((year) => sectionsForYear(spec, year).every((section) => stored.some((s) => s.year === year && s.section === section)))
+    .filter((year) => cat?.ipaOfficialArchive
+      ? cat.sources.filter((s) => s.year === year).every((s) => stored.some((r) => r.year === year && r.section === s.section && !r.partial))
+      : sectionsForYear(spec, year).every((section) => stored.some((s) => s.year === year && s.section === section)))
     .sort((a, b) => b - a);
   return {
     supportedYears: [...(cat?.ipaOfficialArchive ? new Set(cat.sources.map((s) => s.year)) : (spec?.validatedUploadYears ?? []))].sort((a,b) => b - a),

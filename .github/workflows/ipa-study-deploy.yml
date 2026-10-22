@@ -15,7 +15,7 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - run: grep -qx 'DEPLOY_VERIFIED_FE_AP_STUDY_ENGINE_V3' 新システム開発/deploy/ipa-study-deploy-request.txt
+      - run: grep -qx 'DEPLOY_VERIFIED_FE_AP_STUDY_ENGINE_V4' 新システム開発/deploy/ipa-study-deploy-request.txt
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
