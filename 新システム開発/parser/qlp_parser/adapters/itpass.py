@@ -212,6 +212,38 @@ def parse_questions(doc):
     return mark_out_of_order(questions)
 
 
+def recover_verified_missing_questions(doc, questions, year, section, source_sha):
+    """原本を目視確認した単一見出しの誤読だけを、原本SHAと前後の番号で補正する。
+
+    汎用的な連番推測は行わない。平成30年春期34ページの印刷見出し
+    「問77」をVision OCRが「問774」と誤読した事実を原本画像で確認済み。
+    """
+    if (year, section, source_sha) != (
+        2018, "春期",
+        "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
+    ):
+        return questions
+    wrong = [q for q in questions if q.number == 774]
+    if len(wrong) != 1 or any(q.number == 77 for q in questions):
+        return questions
+    q = wrong[0]
+    if q.pages != [34] or not q.rect or not (340 <= q.rect[0] <= 365):
+        return questions
+    index = questions.index(q)
+    if index <= 0 or index + 1 >= len(questions):
+        return questions
+    if questions[index - 1].number != 76 or questions[index + 1].number != 78:
+        return questions
+    q.number = 77
+    q.stem = ""
+    q.choices = list(MARKS)
+    q.stem_mode = q.choice_mode = "official_image"
+    q.preserve_aspect = True
+    q.notes = [n for n in q.notes if n != "question_number_out_of_order"]
+    q.notes.extend(["field:t", "source_sha_pinned_image_heading_review"])
+    return questions
+
+
 ITEM = re.compile(r"^[a-e][ 　]")
 
 
