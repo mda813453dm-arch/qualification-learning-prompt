@@ -52,13 +52,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
           else if (op === 'nextQuestion') {
-            if (window.failNextCalls > 0) {
+            if (window.recoverSkipped) reply({ structuredContent: nextQuestion });
+            else if (window.failNextCalls > 0) {
               window.failNextCalls--;
               reply({ structuredContent: { status: 'error', error: 'TEMPORARY_UNAVAILABLE' } });
             } else reply({ structuredContent: question });
           }
-          else if (op === 'submitAnswer') reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
-            ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+          else if (op === 'submitAnswer') {
+            if (m.params.arguments.value === 'スキップ' && window.dropSkipResponseOnce) {
+              window.dropSkipResponseOnce = false;
+              window.recoverSkipped = true;
+              reply({ structuredContent: { error: 'LOST_ANSWER_RESPONSE' } });
+            } else reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
+              ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+          }
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'explainSpec') reply({ structuredContent: {
@@ -140,7 +147,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 1, '解説は採点記録を読み出す');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
-    assert.ok((await page.evaluate(() => window.followups)).every(x => x.includes('学習セッションID：test-session') && x.includes('問題ID：test:2025:main:1')), '問題IDを固定して学習履歴に合わせたAI解説を依頼する');
+    assert.deepEqual(await page.evaluate(() => window.followups), ['2025年度 問1の解説をお願いします。'], '内部指示やIDを利用者の会話に表示しない');
     assert.deepEqual(await page.evaluate(() => window.internal), [], '解説で入力欄に内部文脈の添付を作らない');
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
@@ -188,9 +195,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
     await ui.getByRole('button', { name: '閉じる' }).click();
     const beforeSkip = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
+    const beforeSkipNext = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
+    // 採点結果の返答だけが失われ、サーバーはすでに次問へ進んだ状態を再現。
+    await page.evaluate(() => { window.dropSkipResponseOnce = true; });
     await ui.getByRole('button', { name: 'スキップ', exact: true }).click();
     await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), beforeSkip + 1);
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), beforeSkipNext + 1, '応答喪失時は保存済みの次問を確認して復旧');
     assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 0, 'スキップ後に余分なボタンを挟まない');
     // 別画面に移り古い枠が無効化されても、サーバーの同じ採点結果へ戻して終了できる。
     const answersBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
