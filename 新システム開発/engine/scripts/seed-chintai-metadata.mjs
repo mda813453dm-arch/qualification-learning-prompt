@@ -36,8 +36,21 @@ const store=new GcpStore({bucket:'qualification-learning-qlp-figures'});
 const key='metadata/q097/'+year+'/main';
 const existing=await store.get(key,'json');
 if(existing){
- assert.deepEqual(existing,rows,'EXISTING_METADATA_CONFLICT');
- console.log('CHINTAI_METADATA_ALREADY_PRESENT',year,rows.length);
+ assert.equal(existing.length,rows.length,'EXISTING_COUNT_CONFLICT');
+ for(let i=0;i<rows.length;i++){
+   assert.equal(existing[i].year,rows[i].year);
+   assert.equal(existing[i].questionNumber,rows[i].questionNumber);
+   assert.deepEqual(existing[i].correctAnswer,rows[i].correctAnswer,'EXISTING_ANSWER_CONFLICT');
+   assert(existing[i].fieldId===rows[i].fieldId ||
+     (existing[i].fieldId==='unclassified' &&
+      ['c1','c2','c3','c4','c5','c6'].includes(rows[i].fieldId)),
+     'EXISTING_CLASSIFICATION_CONFLICT');
+ }
+ if(JSON.stringify(existing)!==JSON.stringify(rows)){
+   await store.put(key,JSON.stringify(rows));
+   console.log('CHINTAI_METADATA_CLASSIFICATION_UPGRADED',year,
+     rows.filter((x,i)=>existing[i].fieldId!==x.fieldId).length);
+ }else console.log('CHINTAI_METADATA_ALREADY_PRESENT',year,rows.length);
 }else{
  await store.put(key,JSON.stringify(rows));
  console.log('CHINTAI_METADATA_WRITTEN',year,rows.length);
