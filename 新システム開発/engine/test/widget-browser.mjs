@@ -62,9 +62,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
-           else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: {
+           else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: window.privateLibrary || {
              status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
            } } });
+           else if (op === 'confirmUploadRights') reply({ structuredContent: {
+             status: 'uploadPermissionConfirmed', sessionId: 'test-session', year: m.params.arguments.year,
+           } });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
             reply({ structuredContent: answer === '2'
@@ -247,6 +250,39 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForFunction(() => window.calls.some(m => m.params?.name === 'getOfficialLibrary'));
     assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
       '保存済み年度の照会も利用者チャットに内部内容を送信しない');
+    // 著作物使用許諾が必要な賃管：年度別チェックでのみ取込可。確認だけではPDFを送らない。
+    await page.evaluate(r => window.deliver(r), result({
+      status: 'sourceUnavailable', sessionId, permissionedUpload: true,
+      qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
+      availableUploadYears: [2015, 2016, 2017, 2023, 2025],
+      validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [],
+    }));
+    await ui.getByRole('heading', { name: '過去問の年度別取り込み（本人専用）' }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /2017年度：原本検証待ち/);
+    await ui.locator('#licensedYear').selectOption('2023');
+    const confirm = ui.getByRole('button', { name: 'この年度の取込を許可して添付へ進む' });
+    assert.equal(await confirm.isDisabled(), true, '利用許諾が未確認ならボタンは無効');
+    const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
+    const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
+    await ui.locator('#licensedAck').check();
+    await confirm.click();
+    await ui.getByText('2023年度の確認を受け付けました。', { exact: false }).waitFor();
+    const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
+    assert.equal(confirmed.length, beforePermission + 1);
+    assert.deepEqual(confirmed.at(-1), { sessionId, year: 2023, confirmed: true });
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
+      '年度確認だけではPDFの取り込みを始めない');
+    await page.evaluate(() => {
+      window.privateLibrary = {
+        status: 'officialLibrary', permissionedUpload: true, sessionId: 'test-session',
+        qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
+        availableUploadYears: [2015, 2016, 2017, 2023, 2025],
+        validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [2023],
+      };
+    });
+    await ui.getByRole('button', { name: '別年度の過去問を取り込む' }).click();
+    await ui.getByRole('heading', { name: '過去問の年度別取り込み（本人専用）' }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /2023年度：本人用に取込済み/);
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
