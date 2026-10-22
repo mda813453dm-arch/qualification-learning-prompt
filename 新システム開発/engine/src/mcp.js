@@ -217,9 +217,25 @@ export const TOOLS = [
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/official-library`],
   },
   {
+    name: 'confirmUploadRights',
+    appOnly: true,
+    uiOnly: true,
+    description: '権利者の許諾が必要な資格だけ。ユーザーが学習画面で指定年度の保存・解析許諾を取得したとチェックした場合に限り記録する。PDFはこの操作では取得も保存もしない。',
+    inputSchema: {
+      type: 'object',
+      required: ['sessionId', 'year', 'confirmed'],
+      properties: {
+        sessionId,
+        year: { type: 'integer', description: 'ユーザーが許諾確認した年度' },
+        confirmed: { type: 'boolean', const: true },
+      },
+    },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/upload-permission`, { year: a.year, confirmed: a.confirmed }],
+  },
+  {
     name: 'attachPdf',
     appOnly: true,
-    description: '利用者が現在のチャットで実際に新規添付した公式の問題PDFと正答PDFだけをエンジンに渡し、同一年度・同一区分の検証済み問題だけ出題に加える。既に共通保存されている部は再添付しない。PDFが添付されていない段階で以前のチャットやファイル保管庫を検索して取り込んだと報告しない。内部確認の途中経過・ファイル検索・照合手順を会話へ出さない（正答同梱の資格は正答PDF省略可）。土地家屋調査士は2022～2025年度が原本検証済みで、午前・午後の区分をsectionに必ず指定し、正答PDFも必須。過去問がそろわないときや、利用者が手元の過去問を使いたいときに、利用者がPDFを添付したら呼ぶ。year は添付PDFの表紙にある実施年度（西暦。令和7年度なら2025）。PDFの中身をAIが書き写して問題を作らない（出題・採点はエンジンが行う）。返ってきた notice をそのまま伝え、次の問題は nextQuestion で受け取る。',
+    description: '利用者が現在のチャットで実際に新規添付した公式の問題PDFと正答PDFだけをエンジンに渡し、同一年度・同一区分の検証済み問題だけ出題に加える。既に共通保存されている部は再添付しない。賃貸不動産経営管理士は著作権の許諾を要し、サイトからの自動取得と共通保存は禁止。利用者本人が年度別の権利確認を済ませた場合のみ添付を受け付け、その本人に限って保存する。PDFが添付されていない段階で以前のチャットやファイル保管庫を検索して取り込んだと報告しない。内部確認の途中経過・ファイル検索・照合手順を会話へ出さない（正答同梱の資格は正答PDF省略可）。土地家屋調査士は2022～2025年度が原本検証済みで、午前・午後の区分をsectionに必ず指定し、正答PDFも必須。過去問がそろわないときや、利用者が手元の過去問を使いたいときに、利用者がPDFを添付したら呼ぶ。year は添付PDFの表紙にある実施年度（西暦。令和7年度なら2025）。PDFの中身をAIが書き写して問題を作らない（出題・採点はエンジンが行う）。返ってきた notice をそのまま伝え、次の問題は nextQuestion で受け取る。',
     meta: { 'openai/fileParams': ['questionPdf', 'answerPdf'] },
     inputSchema: {
       type: 'object',
@@ -227,7 +243,7 @@ export const TOOLS = [
       properties: {
         sessionId,
         year: { type: 'integer', description: '添付PDFの実施年度（西暦）' },
-        section: { type: 'string', enum: ['午前の部', '午後の部'], description: '土地家屋調査士のとき必須。問の部と公式正答PDFの列の結合を固定する。' },
+        section: { type: 'string', enum: ['午前の部', '午後の部', 'main'], description: '土地家屋調査士は午前・午後を必ず指定。賃管は省略可能（main）。' },
         questionPdf: { type: 'object', description: '添付された問題PDF', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url', 'file_id'] },
         answerPdf: { type: 'object', description: '添付された正答PDF（問題PDFに正答が入っていれば省く）', properties: { download_url: { type: 'string' }, file_id: { type: 'string' }, file_name: { type: 'string' }, mime_type: { type: 'string' } }, required: ['download_url', 'file_id'] },
       },
