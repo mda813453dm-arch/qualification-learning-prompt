@@ -29,3 +29,8 @@ console.log('CHINTAI_METADATA_READBACK_OK years=11 questions=500');
 console.log('CHINTAI_METADATA_UNCLASSIFIED',unknown);
 console.log('CHINTAI_METADATA_SPECIAL_ANSWERS',special);
 console.log('CHINTAI_METADATA_YEAR_DETAILS',JSON.stringify(details));
+for(let year=2015;year<=2016;year++){
+ const rows=await store.get('metadata/q097/'+year+'/main','json');
+ console.log('CHINTAI_METADATA_UNCLASSIFIED_QUESTION_NUMBERS',year,
+   rows.filter(x=>x.fieldId==='unclassified').map(x=>x.questionNumber).join(','));
+}
