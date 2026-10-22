@@ -7,7 +7,7 @@
 import { GcpStore } from '../src/gcp-store.js';
 import { readJob, validateResult } from '../src/ingest.js';
 import { httpParser } from '../src/parser-client.js';
-import { writeResult, readResult } from '../src/cache.js';
+import { writeResult, readResult, readFigure } from '../src/cache.js';
 import { officialLibrary } from '../src/official-library.js';
 import { CATALOG } from '../src/catalog.js';
 import { sha256Hex } from '../src/store.js';
@@ -27,6 +27,37 @@ for (const source of [...(job.sources ?? [])].sort((a,b)=>a.year-b.year)) {
   try {
   const k = source.keyParts;
   if (!k?.questionSha256 || !k?.answerSha256) throw new Error(`SOURCE_HASH_MISSING:${source.year}`);
+  // 2026年度は公式サイトからPDFを再取得できないことがある。
+  // 本人の取り込み時に同じ公式原本SHA・同じ検証器で28問照合済みなら、
+  // その検証済みパケットと保存済み公式画像を共有へ複製できる。
+  // 全画像を照合できない場合や旧版パケットは流用しない。
+  if (source.year === 2026 && k.parserVersion === parserVersion) {
+    const previous = await readResult(store, k, Date.now());
+    const v = previous.result;
+    const completePrior = previous.hit && v?.status === 'ready' && v.packetCount === 28 &&
+      v.excluded?.length === 0 && v.packets?.length === 28 &&
+      v.packets.every(p => p.figures?.length ||
+        (p.stemMode === 'text' && p.choiceMode === 'text' &&
+          p.verification?.visual === 'question_level_pdf_graphics_checked'));
+    if (completePrior) {
+      const originalFiles = new Set(v.packets.flatMap(p =>
+        (p.figures || []).flatMap(f => f.svgFile ? [f.file, f.svgFile] : [f.file])));
+      const assets = {};
+      for (const f of originalFiles) {
+        if (!f) throw new Error('SOURCE_ASSET_NAME_MISSING');
+        const b = await readFigure(store, k.questionSha256, parserVersion, f, k.owner);
+        if (!b) throw new Error(`SOURCE_ASSET_MISSING:${f}`);
+        assets[f] = new Uint8Array(b);
+      }
+      const sharedKey = { ...k, owner:'_shared' };
+      await writeResult(store,sharedKey,v,assets,Date.now());
+      const saved = await readResult(store,sharedKey,Date.now());
+      if (!saved.hit || saved.result?.packetCount !== 28) throw new Error('YEAR_2026_SAVE_UNVERIFIED');
+      updated.push(source.year);
+      console.log('YEAR_2026_IMPORTED:28:VERIFIED_EXISTING_OFFICIAL_CACHE');
+      continue;
+    }
+  }
   let questionStored = await store.get(`att/${k.questionSha256}.pdf`, 'arrayBuffer');
   let answerStored = await store.get(`att/${k.answerSha256}.pdf`, 'arrayBuffer');
   // 2026年度の問題は添付されていないため、既に照合した公式URLだけを試す。
