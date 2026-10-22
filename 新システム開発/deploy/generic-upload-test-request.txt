@@ -1,1 +1,2 @@
 RUN_GENERIC_MC_UPLOAD_TEST_V1
+# validate integrated generic MCP upload endpoint and parser
