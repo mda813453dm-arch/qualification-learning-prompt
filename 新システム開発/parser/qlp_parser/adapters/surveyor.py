@@ -182,8 +182,36 @@ def _choice_markers(pg):
         if len(seq) == CHOICE_COUNT:
             found.append(seq)
     if not found and pg.ocr:
-        return _ocr_choice_markers(pg) or _gap_markers(pg)
+        return _ocr_choice_markers(pg) or _native_choice_markers(pg) or _gap_markers(pg)
     return found[-1] if found else None
+
+
+def _native_choice_markers(pg):
+    """OCRが選択番号を読み落とした場合、原本PDFの文字座標だけで番号を照合する。
+
+    古い公式PDFには、選択番号が `1㸬` のように文字化けしている年度がある。
+    番号1〜5が同じ字下げで上から続く場合だけ使用する。本文は原本画像で保持する。
+    """
+    def label(w):
+        return unicodedata.normalize("NFKC", w[4]).replace("㸬", ".")
+
+    lo = min((w[1] for w in pg.words), default=0) - 3
+    marks = [w for w in pg.page.get_text("words", sort=True)
+             if lo <= w[1] < pg.limit and MARKER.match(label(w))]
+    sequences = []
+    for i, first in enumerate(marks):
+        if label(first) not in ("1", "1."):
+            continue
+        seq = [first]
+        for candidate in marks[i + 1:]:
+            if label(candidate) in (str(len(seq) + 1), f"{len(seq) + 1}.") and \
+                    abs(candidate[0] - first[0]) <= OCR_INDENT_TOL and candidate[1] > seq[-1][1]:
+                seq.append(candidate)
+                if len(seq) == CHOICE_COUNT:
+                    break
+        if len(seq) == CHOICE_COUNT:
+            sequences.append(seq)
+    return sequences[-1] if sequences else None
 
 
 _MARKER_LIKE = re.compile(r"^[0-9OoIlS\]|｜]{1,2}[.．。,]?$")
