@@ -61,6 +61,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
+          else if (op === 'explainSpec') reply({ structuredContent: {
+            status: 'explanationContext', sessionId: 'test-session', question: question.question,
+            grade: { questionId: question.question.questionId, correct: true, selected: '3', correctAnswer: '3' }
+          } });
           else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
            else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: window.privateLibrary || {
              status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
@@ -131,19 +135,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
     await ui.getByRole('button', { name: '2 解説を見る' }).click();
+    await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     await page.waitForFunction(() => window.followups.length === 1);
-    await ui.getByRole('button', { name: /再表示/ }).click();
-    await page.waitForFunction(() => window.followups.length === 2);
-    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '再表示で再採点しない');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 1, '解説は採点記録を読み出す');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
-    assert.ok((await page.evaluate(() => window.followups)).every(x => x === '2025年度 問1の解説を見る'), '会話には問題を識別できる操作名だけを送る');
-    const contexts = await page.evaluate(() => window.internal);
-    assert.deepEqual(contexts, [], '解説や再表示で入力欄に内部文脈を添付しない');
+    assert.ok((await page.evaluate(() => window.followups)).every(x => x.includes('学習セッションID：test-session') && x.includes('問題ID：test:2025:main:1')), '問題IDを固定して学習履歴に合わせたAI解説を依頼する');
+    assert.deepEqual(await page.evaluate(() => window.internal), [], '解説で入力欄に内部文脈の添付を作らない');
+    await ui.getByRole('button', { name: '公式正答を再表示' }).click();
+    await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
+    assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
+    await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
+    await page.waitForFunction(() => window.followups.length === 2);
     await page.evaluate(() => { window.rejectMessage = true; });
-    await ui.getByRole('button', { name: /再表示/ }).click();
+    await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
     await ui.locator('#requestError').waitFor();
-    await ui.getByRole('button', { name: /再表示/ }).click();
-    await ui.locator('#retryDisplay:not([disabled])').waitFor();
     assert.equal(await ui.locator('#requestError').count(), 1, '通信失敗の表示を重複追加しない');
     assert.equal(await page.evaluate(() => window.followups.length), 2, '送信失敗時に操作を重複送信しない');
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1, '失敗しても終了操作を残す');
