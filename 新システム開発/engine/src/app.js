@@ -1345,6 +1345,7 @@ async function route(request, env, url, now) {
     if (cat?.privateLicensedUpload) {
       const job = await readJob(env.STORE, sessionJobId(state));
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
+        qualificationName: cat.name, officialUrl: cat.pastExamPage,
         availableUploadYears: cat.availableUploadYears ?? [],
         validatedUploadYears: cat.validatedUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
