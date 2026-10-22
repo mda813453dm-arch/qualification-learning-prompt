@@ -213,35 +213,57 @@ def parse_questions(doc):
 
 
 def recover_verified_missing_questions(doc, questions, year, section, source_sha):
-    """原本を目視確認した単一見出しの誤読だけを、原本SHAと前後の番号で補正する。
+    """原本SHAと印刷画像を確認した見出しにだけ適用する限定的な補正。
 
-    汎用的な連番推測は行わない。平成30年春期34ページの印刷見出し
-    「問77」をVision OCRが「問774」と誤読した事実を原本画像で確認済み。
+    以下は年度・ページ・縦座標・前後の問番号を原本画像と照合済み。
+    一般的な欠番の推定や他年度への自動補完はしない。
     """
-    if (year, section, source_sha) != (
-        2018, "春期",
-        "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
-    ):
-        return questions
-    wrong = [q for q in questions if q.number == 774]
-    if len(wrong) != 1 or any(q.number == 77 for q in questions):
-        return questions
-    q = wrong[0]
-    if q.pages != [34] or not q.rect or not (340 <= q.rect[0] <= 365):
-        return questions
-    index = questions.index(q)
-    if index <= 0 or index + 1 >= len(questions):
-        return questions
-    if questions[index - 1].number != 76 or questions[index + 1].number != 78:
-        return questions
-    q.number = 77
-    q.stem = ""
-    q.choices = list(MARKS)
-    q.stem_mode = q.choice_mode = "official_image"
-    q.preserve_aspect = True
-    q.notes = [n for n in q.notes if n != "question_number_out_of_order"]
-    q.notes.extend(["field:t", "source_sha_pinned_image_heading_review"])
-    return questions
+    verified = {
+        (2018, "春期", "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13"):
+            (774, 77, 34, 340, 365),
+        (2020, "公開問題", "631fe215712475fae9f5e6ef81c02b30033f45a070dc8bae9d04c62283ac32f9"):
+            (722, 72, 33, 55, 80),
+    }
+    patch = verified.get((year, section, source_sha))
+    if patch:
+        wrong_number, correct, page, lo, hi = patch
+        wrong = [q for q in questions if q.number == wrong_number]
+        if len(wrong) == 1 and not any(q.number == correct for q in questions):
+            q = wrong[0]
+            i = questions.index(q)
+            if (q.pages == [page] and q.rect and lo <= q.rect[0] <= hi
+                    and i > 0 and i + 1 < len(questions)
+                    and questions[i - 1].number == correct - 1
+                    and questions[i + 1].number == correct + 1):
+                q.number = correct
+                q.stem = ""
+                q.choices = list(MARKS)
+                q.stem_mode = q.choice_mode = "official_image"
+                q.preserve_aspect = True
+                q.notes = [n for n in q.notes if n != "question_number_out_of_order"]
+                q.notes.extend(["field:t", "source_sha_pinned_image_heading_review"])
+    # 令和4年度問97は原本44ページの「・問97」がOCRで行頭見出しとして
+    # 認識されなかった。問題は44ページ上端から問98直前までと目視確定。
+    if (year, section, source_sha) == (
+        2022, "公開問題",
+        "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
+    ) and not any(q.number == 97 for q in questions):
+        prev = next((q for q in questions if q.number == 96), None)
+        nextq = next((q for q in questions if q.number == 98), None)
+        if (prev and nextq and prev.pages == [43] and nextq.pages == [44]
+                and nextq.rect and 415 <= nextq.rect[0] <= 440
+                and 44 <= doc.page_count):
+            page = doc[43]
+            questions.append(RawQuestion(
+                number=97, stem="", choices=list(MARKS), pages=[44],
+                rect=(70, nextq.rect[0] - 8),
+                has_graphics=True, stem_mode="official_image",
+                choice_mode="official_image", preserve_aspect=True,
+                notes=["field:t", "source_sha_pinned_image_heading_review"],
+                crops=[(44, (page.rect.x0 + 20, 66, page.rect.x1 - 20,
+                             nextq.rect[0] - 8))],
+            ))
+    return sorted(questions, key=lambda q: q.number)
 
 
 ITEM = re.compile(r"^[a-e][ 　]")
