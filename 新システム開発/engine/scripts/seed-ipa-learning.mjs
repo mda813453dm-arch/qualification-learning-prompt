@@ -27,6 +27,7 @@ const summary = { checked: 0, ready: 0, failed: [] };
 for (const cat of [CATALOG.fe, CATALOG.ap]) {
   for (const source of cat.sources) {
     const { year, section } = source;
+    if (process.env.QLP_IPA_ONLY && process.env.QLP_IPA_ONLY !== `${cat.qualificationId}:${year}`) continue;
     const key = `ipa-source/${cat.qualificationId}/${year}/${codeBySection[section]}`;
     const row = await store.get(key, 'json');
     assert(row?.question?.sha256 && row?.answer?.sha256, `PDF_NOT_ARCHIVED:${key}`);
