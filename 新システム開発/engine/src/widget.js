@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v59.html';
+export const WIDGET_URI = 'ui://qlp/question-v60.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.59';
+export const WIDGET_VERSION = '2026-10-23.60';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -68,7 +68,7 @@ a{color:inherit}
   var pending = {}, rid = 1, bridgeReady = false, hasView = false;
   function rpc(method, params){ return new Promise(function(res, rej){
     var id = rid++;
-    var timer = setTimeout(function(){ delete pending[id]; rej(new Error('通信が時間切れになりました')); }, method === 'ui/initialize' ? 5000 : 20000);
+    var timer = setTimeout(function(){ delete pending[id]; rej(new Error('通信が時間切れになりました')); }, method === 'ui/initialize' ? 5000 : 45000);
     pending[id] = { res: res, rej: rej, timer: timer };
     window.parent.postMessage({ jsonrpc: '2.0', id: id, method: method, params: params }, '*');
   }); }
@@ -552,8 +552,11 @@ a{color:inherit}
     if (m.learnerId) studyLid = m.learnerId;
     saveIds();
     var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
+    // 解説済みのときは「解説を見る」を再表示しない（旧サーバーからの回答にも対応）。
+    var entries = (m.choices || []).map(function(c,i){ return { choice:c, action:m.actions ? m.actions[i] : null }; })
+      .filter(function(x){ return !(m.kind === 'next' && m.body && (x.action === 'explain' || (!m.actions && x.choice === '解説を見る'))); });
     var j = m.journey || {};
-    var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + m.choices.map(function(c, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(c) + '</span></button>'; }).join('') + '</div>';
+    var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
@@ -577,8 +580,8 @@ a{color:inherit}
     var em = document.getElementById('endMenu');
     if (em) em.onclick = function(){ endAction(em); };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
-      var n = b.getAttribute('data-n'), c = m.choices[n - 1];
-      var action = m.kind === 'next' ? (m.actions ? m.actions[Number(n) - 1] : n === '1' ? 'next' : n === '2' ? 'review' : null) : null;
+      var n = b.getAttribute('data-n'), entry = entries[Number(n) - 1], c = entry.choice;
+      var action = m.kind === 'next' ? (entry.action || (n === '1' ? 'next' : null)) : null;
       if (action === 'end') { endAction(b); return; }
       if (action === 'explain') {
         if (m.body) { scrollUp(true); return; }
@@ -1104,6 +1107,7 @@ a{color:inherit}
     state.answered = true;
     app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
     var picked = app.querySelector('.choices .opt[data-n="' + v + '"]'); if (picked) picked.classList.add('picked');
+    if (v === 'スキップ') app.insertAdjacentHTML('beforeend', '<div id="skipProgress" class="notice" role="status">スキップして次の問題を開いています…</div>');
     var guess = document.getElementById('guess');
     try {
       var r = await callTool('submitAnswer', { sessionId: state.sessionId, questionId: state.question.questionId, value: String(v), confidence: guess && guess.checked ? 'guess' : 'sure' });
@@ -1112,20 +1116,22 @@ a{color:inherit}
         app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(String(r.hint || '').replace(/（.*$/, '')) + '</div>');
         return;
       }
-      state.next = r && r.next; showGrade(r && r.grade);
+      if (!r || r.error || !r.grade) throw new Error('ANSWER_RESULT_MISSING');
+      state.next = r.next || null;
+      showGrade(r.grade);
     } catch (e) {
       state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
-      app.insertAdjacentHTML('beforeend', '<div class="notice">採点できませんでした。もう一度押してください。</div>');
+      var progress = document.getElementById('skipProgress'); if (progress) progress.remove();
+      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">' + (v === 'スキップ' ? 'スキップを完了できませんでした。もう一度押してください。' : '採点できませんでした。もう一度押してください。') + '</div>');
     }
   }
   // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
   async function requestAdaptiveExplanation(ctx){
     var q = ctx.question;
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
-    // 画面内の採点情報はモデルに届かないため、対象を一意にするIDだけを添える。
-    // AIは必ず explainSpec で保存済みの学習段階・履歴・公式正答を読み、showMenu に動的解説を返す。
-    await ask(label + 'の解説を、私の理解度・学習履歴・苦手分野に合わせてお願いします。各選択肢の正誤理由と根拠も説明してください。' +
-      '（学習セッションID：' + ctx.sessionId + '、問題ID：' + q.questionId + '）');
+    // チャットには利用者向けの短い合図だけを送る（内部処理や識別子を表示しない）。
+    // モデルは直前のstartSessionのIDからexplainSpecを呼び、学習履歴と解説方針を取得する。
+    await ask(label + 'の解説をお願いします。');
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
@@ -1213,7 +1219,7 @@ a{color:inherit}
     // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
     var nextInPlace = async function(){
       var n = state.next || await callTool('nextQuestion', { sessionId: state.sessionId });
-      if (!n || n.error || !['question','waiting','finished','remediation'].includes(n.status)) throw new Error('NEXT_UNAVAILABLE');
+      if (!n || n.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(n.status)) throw new Error('NEXT_UNAVAILABLE');
       if (state.next === n) state.next = null;
       render(n);
       window.scrollTo(0, 0);
