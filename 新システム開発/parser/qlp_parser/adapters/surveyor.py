@@ -1224,15 +1224,19 @@ def parse_questions(doc):
         first_region = _region(by_no[no], y0, y1)
         q = _question(n, no, first_region, True)
         # 令和4年度等では見出し・本文・図が1ページ、5択が次ページにある。
-        # 問番号がない続きページだけを、直前の問の「次のページに続く」と
-        # 5つの選択肢で確認して連結する。別問のページを推測で混ぜない。
+        # 次ページの先頭に公式の5択がそろうときだけ連結する。
+        # 別問の見出しの下側を前問に混ぜない。
         next_page = by_no.get(no + 1)
         # 次ページの上半分が前問の続きで、下半分には新たな見出しがある場合もある。
         # 続きの範囲は「次の見出し」の直前で必ず切る。
         next_head = min(page_headings.get(no + 1, [next_page.limit])) if next_page else None
         continuation = _region(next_page, 0, next_head - 3) if next_page else None
-        if (not q.choices and continuation is not None and
-                "次のページ" in q.stem and _choice_markers(continuation)):
+        # 図・表の見出しや地図内の数字を、設問ページにある「一部の選択肢」
+        # としてOCRが誤認識することがある。また「次のページに続く」は
+        # OCRで欠ける場合がある。前問の5択が未完成で、次ページ先頭（次問見出し前）
+        # に1〜5の選択肢がそろう場合のみ、公式ページを連結する。
+        incomplete = len(q.choices) != CHOICE_COUNT or not all(q.choices)
+        if (incomplete and continuation is not None and _choice_markers(continuation)):
             rest = _question(n, no + 1, continuation, False)
             if len(rest.choices) == CHOICE_COUNT and all(rest.choices):
                 # ページをまたぐ設問は文章だけで図表の位置を復元できない。
