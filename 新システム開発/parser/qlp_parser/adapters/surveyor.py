@@ -583,6 +583,10 @@ def _question(number, no, pg, text_heading):
         # 文字は読めている。図があれば、図だけを切り出す
         if figure is not None:
             crops.append((no, tuple(figure)))
+        elif not body.is_empty:
+            # OCRだけで共有済みとは判断しない。図のない問も原本画像を残す。
+            crops.append((no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN,
+                               min(body.y1 + MARGIN, pg.limit))))
     elif not body.is_empty and (graphics or stem_mode != "text" or choice_mode != "text"):
         # 問題1問分（見出し〜最後の選択肢）をそのまま切り出す。ページ番号の欄は含めない
         crops.append((no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN, min(body.y1 + MARGIN, pg.limit))))
@@ -1173,6 +1177,9 @@ def _build_ocr_question(p, line_text, unknown):
         body = p.pg.body_rect()
         crops.append((p.no, (body.x0 - MARGIN, p.block.y0 - MARGIN, body.x1 + MARGIN, p.block.y1 + MARGIN)))
     body = p.pg.body_rect()
+    if not crops and not body.is_empty:
+        # 図形文字のOCR結果だけを共有時の根拠にしない。
+        crops.append((p.no, (body.x0 - MARGIN, body.y0 - MARGIN, body.x1 + MARGIN, min(body.y1 + MARGIN, p.pg.limit))))
     return RawQuestion(
         number=p.number,
         stem=_fix_symbols(stem),
@@ -1209,4 +1216,36 @@ def parse_questions(doc):
                 return _ocr_questions(numbered, by_no)
             return [_question(n, no, by_no[no], False) for n, no in numbered]
     by_no = dict(pages)
-    return mark_out_of_order([_question(n, no, _region(by_no[no], y0, y1), True) for n, no, y0, y1 in regions])
+    page_headings = {}
+    for _, page_no, start_y, _ in regions:
+        page_headings.setdefault(page_no, []).append(start_y)
+    questions = []
+    for n, no, y0, y1 in regions:
+        first_region = _region(by_no[no], y0, y1)
+        q = _question(n, no, first_region, True)
+        # 令和4年度等では見出し・本文・図が1ページ、5択が次ページにある。
+        # 問番号がない続きページだけを、直前の問の「次のページに続く」と
+        # 5つの選択肢で確認して連結する。別問のページを推測で混ぜない。
+        next_page = by_no.get(no + 1)
+        # 次ページの上半分が前問の続きで、下半分には新たな見出しがある場合もある。
+        # 続きの範囲は「次の見出し」の直前で必ず切る。
+        next_head = min(page_headings.get(no + 1, [next_page.limit])) if next_page else None
+        continuation = _region(next_page, 0, next_head - 3) if next_page else None
+        if (not q.choices and continuation is not None and
+                "次のページ" in q.stem and _choice_markers(continuation)):
+            rest = _question(n, no + 1, continuation, False)
+            if len(rest.choices) == CHOICE_COUNT and all(rest.choices):
+                # ページをまたぐ設問は文章だけで図表の位置を復元できない。
+                # 公式2ページを順番に添付し、正答の採点対象は同じ問番号に固定する。
+                q.stem = (q.stem + "\n" + rest.stem).strip()
+                q.choices = rest.choices
+                q.choice_mode = rest.choice_mode
+                q.pages = [no, no + 1]
+                q.has_graphics = True
+                q.notes.append("question_continues_next_page")
+                q.crops = [
+                    (no, (0, max(0, y0 - MARGIN), first_region.page.rect.width, first_region.limit)),
+                    (no + 1, (0, 0, continuation.page.rect.width, continuation.limit)),
+                ]
+        questions.append(q)
+    return mark_out_of_order(questions)
