@@ -453,7 +453,7 @@ const uploadRightsKey = (sessionId, year) => `upload-rights/${sessionId}/${year}
 async function attachPdf(env, id, state, b, url, now) {
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
   const base = cat?.sources?.[0];
-  const adapter = cat?.uploadAdapter ?? base?.adapter;
+  const adapter = cat?.uploadAdapter ?? base?.adapter ?? 'generic_mc';
   if (!adapter || !ADAPTERS.has(adapter)) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED',
     'この資格のPDF解析はまだ接続されていません。');
   const year = Number(b.year);
@@ -463,7 +463,9 @@ async function attachPdf(env, id, state, b, url, now) {
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
   const section = cat?.uploadSections
     ? String(b.section ?? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : '')).trim()
-    : cat.sources.find((x) => x.year === year)?.section ?? base?.section;
+    : (cat?.sources?.find((x) => x.year === year)?.section ?? base?.section ?? String(b.section ?? '').trim());
+  if (!section || section.length > 50) throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '試験区分を指定してください。');
+  if (adapter === 'generic_mc' && !b.answer) throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '共通解析では同年度・同区分の公式正答PDFが必須です。');
   if (cat?.uploadSections && !cat.uploadSections.includes(section))
     throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '午前の部か午後の部を指定してください。');
   const officialAnswerHtml = cat?.officialAnswerHtml?.[year] ?? null;
