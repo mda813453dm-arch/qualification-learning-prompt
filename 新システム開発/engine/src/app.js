@@ -40,7 +40,7 @@ const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
-const ADAPTERS = new Set(['takken', 'surveyor', 'land_surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'fe', 'ap', 'gyosei', 'shindan', 'mankan']);
+const ADAPTERS = new Set(['takken', 'surveyor', 'land_surveyor', 'chintai', 'fp2', 'fp3', 'itpass', 'fe', 'ap', 'gyosei', 'shindan', 'mankan', 'generic_mc']);
 
 class HttpError extends Error {
   constructor(status, code, detail) {
