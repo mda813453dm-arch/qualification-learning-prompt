@@ -88,9 +88,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
     await ui.getByRole('button', { name: '2 解説を見る', exact: true }).click();
+    await ui.getByRole('heading', { name: '2026年度 問1の公式正答照合' }).waitFor();
     await page.waitForFunction(() => window.messages.length === 1);
-    await ui.locator('#retryDisplay:not([disabled])').waitFor();
-    await ui.getByRole('button', { name: '出ないときは再表示', exact: true }).click();
+    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '保存した採点データを解説前に自動取得');
+    assert.match(await ui.locator('#app').innerText(), /公式正答：3/);
+    await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
     await ui.getByText('AIによる解説（結合試験用）', { exact: true }).waitFor();
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '解説の冒頭にも全体位置を示す');
     assert.equal(await ui.locator('table tbody tr').count(), 5);
@@ -100,7 +102,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
     assert.equal(await page.evaluate(() => window.droppedContext), 0, '文脈添付を要求しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
-    assert.deepEqual(await page.evaluate(() => window.messages), ['2026年度 問1の解説を見る', '2026年度 問1の解説を見る']);
+    const messages = await page.evaluate(() => window.messages);
+    assert.equal(messages.length, 2);
+    assert.ok(messages.every(m => m.includes('学習セッションID：' + knownSessionId) &&
+      m.includes('問題ID：' + first.question.questionId) && m.includes('学習履歴')),
+      'モデルへ同じ問題の保存済み採点と学習履歴を確認する依頼が届く');
     await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
