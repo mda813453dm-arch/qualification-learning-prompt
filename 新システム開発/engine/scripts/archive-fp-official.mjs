@@ -26,7 +26,10 @@ for (const url of urls) {
   const pathname = new URL(url).pathname;
   const name = pathname.slice(pathname.lastIndexOf('/')+1);
   // Distinguish grade in the official filename, instead of guessing by date.
-  const grade = /^g([23])[_-]/i.exec(name)?.[1];
+  const kind = /^([gj])([23])[_-]/i.exec(name);
+  const grade = kind?.[2];
+  const subject = kind?.[1]?.toLowerCase() === 'j' ? '実技' : '学科';
+  if (/hyoushi/i.test(name)) {summary.skipped.push(name); continue;}
   if (!grade) {summary.skipped.push(name); continue;}
   try {
     const res = await fetch(url, {signal:AbortSignal.timeout(60000)});
@@ -40,7 +43,7 @@ for (const url of urls) {
     const back=Buffer.from(await store.get(sourceKey,'arrayBuffer'));
     assert.equal(createHash('sha256').update(back).digest('hex'),hash,'PDF_READBACK_MISMATCH');
     const metadata={schema:'qlp-fp-archive-v1',grade:'fp'+grade,organization:'jafp',
-      filename:name,sourceUrl:url,sha256:hash,bytes:buffer.length,
+      filename:name,subject,sourceUrl:url,sha256:hash,bytes:buffer.length,
       storageKey:sourceKey,parsed:false,learningReady:false};
     await store.put(key,JSON.stringify(metadata));
     assert.equal((await store.get(key,'json'))?.sha256,hash,'METADATA_READBACK_MISMATCH');
