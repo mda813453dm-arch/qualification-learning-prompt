@@ -10,6 +10,7 @@ import { httpParser } from '../src/parser-client.js';
 import { writeResult, readResult } from '../src/cache.js';
 import { officialLibrary } from '../src/official-library.js';
 import { CATALOG } from '../src/catalog.js';
+import { sha256Hex } from '../src/store.js';
 
 const parserVersion = '0.8.2';
 const jobId = process.env.SURVEYOR_IMPORT_JOB;
@@ -21,12 +22,26 @@ const job = await readJob(store, jobId);
 if (!job) throw new Error('IMPORT_JOB_NOT_FOUND');
 const parse = httpParser({ endpoint, token, timeoutMs: 900000 });
 const updated = [];
-for (const source of job.sources ?? []) {
-  if (![2022, 2023, 2024, 2025].includes(source.year) || source.section !== 'main') continue;
+for (const source of [...(job.sources ?? [])].sort((a,b)=>a.year-b.year)) {
+  if (![2022, 2023, 2024, 2025, 2026].includes(source.year) || source.section !== 'main') continue;
+  try {
   const k = source.keyParts;
   if (!k?.questionSha256 || !k?.answerSha256) throw new Error(`SOURCE_HASH_MISSING:${source.year}`);
-  const questionStored = await store.get(`att/${k.questionSha256}.pdf`, 'arrayBuffer');
-  const answerStored = await store.get(`att/${k.answerSha256}.pdf`, 'arrayBuffer');
+  let questionStored = await store.get(`att/${k.questionSha256}.pdf`, 'arrayBuffer');
+  let answerStored = await store.get(`att/${k.answerSha256}.pdf`, 'arrayBuffer');
+  // 2026年度の問題は添付されていないため、既に照合した公式URLだけを試す。
+  // 取得不能やSHA不一致なら共有登録を見送り、既存キャッシュは変更しない。
+  if (source.year === 2026 && (!questionStored || !answerStored)) {
+    const get = async (url,sha) => {
+      const res = await fetch(url,{signal:AbortSignal.timeout(60000)});
+      if (!res.ok) throw new Error(`OFFICIAL_PDF_HTTP_${res.status}`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      if (await sha256Hex(bytes) !== sha) throw new Error('OFFICIAL_PDF_SHA_MISMATCH');
+      return bytes.buffer;
+    };
+    questionStored ||= await get(source.questionUrl,k.questionSha256);
+    answerStored ||= await get(source.answerUrl,k.answerSha256);
+  }
   if (!questionStored || !answerStored) {
     console.log(`YEAR_${source.year}_NOT_IMPORTED:PDF_SOURCE_MISSING`);
     continue;
@@ -59,8 +74,12 @@ for (const source of job.sources ?? []) {
   if (!saved.hit || saved.result?.packetCount !== 28) throw new Error(`YEAR_${source.year}_SAVE_UNVERIFIED`);
   updated.push(source.year);
   console.log(`YEAR_${source.year}_IMPORTED:28`);
+  } catch (error) {
+    console.log(`YEAR_${source.year}_NOT_IMPORTED:${error?.code || error?.message || 'UNKNOWN'}`);
+  }
 }
 const lib = await officialLibrary(store, CATALOG.surveyor, parserVersion, Date.now());
 console.log('SURVEYOR_SHARED_LIBRARY',JSON.stringify({
   updated,stored:lib.stored,missing:lib.missing,totalQuestions:lib.totalQuestions,
 }));
+if (lib.totalQuestions !== 140) process.exitCode = 1;
