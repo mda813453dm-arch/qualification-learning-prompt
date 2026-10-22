@@ -1120,6 +1120,17 @@ a{color:inherit}
       state.next = r.next || null;
       showGrade(r.grade);
     } catch (e) {
+      // 採点がタイムアウトしてもサーバー側でスキップ済みのことがある。
+      // 保存済みの未回答問を確認し、別問への遷移が確定した場合だけ復帰する。
+      if (v === 'スキップ') {
+        try {
+          var recovered = await callTool('nextQuestion', { sessionId: state.sessionId });
+          var moved = recovered && !recovered.error &&
+            (recovered.status === 'question' && recovered.question && recovered.question.questionId !== state.question.questionId ||
+             ['waiting','finished','remediation','sourceUnavailable'].includes(recovered.status));
+          if (moved) { state.next = null; render(recovered); return; }
+        } catch (retryError) { /* 元の問題でスキップを再試行できるようにする */ }
+      }
       state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
       var progress = document.getElementById('skipProgress'); if (progress) progress.remove();
       app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">' + (v === 'スキップ' ? 'スキップを完了できませんでした。もう一度押してください。' : '採点できませんでした。もう一度押してください。') + '</div>');
