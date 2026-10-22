@@ -743,7 +743,7 @@ test('AI作成確認問題は出題時の正答固定を行い、AIには画面�
   assert.equal(result.choices, undefined);
   assert.equal(result.correctAnswer, undefined);
   assert.equal(result.challengeId, 'id1');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v56.html');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v57.html');
 });
 
 test('解説の表示：旧SVGコードは除去し、正誤は大きな結果見出しで表示する', () => {
