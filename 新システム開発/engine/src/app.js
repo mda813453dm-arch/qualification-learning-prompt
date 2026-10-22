@@ -155,7 +155,9 @@ function checkSources(sources, qualificationId, owner = null) {
       && /^https:\/\/\S+$/.test(s.questionUrl ?? '') && s.questionUrl.length <= 500
       && (s.answerUrl == null || (/^https:\/\/\S+$/.test(s.answerUrl) && s.answerUrl.length <= 500));
     if (!ok) throw new HttpError(400, 'SOURCES_INVALID');
-    const out = { qualificationId, adapter: s.adapter, year: s.year, section: s.section, questionUrl: s.questionUrl, answerUrl: s.answerUrl ?? null };
+    const out = { qualificationId, adapter: s.adapter, year: s.year, section: s.section,
+      questionUrl: s.questionUrl, answerUrl: s.answerUrl ?? null,
+      ...(s.privateLicensedUpload === true ? { privateLicensedUpload: true } : {}) };
     return owner ? { ...out, owner } : out;
   });
 }
@@ -490,7 +492,8 @@ async function attachPdf(env, id, state, b, url, now) {
     : (bytes) => keepAttached(env, bytes, origin);
   const questionUrl = await savePdf(await fetchAttached(env, b.question));
   const answerUrl = b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null;
-  const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl }], state.qualificationId, state.learnerId);
+  const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl,
+    ...(cat?.privateLicensedUpload ? { privateLicensedUpload: true } : {}) }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
   await markEngineSources(env, sources);
   const started = await progress(env, jobId, now);
