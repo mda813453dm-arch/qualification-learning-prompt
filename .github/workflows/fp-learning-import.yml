@@ -1,0 +1,33 @@
+name: FP2・FP3学科学習問題の公式検証登録
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/fp-learning-import-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-fp-learning-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_FP_LEARNING_APPROVED: YES
+      QLP_OCR: vision
+    steps:
+      - uses: actions/checkout@v4
+      - run: grep -qx 'APPROVE_JAFP_FP2_FP3_ACADEMIC_VERIFIED_IMPORT_V1' 新システム開発/deploy/fp-learning-import-request.txt
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.13'}
+      - run: npm ci --prefix 新システム開発/engine
+      - run: pip install -r 新システム開発/parser/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y tesseract-ocr tesseract-ocr-jpn potrace
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/import-fp-learning.mjs --commit
