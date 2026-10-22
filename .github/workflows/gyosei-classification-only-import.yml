@@ -1,0 +1,30 @@
+name: 行政書士6年度の問題分類だけ登録
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['新システム開発/deploy/gyosei-classification-request.txt']
+permissions:
+  contents: read
+concurrency:
+  group: qlp-gyosei-classification-only
+  cancel-in-progress: false
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+      QLP_METADATA_ENV: gyosei-classification-only
+      QLP_METADATA_APPROVED: YES
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify restricted three-field operation
+        run: grep -qx 'APPROVE_GYOSEI_2020_2025_CLASSIFICATION_ONLY' 新システム開発/deploy/gyosei-classification-request.txt
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - run: node 新システム開発/engine/scripts/seed-gyosei-classification.mjs --commit
