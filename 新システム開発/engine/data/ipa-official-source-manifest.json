@@ -47,8 +47,8 @@
       "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07a_ap_pm_qs.pdf",
       "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07a_ap_pm_ans.pdf",
       "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07.html",
-      "sourceVerified": false,
-      "note": "公式HTMLに両方掲載。問題PDF本文の取得は未完了。",
+      "sourceVerified": true,
+      "note": "IPA公式2025年度過去問題掲載ページの問題・解答リンクを確認。問題PDF本文の個別抽出は未実施。",
       "questionAnswerParsed": false,
       "sharedDataRegistered": false
     },
@@ -120,6 +120,30 @@
       "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_b_qs.pdf",
       "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/t6hhco0000003zx0-att/2023r05_fe_kamoku_b_ans.pdf",
       "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/2023r05.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2025,
+      "section": "春期午前",
+      "publicationType": "過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_ap_am_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_ap_am_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07.html",
+      "sourceVerified": true,
+      "questionAnswerParsed": false,
+      "sharedDataRegistered": false
+    },
+    {
+      "qualification": "応用情報技術者",
+      "year": 2025,
+      "section": "春期午後",
+      "publicationType": "記述式を含む過去問題",
+      "questionUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_ap_pm_qs.pdf",
+      "answerUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/nl10bi0000009lh8-att/2025r07h_ap_pm_ans.pdf",
+      "officialPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/2025r07.html",
       "sourceVerified": true,
       "questionAnswerParsed": false,
       "sharedDataRegistered": false
