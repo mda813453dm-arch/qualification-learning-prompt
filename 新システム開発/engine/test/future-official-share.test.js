@@ -30,6 +30,9 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
     if (target.qualificationKey === 'takken') {
       assert.match(cat.officialShared.officialPdfPins[2025]['年度共通'],/^[a-f0-9]{64}$/,
         '2025年度宅建の公式原本は既にSHA照合済み。ただし保存済みとは限らない');
+    } else if (target.qualificationKey === 'surveyor') {
+      assert.match(cat.officialShared.officialPdfPins[2025].main,/^[a-f0-9]{64}$/,
+        '測量士補の添付原本SHAを固定。保存状況は別途検査する');
     } else {
       assert.equal(cat.officialPdfPins,undefined,
         '原本PDF未検証の資格で、SHA固定済みだと誤表示しない');
@@ -44,6 +47,8 @@ test('6資格を既存の資格IDで後日共有対象に登録でき、未検�
         [{year:2020,section:'10月'}, {year:2020,section:'12月'}]);
       assert.deepEqual(lib.missing.filter(x => x.year === 2021),
         [{year:2021,section:'10月'}, {year:2021,section:'12月'}]);
+    } else if (target.qualificationKey === 'surveyor') {
+      assert.deepEqual(lib.missing,[2026,2025,2024,2023,2022].map(year=>({year,section:'main'})));
     } else {
       assert.deepEqual(lib.missing, []);
     }
