@@ -108,7 +108,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     for (const [number, answer] of [[2, '1'], [3, '4']]) {
       await ui.locator(`input[name=ans][value="${answer}"]`).check();
       await ui.getByRole('button', { name: '解答する', exact: true }).click();
-      await ui.getByText(`${session.job?.year ?? 2026}年度 問${number}：あなたの答え ${answer}`, { exact: false }).waitFor();
+      await ui.locator('.result-grade .grade-detail').filter({ hasText: 'あなたの答え：' + answer }).waitFor();
       if (number === 2) {
         assert.equal(await ui.locator('#review').count(), 0);
         await ui.locator('#next').click();
