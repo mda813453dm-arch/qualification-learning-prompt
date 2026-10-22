@@ -1,0 +1,46 @@
+name: ITパスポート令和8年度Vision認識診断
+on:
+  push:
+    branches: [ai-learning-system]
+    paths: ['.github/workflows/itpass-vision-diagnostic.yml']
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Install Japanese OCR and parser dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr-jpn
+          python -m pip install -r 新システム開発/parser/requirements.txt
+      - name: Verify source and check Vision full question coverage without storage writes
+        env:
+          PYTHONPATH: 新システム開発/parser
+          QLP_OCR: vision
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('新システム開発/engine/intake/itpass-official-pdf-pins-2026-10-22.json'))
+          s=next(s for s in d['sources'] if s['year']==2026)
+          with open('/tmp/ip-pins.txt','w') as f:
+              f.write(s['questionSha256']+'\n'+s['answerSha256']+'\n')
+          PY
+          qsha="$(sed -n '1p' /tmp/ip-pins.txt)"
+          asha="$(sed -n '2p' /tmp/ip-pins.txt)"
+          gcloud storage cp "gs://qualification-learning-qlp-figures/att/$qsha.pdf" /tmp/ip-question.pdf
+          gcloud storage cp "gs://qualification-learning-qlp-figures/att/$asha.pdf" /tmp/ip-answer.pdf
+          export QLP_VISION_TOKEN="$(gcloud auth print-access-token)"
+          python -m qlp_parser.cli --adapter itpass --year 2026 --section 公開問題 --question-pdf /tmp/ip-question.pdf --question-sha256 "$qsha" --answer-pdf /tmp/ip-answer.pdf --answer-sha256 "$asha" --assets-dir /tmp/ip-assets > /tmp/ip-result.json
+          python - <<'PY'
+          import json,collections
+          d=json.load(open('/tmp/ip-result.json'))
+          p=d.get('packets',[])
+          print('ITPASS_VISION_AUDIT',json.dumps({'status':d.get('status'),'count':len(p),'numbers':[x['questionNumber'] for x in p],'excluded':d.get('excluded',[]),'reasons':dict(collections.Counter(x['reason'] for x in d.get('excluded',[])))},ensure_ascii=False))
+          PY
