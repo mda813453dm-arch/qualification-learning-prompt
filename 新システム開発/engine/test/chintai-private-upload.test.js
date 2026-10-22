@@ -88,7 +88,7 @@ test('年度別の本人による許諾確認を経ない限りPDFを取得も�
   assert.equal(job.sources.length, 1);
   assert.equal(job.sources[0].owner, start.body.learnerId);
   const source = job.sources[0];
-  assert.match(source.questionUrl, /\\/v1\\/private-source\\//);
+  assert.ok(source.questionUrl.includes('/v1/private-source/'));
   assert.notEqual(source.questionUrl, source.answerUrl);
   assert.ok(await env.STORE.get(await sourceKey(source.questionUrl), 'arrayBuffer'));
   assert.equal((await call(env, 'GET', new URL(source.questionUrl).pathname)).status, 404,
