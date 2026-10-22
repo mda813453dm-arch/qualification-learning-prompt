@@ -300,7 +300,10 @@ export const TOOLS = [
       const body = typeof a.body === 'string' && a.body.trim()
         ? a.body.replace(/<svg\b[\s\S]*?(?:<\/svg\s*>|$)/gi, '\n※図解はこの画面では表示できません。説明と表を参照してください。\n').slice(0, 8000)
         : null;
-      return menu ? { status: 'menu', menu: { ...menu, ...(body ? { body } : {}), ...(a.sessionId ? { sessionId: a.sessionId } : {}), ...(a.studyId ? { studyId: a.studyId } : {}), ...(a.learnerId ? { learnerId: a.learnerId } : {}) }, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
+      const readyMenu = menu && a.kind === 'next' && body
+        ? { ...menu, choices: ['次の問題へ', '今日はここまで（学習を終了）'], actions: ['next', 'end'] }
+        : menu;
+      return readyMenu ? { status: 'menu', menu: { ...readyMenu, ...(body ? { body } : {}), ...(a.sessionId ? { sessionId: a.sessionId } : {}), ...(a.studyId ? { studyId: a.studyId } : {}), ...(a.learnerId ? { learnerId: a.learnerId } : {}) }, howToProceed: `選択肢は画面のボタンに出ている。チャットには書かず、ボタンが押されるまで返事を待つ。${NEXT[a.kind] ?? ''}` } : null;
     },
   },
   {
@@ -373,6 +376,10 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v52.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v53.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v54.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v55.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v56.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v57.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v58.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v59.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -427,7 +434,7 @@ export function appInstructions() {
   const noInvent = '\n**強制補強：同一分野の公式実践3問連続誤答後は、短い補強説明のあとAI作成確認問題を1問作る。必ず登録前に本文・全選択肢・正答番号を固定し、registerRemediationQuestion を呼ぶ。返った画面が出題するので、AIは問題をチャットへ書き直さない。採点・誤答時の再出題・正解時の公式問題再開は画面とエンジンが制御する。未登録の確認問題で実践問題へ進まない。**\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDF（公式の問題PDF・正答PDF）を添付したら、`attachPdf` を呼んでエンジンに渡す。** PDFの中身をAIが書き写して出題・採点しない。';
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
   const confirmationFlow = '\n【通常の確認問題】解説あり／確認問題からの選択後は、同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
-  const explanationFlow = '\n【採点後の解説表示】「解説を見る」「再表示」「詳しい解説」はAIの処理開始の合図です。利用者から届く文に学習セッションID・問題IDが含まれている場合は、その2つをそのまま使ってexplainSpec({sessionId, questionId})を最初に呼びます。IDを推測・省略・改変せず、返ったquestionとgradeの同じ問題を、学習段階と苦手履歴に合わせてAIが動的に解説し、showMenu(kind=next, body=解説本文, sessionId, studyId, learnerId)で表示します。公式問題と公式正答は固定ですが、解説の文言は固定テンプレートにしません。解説本文はMarkdownの表・文章だけを使い、生のSVG・HTML・XML、図の生成コードを絶対に出力しません。図が表示できない場合は比較表で説明します。画面内の採点は会話に見えないため、本文・正答が不明でもexplainSpecを省略しません。資格名や回答を聞き直さず、nextQuestion・再採点・startSessionは呼びません。初期画面の「画面のボタンで選んでください」はこの合図の後には適用しません。\n';
+  const explanationFlow = '\n【採点後の解説表示】「解説を見る」「再表示」「詳しい解説」はAIの処理開始の合図です。利用者から届く文に学習セッションID・問題IDが含まれている場合は、その2つをそのまま使ってexplainSpec({sessionId, questionId})を最初に呼びます。IDを推測・省略・改変せず、返ったquestionとgradeの同じ問題を、学習段階と苦手履歴に合わせてAIが動的に解説し、showMenu(kind=next, body=解説本文, sessionId, studyId, learnerId)で表示します。公式問題と公式正答は固定ですが、解説の文言は固定テンプレートにしません。解説本文はMarkdownの表・文章だけを使い、生のSVG・HTML・XML、図の生成コードを絶対に出力しません。解説本文を入れたメニューには「解説を見る」ボタンを再表示しません。画面から送られた短い解説依頼には、既にstartSessionで取得したsessionIdを使い、利用者にIDや内部指示を追加で入力させません。図が表示できない場合は比較表で説明します。画面内の採点は会話に見えないため、本文・正答が不明でもexplainSpecを省略しません。資格名や回答を聞き直さず、nextQuestion・再採点・startSessionは呼びません。初期画面の「画面のボタンで選んでください」はこの合図の後には適用しません。\n';
   const sharingFlow = '\n【公式過去問の共有保存】共有キャッシュで確認できた実際の年度と資格ごとの試験区分（宅建は本試験、2020・2021年度は10月／12月等）だけを学習画面で表示する。資格と関係のない午前／午後などの区分を追加しない。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFファイルが添付されたときだけ、表紙の年度・部と正答の同一性を照合しattachPdfを使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\n';
   return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow + sharingFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
@@ -513,10 +520,13 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
           const context = await callApi('GET', `/v1/sessions/${encodeURIComponent(args.sessionId)}/explanation`);
           if (context.status < 400 && context.body?.nextChoice) {
             const change = context.body.nextChoice.fieldChange;
+            const alreadyExplained = !!out.menu.body;
             const menu = { ...out.menu,
-              choices: [change ? '次の分野の問題へ' : '次の問題へ', '解説を見る',
+              choices: [change ? '次の分野の問題へ' : '次の問題へ',
+                ...(!alreadyExplained ? ['解説を見る'] : []),
                 ...(change ? ['この分野の実践問題を続ける', '総復習（間違えた問題）'] : []), '今日はここまで（学習を終了）'],
-              actions: ['next', 'explain', ...(change ? ['continueField', 'review'] : []), 'end'],
+              actions: ['next', ...(!alreadyExplained ? ['explain'] : []),
+                ...(change ? ['continueField', 'review'] : []), 'end'],
               ...(context.body.journey ? { journey: context.body.journey } : {}),
               ...(change && context.body.nextChoice.nextFieldName ? { nextFieldName: context.body.nextChoice.nextFieldName } : {}) };
             out = { ...out, menu };
