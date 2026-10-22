@@ -66,7 +66,7 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
         p.answerPdfSha256 === item.answerSha256 &&
         (Array.isArray(p.figures) && p.figures.length > 0 ||
           (Array.isArray(p.figures) && !p.figures.length && p.diagramRequired === false &&
-            p.stemMode === 'text' && p.choiceMode === 'text' &&
+            ['text', 'ocr'].includes(p.stemMode) && ['text', 'ocr'].includes(p.choiceMode) &&
             p.verification?.visual === 'question_level_pdf_graphics_checked')));
     if (valid) {
       stored.push({ year: item.year, section: item.section, questions: item.count });
