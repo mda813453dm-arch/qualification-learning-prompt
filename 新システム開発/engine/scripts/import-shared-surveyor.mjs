@@ -22,8 +22,14 @@ const job = await readJob(store, jobId);
 if (!job) throw new Error('IMPORT_JOB_NOT_FOUND');
 const parse = httpParser({ endpoint, token, timeoutMs: 900000 });
 const updated = [];
+const before = await officialLibrary(store, CATALOG.surveyor, parserVersion, Date.now());
+const alreadyShared = new Set(before.stored.map(r => `${r.year}:${r.section}`));
 for (const source of [...(job.sources ?? [])].sort((a,b)=>a.year-b.year)) {
   if (![2022, 2023, 2024, 2025, 2026].includes(source.year) || source.section !== 'main') continue;
+  if (alreadyShared.has(`${source.year}:${source.section}`)) {
+    console.log(`YEAR_${source.year}_ALREADY_SHARED:28`);
+    continue;
+  }
   try {
   const k = source.keyParts;
   if (!k?.questionSha256 || !k?.answerSha256) throw new Error(`SOURCE_HASH_MISSING:${source.year}`);
