@@ -118,9 +118,10 @@ test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空�
     const grade = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: String([3, 1, 4][i]) })).structuredContent;
     assert.equal(grade.grade.correct, true);
     const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body: '解説本文', sessionId } }, { path: '/app' })).body.result._meta.qlp.menu;
-    assert.deepEqual(menu.actions, i < 2 ? ['next', 'explain', 'end'] : ['next', 'explain', 'continueField', 'review', 'end']);
-    assert.deepEqual(menu.choices, i < 2 ? ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）'] :
-      ['次の分野の問題へ', '解説を見る', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+    assert.deepEqual(menu.actions, i < 2 ? ['next', 'end'] : ['next', 'continueField', 'review', 'end'],
+      '解説本文がある場合は再解説の無反応ボタンを省く');
+    assert.deepEqual(menu.choices, i < 2 ? ['次の問題へ', '今日はここまで（学習を終了）'] :
+      ['次の分野の問題へ', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
     assert.equal(menu.journey.fieldIndex, 1);
     if (i < 2) {
       q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
