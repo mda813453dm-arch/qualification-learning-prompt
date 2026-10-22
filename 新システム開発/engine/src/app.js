@@ -459,7 +459,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const year = Number(b.year);
   if (!Number.isInteger(year) || year < 1990 || year > 2100)
     throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', 'PDFの表紙で実施年度（西暦）を確認してください。');
-  if (Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
+  if (adapter !== 'generic_mc' && Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
   const section = adapter === 'generic_mc' ? String(b.section ?? '').trim()
     : cat?.uploadSections
@@ -469,7 +469,7 @@ async function attachPdf(env, id, state, b, url, now) {
   if (adapter === 'generic_mc' && !b.answer) throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '共通解析では同年度・同区分の公式正答PDFが必須です。');
   if (adapter !== 'generic_mc' && cat?.uploadSections && !cat.uploadSections.includes(section))
     throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '午前の部か午後の部を指定してください。');
-  const officialAnswerHtml = cat?.officialAnswerHtml?.[year] ?? null;
+  const officialAnswerHtml = adapter === 'generic_mc' ? null : (cat?.officialAnswerHtml?.[year] ?? null);
   if (cat?.uploadSections && !b.answer && !officialAnswerHtml)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
   if (cat?.privateLicensedUpload) {
@@ -483,7 +483,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const job = await readJob(env.STORE, jobId);
   // 他の利用者が登録済みなら、PDFを再取得せず共有済み結果を使う。
   const global = await libraryFor(env, state.qualificationId, now);
-  if (global?.stored.some((x) => x.year === year && x.section === section))
+  if (adapter !== 'generic_mc' && global?.stored.some((x) => x.year === year && x.section === section))
     return { status: 'attachedAlready', sessionId: id, year, section,
       notice: `${year}年度・${section}は共有保存済みです。PDFの再添付は不要です。`,
       sharedLibrary: publicLibraryView(global) };
