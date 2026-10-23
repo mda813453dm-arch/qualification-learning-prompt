@@ -223,8 +223,11 @@ def _verified_figure_crops(crops, doc):
             thin = [r for r in lines if (r.width>45 and r.height<=6) or
                     (r.height>35 and r.width<=6)]
             if len(thin)>=4:
-                combined = fitz.Rect(thin[0])
-                for r in thin[1:]: combined |= r
+                # PyMuPDFの矩形集合演算は高さ0の線をemptyとして無視する。
+                # 各線に1ptの太さを付けてから合成し、表の範囲を復元する。
+                thick = [fitz.Rect(r.x0-0.5,r.y0-0.5,r.x1+0.5,r.y1+0.5) for r in thin]
+                combined = fitz.Rect(thick[0])
+                for r in thick[1:]: combined |= r
                 if combined.width>80 and combined.height>45:
                     rects.append(combined)
             if not rects:
