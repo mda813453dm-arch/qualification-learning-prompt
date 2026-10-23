@@ -430,6 +430,14 @@ export function forModel(body) {
       howToProceed: '共有保存済みの年度・部は下の学習画面に表示している。会話に転記したりファイルを検索したりしない。' };
   }
   // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
+  if (body.status === 'resumeReady') {
+    return {
+      status: 'resumeReady', sessionId: body.sessionId, learnerId: body.learnerId,
+      qualificationName: body.qualificationName, answeredCount: body.answeredCount,
+      wrongCount: body.wrongCount, pendingQuestion: body.pendingQuestion,
+      howToProceed: '引継ぎ済みの記録と、再開用の操作ボタンを画面に表示しました。初回の試験概要や学習条件は聞かず、利用者の操作を待ってください。',
+    };
+  }
   if (Array.isArray(body.onboarding)) {
     // iOSアプリが _meta をウィジェットへ転送しない場合でも、必須の初期質問を表示できる。
     // 公式概要と質問項目は秘匿情報ではない。AIはツールの案内に従い自分で質問を作らない。
