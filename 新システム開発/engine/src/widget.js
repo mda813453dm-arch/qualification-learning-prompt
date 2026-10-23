@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v70.html';
+export const WIDGET_URI = 'ui://qlp/question-v71.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.70';
+export const WIDGET_VERSION = '2026-10-23.71';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -212,7 +212,10 @@ a{color:inherit}
       return;
     }
     if (data.status === 'restoreIdle') {
-      app.innerHTML = '<h2>学習を再開しました</h2><div class="notice">' + esc(data.notice || '') + '</div>' +
+      // 資格の確認なしに「再開済み」とだけ表示すると、別資格の記録と取り違える。
+      var restoreTitle = data.qualificationName ? data.qualificationName + '｜学習再開' : '学習を再開しました';
+      app.innerHTML = '<h2>' + esc(restoreTitle) + '</h2><div class="notice">' + esc(data.notice || '') + '</div>' +
+        (Number.isInteger(data.answeredCount) ? '<div class="stem">保存済みの回答：' + esc(data.answeredCount) + '問</div>' : '') +
         '<div class="row"><button id="restoreContinue">学習を続ける</button></div>' + endBar();
       document.getElementById('restoreContinue').onclick = function(){
         nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId }).then(render); });
@@ -1474,7 +1477,12 @@ a{color:inherit}
   var restoring = false, wasHidden = false;
   async function restoreFromServer(manual){
     if (restoring) return;
-    if (!state.sessionId) { var saved = loadIds(); state.sessionId = saved.sid || saved.lid || null; }
+    if (!state.sessionId) {
+      // 別資格の過去のsessionIdがlocalStorageに残っていても新しい資格へ流用しない。
+      var currentInput = input() || {}, currentOutput = openaiOutput() || {};
+      state.sessionId = currentInput.sessionId || currentOutput.sessionId ||
+        (manual && !currentInput.qualificationId ? loadIds().sid : null);
+    }
     if (!state.sessionId) { showRecovery('学習セッションの情報を取得できませんでした。新しい学習画面から再開してください。'); return; }
     restoring = true;
     var button = document.getElementById('reopenStudy') || document.getElementById('recoverStudy');
@@ -1594,9 +1602,10 @@ a{color:inherit}
     var stored = loadIds();
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     var initial = openaiOutput() || {};
-    var staleEntry = Array.isArray(initial.onboarding) || initial.status === 'needPlan';
-    if (!state.sessionId && stored.sid) state.sessionId = stored.sid;
-    if (state.sessionId && !locked && (staleEntry || !app.querySelector('button:not([disabled])'))) restoreFromServer(false);
+    // 新規のneedPlanは初回用の正規画面であり、起動直後に復元で置き換えない。
+    // iOSで初回画面を描画した直後に restoreIdle に切り替わる症状を防ぐ。
+    var explicitSession = !!(state.sessionId || input().sessionId || initial.sessionId);
+    if (explicitSession && hasView && !locked && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
@@ -1611,7 +1620,12 @@ a{color:inherit}
     showRecovery('学習画面との接続が切れています。復元ボタンで同じ学習状態を読み直してください。');
   }
   if (window.openai) render(openaiOutput());
-  setTimeout(function(){ if (!hasView) { unavailable(); var ids = loadIds(); if (ids.sid && (bridgeReady || (window.openai && window.openai.callTool))) restoreFromServer(true); } }, 10000);
+  setTimeout(function(){
+    if (!hasView) {
+      unavailable();
+      // 古い資格のIDを使って自動復元しない。表示できない場合は利用者操作だけで復旧する。
+    }
+  }, 10000);
 })();
 </script></body></html>`;
 }
