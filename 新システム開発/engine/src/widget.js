@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v69.html';
+export const WIDGET_URI = 'ui://qlp/question-v70.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.69';
+export const WIDGET_VERSION = '2026-10-23.70';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -228,6 +228,44 @@ a{color:inherit}
     if (data.status === 'diagPreview') { diagPreview(data.diag); return; }
     if (data.status === 'diagIntro') { diagIntro(data.diag, data.question); return; }
     if (data.status === 'diagResult') { diagResultScreen(data); return; }
+    if (data.status === 'resumeReady') {
+      // 引継ぎ済みなら初回の試験概要・免除・学習状況・計画を再表示しない。
+      // 既存の出題・採点履歴を変更せず、学習開始を利用者が選ぶまで待つ。
+      studyLid = data.learnerId || studyLid;
+      var count = Number(data.answeredCount) || 0;
+      var wrong = Number(data.wrongCount) || 0;
+      app.innerHTML = '<h2>' + esc(data.qualificationName || '資格学習') + '｜続きから再開</h2>' +
+        '<div class="notice">前回の学習記録を読み込みました。試験概要・免除・学習状況・計画を最初から設定し直す必要はありません。</div>' +
+        '<div class="stem">回答済み：' + esc(count) + '問　／　要復習：' + esc(wrong) + '問</div>' +
+        (data.pendingQuestion ? '<div class="notice">前回未回答：' + esc(data.pendingQuestion) + '（その問題から再開します）</div>' : '') +
+        '<div class="row"><button id="resumeSavedStudy">学習を再開する</button></div>';
+      saveIds();
+      var resumedStudyId = null, isResuming = false;
+      document.getElementById('resumeSavedStudy').onclick = async function(){
+        if (isResuming) return;
+        isResuming = true; this.disabled = true;
+        var btn = this; btn.textContent = '学習記録を開いています…';
+        try {
+          if (!resumedStudyId) {
+            var started = await callTool('startStudy', { qualificationName: data.qualificationName, learnerId: data.learnerId });
+            if (!started || started.error || !started.studyId) throw new Error('RESUME_STUDY_NOT_STARTED');
+            resumedStudyId = started.studyId;
+          }
+          currentStudyId = resumedStudyId; saveIds();
+          var next = await callTool('nextQuestion', { sessionId: state.sessionId });
+          if (!next || next.error || !['question','waiting','finished','remediation','confirmation_pending','sourceUnavailable'].includes(next.status)) {
+            throw new Error('RESUME_QUESTION_UNAVAILABLE');
+          }
+          render(next);
+        } catch(e) {
+          btn.disabled = false; btn.textContent = '学習を再開する';
+          var msg = document.getElementById('resumeError');
+          if (!msg) { app.insertAdjacentHTML('beforeend','<div class="notice" id="resumeError" role="alert"></div>'); msg = document.getElementById('resumeError'); }
+          msg.textContent = '続きの問題を取得できませんでした。学習記録は保持しています。もう一度押してください。';
+        } finally { isResuming = false; }
+      };
+      return;
+    }
     if (data.planReady) { planDraft = null; onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
     if (Array.isArray(data.onboarding) && data.onboarding.length) { onboardOv = data.overview || null; onboardSteps = data.onboarding; studyLearner = data.learnerId || state.sessionId; onboard(data.onboarding, []); return; }
     if (data.menu) { showMenu(data.menu); return; }
