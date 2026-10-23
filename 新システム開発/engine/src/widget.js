@@ -497,7 +497,7 @@ a{color:inherit}
       if (p.fieldQuestion) h += localBar('この分野の実践問題', Math.min(3, p.fieldQuestion), 3);
       h += '<div class="notice">全分野の実践問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
     }
-    h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</h2>';
+    h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + (q.section === '午前の部' || q.section === '午後の部' ? q.section + ' ' : '') + '問' + q.questionNumber) + '</h2>';
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
