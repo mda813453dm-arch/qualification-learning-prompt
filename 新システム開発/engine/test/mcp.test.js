@@ -98,8 +98,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v70\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-23.70');
+  assert.match(WIDGET_URI, /question-v71\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-23.71');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
@@ -563,6 +563,33 @@ test('宅建は試験概要の直下に免除→学習状況のボタン、免�
   assert.ok(overviewFor('q041').lines.some((l) => /免除制度：登録講習/.test(l)));
   assert.deepEqual(onboardingSteps('q063').map((x) => x.kind), ['status']);
   assert.ok(!overviewFor('q063').lines.some((l) => /免除制度/.test(l)));
+});
+
+test('新しい測量士補は復元要求が届いても試験概要から開始し、別資格の引継ぎIDを上書きしない', async () => {
+  const env = makeEnv();
+  const callUi = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const takken = (await callUi('startSession', { qualificationId: '宅建', sources: [] })).structuredContent;
+  assert.equal(takken.status, 'needPlan');
+  const surveyor = (await callUi('startSession', { qualificationId: '測量士補', learnerId: takken.learnerId, sources: [] })).structuredContent;
+  assert.equal(surveyor.status, 'needPlan');
+  assert.notEqual(surveyor.learnerId, takken.learnerId, '他資格のIDで旧履歴を上書きせず新しい資格に独立したIDを割り当てる');
+  assert.deepEqual(surveyor.onboarding.map(x => x.kind), ['status']);
+
+  const restored = (await callUi('restoreStudyView', { sessionId: surveyor.sessionId })).structuredContent;
+  assert.equal(restored.status, 'needPlan', '新資格の試験概要を再開済みの空画面へ置き換えない');
+  assert.deepEqual(restored.onboarding.map(x => x.kind), ['status']);
+  assert.equal(restored.qualificationId, 'q063');
+
+  const previous = (await callUi('importHandoff', { handoff: '引継ぎID：' + takken.learnerId })).structuredContent;
+  assert.equal(previous.status, 'resumeReady');
+  assert.equal(previous.qualificationId, 'q041', '宅建の保存履歴と測量士補を混在させない');
+  const resume = (await callUi('restoreStudyView', { sessionId: previous.sessionId })).structuredContent;
+  assert.equal(resume.status, 'resumeReady', '明示的な引継ぎでは従来どおり続きの画面を表示');
+  assert.equal(resume.qualificationId, 'q041');
+
+  const fromNow = (await callUi('startSession', { qualificationId: '測量士補', learnerId: surveyor.learnerId, sources: [] })).structuredContent;
+  assert.equal(fromNow.status, 'resumeReady', '同じ資格・同じIDの場合だけ学習を再開する');
+  assert.equal(fromNow.qualificationId, 'q063');
 });
 
 test('アプリ：前回の学習の記録があっても、新しいセッションは学習の開始（startStudy）をするまで出題しない', async () => {
