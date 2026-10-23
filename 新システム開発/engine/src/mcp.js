@@ -308,8 +308,8 @@ export const TOOLS = [
   },
   {
     name: 'explainSpec',
-    // /appと通常のMCPの両方でモデルから参照できるようにする。
-    appOnly: false,
+    // ChatGPT /app接続ではモデルとアプリの両方に公開。通常MCPのAPI定義は変更しない。
+    appOnly: true,
     uiOnly: false,
     meta: { ui: { visibility: ['model', 'app'] } },
     description: '【公式過去問の解説専用・必須】画面から「照合番号：E-...」付きで解説依頼が来たら、必ず最初にexplanationRefを指定してこのツールを呼ぶ。戻り値のquestion・全choices・grade.correctAnswer・explainHow・学習状況だけに基づいて正誤の理由を各選択肢ごとに説明し、通常のチャット本文へ直接表示する。AI生成の解説であることを明記。次問操作・showMenu・再採点は行わない。参照番号がない旧会話では確実に分かるsessionIdで取得する。値を推測してはいけない。取得失敗時は未検証の解説をせず、元の学習画面で再試行する案内だけを出す。図表の画像が読み取れない場合は読めない部分を推測しない。',
