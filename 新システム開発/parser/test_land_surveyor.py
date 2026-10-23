@@ -124,6 +124,26 @@ class LandSurveyorTest(unittest.TestCase):
             adapter.parse_questions(doc, "午後の部")
         self.assertEqual(ctx.exception.code, "CHOICE_SEQUENCE_NOT_VERIFIED")
 
+    def test_line_drawn_diagram_is_cropped_and_text_only_page_has_no_figures(self):
+        import fitz
+        doc = fitz.open()
+        only_text = doc.new_page(width=595, height=842)
+        only_text.insert_text((70, 90), "本文のみの公式問題", fontname="japan", fontsize=11)
+        diagram_page = doc.new_page(width=595, height=842)
+        # 表・図の罫線はPDFのdrawingsでは幅0または高さ0になる。
+        for y in (210, 270, 330):
+            diagram_page.draw_line((130, y), (420, y), color=(0, 0, 0))
+        for x in (130, 275, 420):
+            diagram_page.draw_line((x, 210), (x, 330), color=(0, 0, 0))
+        plain = adapter._verified_figure_crops([(1, (40, 50, 550, 600))], doc)
+        self.assertEqual(plain, [], "文字だけを図にしない")
+        figures = adapter._verified_figure_crops([(2, (40, 50, 550, 600))], doc)
+        self.assertEqual(len(figures), 1)
+        page, bounds = figures[0]
+        self.assertEqual(page, 2)
+        self.assertLess(bounds[3]-bounds[1], 160, "表の罫線だけを切り出す")
+        self.assertLess(bounds[2]-bounds[0], 330)
+
     def test_2022_2023_answer_tables_reject_other_year_keys(self):
         for year in (2022, 2023):
             for section in ("午前の部", "午後の部"):
