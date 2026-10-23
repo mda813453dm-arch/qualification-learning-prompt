@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v62.html';
+export const WIDGET_URI = 'ui://qlp/question-v63.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.62';
+export const WIDGET_VERSION = '2026-10-23.63';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1137,13 +1137,46 @@ a{color:inherit}
     }
   }
   // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
+  async function verifiedImageContext(url){
+    var target = safeUrl(url);
+    if (!target) throw new Error('OFFICIAL_IMAGE_URL_INVALID');
+    var response = await fetch(target, { mode: 'cors', credentials: 'omit' });
+    if (!response.ok) throw new Error('OFFICIAL_IMAGE_UNAVAILABLE');
+    var blob = await response.blob();
+    if (blob.type !== 'image/png' || blob.size < 100 || blob.size > 6000000) throw new Error('OFFICIAL_IMAGE_INVALID');
+    var dataUrl = await new Promise(function(resolve,reject){
+      var reader = new FileReader();
+      reader.onload = function(){resolve(reader.result);};
+      reader.onerror = function(){reject(new Error('OFFICIAL_IMAGE_READ_FAILED'));};
+      reader.readAsDataURL(blob);
+    });
+    return { type:'image', data: String(dataUrl).split(',')[1], mimeType:'image/png',
+      annotations:{ audience:['assistant'] } };
+  }
   async function requestAdaptiveExplanation(ctx){
-    var q = ctx.question;
+    var q=ctx.question, g=ctx.grade;
+    if (!q || !g || q.questionId !== g.questionId) throw new Error('EXPLANATION_BINDING_MISMATCH');
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
-    // モデルが過去のセッションIDを見失っていても、保存済みの問と正答を一意に特定する。
-    // 参照番号は1時間有効なランダム識別子。利用者のチャットに内部ツール指示や本来のIDは表示しない。
-    if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || ''))) throw new Error('EXPLANATION_REF_MISSING');
-    await ask(label + 'の解説をお願いします。（学習セッションID〈一時参照番号〉：' + ctx.explanationRef + '）');
+    var data = {
+      type:'verifiedOfficialExplanation', year:q.year, section:q.section, questionNumber:q.questionNumber,
+      qualificationName:ctx.qualificationName || '', fieldName:q.fieldName || '',
+      stem:q.stem || '', choices:Array.isArray(q.choices) ? q.choices : [],
+      stemMode:q.stemMode || 'text', choiceMode:q.choiceMode || 'text',
+      correctAnswer:g.correctAnswer, selected:g.selected, correct:!!g.correct,
+      explainHow:g.explainHow || '', journey:ctx.journey || {},
+      sessionId:ctx.sessionId, studyId:ctx.studyId, learnerId:ctx.learnerId
+    };
+    var blocks = [{type:'text',text:JSON.stringify(data),annotations:{audience:['assistant']}}];
+    var figures = q.figures || [];
+    for (var i=0;i<Math.min(figures.length,5);i++){
+      blocks.push(await verifiedImageContext(figures[i].url));
+    }
+    if ((data.stemMode === 'official_image' || data.choiceMode === 'official_image') && !figures.length){
+      throw new Error('OFFICIAL_IMAGE_REQUIRED');
+    }
+    if (!bridgeReady) await ready;
+    await rpc('ui/update-model-context',{content:blocks});
+    await ask(label + 'の各選択肢の理由を、学習状況に合わせて解説してください。');
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
