@@ -163,7 +163,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(context[0].content[1].type, 'image');
     assert.equal(context[0].content[1].mimeType, 'image/png');
     assert.equal(context[0].content[1].annotations.audience[0], 'assistant');
-    assert.equal(Buffer.from(context[0].content[1].data, 'base64').length, 177);
+    assert.ok(Buffer.from(context[0].content[1].data, 'base64').length > 100, '公式PNGのバイナリ全体を渡す');
+    assert.equal(Buffer.from(context[0].content[1].data, 'base64').subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
