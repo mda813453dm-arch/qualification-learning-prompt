@@ -150,7 +150,7 @@ a{color:inherit}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !['waiting', 'finished', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -164,6 +164,45 @@ a{color:inherit}
     saveIds();
     hasView = true;
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
+    if (data.error || data.status === 'toolError') {
+      // 未対応の資格や導入画面の取得失敗を「問題を準備中」と偽装しない。
+      var issue = String(data.error || 'UNEXPECTED_START_RESULT');
+      var nameError = issue === 'QUALIFICATION_NOT_SUPPORTED' || issue === 'QUALIFICATION_INVALID';
+      var message = nameError ? '資格名を認識できませんでした。学習する資格名を入力してください。' :
+        issue === 'ONBOARDING_UNAVAILABLE' ? '試験概要と学習状況の画面を取得できませんでした。学習記録は保持しています。' :
+        issue === 'DAILY_LIMIT' ? '本日の利用上限に達しました。学習記録は保持しています。' :
+        issue === 'ACCESS_CODE_REQUIRED' ? '利用コードの入力が必要です。' :
+        '学習画面を開けませんでした。学習記録は保持しています。';
+      app.innerHTML = '<h2>学習の開始を確認してください</h2><div class="notice" role="alert">' + esc(message) + '</div>' +
+        (nameError ? '<label for="retryQualification">学習する資格名</label><input id="retryQualification" placeholder="例：宅建" autocomplete="off" maxlength="100" style="display:block;width:100%;font:inherit;padding:12px;margin:8px 0 14px">' +
+          '<button id="retryQualificationStart">この資格で開始する</button>' :
+          data.sessionId || state.sessionId ? '<div class="row"><button id="retryInit">学習画面を再取得する</button></div>' : '') +
+        ((data.sessionId || state.sessionId) && !nameError ? endBar() : '');
+      var retryName = document.getElementById('retryQualificationStart');
+      if (retryName) retryName.onclick = async function(){
+        var q = document.getElementById('retryQualification').value.trim();
+        if (!q) { document.getElementById('retryQualification').focus(); return; }
+        this.disabled = true;
+        try {
+          var started = await callTool('startSession', { qualificationId: q, sources: [] });
+          if (!started || started.error || !Array.isArray(started.onboarding) || !started.onboarding.length) throw new Error('ONBOARDING_UNAVAILABLE');
+          render(started);
+        } catch (e) {
+          this.disabled = false;
+          var n = document.getElementById('startRetryError');
+          if (!n) { app.insertAdjacentHTML('beforeend','<div class="notice" id="startRetryError" role="alert"></div>'); n = document.getElementById('startRetryError'); }
+          n.textContent = 'この資格の学習を開始できませんでした。資格名を確認して、同じボタンから再試行できます。';
+        }
+      };
+      var retryInit = document.getElementById('retryInit');
+      if (retryInit) retryInit.onclick = function(){ nextBelow(function(){
+        return callTool('nextQuestion', { sessionId: state.sessionId }).then(function(v){
+          if (!v || v.error || (!v.question && !v.onboarding && !v.notice && !['waiting','finished','sourceUnavailable','restoreIdle','remediation'].includes(v.status))) throw new Error('START_VIEW_UNAVAILABLE');
+          render(v);
+        });
+      }); };
+      bindEnd(); return;
+    }
     if (data.status === 'restoredGrade') {
       // 採点済みの問を先に同一問題として描き、その上に正答と続きの操作を復元する。
       render({ ...data, status: 'question', grade: undefined, next: undefined });
@@ -365,7 +404,13 @@ a{color:inherit}
       };
       bindEnd(); return;
     }
-    if (data.status === 'waiting' || data.status === 'finished' || !data.question) {
+    if (data.status === 'reviewEmpty') {
+      app.innerHTML = '<div class="notice">' + esc(data.notice || '間違えた問題はまだありません。') + '</div>' +
+        '<div class="row"><button id="reviewNext">次の公式過去問へ</button></div>' + endBar();
+      document.getElementById('reviewNext').onclick = function(){ nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId }).then(render); }); };
+      bindEnd(); return;
+    }
+    if (data.status === 'waiting' || data.status === 'finished') {
       // 待つ間・解き終えたときも、次にできることをボタンで出す（番号の選択肢の文は出さない）
       var waiting = data.status === 'waiting';
       var wh = '<div class="stem">' + esc(data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
@@ -379,6 +424,23 @@ a{color:inherit}
       wb('wChk', function(){ ask((studyField || '今の分野') + 'の確認問題（AIが作った問題）を出してください。'); });
       bindEnd();
       return;
+    }
+    if (!data.question) {
+      // 予期しない状態を「問題を準備中」「総復習」扱いにしない。
+      // 利用者が学習画面を再取得できるよう、次の問題を勝手に進めず回復経路を残す。
+      var hasSession = !!(data.sessionId || state.sessionId);
+      var msg = data.status === 'needPlan'
+        ? '試験概要・免除・学習状況の画面をまだ表示できていません。'
+        : '学習画面の表示内容を取得できませんでした。';
+      app.innerHTML = '<div class="notice" role="alert">' + esc(msg) + '</div>' +
+        (hasSession ? '<div class="row"><button id="loadCurrentStudy">現在の学習画面を再取得する</button></div>' : '') +
+        (hasSession ? endBar() : '<div class="notice">「宅建」など、学習する資格名を送って開始してください。</div>');
+      var load = document.getElementById('loadCurrentStudy');
+      if (load) load.onclick = function(){ nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId }).then(function(v){
+        if (!v || v.error || (!v.question && !v.onboarding && !v.notice && !['waiting','finished','sourceUnavailable','restoreIdle','remediation'].includes(v.status))) throw new Error('STUDY_VIEW_UNAVAILABLE');
+        render(v);
+      }); }); };
+      bindEnd(); return;
     }
     if (data.fieldChanged && !data.repeated && data.question.kind === 'new' && !data.itemAsked && (studyLid || state.sessionId)) {
       app.innerHTML = '<div class="notice"><b>' + esc(data.fieldNotice || '分野が変わります') + '</b></div>';
