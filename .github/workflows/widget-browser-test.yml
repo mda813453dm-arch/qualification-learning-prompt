@@ -17,7 +17,11 @@ permissions:
 jobs:
   widget:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Official Playwright image carries matching Chromium/WebKit shared libraries.
+    # Runner libraries alone are insufficient, and apt mirrors can exceed CI timeout.
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -38,13 +42,12 @@ jobs:
       - name: 試験専用ブラウザを準備（本番依存には追加しない）
         run: |
           npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
-          # ubuntu-24.04 runner の既存ライブラリを利用する。
-          # --with-deps は外部aptミラーが低速な場合、実DOM試験前に10分でタイムアウトする。
-          # 不足ライブラリがあればブラウザ起動試験で検知する。
-          node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
+          # The container already includes the exact browser engines and system libraries.
+          # Verify installation without installing ubuntu apt packages.
+          PLAYWRIGHT_BROWSERS_PATH=/ms-playwright node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
       - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
         run: |
-          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
+          PLAYWRIGHT_BROWSERS_PATH=/ms-playwright PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-confirmation-browser.mjs
 # 2026-10-20T08:44:38Z rerun: the app showed no buttons after the 行政書士 deploy
