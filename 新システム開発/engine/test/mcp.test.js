@@ -131,7 +131,7 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   // 実ChatGPTでexplainSpecが登録済みツール一覧にない場合でも、既存のnextQuestionから読取可能。
   // 特別なsessionId=照合番号は次問進行ではなく公式解説資料のみを返す。
   const fallback = (await rpc(env, 'tools/call', { name: 'nextQuestion', arguments: { sessionId: context.explanationRef } }, { path: '/app' })).body.result;
-  assert.equal(fallback.isError, undefined);
+  assert.equal(fallback.isError, false, '公式資料を正しく取得した場合は明示的に成功を返す');
   assert.equal(fallback.structuredContent.status, 'explanationContext');
   assert.equal(fallback.structuredContent.question.questionId, q.questionId);
   assert.equal(fallback.structuredContent.grade.correctAnswer, 3);
