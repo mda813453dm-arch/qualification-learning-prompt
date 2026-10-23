@@ -115,7 +115,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
     await ui.getByRole('button', { name: '次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
-    assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1, '解説後の次問表示は画面から直接取得され、AIの追加呼出しに依存しない');
+    assert.ok(toolCalls.filter(c => c.name === 'nextQuestion').length <= 1, '次問は採点時の先取り結果か画面の取得のみで表示し、AIに重複取得させない');
     assert.equal(await page.evaluate(() => window.messages.length), 2, '解説後の次問表示はAIへの依頼に依存しない');
     for (const [number, answer] of [[2, '1'], [3, '4']]) {
       await ui.locator(`input[name=ans][value="${answer}"]`).check();
