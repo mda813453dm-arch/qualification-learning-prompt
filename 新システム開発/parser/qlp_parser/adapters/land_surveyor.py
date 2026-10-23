@@ -214,10 +214,14 @@ def _verified_figure_crops(crops, doc):
             for img in page.get_images(full=True):
                 rects.extend(r for r in page.get_image_rects(img)
                              if r.width>30 and r.height>25)
+            # 単一の線は高さ・幅の一方が0の矩形となる。is_emptyで落とすと
+            # 線だけで描かれた測量図・表を見落とすため、長さで判定する。
             lines = [fitz.Rect(d.get("rect") or (0,0,0,0)) for d in page.get_drawings()]
-            lines = [r for r in lines if not r.is_empty and r.y0>=25 and r.y1<page.rect.y1-25]
+            lines = [r for r in lines if (r.width>15 or r.height>15) and
+                     r.y0>=25 and r.y1<page.rect.y1-25]
             rects.extend(r for r in lines if r.width>60 and r.height>28)
-            thin = [r for r in lines if (r.width>45 and r.height<=6) or (r.height>35 and r.width<=6)]
+            thin = [r for r in lines if (r.width>45 and r.height<=6) or
+                    (r.height>35 and r.width<=6)]
             if len(thin)>=4:
                 combined = fitz.Rect(thin[0])
                 for r in thin[1:]: combined |= r
