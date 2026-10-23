@@ -77,7 +77,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/notifications/initialized') deliver({ _meta: { qlp: { ...first, learnerId: session.learnerId, studyId: study.studyId } } });
         else if (m.method === 'tools/call') reply(await window.engineTool(m.params.name, m.params.arguments));
         else if (m.method === 'ui/update-model-context') {
-          assert.ok(m.params.content.every(c => c.annotations?.audience?.length === 1 && c.annotations.audience[0] === 'assistant'));
+          if (!m.params.content.every(c => c.annotations?.audience?.length === 1 && c.annotations.audience[0] === 'assistant')) window.protocolErrors = (window.protocolErrors || []).concat('non-private context');
           window.hiddenContext = m.params; window.droppedContext++; reply({});
         }
         else if (m.method === 'ui/message') {
