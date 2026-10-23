@@ -110,6 +110,23 @@ try {
     saved.set(MOJ+info.name,bytes);
   }
   console.log('SHA-256 validated for all 12 official PDF files');
+  if (textUpgrade) {
+    // 1問でも読み取りが確定しないのに、既存の共有問題を再書込しない。
+    // 2025午前問1はユーザー実機で「本文・選択肢が画像」と確認された対象。
+    const pins2025 = pins.get(2025);
+    const question = officialFile(pins2025['午前の部']);
+    const answer = officialFile(pins2025.answer);
+    const audited = await parseOfficial({
+      year:2025,section:'午前の部',
+      question:{url:MOJ+question.name,sha256:pins2025['午前の部'],bytes:saved.get(MOJ+question.name)},
+      answer:{url:MOJ+answer.name,sha256:pins2025.answer,bytes:saved.get(MOJ+answer.name)},
+    });
+    const q1 = audited.result.packets.find(p=>p.questionNumber===1);
+    assert(q1 && q1.stemMode==='text' && q1.choiceMode==='text' &&
+      q1.figures.length===0 && q1.stem.includes('トータルステーション') &&
+      q1.choices.length===5, '2025_MORNING_Q1_TEXT_PREFLIGHT_FAILED');
+    console.log('MORNING_2025_Q1_VERIFIED_TEXT',q1.stem.length,'characters');
+  }
   const store = commit ? new GcpStore({bucket:'qualification-learning-qlp-figures'}) : new MemoryStore();
   const before = await officialLibrary(store,cat,PV,Date.now());
   const wanted = cat.validatedUploadYears.slice().sort((a,b)=>b-a).flatMap((year)=>
