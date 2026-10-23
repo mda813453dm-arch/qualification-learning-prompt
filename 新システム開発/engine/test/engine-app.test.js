@@ -98,8 +98,8 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
 
 test('取り込みジョブが完了でも利用可能な問題が0件なら全問終了と表示しない', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
-  const { sessionId } = await startSession(env);
-  const key = 'job/' + encodeURIComponent(SRC.qualificationId);
+  const { sessionId, learnerId } = await startSession(env);
+  const key = 'job/' + encodeURIComponent(SRC.qualificationId + '~' + learnerId);
   const job = await env.STORE.get(key, 'json');
   assert.equal(job.state, 'done');
   // 本番で問題保存が見つからない状態を再現。学習履歴や資格は変更しない。
