@@ -259,7 +259,7 @@ export const TOOLS = [
   },
   {
     name: 'importHandoff',
-    description: '引継ぎIDまたは引継ぎデータがある場合に最初に呼ぶ。保存済みの学習履歴から専用の再開画面を開き、初回の試験概要・免除・学習状況は聞き直さない。公式PDFは取り直さない。',
+    description: '引継ぎIDまたは引継ぎデータを受けたら先に呼ぶ。成功したら返されたsessionIdでrestoreStudyViewを1回呼び、既存の学習画面に「学習を再開する」ボタンを表示する。初回の試験概要・免除・学習状況・学習計画をやり直さない。startSessionは呼ばない。',
     inputSchema: {
       type: 'object',
       required: ['handoff'],
@@ -401,7 +401,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v67.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v68.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v69.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary', 'importHandoff']);
+const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -466,7 +466,7 @@ export function appInstructions() {
   const confirmationFlow = '\n【通常の確認問題】解説あり／確認問題からの選択後は、同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
   const explanationFlow = '\n【採点後のAI解説：必ず参照照合】画面から「照合番号：E-...」を含む解説依頼が届いたら、モデルに既に公開されているnextQuestion({sessionId: 照合番号})で採点済み問題の解説資料を読み取る。この番号を渡すときに限り読取専用であり、通常の次問処理を実行しない。explainSpecがモデル側にあれば代わりに利用してもよい。問題文・全選択肢・公式正答・理解度・苦手履歴を同一セッションから取得し、戻り値のquestion.questionId === grade.questionIdを確認する。正答番号・年度・問番号を推測しない。取得した根拠に基づき全選択肢の理由と法的根拠を学習状況に合わせ通常のチャット本文で説明する（AI生成の解説と明示）。ツールが失敗した場合、直前会話や隠しモデル文脈だけで解説を生成せず、学習画面の「解説を再表示」から再取得するよう案内する。解説の途中でnextQuestion・submitAnswer・showMenu・startSessionを呼ばない。次問・終了操作は元の学習画面のボタンが管理する。公式図表が必要で画像を確認できない場合は推測で内容を補わない。\n';
   const sharingFlow = '\n【公式過去問の共有保存】共有キャッシュで確認できた実際の年度と資格ごとの試験区分（宅建は本試験、2020・2021年度は10月／12月等）だけを学習画面で表示する。資格と関係のない午前／午後などの区分を追加しない。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFファイルが添付されたときだけ、表紙の年度・部と正答の同一性を照合しattachPdfを使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\n';
-  const handoffFlow = '\n【引継ぎからの再開】引継ぎIDまたは引継ぎデータが入力されている場合、初回用のstartSessionよりもimportHandoffを優先する。戻り値status=resumeReadyで学習画面に再開ボタンが出るため、試験概要・免除・学習状況・学習計画を繰り返さない。利用者が画面で学習開始を選択するまで、AIは出題を開始しない。\n';
+  const handoffFlow = '\n【引継ぎからの再開】引継ぎIDや引継ぎデータを受け取ったら、startSessionを呼ばずimportHandoffを呼ぶ。成功後に返されたsessionIdをそのままrestoreStudyView({sessionId})へ渡し、登録済みの表示画面に「学習を再開する」ボタンを出す。旧版の接続環境ではimportHandoffだけでは画面が出ないので、restoreStudyViewの呼出しを絶対に省略しない。免除・試験概要・学習状況・計画を聞き直さず、本人が再開ボタンを押すまで待つ。\n';
   return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow + sharingFlow + handoffFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
@@ -474,7 +474,7 @@ export function appInstructions() {
 const APP_START_DESC = '資格の学習準備を始める。公式PDFは自動取得できる資格だけ裏で取り込む。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（取得可能ならエンジンが公式サイトから集め、必要な資格は後から本人添付を案内する）。利用者がユーザー入力が「@資格学習 宅建」の場合は qualificationId に必ず「宅建」のみを指定する。「資格学習」はアプリ名であり資格名ではない。資格名が読み取れないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  importHandoff: '引継ぎデータやIDから再開するときはimportHandoffを使用する。初回の試験概要・免除・学習状況ではなく再開用画面を表示する。startSessionを追加で呼ばず再開ボタンを待つ。',
+  importHandoff: '引継ぎデータやIDから再開するときはimportHandoffを使用し、戻り値のsessionIdでrestoreStudyViewを必ず1回呼ぶ。復元した画面の「学習を再開する」を待つ。初回の試験概要・免除・学習状況は出さず、startSessionも呼ばない。',
   nextQuestion: '【公式解説資料の安全な取得】学習画面から「照合番号：E-英数字16文字」が届いた場合、説明する前に、モデルから既に利用可能なnextQuestion({sessionId:照合番号})を呼ぶ。この特殊な照合番号では次の問題へ絶対に進まず、採点済み問題と公式正答だけを読み取る。戻り値のstatusがexplanationContextでquestion.questionIdとgrade.questionIdが一致したら、AI作成の解説として全選択肢の正誤理由を学習状況に応じてチャットで説明する。データが読めなければ推測しない。解説資料の再取得にexplainSpecがモデル側で利用可能なら、その読取専用ツールを使ってもよい。照合番号で資料を読むときは、実セッションIDの入力やユーザーへの問題文の再添付を要求しない。【通常の出題】【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】公式過去問の解説依頼には画面で示された照合番号を使って必ずexplainSpecを先に呼び、サーバーの採点済み問題に基づいて通常チャット本文で説明する。非表示文脈だけで採点や解説をしない。次問・終了ボタンは画面で管理する。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）の本文・全選択肢・固定した正答を registerConfirmationQuestion に登録して、第1問/全3問の画面で答えを待つ。確認問題をチャット本文に書かない。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、解説を省き、registerConfirmationQuestion で第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式過去問のAI解説本文は会話に表示し、次問と終了の選択ボタンは既存の学習画面に保持する。',
   startSession: '【引継ぎIDがある場合はimportHandoffを優先する。startSessionは初回用】初回学習の【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールは必ず試験概要と学習条件の画面を先に出す。公式サイトから自動取り込みできる資格だけ裏で取得する。PDFの利用者添付が必要な資格は、承認後の問題画面で添付方法を案内する。「セッション」など内部用語は利用者に見せない。②試験概要はエンジンが画面に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。③このツールの結果として、エンジンが画面に試験概要を出し、その直下に免除（制度がある資格だけ）と学習状況のボタンを出す（nextQuestion は呼ばない）。AIは showMenu（kind=exempt / status）を呼ばず、ChatGPT標準の質問・選択肢の画面も使わず、押されるまで待つ。④答え（「免除：…/学習状況：…」）がチャットに届いてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。⑤利用者が「学習計画の希望：…」と送ってきたら、その希望と、試験概要・出題数・学習状況を踏まえて学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は希望に合わせ、無ければAI調整型）。承認は文章で聞かず、必ず showMenu（kind=plan）を呼び、承認のボタンが押されたら startStudy を呼ぶ。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
