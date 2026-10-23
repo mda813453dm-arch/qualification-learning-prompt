@@ -339,6 +339,29 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '現在の学習画面を再取得する' }).click();
     await ui.locator('input[name=ans][value="3"]').waitFor();
 
+    // 引継ぎIDからの再開では初期の試験概要や免除・学習状況を出さない。
+    await page.evaluate(() => {
+      window.failNextCalls = 0;
+      window.recoverSkipped = true;
+      window.deliver({ structuredContent: {
+        status: 'resumeReady', learnerId: 'testlearner', sessionId: 'test-session',
+        qualificationName: '宅地建物取引士（宅建）', answeredCount: 4, wrongCount: 2,
+        pendingQuestion: null,
+      } });
+    });
+    await ui.getByRole('heading', { name: '宅地建物取引士（宅建）｜続きから再開' }).waitFor();
+    assert.equal(await ui.getByText('■試験概要').count(), 0, '再開時は試験概要を表示しない');
+    assert.equal(await ui.getByText('免除制度を利用しますか？').count(), 0, '免除の再質問をしない');
+    assert.match(await ui.locator('#app').innerText(), /回答済み：4問.*要復習：2問/);
+    const beforeResume = await page.evaluate(() => window.calls.length);
+    await ui.getByRole('button', { name: '学習を再開する' }).click();
+    await ui.getByText('試験用の問題文').waitFor();
+    const resumeCalls = await page.evaluate(i => window.calls.slice(i).filter(m => m.method === 'tools/call').map(m => ({ name: m.params.name, args: m.params.arguments })), beforeResume);
+    assert.equal(resumeCalls.filter(x => x.name === 'startStudy').length, 1, '学習時間の開始は利用者の明示操作で1回だけ');
+    assert.equal(resumeCalls.filter(x => x.name === 'nextQuestion').length, 1, '次問をエンジンが1回だけ選択');
+    assert.equal(resumeCalls.filter(x => x.name === 'startSession').length, 0, '初回の学習セッションを作り直さない');
+    assert.equal(resumeCalls.find(x => x.name === 'startStudy').args.learnerId, 'testlearner');
+
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
