@@ -435,7 +435,7 @@ export function forModel(body) {
   if (body.status === 'resumeReady') {
     return {
       status: 'resumeReady', sessionId: body.sessionId, learnerId: body.learnerId,
-      qualificationName: body.qualificationName, answeredCount: body.answeredCount,
+      qualificationId: body.qualificationId, qualificationName: body.qualificationName, answeredCount: body.answeredCount,
       wrongCount: body.wrongCount, pendingQuestion: body.pendingQuestion,
       howToProceed: '引継ぎ済みの記録と、再開用の操作ボタンを画面に表示しました。初回の試験概要や学習条件は聞かず、利用者の操作を待ってください。',
     };
