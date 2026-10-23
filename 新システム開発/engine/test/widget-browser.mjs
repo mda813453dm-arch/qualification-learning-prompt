@@ -113,6 +113,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
+    await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
+    // 新規資格の導入画面を、起動直後に旧セッションのrestoreIdleで上書きしない。
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => window.calls.filter(c => c.params?.name === 'restoreStudyView').length), 0,
+      '新規の資格／初回学習では自動復元APIを呼ばない');
+    assert.equal(await ui.getByRole('button', { name: '2 免除を利用しない' }).count(), 1,
+      '初回用の免除・学習状況確認画面を維持する');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
     await ui.getByRole('button', { name: '4 過去問演習中' }).click();
     // 押下結果が同じ位置に可視表示され、直後の二度押しも旧画面では無視される。
