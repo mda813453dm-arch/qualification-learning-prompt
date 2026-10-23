@@ -63,7 +63,7 @@ test('無応答は有限時間で案内に変わり、後から結果が来れ�
   const h = host();
   [...h.timers.values()].find((t) => t.ms === 5000).fn();
   await new Promise(setImmediate);
-  assert.match(h.app.innerHTML, /接続を確認できません/);
+  assert.match(h.app.innerHTML, /学習画面との接続が切れています/);
   h.emit({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: menuResult });
   assert.match(h.app.innerHTML, /始めます/);
   [...h.timers.values()].find((t) => t.ms === 10000).fn();
