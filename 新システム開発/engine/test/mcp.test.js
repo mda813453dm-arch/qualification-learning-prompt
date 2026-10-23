@@ -72,10 +72,16 @@ test('トークンはヘッダーか URL で受け取り、どちらも無けれ
   assert.equal(get.status, 405);
 });
 
-test('従来の解説方針呼出しもAIが読めるcontentで返し、UI専用メタデータに隠さない', async () => {
-  const r = await rpc(makeEnv(), 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
+test('解説資料の読取はUI専用、従来の解説方針互換は学習画面には返すがモデルへ追加ツールとして公開しない', async () => {
+  const env = makeEnv();
+  const tools = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
+  const t = tools.find(x => x.name === 'explainSpec');
+  assert.ok(t);
+  assert.deepEqual(t._meta.ui.visibility, ['app']);
+  const r = await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
   const value = r.body.result;
-  assert.match(JSON.parse(value.content[0].text).explainHow, /マークダウンの表/);
+  assert.deepEqual(value.content, []);
+  assert.match(value.structuredContent.explainHow, /マークダウンの表/);
   assert.match(value.structuredContent.order, /showMenu/);
   assert.equal(value._meta, undefined);
 });
