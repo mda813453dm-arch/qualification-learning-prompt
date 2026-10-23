@@ -69,7 +69,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'explainSpec') reply({ structuredContent: {
-            status: 'explanationContext', sessionId: 'test-session', question: question.question,
+            status: 'explanationContext', explanationRef: 'E-abcdefghABCDEFGH', sessionId: 'test-session', question: question.question,
             grade: { questionId: question.question.questionId, correct: true, selected: '3', correctAnswer: '3' }
           } });
           else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
