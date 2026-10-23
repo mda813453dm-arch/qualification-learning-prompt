@@ -576,6 +576,23 @@ const ITEM_HOW = 'display をそのまま表示し、📍今回の位置・🎯�
 const RESUME_MENU = ['---', '■続きから始めますか？', '1：始めます'].join('\n');
 const RESUME_HOW = '読めた内容を短く確認したあと、「続きから始めるときは『始めます』と入力してください。」の代わりに resumeMenu を1文字も変えずに付ける（後ろに何も書かない）。';
 
+/** 引継ぎ済みの学習者は初回の試験概要・免除・学習状況・計画を繰り返さない。
+ * 前回の記録と現在の未回答問だけを表示し、開始の合図を受けるまで時間計測・出題はしない。 */
+function resumeReadyView(id, state) {
+  const catalog = Object.values(CATALOG).find((x) => x.qualificationId === state.qualificationId);
+  const history = Object.values(state.history ?? {});
+  const wrong = history.filter((h) => ['wrong', 'recall_failure'].includes(h.result)).length;
+  return {
+    status: 'resumeReady', sessionId: id, learnerId: state.learnerId,
+    qualificationId: state.qualificationId, qualificationName: catalog?.name ?? state.qualificationId,
+    answeredCount: history.length, wrongCount: wrong,
+    pendingQuestion: pendingLabel(state), restored: history.length,
+    resumeMenu: RESUME_MENU,
+    howToShow: '保存済みの学習状況だけを表示します。試験概要・免除・学習状況の初回質問や学習計画の承認をやり直しません。画面の「学習を再開する」を押すと、学習時間の計測を開始して未回答問または次の公式過去問へ進みます。',
+  };
+}
+
+
 // ChatGPTは、返答が区切り線のあとの「質問＋番号の選択肢」で終わるとボタンにする（後ろに案内の行があるとボタンにならない）
 const WAIT_MENU = ['---', '■取り込みを待つ間、どうしますか？', '1：今の項目の解説を読む', '2：今の項目の確認問題を解く', '3：取り込みの進み具合を確認する'].join('\n');
 const WAIT_AFTER = ['---', '■次はどうしますか？', '1：取り込みの進み具合を確認する', '2：続けて解説を読む', '3：確認問題を解く'].join('\n');
@@ -1159,13 +1176,10 @@ async function route(request, env, url, now) {
         await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
         await markEngineSources(env, sources);
       }
-      return json(201, { sessionId: restored.id, learnerId,
+      return json(201, { ...resumeReadyView(restored.id, restored.state),
         job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)),
-        ...PLAN_UI, ...(env.QLP_WIDGET ? {
-          status: 'needPlan', onboarding: onboardingSteps(b.qualificationId),
-          overview: await libraryOverview(env, b.qualificationId, now),
-          howToProceed: appStartHint(), planMenu: undefined,
-        } : {}) });
+        ...(env.QLP_WIDGET ? {} : { ...PLAN_UI, ...{ resumeMenu: RESUME_MENU, howToShow: RESUME_HOW } }),
+      });
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
@@ -1857,14 +1871,15 @@ async function route(request, env, url, now) {
     if (state.learnerId || b.sources) job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
     await saveSession(env, id, state, now);
-    if (state.learnerId) await env.STORE.put(lastSessionKey(state.learnerId), id, { expirationTtl: SESSION_TTL_S });
+    if (state.learnerId) {
+      await env.STORE.put(lastSessionKey(state.learnerId), id, { expirationTtl: SESSION_TTL_S });
+      // 引継ぎは新しい学習回の入口。「再開する」の承認までは勝手に出題・時間計測しない。
+      await env.STORE.put(studyOpenKey(state.learnerId), String(now), { expirationTtl: STUDY_TTL_S });
+    }
     return json(201, {
-      sessionId: id,
-      restored: Object.keys(state.history).length,
+      ...resumeReadyView(id, state),
       withheld: state.withheld.map((w) => ({ ...w, message: WITHHELD_MESSAGES[w.reason] })),
       job: jobView(job),
-      resumeMenu: RESUME_MENU,
-      howToShow: RESUME_HOW,
     });
   }
 
