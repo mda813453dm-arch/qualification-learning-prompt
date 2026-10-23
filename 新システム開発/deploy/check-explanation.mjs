@@ -20,8 +20,9 @@ assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
 assert.ok(!resource.contents[0].text.includes('setWidgetState'), '画面からモデル文脈の添付を要求しない');
-assert.ok(resource.contents[0].text.includes('ui/update-model-context'), '解説資料を利用者の会話に出さずモデルへ渡す');
-assert.ok(resource.contents[0].text.includes("audience:['assistant']"), 'モデル文脈の可視性はAI限定とする');
+assert.ok(resource.contents[0].text.includes("content:[{type:'text',text:visible}].concat(blocks)"), '解説依頼と公式根拠を同じui/messageで送る');
+assert.ok(resource.contents[0].text.includes("audience:['assistant']"), '利用者に表示しない根拠をAIへ渡す');
+assert.ok(!resource.contents[0].text.includes("rpc('ui/update-model-context',{content:blocks})"), 'ACKしたのに文脈が欠落する経路に依存しない');
 assert.ok(!resource.contents[0].text.includes("学習セッションID〈一時参照番号〉："), '再接続用の内部番号をチャットへ送らない');
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
@@ -36,4 +37,4 @@ assert.equal(missingRef.isError, true);
 assert.equal(missingRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '参照番号だけのモデル呼出しが公開され、未知の番号は安全に拒否');
 const oldSchemaRef = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: 'E-0000000000000000' } });
 assert.equal(oldSchemaRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '旧ChatGPTツールのsessionId欄でも一時参照番号を復元できる');
-console.log(`PASS deployed explanation metadata, model-visible spec and read-only context route (${WIDGET_VERSION})`);
+console.log(`PASS deployed explanation metadata, single-message private evidence and read-only context route (${WIDGET_VERSION})`);
