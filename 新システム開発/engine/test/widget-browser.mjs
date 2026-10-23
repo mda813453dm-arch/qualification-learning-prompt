@@ -15,6 +15,7 @@ const onboarding = { status: 'needPlan', learnerId, sessionId,
 const question = { status: 'question', sessionId, question: {
   questionId: 'test:2025:main:1', year: 2025, questionNumber: 1, fieldName: '測量に関する法規',
   stem: '試験用の問題文', choices: ['選択肢A', '選択肢B', '選択肢C', '選択肢D'],
+  stemMode: 'official_image', choiceMode: 'official_image', figures: [{ url: 'https://qlp.test/figure.png' }],
 } };
 const nextQuestion = { status: 'question', sessionId, question: {
   ...question.question, questionId: 'test:2025:main:2', questionNumber: 2,
@@ -27,6 +28,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
+    await page.route('https://qlp.test/figure.png', route => route.fulfill({
+      contentType: 'image/png', headers: { 'access-control-allow-origin': '*' },
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAWHRFWHRTb3VyY2UAT2ZmaWNpYWwgdGVzdCBpbWFnZSByZWZlcmVuY2U6IHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4d9amawAAABRJREFUeJxj/P//PwMMMDEgAdwcAJZuAwXyJb75AAAAAElFTkSuQmCC', 'base64'),
+    }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, question, nextQuestion }) => {
       window.calls = []; window.followups = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
@@ -154,6 +159,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(context.length, 1, '非表示文脈は送信前に1回だけ渡す');
     assert.equal(context[0].content[0].annotations.audience[0], 'assistant');
     assert.equal(JSON.parse(context[0].content[0].text).correctAnswer, '3');
+    assert.equal(context[0].content.length, 2, 'スキャン原本の公式PNGを文字情報と共にAIへ渡す');
+    assert.equal(context[0].content[1].type, 'image');
+    assert.equal(context[0].content[1].mimeType, 'image/png');
+    assert.equal(context[0].content[1].annotations.audience[0], 'assistant');
+    assert.equal(Buffer.from(context[0].content[1].data, 'base64').length, 177);
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
