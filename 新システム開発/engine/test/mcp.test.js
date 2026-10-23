@@ -333,8 +333,16 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
-  assert.equal(opened.structuredContent.onboarding, undefined);
+  assert.deepEqual(opened.structuredContent.onboarding.map((s) => s.kind), ['exempt', 'status'], 'iOSで_metaが消えても導入画面が表示できる');
+  assert.equal(opened.structuredContent.overview.title, '■試験概要');
   assert.ok(opened.structuredContent.sessionId);
+  // 実機で「@資格学習 宅建」を指定したのに、AIがアプリ名だけを資格として送ってしまった回帰例。
+  const appNameOnly = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '資格学習', sources: [] } });
+  assert.equal(appNameOnly.isError, true, 'アプリ名だけで資格を推測しない');
+  assert.equal(appNameOnly.structuredContent.error, 'QUALIFICATION_NOT_SUPPORTED');
+  const tagged = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '@資格学習 宅建', sources: [] } });
+  assert.deepEqual(tagged.structuredContent.onboarding.map((x) => x.kind), ['exempt', 'status'], 'アプリ名を含む資格表記も宅建の導入画面へ進む');
+  assert.equal(tagged.structuredContent.overview.title, '■試験概要');
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
   assert.equal(menu._meta.qlp.menu.choices[0], '承認して始める');
   assert.equal(menu.structuredContent.menu, undefined);
@@ -365,10 +373,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
   const earlyRes = await call2('nextQuestion', { sessionId });
   const early = earlyRes.structuredContent;
-  assert.equal(early.onboarding, undefined);
+  assert.deepEqual(early.onboarding.map((s) => s.kind), ['exempt', 'status']);
   assert.equal(earlyRes._meta.qlp.onboarding.at(-1).kind, 'status');
   assert.equal(early.status, 'needPlan');
-  assert.equal(early.overview, undefined);
+  assert.ok(early.overview?.title === '■試験概要');
   assert.equal(early.question, undefined);
   await call2('startStudy', { qualificationName: '測量士補', learnerId: started.learnerId });
   const r = await call2('nextQuestion', { sessionId });
@@ -811,7 +819,7 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
   assert.match(full.overview.lines.join('\n'), /午前の部/);
   assert.deepEqual(full.onboarding.map((q) => q.kind), ['exempt', 'status']);
   assert.equal(full.job, null, 'PDF解析ジョブを未対応なのに起動しない');
-  assert.equal(started.structuredContent.overview, undefined, '概要は表示専用に保持する');
+  assert.equal(started.structuredContent.overview.title, '■試験概要', '初期概要はUI優先で、iOSが_metaを落としても使える');
 
   const sid = full.sessionId, lid = full.learnerId;
   assert.equal((await app('nextQuestion', { sessionId: sid }))._meta.qlp.status, 'needPlan', '開始承認を飛ばせない');
