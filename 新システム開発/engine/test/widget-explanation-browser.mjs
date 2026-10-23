@@ -46,7 +46,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.exposeFunction('modelStep', async (message) => {
       // モデル役は最初のセッションIDを受け取れない条件で試験する。
       // チャットの自然文に付いた一時参照番号だけで照合済みの採点データへ到達する。
-      const ref = /参照番号：(E-[A-Za-z0-9_-]{16})/.exec(message)?.[1];
+      const ref = /学習セッションID〈一時参照番号〉：(E-[A-Za-z0-9_-]{16})/.exec(message)?.[1];
       assert.ok(ref, '短い学習参照番号がAI側のメッセージにある');
       const spec = await tool('explainSpec', { explanationRef: ref });
       assert.equal(spec.isError, false);
