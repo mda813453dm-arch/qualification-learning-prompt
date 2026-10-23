@@ -31,4 +31,6 @@ assert.equal(missing.structuredContent.error, 'SESSION_NOT_FOUND', '本番にも
 const missingRef = await rpc('tools/call', { name: 'explainSpec', arguments: { explanationRef: 'E-0000000000000000' } });
 assert.equal(missingRef.isError, true);
 assert.equal(missingRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '参照番号だけのモデル呼出しが公開され、未知の番号は安全に拒否');
+const oldSchemaRef = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: 'E-0000000000000000' } });
+assert.equal(oldSchemaRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '旧ChatGPTツールのsessionId欄でも一時参照番号を復元できる');
 console.log(`PASS deployed explanation metadata, model-visible spec and read-only context route (${WIDGET_VERSION})`);
