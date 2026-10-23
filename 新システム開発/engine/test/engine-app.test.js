@@ -536,7 +536,7 @@ test('startSession の前に引継ぎIDで出題を求められても、学習�
   const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
   const r = await call(env, 'POST', `/v1/sessions/${st.learnerId}/next`);
   assert.equal(r.status, 200, JSON.stringify(r.body));
-  assert.ok(['waiting', 'question', 'finished'].includes(r.body.status), JSON.stringify(r.body).slice(0, 300));
+  assert.ok(['waiting', 'question', 'sourceUnavailable'].includes(r.body.status), JSON.stringify(r.body).slice(0, 300));
   assert.deepEqual(r.body.job.sources.map((s) => s.year), [2026]);
 });
 
