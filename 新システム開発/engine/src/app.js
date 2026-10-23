@@ -1860,6 +1860,18 @@ async function route(request, env, url, now) {
       }
       state = resumed(saved);
     }
+    // 既存の学習者IDがあれば、JSON引継ぎでも保存済みの未回答問題や学習設定を優先して復元する。
+    const importedLid = validLearnerId(state.learnerId);
+    if (importedLid) {
+      const stored = await env.STORE.get(learnerStateKey(importedLid), 'json');
+      if (stored?.qualificationId === state.qualificationId &&
+          Object.keys(stored.history ?? {}).length >= Object.keys(state.history ?? {}).length) {
+        state = resumed(stored);
+      }
+    } else {
+      // 古い引継ぎJSONにIDが無い場合も、新しいIDで今後の履歴と学習時間を一体で保存する。
+      state = { ...state, learnerId: newLearnerId() };
+    }
     await gateEnter(env, state.learnerId, b.accessCode, now);
     let job = null;
     if (b.sources) {
