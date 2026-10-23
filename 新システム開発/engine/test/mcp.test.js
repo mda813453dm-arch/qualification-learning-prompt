@@ -96,8 +96,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /rpc\('ui\/message',\{role:'user',content:\[\{type:'text',text:visible\}\]\.concat\(blocks\)\}\)/);
   assert.match(html, /AI解説を再依頼/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v67\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-23.67');
+  assert.match(WIDGET_URI, /question-v68\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-23.68');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
