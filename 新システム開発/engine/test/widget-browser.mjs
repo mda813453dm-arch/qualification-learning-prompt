@@ -87,7 +87,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           }
           else window.protocolErrors.push('unexpected tool ' + op);
         } else if (m.method === 'ui/update-model-context') {
-          window.internal.push(m.params.content[0].text);
+          window.internal.push(m.params);
           reply({});
         } else if (m.method === 'ui/message') {
           if (window.rejectMessage) {
@@ -147,10 +147,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 1, '解説は採点記録を読み出す');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
-    assert.ok((await page.evaluate(() => window.followups)).every(m =>
-      /^2025年度 問1の解説をお願いします。\（学習セッションID〈一時参照番号〉：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
-      '解説の会話には短い一時参照番号だけを表示する');
-    assert.deepEqual(await page.evaluate(() => window.internal), [], '解説で入力欄に内部文脈の添付を作らない');
+    assert.deepEqual(await page.evaluate(() => window.followups),
+      ['2025年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。'],
+      '会話には内部コードを出さず、解説依頼だけを送る');
+    const context = await page.evaluate(() => window.internal);
+    assert.equal(context.length, 1, '非表示文脈は送信前に1回だけ渡す');
+    assert.equal(context[0].content[0].annotations.audience[0], 'assistant');
+    assert.equal(JSON.parse(context[0].content[0].text).correctAnswer, '3');
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
