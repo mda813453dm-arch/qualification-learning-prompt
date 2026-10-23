@@ -102,6 +102,11 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   assert.equal(viaRef.isError, false);
   assert.equal(viaRef.structuredContent.question.questionId, q.questionId);
   assert.equal(viaRef.structuredContent.grade.correctAnswer, 3);
+  const legacyAlias = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
+    sessionId: context.explanationRef,
+  } }, { path: '/app' })).body.result;
+  assert.equal(legacyAlias.isError, false, '旧ChatGPTツールのsessionId欄でも一時参照番号を照合する');
+  assert.equal(legacyAlias.structuredContent.question.questionId, q.questionId);
   assert.equal(await env.STORE.get(`ses/${sessionId}`), beforeRefRead, '参照番号の復元は学習記録を変更しない');
   const malformed = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
     explanationRef: 'E-short',
