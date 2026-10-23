@@ -309,6 +309,7 @@ export const TOOLS = [
   {
     name: 'explainSpec',
     appOnly: true,
+    uiOnly: true,
     description: '【解説依頼を受けたら必ず最初に呼ぶ】「学習セッションID〈一時参照番号〉：E-」から始まるコードが利用者の文にあれば、sessionIdの記憶を頼らずexplanationRefにその番号を入れて呼ぶ。サーバーが採点済みの同じ問題・全選択肢・公式正答・学習履歴・解説方針を確定して返す。参照番号なしの旧会話ではstartSessionで得たsessionIdを渡す。返ったquestionとgradeを使い、理解度・苦手履歴に応じて自分の言葉で解説を作成し、showMenu(kind=next,body=解説本文,sessionId,studyId,learnerId)で画面に表示する。内部コードを推測・再作成したり、資格名の再入力・「もう一度」という再送依頼で終えたりしない。正答番号・問題文が確認できなければ推測で解説しない。',
     inputSchema: { type: 'object', properties: { explanationRef: { type: 'string', pattern: '^E-[A-Za-z0-9_-]{16}$', description: '会話の参照番号をそのまま渡す。sessionIdは不要' }, sessionId, questionId: { type: 'string', description: '分かる場合だけ、解説対象のquestionId。別の問題ならエラーにする' }, correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' }, checkSuggested: { type: 'boolean' } } },
     api: (a) => {
