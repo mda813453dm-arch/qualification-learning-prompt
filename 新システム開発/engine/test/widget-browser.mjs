@@ -52,7 +52,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         } else if (m.method === 'tools/call') {
           if (!ready) window.protocolErrors.push('tool before initialized');
           const op = m.params.name;
-          if (op === 'chooseItem') reply({ structuredContent: { status: 'item', journey: { fieldIndex: 1, fieldTotal: 8 } } });
+          if (op === 'startSession') {
+            const q = String(m.params.arguments.qualificationId || '');
+            if (!q.includes('宅建')) reply({ isError: true, structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } });
+            else reply({ structuredContent: { ...first._meta.qlp, sessionId: 'test-session-startup-recovered' } });
+          }
+          else if (op === 'chooseItem') reply({ structuredContent: { status: 'item', journey: { fieldIndex: 1, fieldTotal: 8 } } });
           else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
@@ -318,6 +323,30 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '別年度の過去問を取り込む' }).click();
     await ui.getByRole('heading', { name: '過去問の年度別取り込み（本人専用）' }).waitFor();
     assert.match(await ui.locator('#app').innerText(), /2023年度：本人用に取込済み/);
+    // 2026-10-23 iPhone: startSession資格名判定失敗を「問題準備中」と偽装せず再開できる。
+    await page.evaluate(() => window.deliver({ isError: true,
+      structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } }));
+    await ui.locator('#retryQualification').waitFor();
+    assert.match(await ui.locator('#app').innerText(), /資格名を認識できませんでした/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /問題を準備しています/);
+    assert.equal(await ui.getByRole('button', { name: '総復習（間違えた問題）' }).count(), 0);
+    await ui.locator('#retryQualification').fill('宅建');
+    await ui.getByRole('button', { name: 'この資格で開始する' }).click();
+    await ui.getByText('現在の学習状況を選んでください。').waitFor();
+    const restarts = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'startSession').map(x => x.params.arguments));
+    assert.equal(restarts.at(-1).qualificationId, '宅建');
+    assert.deepEqual(restarts.at(-1).sources, []);
+
+    // 未対応状態を正当な待機・終了と混同せず、出題画面へ復旧する。
+    await page.evaluate(() => window.deliver({ structuredContent: {
+      status: 'unhandled', sessionId: 'test-session-startup-recovered', display: 'incomplete view',
+    } }));
+    await ui.getByRole('button', { name: '現在の学習画面を再取得する' }).waitFor();
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /問題を準備しています/);
+    await page.evaluate(() => { window.failNextCalls = 0; });
+    await ui.getByRole('button', { name: '現在の学習画面を再取得する' }).click();
+    await ui.locator('input[name=ans][value="3"]').waitFor();
+
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
