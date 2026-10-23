@@ -1002,7 +1002,16 @@ async function restoreStudyView(env, id, state, now) {
         ? '許諾未確認のPDFは自動取得・共有保存しません。許諾を得た利用者本人だけ年度別に取り込めます。'
         : '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
   }
-  return { ...identity, status: 'restoreIdle',
+  // 初回の公式概要・学習状況選択が終わっていないセッションは「再開済み」に偽装しない。
+  // 引継ぎセッションは上の resumePending 分岐で明示的に復元される。
+  if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
+    return { ...identity, status: 'needPlan', qualificationId: state.qualificationId,
+      onboarding: onboardingSteps(state.qualificationId),
+      overview: await libraryOverview(env, state.qualificationId, now) };
+  }
+  return { ...identity, status: 'restoreIdle', qualificationId: state.qualificationId,
+    qualificationName: cat?.name ?? state.qualificationId,
+    answeredCount: Object.keys(state.history ?? {}).length,
     notice: '保存した学習記録を確認しました。学習を続けるか、今日はここまでで終了できます。' };
 }
 
@@ -1170,7 +1179,10 @@ async function route(request, env, url, now) {
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);
-    const learnerId = given ?? newLearnerId();
+    // 他資格の引継ぎIDを誤って指定しても、そのIDの保存済み学習履歴を上書きしない。
+    const existingLearner = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
+    const switchedQualification = !!(existingLearner && existingLearner.qualificationId !== b.qualificationId);
+    const learnerId = switchedQualification ? newLearnerId() : (given ?? newLearnerId());
     await gateEnter(env, learnerId, b.accessCode, now);
     await env.STORE.put(studyOpenKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
