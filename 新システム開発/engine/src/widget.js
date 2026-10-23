@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v66.html';
+export const WIDGET_URI = 'ui://qlp/question-v67.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.66';
+export const WIDGET_VERSION = '2026-10-23.67';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1218,6 +1218,9 @@ a{color:inherit}
   async function requestAdaptiveExplanation(ctx){
     var q=ctx.question, g=ctx.grade;
     if (!q || !g || q.questionId !== g.questionId) throw new Error('EXPLANATION_BINDING_MISMATCH');
+    // 画面からの依頼には必ずサーバーが発行した参照番号を付ける。
+    // iOSでassistant-onlyの情報が消えても、AIがexplainSpecから公式根拠を再取得できる。
+    if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || ''))) throw new Error('EXPLANATION_REFERENCE_MISSING');
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
     var data = {
       type:'verifiedOfficialExplanation', year:q.year, section:q.section, questionNumber:q.questionNumber,
@@ -1239,7 +1242,7 @@ a{color:inherit}
     // 検証済み資料と利用者向け依頼を、同じ1回のui/messageで確実に引き渡す。
     // annotations.audience=["assistant"] の問題本文・公式PNGはユーザーには表示しない。
     if (!bridgeReady) await ready;
-    var visible = label + 'の各選択肢の理由を、学習状況に合わせて解説してください。';
+    var visible = label + 'の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：' + ctx.explanationRef + '）';
     return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}].concat(blocks)});
   }
   async function loadExplanation(questionId, requestAi){
@@ -1273,7 +1276,7 @@ a{color:inherit}
       (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
       (pdf ? '<div class="notice"><a href="' + esc(pdf) + '" target="_blank" rel="noopener">公式正答PDFを確認する ›</a></div>' : '') +
       '<div class="notice">ここまでは公式正答との照合です。各選択肢の理由や根拠は、学習履歴に合わせてAIが解説します。</div>' +
-      '<div class="row"><button id="moreAiExplanation">AI解説をもう一度表示</button><button id="explanationRetry">公式正答を再表示</button><button id="explanationNext">次の問題へ</button></div>' + endBar();
+      '<div class="row"><button id="moreAiExplanation">AI解説を再依頼</button><button id="explanationRetry">公式正答を再表示</button><button id="explanationNext">次の問題へ</button></div>' + endBar();
     scrollUp(true); bindEnd();
     document.getElementById('explanationRetry').onclick = function(){
       this.disabled = true;
