@@ -1163,8 +1163,7 @@ a{color:inherit}
       stem:q.stem || '', choices:Array.isArray(q.choices) ? q.choices : [],
       stemMode:q.stemMode || 'text', choiceMode:q.choiceMode || 'text',
       correctAnswer:g.correctAnswer, selected:g.selected, correct:!!g.correct,
-      explainHow:g.explainHow || '', journey:ctx.journey || {},
-      sessionId:ctx.sessionId, studyId:ctx.studyId, learnerId:ctx.learnerId
+      explainHow:g.explainHow || '', journey:ctx.journey || {}
     };
     var blocks = [{type:'text',text:JSON.stringify(data),annotations:{audience:['assistant']}}];
     var figures = q.figures || [];
@@ -1185,7 +1184,6 @@ a{color:inherit}
     var ctx = await callTool('explainSpec', args);
     if (!ctx || ctx.error || ctx.status !== 'explanationContext' ||
         ctx.sessionId !== state.sessionId || !ctx.question || !ctx.grade ||
-        !/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || '')) ||
         ctx.question.questionId !== ctx.grade.questionId ||
         (questionId && ctx.grade.questionId !== questionId)) throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
     renderVerifiedExplanation(ctx);
