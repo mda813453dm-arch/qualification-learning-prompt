@@ -26,6 +26,10 @@ jobs:
             echo '承認マーカーがありません。共有保存は実行しません。'
             exit 1
           fi
+          if ! grep -qx 'APPROVE_LAND_SURVEYOR_VERIFIED_TEXT_REPARSE' 新システム開発/deploy/land-surveyor-import-request.txt; then
+            echo '図表以外のテキスト再解析に関する承認がありません。'
+            exit 1
+          fi
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
       - uses: actions/setup-python@v5
@@ -41,4 +45,5 @@ jobs:
       - name: 承認済みの共有保存（先に12原本のSHA全部を検査し、各年度30問を保存）
         env:
           QLP_IMPORT_APPROVED: YES
+          QLP_LAND_SURVEYOR_TEXT_UPGRADE: YES
         run: node 新システム開発/engine/scripts/seed-official-land-surveyor.mjs --commit
