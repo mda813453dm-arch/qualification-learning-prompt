@@ -377,7 +377,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(earlyRes._meta.qlp.onboarding.at(-1).kind, 'status');
   assert.equal(early.status, 'needPlan');
   // SRCは任意の公式PDFを指定する非カタログ資格で、概要が存在しなくても既存の出題を維持する。
-  if (early.overview) assert.equal(early.overview.title, '■試験概要');
+  assert.ok(early.overview && typeof early.overview === 'object', '利用者提供PDFの資格でも概要応答の形を保つ');
   assert.equal(early.question, undefined);
   await call2('startStudy', { qualificationName: '測量士補', learnerId: started.learnerId });
   const r = await call2('nextQuestion', { sessionId });
