@@ -134,7 +134,9 @@ test('解説は次問先取り後も採点済み問題を返し、再表示で�
   assert.equal(a.body.grade.selected, g.grade.selected);
   assert.equal(a.body.learnerId, learnerId);
   assert.ok(a.body.studyId);
-  assert.match(a.body.howToProceed, /showMenu\(kind=next/);
+  assert.match(a.body.howToProceed, /通常のチャット回答本文/);
+  assert.match(a.body.howToProceed, /解説時にshowMenu・nextQuestion/);
+  assert.doesNotMatch(a.body.howToProceed, /解説本文はshowMenu\(kind=next/);
   assert.equal(env.STORE.writes, writes + 2, '一時参照番号の保存2回だけを許可し、学習記録は変更しない');
   assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
   assert.equal(web.calls.length, fetches);
