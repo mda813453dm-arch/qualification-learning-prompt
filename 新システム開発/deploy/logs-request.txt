@@ -34,3 +34,4 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-20T10:04:47Z check why the check question failed after the explanation (mcp_rpc errors)
 2026-10-21 22:05 JST read-only investigation: determine whether file attach INVALID_ARGUMENT reached server; do not modify Cloud Run or PDF storage
 2026-10-21 22:16 JST sanitized attachment failure HTTP status inspection only, no deployment or file content
+2026-10-23T02:00:00Z read-only investigation of iPhone explanation reconnect failure reported at 2026-10-23 10:34 JST; no learner data changes.
