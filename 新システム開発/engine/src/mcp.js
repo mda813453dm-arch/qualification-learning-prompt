@@ -309,8 +309,9 @@ export const TOOLS = [
   {
     name: 'explainSpec',
     appOnly: true,
-    uiOnly: true,
-    description: '【解説依頼を受けたら必ず最初に呼ぶ】「学習セッションID〈一時参照番号〉：E-」から始まるコードが利用者の文にあれば、sessionIdの記憶を頼らずexplanationRefにその番号を入れて呼ぶ。サーバーが採点済みの同じ問題・全選択肢・公式正答・学習履歴・解説方針を確定して返す。参照番号なしの旧会話ではstartSessionで得たsessionIdを渡す。返ったquestionとgradeを使い、理解度・苦手履歴に応じて自分の言葉で解説を作成し、showMenu(kind=next,body=解説本文,sessionId,studyId,learnerId)で画面に表示する。内部コードを推測・再作成したり、資格名の再入力・「もう一度」という再送依頼で終えたりしない。正答番号・問題文が確認できなければ推測で解説しない。',
+    // AIに公開する。旧版のuiOnly指定だとモデルから見えず、解説の再表示ループになる。
+    uiOnly: false,
+    description: '【公式過去問の解説専用・必須】画面から「照合番号：E-...」付きで解説依頼が来たら、必ず最初にexplanationRefを指定してこのツールを呼ぶ。戻り値のquestion・全choices・grade.correctAnswer・explainHow・学習状況だけに基づいて正誤の理由を各選択肢ごとに説明し、通常のチャット本文へ直接表示する。AI生成の解説であることを明記。次問操作・showMenu・再採点は行わない。参照番号がない旧会話では確実に分かるsessionIdで取得する。値を推測してはいけない。取得失敗時は未検証の解説をせず、元の学習画面で再試行する案内だけを出す。図表の画像が読み取れない場合は読めない部分を推測しない。',
     inputSchema: { type: 'object', properties: { explanationRef: { type: 'string', pattern: '^E-[A-Za-z0-9_-]{16}$', description: '会話の参照番号をそのまま渡す。sessionIdは不要' }, sessionId, questionId: { type: 'string', description: '分かる場合だけ、解説対象のquestionId。別の問題ならエラーにする' }, correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' }, checkSuggested: { type: 'boolean' } } },
     api: (a) => {
       // ChatGPT側が旧版ツール定義を保持していても、参照番号を既存sessionId欄へ渡して復旧可能。
@@ -318,13 +319,7 @@ export const TOOLS = [
       return ref ? ['GET', `/v1/explanation-ref/${encodeURIComponent(ref)}`]
         : ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/explanation${a.questionId ? `?questionId=${encodeURIComponent(a.questionId)}` : ''}`];
     },
-    local: (a) => typeof a.correct === 'boolean' && a.selected != null && a.correctAnswer != null ? ({
-      status: 'explainSpec',
-      explainHow: explainHow({ grade: { correct: !!a.correct, selected: String(a.selected ?? ''), correctAnswer: String(a.correctAnswer ?? '') }, fieldName: a.fieldName ?? null }),
-      order: REVIEW_ORDER,
-      // 同じ分野で3問続けて間違えたときは、解説のあとに確認問題を選べるようにする。確認問題はAIが作り、分野と問数を先に示す
-      ...(a.checkSuggested ? { checkPlan: `同じ分野（${a.fieldName ?? '今の分野'}）で3問続けて間違えたので、解説は、チャットには書かず showMenu（kind=check）の body に入れて呼ぶ。「確認問題で基本を確かめる」が押されたら、まず『${a.fieldName ?? '今の分野'}の確認問題を3問出します（AIが作った問題です）』と書き、その分野の確認問題を1問ずつ出す。3問の答え合わせは、チャットには書かず showMenu（kind=next）の body に入れて呼ぶ。` } : {}),
-    }) : null,
+
   },
   {
     name: 'saveProfile',
@@ -448,7 +443,7 @@ export function appInstructions() {
   const noInvent = '\n**強制補強：同一分野の公式実践3問連続誤答後は、短い補強説明のあとAI作成確認問題を1問作る。必ず登録前に本文・全選択肢・正答番号を固定し、registerRemediationQuestion を呼ぶ。返った画面が出題するので、AIは問題をチャットへ書き直さない。採点・誤答時の再出題・正解時の公式問題再開は画面とエンジンが制御する。未登録の確認問題で実践問題へ進まない。**\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDF（公式の問題PDF・正答PDF）を添付したら、`attachPdf` を呼んでエンジンに渡す。** PDFの中身をAIが書き写して出題・採点しない。';
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
   const confirmationFlow = '\n【通常の確認問題】解説あり／確認問題からの選択後は、同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
-  const explanationFlow = "\n【採点後のAI解説】画面から「〇年度 問〇の各選択肢の理由を、学習状況に合わせて解説してください。」と届いた場合、直前のモデル専用文脈verifiedOfficialExplanationの公式問題・公式正答・学習状況を確認する。年度・問番号の一致を確認し、正答が決定済みの各選択肢をAIが理由と根拠を添えて動的に説明する。official_image形式では添付された公式PNGを直接読み、読めない文字を推測で補わない。これは公式解説ではなくAI生成の学習支援解説であることを示す。**解説は通常のチャット回答本文に表示する。ここではexplainSpec、showMenu、nextQuestion、submitAnswer、startSessionなど一切のツールを呼ばない。** 同じ画面に「次の問題へ」「学習終了」が残っているため、チャットに新しい選択肢を作らない。モデル専用文脈が無い場合は別問と正答を推測せず、画面内の「AI解説をもう一度表示」を案内する。利用者にID・一時参照番号を入力させたり「もう一度」を送信させて終了しない。\n";
+  const explanationFlow = '\n【採点後のAI解説：必ず参照照合】画面から「照合番号：E-...」を含む解説依頼が届いたら、他の操作より先にexplainSpec({explanationRef: 照合番号})を呼ぶ。問題文・全選択肢・公式正答・理解度・苦手履歴を同一セッションから取得し、戻り値のquestion.questionId === grade.questionIdを確認する。正答番号・年度・問番号を推測しない。取得した根拠に基づき全選択肢の理由と法的根拠を学習状況に合わせ通常のチャット本文で説明する（AI生成の解説と明示）。ツールが失敗した場合、直前会話や隠しモデル文脈だけで解説を生成せず、画面の「AI解説を再依頼」を案内する。解説の途中でnextQuestion・submitAnswer・showMenu・startSessionを呼ばない。次問・終了操作は元の学習画面のボタンが管理する。公式図表が必要で画像を確認できない場合は推測で内容を補わない。\n';
   const sharingFlow = '\n【公式過去問の共有保存】共有キャッシュで確認できた実際の年度と資格ごとの試験区分（宅建は本試験、2020・2021年度は10月／12月等）だけを学習画面で表示する。資格と関係のない午前／午後などの区分を追加しない。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFファイルが添付されたときだけ、表紙の年度・部と正答の同一性を照合しattachPdfを使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\n';
   return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + explanationFlow + sharingFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
@@ -457,7 +452,7 @@ export function appInstructions() {
 const APP_START_DESC = '資格の学習準備を始める。公式PDFは自動取得できる資格だけ裏で取り込む。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（取得可能ならエンジンが公式サイトから集め、必要な資格は後から本人添付を案内する）。利用者がユーザー入力が「@資格学習 宅建」の場合は qualificationId に必ず「宅建」のみを指定する。「資格学習」はアプリ名であり資格名ではない。資格名が読み取れないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  nextQuestion: '【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】学習画面から検証済みモデル文脈verifiedOfficialExplanationと共に公式過去問のAI解説を求められたときは、正答・公式問題・原本画像を根拠に通常のチャット本文で解説する。この経路では追加のツール呼出し・showMenuは不要で、次問や終了ボタンは学習画面に既にある。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）の本文・全選択肢・固定した正答を registerConfirmationQuestion に登録して、第1問/全3問の画面で答えを待つ。確認問題をチャット本文に書かない。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、解説を省き、registerConfirmationQuestion で第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式過去問のAI解説本文は会話に表示し、次問と終了の選択ボタンは既存の学習画面に保持する。',
+  nextQuestion: '【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】公式過去問の解説依頼には画面で示された照合番号を使って必ずexplainSpecを先に呼び、サーバーの採点済み問題に基づいて通常チャット本文で説明する。非表示文脈だけで採点や解説をしない。次問・終了ボタンは画面で管理する。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）の本文・全選択肢・固定した正答を registerConfirmationQuestion に登録して、第1問/全3問の画面で答えを待つ。確認問題をチャット本文に書かない。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、解説を省き、registerConfirmationQuestion で第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式過去問のAI解説本文は会話に表示し、次問と終了の選択ボタンは既存の学習画面に保持する。',
   startSession: '【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールは必ず試験概要と学習条件の画面を先に出す。公式サイトから自動取り込みできる資格だけ裏で取得する。PDFの利用者添付が必要な資格は、承認後の問題画面で添付方法を案内する。「セッション」など内部用語は利用者に見せない。②試験概要はエンジンが画面に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。③このツールの結果として、エンジンが画面に試験概要を出し、その直下に免除（制度がある資格だけ）と学習状況のボタンを出す（nextQuestion は呼ばない）。AIは showMenu（kind=exempt / status）を呼ばず、ChatGPT標準の質問・選択肢の画面も使わず、押されるまで待つ。④答え（「免除：…/学習状況：…」）がチャットに届いてから学習計画（始める分野と理由、進め方）を示し、最後に showMenu（kind=plan）を呼んで返事を待つ（「1：始めます」をチャットに書かない）。利用者が計画を見る前に、勝手に学習計画を立てたり、問題を出したりしない。⑤利用者が「学習計画の希望：…」と送ってきたら、その希望と、試験概要・出題数・学習状況を踏まえて学習計画を柔軟に立て直し、始める分野・進め方・復習の間隔を示す（復習の間隔は希望に合わせ、無ければAI調整型）。承認は文章で聞かず、必ず showMenu（kind=plan）を呼び、承認のボタンが押されたら startStudy を呼ぶ。',
   startStudy: '利用者が「1」または「始めます」と答えたときにだけ呼ぶ。呼んだら display をそのまま表示し、続けて showMenu（kind=item）を呼んで進め方を選んでもらう（選択肢をチャットに書かない）。',
 };
@@ -527,6 +522,9 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         }
       }
       if (tool.appOnly && !widget) return fail(id, -32602, `Unknown tool: ${params.name}`);
+      if (tool.name === 'explainSpec' && !args.explanationRef && !args.sessionId) {
+        return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'EXPLANATION_REFERENCE_REQUIRED' }) }], structuredContent: { error: 'EXPLANATION_REFERENCE_REQUIRED' } });
+      }
       if (tool.local && !(tool.name === 'explainSpec' && (args.sessionId || args.explanationRef))) {
         let out = tool.local(args);
         if (tool.name === 'showMenu' && args.kind === 'next' && args.sessionId && out) {
