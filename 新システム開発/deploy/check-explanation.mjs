@@ -20,7 +20,9 @@ assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
 assert.ok(!resource.contents[0].text.includes('setWidgetState'), '画面からモデル文脈の添付を要求しない');
-assert.ok(!resource.contents[0].text.includes('ui/update-model-context'), '入力欄への文脈添付を要求しない');
+assert.ok(resource.contents[0].text.includes('ui/update-model-context'), '解説資料を利用者の会話に出さずモデルへ渡す');
+assert.ok(resource.contents[0].text.includes("audience:['assistant']"), 'モデル文脈の可視性はAI限定とする');
+assert.ok(!resource.contents[0].text.includes("学習セッションID〈一時参照番号〉："), '再接続用の内部番号をチャットへ送らない');
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
 assert.ok(JSON.parse(spec.content[0].text).explainHow, '解説方針がモデルに読める本文にある');
