@@ -43,27 +43,28 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.exposeFunction('engineTool', tool);
-    await page.exposeFunction('modelStep', async (message) => {
-      // モデル役は最初のセッションIDを受け取れない条件で試験する。
-      // チャットの自然文に付いた一時参照番号だけで照合済みの採点データへ到達する。
-      const ref = /学習セッションID〈一時参照番号〉：(E-[A-Za-z0-9_-]{16})/.exec(message)?.[1];
-      assert.ok(ref, '短い学習参照番号がAI側のメッセージにある');
-      const spec = await tool('explainSpec', { explanationRef: ref });
-      assert.equal(spec.isError, false);
-      const context = spec.structuredContent;
-      assert.equal(context.question.questionId, first.question.questionId);
-      const snapshot = await env.STORE.get(`ses/${knownSessionId}`);
-      const again = await tool('explainSpec', { explanationRef: ref });
-      const withoutNewReference = ({ explanationRef, ...other }) => other;
-      assert.deepEqual(withoutNewReference(again.structuredContent), withoutNewReference(context));
-      assert.equal(await env.STORE.get(`ses/${knownSessionId}`), snapshot);
-      const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((c, i) => `|${i + 1}|${c}|`).join('\n')}`;
-      return tool('showMenu', { kind: 'next', body, sessionId: context.sessionId, studyId: context.studyId, learnerId: context.learnerId });
+    await page.exposeFunction('modelStep', async (message, hiddenContext) => {
+      assert.match(message, /^2026年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。$/);
+      assert.equal(hiddenContext.content.length, 1, '画像がない問題は検証済みの本文だけを渡す');
+      assert.deepEqual(hiddenContext.content[0].annotations.audience, ['assistant']);
+      const context = JSON.parse(hiddenContext.content[0].text);
+      assert.equal(context.type, 'verifiedOfficialExplanation');
+      assert.equal(context.year, 2026);
+      assert.equal(context.questionNumber, 1);
+      assert.deepEqual(context.choices, first.question.choices);
+      assert.equal(context.correctAnswer, 3);
+      const before = toolCalls.filter(c => c.name === 'explainSpec').length;
+      const body = `AIによる解説（結合試験用）\n\n${context.year}年度 問${context.questionNumber}の正答は${context.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.choices.map((c, i) => `|${i + 1}|${c}|`).join('\n')}`;
+      const result = await tool('showMenu', { kind: 'next', body,
+        sessionId: context.sessionId, studyId: context.studyId, learnerId: context.learnerId });
+      assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, before,
+        'AI解説の生成中はエンジンの再取得を呼ばない');
+      return result;
     });
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, study, session }) => {
-      window.messages = []; window.droppedContext = 0; window.droppedWidgetState = 0;
+      window.messages = []; window.hiddenContext = null; window.droppedContext = 0; window.droppedWidgetState = 0;
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'width:100%;height:650px;border:0';
       const send = data => iframe.contentWindow.postMessage(data, '*');
@@ -75,11 +76,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         if (m.method === 'ui/initialize') reply({ protocolVersion: '2026-01-26', hostCapabilities: {} });
         else if (m.method === 'ui/notifications/initialized') deliver({ _meta: { qlp: { ...first, learnerId: session.learnerId, studyId: study.studyId } } });
         else if (m.method === 'tools/call') reply(await window.engineTool(m.params.name, m.params.arguments));
-        else if (m.method === 'ui/update-model-context') { window.droppedContext++; reply({}); }
+        else if (m.method === 'ui/update-model-context') {
+          assert.ok(m.params.content.every(c => c.annotations?.audience?.length === 1 && c.annotations.audience[0] === 'assistant'));
+          window.hiddenContext = m.params; window.droppedContext++; reply({});
+        }
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          if (window.messages.length > 1) deliver(await window.modelStep(window.messages.at(-1)));
+          if (window.messages.length > 1) deliver(await window.modelStep(window.messages.at(-1), window.hiddenContext));
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
@@ -105,12 +109,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '解説済みなら無反応の「解説を見る」ボタンを出さない');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
-    assert.equal(await page.evaluate(() => window.droppedContext), 0, '文脈添付を要求しない');
+    assert.equal(await page.evaluate(() => window.droppedContext), 2, '2回とも最新の検証済み文脈を非表示で渡す');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
-    assert.ok(messages.every(m => /^2026年度 問1の解説をお願いします。\（学習セッションID〈一時参照番号〉：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
-      '解説を受けるモデルは一時参照番号だけで問題を特定できる');
+    assert.ok(messages.every(m => m === '2026年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。'),
+      '会話には自然な解説依頼だけを表示し、識別番号や内部指示は出さない');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
     await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
