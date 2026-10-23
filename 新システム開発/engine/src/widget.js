@@ -368,12 +368,12 @@ a{color:inherit}
         try {
           var latest = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
           if (!latest || latest.error || latest.status !== 'officialLibrary') throw new Error('SHARED_LOOKUP_FAILED');
-          if (JSON.stringify(latest.sharedLibrary && latest.sharedLibrary.stored || []) !==
-              JSON.stringify(library && library.stored || [])) {
-            var next = await callTool('nextQuestion', { sessionId: state.sessionId });
-            if (next && !next.error && next.status !== 'sourceUnavailable') { render(next); return; }
-          }
-          render({ ...data, sharedLibrary: latest.sharedLibrary });
+          // 共有年次一覧が変わらなくても、読み取れるパケットが復旧した可能性がある。
+          // 保存状況を確認したら必ず同じセッションの現在問を再取得する。
+          var next = await callTool('nextQuestion', { sessionId: state.sessionId });
+          if (next && !next.error && next.status !== 'sourceUnavailable') { render(next); return; }
+          render({ ...data, sharedLibrary: latest.sharedLibrary,
+            notice: next?.notice || '公式問題をまだ読み出せません。共有保存状況を確認してください。' });
         } catch(e) {
           this.disabled = false;
           app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">保存状況を確認できませんでした。もう一度押してください。</div>');
