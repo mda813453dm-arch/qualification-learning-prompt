@@ -138,7 +138,12 @@ try {
   };
   for (const {year,section} of wanted) {
     const key = year+':'+section;
-    if (present.has(key) && !textUpgrade) { console.log(year, section, 'already shared; reused'); continue; }
+    // 2022/2023は実原本で安全にテキスト化できる問がゼロと事前検査済み。
+    // 改善のない既存画像パケットを置換せず、2024/2025だけ差分更新する。
+    if (present.has(key) && (!textUpgrade || year < 2024)) {
+      console.log(year, section, 'already shared; reused');
+      continue;
+    }
     const q = officialFile(pins.get(year)[section]);
     const a = officialFile(pins.get(year).answer);
     const now = Date.now();
