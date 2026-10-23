@@ -543,7 +543,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
           const error = { error: 'EXPLANATION_BINDING_MISMATCH' };
           return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify(error) }], structuredContent: error });
         }
-        return ok(id, { content: [{ type: 'text', text: JSON.stringify(result.body) }], structuredContent: result.body });
+        return ok(id, { isError: false, content: [{ type: 'text', text: JSON.stringify(result.body) }], structuredContent: result.body });
       }
       if (tool.name === 'explainSpec' && !args.explanationRef && !args.sessionId) {
         return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'EXPLANATION_REFERENCE_REQUIRED' }) }], structuredContent: { error: 'EXPLANATION_REFERENCE_REQUIRED' } });
