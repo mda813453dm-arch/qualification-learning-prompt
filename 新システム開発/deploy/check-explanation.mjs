@@ -29,6 +29,7 @@ assert.ok(resource.contents[0].text.includes('照合番号：'), '公式問題�
 assert.ok(resource.contents[0].text.includes('var explicitSession ='), 'UIは現在の資格の明示的なセッションがある場合にだけ復元する');
 assert.ok(!resource.contents[0].text.includes('staleEntry ||'), '初回の導入画面を古いセッションで上書きしない');
 assert.ok(resource.contents[0].text.includes('資格の確認なしに'), '再開画面の資格識別を保持する');
+assert.ok(resource.contents[0].text.includes("q.section === '午前の部' || q.section === '午後の部'"), '公式の問題見出しに午前・午後の区分を表示する');
 
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
