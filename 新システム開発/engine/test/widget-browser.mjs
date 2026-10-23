@@ -159,12 +159,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.deepEqual(await page.evaluate(() => window.followups),
-      ['2025年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。'],
+      ['2025年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）'],
       '会話には内部コードを出さず、解説依頼だけを送る');
     assert.deepEqual(await page.evaluate(() => window.internal), [], '不安定な遅延モデル文脈更新に依存しない');
     const full = await page.evaluate(() => window.fullMessages[0]);
     assert.equal(full.length, 3, '解説依頼・検証済み根拠・公式PNGを同じ送信に含める');
-    assert.equal(full[0].text, '2025年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。');
+    assert.equal(full[0].text, '2025年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）');
     assert.equal(full[1].annotations.audience[0], 'assistant');
     assert.equal(JSON.parse(full[1].text).correctAnswer, '3');
     assert.equal(full[2].type, 'image');
@@ -175,10 +175,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
-    await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
+    await ui.getByRole('button', { name: 'AI解説を再依頼' }).click();
     await page.waitForFunction(() => window.followups.length === 2);
     await page.evaluate(() => { window.rejectMessage = true; });
-    await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
+    await ui.getByRole('button', { name: 'AI解説を再依頼' }).click();
     await ui.locator('#requestError').waitFor();
     assert.equal(await ui.locator('#requestError').count(), 1, '通信失敗の表示を重複追加しない');
     assert.equal(await page.evaluate(() => window.followups.length), 2, '送信失敗時に操作を重複送信しない');
