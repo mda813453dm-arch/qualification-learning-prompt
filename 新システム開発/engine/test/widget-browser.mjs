@@ -34,7 +34,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, question, nextQuestion }) => {
-      window.calls = []; window.followups = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
+      window.calls = []; window.followups = []; window.fullMessages = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
       let ready = false;
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'width:100%;height:600px;border:0';
@@ -100,6 +100,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             return;
           }
           window.followups.push(m.params.content[0].text);
+          window.fullMessages.push(m.params.content);
           reply({});
         }
       });
@@ -155,16 +156,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.deepEqual(await page.evaluate(() => window.followups),
       ['2025年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。'],
       '会話には内部コードを出さず、解説依頼だけを送る');
-    const context = await page.evaluate(() => window.internal);
-    assert.equal(context.length, 1, '非表示文脈は送信前に1回だけ渡す');
-    assert.equal(context[0].content[0].annotations.audience[0], 'assistant');
-    assert.equal(JSON.parse(context[0].content[0].text).correctAnswer, '3');
-    assert.equal(context[0].content.length, 2, 'スキャン原本の公式PNGを文字情報と共にAIへ渡す');
-    assert.equal(context[0].content[1].type, 'image');
-    assert.equal(context[0].content[1].mimeType, 'image/png');
-    assert.equal(context[0].content[1].annotations.audience[0], 'assistant');
-    assert.ok(Buffer.from(context[0].content[1].data, 'base64').length > 100, '公式PNGのバイナリ全体を渡す');
-    assert.equal(Buffer.from(context[0].content[1].data, 'base64').subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.deepEqual(await page.evaluate(() => window.internal), [], '不安定な遅延モデル文脈更新に依存しない');
+    const full = await page.evaluate(() => window.fullMessages[0]);
+    assert.equal(full.length, 3, '解説依頼・検証済み根拠・公式PNGを同じ送信に含める');
+    assert.equal(full[0].text, '2025年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。');
+    assert.equal(full[1].annotations.audience[0], 'assistant');
+    assert.equal(JSON.parse(full[1].text).correctAnswer, '3');
+    assert.equal(full[2].type, 'image');
+    assert.equal(full[2].mimeType, 'image/png');
+    assert.equal(full[2].annotations.audience[0], 'assistant');
+    assert.ok(Buffer.from(full[2].data, 'base64').length > 100, '公式PNGのバイナリ全体を渡す');
+    assert.equal(Buffer.from(full[2].data, 'base64').subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
     await ui.getByRole('button', { name: '公式正答を再表示' }).click();
     await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
     assert.equal(await page.evaluate(() => window.followups.length), 1, '公式正答の再表示でAI依頼を重複させない');
