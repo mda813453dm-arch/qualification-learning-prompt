@@ -38,7 +38,10 @@ jobs:
       - name: 試験専用ブラウザを準備（本番依存には追加しない）
         run: |
           npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
-          node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install --with-deps chromium webkit
+          # ubuntu-24.04 runner の既存ライブラリを利用する。
+          # --with-deps は外部aptミラーが低速な場合、実DOM試験前に10分でタイムアウトする。
+          # 不足ライブラリがあればブラウザ起動試験で検知する。
+          node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
       - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
         run: |
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
