@@ -45,9 +45,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.exposeFunction('engineTool', tool);
     await page.exposeFunction('modelStep', async (message, hiddenContext) => {
       assert.match(message, /^2026年度 問1の各選択肢の理由を、学習状況に合わせて解説してください。$/);
-      assert.equal(hiddenContext.content.length, 1, '画像がない問題は検証済みの本文だけを渡す');
-      assert.deepEqual(hiddenContext.content[0].annotations.audience, ['assistant']);
-      const context = JSON.parse(hiddenContext.content[0].text);
+      assert.equal(hiddenContext.content.length, 2, '利用者向けの解説依頼と検証済み本文を同一メッセージで渡す');
+      assert.equal(hiddenContext.content[0].text, message);
+      assert.deepEqual(hiddenContext.content[1].annotations.audience, ['assistant']);
+      const context = JSON.parse(hiddenContext.content[1].text);
       assert.equal(context.type, 'verifiedOfficialExplanation');
       assert.equal(context.year, 2026);
       assert.equal(context.questionNumber, 1);
@@ -80,7 +81,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          if (window.messages.length > 1) window.modelReplies.push(await window.modelStep(window.messages.at(-1), window.hiddenContext));
+          if (window.messages.length > 1) window.modelReplies.push(await window.modelStep(window.messages.at(-1), m.params));
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
@@ -105,7 +106,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 0, 'AIに追加ツールを呼ばせずチャットへ解説');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
-    assert.equal(await page.evaluate(() => window.droppedContext), 2, '2回とも最新の検証済み文脈を非表示で渡す');
+    assert.equal(await page.evaluate(() => window.droppedContext), 0, '解説は遅延モデル文脈のACKや取落ちに依存しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
