@@ -457,7 +457,7 @@ const APP_FLOW = {
 
 function widgetResource(baseUrl, uri = WIDGET_URI) {
   const origin = (() => { try { return new URL(baseUrl).origin; } catch { return null; } })();
-  const csp = { connectDomains: [], resourceDomains: origin ? [origin] : [] };
+  const csp = { connectDomains: origin ? [origin] : [], resourceDomains: origin ? [origin] : [] };
   return {
     uri,
     mimeType: WIDGET_MIME,
