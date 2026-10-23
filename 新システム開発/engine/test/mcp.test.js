@@ -120,7 +120,7 @@ test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面
   const restoreTool = list.find(x => x.name === 'restoreStudyView');
   assert.equal(restoreTool._meta['openai/outputTemplate'], WIDGET_URI, '既存の画面復元ツールから再開画面を出す');
   const resumed = await callUi('importHandoff', { handoff: '引継ぎID：' + opened.learnerId });
-  assert.equal(resumed.isError, undefined);
+  assert.equal(resumed.isError, false);
   assert.equal(resumed.structuredContent.status, 'resumeReady');
   assert.equal(resumed._meta, undefined, '引継ぎの読込み自体は新しい画面ツールへの依存を追加しない');
   assert.equal(resumed.structuredContent.nextTool, 'restoreStudyView');
@@ -578,7 +578,7 @@ test('アプリ：前回の学習の記録があっても、新しいセッシ�
   // 同じ引継ぎIDで、新しいチャット（新しいセッション）を始める。学習の開始はまだ
   const again = content(await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [], learnerId } }));
   const n1 = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: again.sessionId } });
-  assert.equal(n1._meta.qlp.status, 'needPlan');
+  assert.equal(n1._meta.qlp.status, 'resumeReady', '再開した学習者には初回の試験概要を表示しない');
   assert.equal(n1._meta.qlp.question, undefined);
   t += 60_000;
   await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId } });
