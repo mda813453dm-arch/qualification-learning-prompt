@@ -128,7 +128,13 @@ export async function ingestSource(src, deps) {
   const cached = await readResult(store, keyParts, now);
   // 明示した共有登録ジョブでは、旧解析版が同じ parserVersion で残した
   // 不完全なキャッシュだけを再解析する。全問検証済みの共有結果は再利用する。
-  if (cached.hit && !(deps.forceReparsePartial === true && cached.result?.status !== 'ready'))
+  // 管理者がSHA固定の土地家屋調査士PDFを再検証し、テキスト出題に更新する場合のみ、
+  // 同じ版の旧「全ページ画像」結果を意図的に再解析する。個人の記録や他資格には使わない。
+  const verifiedLandUpgrade = deps.forceReparseVerifiedLand === true &&
+    src.owner === '_shared' && src.adapter === 'land_surveyor' &&
+    src.qualificationId === 'land_surveyor';
+  if (cached.hit && !verifiedLandUpgrade &&
+      !(deps.forceReparsePartial === true && cached.result?.status !== 'ready'))
     return { from: 'cache', keyParts, result: cached.result };
   // 学習者ごとの取り込み：同じ公式PDF・同じ分解プログラムの版で分解済みの控えがあれば、それを写す（分解し直さない。費用を抑えるため）
   // 権利者の許諾が本人単位の問題は、共通ライブラリの解析結果も複製しない。
