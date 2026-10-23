@@ -1233,7 +1233,9 @@ a{color:inherit}
       try {
         await requestAdaptiveExplanation(ctx);
       } catch(e) {
-        app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">AIへの解説資料の受け渡しに失敗しました。公式正答と学習状態は保持しています。同じボタンで再試行できます。</div>');
+        var err = document.getElementById('requestError');
+        if (!err) { app.insertAdjacentHTML('beforeend','<div id="requestError" class="notice" role="alert"></div>'); err = document.getElementById('requestError'); }
+        err.textContent = 'AIへの解説資料の送信に失敗しました。公式正答と学習状態は保持しています。同じボタンで再試行できます。';
       } finally {
         var b = document.getElementById('moreAiExplanation'); if (b) b.disabled = false;
       }
