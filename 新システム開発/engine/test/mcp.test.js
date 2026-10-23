@@ -93,6 +93,31 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   assert.equal(spec.isError, false);
   const context = spec.structuredContent;
   assert.equal(context.question.questionId, q.questionId);
+  assert.match(context.explanationRef, /^E-[A-Za-z0-9_-]{16}$/);
+  // モデルがsessionId・questionIdを受け取っていなくても、この番号だけで正確に復元する。
+  const beforeRefRead = await env.STORE.get(`ses/${sessionId}`);
+  const viaRef = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
+    explanationRef: context.explanationRef,
+  } }, { path: '/app' })).body.result;
+  assert.equal(viaRef.isError, false);
+  assert.equal(viaRef.structuredContent.question.questionId, q.questionId);
+  assert.equal(viaRef.structuredContent.grade.correctAnswer, 3);
+  assert.equal(await env.STORE.get(`ses/${sessionId}`), beforeRefRead, '参照番号の復元は学習記録を変更しない');
+  const malformed = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
+    explanationRef: 'E-short',
+  } }, { path: '/app' })).body.result;
+  assert.equal(malformed.structuredContent.error, 'EXPLANATION_REF_INVALID');
+  const missing = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
+    explanationRef: 'E-0000000000000000',
+  } }, { path: '/app' })).body.result;
+  assert.equal(missing.structuredContent.error, 'EXPLANATION_REF_EXPIRED');
+  // 別の問題への誤結合が起きる参照はAPIで拒否し、別問に置き換えない。
+  const forged = 'E-1111111111111111';
+  await env.STORE.put('eref/' + forged, JSON.stringify({ sessionId, questionId: 'surveyor:2026:main:999' }), { expirationTtl: 3600 });
+  const wrongBinding = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
+    explanationRef: forged,
+  } }, { path: '/app' })).body.result;
+  assert.equal(wrongBinding.structuredContent.error, 'EXPLANATION_BINDING_MISMATCH');
   assert.equal(context.question.stem, q.stem);
   assert.deepEqual(context.question.choices, q.choices);
   assert.equal(context.grade.correctAnswer, 3);
