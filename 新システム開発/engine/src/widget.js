@@ -1296,7 +1296,8 @@ a{color:inherit}
     document.getElementById('moreAiExplanation').onclick = async function(){
       this.disabled = true;
       try {
-        await requestAdaptiveExplanation(ctx);
+        // 再依頼のたびに同じ採点済み問題を読み直し、一時照合番号の有効期限を更新する。
+        await loadExplanation(q.questionId, true);
       } catch(e) {
         var err = document.getElementById('requestError');
         if (!err) { app.insertAdjacentHTML('beforeend','<div id="requestError" class="notice" role="alert"></div>'); err = document.getElementById('requestError'); }
