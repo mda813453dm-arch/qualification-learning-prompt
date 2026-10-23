@@ -1141,12 +1141,23 @@ async function route(request, env, url, now) {
         await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
         await markEngineSources(env, sources);
       }
-      return json(201, { sessionId: restored.id, learnerId, job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)), ...PLAN_UI });
+      return json(201, { sessionId: restored.id, learnerId,
+        job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)),
+        ...PLAN_UI, ...(env.QLP_WIDGET ? {
+          status: 'needPlan', onboarding: onboardingSteps(b.qualificationId),
+          overview: await libraryOverview(env, b.qualificationId, now),
+          howToProceed: appStartHint(), planMenu: undefined,
+        } : {}) });
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
     const job = overviewOnly ? null : await progress(env, sessionJobId(state), now);
-    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI, ...(env.QLP_WIDGET ? { howToProceed: appStartHint(), planMenu: undefined } : {}) });
+    return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI,
+      ...(env.QLP_WIDGET ? {
+        status: 'needPlan', onboarding: onboardingSteps(b.qualificationId),
+        overview: await libraryOverview(env, b.qualificationId, now),
+        howToProceed: appStartHint(), planMenu: undefined,
+      } : {}) });
   }
 
   // 計画の編集はウィジェット側で一時保存し、利用者が「始めます」と承認した時点だけ確定させる。
