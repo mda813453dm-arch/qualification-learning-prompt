@@ -25,7 +25,8 @@ assert.ok(resource.contents[0].text.includes("audience:['assistant']"), 'モデ�
 assert.ok(!resource.contents[0].text.includes("学習セッションID〈一時参照番号〉："), '再接続用の内部番号をチャットへ送らない');
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
-assert.ok(JSON.parse(spec.content[0].text).explainHow, '解説方針がモデルに読める本文にある');
+assert.deepEqual(spec.content, [], '内部の解説方針はUI専用結果としモデルに直接配らない');
+assert.ok(spec.structuredContent?.explainHow, '学習画面には解説方針が届いている');
 assert.equal(spec._meta, undefined, '解説方針をUI専用領域に隠していない');
 const missing = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: '00000000-0000-0000-0000-000000000000' } });
 assert.equal(missing.isError, true);
