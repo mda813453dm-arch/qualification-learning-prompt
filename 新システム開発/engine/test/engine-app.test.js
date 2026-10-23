@@ -259,6 +259,25 @@ test('経路A：分解サーバーが無いときはアプリの分解結果を�
   assert.equal(next.question.questionNumber, 1);
 });
 
+test('旧JSON引継ぎにIDがなくても新IDで再開待ちと学習履歴を保持する', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const q = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
+  await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q.questionId, value: 3 });
+  const text = (await call(env, 'GET', `/v1/sessions/${sessionId}/handoff`)).body.handoff;
+  const raw = JSON.parse(text);
+  raw.learnerId = null;
+  const imported = await call(env, 'POST', '/v1/handoff/import', { handoff: JSON.stringify(raw) });
+  assert.equal(imported.status, 201);
+  assert.equal(imported.body.status, 'resumeReady');
+  assert.match(imported.body.learnerId, /^[a-z2-9]{10}$/);
+  assert.equal(imported.body.answeredCount, 1);
+  assert.equal(imported.body.onboarding, undefined);
+  const stored = await env.STORE.get(`ses/${imported.body.sessionId}`, 'json');
+  assert.equal(stored.state.learnerId, imported.body.learnerId);
+  assert.equal(Object.keys(stored.state.history).length, 1);
+});
+
 test('PNGでない図は受け取らない', async () => {
   const { env } = makeEnv();
   await startSession(env);
