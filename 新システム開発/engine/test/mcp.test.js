@@ -77,7 +77,9 @@ test('解説取得ツールをChatGPTモデルへ公開し、照合番号なし�
   const tools = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
   const t = tools.find(x => x.name === 'explainSpec');
   assert.ok(t);
-  assert.equal(t._meta, undefined, 'モデル非公開のvisibility: appを付けない');
+  assert.deepEqual(t._meta.ui.visibility, ['model', 'app'], '解説取得は両方に明示公開');
+  const fallback = tools.find(x => x.name === 'nextQuestion');
+  assert.match(fallback.description, /公式解説資料の安全な取得/);
   assert.match(t.description, /必ず最初に/);
   assert.match(t.description, /通常のチャット本文/);
   const r = await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
@@ -126,6 +128,17 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   } }, { path: '/app' })).body.result;
   assert.equal(legacyAlias.isError, false, '旧ChatGPTツールのsessionId欄でも一時参照番号を照合する');
   assert.equal(legacyAlias.structuredContent.question.questionId, q.questionId);
+  // 実ChatGPTでexplainSpecが登録済みツール一覧にない場合でも、既存のnextQuestionから読取可能。
+  // 特別なsessionId=照合番号は次問進行ではなく公式解説資料のみを返す。
+  const fallback = (await rpc(env, 'tools/call', { name: 'nextQuestion', arguments: { sessionId: context.explanationRef } }, { path: '/app' })).body.result;
+  assert.equal(fallback.isError, undefined);
+  assert.equal(fallback.structuredContent.status, 'explanationContext');
+  assert.equal(fallback.structuredContent.question.questionId, q.questionId);
+  assert.equal(fallback.structuredContent.grade.correctAnswer, 3);
+  assert.equal(JSON.parse(fallback.content[0].text).question.questionId, q.questionId, 'AIが読める通常のcontentに公式根拠がある');
+  const missingAlias = (await rpc(env, 'tools/call', { name: 'nextQuestion', arguments: { sessionId: 'E-0000000000000000' } }, { path: '/app' })).body.result;
+  assert.equal(missingAlias.isError, true);
+  assert.equal(missingAlias.structuredContent.error, 'EXPLANATION_REF_EXPIRED');
   assert.equal(await env.STORE.get(`ses/${sessionId}`), beforeRefRead, '参照番号の復元は学習記録を変更しない');
   const malformed = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: {
     explanationRef: 'E-short',
@@ -155,6 +168,17 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   const stale = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { sessionId, questionId: 'surveyor:2026:main:2' } }, { path: '/app' })).body.result;
   assert.equal(stale.isError, true);
   assert.equal(stale.structuredContent.error, 'EXPLANATION_BINDING_MISMATCH');
+});
+
+test('既存モデル公開ツールは解説参照番号を採点済みデータの読み取りとして識別する', () => {
+  const tool = TOOLS.find(x => x.name === 'nextQuestion');
+  assert.ok(tool);
+  assert.equal(tool.appOnly, undefined);
+  assert.match(tool.description, /次の問題を受け取る/);
+  assert.match(widgetHtml(), /annotations:\{audience:\['assistant'\]\}/);
+  // 問題本文・全選択肢・正答は同一送信のassistant向けブロックに入り、ユーザー向け文へ書かない。
+  assert.match(widgetHtml(), /\.concat\(blocks\)/);
+  assert.doesNotMatch(widgetHtml(), /var visible = [^;]*JSON\.stringify\(data\)/);
 });
 
 test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空の総復習は進行しない', async () => {
