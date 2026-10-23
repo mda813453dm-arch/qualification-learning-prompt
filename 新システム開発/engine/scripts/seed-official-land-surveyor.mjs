@@ -21,6 +21,7 @@ import { MemoryStore, sha256Hex } from '../src/store.js';
 import { GcpStore } from '../src/gcp-store.js';
 import { ingestSource } from '../src/ingest.js';
 import { officialLibrary } from '../src/official-library.js';
+import { readResult } from '../src/cache.js';
 
 const execFile = promisify(execFileCallback);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
