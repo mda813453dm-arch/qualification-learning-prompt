@@ -2,7 +2,7 @@
 
 既存の integration/verify_surveyor_2025.py・morning_complete_question_audit.py
 で確認したSHAと正答を出典とする。図の抽出は既存の共通
-core.render_crops を使い、設問のある元のPDFページをそのまま高解像度で示す。
+core.render_crops を使う。テキスト層で確認できた本文・選択肢はテキスト化し、図表のみ原本を切り出す。
 
 午前（択一1～10）・午後（択一1～20）の正答は一つのPDFに左右2列で
 載っている。必ずPDF内の座標と部別の列を同時検証し、別の部を混ぜない。
@@ -152,6 +152,90 @@ def _question_crop(page):
         return full
 
 
+
+# 数字1～5を問題文中の数値と混同せず、末尾の5肢だけを採用する。
+CHOICE_MARK = re.compile(r"(?<!\S)([1-5])\s+")
+PAGE_FOOTER = re.compile(r"^[\s─ー‐－-]*[（(]\s*\d+\s*[）)][\s─ー‐－-]*$")
+BAD_CHARS = ("\ufffd", "(cid:", "\x00")
+
+
+def _verified_text(crops, doc, number):
+    """PDFテキスト層から正確に5肢を切り出せる場合だけ返す。
+
+    OCRの推測補完はせず、認識・順序・文字の欠落時はNoneを返す。
+    """
+    lines = []
+    for index, _ in crops:
+        raw = doc[index-1].get_text("text", sort=True)
+        if not isinstance(raw, str) or any(b in raw for b in BAD_CHARS):
+            return None
+        block = [_norm(x).strip() for x in raw.splitlines()
+                 if x.strip() and not PAGE_FOOTER.fullmatch(_norm(x).strip())]
+        if not block or (lines and HEADING.match(block[0])):
+            return None
+        lines.extend(block)
+    if not lines or not (head := HEADING.match(lines[0])) or int(head.group(1)) != number:
+        return None
+    body = [HEADING.sub("", lines[0], count=1).strip(), *lines[1:]]
+    body = [x for x in body if x]
+    if len(body) < 2:
+        return None
+    tail = body[-1]
+    markers = list(CHOICE_MARK.finditer(tail))
+    found = None
+    if [int(x.group(1)) for x in markers] == [1, 2, 3, 4, 5]:
+        found = [tail[m.end():(markers[i+1].start() if i < 4 else len(tail))].strip()
+                 for i,m in enumerate(markers)]
+        body = body[:-1]
+    elif len(body) >= 6:
+        match = [re.match(r"^([1-5])\s+(.+)$", line) for line in body[-5:]]
+        if all(match) and [int(m.group(1)) for m in match] == [1,2,3,4,5]:
+            found = [m.group(2).strip() for m in match]
+            body = body[:-5]
+    if not found or any(not x or len(x)>180 for x in found):
+        return None
+    stem = "\n".join(body).strip()
+    if len(stem)<25 or any(HEADING.match(s) for s in body[1:]):
+        return None
+    return stem, found
+
+
+def _verified_figure_crops(crops, doc):
+    """PDFに本物の図・表があるときだけその領域を返す。不確実ならNone。
+
+    文字の下線やページの区切りを図と誤認しない。
+    """
+    try:
+        import fitz
+        regions = []
+        for index,_ in crops:
+            page = doc[index-1]
+            rects = []
+            for img in page.get_images(full=True):
+                rects.extend(r for r in page.get_image_rects(img)
+                             if r.width>30 and r.height>25)
+            lines = [fitz.Rect(d.get("rect") or (0,0,0,0)) for d in page.get_drawings()]
+            lines = [r for r in lines if not r.is_empty and r.y0>=25 and r.y1<page.rect.y1-25]
+            rects.extend(r for r in lines if r.width>60 and r.height>28)
+            thin = [r for r in lines if (r.width>45 and r.height<=6) or (r.height>35 and r.width<=6)]
+            if len(thin)>=4:
+                combined = fitz.Rect(thin[0])
+                for r in thin[1:]: combined |= r
+                if combined.width>80 and combined.height>45:
+                    rects.append(combined)
+            if not rects:
+                continue
+            area = fitz.Rect(rects[0])
+            for r in rects[1:]: area |= r
+            if area.width>page.rect.width*0.94 or area.height>page.rect.height*0.78:
+                return None
+            clip = fitz.Rect(area.x0-9,area.y0-9,area.x1+9,area.y1+9) & page.rect
+            regions.append((index,tuple(clip)))
+        return regions
+    except (TypeError,ValueError,AttributeError,IndexError):
+        return None
+
+
 def parse_questions(doc, section):
     if section not in SECTIONS:
         raise ParseError("SECTION_NOT_SUPPORTED")
@@ -186,21 +270,32 @@ def parse_questions(doc, section):
             if "12345" not in "".join(map(str, choices + next_choices)):
                 raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=n)
             crops.append((following + 1, _question_crop(next_page)))
-        # 原本のページ順で表示。記述式や付録の表を取り込まない。
-        first_crop = crops[0][1]
-        found[n] = RawQuestion(
-            number=n,
-            stem="公式試験問題の本文・図表・選択肢を、下の原本画像で確認してください。拡大して読めます。",
-            choices=[str(j) for j in range(1, 6)],
-            pages=[p for p, _ in crops],
-            rect=(first_crop[1], first_crop[3]),
-            has_graphics=True,
-            notes=["original_question_image", "no_generated_figure"] + (["verified_continuation_page"] if len(crops) > 1 else []),
-            stem_mode="official_image",
-            choice_mode="official_image",
-            crops=crops,
-            preserve_aspect=True,
-        )
+        # テキスト層の検証に成功した問は文字＋本物の図表のみ。
+        # データ不完全・図の位置が不確実な問は従来の原本画像表示に戻す。
+        parsed = _verified_text(crops,doc,n)
+        figure_crops = _verified_figure_crops(crops,doc) if parsed else None
+        first_crop=crops[0][1]
+        if parsed and figure_crops is not None:
+            stem, options=parsed
+            found[n]=RawQuestion(
+                number=n,stem=stem,choices=options,pages=[p for p,_ in crops],
+                rect=(first_crop[1],first_crop[3]),has_graphics=bool(figure_crops),
+                notes=["verified_pdf_text","official_diagrams_only"] +
+                      (["verified_continuation_page"] if len(crops)>1 else []),
+                stem_mode="text",choice_mode="text",crops=figure_crops,
+                preserve_aspect=True,
+            )
+        else:
+            found[n]=RawQuestion(
+                number=n,
+                stem="公式試験問題の本文・図表・選択肢を、下の原本画像で確認してください。拡大して読めます。",
+                choices=[str(j) for j in range(1,6)],pages=[p for p,_ in crops],
+                rect=(first_crop[1],first_crop[3]),has_graphics=True,
+                notes=["original_question_image","text_or_diagram_verification_pending"] +
+                      (["verified_continuation_page"] if len(crops)>1 else []),
+                stem_mode="official_image",choice_mode="official_image",
+                crops=crops,preserve_aspect=True,
+            )
     if sorted(found) != list(range(1, count + 1)):
         raise ParseError("QUESTION_SET_INCOMPLETE", found=sorted(found), expected=count)
     return list(found.values())
