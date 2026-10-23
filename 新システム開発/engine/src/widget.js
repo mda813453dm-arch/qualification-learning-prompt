@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v60.html';
+export const WIDGET_URI = 'ui://qlp/question-v61.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.60';
+export const WIDGET_VERSION = '2026-10-23.61';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1140,9 +1140,10 @@ a{color:inherit}
   async function requestAdaptiveExplanation(ctx){
     var q = ctx.question;
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
-    // チャットには利用者向けの短い合図だけを送る（内部処理や識別子を表示しない）。
-    // モデルは直前のstartSessionのIDからexplainSpecを呼び、学習履歴と解説方針を取得する。
-    await ask(label + 'の解説をお願いします。');
+    // モデルが過去のセッションIDを見失っていても、保存済みの問と正答を一意に特定する。
+    // 参照番号は1時間有効なランダム識別子。利用者のチャットに内部ツール指示や本来のIDは表示しない。
+    if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || ''))) throw new Error('EXPLANATION_REF_MISSING');
+    await ask(label + 'の解説をお願いします。（参照番号：' + ctx.explanationRef + '）');
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
@@ -1151,6 +1152,7 @@ a{color:inherit}
     var ctx = await callTool('explainSpec', args);
     if (!ctx || ctx.error || ctx.status !== 'explanationContext' ||
         ctx.sessionId !== state.sessionId || !ctx.question || !ctx.grade ||
+        !/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || '')) ||
         ctx.question.questionId !== ctx.grade.questionId ||
         (questionId && ctx.grade.questionId !== questionId)) throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
     renderVerifiedExplanation(ctx);
