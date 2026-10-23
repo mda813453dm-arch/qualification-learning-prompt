@@ -1203,7 +1203,8 @@ a{color:inherit}
         (correct ? '　<b>【公式正答】</b>' : '') + (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     var pdf = safeUrl(g.answerPdfUrl);
-    app.innerHTML = '<h2>' + esc(label) + 'の公式正答照合</h2>' +
+    var j = ctx.journey || {};
+    app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + '<h2>' + esc(label) + 'の公式正答照合</h2>' +
       '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '✓ 正解' : '✕ 不正解') + '</div>' +
       '<div class="stem"><b>公式正答：' + esc(ans) + '</b>　／　あなたの回答：' + esc(g.selected == null ? '分からない' : g.selected) + '</div>' +
       (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
