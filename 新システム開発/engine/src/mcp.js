@@ -423,7 +423,9 @@ export function forModel(body) {
   }
   // 学習の始め：免除・学習状況は問題の画面のボタンで聞いている（AIは聞かない）
   if (Array.isArray(body.onboarding)) {
-    const { onboarding, overview, planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
+    // iOSアプリが _meta をウィジェットへ転送しない場合でも、必須の初期質問を表示できる。
+    // 公式概要と質問項目は秘匿情報ではない。AIはツールの案内に従い自分で質問を作らない。
+    const { planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
     return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、画面のあとのチャットの文は「画面のボタンで選んでください」の1行だけにする（長く書くと画面が上に押し出されて見えなくなる）。利用者が答えるまで待つ。そのあとの学習計画・初期診断・学習の開始・進め方の選択も、この画面とエンジンだけで進む（AIは計画を書かず、showMenu も nextQuestion も呼ばない）。画面から解説などを頼まれたら、そのとき答える。' };
   }
   const slim = (v) => {
@@ -451,7 +453,7 @@ export function appInstructions() {
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
-const APP_START_DESC = '資格の学習準備を始める。公式PDFは自動取得できる資格だけ裏で取り込む。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（取得可能ならエンジンが公式サイトから集め、必要な資格は後から本人添付を案内する）。利用者が資格名をまだ言っていないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
+const APP_START_DESC = '資格の学習準備を始める。公式PDFは自動取得できる資格だけ裏で取り込む。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」）。sources は空の配列 [] にする（取得可能ならエンジンが公式サイトから集め、必要な資格は後から本人添付を案内する）。利用者がユーザー入力が「@資格学習 宅建」の場合は qualificationId に必ず「宅建」のみを指定する。「資格学習」はアプリ名であり資格名ではない。資格名が読み取れないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
   nextQuestion: '【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】学習画面から検証済みモデル文脈verifiedOfficialExplanationと共に公式過去問のAI解説を求められたときは、正答・公式問題・原本画像を根拠に通常のチャット本文で解説する。この経路では追加のツール呼出し・showMenuは不要で、次問や終了ボタンは学習画面に既にある。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）、同じ返事の最後に、必ず確認問題（AIが作った問題）の本文・全選択肢・固定した正答を registerConfirmationQuestion に登録して、第1問/全3問の画面で答えを待つ。確認問題をチャット本文に書かない。解説だけで終わって showMenu（kind=next）や「次の問題へ」の案内に進んではいけない（確認問題を飛ばすと、実践問題の前の確認が抜ける）。「○○を確認問題から始めます。」と送ってきたら、解説を省き、registerConfirmationQuestion で第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を出す（画面が新しい枠でチャットの一番下に出る。AIはその前後に長い文を書かない）。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式過去問のAI解説本文は会話に表示し、次問と終了の選択ボタンは既存の学習画面に保持する。',
@@ -553,12 +555,19 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       const res = await callApi(m, path, body);
       // アプリでは、資格名を受けたらすぐ試験概要と免除・学習状況のボタンを画面に出す（AIが次に nextQuestion を呼ぶのに頼らない）
       if (widget && tool.name === 'startSession' && res.status < 400 && res.body?.sessionId) {
-        const nx = await callApi('POST', `/v1/sessions/${encodeURIComponent(res.body.sessionId)}/next`, undefined);
-        if (nx.status < 400 && Array.isArray(nx.body?.onboarding)) {
-          const merged = { ...nx.body, sessionId: res.body.sessionId, learnerId: res.body.learnerId ?? nx.body.learnerId, job: res.body.job };
-          const view = forModel(merged);
-          return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
+        // 現行エンジンは最初の応答へ導入画面を含める。余分な nextQuestion を呼ばず1回で表示する。
+        let merged = res.body;
+        if (!Array.isArray(merged.onboarding) || !merged.onboarding.length) {
+          // 旧サーバーとの互換。ただし取得失敗時は空の学習終了画面へ進めない。
+          const nx = await callApi('POST', `/v1/sessions/${encodeURIComponent(res.body.sessionId)}/next`, undefined);
+          if (nx.status >= 400 || !Array.isArray(nx.body?.onboarding) || !nx.body.onboarding.length) {
+            return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ONBOARDING_UNAVAILABLE' }) }],
+              structuredContent: { status: 'toolError', error: 'ONBOARDING_UNAVAILABLE', sessionId: res.body.sessionId, learnerId: res.body.learnerId } });
+          }
+          merged = { ...nx.body, sessionId: res.body.sessionId, learnerId: res.body.learnerId ?? nx.body.learnerId, job: res.body.job };
         }
+        const view = forModel(merged);
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
       }
       if (widget && WIDGET_TOOLS.has(tool.name) && res.status < 400) {
         const view = forModel(res.body);
