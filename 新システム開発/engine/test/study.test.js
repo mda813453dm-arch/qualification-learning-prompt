@@ -6,8 +6,29 @@ import { newState, pickNext, pin, grade } from '../src/engine.js';
 import { updateReviewItem, selectDueReviews } from '../src/review.js';
 import { FIXED_UI_CHOICES } from '../src/fixed-ui.js';
 import { chooseField, dueReview, frequencyOrder, pickInField, reviewTurn } from '../src/study.js';
+import { sourceQuestionLabel, gradedQuestionContents } from '../src/study-log.js';
 
 const item = (year, n, fieldId) => ({ keyParts: {}, packet: { questionId: `q:${year}:${n}`, year, questionNumber: n, fieldId } });
+
+test('土地家屋調査士の午前・午後を同じ年度・同じ問番号でも別の記録として表示する', () => {
+  const morning = { year: 2025, section: '午前の部', number: 1 };
+  const afternoon = { year: 2025, section: '午後の部', number: 1 };
+  assert.equal(sourceQuestionLabel(morning), '2025年度 午前の部 問1');
+  assert.equal(sourceQuestionLabel(afternoon), '2025年度 午後の部 問1');
+  assert.notEqual(sourceQuestionLabel(morning), sourceQuestionLabel(afternoon));
+  const history = {
+    'land_surveyor:2025:午前の部:1': { source: morning, gradedAt: 2000, result: 'confident_correct' },
+    'land_surveyor:2025:午後の部:1': { source: afternoon, gradedAt: 3000, result: 'wrong' },
+    'land_surveyor:2024:午前の部:1': { source: { year: 2024, section: '午前の部', number: 1 }, gradedAt: 500, result: 'wrong' },
+  };
+  assert.deepEqual(gradedQuestionContents(history, 1000), [
+    '2025年度 午前の部 問1：正解',
+    '2025年度 午後の部 問1：不正解',
+  ]);
+  assert.equal(sourceQuestionLabel({}, 'land_surveyor:2024:午後の部:1'), '2024年度 午後の部 問1');
+  assert.equal(sourceQuestionLabel({ year: 2025, section: 'main', number: 1 }), '2025年度 問1',
+    '区分のない資格へ午前・午後を勝手に追加しない');
+});
 
 test('分野の中では、まだ解いていない年度を先にして複数年度にまたがる', () => {
   const items = [item(2025, 1, 'a'), item(2025, 2, 'a'), item(2025, 3, 'a'), item(2024, 4, 'a'), item(2023, 5, 'a')];
