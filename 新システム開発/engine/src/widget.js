@@ -1228,8 +1228,13 @@ a{color:inherit}
     };
     document.getElementById('moreAiExplanation').onclick = async function(){
       this.disabled = true;
-      await requestAdaptiveExplanation(ctx);
-      var b = document.getElementById('moreAiExplanation'); if (b) b.disabled = false;
+      try {
+        await requestAdaptiveExplanation(ctx);
+      } catch(e) {
+        app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">AIへの解説資料の受け渡しに失敗しました。公式正答と学習状態は保持しています。同じボタンで再試行できます。</div>');
+      } finally {
+        var b = document.getElementById('moreAiExplanation'); if (b) b.disabled = false;
+      }
     };
   }
   function gradeBanner(g, label){
