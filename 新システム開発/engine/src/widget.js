@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v61.html';
+export const WIDGET_URI = 'ui://qlp/question-v62.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.61';
+export const WIDGET_VERSION = '2026-10-23.62';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1143,7 +1143,7 @@ a{color:inherit}
     // モデルが過去のセッションIDを見失っていても、保存済みの問と正答を一意に特定する。
     // 参照番号は1時間有効なランダム識別子。利用者のチャットに内部ツール指示や本来のIDは表示しない。
     if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || ''))) throw new Error('EXPLANATION_REF_MISSING');
-    await ask(label + 'の解説をお願いします。（参照番号：' + ctx.explanationRef + '）');
+    await ask(label + 'の解説をお願いします。（学習セッションID〈一時参照番号〉：' + ctx.explanationRef + '）');
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
