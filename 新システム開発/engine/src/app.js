@@ -800,6 +800,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       qualificationName: cat?.name ?? state.qualificationId, fieldName: cat?.fields?.[fid] ?? '最初の分野',
       officialUrl: cat?.pastExamPage ?? null, sourceAttachmentSupported: !!cat?.uploadAdapter,
       sharedLibrary: publicLibraryView(shared), validatedUploadYears: cat?.validatedUploadYears ?? [],
+      job: jobView(job),
       notice: job?.state === 'failed'
         ? '公式過去問の取得または検証に失敗しました。保存状況を更新し、利用可能な年度の問題を確認してください。'
         : '現在利用できる公式過去問が0件です。未登録・保存データを読み出せない状態と、全問終了は異なります。共有保存状況を更新してください。' };
