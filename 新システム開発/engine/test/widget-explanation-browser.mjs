@@ -53,18 +53,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.equal(context.questionNumber, 1);
       assert.deepEqual(context.choices, first.question.choices);
       assert.equal(context.correctAnswer, 3);
-      const before = toolCalls.filter(c => c.name === 'explainSpec').length;
+      const before = toolCalls.length;
       const body = `AIによる解説（結合試験用）\n\n${context.year}年度 問${context.questionNumber}の正答は${context.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.choices.map((c, i) => `|${i + 1}|${c}|`).join('\n')}`;
-      const result = await tool('showMenu', { kind: 'next', body,
-        sessionId: context.sessionId, studyId: context.studyId, learnerId: context.learnerId });
-      assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, before,
-        'AI解説の生成中はエンジンの再取得を呼ばない');
-      return result;
+      assert.equal(toolCalls.length, before, 'AIは追加のエンジン呼出しなしで解説できる');
+      return { body };
     });
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, study, session }) => {
-      window.messages = []; window.hiddenContext = null; window.droppedContext = 0; window.droppedWidgetState = 0;
+      window.messages = []; window.modelReplies = []; window.hiddenContext = null; window.droppedContext = 0; window.droppedWidgetState = 0;
       const iframe = document.createElement('iframe');
       iframe.style.cssText = 'width:100%;height:650px;border:0';
       const send = data => iframe.contentWindow.postMessage(data, '*');
@@ -83,7 +80,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          if (window.messages.length > 1) deliver(await window.modelStep(window.messages.at(-1), window.hiddenContext));
+          if (window.messages.length > 1) window.modelReplies.push(await window.modelStep(window.messages.at(-1), window.hiddenContext));
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
@@ -101,12 +98,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '保存した採点データを解説前に自動取得');
     assert.match(await ui.locator('#app').innerText(), /公式正答：3/);
     await ui.getByRole('button', { name: 'AI解説をもう一度表示' }).click();
-    await ui.getByText('AIによる解説（結合試験用）', { exact: true }).waitFor();
-    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '解説の冒頭にも全体位置を示す');
-    assert.equal(await ui.locator('table tbody tr').count(), 5);
-    assert.equal(await ui.locator('h2').innerText(), '次はどうしますか？');
-    assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(), ['次の問題へ', '今日はここまで（学習を終了）'],
-      '解説済みなら無反応の「解説を見る」ボタンを出さない');
+    await page.waitForFunction(() => window.modelReplies.length === 1);
+    assert.match((await page.evaluate(() => window.modelReplies[0].body)), /AIによる解説（結合試験用）/);
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '学習画面の解説にも全体位置を示す');
+    assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 1, '本文は会話へ、次問操作は元の画面に残す');
+    assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 0, 'AIに追加ツールを呼ばせずチャットへ解説');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
     assert.equal(await page.evaluate(() => window.droppedContext), 2, '2回とも最新の検証済み文脈を非表示で渡す');
@@ -117,7 +113,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '会話には自然な解説依頼だけを表示し、識別番号や内部指示は出さない');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
-    await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
+    await ui.getByRole('button', { name: '次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
     assert.equal(await page.evaluate(() => window.messages.length), 2, '解説後の次問表示はAIへの依頼に依存しない');
