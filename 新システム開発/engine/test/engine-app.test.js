@@ -96,6 +96,22 @@ test('経路B：出題には正答を入れず、採点は出題時に控えた�
   assert.equal(web.calls.length, fetchesBefore);
 });
 
+test('取り込みジョブが完了でも利用可能な問題が0件なら全問終了と表示しない', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const { sessionId } = await startSession(env);
+  const key = 'job/' + encodeURIComponent(SRC.qualificationId);
+  const job = await env.STORE.get(key, 'json');
+  assert.equal(job.state, 'done');
+  // 本番で問題保存が見つからない状態を再現。学習履歴や資格は変更しない。
+  await env.STORE.put(key, JSON.stringify({ ...job, sources: [] }));
+  const result = await call(env, 'POST', `/v1/sessions/${sessionId}/next`);
+  assert.equal(result.status, 200);
+  assert.equal(result.body.status, 'sourceUnavailable');
+  assert.equal(result.body.sessionId, sessionId);
+  assert.match(result.body.notice, /公式過去問が0件/);
+  assert.notEqual(result.body.notice, '問題を準備しています。');
+});
+
 test('解説は次問先取り後も採点済み問題を返し、再表示で出題・採点・取得・記録を変更しない', async () => {
   const { env, web } = makeEnv({ parserUrl: 'https://parser.example' });
   const { sessionId, learnerId } = await startSession(env);
