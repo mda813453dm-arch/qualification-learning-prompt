@@ -9,7 +9,7 @@ import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { TOOLS } from '../src/mcp.js';
-import { WIDGET_URI, widgetHtml } from '../src/widget.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -94,8 +94,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /rpc\('ui\/message',\{role:'user',content:\[\{type:'text',text:visible\}\]\.concat\(blocks\)\}\)/);
   assert.match(html, /AI解説を再依頼/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(html, /question-v67\.html/);
-  assert.match(html, /2026-10-23\.67/);
+  assert.match(WIDGET_URI, /question-v67\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-23.67');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
