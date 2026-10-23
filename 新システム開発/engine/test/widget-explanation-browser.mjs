@@ -109,7 +109,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
-    assert.ok(messages.every(m => /^2026年度 問1の解説をお願いします。\（参照番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
+    assert.ok(messages.every(m => /^2026年度 問1の解説をお願いします。\（学習セッションID〈一時参照番号〉：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '解説を受けるモデルは一時参照番号だけで問題を特定できる');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
