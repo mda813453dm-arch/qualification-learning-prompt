@@ -46,7 +46,7 @@ export const TOOLS = [
       type: 'object',
       required: ['qualificationId', 'sources'],
       properties: {
-        qualificationId: { type: 'string' },
+        qualificationId: { type: 'string', description: '利用者が学習する資格名だけを指定する。「@資格学習 宅建」なら「宅建」。「資格学習」はアプリ名で資格ではない。資格名が未指定ならこのツールを呼ばず確認する。' },
         learnerId: { type: 'string', description: '引継ぎデータから再開したときだけ、その引継ぎID' },
         accessCode: { type: 'string', description: '利用コードが必要と返されたときだけ、利用者が入力したコードをそのまま入れる' },
         sources: { type: 'array', maxItems: 40, items: source },
