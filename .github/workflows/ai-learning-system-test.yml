@@ -1,0 +1,33 @@
+name: AI learning engine tests
+on:
+  push:
+    branches:
+      - ai-learning-system
+    paths:
+      - '新システム開発/engine/**'
+      - '.github/workflows/ai-learning-system-test.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: '新システム開発/engine/package-lock.json'
+      - name: Install dependencies
+        working-directory: '新システム開発/engine'
+        run: npm ci
+      - name: Check JavaScript syntax
+        working-directory: '新システム開発/engine'
+        run: |
+          node --check src/mcp.js
+          node --check src/widget.js
+          node --check src/app.js
+          node --check test/mcp.test.js
+      - name: Run all automated tests
+        working-directory: '新システム開発/engine'
+        run: npm test
