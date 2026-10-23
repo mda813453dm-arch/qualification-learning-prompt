@@ -30,7 +30,7 @@ import { LIMIT_MSG, NEED_CODE, admin as accessAdmin, checkCode, countUse, getCon
 import { INSTRUCTIONS } from './instructions.js';
 import { PRIVACY_HTML } from './privacy.js';
 import { OPENAPI_YAML } from './gpt-openapi.js';
-import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId } from './study-log.js';
+import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, studyKey, timeKey, validLearnerId, sourceQuestionLabel, gradedQuestionContents } from './study-log.js';
 
 export const DEFAULT_PARSER_VERSION = '0.8.2';
 const MAX_SOURCES = 40;
@@ -259,7 +259,7 @@ function pendingLabel(saved) {
   const cur = saved?.current;
   if (!cur || cur.grade || !cur.source) return null;
   const year = cur.source.year ? `${cur.source.year}年度 ` : '';
-  return `${year}問${cur.source.number ?? '?'}`;
+  return sourceQuestionLabel(cur.source, cur.questionId);
 }
 
 /** 引継ぎデータの文から、引継ぎIDらしい文字列を探す（「引継ぎID」の近くを先に。最大5つ）。 */
@@ -1689,8 +1689,11 @@ async function route(request, env, url, now) {
           const weak = weakFields(st.history, cat?.fields ?? {});
           if (weak.length) input = { ...input, weaknesses: weak };
         }
-        if (!(input.contents ?? []).length && graded.length) {
-          input = { ...input, contents: graded.map((h) => `${h.source?.year ?? '年度未確認'}年度 問${h.source?.number ?? '?'}：${h.result === 'wrong' ? '不正解' : h.result === 'recall_failure' ? '分からない（正答を確認）' : '正解'}`) };
+        // AIの自由文では午前・午後の区分を落とすことがあるため、
+        // 公式問題の採点記録があれば、必ずエンジン側の出典IDから行を構成する。
+        // 問1が同年度に二つあっても午前・午後を別問題として記録する。
+        if (graded.length) {
+          input = { ...input, contents: gradedQuestionContents(st.history, study.startedAt) };
         }
         // 利用者が本文を手入力しなくても、実際の回答・復習予定から引継ぎを構成する。
         const fieldNames = cat?.fields ?? {};
@@ -1749,7 +1752,7 @@ async function route(request, env, url, now) {
         }
         const pendingCurrent = st.current && !st.current.grade ? st.current : null;
         const pendingText = pendingCurrent?.source?.year && pendingCurrent?.source?.number
-          ? `${pendingCurrent.source.year}年度 問${pendingCurrent.source.number}（未回答）` : null;
+          ? `${sourceQuestionLabel(pendingCurrent.source, pendingCurrent.questionId)}（未回答）` : null;
         const weak = weakFields(st.history ?? {}, fields);
         if (!(input.nextPriority ?? []).length) {
           const priority = [];
@@ -1783,7 +1786,7 @@ async function route(request, env, url, now) {
         }
         const skipped = (st.skipped ?? []).filter((x) => Number.isFinite(x.at) && x.at >= study.startedAt);
         if (skipped.length) {
-          const detail = skipped.map((x) => `${x.year ?? '年度未確認'}年度 問${x.questionNumber ?? '?'}`).join('、');
+          const detail = skipped.map((x) => sourceQuestionLabel({ year: x.year, section: x.section, number: x.questionNumber }, x.questionId)).join('、');
           input = { ...input, results: { ...(input.results ?? {}), skipped: skipped.length, skippedDetail: detail } };
         }
       } catch (e) {
