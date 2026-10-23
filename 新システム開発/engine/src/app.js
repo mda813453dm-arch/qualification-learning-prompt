@@ -789,6 +789,21 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
           : 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題・正答PDFを添付してください。')
         : '今回の学習対象の公式問題は共有保存されていません。未保存の部だけPDFを添付してください。' };
   }
+  // 汎用資格共通：問題を一件も読めない状態を「全問終了」と誤判定しない。
+  // 既存の学習履歴を消さず、共有ライブラリを確認・更新する操作へ戻す。
+  // 取り込み実行中のみwaitingのまま扱い、読み取り失敗/未登録をfinishedにしない。
+  if (items.length === 0 && job?.state !== 'running') {
+    const shared = await libraryFor(env, state.qualificationId, now);
+    const fields = studyFieldOrder(state, cat);
+    const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
+    return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
+      qualificationName: cat?.name ?? state.qualificationId, fieldName: cat?.fields?.[fid] ?? '最初の分野',
+      officialUrl: cat?.pastExamPage ?? null, sourceAttachmentSupported: !!cat?.uploadAdapter,
+      sharedLibrary: publicLibraryView(shared), validatedUploadYears: cat?.validatedUploadYears ?? [],
+      notice: job?.state === 'failed'
+        ? '公式過去問の取得または検証に失敗しました。保存状況を更新し、利用可能な年度の問題を確認してください。'
+        : '現在利用できる公式過去問が0件です。未登録・保存データを読み出せない状態と、全問終了は異なります。共有保存状況を更新してください。' };
+  }
   const prevField = state.current?.fieldId ?? null;
   // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
   if (want && FRESH_WANT.test(want)) {
@@ -841,7 +856,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       if (!state.waitedForImport) await saveSession(env, id, { ...state, waitedForImport: true }, now);
       return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
     }
-    return { status: pick.status, notice, attachNotice: ATTACH_NOTICE, howToAttach: ATTACH_HOW, job: jobView(job) };
+    return { status: pick.status, notice: pick.status === 'finished'
+      ? '利用可能な公式過去問はすべて解答済みです。総復習するか学習を終了してください。'
+      : notice, attachNotice: ATTACH_NOTICE, howToAttach: ATTACH_HOW, job: jobView(job) };
   }
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
