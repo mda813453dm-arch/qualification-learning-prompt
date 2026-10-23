@@ -100,12 +100,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForFunction(() => window.messages.length === 1);
     assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '保存した採点データを解説前に自動取得');
     assert.match(await ui.locator('#app').innerText(), /公式正答：3/);
-    await ui.getByRole('button', { name: 'AI解説を再依頼' }).click();
+    assert.equal(await ui.getByRole('button', { name: 'AI解説を再依頼' }).count(), 0, '成功した解説画面に無意味な再依頼を表示しない');
+    assert.equal(await ui.getByRole('button', { name: '公式正答を再表示' }).count(), 0, '正答表示中の無意味な再表示を表示しない');
     await page.waitForFunction(() => window.modelReplies.length === 1);
     assert.match((await page.evaluate(() => window.modelReplies[0].body)), /AIによる解説（結合試験用）/);
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '学習画面の解説にも全体位置を示す');
     assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 1, '本文は会話へ、次問操作は元の画面に残す');
-    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 2, '画面は採点済み問題を取得・再依頼時に確認する');
+    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '解説の重複依頼をしない');
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion' && /^E-/.test(c.args.sessionId)).length, 1, 'モデルの既存ツールから照合番号で公式根拠を取得');
     assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 0, '解説本文はチャットに直接表示しメニューを重複表示しない');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
@@ -113,7 +114,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedContext), 0, '解説は遅延モデル文脈のACKや取落ちに依存しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
-    assert.equal(messages.length, 2);
+    assert.equal(messages.length, 1);
     assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
@@ -121,7 +122,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.ok(toolCalls.filter(c => c.name === 'nextQuestion' && !/^E-/.test(c.args.sessionId)).length <= 1, '通常の次問取得は学習画面だけが管理する');
-    assert.equal(await page.evaluate(() => window.messages.length), 2, '解説後の次問表示はAIへの依頼に依存しない');
+    assert.equal(await page.evaluate(() => window.messages.length), 1, '解説後の次問表示はAIへの依頼に依存しない');
     for (const [number, answer] of [[2, '1'], [3, '4']]) {
       await ui.locator(`input[name=ans][value="${answer}"]`).check();
       await ui.getByRole('button', { name: '解答する', exact: true }).click();
