@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v63.html';
+export const WIDGET_URI = 'ui://qlp/question-v64.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.63';
+export const WIDGET_VERSION = '2026-10-23.64';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1173,9 +1173,12 @@ a{color:inherit}
     if ((data.stemMode === 'official_image' || data.choiceMode === 'official_image') && !figures.length){
       throw new Error('OFFICIAL_IMAGE_REQUIRED');
     }
+    // ChatGPT iOSのモデル文脈更新がACKしても次ターンへ届かない場合がある。
+    // 検証済み資料と利用者向け依頼を、同じ1回のui/messageで確実に引き渡す。
+    // annotations.audience=["assistant"] の問題本文・公式PNGはユーザーには表示しない。
     if (!bridgeReady) await ready;
-    await rpc('ui/update-model-context',{content:blocks});
-    await ask(label + 'の各選択肢の理由を、学習状況に合わせて解説してください。');
+    var visible = label + 'の各選択肢の理由を、学習状況に合わせて解説してください。';
+    return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}].concat(blocks)});
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
