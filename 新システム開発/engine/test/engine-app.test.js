@@ -847,6 +847,42 @@ test('再表示は同じ未回答問題を返し、学習の記録と次問位�
   assert.notEqual(again.question.questionId, q.questionId, '直前に回答済みの問題に戻さない');
 });
 
+test('学習終了ログは同じ2025年度問1の午前と午後を保存された区分で別々に表示する', async () => {
+  const { env } = makeEnv({ parserUrl: 'https://parser.example' });
+  const session = await startSession(env);
+  const study = (await call(env, 'POST', '/v1/study/start',
+    { qualificationName: '土地家屋調査士', learnerId: session.learnerId })).body;
+  assert.ok(study.studyId);
+  const stored = await env.STORE.get(`ses/${session.sessionId}`, 'json');
+  const history = {
+    'land_surveyor:2025:午前の部:1': {
+      result: 'confident_correct', gradedAt: env.now + 1000, kind: 'new', fieldId: 'l1',
+      source: { year: 2025, section: '午前の部', number: 1 },
+    },
+    'land_surveyor:2025:午後の部:1': {
+      result: 'wrong', gradedAt: env.now + 2000, kind: 'new', fieldId: 'l3',
+      source: { year: 2025, section: '午後の部', number: 1 },
+    },
+  };
+  await env.STORE.put(`ses/${session.sessionId}`, JSON.stringify({
+    ...stored, state: { ...stored.state, history },
+  }));
+  env.now += 5 * 60000;
+  const ended = await call(env, 'POST', `/v1/study/${study.studyId}/end`, {
+    sessionId: session.sessionId,
+    contents: ['2025年度 問1：正解', '2025年度 問1：不正解'],
+  });
+  assert.equal(ended.status, 200, JSON.stringify(ended.body));
+  assert.match(ended.body.log, /2025年度 午前の部 問1：正解/);
+  assert.match(ended.body.log, /2025年度 午後の部 問1：不正解/);
+  assert.doesNotMatch(ended.body.log, /・2025年度 問1：/);
+  assert.match(ended.body.log, /採点確定回答2問（正解1問・不正解1問）/);
+  const again = await call(env, 'POST', `/v1/study/${study.studyId}/end`, { sessionId: session.sessionId });
+  assert.equal(again.status, 200);
+  assert.equal(again.body.log.includes('午前の部 問1'), true);
+  assert.equal(again.body.log.includes('午後の部 問1'), true);
+});
+
 test('終了メニューが学習IDを失ってもセッションIDから同一の引継ぎデータを取得', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const session = await startSession(env);
