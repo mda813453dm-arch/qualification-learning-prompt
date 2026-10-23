@@ -98,9 +98,50 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v69\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-23.69');
+  assert.match(WIDGET_URI, /question-v70\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-23.70');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
+});
+
+test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面へ進み、履歴から次の問題を出す', async () => {
+  const env = makeEnv();
+  const callUi = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const opened = (await callUi('startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
+  const firstStudy = (await callUi('startStudy', { qualificationName: '測量士補', learnerId: opened.learnerId })).structuredContent;
+  assert.ok(firstStudy.studyId);
+  const q = (await callUi('nextQuestion', { sessionId: opened.sessionId })).structuredContent.question;
+  assert.equal(q.questionNumber, 1);
+  const grade = (await callUi('submitAnswer', { sessionId: opened.sessionId, questionId: q.questionId, value: '3' })).structuredContent.grade;
+  assert.equal(grade.correct, true);
+  env.clock = () => T0 + 10000;
+  const list = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
+  const importer = list.find(x => x.name === 'importHandoff');
+  assert.equal(importer._meta['openai/outputTemplate'], WIDGET_URI, '引継ぎ専用結果から学習画面を起動する');
+  const resumed = await callUi('importHandoff', { handoff: '引継ぎID：' + opened.learnerId });
+  assert.equal(resumed.isError, undefined);
+  assert.equal(resumed.structuredContent.status, 'resumeReady');
+  assert.equal(resumed._meta.qlp.status, 'resumeReady');
+  assert.equal(resumed.structuredContent.answeredCount, 1);
+  assert.equal(resumed.structuredContent.onboarding, undefined);
+  assert.equal(resumed._meta.qlp.overview, undefined);
+  assert.ok(resumed.structuredContent.sessionId);
+  assert.notEqual(resumed.structuredContent.sessionId, opened.sessionId);
+
+  const blocked = (await callUi('nextQuestion', { sessionId: resumed.structuredContent.sessionId })).structuredContent;
+  assert.equal(blocked.status, 'needPlan', '再開ボタン前は自動で出題しない');
+  const secondStudy = (await callUi('startStudy', { qualificationName: '測量士補', learnerId: opened.learnerId })).structuredContent;
+  assert.ok(secondStudy.studyId);
+  const next = (await callUi('nextQuestion', { sessionId: resumed.structuredContent.sessionId })).structuredContent;
+  assert.equal(next.question.questionNumber, 2, '解答済みの問1や初期案内ではなく次の問題');
+  assert.equal(next.question.questionId !== q.questionId, true);
+
+  env.clock = () => T0 + 20000;
+  const fromStart = await callUi('startSession', { qualificationId: SRC.qualificationId, learnerId: opened.learnerId, sources: [SRC] });
+  assert.equal(fromStart.structuredContent.status, 'resumeReady', '引継ぎID付きstartSessionも初回導入に戻らない');
+  assert.equal(fromStart._meta.qlp.onboarding, undefined);
+  assert.equal(fromStart.structuredContent.answeredCount, 1);
+  assert.match(widgetHtml(), /resumeSavedStudy/);
+  assert.match(widgetHtml(), /学習を再開する/);
 });
 
 test('画面の非表示文脈がなくても、既知のsessionIdだけで解説対象を取得して解説画面へ渡せる', async () => {
