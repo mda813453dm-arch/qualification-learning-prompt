@@ -31,6 +31,11 @@ const PV = '0.8.2';
 const mode = process.argv[2];
 if (!['--dry-run', '--commit'].includes(mode)) throw new Error('SPECIFY_DRY_RUN_OR_COMMIT');
 const commit = mode === '--commit';
+// 実際のPDFと正答SHAを全年度照合できた承認済みジョブだけで、旧「画像一枚」の共有データを置き換える。
+const textUpgrade = process.env.QLP_LAND_SURVEYOR_TEXT_UPGRADE === 'YES';
+if (textUpgrade && (!commit || process.env.QLP_IMPORT_APPROVED !== 'YES')) {
+  throw new Error('VERIFIED_TEXT_UPGRADE_REQUIRES_APPROVED_SHARED_IMPORT');
+}
 if (commit && (process.env.QLP_IMPORT_APPROVED !== 'YES' ||
     process.env.GOOGLE_CLOUD_PROJECT !== 'qualification-learning' ||
     process.env.QLP_IMPORT_ENV !== 'official-shared-only')) {
@@ -77,7 +82,9 @@ async function parseOfficial(input) {
     const result = JSON.parse(stdout);
     if (result.status !== 'ready' || result.packetCount !== expectedCount ||
         (result.excluded ?? []).length || result.packets?.length !== expectedCount ||
-        result.packets.some((x) => !(x.figures || []).length)) {
+        result.packets.some((x) => !((x.figures || []).length ||
+          (x.stemMode === 'text' && x.choiceMode === 'text' &&
+           x.diagramRequired === false && x.verification?.visual === 'question_level_pdf_graphics_checked')))) {
       throw new Error('OFFICIAL_QUESTIONS_INCOMPLETE');
     }
     const assets = {};
@@ -114,7 +121,7 @@ try {
   };
   for (const {year,section} of wanted) {
     const key = year+':'+section;
-    if (present.has(key)) { console.log(year, section, 'already shared; reused'); continue; }
+    if (present.has(key) && !textUpgrade) { console.log(year, section, 'already shared; reused'); continue; }
     const q = officialFile(pins.get(year)[section]);
     const a = officialFile(pins.get(year).answer);
     const now = Date.now();
@@ -122,10 +129,20 @@ try {
       section, questionUrl:MOJ+q.name, answerUrl:MOJ+a.name, owner:'_shared' };
     const response = await ingestSource(src,{
       store, fetchPdf, parse:parseOfficial, parserVersion:PV, now,
+      forceReparseVerifiedLand:textUpgrade,
     });
     assert.equal(response.result.status,'ready');
     assert.equal(response.result.packetCount,cat.uploadQuestionCounts[section]);
-    console.log(year,section,response.result.packetCount,commit?'saved':'verified only');
+    if (textUpgrade && year === 2025 && section === '午前の部') {
+      const first = response.result.packets.find(p => p.questionNumber === 1);
+      if (!first || first.stemMode !== 'text' || first.choiceMode !== 'text' ||
+          first.figures?.length || !first.stem.includes('トータルステーション') ||
+          first.choices?.length !== 5) {
+        throw new Error('MORNING_2025_Q1_TEXT_NOT_VERIFIED');
+      }
+    }
+    const textCount = response.result.packets.filter(p => p.stemMode === 'text' && p.choiceMode === 'text').length;
+    console.log(year,section,response.result.packetCount,'verifiedText='+textCount,commit?'saved':'verified only');
   }
   const after = await officialLibrary(store,cat,PV,Date.now());
   assert.equal(after.stored.length,8,'SHARED_SECTIONS_INCOMPLETE');
