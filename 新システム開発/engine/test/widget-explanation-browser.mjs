@@ -45,7 +45,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.exposeFunction('engineTool', tool);
     await page.exposeFunction('modelStep', async (message, delivered) => {
       // iOSのホストがassistant-only文脈を全て落とす失敗を再現する。
-      assert.match(message, /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\\（照合番号：E-[A-Za-z0-9_-]{16}\\）$/);
+      assert.match(message, /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/);
       assert.equal(delivered.content.length, 1, 'モデルには可視テキストだけを渡す');
       const ref = message.match(/照合番号：(E-[A-Za-z0-9_-]{16})/)[1];
       const before = toolCalls.length;
@@ -58,7 +58,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.deepEqual(context.question.choices, first.question.choices);
       assert.equal(context.grade.correctAnswer, 3);
       assert.equal(toolCalls.length, before + 1, 'モデル役が照合番号で保存済み根拠を取り直す');
-      const body = `AIによる解説（結合試験用）\\n\\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\\n\\n|番号|選択肢|\\n|---|---|\\n${context.question.choices.map((choice, i) => `|${i + 1}|${choice}|`).join('\\n')}`;
+      const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((choice, i) => `|${i + 1}|${choice}|`).join('\n')}`;
       return { body };
     });
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
@@ -113,7 +113,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
-    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\\（照合番号：E-[A-Za-z0-9_-]{16}\\）$/.test(m)),
+    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
