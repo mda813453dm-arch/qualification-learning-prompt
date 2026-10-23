@@ -105,7 +105,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match((await page.evaluate(() => window.modelReplies[0].body)), /AIによる解説（結合試験用）/);
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '学習画面の解説にも全体位置を示す');
     assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 1, '本文は会話へ、次問操作は元の画面に残す');
-    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 2, 'モデル役は照合番号で根拠を読み直す');
+    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 3, '再依頼時の照合番号更新とモデル役の読取を双方確認する');
     assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 0, '解説本文はチャットに直接表示しメニューを重複表示しない');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 0, '解説中は次問を取得しない');
