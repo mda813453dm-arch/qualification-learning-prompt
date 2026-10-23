@@ -1034,7 +1034,7 @@ async function route(request, env, url, now) {
     const bytes = await readFigure(env.STORE, qsha, pv, file, own ? decodeURIComponent(parts[3]) : null);
     if (!bytes) throw new HttpError(404, 'FIGURE_NOT_FOUND');
     const type = file.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' } });
+    return new Response(bytes, { headers: { 'content-type': type, 'cache-control': 'public, max-age=3600' } });
   }
 
   // 公式PDFのページ画像（トークン不要。キーにPDFのSHA-256が入るので推測できない）
