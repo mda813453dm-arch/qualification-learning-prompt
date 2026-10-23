@@ -585,7 +585,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       const [m, path, body] = tool.api(args);
       const res = await callApi(m, path, body);
       // アプリでは、資格名を受けたらすぐ試験概要と免除・学習状況のボタンを画面に出す（AIが次に nextQuestion を呼ぶのに頼らない）
-      if (widget && tool.name === 'startSession' && res.status < 400 && res.body?.sessionId) {
+      if (widget && tool.name === 'startSession' && res.status < 400 && res.body?.sessionId && res.body.status !== 'resumeReady') {
         // 現行エンジンは最初の応答へ導入画面を含める。余分な nextQuestion を呼ばず1回で表示する。
         let merged = res.body;
         if (!Array.isArray(merged.onboarding) || !merged.onboarding.length) {
