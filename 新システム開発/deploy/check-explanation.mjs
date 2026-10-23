@@ -26,6 +26,10 @@ assert.ok(resource.contents[0].text.includes("content:[{type:'text',text:visible
 assert.ok(resource.contents[0].text.includes("audience:['assistant']"), '利用者に表示しない根拠をAIへ渡す');
 assert.ok(!resource.contents[0].text.includes("rpc('ui/update-model-context',{content:blocks})"), 'ACKしたのに文脈が欠落する経路に依存しない');
 assert.ok(resource.contents[0].text.includes('照合番号：'), '公式問題に対応する照合番号をAIへ渡す');
+assert.ok(resource.contents[0].text.includes('var explicitSession ='), 'UIは現在の資格の明示的なセッションがある場合にだけ復元する');
+assert.ok(!resource.contents[0].text.includes('staleEntry ||'), '初回の導入画面を古いセッションで上書きしない');
+assert.ok(resource.contents[0].text.includes('資格の確認なしに'), '再開画面の資格識別を保持する');
+
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
 assert.equal(spec.isError, true, '採点情報だけを渡してもAIへ解説データを渡さない');
