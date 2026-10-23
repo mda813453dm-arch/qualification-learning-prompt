@@ -34,6 +34,27 @@ function lines(v, fallback = 'なし') {
 const one = (v, fallback = '未確認') => clean(v) || fallback;
 const n = (v) => (Number.isInteger(v) && v >= 0 && v < 100000 ? v : 0);
 
+// 年度だけでは同じ問番号の午前・午後を区別できない。エンジンが保存した区分を用いる。
+const GENERIC_SECTIONS = new Set(['', 'main', '年度共通', '本試験', 'default']);
+export function sourceQuestionLabel(source = {}, questionId = '') {
+  const pieces = String(questionId).split(':');
+  const year = source?.year ?? (pieces.length >= 4 ? Number(pieces[1]) : null);
+  const number = source?.number ?? (pieces.length >= 4 ? Number(pieces[3]) : null);
+  const section = String(source?.section ?? (pieces.length >= 4 ? pieces[2] : '')).trim();
+  const period = Number.isInteger(Number(year)) && Number(year) >= 1900 ? `${year}年度` : '年度未確認';
+  const part = !GENERIC_SECTIONS.has(section) ? ` ${section}` : '';
+  return `${period}${part} 問${Number.isInteger(Number(number)) && Number(number) > 0 ? number : '?'}`;
+}
+
+/** 学習ログの出題・採点履歴はAIの自由文ではなく、保存済みの問題ID・年度・区分から作る。 */
+export function gradedQuestionContents(history = {}, startedAt = 0) {
+  return Object.entries(history ?? {})
+    .filter(([, h]) => Number.isFinite(h?.gradedAt) && h.gradedAt >= startedAt)
+    .sort(([aId, a], [bId, b]) => a.gradedAt - b.gradedAt || aId.localeCompare(bId))
+    .map(([id, h]) => `${sourceQuestionLabel(h.source, id)}：${h.result === 'wrong' ? '不正解' : h.result === 'recall_failure' ? '分からない（正答を確認）' : '正解'}`);
+}
+
+
 /** 学習の記録を作る（開始時刻はこの時点のエンジンの時刻）。 */
 export function newStudy({ qualificationName, learnerId, now }) {
   return { qualificationName: one(qualificationName, '未確認'), learnerId, startedAt: now, endedAt: null, minutes: null };
