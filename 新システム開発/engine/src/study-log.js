@@ -130,6 +130,8 @@ export function finishStudy(study, totalBefore, input, now, engineHandoff = null
     ...lines(input.studiedAreas, '記録なし'),
     '■5. 正誤や弱点などの学習状況',
     `・今回：正解${correct}問・不正解${wrong}問・未回答${n(r.skipped)}問`,
+    '・公式問題の履歴（年度・試験区分・問番号）：',
+    ...lines(input.contents, '今回の出題記録なし'),
     ...lines(input.weaknesses, '弱点の記録なし'),
     ...(engineHandoff ? [`・エンジンの記録：${engineHandoff}`] : []),
     '■6. 復習対象',
