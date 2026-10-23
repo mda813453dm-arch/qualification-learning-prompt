@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v68.html';
+export const WIDGET_URI = 'ui://qlp/question-v69.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-23.68';
+export const WIDGET_VERSION = '2026-10-23.69';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1276,15 +1276,8 @@ a{color:inherit}
       (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
       (pdf ? '<div class="notice"><a href="' + esc(pdf) + '" target="_blank" rel="noopener">公式正答PDFを確認する ›</a></div>' : '') +
       '<div class="notice">ここまでは公式正答との照合です。各選択肢の理由や根拠は、学習履歴に合わせてAIが解説します。</div>' +
-      '<div class="row"><button id="moreAiExplanation">AI解説を再依頼</button><button id="explanationRetry">公式正答を再表示</button><button id="explanationNext">次の問題へ</button></div>' + endBar();
+      '<div class="row"><button id="explanationNext">次の問題へ</button></div>' + endBar();
     scrollUp(true); bindEnd();
-    document.getElementById('explanationRetry').onclick = function(){
-      this.disabled = true;
-      loadExplanation(q.questionId).catch(function(){
-        var b = document.getElementById('explanationRetry'); if(b) b.disabled = false;
-        app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">同じ問題の確認に失敗しました。もう一度押してください。</div>');
-      });
-    };
     document.getElementById('explanationNext').onclick = async function(){
       this.disabled = true;
       try {
@@ -1293,19 +1286,7 @@ a{color:inherit}
         state.next = null; render(out);
       } catch(e) { var b = document.getElementById('explanationNext'); if(b) b.disabled = false; }
     };
-    document.getElementById('moreAiExplanation').onclick = async function(){
-      this.disabled = true;
-      try {
-        // 再依頼のたびに同じ採点済み問題を読み直し、一時照合番号の有効期限を更新する。
-        await loadExplanation(q.questionId, true);
-      } catch(e) {
-        var err = document.getElementById('requestError');
-        if (!err) { app.insertAdjacentHTML('beforeend','<div id="requestError" class="notice" role="alert"></div>'); err = document.getElementById('requestError'); }
-        err.textContent = 'AIへの解説資料の送信に失敗しました。公式正答と学習状態は保持しています。同じボタンで再試行できます。';
-      } finally {
-        var b = document.getElementById('moreAiExplanation'); if (b) b.disabled = false;
-      }
-    };
+
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
@@ -1454,9 +1435,11 @@ a{color:inherit}
   // 画面を行き来したときにも、採点・nextQuestion・startStudyは自動実行しない。
   var restoring = false, wasHidden = false;
   async function restoreFromServer(manual){
-    if (restoring || !state.sessionId) return;
+    if (restoring) return;
+    if (!state.sessionId) { var saved = loadIds(); state.sessionId = saved.sid || saved.lid || null; }
+    if (!state.sessionId) { showRecovery('学習セッションの情報を取得できませんでした。新しい学習画面から再開してください。'); return; }
     restoring = true;
-    var button = document.getElementById('reopenStudy');
+    var button = document.getElementById('reopenStudy') || document.getElementById('recoverStudy');
     if (button) { button.disabled = true; button.textContent = '復元しています…'; }
     try {
       var restored = await callTool('restoreStudyView', { sessionId: state.sessionId });
@@ -1479,7 +1462,7 @@ a{color:inherit}
       state.question = null; state.next = null; state.answered = false;
       render(restored);
     } catch (e) {
-      if (button) { button.disabled = false; button.textContent = '今の学習画面を再開'; }
+      if (button) { button.disabled = false; button.textContent = '学習画面を復元'; }
       var err = document.getElementById('restoreError');
       if (!err) { app.insertAdjacentHTML('beforeend', '<div id="restoreError" class="notice" role="alert"></div>'); err = document.getElementById('restoreError'); }
       err.textContent = '学習状態を復元できませんでした。同じボタンで再試行できます。';
@@ -1489,10 +1472,10 @@ a{color:inherit}
     if (document.hidden) { wasHidden = true; return; }
     if (!wasHidden) return;
     wasHidden = false;
-    if (!locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
+    if (!locked && state.sessionId) restoreFromServer(false);
   });
   if (typeof window.addEventListener === 'function') window.addEventListener('pageshow', function(e){
-    if (e.persisted && !locked && state.sessionId && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
+    if (e.persisted && !locked && state.sessionId) restoreFromServer(false);
   });
   window.addEventListener('message', function(e){
     if (e.source !== window.parent) return;
@@ -1574,16 +1557,23 @@ a{color:inherit}
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     var initial = openaiOutput() || {};
     var staleEntry = Array.isArray(initial.onboarding) || initial.status === 'needPlan';
-    if (state.sessionId && stored.sid === state.sessionId && stored.studyId && !locked &&
-        (staleEntry || !app.querySelector('button:not([disabled])'))) restoreFromServer(false);
+    if (!state.sessionId && stored.sid) state.sessionId = stored.sid;
+    if (state.sessionId && !locked && (staleEntry || !app.querySelector('button:not([disabled])'))) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
     if (!hasView) unavailable();
   });
-  function unavailable(){ app.innerHTML = '<h2>資格学習</h2><div class="notice">学習画面との接続を確認できませんでした。「画面が表示されない」とチャットに入力してください。</div>'; fit(); }
+  function showRecovery(message){
+    app.innerHTML = '<h2>資格学習</h2><div class="notice" role="alert">' + esc(message) + '</div><div class="row"><button id="recoverStudy" type="button">学習画面を復元</button></div>';
+    document.getElementById('recoverStudy').onclick = function(){ restoreFromServer(true); };
+    fit();
+  }
+  function unavailable(){
+    showRecovery('学習画面との接続が切れています。復元ボタンで同じ学習状態を読み直してください。');
+  }
   if (window.openai) render(openaiOutput());
-  setTimeout(function(){ if (!hasView) unavailable(); }, 10000);
+  setTimeout(function(){ if (!hasView) { unavailable(); var ids = loadIds(); if (ids.sid && (bridgeReady || (window.openai && window.openai.callTool))) restoreFromServer(true); } }, 10000);
 })();
 </script></body></html>`;
 }
