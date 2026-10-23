@@ -22,6 +22,11 @@ def synthetic_question(section, year=2025):
     for n in range(1, count + 1):
         page = doc.new_page(width=595, height=842)
         page.insert_text((70, 85), f"第{n} 問 合成データで出題・採点を確認する", fontname="japan", fontsize=12)
+        if n in (1, 2):
+            # PDF文字層が完全な問題。問1は本文・五肢だけ、問2には実際の図が一つある。
+            page.insert_text((70, 125), "望遠鏡の正反の観測値を平均して、測量の誤差について正しく判定できる組合せを選ぶ。", fontname="japan", fontsize=11)
+            if n == 2:
+                page.draw_rect(fitz.Rect(150, 200, 390, 340), color=(0, 0, 0), width=1.2)
         if section == "午後の部" and year == 2022 and n == 18:
             page.insert_text((70, 170), "この問は問題文と図が次ページにも続く。", fontname="japan", fontsize=12)
             page.draw_rect(fitz.Rect(100, 205, 325, 350), width=1.2)
@@ -71,15 +76,25 @@ class PipelineTest(unittest.TestCase):
                     self.assertEqual([p["questionNumber"] for p in result["packets"]], list(range(1, count+1)))
                     self.assertEqual([p["correctAnswer"] for p in result["packets"]], land_surveyor.EXPECTED_BY_YEAR[year][section])
                     self.assertTrue(all(p["fieldId"] == field for p in result["packets"]))
-                    self.assertTrue(all(p["stemMode"] == "official_image" and p["choiceMode"] == "official_image" for p in result["packets"]))
-                    expect_images = count + (1 if year == 2022 and section == "午後の部" else 0)
+                    self.assertEqual(result["packets"][0]["stemMode"], "text", "図なしの問1はテキスト")
+                    self.assertEqual(result["packets"][0]["choices"], ["アウ", "アエ", "イウ", "ウエ", "エオ"])
+                    self.assertFalse(result["packets"][0]["diagramRequired"])
+                    self.assertEqual(result["packets"][0]["figures"], [], "単なる文字列を図扱いしない")
+                    self.assertEqual(result["packets"][1]["stemMode"], "text")
+                    self.assertEqual(result["packets"][1]["choiceMode"], "text")
+                    self.assertTrue(result["packets"][1]["diagramRequired"], "図のある問2だけ図を添える")
+                    self.assertEqual(len(result["packets"][1]["figures"]), 1)
+                    self.assertLess(result["packets"][1]["figures"][0]["rect"][3] - result["packets"][1]["figures"][0]["rect"][1], 200, "問2はページ全体でなく図形だけ")
+                    self.assertTrue(all(p["stemMode"] == "official_image" for p in result["packets"][2:]))
+                    expect_images = count - 1 + (1 if year == 2022 and section == "午後の部" else 0)
                     self.assertEqual(len([k for k in assets if k.endswith(".png")]), expect_images)
                     if year == 2022 and section == "午後の部":
                         q18 = next(p for p in result["packets"] if p["questionNumber"] == 18)
                         self.assertEqual(q18["evidence"]["questionPdfPages"], [19, 20])
                         self.assertEqual(len(q18["figures"]), 2)
                         self.assertEqual([f["page"] for f in q18["figures"]], [19, 20])
-                    self.assertTrue(all(len(assets[p["figures"][0]["file"]]) < 5 * 1024 * 1024 for p in result["packets"]))
+                    self.assertTrue(all(len(assets[p["figures"][0]["file"]]) < 5 * 1024 * 1024
+                                        for p in result["packets"] if p["figures"]))
                     self.assertTrue(all(p["questionPdfSha256"] == q_sha and p["answerPdfSha256"] == answer_sha for p in result["packets"]))
 
     def test_year_and_section_mismatch_fail_closed(self):
