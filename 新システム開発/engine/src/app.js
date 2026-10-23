@@ -13,7 +13,7 @@
 import { CATALOG } from './catalog.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
-import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
+import { constants as cryptoConstants, createHmac } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { SET_SIZE, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
@@ -1465,7 +1465,7 @@ async function route(request, env, url, now) {
   }
 
   // 画面が発行した一時参照番号から、同じ採点済み問題だけを読む。
-  // AIが元の会話のsessionIdを失っても問題を推測しない。参照番号は96ビットの乱数で1時間有効。
+  // AIが元の会話のsessionIdを失っても問題を推測しない。参照番号は秘密鍵付きの96ビットの照合符号で1時間有効。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'explanation-ref' && parts.length === 3) {
     const ref = parts[2];
     if (!/^E-[A-Za-z0-9_-]{16}$/.test(ref)) throw new HttpError(400, 'EXPLANATION_REF_INVALID');
@@ -1516,7 +1516,9 @@ async function route(request, env, url, now) {
     const answeredInField = Object.values(state.history ?? {}).filter((h) => h.fieldId === fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
     // 参照番号はAIが読める短いユーザー向け識別子。実セッションIDと問題IDは会話に表示しない。
     // 学習履歴への書込みは行わない。参照用マッピングだけを期限付き保存する。
-    const explanationRef = 'E-' + randomBytes(12).toString('base64url');
+    // 同じ採点済み問題の再表示では同じ参照番号にする（応答本文の同一性も保持）。
+    const explanationRef = 'E-' + createHmac('sha256', String(env.API_TOKEN || 'test-only'))
+      .update(id + ':' + grade.questionId).digest('base64url').slice(0, 16);
     await env.STORE.put(`eref/${explanationRef}`, JSON.stringify({ sessionId: id, questionId: grade.questionId }), { expirationTtl: 3600 });
     return json(200, { status: 'explanationContext', explanationRef, sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
       journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length, stage: `practice${Math.min(3, Math.max(1, answeredInField))}`, fieldName },
