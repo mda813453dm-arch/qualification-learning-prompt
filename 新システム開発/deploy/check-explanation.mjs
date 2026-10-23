@@ -17,7 +17,8 @@ async function rpc(method, params) {
 const list = await rpc('tools/list', {});
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.sessionId, '保存済み問題の読取引数が公開されている');
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.explanationRef, '学習参照番号による復元ツールが公開されている');
-assert.equal(list.tools.find(t => t.name === 'explainSpec')?._meta, undefined, 'モデルから解説取得ツールが見える');
+assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visibility, ['model','app'], '解説取得をモデルと画面に公開');
+assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
 assert.ok(!resource.contents[0].text.includes('setWidgetState'), '画面からモデル文脈の添付を要求しない');
@@ -35,6 +36,9 @@ assert.equal(missing.structuredContent.error, 'SESSION_NOT_FOUND', '本番にも
 const missingRef = await rpc('tools/call', { name: 'explainSpec', arguments: { explanationRef: 'E-0000000000000000' } });
 assert.equal(missingRef.isError, true);
 assert.equal(missingRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '参照番号だけのモデル呼出しが公開され、未知の番号は安全に拒否');
+const fallback = await rpc('tools/call', { name: 'nextQuestion', arguments: { sessionId: 'E-0000000000000000' } });
+assert.equal(fallback.isError, true);
+assert.equal(fallback.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '登録済みnextQuestionでも照合番号を読み取り専用として処理');
 const oldSchemaRef = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: 'E-0000000000000000' } });
 assert.equal(oldSchemaRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '旧ChatGPTツールのsessionId欄でも一時参照番号を復元できる');
-console.log(`PASS deployed explanation model-visible lookup, durable reference, and read-only context route (${WIDGET_VERSION})`);
+console.log(`PASS deployed verified explanation via pre-registered model-visible nextQuestion, private evidence and safe ref (${WIDGET_VERSION})`);
