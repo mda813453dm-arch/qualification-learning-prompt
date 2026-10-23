@@ -743,6 +743,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let state = state0;
   // アプリでは、このチャットで学習を開始（startStudy）するまで出題しない（学習計画の確認を飛ばさせない）
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
+    // 引継ぎ直後は初回用の試験概要へ戻さず、何度呼んでも同じ再開画面を返す。
+    if (state.resumePending) return resumeReadyView(id, state);
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: await libraryOverview(env, state.qualificationId, now), learnerId: state.learnerId };
   }
   // 3連続誤答では分野・年度の指定を含めて新問を出さない（確認問題正解による復帰待ち）。
@@ -925,6 +927,10 @@ async function restoreStudyView(env, id, state, now) {
   const fields = studyFieldOrder(state, cat);
   const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
   const identity = { sessionId: id, learnerId: state.learnerId, studyId };
+  if (state.resumePending && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
+    // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
+    return { ...resumeReadyView(id, state), restored: true };
+  }
   const check = state.confirmation;
   if (check?.count >= 3) {
     return { ...identity, status: 'confirmation_result', restored: true, complete: true,
@@ -1170,6 +1176,8 @@ async function route(request, env, url, now) {
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
     const restored = given ? await sessionFromLearner(env, given, now) : null;
     if (restored && restored.state.qualificationId === b.qualificationId) {
+      restored.state = { ...restored.state, resumePending: true };
+      await saveSession(env, restored.id, restored.state, now);
       const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
       if (!overviewOnly) {
         const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
@@ -1587,7 +1595,7 @@ async function route(request, env, url, now) {
       try {
         const active = await loadSession(env, activeSessionId, now);
         await saveSession(env, activeSessionId, {
-          ...active, reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 },
+          ...active, resumePending: false, reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 },
         }, now);
       } catch { /* セッション未作成・期限切れのときは、学習開始を妨げない */ }
     }
@@ -1882,6 +1890,7 @@ async function route(request, env, url, now) {
     }
     if (state.learnerId || b.sources) job = await progress(env, sessionJobId(state), now);
     const id = crypto.randomUUID();
+    state = { ...state, resumePending: true };
     await saveSession(env, id, state, now);
     if (state.learnerId) {
       await env.STORE.put(lastSessionKey(state.learnerId), id, { expirationTtl: SESSION_TTL_S });
