@@ -72,18 +72,31 @@ test('トークンはヘッダーか URL で受け取り、どちらも無けれ
   assert.equal(get.status, 405);
 });
 
-test('解説資料の読取はUI専用、従来の解説方針互換は学習画面には返すがモデルへ追加ツールとして公開しない', async () => {
+test('解説取得ツールをChatGPTモデルへ公開し、照合番号なしの疑似正答で解説させない', async () => {
   const env = makeEnv();
   const tools = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
   const t = tools.find(x => x.name === 'explainSpec');
   assert.ok(t);
-  assert.deepEqual(t._meta.ui.visibility, ['app']);
+  assert.equal(t._meta, undefined, 'モデル非公開のvisibility: appを付けない');
+  assert.match(t.description, /必ず最初に/);
+  assert.match(t.description, /通常のチャット本文/);
   const r = await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
-  const value = r.body.result;
-  assert.deepEqual(value.content, []);
-  assert.match(value.structuredContent.explainHow, /マークダウンの表/);
-  assert.match(value.structuredContent.order, /showMenu/);
-  assert.equal(value._meta, undefined);
+  assert.equal(r.body.result.isError, true);
+  assert.equal(r.body.result.structuredContent.error, 'EXPLANATION_REFERENCE_REQUIRED');
+  assert.doesNotMatch(JSON.stringify(r.body.result), /explainHow/, '出題元を照合できなければ解説を返さない');
+});
+
+test('解説依頼は照合番号を可視メッセージに必ず含み、ChatGPTが再取得できる', () => {
+  const html = widgetHtml();
+  assert.match(html, /EXPLANATION_REFERENCE_MISSING/);
+  assert.match(html, /ctx\.explanationRef/);
+  assert.match(html, /照合番号：/);
+  assert.match(html, /rpc\('ui\/message',\{role:'user',content:\[\{type:'text',text:visible\}\]\.concat\(blocks\)\}\)/);
+  assert.match(html, /AI解説を再依頼/);
+  assert.doesNotMatch(html, /AI解説をもう一度表示/);
+  assert.match(html, /question-v67\.html/);
+  assert.match(html, /2026-10-23\.67/);
+  assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
 test('画面の非表示文脈がなくても、既知のsessionIdだけで解説対象を取得して解説画面へ渡せる', async () => {
