@@ -83,7 +83,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          if (window.messages.length > 1) window.modelReplies.push(await window.modelStep(window.messages.at(-1), {content:[m.params.content[0]]}));
+          window.modelReplies.push(await window.modelStep(window.messages.at(-1), {content:[m.params.content[0]]}));
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
