@@ -311,9 +311,12 @@ export const TOOLS = [
     appOnly: true,
     description: '【解説依頼を受けたら必ず最初に呼ぶ】「参照番号：E-」から始まるコードが利用者の文にあれば、sessionIdの記憶を頼らずexplanationRefにその番号を入れて呼ぶ。サーバーが採点済みの同じ問題・全選択肢・公式正答・学習履歴・解説方針を確定して返す。参照番号なしの旧会話ではstartSessionで得たsessionIdを渡す。返ったquestionとgradeを使い、理解度・苦手履歴に応じて自分の言葉で解説を作成し、showMenu(kind=next,body=解説本文,sessionId,studyId,learnerId)で画面に表示する。内部コードを推測・再作成したり、資格名の再入力・「もう一度」という再送依頼で終えたりしない。正答番号・問題文が確認できなければ推測で解説しない。',
     inputSchema: { type: 'object', properties: { explanationRef: { type: 'string', pattern: '^E-[A-Za-z0-9_-]{16}$', description: '会話の参照番号をそのまま渡す。sessionIdは不要' }, sessionId, questionId: { type: 'string', description: '分かる場合だけ、解説対象のquestionId。別の問題ならエラーにする' }, correct: { type: 'boolean' }, selected: { type: 'string' }, correctAnswer: { type: 'string' }, fieldName: { type: 'string' }, checkSuggested: { type: 'boolean' } } },
-    api: (a) => a.explanationRef
-      ? ['GET', `/v1/explanation-ref/${encodeURIComponent(a.explanationRef)}`]
-      : ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/explanation${a.questionId ? `?questionId=${encodeURIComponent(a.questionId)}` : ''}`],
+    api: (a) => {
+      // ChatGPT側が旧版ツール定義を保持していても、参照番号を既存sessionId欄へ渡して復旧可能。
+      const ref = a.explanationRef || (/^E-[A-Za-z0-9_-]{16}$/.test(String(a.sessionId || '')) ? a.sessionId : null);
+      return ref ? ['GET', `/v1/explanation-ref/${encodeURIComponent(ref)}`]
+        : ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/explanation${a.questionId ? `?questionId=${encodeURIComponent(a.questionId)}` : ''}`];
+    },
     local: (a) => typeof a.correct === 'boolean' && a.selected != null && a.correctAnswer != null ? ({
       status: 'explainSpec',
       explainHow: explainHow({ grade: { correct: !!a.correct, selected: String(a.selected ?? ''), correctAnswer: String(a.correctAnswer ?? '') }, fieldName: a.fieldName ?? null }),
