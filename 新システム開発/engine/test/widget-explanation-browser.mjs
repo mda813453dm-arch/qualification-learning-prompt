@@ -43,15 +43,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
     await page.exposeFunction('engineTool', tool);
-    await page.exposeFunction('modelStep', async () => {
-      // 画面文脈の添付を使わず、保存済みの採点結果から復旧できるか。
-      const spec = await tool('explainSpec', { sessionId: knownSessionId });
+    await page.exposeFunction('modelStep', async (message) => {
+      // モデル役は最初のセッションIDを受け取れない条件で試験する。
+      // チャットの自然文に付いた一時参照番号だけで照合済みの採点データへ到達する。
+      const ref = /参照番号：(E-[A-Za-z0-9_-]{16})/.exec(message)?.[1];
+      assert.ok(ref, '短い学習参照番号がAI側のメッセージにある');
+      const spec = await tool('explainSpec', { explanationRef: ref });
       assert.equal(spec.isError, false);
       const context = spec.structuredContent;
       assert.equal(context.question.questionId, first.question.questionId);
       const snapshot = await env.STORE.get(`ses/${knownSessionId}`);
-      const again = await tool('explainSpec', { sessionId: knownSessionId });
-      assert.deepEqual(again.structuredContent, context);
+      const again = await tool('explainSpec', { explanationRef: ref });
+      const withoutNewReference = ({ explanationRef, ...other }) => other;
+      assert.deepEqual(withoutNewReference(again.structuredContent), withoutNewReference(context));
       assert.equal(await env.STORE.get(`ses/${knownSessionId}`), snapshot);
       const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((c, i) => `|${i + 1}|${c}|`).join('\n')}`;
       return tool('showMenu', { kind: 'next', body, sessionId: context.sessionId, studyId: context.studyId, learnerId: context.learnerId });
@@ -75,7 +79,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          if (window.messages.length > 1) deliver(await window.modelStep());
+          if (window.messages.length > 1) deliver(await window.modelStep(window.messages.at(-1)));
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
@@ -105,10 +109,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 2);
-    assert.ok(messages.every(m => m === '2026年度 問1の解説をお願いします。'),
-      'チャットに送るのは短い利用者向けの合図だけ');
+    assert.ok(messages.every(m => /^2026年度 問1の解説をお願いします。\（参照番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
+      '解説を受けるモデルは一時参照番号だけで問題を特定できる');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
-      '内部識別子とAI処理指示をチャットに露出しない');
+      '内部セッションID・問題ID・AI指示をチャットに露出しない');
     await ui.getByRole('button', { name: '1 次の問題へ', exact: true }).click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion').length, 1);
