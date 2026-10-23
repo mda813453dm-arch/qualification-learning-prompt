@@ -332,7 +332,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: '総復習（間違えた問題）' }).count(), 0);
     await ui.locator('#retryQualification').fill('宅建');
     await ui.getByRole('button', { name: 'この資格で開始する' }).click();
-    await ui.getByText('現在の学習状況を選んでください。').waitFor();
+    await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
     const restarts = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'startSession').map(x => x.params.arguments));
     assert.equal(restarts.at(-1).qualificationId, '宅建');
     assert.deepEqual(restarts.at(-1).sources, []);
