@@ -85,14 +85,26 @@ class PipelineTest(unittest.TestCase):
                     self.assertTrue(result["packets"][1]["diagramRequired"], "図のある問2だけ図を添える")
                     self.assertEqual(len(result["packets"][1]["figures"]), 1)
                     self.assertLess(result["packets"][1]["figures"][0]["rect"][3] - result["packets"][1]["figures"][0]["rect"][1], 200, "問2はページ全体でなく図形だけ")
-                    self.assertTrue(all(p["stemMode"] == "official_image" for p in result["packets"][2:]))
-                    expect_images = count - 1 + (1 if year == 2022 and section == "午後の部" else 0)
+                    # 2022午後問18は続きページにも文字層があるため、改修後は
+                    # その本文・選択肢をテキストで復元し図だけを画像にできる。
+                    self.assertTrue(all(p["stemMode"] == "official_image" for p in result["packets"][2:]
+                                        if not (year == 2022 and section == "午後の部" and p["questionNumber"] == 18)))
+                    q18 = (next((p for p in result["packets"] if p["questionNumber"] == 18), None)
+                           if year == 2022 and section == "午後の部" else None)
+                    expect_images = count - 1 + (1 if q18 and q18["stemMode"] == "official_image" else 0)
                     self.assertEqual(len([k for k in assets if k.endswith(".png")]), expect_images)
                     if year == 2022 and section == "午後の部":
                         q18 = next(p for p in result["packets"] if p["questionNumber"] == 18)
                         self.assertEqual(q18["evidence"]["questionPdfPages"], [19, 20])
-                        self.assertEqual(len(q18["figures"]), 2)
-                        self.assertEqual([f["page"] for f in q18["figures"]], [19, 20])
+                        self.assertIn("verified_continuation_page", q18["evidence"]["notes"])
+                        if q18["stemMode"] == "text":
+                            self.assertEqual(len(q18["figures"]), 1)
+                            self.assertEqual([f["page"] for f in q18["figures"]], [19])
+                            self.assertIn("後半の選択肢", q18["stem"])
+                            self.assertEqual(len(q18["choices"]), 5)
+                        else:
+                            self.assertEqual(len(q18["figures"]), 2)
+                            self.assertEqual([f["page"] for f in q18["figures"]], [19, 20])
                     self.assertTrue(all(len(assets[p["figures"][0]["file"]]) < 5 * 1024 * 1024
                                         for p in result["packets"] if p["figures"]))
                     self.assertTrue(all(p["questionPdfSha256"] == q_sha and p["answerPdfSha256"] == answer_sha for p in result["packets"]))
