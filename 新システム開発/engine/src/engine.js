@@ -189,7 +189,8 @@ export function questionScreen(q, display, { fieldName = null, fieldNotice = nul
   const link = q.questionPdfUrl ? `問題PDF：[公式の問題PDF${page ? `（${page}ページ）` : ''}](${q.questionPdfUrl}${page ? `#page=${page}` : ''})` : null;
   // 年に何回もある試験（FP：2024年5月・9月など）は、回の名前で見出しにする
   const when = /^\d{4}年\d{1,2}月/.test(q.section ?? '') ? q.section : `${q.year}年度`;
-  const head = `■${when} 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : q.kind === 'reinforce' ? '（補強）' : ''}`;
+  const section = ['午前の部', '午後の部'].includes(q.section) ? ` ${q.section}` : '';
+  const head = `■${when}${section} 問${q.questionNumber}${q.kind === 'review' ? '（復習）' : q.kind === 'reinforce' ? '（補強）' : ''}`;
   return [
     fieldNotice ? `**${fieldNotice}**` : null,
     fieldName ? `📍${fieldName}\n${head}` : head,
@@ -377,7 +378,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
         current: { ...cur, grade: g },
         lastGrade: g,
         reviewPacing: cur.kind === 'review' ? completedPace(state, cur.kind, today) : state.reviewPacing,
-        skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, questionNumber: cur.source?.number ?? null }],
+        skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, section: cur.source?.section ?? null, questionNumber: cur.source?.number ?? null }],
       },
     };
   }
