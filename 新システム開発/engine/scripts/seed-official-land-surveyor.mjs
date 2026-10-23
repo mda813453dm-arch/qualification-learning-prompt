@@ -170,6 +170,16 @@ try {
   assert.equal(after.stored.length,8,'SHARED_SECTIONS_INCOMPLETE');
   assert.equal(after.totalQuestions,120,'SHARED_QUESTIONS_INCOMPLETE');
   assert.deepEqual(after.missing,[],'UNSAVED_SECTIONS_REMAIN');
+  if (textUpgrade && commit) {
+    const shared2025 = after.sources.find(x => x.year===2025 && x.section==='午前の部');
+    assert(shared2025,'SHARED_2025_MORNING_NOT_LISTED');
+    const readBack = await readResult(store,shared2025.keyParts,Date.now());
+    const q1 = readBack.result?.packets?.find(p=>p.questionNumber===1);
+    assert(readBack.hit && q1?.stemMode==='text' && q1?.choiceMode==='text' &&
+      q1?.figures?.length===0 && q1?.choices?.length===5 &&
+      q1?.stem?.includes('トータルステーション'), 'SHARED_2025_MORNING_Q1_TEXT_NOT_PERSISTED');
+    console.log('SHARED_2025_MORNING_Q1_TEXT_PERSISTED',q1.stem.length,'characters');
+  }
   console.log('ALL 8 sections, 120 official questions verified',commit?'and persisted in shared library':'WITHOUT ANY PRODUCTION WRITES');
 } finally {
   await rm(work,{recursive:true,force:true});
