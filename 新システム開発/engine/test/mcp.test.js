@@ -373,7 +373,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   // 学習の開始（startStudy）の前は出題しない（学習計画の確認を飛ばさせない）
   const earlyRes = await call2('nextQuestion', { sessionId });
   const early = earlyRes.structuredContent;
-  assert.deepEqual(early.onboarding.map((s) => s.kind), ['exempt', 'status']);
+  assert.deepEqual(early.onboarding.map((s) => s.kind), ['status'], '免除制度のない測量士補では免除を聞かない');
   assert.equal(earlyRes._meta.qlp.onboarding.at(-1).kind, 'status');
   assert.equal(early.status, 'needPlan');
   assert.ok(early.overview?.title === '■試験概要');
