@@ -223,7 +223,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1, '解説後も終了操作を残す');
     await page.evaluate(r => window.deliver(r), result({ status: 'menu', menu: {
       kind:'next', prompt:'次はどうしますか？',
-      body:'## 2025年度 問1のAI解説\\n\\n1. 最初の選択肢の根拠を確認\\n2. 次の選択肢と比べる',
+      body:'## 2025年度 問1のAI解説\n\n1. 最初の選択肢の根拠を確認\n2. 次の選択肢と比べる',
       choices:['次の問題へ','今日はここまで（学習を終了）'],
       actions:['next','end'], studyId:'test-study', sessionId,
     } }));
