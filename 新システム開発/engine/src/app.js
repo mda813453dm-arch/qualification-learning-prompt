@@ -1321,6 +1321,19 @@ async function route(request, env, url, now) {
       return json(200, await openDescriptive(env, id, state, now,
         { year: b.year, section: b.section, number: b.number }));
     }
+    // ユーザーが旧問題画面を押した際、採点や進行の変更なしで最新問を検証する。
+    // restoreStudyView は「学習開始済み」でないと記述式を返さないため、この専用照合を使う。
+    if (method === 'GET' && parts[4] === 'status' && parts.length === 5) {
+      const cur = state.descriptiveCurrent;
+      const expected = url.searchParams.get('questionId');
+      const shownAt = Number(url.searchParams.get('shownAt'));
+      if (!cur || !expected || cur.questionId !== expected ||
+          !Number.isFinite(shownAt) || shownAt !== Number(cur.shownAt))
+        throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
+      return json(200, { status: 'descriptiveCurrentVerified', sessionId: id,
+        questionId: cur.questionId, shownAt: cur.shownAt,
+        revealed: !!cur.revealedAt });
+    }
     if (method === 'POST' && parts[4] === 'reveal' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
       if (!cur) throw new HttpError(409, 'DESCRIPTIVE_NOT_OPEN');
