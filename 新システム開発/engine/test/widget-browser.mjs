@@ -76,6 +76,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             } else reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
               ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           }
+          else if (op === 'openDescriptiveQuestion') {
+            const args = m.params.arguments;
+            window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
+              question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
+                year: args.year, section: args.section, number: args.number, kind: 'descriptive',
+                gradingMode: 'none', text: '公式の記述式問題文と資料',
+                pages: [{ page: 24, url: 'https://qlp.test/figure.png' }],
+                sourceUrl: 'https://www.moj.go.jp/content/001450011.pdf' } };
+            reply({ structuredContent: window.lastDescriptive });
+          }
+          else if (op === 'revealDescriptiveAnswer') {
+            reply({ structuredContent: { ...window.lastDescriptive, status: 'descriptiveReveal' } });
+          }
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'explainSpec') reply({ structuredContent: {
@@ -368,6 +381,32 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(resumeCalls.filter(x => x.name === 'nextQuestion').length, 1, '次問をエンジンが1回だけ選択');
     assert.equal(resumeCalls.filter(x => x.name === 'startSession').length, 0, '初回の学習セッションを作り直さない');
     assert.equal(resumeCalls.find(x => x.name === 'startStudy').args.learnerId, 'testlearner');
+
+    // 土地家屋調査士の記述式は午前11/午後21/22を画像・本文で表示し、採点しない。
+    await page.evaluate(() => window.deliver({ structuredContent: {
+      status: 'question', sessionId: 'test-session', question: {
+        questionId: 'land_surveyor:2025:午後の部:20', year: 2025,
+        section: '午後の部', questionNumber: 20, stem: '択一式の本文',
+        choices: ['一', '二', '三', '四', '五'], fieldName: '不動産登記',
+      }
+    } }));
+    await ui.getByRole('button', { name: '記述式（午前11・午後21/22）を開く' }).waitFor();
+    await ui.getByRole('button', { name: '記述式（午前11・午後21/22）を開く' }).click();
+    await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
+    await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /公式の記述式問題文と資料/);
+    assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
+    const beforeDescriptiveGrade = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
+    await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
+    await ui.getByText('参考解答の表示操作を受け付けました。', { exact: false }).waitFor();
+    const descCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'revealDescriptiveAnswer').length);
+    assert.ok(descCalls >= 1);
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), beforeDescriptiveGrade,
+      '解答ボタンで正誤判定ツールを呼ばない');
+    assert.match((await page.evaluate(() => window.followups)).at(-1), /AI参考解答/);
+    await ui.getByRole('button', { name: '次の記述式へ' }).click();
+    await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
+    assert.equal(await ui.locator('input[name=ans]').count(), 0);
 
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
