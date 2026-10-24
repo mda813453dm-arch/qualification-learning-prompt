@@ -43,6 +43,11 @@ test('記述式の画面・解答表示には正答番号・正誤・自動採�
     assert.equal(result.grade,undefined);
     assert.equal(result.question.choices,undefined);
     assert.equal(result.status,revealed?'descriptiveReveal':'descriptiveQuestion');
+    if (revealed) {
+      assert.equal(result.question.text,undefined);
+      assert.equal(result.question.pages,undefined);
+      assert.equal(result.question.layout,undefined);
+    }
   }
 });
 
