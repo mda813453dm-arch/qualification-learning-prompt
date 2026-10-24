@@ -59,7 +59,22 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
   assert.deepEqual(names.sort(), ops.sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 11);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 12);
+});
+
+test('記述式解説の末尾にモデルが最新問専用の操作画面を配置する', async () => {
+  const env = makeEnv();
+  const tools = (await rpc(env, 'tools/list', {})).body.result.tools;
+  const nav = tools.find(x => x.name === 'showDescriptiveActions');
+  assert.ok(nav, '解説後の専用ツールはモデルに公開');
+  assert.equal(nav._meta['openai/outputTemplate'], WIDGET_URI);
+  assert.match(nav.description, /解説を書き終えた直後/);
+  assert.match(INSTRUCTIONS, /showDescriptiveActions/);
+  const view = forModel({ status:'descriptiveActions', sessionId:'session',
+    question: { questionId:'land_surveyor:2025:午前の部:11',text:'秘匿原本' } });
+  assert.equal(view.status, 'descriptiveActions');
+  assert.equal(view.questionId,'land_surveyor:2025:午前の部:11');
+  assert.doesNotMatch(JSON.stringify(view),/秘匿原本/);
 });
 
 test('トークンはヘッダーか URL で受け取り、どちらも無ければ断る', async () => {
@@ -98,8 +113,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v75\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.75');
+  assert.match(WIDGET_URI, /question-v77\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.77');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
