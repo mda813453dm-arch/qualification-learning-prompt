@@ -1012,3 +1012,40 @@ test('測量士補2026年度問6は学習計画なし・セッションID未知�
   assert.equal(unavailable.body.status,'questionUnavailable');
   assert.equal(unavailable.body.question,undefined,'2026年度などへの代替出題をしない');
 });
+
+test('指定した問6が別分野でも学習方法の選択画面に戻さず、公式問そのものを返す', async () => {
+  const { env, web } = makeEnv({ parserUrl: 'https://parser.example' });
+  const parser = fakeParser(web, {
+    answers: [3, 1, 4, 2, 1, 5],
+    fieldIds: ['s1', 's1', 's1', 's1', 's2', 's2'], figureOn: [],
+  });
+  env.parserFetch = async (_, init) => {
+    const b=JSON.parse(init.body);
+    const bytes=v=>Uint8Array.from(atob(v.base64),c=>c.charCodeAt(0));
+    const data=await parser({question:{bytes:bytes(b.question)},answer:{bytes:bytes(b.answer)}});
+    return new Response(JSON.stringify({result:data.result,assets:assetsB64(data.assets)}));
+  };
+  const { sessionId } = await startSession(env);
+  const first=(await call(env,'POST',`/v1/sessions/${sessionId}/next`)).body;
+  assert.equal(first.question.fieldName,'測量に関する法規');
+  const chosen=(await call(env,'POST',`/v1/sessions/${sessionId}/next`,
+    {question:'問6を出題してください'})).body;
+  assert.equal(chosen.status,'question');
+  assert.equal(chosen.question.questionNumber,6);
+  assert.equal(chosen.question.year,2026);
+  assert.equal(chosen.question.fieldName,'多角測量');
+  assert.equal(chosen.fieldChanged,true,'通常の分野移行が検知できるケースを再現');
+  assert.equal(chosen.explicitQuestion,true,'明示指定フラグが画面に伝播する');
+  assert.equal(chosen.question.choices.length,5);
+  assert.match(chosen.question.stem,/問6の本文/);
+  assert.equal(chosen.question.correctAnswer,undefined);
+  assert.equal(chosen.itemMenu,undefined,'分野移行で問6を選択画面に差し替えない');
+  const directYear=(await call(env,'POST',`/v1/sessions/${sessionId}/next`,
+    {question:'2026年度 問6'})).body;
+  assert.equal(directYear.explicitQuestion,true);
+  assert.equal(directYear.question.questionNumber,6);
+  const nonExisting=(await call(env,'POST',`/v1/sessions/${sessionId}/next`,
+    {question:'2026年度 問99'})).body;
+  assert.equal(nonExisting.status,'questionUnavailable');
+  assert.equal(nonExisting.question,undefined,'指定問がない場合は分野選択にも別問にも進めない');
+});
