@@ -294,8 +294,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       bc.postMessage({ at: Date.now() + 1000 });
       bc.close();
     });
-    await ui.getByRole('button', { name: '今の学習画面を再開' }).waitFor();
-    await ui.getByRole('button', { name: '今の学習画面を再開' }).click();
+    await ui.getByRole('button', { name: 'ここで現在の学習を開く' }).waitFor();
+    assert.equal(await ui.locator('.old-screen').count(),1,'旧表示はコンパクトな1行へ移行');
+    assert.equal(await ui.locator('.stem').count(),0,'以前の問題文・選択肢・解説をDOMから除去');
+    assert.equal(await ui.locator('.study-progress').count(),0,'前の進捗バーも残さない');
+    assert.ok(await ui.locator('#app').evaluate(el => el.getBoundingClientRect().height < 95),
+      '長い過去問の画面をiPhoneでも高さ95px未満に縮める');
+    await ui.getByRole('button', { name: 'ここで現在の学習を開く' }).click();
     await ui.getByRole('button', { name: '2 解説を見る' }).waitFor();
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'restoreStudyView').length), 1);
