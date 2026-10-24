@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v75.html';
+export const WIDGET_URI = 'ui://qlp/question-v76.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.75';
+export const WIDGET_VERSION = '2026-10-24.76';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -122,7 +122,10 @@ a{color:inherit}
     var overlay = document.createElement('div'); overlay.className = 'fig-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-label', b.getAttribute('aria-label'));
     overlay.innerHTML = '<div class="fig-controls"><button type="button" data-close>閉じる</button><button type="button" data-minus aria-label="縮小">−</button><button type="button" data-plus aria-label="拡大">＋</button></div><div class="fig-scroll"><img alt="拡大した公式の問題の図" src="' + esc(b.getAttribute('data-figure')) + '"></div>';
     document.body.appendChild(overlay); var img = overlay.querySelector('img'), scroll = overlay.querySelector('.fig-scroll'), scale = 2;
-    function resize(){ img.style.width = Math.round(scroll.clientWidth * scale) + 'px'; }
+    // モーダルを開いた直後は必ず図の左上を表示。親ページのスクロール位置を引き継がない。
+    overlay.scrollTop = 0; scroll.scrollTop = 0; scroll.scrollLeft = 0;
+    function resize(){ img.style.width = Math.round(scroll.clientWidth * scale) + 'px'; scroll.scrollTop = 0; scroll.scrollLeft = 0; }
+    img.addEventListener('load', function(){ scroll.scrollTop = 0; scroll.scrollLeft = 0; });
     resize(); overlay.querySelector('[data-close]').onclick = function(){ overlay.remove(); };
     overlay.querySelector('[data-plus]').onclick = function(){ scale = Math.min(6, scale + 1); resize(); };
     overlay.querySelector('[data-minus]').onclick = function(){ scale = Math.max(1, scale - 1); resize(); };
@@ -630,8 +633,9 @@ a{color:inherit}
         if (!r || r.error || r.status !== 'descriptiveReveal' ||
             r.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
         render(r);
+        var isLand = q.number === 11 || q.number === 21;
         await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、公式模範解答とは区別してください。自動採点はしないでください。',
-          label + 'のAI参考解答・解説をお願いします。座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。');
+          isLand ? label + 'のAI参考解答・解説をお願いします。土地の座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。' : label + 'の建物のAI参考解答・解説をお願いします。問題に不要な三角関数・複素数の座標計算を追加しないでください（自動採点なし）。');
       } catch(e) {
         var err = document.getElementById('descriptiveRevealError');
         if (!err) app.insertAdjacentHTML('beforeend','<div class="notice" id="descriptiveRevealError" role="alert"></div>');
