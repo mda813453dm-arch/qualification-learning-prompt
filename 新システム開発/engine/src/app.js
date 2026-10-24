@@ -309,6 +309,33 @@ function catalogQid(v) {
   return catalogIdByName(t) ?? t;
 }
 
+/** 利用者が番号を指定した公式問題の出題依頼。自動選題と区別し、未登録なら代替問題を出さない。 */
+function isExactQuestionRequest(value) {
+  return typeof value === 'string' && /(?:問\s*\d{1,3}|第\s*\d{1,3}\s*問)/.test(value.normalize('NFKC'));
+}
+function directQuestionText(spec) {
+  if (spec == null) return null;
+  const year = spec.year, number = spec.questionNumber ?? spec.number;
+  const section = spec.section == null ? '' : String(spec.section).trim();
+  if (!Number.isInteger(year) || year < 1990 || year > 2100 ||
+      !Number.isInteger(number) || number < 1 || number > 200 ||
+      section.length > 40 || /[<>\r\n]/.test(section))
+    throw new HttpError(400, 'DIRECT_QUESTION_INVALID');
+  return `${year}年度 ${section ? section + ' ' : ''}問${number}`;
+}
+/** 指定問の自主学習を開始する。開始前の通常計画は変更せず、学習時間は明示的な出題依頼時に計測する。 */
+async function startDirectStudy(env, state, now) {
+  const lid = state.learnerId;
+  if (await studyStartedInThisChat(env, lid)) return env.STORE.get(lastStudyKey(lid));
+  const study = newStudy({ qualificationName: catalogFor(state.qualificationId)?.name ?? state.qualificationId,
+    learnerId: lid, now });
+  const studyId = crypto.randomUUID();
+  await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
+  await env.STORE.put(lastStudyKey(lid), studyId, { expirationTtl: STUDY_TTL_S });
+  await env.STORE.put(studyStartKey(lid), String(now), { expirationTtl: STUDY_TTL_S });
+  return studyId;
+}
+
 const NOT_SUPPORTED_HINT = 'この資格の過去問は、まだエンジンで扱えません。利用者に、公式の過去問PDFを添付してもらうか、AIが作った練習問題と明示して進めるかを選んでもらってください。';
 
 /** 新しい学習者のセッションを作り、過去問の取り込みを始める（startSession と同じ）。 */
@@ -782,7 +809,7 @@ async function diagStep(env, id, state0, now, b) {
 
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
-  let want = want0;
+  let want = want0 ?? state0.directRequested ?? null;
   let state = state0;
   // アプリでは、このチャットで学習を開始（startStudy）するまで出題しない（学習計画の確認を飛ばさせない）
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
@@ -830,6 +857,16 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   const job = await progress(env, sessionJobId(state), now);
   let items = withoutExempt(state, await availablePackets(env.STORE, job, now));
+  // 直接指定の問が未保存なら、ほかの年度・問へ自動的に代替しない。
+  if (isExactQuestionRequest(want) && !findWanted(state, items, want, {})) {
+    const shared = await libraryFor(env, state.qualificationId, now);
+    return { status: 'questionUnavailable', sessionId: id, learnerId: state.learnerId,
+      requestedQuestion: want, sharedLibrary: publicLibraryView(shared),
+      preparing: job?.state === 'running',
+      notice: job?.state === 'running'
+        ? '指定された公式問題はまだ出題準備ができていません。別の問題には進まず、同じ問題を再確認できます。'
+        : '指定された年度・問番号の公式問題は、現在の検証済み保存データから見つかりませんでした。別の問題は出題していません。' };
+  }
   // 午前免除などで、共有済みの問題が学習対象外なら未保存分だけ案内する。
   if (cat?.overviewOnly && items.length === 0 && !job?.sources?.some((s) => s.status === 'pending')) {
     const shared = await libraryFor(env, state.qualificationId, now);
@@ -925,7 +962,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
-  state = pin(state, pick.item, pick.kind, now);
+  state = pin({ ...state, directRequested: null }, pick.item, pick.kind, now);
   if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
   // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
@@ -1230,6 +1267,7 @@ async function route(request, env, url, now) {
     if (!qidOk(String(b.qualificationId ?? '').replace(/\s/g, ''))) throw new HttpError(400, 'QUALIFICATION_INVALID');
     // 資格名（「賃管」など）で呼ばれても、エンジンが扱う資格なら番号に読み替える（指示文に番号を並べなくてよいように）
     b.qualificationId = catalogQid(b.qualificationId);
+    const directWanted = directQuestionText(b.requestedQuestion);
     const known = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId);
     if (!known && !(Array.isArray(b.sources) && b.sources.length)) throw new HttpError(422, 'QUALIFICATION_NOT_SUPPORTED', NOT_SUPPORTED_HINT);
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
@@ -1252,6 +1290,13 @@ async function route(request, env, url, now) {
         await startJob(env.STORE, sessionJobId(restored.state), sources, now, { persistent: true });
         await markEngineSources(env, sources);
       }
+      if (directWanted) {
+        const directState = { ...restored.state, resumePending: false, directRequested: directWanted };
+        await saveSession(env, restored.id, directState, now);
+        const studyId = await startDirectStudy(env, directState, now);
+        const view = await nextView(env, restored.id, directState, now, { want: directWanted });
+        return json(201, { ...view, sessionId: restored.id, learnerId, studyId });
+      }
       return json(201, { ...resumeReadyView(restored.id, restored.state),
         job: overviewOnly ? null : jobView(await progress(env, sessionJobId(restored.state), now)),
         ...(env.QLP_WIDGET ? {} : { ...PLAN_UI, ...{ resumeMenu: RESUME_MENU, howToShow: RESUME_HOW } }),
@@ -1259,6 +1304,13 @@ async function route(request, env, url, now) {
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
     const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
+    if (directWanted) {
+      const directState = { ...state, directRequested: directWanted };
+      await saveSession(env, id, directState, now);
+      const studyId = await startDirectStudy(env, directState, now);
+      const view = await nextView(env, id, directState, now, { want: directWanted });
+      return json(201, { ...view, sessionId: id, learnerId, studyId });
+    }
     const job = overviewOnly ? null : await progress(env, sessionJobId(state), now);
     return json(201, { sessionId: id, learnerId, job: jobView(job), ...PLAN_UI,
       ...(env.QLP_WIDGET ? {
@@ -1421,7 +1473,8 @@ async function route(request, env, url, now) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
     await gateUse(env, state.learnerId, now);
-    const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : null;
+    const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
+    if (isExactQuestionRequest(want)) await startDirectStudy(env, state, now);
     // モデルに新しいMCPツールがまだ公開されていない環境用：既存のnextQuestionを
     // 読み取り専用の解説後ナビゲーションへ転用する。現在問以外は409で拒否する。
     const actionsPrefix = '記述式解説後の操作メニュー:';
