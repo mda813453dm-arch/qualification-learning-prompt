@@ -1359,6 +1359,9 @@ async function route(request, env, url, now) {
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : cur.explanationMarkdown;
       if (method === 'POST') {
+        if (typeof explanationMarkdown !== 'string' || !explanationMarkdown.trim() ||
+            explanationMarkdown.length > 40000)
+          throw new HttpError(400, 'DESCRIPTIVE_EXPLANATION_REQUIRED');
         const check = validateDescriptiveExplanation(explanationMarkdown, cur);
         if (!check.ok) throw new HttpError(422, check.code);
         // 最後まで完成した解説だけを問題IDに結びつけて保存。画面の復元時にも同じ全文を表示する。
