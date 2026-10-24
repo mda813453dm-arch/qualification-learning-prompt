@@ -28,7 +28,7 @@ test('解説Markdownを安全にHTML化し、関数電卓の式を失わない',
     '<script>alert("unsafe")</script>',
   ].join('\n');
   const out=explanationHtml(markdown);
-  assert.match(out,/<h3>面積の求め方<\/h3>/);
+  assert.match(out,/<h2>面積の求め方<\/h2>/);
   assert.match(out,/<strong>関数電卓<\/strong>/);
   assert.match(out,/A\*Conjg\(B\)/);
   assert.match(out,/<table>/);
