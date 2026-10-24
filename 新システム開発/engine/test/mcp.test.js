@@ -104,7 +104,7 @@ test('解説取得ツールをChatGPTモデルへ公開し、照合番号なし�
   const fallback = tools.find(x => x.name === 'nextQuestion');
   assert.match(fallback.description, /公式解説資料の安全な取得/);
   assert.match(t.description, /必ず最初に/);
-  assert.match(t.description, /通常のチャット本文/);
+  assert.match(t.description, /showMenu/);
   const r = await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
   assert.equal(r.body.result.isError, true);
   assert.equal(r.body.result.structuredContent.error, 'EXPLANATION_REFERENCE_REQUIRED');
@@ -116,13 +116,14 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /EXPLANATION_REFERENCE_MISSING/);
   assert.match(html, /ctx\.explanationRef/);
   assert.match(html, /照合番号：/);
-  assert.match(html, /rpc\('ui\/message',\{role:'user',content:\[\{type:'text',text:visible\}\]\.concat\(blocks\)\}\)/);
+  assert.match(html, /rpc\('ui\/message',\{role:'user',content:\[\{type:'text',text:visible\}\]\}\)/);
+  assert.doesNotMatch(html, /\.concat\(blocks\)|verifiedOfficialExplanation|async function verifiedImageContext/, '内部JSONと画像をチャットへ添付しない');
   assert.doesNotMatch(html, /<button id=\\"moreAiExplanation\\">/);
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v84\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.84');
+  assert.match(WIDGET_URI, /question-v85\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.85');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
@@ -275,9 +276,8 @@ test('既存モデル公開ツールは解説参照番号を採点済みデー�
   assert.ok(tool);
   assert.equal(tool.appOnly, undefined);
   assert.match(tool.description, /次の問題を受け取る/);
-  assert.match(widgetHtml(), /annotations:\{audience:\['assistant'\]\}/);
-  // 問題本文・全選択肢・正答は同一送信のassistant向けブロックに入り、ユーザー向け文へ書かない。
-  assert.match(widgetHtml(), /\.concat\(blocks\)/);
+  assert.doesNotMatch(widgetHtml(), /verifiedOfficialExplanation|\.concat\(blocks\)/,
+    '問題本文・公式正答を会話メッセージに自動添付しない');
   assert.doesNotMatch(widgetHtml(), /var visible = [^;]*JSON\.stringify\(data\)/);
 });
 
@@ -920,7 +920,9 @@ test('再表示は読み取り専用で、内部指示を利用者の発言と�
   assert.ok(app.includes('async function redisplayView('));
   const fn = app.split('async function redisplayView(')[1].split('/** 図をもう一度')[0];
   assert.ok(!fn.includes('saveSession(') && !fn.includes('nextView(') && !fn.includes('pin('));
-  assert.ok(!html.includes("rpc('ui/update-model-context',{content:blocks})") && html.includes("rpc('ui/message',{role:'user',content:[{type:'text',text:visible}].concat(blocks)})"), '同一メッセージで公式根拠を渡し、ACK後の文脈落ちを防ぐ');
+  assert.ok(!html.includes("rpc('ui/update-model-context',{content:blocks})") &&
+    html.includes("rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]})"),
+    'モデルへの証拠は照合番号経由。iOSの会話に生JSON・添付画像を載せない');
   assert.ok(!html.includes('window.openai.sendFollowUpMessage({ prompt: text })'), '内部依頼文を利用者のチャットへ送らない');
   assert.ok(!html.includes("rpc('ui/message', { role: 'user', content: [{ type: 'text', text: text }] })"));
   assert.ok(html.includes('showEnd(r);'));
