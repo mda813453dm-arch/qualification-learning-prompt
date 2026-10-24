@@ -20,7 +20,8 @@ import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
-import { awaitUpload, httpParser, renderPages, uploadedParse } from './parser-client.js';
+import { awaitUpload, httpParser, renderPages, renderDescriptive, uploadedParse } from './parser-client.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView } from './descriptive.js';
 import { handleRpc } from './mcp.js';
 import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
 import { officialLibrary, publicLibraryView, combineWithSharedJob } from './official-library.js';
@@ -323,6 +324,41 @@ async function createSession(env, { qualificationId, learnerId, plan, sources },
   await saveSession(env, id, state, now);
   await env.STORE.put(lastSessionKey(learnerId), id, { expirationTtl: SESSION_TTL_S });
   return { id, state };
+}
+
+/** 記述式は択一120問と別系統で出題する。公式問題原本をSHAで検証する。 */
+async function openDescriptive(env, id, state, now, requested) {
+  if (state.qualificationId !== 'land_surveyor') throw new HttpError(422, 'DESCRIPTIVE_QUALIFICATION_MISMATCH');
+  if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
+    throw new HttpError(409, 'STUDY_NOT_STARTED');
+  const spec = descriptiveSpec(requested.year, requested.section, requested.number, catalogFor(state.qualificationId)?.officialPdfPins);
+  if (!spec) throw new HttpError(422, 'DESCRIPTIVE_QUESTION_UNSUPPORTED');
+  if (!env.PARSER_URL) throw new HttpError(503, 'DESCRIPTIVE_PARSER_UNAVAILABLE');
+  let bytes;
+  try {
+    bytes = await withStoredSources(env.STORE, env.fetchPdf ?? defaultFetchPdf)(spec.url);
+  } catch { throw new HttpError(502, 'OFFICIAL_QUESTION_FETCH_FAILED'); }
+  if (!(bytes instanceof Uint8Array) || await sha256Hex(bytes) !== spec.sha)
+    throw new HttpError(422, 'OFFICIAL_QUESTION_SHA_MISMATCH');
+  const parsed = await renderDescriptive({ endpoint: env.PARSER_URL, token: env.PARSER_TOKEN,
+    fetch: env.parserFetch, bytes, sha256: spec.sha, year: spec.year, section: spec.section, number: spec.number });
+  const pageNumbers = parsed.pageNumbers;
+  // 公開するURLは検証済み公式原本の画像だけ。URLパラメータから勝手なファイルは作らない。
+  for (const n of pageNumbers)
+    await env.STORE.put(`pgimg/${spec.sha}/${n}`, parsed.pages[`p${n}.png`], { expirationTtl: SESSION_TTL_S });
+  const base = env.PUBLIC_BASE_URL ?? '';
+  const current = {
+    ...spec, sourceUrl: spec.url,
+    text: parsed.text,
+    pageNumbers,
+    pages: pageNumbers.map(n => ({ page: n, url: `${base}/v1/pageimg/${spec.sha}/p${n}.png` })),
+    shownAt: now, revealedAt: null,
+  };
+  await saveSession(env, id, { ...state, descriptiveCurrent: current,
+    descriptiveHistory: { ...(state.descriptiveHistory ?? {}),
+      [spec.questionId]: { year: spec.year, section: spec.section, number: spec.number, viewedAt: now,
+        viewed: true, gradingMode: 'none' } } }, now);
+  return descriptiveView(current, id);
 }
 
 // AIアプリが sessionId の代わりに引継ぎIDや学習の番号（studyId）を送ってくることがあるので、
@@ -1256,11 +1292,51 @@ async function route(request, env, url, now) {
       methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes });
   }
 
+  // 記述式の独立経路。自動採点・正答PDFの結合・択一履歴の変更を行わない。
+  if (parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'descriptive' && parts.length >= 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    if (method === 'POST' && parts.length === 4) {
+      const b = (await body(request)) ?? {};
+      return json(200, await openDescriptive(env, id, state, now,
+        { year: b.year, section: b.section, number: b.number }));
+    }
+    if (method === 'POST' && parts[4] === 'reveal' && parts.length === 5) {
+      const cur = state.descriptiveCurrent;
+      if (!cur) throw new HttpError(409, 'DESCRIPTIVE_NOT_OPEN');
+      const updated = { ...cur, revealedAt: cur.revealedAt ?? now };
+      const key = cur.questionId;
+      const oldHistory = state.descriptiveHistory?.[key] ?? {};
+      await saveSession(env, id, { ...state, descriptiveCurrent: updated,
+        descriptiveHistory: { ...(state.descriptiveHistory ?? {}),
+          [key]: { ...oldHistory, revealedAt: updated.revealedAt, gradingMode: 'none' } } }, now);
+      return json(200, descriptiveView(updated, id, true));
+    }
+    if (method === 'GET' && parts[4] === 'context' && parts.length === 5) {
+      const cur = state.descriptiveCurrent;
+      if (!cur?.text || !cur?.pageNumbers?.length) throw new HttpError(404, 'DESCRIPTIVE_NOT_OPEN');
+      return json(200, { status: 'descriptiveContext', sessionId: id,
+        questionId: cur.questionId, year: cur.year, section: cur.section, number: cur.number,
+        officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
+        originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
+        gradingMode: 'none', officialModelAnswerVerified: false,
+        notice: '模範解答は確認できません。AIの参考解答を提示する場合は公式正答と称さず、原本の図表を読めない部分は推測で補わない。' });
+    }
+  }
+
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
     await gateUse(env, state.learnerId, now);
-    const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 40) : null;
+    const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : null;
+    const desc = state.qualificationId === 'land_surveyor' ? requestedDescriptive(want) : null;
+    if (desc) return json(200, await openDescriptive(env, id, state, now, desc));
+    if (want?.includes('択一式に戻る') && state.descriptiveCurrent) {
+      const updated = { ...state, descriptiveCurrent: null };
+      await saveSession(env, id, updated, now);
+      return json(200, await nextView(env, id, updated, now, { want: null }));
+    }
+    if (state.descriptiveCurrent && !want) return json(200, descriptiveView(state.descriptiveCurrent, id, !!state.descriptiveCurrent.revealedAt));
     return json(200, await nextView(env, id, state, now, { want }));
   }
 
@@ -1276,6 +1352,8 @@ async function route(request, env, url, now) {
         }
       } catch { /* 期限切れの新セッションなら既存の学習状態を使う */ }
     }
+    if (state.descriptiveCurrent && await studyStartedInThisChat(env, state.learnerId))
+      return json(200, { ...descriptiveView(state.descriptiveCurrent, id, !!state.descriptiveCurrent.revealedAt), restored: true });
     return json(200, { ...await restoreStudyView(env, id, state, now), restored: true });
   }
 
