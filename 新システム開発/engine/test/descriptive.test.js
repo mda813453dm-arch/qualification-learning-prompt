@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { descriptiveSpec, requestedDescriptive, descriptiveView } from '../src/descriptive.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation } from '../src/descriptive.js';
 import { CATALOG } from '../src/catalog.js';
 import { renderDescriptive } from '../src/parser-client.js';
 import { forModel } from '../src/mcp.js';
@@ -74,4 +74,37 @@ test('記述式パーサーが返す本文・出典SHA・画像枚数を検証�
       bytes:new Uint8Array([37,80,68,70,45]),sha256:'0'.repeat(64),
       year:2025,section:'午前の部',number:11 }),
     /ASSETS_INVALID|DESCRIPTIVE_PARSER_RESULT_UNVERIFIED/);
+});
+
+
+test('土地の解説は複素数の公式だけでは受け付けず、通常解法と各小問の解説を確認する', () => {
+  const current = { number:11, text:'土地の地積と面積を求めよ。' };
+  const calculatorOnly = '## 関数電卓による計算\n' + 'S=Abs(Imag(A*Conjg(B)+B*Conjg(C)))/2\n'.repeat(35);
+  assert.equal(validateDescriptiveExplanation(calculatorOnly,current).code,'DESCRIPTIVE_SUBQUESTIONS_MISSING');
+  const short = '## 問1：通常解法\n根拠：座標法で計算。\n## 問2：関数電卓\nConjgとImagを使う。';
+  assert.equal(validateDescriptiveExplanation(short,current).code,'DESCRIPTIVE_EXPLANATION_TOO_SHORT');
+  const normal = '原本の表を確認し、座標法・三角関数の通常解法を行う。根拠を確認し、検算と丸め方を説明する。'.repeat(12);
+  const full = '## 問1：土地の整理\n' + normal + '\n## 問2：地積\n' +
+    '通常解法は座標法で行う。\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2\n' +
+    normal;
+  assert.equal(validateDescriptiveExplanation(full,current).ok,true);
+  assert.equal(validateDescriptiveExplanation(full.replace(/Conjg/g,'Complex'),current).code,'DESCRIPTIVE_AREA_CALCULATOR_MISSING');
+  assert.equal(validateDescriptiveExplanation('## 問1\n' + normal + '\n## 問2\n' + normal,
+    {number:21,text:'地積面積の計算をしない問題'}).code,'DESCRIPTIVE_AREA_CALCULATOR_MISSING');
+  assert.equal(validateDescriptiveExplanation('建物の用途と登記申請の要件を確認した参考解説です。'.repeat(8),
+    {number:22,text:'建物の登記'}).ok,true);
+});
+
+test('完成した記述式の解説を復元すると操作ボタンと同じ画面へ戻す', () => {
+  const spec=descriptiveSpec(2025,'午前の部',11,pins);
+  const saved={...spec, explanationMarkdown:'## 問1\n通常解法\n## 問2\n座標法',
+    text:'原本記述式の問題文',shownAt:123,pages:[{page:1,url:'https://example.test/p1.png'}]};
+  const restored=descriptiveView(saved,'study-session',true);
+  assert.equal(restored.status,'descriptiveActions');
+  assert.equal(restored.explanationMarkdown,saved.explanationMarkdown);
+  assert.equal(restored.question.questionId,spec.questionId);
+  assert.equal(restored.question.text,undefined);
+  assert.equal(restored.question.pages,undefined);
+  assert.equal(descriptiveView(saved,'study-session',false).status,'descriptiveQuestion');
+  assert.equal(descriptiveView(saved,'study-session',false).explanationMarkdown,undefined);
 });
