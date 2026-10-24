@@ -26,6 +26,26 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   assert.equal(d.question.choices,undefined);
   assert.equal(d.question.pages.length,count);
   assert.ok(d.question.text.length>500);
+  // 文字・表・図を独立表示できること。ページ全体の画像は学習画面で使用しない。
+  assert.ok(Array.isArray(d.question.layout) && d.question.layout.length >= 3,
+    'structured text/table/figure missing');
+  const tables=d.question.layout.filter(x=>x.kind==='table');
+  const diagrams=d.question.layout.filter(x=>x.kind==='figure');
+  assert.ok(tables.length>=1, 'structured HTML table source missing '+n);
+  assert.ok(diagrams.length>=1, 'PDF diagram crop missing '+n);
+  for(const t of tables){
+    assert.ok(t.rows.length>=2 && t.rows.every(row=>row.length===t.rows[0].length));
+  }
+  for(const f of diagrams){
+    assert.ok(/^https:\/\//.test(f.url), 'diagram URL missing');
+    const img=await fetch(f.url,{signal:AbortSignal.timeout(30000)});
+    assert.ok(img.ok, 'official diagram not readable '+n);
+    assert.deepEqual([...new Uint8Array(await img.arrayBuffer()).slice(0,4)],[137,80,78,71]);
+  }
+  if(n===11){
+    assert.ok(tables.length>=2,'observed and calculated survey tables both required');
+    assert.ok(tables.some(t=>JSON.stringify(t.rows).includes('200.00')));
+  }
   const layout=d.question.layout;
   assert.ok(Array.isArray(layout) && layout.length>3,'verified structured layout required');
   assert.ok(layout.some(b=>b.kind==='text' && b.text.includes('第'+n+'問')),'official heading');
@@ -52,6 +72,7 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   const restored=await api('GET',prefix+'/restore');
   assert.equal(restored.status,'descriptiveReveal');
   assert.equal(restored.question.questionId,d.question.questionId);
+  assert.deepEqual(restored.question.layout,d.question.layout,'restored layout must be unchanged');
   const image=await fetch(d.question.pages[0].url,{signal:AbortSignal.timeout(30000)});
   assert.ok(image.ok,'official page image '+n);
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,4)],[137,80,78,71]);
