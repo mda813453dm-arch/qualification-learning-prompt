@@ -446,16 +446,35 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '解答ボタンで自動採点しない');
     assert.match((await page.evaluate(() => window.followups)).at(-1), /三角関数と複素数の両方/);
 
-    // AIの解説の最後に表示される操作パネル（実際のMCP結果を注入）。
+    // AI参考解説と操作ボタンを同じ学習画面内で連続表示。
     await page.evaluate(() => {
       const q = window.lastDescriptive.question;
       window.deliver({ structuredContent: { status:'descriptiveActions', sessionId:'test-session',
+        explanationMarkdown: '## 問21の解説\n\n**点A**から求めます。\n\nS=Abs(Imag(A*Conjg(B)))/2\n\n<script>alert(1)</script>',
         question: { questionId:q.questionId, year:q.year,section:q.section,
           number:q.number,shownAt:q.shownAt } } });
     });
-    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor();
+    await ui.getByRole('heading', { name:/AI参考解答・解説/ }).waitFor();
+    assert.equal(await ui.locator('.descriptive-explanation strong').innerText(),'点A','解説のMarkdownを表示');
+    assert.equal(await ui.locator('.descriptive-explanation script').count(),0,'解説に含まれたHTMLを実行しない');
+    assert.match(await ui.locator('.descriptive-explanation').innerText(),/<script>alert\(1\)<\/script>/,'HTMLはテキストとして残す');
+    assert.ok(await ui.locator('.descriptive-explanation').evaluate(x=>x.compareDocumentPosition(document.querySelector('.descriptive-actions')) & Node.DOCUMENT_POSITION_FOLLOWING),
+      '解説の直後に操作ボタンが配置される');
     assert.equal(await ui.locator('#descriptiveSource').count(),0,'操作パネルには原本を再掲しない');
     assert.equal(await ui.getByRole('button', { name:'次の記述式へ' }).count(),1);
+    await ui.getByRole('button', { name: '次の記述式へ' }).click();
+    await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
+    assert.equal(await ui.locator('.descriptive-explanation').count(),0,'次問へ移ると前の解説とボタンが消える');
+    assert.equal(await ui.locator('.descriptive-actions').count(),0,'前の問の操作ボタンを残さない');
+    // 別の問を選び直す経路も保つ。
+    await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
+    await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
+    await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
+    await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
+    await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
+    await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
+    await ui.getByRole('button', { name: '解説後の操作パネルを開く（上に戻った場合）' }).click();
+    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor();
     await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
     await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();

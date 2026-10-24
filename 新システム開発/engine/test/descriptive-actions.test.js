@@ -80,6 +80,36 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   assert.equal(response.body.result._meta.qlp.question.questionId,Q1);
 });
 
+test('AI解説全文を同じ画面でボタンの前に返し、別問への遅延解説や空本文は拒否する',async()=>{
+  const e=env();await store(e,Q1,T0,T0+1);
+  const route='/v1/sessions/'+SID+'/descriptive/actions';
+  const explanationMarkdown='## 問11の解法\n\n**方位角**と距離を計算します。\n\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
+  const res=await send(e,'POST',route,{questionId:Q1,explanationMarkdown});
+  assert.equal(res.status,200);
+  assert.equal(res.body.status,'descriptiveActions');
+  assert.equal(res.body.explanationMarkdown,explanationMarkdown,'省略せずモデルの解説を表示する');
+  assert.equal(res.body.question.layout,undefined,'長い原本問題は再添付しない');
+  assert.equal(res.body.grade,undefined,'採点しない');
+  const invalid=await send(e,'POST',route,{questionId:Q1,explanationMarkdown:'  '});
+  assert.equal(invalid.status,400);
+  const wrong=await send(e,'POST',route,{questionId:Q2,explanationMarkdown});
+  assert.equal(wrong.status,409);
+  await store(e,Q2,T0+1000,T0+1500);
+  assert.equal((await send(e,'POST',route,{questionId:Q1,explanationMarkdown})).status,409,
+    '画面切替後に前の問へ解説を混入させない');
+
+  const post=(method,params)=>send(e,'POST','/mcp',{jsonrpc:'2.0',id:1,method,params});
+  const tool=(await post('tools/list',{})).body.result.tools.find(t=>t.name==='showDescriptiveActions');
+  assert.ok(tool.inputSchema.properties.explanationMarkdown,'同一カード用の引数をモデルへ公開');
+  const mcp=await post('tools/call',{name:'showDescriptiveActions',
+    arguments:{sessionId:SID,questionId:Q2,explanationMarkdown}});
+  assert.equal(mcp.status,200);
+  assert.equal(mcp.body.result._meta.qlp.explanationMarkdown,explanationMarkdown,
+    '学習画面に解説全文を渡す');
+  assert.equal(mcp.body.result.structuredContent.explanationMarkdown,undefined,
+    'チャットへ同じ解説を二重出力しない');
+});
+
 test('土地の座標計算だけ機種非依存の関数電卓ガイドを返す',async()=>{
   const e=env();
   const target='/v1/sessions/'+SID+'/descriptive/context';

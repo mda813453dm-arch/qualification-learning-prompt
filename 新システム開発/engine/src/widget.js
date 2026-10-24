@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v81.html';
+export const WIDGET_URI = 'ui://qlp/question-v82.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.81';
+export const WIDGET_VERSION = '2026-10-24.82';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -28,6 +28,13 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .question-table th{background:var(--accbg);font-weight:700}
 .descriptive-source{margin:12px 0}.descriptive-source summary{cursor:pointer;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
+.descriptive-explanation{font-size:16px;line-height:1.8;overflow-wrap:anywhere;margin:8px 0 18px}
+.descriptive-explanation p{margin:8px 0 14px;white-space:pre-wrap}
+.descriptive-explanation h3{color:var(--fg);font-size:17px;margin:17px 0 6px}
+.descriptive-explanation ul,.descriptive-explanation ol{padding-left:1.5em;margin:8px 0}
+.descriptive-explanation code{background:var(--btn);border-radius:4px;padding:1px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
+.descriptive-explanation .equation{background:var(--accbg);padding:7px 10px;border-radius:8px;overflow-wrap:anywhere}
+.descriptive-actions{border-top:2px solid var(--line);padding-top:14px;margin-top:12px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
 .choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -82,6 +89,41 @@ a{color:inherit}
   }); }
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // AI解説はツールの文字列を必ずエスケープしてから、限定したMarkdownだけ描画する。
+  // HTMLやJavaScriptを解説文から実行させない。
+  function explanationInline(s){
+    return esc(s).replace(/\\x60([^\\x60\\n]+)\\x60/g, '<code>$1</code>')
+      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>');
+  }
+  function explanationHtml(markdown){
+    var lines = String(markdown || '').replace(/\\r\\n/g,'\\n').split('\\n'), html = [], i = 0;
+    while (i < lines.length) {
+      var line = lines[i];
+      if (!line.trim()){ i++; continue; }
+      if (/^\\s*\\|.*\\|\\s*$/.test(line) && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '')) {
+        var tableLines=[line, lines[i+1]]; i+=2;
+        while(i<lines.length && /^\\s*\\|.*\\|\\s*$/.test(lines[i])) tableLines.push(lines[i++]);
+        html.push(stemHtml(tableLines.join('\\n'))); continue;
+      }
+      var heading=line.match(/^\\s*#{1,4}\\s+(.+)$/);
+      if (heading){html.push('<h3>'+explanationInline(heading[1])+'</h3>');i++;continue;}
+      if (/^\\s*[-*]\\s+/.test(line) || /^\\s*\\d+[.)]\\s+/.test(line)) {
+        var ordered=/^\\s*\\d+[.)]\\s+/.test(line), list=[];
+        while(i<lines.length && (ordered ? /^\\s*\\d+[.)]\\s+/ : /^\\s*[-*]\\s+/).test(lines[i])) {
+          list.push('<li>'+explanationInline(lines[i++].replace(ordered ? /^\\s*\\d+[.)]\\s+/ : /^\\s*[-*]\\s+/,''))+'</li>');
+        }
+        html.push('<'+(ordered?'ol':'ul')+'>'+list.join('')+'</'+(ordered?'ol':'ul')+'>');continue;
+      }
+      var paragraph=[];
+      while(i<lines.length && lines[i].trim() && !/^\\s*#{1,4}\\s+/.test(lines[i]) &&
+        !/^\\s*[-*]\\s+/.test(lines[i]) &&
+        !( /^\\s*\\|.*\\|\\s*$/.test(lines[i]) && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '') )) paragraph.push(lines[i++]);
+      if (!paragraph.length){i++;continue;}
+      var eq = paragraph.length === 1 && /^(?:S\\s*=|[A-Za-zα-ωΑ-ΩΔθ]\\s*=)/.test(paragraph[0].trim());
+      html.push('<p'+(eq?' class="equation"':'')+'>'+paragraph.map(explanationInline).join('\\n')+'</p>');
+    }
+    return html.join('');
+  }
   function stemHtml(t){
     var lines=String(t == null ? '' : t).split(/\\r?\\n/), out=[];
     for(var i=0;i<lines.length;){
@@ -692,10 +734,14 @@ a{color:inherit}
   function showDescriptiveActions(d){
     var q = d.question || {};
     state.question = null; state.answered = false;
-    app.innerHTML = '<h2>解説後の操作｜' + esc(q.year) + '年度 ' + esc(q.section) +
+    var withExplanation = typeof d.explanationMarkdown === 'string' && !!d.explanationMarkdown.trim();
+    app.innerHTML = '<h2>' + (withExplanation ? 'AI参考解答・解説' : '解説後の操作') + '｜' + esc(q.year) + '年度 ' + esc(q.section) +
       ' 問' + esc(q.number) + '</h2>' +
-      '<div class="notice">ここが現在の問題の操作パネルです。上の古い問題画面のボタンは使わないでください。</div>' +
-      descriptiveMenuButtons() + endBar();
+      (withExplanation ? '<div class="notice">AIによる参考解説です。公式模範解答としての採点は行いません。</div>' +
+        '<section class="descriptive-explanation" aria-label="AI参考解説">' + explanationHtml(d.explanationMarkdown) + '</section>' : '') +
+      '<div class="descriptive-actions"><div class="notice">' +
+      (withExplanation ? '解説はここまでです。続ける操作を選んでください。' : '現在の問題の操作パネルです。') + '</div>' +
+      descriptiveMenuButtons() + endBar() + '</div>';
     if (!publishDescriptive(q, 'actions')) return;
     scrollUp(); bindEnd(); bindDescriptiveNavigation(q);
   }

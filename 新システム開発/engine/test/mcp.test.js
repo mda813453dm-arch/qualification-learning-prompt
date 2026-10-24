@@ -68,13 +68,16 @@ test('記述式解説の末尾にモデルが最新問専用の操作画面を�
   const nav = tools.find(x => x.name === 'showDescriptiveActions');
   assert.ok(nav, '解説後の専用ツールはモデルに公開');
   assert.equal(nav._meta['openai/outputTemplate'], WIDGET_URI);
-  assert.match(nav.description, /解説を書き終えた直後/);
+  assert.match(nav.description, /explanationMarkdown/);
+  assert.match(nav.description, /解説本文を先にチャットへ出さない/);
+  assert.ok(nav.inputSchema.properties.explanationMarkdown);
   assert.match(INSTRUCTIONS, /showDescriptiveActions/);
   const view = forModel({ status:'descriptiveActions', sessionId:'session',
+    explanationMarkdown: '解説を下の画面に表示',
     question: { questionId:'land_surveyor:2025:午前の部:11',text:'秘匿原本' } });
   assert.equal(view.status, 'descriptiveActions');
   assert.equal(view.questionId,'land_surveyor:2025:午前の部:11');
-  assert.doesNotMatch(JSON.stringify(view),/秘匿原本/);
+  assert.doesNotMatch(JSON.stringify(view),/秘匿原本|解説を下の画面に表示/,'表示内容は画面だけへ送る');
 });
 
 test('トークンはヘッダーか URL で受け取り、どちらも無ければ断る', async () => {
@@ -113,8 +116,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v81\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.81');
+  assert.match(WIDGET_URI, /question-v82\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.82');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 

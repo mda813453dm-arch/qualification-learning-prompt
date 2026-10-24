@@ -1348,17 +1348,24 @@ async function route(request, env, url, now) {
           [key]: { ...oldHistory, revealedAt: updated.revealedAt, gradingMode: 'none' } } }, now);
       return json(200, descriptiveView(updated, id, true));
     }
-    // AIの解説が終わった後の操作パネル用。本文や図は返さない。
-    // 旧問のAIが遅れて操作パネルを要求しても、現在の問題と一致しなければ拒否する。
-    if (method === 'GET' && parts[4] === 'actions' && parts.length === 5) {
+    // AI解説と操作ボタンを同一ウィジェットに描画する。解説を別のチャット本文に
+    // 出すと、その「後」にツールを呼べず、ボタンだけが取り残されるため。
+    // GET は旧ウィジェットの救済経路として残し、POST だけが解説本文を受け取る。
+    if ((method === 'GET' || method === 'POST') && parts[4] === 'actions' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
-      const expected = url.searchParams.get('questionId');
+      const args = method === 'POST' ? (await body(request).catch(() => ({}))) : {};
+      const expected = method === 'POST' ? args.questionId : url.searchParams.get('questionId');
       if (!cur?.revealedAt || !expected || expected !== cur.questionId)
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
+      const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : undefined;
+      if (method === 'POST' && (typeof explanationMarkdown !== 'string' ||
+          !explanationMarkdown.trim() || explanationMarkdown.length > 40000))
+        throw new HttpError(400, 'DESCRIPTIVE_EXPLANATION_REQUIRED');
       return json(200, { status: 'descriptiveActions', sessionId: id,
         question: { questionId: cur.questionId, year: cur.year, section: cur.section,
           number: cur.number, shownAt: cur.shownAt }, gradingMode: 'none',
-        notice: 'AI参考解説の続きです。この操作パネルにある現在の問題のボタンを押してください。' });
+        ...(explanationMarkdown ? { explanationMarkdown } : {}),
+        notice: '現在の問題の解説と操作ボタンです。次の問題へ移るとこの枠のボタンは消えます。' });
     }
     if (method === 'GET' && parts[4] === 'context' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
