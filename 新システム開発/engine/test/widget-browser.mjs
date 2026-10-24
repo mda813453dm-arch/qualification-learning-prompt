@@ -208,19 +208,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.deepEqual(await page.evaluate(() => window.followups),
-      ['2025年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）'],
-      '会話には内部コードを出さず、解説依頼だけを送る');
+      ['2025年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）'],
+      '会話には照合番号と解説依頼だけを送る');
     assert.deepEqual(await page.evaluate(() => window.internal), [], '不安定な遅延モデル文脈更新に依存しない');
     const full = await page.evaluate(() => window.fullMessages[0]);
-    assert.equal(full.length, 3, '解説依頼・検証済み根拠・公式PNGを同じ送信に含める');
-    assert.equal(full[0].text, '2025年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）');
-    assert.equal(full[1].annotations.audience[0], 'assistant');
-    assert.equal(JSON.parse(full[1].text).correctAnswer, '3');
-    assert.equal(full[2].type, 'image');
-    assert.equal(full[2].mimeType, 'image/png');
-    assert.equal(full[2].annotations.audience[0], 'assistant');
-    assert.ok(Buffer.from(full[2].data, 'base64').length > 100, '公式PNGのバイナリ全体を渡す');
-    assert.equal(Buffer.from(full[2].data, 'base64').subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(full.length,1,'内部資料のJSONやPNGはiPhoneの会話に送らない');
+    assert.equal(full[0].type,'text');
+    assert.equal(full[0].text, '2025年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）');
+    assert.doesNotMatch(full[0].text,/verifiedOfficialExplanation|MCP app context|correctAnswer|\\?stem/);
+    assert.equal(full[0].annotations,undefined,'非表示指定が無視されても原本データが露出しない');
     assert.equal(await ui.getByRole('button', { name: '公式正答を再表示' }).count(), 0, '表示済み正答の再表示ボタンは不要');
     assert.equal(await ui.getByRole('button', { name: 'AI解説を再依頼' }).count(), 0, '解説成功後の重複依頼ボタンは不要');
     assert.equal(await page.evaluate(() => window.followups.length), 1, 'AI解説は一度だけ送信する');
