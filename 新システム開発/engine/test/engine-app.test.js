@@ -759,7 +759,7 @@ test('再開のとき、前回答えていない問を startStudy で知らせ�
   assert.equal(g.grade.questionId, fresh.question.questionId);
 });
 
-test('利用者が問題を指定したら（「問3を出して」）、出題中の問があってもその問を出す。無ければ知らせて通常の次の問', async () => {
+test('利用者が問題を指定したら出題中でも指定問だけを出し、未登録の問は別の問に置き換えない', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
   const { sessionId } = await startSession(env);
   const first = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
@@ -770,8 +770,9 @@ test('利用者が問題を指定したら（「問3を出して」）、出題�
   const g = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: want.question.questionId, value: 4 });
   assert.equal(g.body.grade.correct, true);
   const none = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`, { question: '問99' })).body;
-  assert.equal(none.status, 'question');
-  assert.match(none.question.screen, /問99）は、取り込んだ過去問の中に見つかりませんでした/);
+  assert.equal(none.status, 'questionUnavailable');
+  assert.equal(none.question, undefined);
+  assert.match(none.notice, /見つかりませんでした/);
 });
 
 test('分解プログラムの版が上がったら、取り込み済みの年度も新しい版で分解し直し、終わるまでは前の版で出題を続ける', async () => {
@@ -980,4 +981,34 @@ test('終了時の出題セッション取得失敗は引継ぎ成功と扱わ�
   const again = await call(env, 'POST', `/v1/study/${study.studyId}/end`,
     { sessionId: ses.sessionId });
   assert.equal(again.body.totalMinutes, 20);
+});
+
+test('測量士補2026年度問6は学習計画なし・セッションID未知でも直接表示して公式採点できる', async () => {
+  const { env, web } = makeEnv({ parserUrl:'https://parser.example' });
+  const parser = fakeParser(web, { answers:[3,1,4,2,1,5], figureOn:[] });
+  env.parserFetch = async (_, init) => {
+    const b = JSON.parse(init.body);
+    const bytes = (v) => Uint8Array.from(atob(v.base64), c=>c.charCodeAt(0));
+    const r=await parser({question:{bytes:bytes(b.question)},answer:{bytes:bytes(b.answer)}});
+    return new Response(JSON.stringify({result:r.result,assets:assetsB64(r.assets)}));
+  };
+  const opened=await call(env,'POST','/v1/sessions',{
+    qualificationId:'測量士補',sources:[SOURCE],
+    requestedQuestion:{year:2026,questionNumber:6},
+  });
+  assert.equal(opened.status,201,JSON.stringify(opened.body));
+  assert.equal(opened.body.status,'question');
+  assert.equal(opened.body.question.questionNumber,6,'問1ではなく指定した問6');
+  assert.equal(opened.body.question.year,2026);
+  assert.ok(opened.body.studyId,'明示的な自主学習を開始して学習終了可能');
+  assert.equal(opened.body.question.correctAnswer,undefined,'出題前に正答を漏らさない');
+  const qid=opened.body.question.questionId;
+  const g=await call(env,'POST',`/v1/sessions/${opened.body.sessionId}/answer`,{questionId:qid,value:5});
+  assert.equal(g.status,200,JSON.stringify(g.body));
+  assert.equal(g.body.grade.questionId,qid);
+  assert.equal(g.body.grade.correct,true,'出題時に固定された公式正答で採点');
+  const unavailable=await call(env,'POST',`/v1/sessions/${opened.body.sessionId}/next`,
+    {question:'2025年度 問6'});
+  assert.equal(unavailable.body.status,'questionUnavailable');
+  assert.equal(unavailable.body.question,undefined,'2026年度などへの代替出題をしない');
 });
