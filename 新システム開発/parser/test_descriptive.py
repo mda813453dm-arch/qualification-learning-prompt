@@ -24,7 +24,7 @@ class DescriptiveTest(unittest.TestCase):
     def test_never_accepts_unpinned_pdf(self):
         doc = self.sample("午後の部", ["令和7年度 午後の部", "第21問", "第22問"])
         with self.assertRaisesRegex(DescriptiveError, "DESCRIPTIVE_SHA_MISMATCH"):
-            extract_descriptive(pdf_bytes=doc.tobytes(), year=2025, section="午後の部",
+            extract_descriptive(pdf_bytes=b'%PDF-test-not-a-pinned-original', year=2025, section="午後の部",
                                 number=21, expected_sha="0" * 64)
 
 
