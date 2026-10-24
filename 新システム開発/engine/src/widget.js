@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v82.html';
+export const WIDGET_URI = 'ui://qlp/question-v83.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.82';
+export const WIDGET_VERSION = '2026-10-24.83';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -779,7 +779,7 @@ a{color:inherit}
         try {
           if (!await requireCurrentDescriptive(q)) return;
           var response;
-          try { response = await callTool('showDescriptiveActions', { sessionId: state.sessionId, questionId: q.questionId }); } catch (_) { /* older app connector: use nextQuestion */ }
+          try { response = await callTool('getDescriptiveActions', { sessionId: state.sessionId, questionId: q.questionId }); } catch (_) { /* older app connector: use nextQuestion */ }
           if (!response || response.status !== 'descriptiveActions') {
             response = await callTool('nextQuestion', { sessionId: state.sessionId, question: '記述式解説後の操作メニュー:' + q.questionId });
           }
