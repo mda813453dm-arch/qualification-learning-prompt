@@ -649,12 +649,11 @@ a{color:inherit}
   }); } catch(e){}
   async function requireCurrentDescriptive(q){
     try {
-      var live = await callTool('restoreStudyView', { sessionId: state.sessionId });
-      var current = live && live.question;
-      var ok = current && current.questionId === q.questionId &&
-        Number(current.shownAt || 0) === Number(q.shownAt || 0) &&
-        (live.status === 'descriptiveQuestion' || live.status === 'descriptiveReveal');
-      if (ok) return true;
+      var live = await callTool('verifyCurrentDescriptive', {
+        sessionId: state.sessionId, questionId: q.questionId, shownAt: Number(q.shownAt) || 0
+      });
+      if (live && live.status === 'descriptiveCurrentVerified' &&
+          live.questionId === q.questionId && Number(live.shownAt) === Number(q.shownAt)) return true;
     } catch(e){}
     obsoleteDescriptive();
     return false;
