@@ -169,14 +169,28 @@ export async function renderDescriptive({ endpoint, token, fetch: doFetch = fetc
   }
   const result = await response.json();
   const pages = decodeAssets(result.pages);
+  const diagrams = decodeAssets(result.diagrams);
+  const layout = result.layout;
   if (result.kind !== 'descriptive' || result.status !== 'ready' ||
       result.year !== year || result.section !== section || result.number !== number ||
       result.questionSha256 !== sha256 ||
       !Array.isArray(result.pageNumbers) || !result.pageNumbers.length ||
       result.pageNumbers.length > 12 ||
       result.pageNumbers.some(n => !Number.isInteger(n) || !pages[`p${n}.png`]) ||
-      typeof result.text !== 'string' || !result.text.trim() || result.gradingMode !== 'none') {
+      typeof result.text !== 'string' || !result.text.trim() || result.gradingMode !== 'none' ||
+      !Array.isArray(layout) || layout.length < 2 || layout.length > 400 ||
+      !layout.some(b => b?.kind === 'text' && /第\s*\d+\s*問/.test(b.text || '')) ||
+      !layout.every(b => b && (
+        (b.kind === 'text' && typeof b.text === 'string' && b.text.length <= 3000) ||
+        (b.kind === 'table' && typeof b.caption === 'string' && b.caption.length <= 200 &&
+          Array.isArray(b.rows) && b.rows.length >= 2 && b.rows.length <= 100 &&
+          b.rows.every(row => Array.isArray(row) && row.length >= 2 && row.length <= 15 &&
+            row.every(cell => typeof cell === 'string' && cell.length <= 160))) ||
+        (b.kind === 'figure' && /^f\d{1,2}\.png$/.test(b.file || '') &&
+          Number.isInteger(b.page) && result.pageNumbers.includes(b.page) && !!diagrams[b.file])
+      )) ||
+      Object.keys(diagrams).length !== layout.filter(b => b.kind === 'figure').length) {
     throw new IngestError('DESCRIPTIVE_PARSER_RESULT_UNVERIFIED');
   }
-  return { ...result, pages };
+  return { ...result, pages, diagrams };
 }
