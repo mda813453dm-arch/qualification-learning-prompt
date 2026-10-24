@@ -125,6 +125,13 @@ export const TOOLS = [
     api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/context`],
   },
   {
+    name: 'showDescriptiveActions',
+    description: '【AI参考解説を書き終えた直後に必ず呼ぶ】土地家屋調査士の現在の記述式問について、解説の下に「次の記述式へ／年度・問題を選び直す／択一式に戻る／学習を終了」の小さな操作パネルを出す。問題文・表・図は再掲しない。getDescriptiveContext が返した sessionId と questionId をそのまま指定する。旧問のパネルは開けない。解説をまだ書いていない時点では呼ばない。',
+    inputSchema: { type: 'object', required: ['sessionId', 'questionId'],
+      additionalProperties: false, properties: { sessionId, questionId: { type: 'string' } } },
+    api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/actions?questionId=${encodeURIComponent(a.questionId)}`],
+  },
+  {
     name: 'saveStudyPlan',
     appOnly: true,
     uiOnly: true,
@@ -428,7 +435,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v71.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v72.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v73.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
+const WIDGET_TOOLS = new Set(['showDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -449,12 +456,17 @@ export function forModel(body) {
       challengeId: body.challengeId, repeated: !!body.repeated,
       howToProceed: 'AI作成確認問題はこの下の学習画面にすべて表示済み。チャットで問題文や選択肢を書き直さず、画面での解答を待つ。採点・再試行は画面とエンジンが行う。' };
   }
+  if (body.status === 'descriptiveActions') {
+    return { status: 'descriptiveActions', sessionId: body.sessionId,
+      questionId: body.question?.questionId, gradingMode: 'none',
+      howToProceed: '解説の直後の最新操作パネルを下の学習画面に表示しました。問題文・表・図は再掲しない。利用者が下のボタンを押すまで進行させない。' };
+  }
   if (body.status === 'descriptiveQuestion' || body.status === 'descriptiveReveal') {
     return { status: body.status, sessionId: body.sessionId,
       year: body.question?.year, section: body.question?.section,
       number: body.question?.number, gradingMode: 'none',
       howToProceed: body.status === 'descriptiveReveal'
-        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。土地（午前問11・午後問21）の座標計算だけ三角関数と複素数（方位定義を原本照合）の両方で解き、結果を照合する。建物（午後問22）には不要な座標計算を追加しない。チャットに長い問題文・表・図を再掲せず、解答・解説だけ表示する。採点はしない。'
+        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。土地（午前問11・午後問21）の座標計算だけ三角関数と複素数（方位定義を原本照合）の両方で解き、結果を照合する。建物（午後問22）には不要な座標計算を追加しない。チャットに長い問題文・表・図を再掲せず、解答・解説だけ表示する。解説の完了後はshowDescriptiveActionsを一度だけ呼び、解説の下に現在問の操作パネルを表示する。採点はしない。'
         : '公式原本の記述式問題は学習画面に表示済み。択一式の番号回答や採点は行わず、解答・解説を表示ボタンの押下を待つ。',
     };
   }
@@ -560,7 +572,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...(widget && WIDGET_TOOLS.has(name) ? { _meta: WIDGET_TOOL_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: WIDGET_TOOL_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
@@ -640,7 +652,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         const view = forModel(merged);
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
       }
-      if (widget && WIDGET_TOOLS.has(tool.name) && res.status < 400) {
+      if ((widget && WIDGET_TOOLS.has(tool.name) || tool.name === 'showDescriptiveActions') && res.status < 400) {
         const view = forModel(res.body);
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
       }
