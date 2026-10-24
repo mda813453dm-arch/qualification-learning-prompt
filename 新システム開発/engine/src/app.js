@@ -1802,7 +1802,9 @@ async function route(request, env, url, now) {
     const saved = state.lastExplanation;
     const grade = saved?.grade ?? state.lastGrade;
     if (!grade?.questionId || grade.questionId !== storedRef.questionId || grade.skipped ||
-        saved && saved.questionId !== grade.questionId)
+        saved && saved.questionId !== grade.questionId ||
+        (state.current?.questionId && state.current.questionId !== grade.questionId &&
+          !state.current.prefetched && !state.current.grade))
       throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');
     // GETの検証済み照合機構と同じ条件を使い、必ず採点時に保存された公式正答と照合する。
     const proofUrl = new URL(`/v1/sessions/${encodeURIComponent(id)}/explanation`, url);
