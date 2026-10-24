@@ -29,6 +29,11 @@ async function store(e, questionId, shownAt, revealedAt){
 test('解説前には操作メニューを返さず、現在問だけ解説後の短い操作パネルを返す',async()=>{
   const e=env();await store(e,Q1,T0,null);
   const uri='/v1/sessions/'+SID+'/descriptive/actions?questionId=';
+  const verify='/v1/sessions/'+SID+'/descriptive/status?questionId=';
+  assert.equal((await send(e,'GET',verify+encodeURIComponent(Q1)+'&shownAt='+T0)).status,200,'未学習開始でも現在問だけは照合可能');
+  assert.equal((await send(e,'GET',verify+encodeURIComponent(Q2)+'&shownAt='+T0)).status,409,'旧問や別問からの誤操作を拒否');
+  assert.equal((await send(e,'GET',verify+encodeURIComponent(Q1)+'&shownAt='+(T0-1))).status,409,'同じ問題でも古い表示を拒否');
+
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q1))).status,409);
   assert.equal((await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q2})).status,409);
   const shown=await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q1});
