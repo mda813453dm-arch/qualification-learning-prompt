@@ -841,7 +841,7 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   // 利用者のチャットに「AIへの指示」が見えないこと
   assert.ok(!html.includes('【順番】'), '画面の送信文に手順を入れない');
   assert.ok(html.includes('var visible = actionLabel || text;'), '会話には操作名だけを渡す');
-  assert.ok(html.includes("content:[{type:'text',text:visible}].concat(blocks)") && html.includes("audience:['assistant']"), '利用者向けの短文と非表示の公式根拠を同じメッセージで送る');
+  assert.ok(html.includes("content:[{type:'text',text:visible}]") && !html.includes('.concat(blocks)'), 'iPhoneの会話へ送るのは照合番号付き短文だけ。根拠は読取ツールから取得');
   assert.ok(!html.includes('setWidgetState'), '保存時に不要な添付を増やさない');
   assert.ok(html.includes("field + 'を解説から始めます。'"));
   assert.ok(html.includes('function planEditMenu()'));
@@ -873,7 +873,7 @@ test('解説の本文は showMenu の body に入れ、画面のボタンの上�
   const r = show.local({ kind: 'next', body: '## 解説\n- 要点' });
   assert.equal(r.menu.body, '## 解説\n- 要点');
   assert.equal(show.local({ kind: 'next' }).menu.body, undefined);
-  assert.equal(show.local({ kind: 'next', body: 'あ'.repeat(9000) }).menu.body.length, 8000);
+  assert.equal(show.local({ kind: 'next', body: 'あ'.repeat(17000) }).menu.body.length, 16000);
   assert.ok(mcp.includes('の body に入れて呼ぶ'));
   assert.ok(!mcp.includes('まず答え合わせと解説を書き、最後に showMenu'));
   assert.ok(html.includes('function md(src)') && html.includes("var body = m.body ? '<div class=\"md\">'"));
