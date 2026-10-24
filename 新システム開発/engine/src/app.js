@@ -21,7 +21,7 @@ import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, renderDescriptive, uploadedParse } from './parser-client.js';
-import { descriptiveSpec, requestedDescriptive, descriptiveView } from './descriptive.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation } from './descriptive.js';
 import { handleRpc } from './mcp.js';
 import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
 import { officialLibrary, publicLibraryView, combineWithSharedJob } from './official-library.js';
@@ -1357,10 +1357,15 @@ async function route(request, env, url, now) {
       const expected = method === 'POST' ? args.questionId : url.searchParams.get('questionId');
       if (!cur?.revealedAt || !expected || expected !== cur.questionId)
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
-      const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : undefined;
-      if (method === 'POST' && (typeof explanationMarkdown !== 'string' ||
-          !explanationMarkdown.trim() || explanationMarkdown.length > 40000))
-        throw new HttpError(400, 'DESCRIPTIVE_EXPLANATION_REQUIRED');
+      const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : cur.explanationMarkdown;
+      if (method === 'POST') {
+        const check = validateDescriptiveExplanation(explanationMarkdown, cur);
+        if (!check.ok) throw new HttpError(422, check.code);
+        // 最後まで完成した解説だけを問題IDに結びつけて保存。画面の復元時にも同じ全文を表示する。
+        await saveSession(env, id, { ...state, descriptiveCurrent: {
+          ...cur, explanationMarkdown, explanationUpdatedAt: now,
+        } }, now);
+      }
       return json(200, { status: 'descriptiveActions', sessionId: id,
         question: { questionId: cur.questionId, year: cur.year, section: cur.section,
           number: cur.number, shownAt: cur.shownAt }, gradingMode: 'none',
@@ -1426,6 +1431,7 @@ async function route(request, env, url, now) {
       return json(200, { status: 'descriptiveActions', sessionId: id,
         question: { questionId: cur.questionId, year: cur.year, section: cur.section,
           number: cur.number, shownAt: cur.shownAt }, gradingMode: 'none',
+        ...(cur.explanationMarkdown ? { explanationMarkdown: cur.explanationMarkdown } : {}),
         notice: 'AI参考解説の続きです。現在の問題専用の操作パネルです。' });
     }
     const desc = state.qualificationId === 'land_surveyor' ? requestedDescriptive(want) : null;
