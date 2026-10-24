@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v84.html';
+export const WIDGET_URI = 'ui://qlp/question-v85.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.84';
+export const WIDGET_VERSION = '2026-10-24.85';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1573,51 +1573,18 @@ a{color:inherit}
     }
   }
   // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
-  async function verifiedImageContext(url){
-    var target = safeUrl(url);
-    if (!target) throw new Error('OFFICIAL_IMAGE_URL_INVALID');
-    var response = await fetch(target, { mode: 'cors', credentials: 'omit' });
-    if (!response.ok) throw new Error('OFFICIAL_IMAGE_UNAVAILABLE');
-    var blob = await response.blob();
-    if (blob.type !== 'image/png' || blob.size < 100 || blob.size > 6000000) throw new Error('OFFICIAL_IMAGE_INVALID');
-    var dataUrl = await new Promise(function(resolve,reject){
-      var reader = new FileReader();
-      reader.onload = function(){resolve(reader.result);};
-      reader.onerror = function(){reject(new Error('OFFICIAL_IMAGE_READ_FAILED'));};
-      reader.readAsDataURL(blob);
-    });
-    return { type:'image', data: String(dataUrl).split(',')[1], mimeType:'image/png',
-      annotations:{ audience:['assistant'] } };
-  }
+  // 解説は公式の一時照合番号からモデルが専用ツールで取得する。
+  // ui/message に巨大なJSONや画像を添付するとiPhoneで本文に露出するため禁止。
   async function requestAdaptiveExplanation(ctx){
     var q=ctx.question, g=ctx.grade;
     if (!q || !g || q.questionId !== g.questionId) throw new Error('EXPLANATION_BINDING_MISMATCH');
-    // 画面からの依頼には必ずサーバーが発行した参照番号を付ける。
-    // iOSでassistant-onlyの情報が消えても、AIがexplainSpecから公式根拠を再取得できる。
-    if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || ''))) throw new Error('EXPLANATION_REFERENCE_MISSING');
-    var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
-    var data = {
-      type:'verifiedOfficialExplanation', year:q.year, section:q.section, questionNumber:q.questionNumber,
-      qualificationName:ctx.qualificationName || '', fieldName:q.fieldName || '',
-      stem:q.stem || '', choices:Array.isArray(q.choices) ? q.choices : [],
-      stemMode:q.stemMode || 'text', choiceMode:q.choiceMode || 'text',
-      correctAnswer:g.correctAnswer, selected:g.selected, correct:!!g.correct,
-      explainHow:g.explainHow || '', journey:ctx.journey || {}
-    };
-    var blocks = [{type:'text',text:JSON.stringify(data),annotations:{audience:['assistant']}}];
-    var figures = q.figures || [];
-    for (var i=0;i<Math.min(figures.length,5);i++){
-      blocks.push(await verifiedImageContext(figures[i].url));
-    }
-    if ((data.stemMode === 'official_image' || data.choiceMode === 'official_image') && !figures.length){
-      throw new Error('OFFICIAL_IMAGE_REQUIRED');
-    }
-    // ChatGPT iOSのモデル文脈更新がACKしても次ターンへ届かない場合がある。
-    // 検証済み資料と利用者向け依頼を、同じ1回のui/messageで確実に引き渡す。
-    // annotations.audience=["assistant"] の問題本文・公式PNGはユーザーには表示しない。
+    if (!/^E-[A-Za-z0-9_-]{16}$/.test(String(ctx.explanationRef || '')))
+      throw new Error('EXPLANATION_REFERENCE_MISSING');
     if (!bridgeReady) await ready;
-    var visible = label + 'の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。（照合番号：' + ctx.explanationRef + '）';
-    return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}].concat(blocks)});
+    var label=(q.year ? q.year+'年度 ' : '')+'問'+q.questionNumber;
+    var visible=label+'の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。（照合番号：'+ctx.explanationRef+'）';
+    // 画面のボタンで同じ依頼を2回出さず、復旧時も同一問を対象とする。
+    return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]});
   }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
@@ -1649,7 +1616,7 @@ a{color:inherit}
       '<div class="stem"><b>公式正答：' + esc(ans) + '</b>　／　あなたの回答：' + esc(g.selected == null ? '分からない' : g.selected) + '</div>' +
       (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
       (pdf ? '<div class="notice"><a href="' + esc(pdf) + '" target="_blank" rel="noopener">公式正答PDFを確認する ›</a></div>' : '') +
-      '<div class="notice">ここまでは公式正答との照合です。各選択肢の理由や根拠は、学習履歴に合わせてAIが解説します。</div>' +
+      '<div class="notice">ここまでは公式正答との照合です。AIの詳しい解説は、この下の新しい学習画面に操作ボタンと一緒に表示します。</div>' +
       '<div class="row"><button id="explanationNext">次の問題へ</button></div>' + endBar();
     scrollUp(true); bindEnd();
     document.getElementById('explanationNext').onclick = async function(){
