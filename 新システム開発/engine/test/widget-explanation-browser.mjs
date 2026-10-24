@@ -106,7 +106,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
     await ui.getByRole('button', { name: '2 解説を見る', exact: true }).click();
     await ui.getByRole('heading', { name: '2026年度 問1の公式正答照合' }).waitFor();
-    await page.waitForFunction(() => window.messages.length === 1);
+    await page.waitForFunction(() => window.messages.length === 1, null, {timeout:7000}).catch(async e => {
+      const context={ errors, messages:await page.evaluate(() => window.messages),
+        calls:toolCalls.map(x=>x.name),
+        screen:await ui.locator('#app').innerText(),
+        callbackErrors:await page.evaluate(() => window.protocolErrors || []),
+        iframeErrors:await page.evaluate(() => window.iframeErrors || []),
+      };
+      throw new Error('EXPLANATION_CHAT_DISPATCH_FAILED '+JSON.stringify(context).slice(0,2600)+' '+e.message);
+    });
     assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '保存した採点データを解説前に自動取得');
     assert.match(await ui.locator('#app').innerText(), /公式正答：3/);
     assert.equal(await ui.getByRole('button', { name: 'AI解説を再依頼' }).count(), 0, '成功した解説画面に無意味な再依頼を表示しない');
