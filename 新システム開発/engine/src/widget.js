@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v79.html';
+export const WIDGET_URI = 'ui://qlp/question-v80.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.79';
+export const WIDGET_VERSION = '2026-10-24.80';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1832,7 +1832,11 @@ a{color:inherit}
   }
   try { new ResizeObserver(fit).observe(app); } catch (e) {}
   fit();
-  window.addEventListener('openai:set_globals', function(){ if (!bridgeReady && window.openai && !state.question) render(openaiOutput()); });
+  window.addEventListener('openai:set_globals', function(){
+    // iOSではMCPブリッジ初期化後に初回toolOutputが到着する場合がある。
+    // bridgeReadyで遮断すると初回問題が描画されず、利用者の再要求で初めて表示される。
+    if (window.openai && !hasView) render(openaiOutput());
+  });
   function openaiOutput(){ var o = window.openai; return o ? ((o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput) : null; }
   // MCP本体のバージョンとMCP Apps UIのバージョンは別。部分的なopenai.toolOutputがあっても初期化する。
   var ready = rpc('ui/initialize', { protocolVersion: '2026-01-26', appCapabilities: {}, appInfo: { name: 'qlp-question', version: '${WIDGET_VERSION}' } }).then(function(){
@@ -1845,6 +1849,8 @@ a{color:inherit}
     var stored = loadIds();
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     var initial = openaiOutput() || {};
+    // ブリッジ初期化時に出力が既に届いていれば、初回描画を必ず試みる。
+    if (!hasView && window.openai) render(initial);
     // 新規のneedPlanは初回用の正規画面であり、起動直後に復元で置き換えない。
     // iOSで初回画面を描画した直後に restoreIdle に切り替わる症状を防ぐ。
     var explicitSession = !!(state.sessionId || input().sessionId || initial.sessionId);
