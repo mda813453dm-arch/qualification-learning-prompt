@@ -1,0 +1,60 @@
+name: 土地家屋調査士記述式の公式原本検証（保存なし）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '.github/workflows/land-surveyor-descriptive-audit.yml'
+      - '新システム開発/parser/qlp_parser/descriptive.py'
+      - '新システム開発/parser/test_descriptive.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: PDF parser dependencies
+        run: pip install -r 新システム開発/parser/requirements.txt
+      - name: Unit tests - Japanese headings and section separation
+        env:
+          PYTHONPATH: 新システム開発/parser
+        run: python -m unittest discover -s 新システム開発/parser -p test_descriptive.py -v
+      - name: Official Ministry of Justice originals - SHA and all 12 descriptive questions
+        shell: bash
+        env:
+          PYTHONPATH: 新システム開発/parser
+        run: |
+          python - <<'PY'
+          import hashlib, subprocess, tempfile
+          from pathlib import Path
+          from qlp_parser.adapters.land_surveyor import PIN_BY_YEAR
+          from qlp_parser.descriptive import extract_descriptive
+          names = {
+            2022: ('001383834','001383847'),
+            2023: ('001408935','001408936'),
+            2024: ('001427201','001427202'),
+            2025: ('001450010','001450011'),
+          }
+          with tempfile.TemporaryDirectory() as work:
+            for year,(am,pm) in names.items():
+              for section,file in (('午前の部',am),('午後の部',pm)):
+                path = Path(work)/(file+'.pdf')
+                subprocess.run(['curl','--fail','--location','--silent','--show-error','--retry','2',
+                  '--max-time','50','--header','User-Agent: Mozilla/5.0',
+                  '--output',str(path),'https://www.moj.go.jp/content/'+file+'.pdf'],check=True)
+                data=path.read_bytes()
+                digest=hashlib.sha256(data).hexdigest()
+                assert digest==PIN_BY_YEAR[year][section], 'source SHA mismatch'
+                for number in ((11,) if section=='午前の部' else (21,22)):
+                  result=extract_descriptive(pdf_bytes=data,year=year,section=section,
+                    number=number,expected_sha=digest)
+                  assert result['status']=='ready' and result['gradingMode']=='none'
+                  assert result['pageNumbers'] and len(result['pages'])==len(result['pageNumbers'])
+                  assert result['textComplete'] and result['text']
+                  print('PASS',year,section,'問'+str(number),'pages',result['pageNumbers'],
+                        'textlen',len(result['text']),flush=True)
+          PY
