@@ -102,6 +102,29 @@ export const TOOLS = [
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.question ? { question: a.question } : undefined],
   },
   {
+    name: 'openDescriptiveQuestion',
+    description: '土地家屋調査士の記述式を公式原本から出題する。午前11、午後21（土地）・22（建物）、2022〜2025年度。採点せず、択一の正答率や学習計画を変更しない。',
+    inputSchema: { type: 'object', required: ['sessionId', 'year', 'section', 'number'], properties: {
+      sessionId, year: { type: 'integer' }, section: { type: 'string', enum: ['午前の部','午後の部'] },
+      number: { type: 'integer', enum: [11,21,22] },
+    } },
+    api: a => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive`,
+      { year: a.year, section: a.section, number: a.number }],
+  },
+  {
+    name: 'revealDescriptiveAnswer',
+    appOnly: true, uiOnly: true,
+    description: '公式の記述式問題を開いた後に、採点せず参考解答を確認する操作を記録する。公式の模範解答は生成しない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: a => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/reveal`],
+  },
+  {
+    name: 'getDescriptiveContext',
+    description: '記述式の参考解答を作成する場合だけ、現在の同一セッションに登録した公式問題文・年度・部・出典・ページ番号を読み取る。公式模範解答は未確認。自動採点しない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/context`],
+  },
+  {
     name: 'saveStudyPlan',
     appOnly: true,
     uiOnly: true,
@@ -402,8 +425,9 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v68.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v69.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v70.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v71.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v72.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
+const WIDGET_TOOLS = new Set(['openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -423,6 +447,15 @@ export function forModel(body) {
     return { status: 'remediation_question', sessionId: body.sessionId,
       challengeId: body.challengeId, repeated: !!body.repeated,
       howToProceed: 'AI作成確認問題はこの下の学習画面にすべて表示済み。チャットで問題文や選択肢を書き直さず、画面での解答を待つ。採点・再試行は画面とエンジンが行う。' };
+  }
+  if (body.status === 'descriptiveQuestion' || body.status === 'descriptiveReveal') {
+    return { status: body.status, sessionId: body.sessionId,
+      year: body.question?.year, section: body.question?.section,
+      number: body.question?.number, gradingMode: 'none',
+      howToProceed: body.status === 'descriptiveReveal'
+        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。採点はしない。'
+        : '公式原本の記述式問題は学習画面に表示済み。択一式の番号回答や採点は行わず、解答・解説を表示ボタンの押下を待つ。',
+    };
   }
   if (body.status === 'sourceUnavailable') {
     return { status: 'sourceUnavailable', sessionId: body.sessionId,
