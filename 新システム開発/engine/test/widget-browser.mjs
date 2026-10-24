@@ -221,8 +221,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: 'AI解説を再依頼' }).count(), 0, '解説成功後の重複依頼ボタンは不要');
     assert.equal(await page.evaluate(() => window.followups.length), 1, 'AI解説は一度だけ送信する');
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1, '解説後も終了操作を残す');
-    await page.evaluate(r => window.deliver(r), result({ status: 'menu', menu: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '復習する'], studyId: 'test-study', sessionId } }));
-    await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
+    await page.evaluate(r => window.deliver(r), result({ status: 'menu', menu: {
+      kind:'next', prompt:'次はどうしますか？',
+      body:'## 2025年度 問1のAI解説\\n\\n1. 最初の選択肢の根拠を確認\\n2. 次の選択肢と比べる',
+      choices:['次の問題へ','今日はここまで（学習を終了）'],
+      actions:['next','end'], studyId:'test-study', sessionId,
+    } }));
+    await ui.getByRole('heading', {name:'2025年度 問1のAI解説'}).waitFor();
+    const explained=ui.locator('.md');
+    assert.equal(await explained.count(),1,'AI解説本文をボタンと同じ学習画面に描画する');
+    const actions=ui.locator('.choices');
+    assert.ok(await explained.evaluate(el => !!(el.compareDocumentPosition(document.querySelector('.choices')) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      'AI解説がボタンより上にある');
+    assert.equal(await actions.locator('button').count(),2,'次問と終了の2ボタンを表示');
+    assert.equal(await ui.getByRole('button', {name:'解説を見る'}).count(),0,'解説済みなのに再解説ボタンを表示しない');
+    await ui.getByRole('button', { name: '2 今日はここまで（学習を終了）' }).click();
     assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文');
     assert.equal(await ui.getByRole('button', { name: '引継ぎデータをコピー' }).count(), 1);
     // 強制補強のAI作成問題でも正答を利用者の回答に混ぜないことを模擬ホストで検証する。
