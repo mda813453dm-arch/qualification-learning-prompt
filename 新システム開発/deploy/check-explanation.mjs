@@ -17,13 +17,18 @@ async function rpc(method, params) {
 const list = await rpc('tools/list', {});
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.sessionId, '保存済み問題の読取引数が公開されている');
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.explanationRef, '学習参照番号による復元ツールが公開されている');
+assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.explanationRef,
+  '検証済み解説全文を操作ボタンと同じ画面に登録できる');
 assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visibility, ['model','app'], '解説取得をモデルと画面に公開');
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
 assert.ok(!resource.contents[0].text.includes('setWidgetState'), '画面からモデル文脈の添付を要求しない');
-assert.ok(resource.contents[0].text.includes("content:[{type:'text',text:visible}].concat(blocks)"), '解説依頼と公式根拠を同じui/messageで送る');
-assert.ok(resource.contents[0].text.includes("audience:['assistant']"), '利用者に表示しない根拠をAIへ渡す');
+assert.ok(resource.contents[0].text.includes("rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]})"), '解説依頼は照合番号付き短文のみ送信する');
+assert.ok(!resource.contents[0].text.includes('verifiedOfficialExplanation') &&
+  !resource.contents[0].text.includes('.concat(blocks)') &&
+  !resource.contents[0].text.includes('async function verifiedImageContext'),
+  'ユーザーへのチャットに内部JSON・公式PNGを添付しない');
 assert.ok(!resource.contents[0].text.includes("rpc('ui/update-model-context',{content:blocks})"), 'ACKしたのに文脈が欠落する経路に依存しない');
 assert.ok(resource.contents[0].text.includes('照合番号：'), '公式問題に対応する照合番号をAIへ渡す');
 assert.ok(resource.contents[0].text.includes('var explicitSession ='), 'UIは現在の資格の明示的なセッションがある場合にだけ復元する');
@@ -46,4 +51,4 @@ assert.equal(fallback.isError, true);
 assert.equal(fallback.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '登録済みnextQuestionでも照合番号を読み取り専用として処理');
 const oldSchemaRef = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: 'E-0000000000000000' } });
 assert.equal(oldSchemaRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '旧ChatGPTツールのsessionId欄でも一時参照番号を復元できる');
-console.log(`PASS deployed verified explanation via pre-registered model-visible nextQuestion, private evidence and safe ref (${WIDGET_VERSION})`);
+console.log(`PASS deployed explanation reference only, iOS-safe chat, verified showMenu schema (${WIDGET_VERSION})`);
