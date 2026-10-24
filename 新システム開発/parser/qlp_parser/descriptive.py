@@ -12,7 +12,7 @@ from .adapters.land_surveyor import PIN_BY_YEAR
 
 MAX_DESCRIPTIVE_PAGES = 12
 HEADER = re.compile(r"^第\s*(\d{1,2})\s*問(?:\s|$)")
-APPENDIX = re.compile(r"^(?:付録|附録|関数表|三角関数表|答案用紙|解答用紙)")
+APPENDIX = re.compile(r"^(?:付録|附録|関数表|三角関数表|答案用紙|解答用紙|三角関数値表|数表)")
 FOOTER = re.compile(r"^[\-─‐ー－]*\s*[（(]\s*\d+\s*[）)]\s*[\-─‐ー－]*$")
 
 
@@ -49,7 +49,13 @@ def find_descriptive_pages(doc, section, number):
     for i in range(start, len(doc)):
         lines = _page_lines(doc[i])
         if i > start:
-            if not lines or APPENDIX.match(lines[0]):
+            # 旧冊子では付録の計算表が「度 sin cos tan」等で始まる。
+            # 付録を第11問に混入させず、本文・数値表と別に扱う。
+            header = "".join(lines[:6]).lower().replace(" ", "")
+            if not lines or APPENDIX.match(lines[0]) or (
+                all(k in header for k in ("sin", "cos", "tan")) and
+                ("度" in header or "角度" in header)
+            ):
                 break
             # 旧年度の関数表は見出しが「度 sin cos tan」で始まる。
             # 問題の図とは無関係な付録を記述式の本文・表に混入させない。
