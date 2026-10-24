@@ -75,6 +75,59 @@ def find_descriptive_pages(doc, section, number):
 
 
 
+def _figure_confidence(page, box):
+    """独立した図だけを選ぶ。サイズのみでは採用しない。
+
+    描画命令の種類・図形の空間分布・文字の占有率を照合する。
+    単なる下線や枠付き文章は図と認定しない。
+    """
+    import fitz
+    rect = fitz.Rect(box)
+    if rect.is_empty or rect.width < 75 or rect.height < 65:
+        return False
+    drawings = []
+    for d in page.get_drawings():
+        dr = fitz.Rect(d["rect"])
+        if dr.intersects(rect):
+            drawings.append(d)
+    images = sum(bool(page.get_image_rects(img[0]) and
+                      any(fitz.Rect(ir).intersects(rect) for ir in page.get_image_rects(img[0])))
+                 for img in page.get_images())
+    if not drawings and not images:
+        return False
+    text_lines = []
+    for block in page.get_text("dict").get("blocks", []):
+        for line in block.get("lines", []):
+            lr = fitz.Rect(line["bbox"])
+            if lr.intersects(rect):
+                content = "".join(span.get("text", "") for span in line.get("spans", []))
+                if content.strip():
+                    text_lines.append((lr, content.strip()))
+    text_chars = sum(len(t) for _, t in text_lines)
+    area = rect.width * rect.height
+    # 長文の枠や文字だらけの領域を図として切り出さない。
+    if text_chars > max(120, area / 190):
+        return False
+    # 直線の方向が二方向以上に分布する、または画像が存在する。
+    vertical = horizontal = diagonal = 0
+    for d in drawings:
+        for item in d.get("items", []):
+            if not item or item[0] != "l":
+                continue
+            a, b = item[1], item[2]
+            dx, dy = abs(a.x-b.x), abs(a.y-b.y)
+            if dx < 1 and dy > 6: vertical += 1
+            elif dy < 1 and dx > 6: horizontal += 1
+            elif dx > 6 and dy > 6: diagonal += 1
+    if images:
+        return True
+    if diagonal >= 2 and (horizontal + vertical + diagonal) >= 3:
+        return True
+    if vertical >= 2 and horizontal >= 2 and text_chars <= 65:
+        return True
+    return False
+
+
 def structured_descriptive(doc, nums):
     """PDF原本と座標領域を照合し、文章・表・図だけを独立した順序付きブロックにする。
 
@@ -128,6 +181,8 @@ def structured_descriptive(doc, nums):
         clip = box & page.rect
         if clip.is_empty or (clip.width * clip.height) < 4500:
             continue
+        if not _figure_confidence(page, clip):
+            continue
         num = len(images) + 1
         if num > 20:
             raise DescriptiveError("DESCRIPTIVE_TOO_MANY_FIGURES")
@@ -173,7 +228,33 @@ def structured_descriptive(doc, nums):
                                   clean_lines[0][0].x0, "text", {"kind": "text", "text": paragraph}))
 
     slots.sort(key=lambda item: (item[0], round(item[1], 1), item[2]))
-    blocks = [item[4] for item in slots]
+    # PDFのテキストブロック境界は意味上の改行ではない。
+    # 句点で文を確定し、表・図・見出しの前後だけを独立させる。
+    blocks = []
+    pending = ""
+    def flush():
+        nonlocal pending
+        if pending.strip():
+            blocks.append({"kind": "text", "text": pending.strip()})
+        pending = ""
+    for _, _, _, _, item in slots:
+        if item["kind"] != "text":
+            flush()
+            blocks.append(item)
+            continue
+        raw = item["text"].strip()
+        if not raw:
+            continue
+        if re.match(r"^(?:第\\s*\\d+\\s*問|問\\s*[1-9]\\b|〔|【|［)", _norm(raw)):
+            flush()
+        pending += raw
+        # 「。」で段落を分ける。「、」では切らない。
+        parts = re.split(r"(?<=[。！？])(?=[^」』）])", pending)
+        for part in parts[:-1]:
+            if part.strip():
+                blocks.append({"kind": "text", "text": part.strip()})
+        pending = parts[-1]
+    flush()
     if len(blocks) > 400 or not any(b["kind"] == "text" for b in blocks):
         raise DescriptiveError("DESCRIPTIVE_LAYOUT_UNVERIFIED")
     # 問題文が図表と別の形で検証できないときはページ画像への暗黙フォールバックをしない。
