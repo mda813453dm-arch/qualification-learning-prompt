@@ -474,7 +474,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
     await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
     await ui.getByRole('button', { name: '解説後の操作パネルを開く（上に戻った場合）' }).click();
-    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor();
+    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor({ timeout: 4000 }).catch(async e => {
+      const debug = { view: await ui.locator('#app').innerText(), calls: await page.evaluate(() => window.calls.filter(m => m.params?.name).slice(-8).map(m => ({name:m.params.name,args:m.params.arguments}))), errors: await page.evaluate(() => window.protocolErrors) };
+      throw new Error('DESCRIPTIVE_FALLBACK_VIEW: '+JSON.stringify(debug)+' | '+e.message);
+    });
     await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
     await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
