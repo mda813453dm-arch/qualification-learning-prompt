@@ -35,6 +35,12 @@ test('解説前には操作メニューを返さず、現在問だけ解説後�
   assert.equal((await send(e,'GET',verify+encodeURIComponent(Q1)+'&shownAt='+(T0-1))).status,409,'同じ問題でも古い表示を拒否');
 
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q1))).status,409);
+  // 既存のモデル公開nextQuestionが新しい操作パネルツールを代替できる。
+  const route='/v1/sessions/'+SID+'/next';
+  const special='記述式解説後の操作メニュー:';
+  assert.equal((await send(e,'POST',route,{question:special+Q1})).status,409,'解説前は出せない');
+  assert.equal((await send(e,'POST',route,{question:special+Q2})).status,409,'現在問以外は出せない');
+
   assert.equal((await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q2})).status,409);
   const shown=await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q1});
   assert.equal(shown.status,200);
@@ -46,9 +52,19 @@ test('解説前には操作メニューを返さず、現在問だけ解説後�
   assert.equal(controls.body.question.shownAt,T0);
   assert.equal(controls.body.question.layout,undefined,'元の問題・表・図を返さない');
   assert.equal(controls.body.grade,undefined,'自動採点しない');
+  const fallback=await send(e,'POST',route,{question:special+Q1});
+  assert.equal(fallback.status,200);
+  assert.equal(fallback.body.status,'descriptiveActions','既存nextQuestion経由で画面を開ける');
+  assert.equal(fallback.body.question.questionId,Q1,'現在問のみに固定');
+  assert.equal(fallback.body.question.text,undefined,'既存ツールでも原本文を再表示しない');
+  assert.equal(fallback.body.grade,undefined,'学習履歴と自動採点は変更しない');
+
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q2))).status,409);
   await store(e,Q2,T0+1000,T0+1500);
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q1))).status,409,'次問移動後の旧パネルは無効');
+  assert.equal((await send(e,'POST',route,{question:special+Q1})).status,409,'既存ツールも旧問題IDを拒否');
+  assert.equal((await send(e,'POST',route,{question:special+Q2})).status,200);
+
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q2))).status,200);
 });
 test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUIメタデータを伴う',async()=>{
