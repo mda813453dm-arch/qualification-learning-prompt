@@ -1370,7 +1370,7 @@ async function route(request, env, url, now) {
         coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
         coordinateExplanationGuidance: cur.number === 22
           ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算や関数電卓による座標操作は追加しない。'
-          : '土地の座標計算・面積計算を要する小問では原本の数値・方位定義・丸め規則を確認し、(1)通常の三角関数・座標法、(2)点名をメモリー保存した複素数による解法、(3)関数電卓の機能名で実際の入力式と途中値、(4)計算結果の照合を小問ごとに示す。方向角・距離だけでなく面積も省略しない。北がX軸正方向・東がY軸正方向ならz=X+iY、X=Real(z)、Y=Imag(z)。面積ではImagとConjg/Conjを使う。四角形ABGEの例ならS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、またはS=Abs(Imag((A-G)*Conjg(B-E)))/2。頂点の順序、四角形の形状、符号、積の演算順序を原本の見取図で照合し、結果に絶対値を取って2で割る。各点の未丸めの計算値を使い、最後に原本指定の切り捨て・四捨五入をする。丸めたG座標を用いて95.92m2が必ず得られると主張しない。PDFで確認できない数値を推測しない。',
+          : '土地の座標計算・面積計算を要する小問では原本の数値・方位定義・丸め規則を確認し、(1)通常の三角関数・座標法、(2)点名をメモリー保存した複素数による解法、(3)関数電卓の機能名で実際の入力式と途中値、(4)計算結果の照合を小問ごとに示す。方向角・距離だけでなく面積も省略しない。北がX軸正方向・東がY軸正方向ならz=X+iY、X=Real(z)、Y=Imag(z)。面積ではImagとConjg/Conjを使う。四角形ABGEの例ならS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、またはS=Abs(Imag((A-G)*Conjg(B-E)))/2。頂点の順序、四角形の形状、符号、積の演算順序を原本の見取図で照合し、結果に絶対値を取って2で割る。各点の未丸めの計算値を使い、途中丸めを避け、最後に原本指定の切り捨て・四捨五入をする。丸めたG座標を用いて95.92m2が必ず得られると主張しない。PDFで確認できない数値を推測しない。',
         calculatorExplanation: [11, 21].includes(cur.number) ? {
           format: 'generic-function-names-not-model-specific-button-sequences',
           assumedModels: ['Canon F-789SG', 'CASIO fx-JP series'],
