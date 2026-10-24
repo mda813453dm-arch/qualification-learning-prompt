@@ -81,6 +81,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
               question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
                 year: args.year, section: args.section, number: args.number, kind: 'descriptive',
+                shownAt: ++window.descriptiveCounter,
                 gradingMode: 'none', text: '第21問\n観測結果\n器械点  視準点\nT1  T2  0°\n見取図\nA\nB\nC',
                 pages: [{ page: 24, url: 'https://qlp.test/original.png' }],
                 layout: [
@@ -92,7 +93,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             reply({ structuredContent: window.lastDescriptive });
           }
           else if (op === 'revealDescriptiveAnswer') {
-            reply({ structuredContent: { ...window.lastDescriptive, status: 'descriptiveReveal' } });
+            if (m.params.arguments.questionId !== window.lastDescriptive?.question?.questionId)
+              reply({ structuredContent: { error:'DESCRIPTIVE_ACTIONS_STALE' } });
+            else {
+              window.lastDescriptive = { ...window.lastDescriptive, status:'descriptiveReveal' };
+              reply({ structuredContent: window.lastDescriptive });
+            }
+          }
+          else if (op === 'showDescriptiveActions') {
+            const q=window.lastDescriptive?.question;
+            if (window.lastDescriptive?.status !== 'descriptiveReveal' ||
+                m.params.arguments.questionId !== q?.questionId)
+              reply({ structuredContent:{ error:'DESCRIPTIVE_ACTIONS_STALE' } });
+            else reply({ structuredContent:{ status:'descriptiveActions', sessionId:'test-session',
+              question:{ questionId:q.questionId,year:q.year,section:q.section,
+                number:q.number,shownAt:q.shownAt } } });
           }
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
@@ -100,7 +115,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             status: 'explanationContext', explanationRef: 'E-abcdefghABCDEFGH', sessionId: 'test-session', question: question.question,
             grade: { questionId: question.question.questionId, correct: true, selected: '3', correctAnswer: '3' }
           } });
-          else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || nextQuestion });
+          else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || window.lastDescriptive || nextQuestion });
            else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: window.privateLibrary || {
              status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
            } } });
@@ -127,6 +142,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           reply({});
         }
       });
+      window.descriptiveCounter = 0;
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"}};<\/script><script>');
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
@@ -410,16 +426,27 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
     const beforeDescriptiveGrade = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
-    await ui.getByText('参考解答の表示操作を受け付けました。', { exact: false }).waitFor();
-    assert.equal(await ui.locator('#descriptiveSource:not([open])').count(), 1, '解説の前に長い問題文・表・図を折りたたむ');
-    assert.equal(await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).count(), 0, '解説ボタンは繰り返し表示しない');
-    await ui.getByText('問題・表・図を再表示').click();
-    assert.equal(await ui.locator('#descriptiveSource[open]').count(), 1, '必要なら原本を再表示できる');
+    await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
+    assert.equal(await ui.locator('#descriptiveSource').count(), 0, '解説前の問題・表・図をDOMへ再出力しない');
+    assert.equal(await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).count(), 0);
+    assert.equal(await ui.getByRole('button', { name: '次の記述式へ' }).count(), 0, '解説前の画面に旧ナビゲーションを残さない');
+    assert.match(await ui.locator('#app').innerText(), /上に戻り.*ボタンを押して/,'戻る場合の注釈');
     const descCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'revealDescriptiveAnswer').length);
     assert.ok(descCalls >= 1);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), beforeDescriptiveGrade,
-      '解答ボタンで正誤判定ツールを呼ばない');
+      '解答ボタンで自動採点しない');
     assert.match((await page.evaluate(() => window.followups)).at(-1), /三角関数と複素数の両方/);
+
+    // AIの解説の最後に表示される操作パネル（実際のMCP結果を注入）。
+    await page.evaluate(() => {
+      const q = window.lastDescriptive.question;
+      window.deliver({ structuredContent: { status:'descriptiveActions', sessionId:'test-session',
+        question: { questionId:q.questionId, year:q.year,section:q.section,
+          number:q.number,shownAt:q.shownAt } } });
+    });
+    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor();
+    assert.equal(await ui.locator('#descriptiveSource').count(),0,'操作パネルには原本を再掲しない');
+    assert.equal(await ui.getByRole('button', { name:'次の記述式へ' }).count(),1);
     await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
     await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
