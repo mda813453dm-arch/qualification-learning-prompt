@@ -93,6 +93,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
                 sourceUrl: 'https://www.moj.go.jp/content/001450011.pdf' } };
             reply({ structuredContent: window.lastDescriptive });
           }
+          else if (op === 'verifyCurrentDescriptive') {
+            const q=window.lastDescriptive?.question, args=m.params.arguments;
+            if (!q || args.questionId!==q.questionId || Number(args.shownAt)!==Number(q.shownAt))
+              reply({ structuredContent:{ error:'DESCRIPTIVE_ACTIONS_STALE' } });
+            else reply({ structuredContent:{status:'descriptiveCurrentVerified',sessionId:args.sessionId,
+              questionId:q.questionId,shownAt:q.shownAt,revealed:window.lastDescriptive.status==='descriptiveReveal'} });
+          }
           else if (op === 'revealDescriptiveAnswer') {
             if (m.params.arguments.questionId !== window.lastDescriptive?.question?.questionId)
               reply({ structuredContent: { error:'DESCRIPTIVE_ACTIONS_STALE' } });
