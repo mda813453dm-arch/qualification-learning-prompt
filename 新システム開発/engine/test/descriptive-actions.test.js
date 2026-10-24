@@ -20,7 +20,7 @@ async function store(e, questionId, shownAt, revealedAt){
     state:{ qualificationId:'land_surveyor',
       descriptiveCurrent:{ questionId,year:2025,
         section:questionId.includes('午前')?'午前の部':'午後の部',
-        number:questionId.includes('午前')?11:21,shownAt,revealedAt,
+        number:Number(questionId.match(/:(\d+)$/)?.[1]),shownAt,revealedAt,
         text:'公式原本の内容を保持',pageNumbers:[14],
         pages:[{page:14,url:'https://moj.example/p14.png'}],
         layout:[{kind:'text',text:'第11問の公式本文'}] }
@@ -62,4 +62,33 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   assert.equal(response.body.result.structuredContent.status,'descriptiveActions');
   assert.equal(response.body.result._meta.qlp.question.text,undefined,'モデルと画面のどちらにも原本は再送しない');
   assert.equal(response.body.result._meta.qlp.question.questionId,Q1);
+});
+
+test('土地の座標計算だけ機種非依存の関数電卓ガイドを返す',async()=>{
+  const e=env();
+  const target='/v1/sessions/'+SID+'/descriptive/context';
+  for(const questionId of [Q1,Q2]){
+    await store(e,questionId,T0,T0+1);
+    const answer=await send(e,'GET',target);
+    assert.equal(answer.status,200);
+    assert.deepEqual(answer.body.coordinateExplanationMethods,
+      ['trigonometry','complex_numbers','scientific_calculator']);
+    const calc=answer.body.calculatorExplanation;
+    assert.ok(calc && calc.format.includes('generic-function-names'));
+    assert.deepEqual(calc.assumedModels,['Canon F-789SG','CASIO fx-JP series']);
+    const names=calc.functions.join(' ');
+    for(const f of ['arg','Abs','Conjg','Real','Imag','r∠θ','a+bi','STO','RCL','M'])
+      assert.ok(names.includes(f),'calculator function '+f);
+    assert.ok(calc.settings.some(x=>x.includes('DEG')));
+    assert.ok(calc.examples.some(x=>x.includes('Δz')));
+    assert.ok(calc.notes.some(x=>x.includes('M+/M-')));
+    assert.match(answer.body.coordinateExplanationGuidance,/途中丸め/);
+  }
+  await store(e,'land_surveyor:2025:午後の部:22',T0,T0+1);
+  const building=await send(e,'GET',target);
+  assert.equal(building.status,200);
+  assert.equal(building.body.number,22);
+  assert.deepEqual(building.body.coordinateExplanationMethods,[]);
+  assert.equal(building.body.calculatorExplanation,null);
+  assert.match(building.body.coordinateExplanationGuidance,/建物記述式/);
 });
