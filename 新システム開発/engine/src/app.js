@@ -1375,7 +1375,7 @@ async function route(request, env, url, now) {
           format: 'generic-function-names-not-model-specific-button-sequences',
           assumedModels: ['Canon F-789SG', 'CASIO fx-JP series'],
           settings: ['複素数モード', 'DEG（度数法）', '直交形式a+bi／極形式r∠θを必要に応じて切替'],
-          functions: ['arg/Arg（偏角）', 'Abs（距離）', 'conjg/Conj（共役）', 'real/Real/ReP（実部）', 'imag/Imag/ImP（虚部）', 'r∠θ（極形式）', 'a+bi（直交形式）', 'STO（記憶）', 'RCL（呼出し）', 'M（対応するメモリー変数・メモリー操作）'],
+          functions: ['arg/Arg（偏角）', 'Abs（距離）', 'conjg/Conjg/Conj（共役）', 'real/Real/ReP（実部）', 'imag/Imag/ImP（虚部）', 'r∠θ（極形式）', 'a+bi（直交形式）', 'STO（記憶）', 'RCL（呼出し）', 'M（対応するメモリー変数・メモリー操作）'],
           examples: ['zA=XA+iYA', 'Δz=zB-zA', 'θ=(arg(Δz)+360) mod 360', 'r=Abs(Δz)', 'zB=zA+r∠θ', 'XB=real(zB)', 'YB=imag(zB)'],
           notes: [
             '機種ごとに表示名・メニュー・STO/RCLの操作方法・Mメモリーの仕様が違う。物理キーの固定手順を発明しない。',
