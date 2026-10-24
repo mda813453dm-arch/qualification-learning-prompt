@@ -121,8 +121,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v83\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.83');
+  assert.match(WIDGET_URI, /question-v84\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.84');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
@@ -733,8 +733,8 @@ test('アプリ：免除が適用確定なら免除される問を出さず、�
   const st = content(await app('tools/call', { name: 'startStudy', arguments: { qualificationName: '宅建', learnerId: s.learnerId } }));
   assert.equal(st.learnerStage ?? 3, 3);
   const n = await app('tools/call', { name: 'nextQuestion', arguments: { sessionId: s.learnerId, question: '2026年度 問46' } });
-  assert.notEqual(n._meta.qlp.question.questionNumber, 46);
-  assert.notEqual(n._meta.qlp.question.questionNumber, 47);
+  assert.equal(n._meta.qlp.status, 'questionUnavailable', '免除対象の指定問を別の問題へ置き換えない');
+  assert.equal(n._meta.qlp.question, undefined);
 });
 
 test('アプリ：過去問がまだ無いときの初期診断は、取り込み待ちのエラーで返す', async () => {
