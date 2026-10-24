@@ -138,15 +138,22 @@ export const TOOLS = [
   },
   {
     name: 'showDescriptiveActions',
-    description: '【記述式解説の必須出力先】getDescriptiveContextで資料を確認し、通常と複素数による詳しい解説を内部で完成させたら、その全文をexplanationMarkdownに渡す。AI解説と「次の記述式へ／年度・問題を選び直す／択一式に戻る／学習終了」のボタンを同じ学習画面に連続表示する。解説本文を先にチャットへ出さない。sessionIdとquestionIdは直前のgetDescriptiveContextが返した現在の同一セッション・同一問題の値を使う。古い画面や過去の会話にあったIDを流用しない。409 DESCRIPTIVE_ACTIONS_STALEの場合、推測で再送せず現在のセッションのgetDescriptiveContextを再取得し、利用者が指定した年度・部・問と一致するか照合する。一致しなければopenDescriptiveQuestionで指定問題を開き直し、解答表示を行ってから登録する。採点しない。成功後はチャットに解説を重複出力しない。旧UIからの呼出しではexplanationMarkdownを省略可能だが、モデルから呼ぶときは必須。ツールが使えない場合だけ本文解説と番号選択肢をチャットに表示し、ボタンを表示済みと決して言わない。',
-    inputSchema: { type: 'object', required: ['sessionId', 'questionId'],
+    description: '【完成した全文のみ登録・省略不可】getDescriptiveContextで資料を確認し、通常と複素数による詳しい解説を内部で完成させたら、その全文をexplanationMarkdownに渡す。AI解説と「次の記述式へ／年度・問題を選び直す／択一式に戻る／学習終了」のボタンを同じ学習画面に連続表示する。解説本文を先にチャットへ出さない。sessionIdとquestionIdは直前のgetDescriptiveContextが返した現在の同一セッション・同一問題の値を使う。古い画面や過去の会話にあったIDを流用しない。409 DESCRIPTIVE_ACTIONS_STALEの場合、推測で再送せず現在のセッションのgetDescriptiveContextを再取得し、利用者が指定した年度・部・問と一致するか照合する。一致しなければopenDescriptiveQuestionで指定問題を開き直し、解答表示を行ってから登録する。採点しない。成功後はチャットに解説を重複出力しない。一部の計算法だけで登録するとサーバーが422で拒否する。全小問を『## 問1』『## 問2』のように見出し分けし、目的・根拠・通常解法・必要な計算・検算を解説した後、面積がある場合にConjg/Imagを使う電卓の別解を加える。未確認はその小問に明示し、全文を省略しない。422なら不足分を補って全文を再送し、ボタンのみの旧経路へ逃げない。ツールが使えない場合だけ本文解説と番号選択肢をチャットに表示し、ボタンを表示済みと決して言わない。',
+    inputSchema: { type: 'object', required: ['sessionId', 'questionId', 'explanationMarkdown'],
       additionalProperties: false, properties: { sessionId, questionId: { type: 'string' },
-        explanationMarkdown: { type: 'string', maxLength: 40000,
+        explanationMarkdown: { type: 'string', minLength: 160, maxLength: 40000,
           description: '原本と照合して完成したAI参考解説の全文。Markdownの見出し・リスト・表が使用できる。表示ボタンの直前に描画される。モデルからの呼び出しでは必ず指定する。' } } },
-    api: a => a.explanationMarkdown === undefined
-      ? ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/actions?questionId=${encodeURIComponent(a.questionId)}`]
-      : ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/actions`,
-        { questionId: a.questionId, explanationMarkdown: a.explanationMarkdown }],
+    api: a => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/actions`,
+      { questionId: a.questionId, explanationMarkdown: a.explanationMarkdown }],
+  },
+  {
+  {
+    name: 'getDescriptiveActions',
+    appOnly: true, uiOnly: true,
+    description: '旧画面の復元専用。現在の記述式の解説・操作ボタンを読取専用で表示する。AIからの参考解説登録には使用しない。',
+    inputSchema: { type: 'object', required: ['sessionId','questionId'],
+      additionalProperties: false, properties: { sessionId, questionId: { type: 'string' } } },
+    api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/actions?questionId=${encodeURIComponent(a.questionId)}`],
   },
   {
     name: 'saveStudyPlan',
