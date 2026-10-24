@@ -1395,6 +1395,20 @@ async function route(request, env, url, now) {
     const { id, state } = await resolveSession(env, parts[2], now);
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : null;
+    // モデルに新しいMCPツールがまだ公開されていない環境用：既存のnextQuestionを
+    // 読み取り専用の解説後ナビゲーションへ転用する。現在問以外は409で拒否する。
+    const actionsPrefix = '記述式解説後の操作メニュー:';
+    if (want?.startsWith(actionsPrefix)) {
+      const cur = state.descriptiveCurrent;
+      const askedId = want.slice(actionsPrefix.length);
+      if (state.qualificationId !== 'land_surveyor' || !cur?.revealedAt ||
+          !askedId || askedId !== cur.questionId)
+        throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
+      return json(200, { status: 'descriptiveActions', sessionId: id,
+        question: { questionId: cur.questionId, year: cur.year, section: cur.section,
+          number: cur.number, shownAt: cur.shownAt }, gradingMode: 'none',
+        notice: 'AI参考解説の続きです。現在の問題専用の操作パネルです。' });
+    }
     const desc = state.qualificationId === 'land_surveyor' ? requestedDescriptive(want) : null;
     if (desc) return json(200, await openDescriptive(env, id, state, now, desc));
     if (want?.includes('択一式に戻る') && state.descriptiveCurrent) {
