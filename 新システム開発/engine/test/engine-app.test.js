@@ -993,7 +993,7 @@ test('測量士補2026年度問6は学習計画なし・セッションID未知�
     return new Response(JSON.stringify({result:r.result,assets:assetsB64(r.assets)}));
   };
   const opened=await call(env,'POST','/v1/sessions',{
-    qualificationId:'測量士補',sources:[SOURCE],
+    qualificationId:SRC.qualificationId,sources:[SOURCE],
     requestedQuestion:{year:2026,questionNumber:6},
   });
   assert.equal(opened.status,201,JSON.stringify(opened.body));
