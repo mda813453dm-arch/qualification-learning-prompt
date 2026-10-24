@@ -1146,7 +1146,7 @@ async function route(request, env, url, now) {
     const number = Number(parts[3]);
     const file = decodeURIComponent(parts[4]);
     if (!/^[a-f0-9]{64}$/.test(sha) || ![11, 21, 22].includes(number) ||
-        !/^f\\d{1,2}\\.png$/.test(file)) throw new HttpError(404, 'DIAGRAM_NOT_FOUND');
+        !/^f\d{1,2}\.png$/.test(file)) throw new HttpError(404, 'DIAGRAM_NOT_FOUND');
     const bytes = await env.STORE.get(`diagram/${sha}/${number}/${file}`, 'arrayBuffer');
     if (!bytes) throw new HttpError(404, 'DIAGRAM_NOT_FOUND');
     return new Response(bytes, { headers: { 'content-type': 'image/png',
