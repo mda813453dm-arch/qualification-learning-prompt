@@ -93,7 +93,7 @@ def structured_descriptive(doc, nums):
             for cell in row:
                 token = check_text(cell)
                 if token and token not in corpus:
-                    raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED: " + repr(token[:30]) + " vs " + repr(corpus[:130]))
+                    raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED: nums=" + repr(nums) + " table=" + repr(table["page"]) + " caption=" + repr(table.get("caption", "")[:50]) + " rows=" + repr(rows[:2]) + " token=" + repr(token[:30]) + " vs " + repr(corpus[:130]))
         first_page, first_box = table["_boxes"][0]
         slots.append((first_page, first_box.y0, first_box.x0, "table", {
             "kind": "table", "caption": table.get("caption", ""), "rows": rows
