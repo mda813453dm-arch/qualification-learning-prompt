@@ -962,7 +962,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
-  state = pin({ ...state, directRequested: null }, pick.item, pick.kind, now);
+  state = pin({ ...state, directRequested: null, publishedExplanation: null }, pick.item, pick.kind, now);
   if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
   // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
