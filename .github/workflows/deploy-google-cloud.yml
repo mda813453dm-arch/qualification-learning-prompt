@@ -35,6 +35,11 @@ jobs:
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
           node 新システム開発/deploy/check-explanation.mjs
+      - name: 測量士補の2026年度問6を年度・問番号で直接指定し、公開後に検証
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          node 新システム開発/deploy/check-direct-question.mjs
       - name: 記述式の公式原本・解答表示・画面復元を実接続で検証（採点は行わない）
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
