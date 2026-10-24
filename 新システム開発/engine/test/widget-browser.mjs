@@ -82,7 +82,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
                 year: args.year, section: args.section, number: args.number, kind: 'descriptive',
                 gradingMode: 'none', text: '第21問\n観測結果\n器械点  視準点\nT1  T2  0°\n見取図\nA\nB\nC',
-                pages: [{ page: 24, url: 'https://qlp.test/figure.png' }],
+                pages: [{ page: 24, url: 'https://qlp.test/original.png' }],
+                layout: [
+                  { kind: 'text', text: '第21問 観測結果を使って計算する。' },
+                  { kind: 'table', caption: '〔測量成果〕', rows: [['点名','X座標(m)','Y座標(m)'], ['A','200.00','199.50']] },
+                  { kind: 'figure', file: 'f1.png', page: 24, url: 'https://qlp.test/figure.png' },
+                ],
                 sourceUrl: 'https://www.moj.go.jp/content/001450011.pdf' } };
             reply({ structuredContent: window.lastDescriptive });
           }
@@ -395,7 +400,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
     await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
     assert.equal(await ui.locator('#descriptiveSource[open]').count(), 1, '最初は原本ページを表示する');
-    assert.equal(await ui.getByRole('button', { name: '公式原本24ページを拡大' }).count(), 1);
+    assert.equal(await ui.locator('#descriptiveSource .question-table').count(), 1, '表はHTML表で表示');
+    assert.equal(await ui.locator('#descriptiveSource .fig-open').count(), 1, '図だけが拡大対象');
+    assert.equal(await ui.locator('#descriptiveSource .descriptive-page').count(), 0, 'PDFのページ全体は画像として表示しない');
+    await ui.locator('#descriptiveSource .fig-open').click();
+    assert.equal(await ui.locator('.fig-overlay').count(), 1, '図をタップすると拡大');
+    await ui.getByRole('button', { name: '閉じる' }).click();
     assert.doesNotMatch(await ui.locator('#app').innerText(), /器械点  視準点|見取図\s+A\s+B/, '表や図をPDFテキスト層から偽の文章にしない');
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
     const beforeDescriptiveGrade = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
