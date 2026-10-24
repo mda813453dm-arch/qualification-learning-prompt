@@ -294,7 +294,7 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   }},{path:'/app'})).body.result;
   assert.equal(badPayload.isError,true,'内部JSONは解説として保存しない');
   assert.equal(badPayload.structuredContent.error,'EXPLANATION_INTERNAL_DATA_REJECTED');
-  const advanced=(await rpc(env,'tools/call',{name:'nextQuestion',arguments:{sessionId}},{path:'/app'})).body.result;
+  const advanced=(await rpc(env,'tools/call',{name:'nextQuestion',arguments:{sessionId}})).body.result;
   assert.equal(advanced.structuredContent.status,'question');
   const afterNext=(await rpc(env,'tools/call',{name:'restoreStudyView',arguments:{sessionId}},{path:'/app'})).body.result;
   assert.notEqual(afterNext._meta.qlp.status,'menu','次問で古い解説・操作ボタンを消す');
