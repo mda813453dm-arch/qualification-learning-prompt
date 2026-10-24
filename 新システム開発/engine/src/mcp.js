@@ -112,6 +112,16 @@ export const TOOLS = [
       { year: a.year, section: a.section, number: a.number }],
   },
   {
+    name: 'verifyCurrentDescriptive',
+    appOnly: true, uiOnly: true,
+    description: '古い記述式問題の画面からの誤操作を防ぐため、今開いている同一問題IDと表示時刻を読取専用で照合する。本文・図・表は返さない。',
+    inputSchema: { type: 'object', required: ['sessionId','questionId','shownAt'],
+      additionalProperties: false, properties: {
+        sessionId, questionId: { type: 'string' }, shownAt: { type: 'number' },
+      } },
+    api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/status?questionId=${encodeURIComponent(a.questionId)}&shownAt=${encodeURIComponent(a.shownAt)}`],
+  },
+  {
     name: 'revealDescriptiveAnswer',
     appOnly: true, uiOnly: true,
     description: '公式の記述式問題を開いた後に、採点せず参考解答を確認する操作を記録する。公式の模範解答は生成しない。',
