@@ -481,7 +481,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           late.contentWindow.postMessage({ jsonrpc:'2.0', id:m.id, result:{} }, '*');
         }
       });
-      late.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:null};<\\/script><script>');
+      late.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:null};</script><script>');
       document.body.appendChild(late);
       window.lateQuestion = question;
     }, { html: widgetHtml(), question });
