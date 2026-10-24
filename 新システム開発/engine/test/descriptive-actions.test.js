@@ -73,7 +73,10 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   const list=await post('tools/list',{});
   const tool=list.body.result.tools.find(t=>t.name==='showDescriptiveActions');
   assert.ok(tool?._meta?.['openai/outputTemplate']);
-  const response=await post('tools/call',{name:'getDescriptiveActions',arguments:{sessionId:SID,questionId:Q1}});
+  const complete='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
+    '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
+    '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
+  const response=await post('tools/call',{name:'showDescriptiveActions',arguments:{sessionId:SID,questionId:Q1,explanationMarkdown:complete}});
   assert.equal(response.status,200);
   assert.equal(response.body.result.structuredContent.status,'descriptiveActions');
   assert.equal(response.body.result._meta.qlp.question.text,undefined,'モデルと画面のどちらにも原本は再送しない');
