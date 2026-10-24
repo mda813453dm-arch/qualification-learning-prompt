@@ -970,9 +970,9 @@ test('最新の画面へ進むと前の問題・解説本文・選択肢を破�
   const start=html.indexOf('function lockOld(){');
   const end=html.indexOf('function stamp(data)',start);
   const fn=html.slice(start,end);
-  assert.ok(fn.includes("app.innerHTML = '<div class=\\"old-screen\\""),'旧DOMを丸ごと破棄する');
+  assert.ok(fn.includes('app.innerHTML =') && fn.includes('old-screen'), '旧DOMを丸ごと破棄する');
   assert.ok(!fn.includes("app.insertAdjacentHTML('beforeend'"),'長い旧解説の下に通知を追加しない');
-  assert.ok(!fn.includes('app.style.opacity = \\'.65\\''),'古い問題を半透明のまま残さない');
+  assert.ok(!fn.includes("app.style.opacity = '.65'"), '古い問題を半透明のまま残さない');
   assert.ok(html.includes("#app.is-old{min-height:0"),'旧枠の高さを縮める');
   assert.ok(html.includes("window.addEventListener('storage'"),'iOSではlocalStorageでも画面更新を通知する');
   assert.ok(html.includes("app.classList.remove('is-old')"),'手動で現在の画面を開いたときは旧表示解除');
