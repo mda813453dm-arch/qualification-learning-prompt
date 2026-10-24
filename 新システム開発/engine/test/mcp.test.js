@@ -122,8 +122,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v85\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.85');
+  assert.match(WIDGET_URI, /question-v86\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.86');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
@@ -965,6 +965,19 @@ test('再表示は読み取り専用で、内部指示を利用者の発言と�
   assert.ok(html.includes("typeof r.handoff === 'string'"));
   assert.ok(!html.includes("ask('今日はここまで。学習を終了します。')"));
 });
+test('最新の画面へ進むと前の問題・解説本文・選択肢を破棄して旧枠を1行へ縮める', () => {
+  const html = widgetHtml();
+  const start=html.indexOf('function lockOld(){');
+  const end=html.indexOf('function stamp(data)',start);
+  const fn=html.slice(start,end);
+  assert.ok(fn.includes("app.innerHTML = '<div class=\\"old-screen\\""),'旧DOMを丸ごと破棄する');
+  assert.ok(!fn.includes("app.insertAdjacentHTML('beforeend'"),'長い旧解説の下に通知を追加しない');
+  assert.ok(!fn.includes('app.style.opacity = \\'.65\\''),'古い問題を半透明のまま残さない');
+  assert.ok(html.includes("#app.is-old{min-height:0"),'旧枠の高さを縮める');
+  assert.ok(html.includes("window.addEventListener('storage'"),'iOSではlocalStorageでも画面更新を通知する');
+  assert.ok(html.includes("app.classList.remove('is-old')"),'手動で現在の画面を開いたときは旧表示解除');
+});
+
 test('解説・次へのメニューには学習ID等を渡せる', () => {
   const show = TOOLS.find((t) => t.name === 'showMenu');
   const r = show.local({ kind: 'next', body: '解説', sessionId: 's1', studyId: 'st1', learnerId: 'l1' });
