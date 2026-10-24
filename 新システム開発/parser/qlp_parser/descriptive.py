@@ -63,6 +63,104 @@ def find_descriptive_pages(doc, section, number):
     return nums
 
 
+
+def structured_descriptive(doc, nums):
+    """PDF原本と座標領域を照合し、文章・表・図だけを独立した順序付きブロックにする。
+
+    数字や図形をAIに復元させない。表が原本のテキスト層と一致しないときは
+    推測で埋めずに出題を停止する。図はPDF自体を部分レンダリングする。
+    """
+    import fitz
+    from .server import page_layout
+
+    tables, shapes = page_layout(doc, nums)
+    blocks, images, omitted = [], {}, {}
+    slots = []
+    check_text = lambda v: re.sub(r"\s+", "", _norm(v)).replace("，", ",")
+    for table in tables:
+        rows = table.get("rows", [])
+        if not rows or any(len(row) != len(rows[0]) for row in rows) or len(rows) < 2 or len(rows[0]) < 2:
+            raise DescriptiveError("DESCRIPTIVE_TABLE_STRUCTURE_INVALID")
+        # セルがページのテキスト層に実在するかを独立照合。
+        corpus = "".join(check_text(doc[pg-1].get_text("text", clip=b)) for pg, b in table["_boxes"])
+        for row in rows:
+            for cell in row:
+                token = check_text(cell)
+                if token and token not in corpus:
+                    raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED")
+        first_page, first_box = table["_boxes"][0]
+        slots.append((first_page, first_box.y0, first_box.x0, "table", {
+            "kind": "table", "caption": table.get("caption", ""), "rows": rows
+        }))
+        for pg, box in table["_boxes"]:
+            omitted.setdefault(pg, []).append(box + (-1, -1, 1, 1))
+
+    for f in shapes:
+        page_num, box = f["page"], fitz.Rect(f["bbox"])
+        if box.width < 75 or box.height < 65:
+            continue
+        if any((box & t).get_area() > box.get_area() * 0.12 for t in omitted.get(page_num, [])):
+            continue
+        page = doc[page_num-1]
+        clip = box & page.rect
+        if clip.is_empty or clip.get_area() < 4500:
+            continue
+        num = len(images) + 1
+        if num > 20:
+            raise DescriptiveError("DESCRIPTIVE_TOO_MANY_FIGURES")
+        fname = f"f{num}.png"
+        pix = page.get_pixmap(clip=clip, matrix=fitz.Matrix(3, 3), alpha=False)
+        images[fname] = base64.b64encode(pix.tobytes("png")).decode("ascii")
+        slots.append((page_num, clip.y0, clip.x0, "figure", {
+            "kind": "figure", "file": fname, "page": page_num
+        }))
+        omitted.setdefault(page_num, []).append(clip + (-3, -3, 3, 3))
+
+    for pg in nums:
+        page = doc[pg-1]
+        for b in page.get_text("dict").get("blocks", []):
+            lines = b.get("lines", [])
+            if not lines:
+                continue
+            clean_lines = []
+            for line in lines:
+                box = fitz.Rect(line["bbox"])
+                if box.get_area() <= 0:
+                    continue
+                if any((box & excluded).get_area() / box.get_area() >= .48
+                       for excluded in omitted.get(pg, [])):
+                    continue
+                text = "".join(sp.get("text", "") for sp in line.get("spans", [])).strip()
+                if not text or FOOTER.fullmatch(_norm(text)):
+                    continue
+                clean_lines.append((box, text))
+            if clean_lines:
+                # PDFの1段落中の行折返しは連結する。独立した問番号や見出しは別ブロック。
+                joined = ""
+                paragraphs = []
+                for box, text in clean_lines:
+                    if joined and re.match(r"^(?:問\s*[1-9]\b|〔|【|［)", _norm(text)):
+                        paragraphs.append(joined)
+                        joined = ""
+                    joined += text
+                if joined:
+                    paragraphs.append(joined)
+                for i, paragraph in enumerate(paragraphs):
+                    slots.append((pg, clean_lines[0][0].y0 + i * .01,
+                                  clean_lines[0][0].x0, "text", {"kind": "text", "text": paragraph}))
+
+    slots.sort(key=lambda item: (item[0], round(item[1], 1), item[2]))
+    blocks = [item[4] for item in slots]
+    if len(blocks) > 400 or not any(b["kind"] == "text" for b in blocks):
+        raise DescriptiveError("DESCRIPTIVE_LAYOUT_UNVERIFIED")
+    # 問題文が図表と別の形で検証できないときはページ画像への暗黙フォールバックをしない。
+    combined = "".join(b["text"] for b in blocks if b["kind"] == "text")
+    if not re.search(r"第\s*" + str(11 if "第11問" in _norm(combined) else 21 if "第21問" in _norm(combined) else 22) + r"\s*問", combined):
+        # タイトルは元PDFですでに検証されているが、このビューにも残っている必要がある。
+        if "第" not in combined:
+            raise DescriptiveError("DESCRIPTIVE_HEADING_LOST")
+    return blocks, images
+
 def extract_descriptive(*, pdf_bytes, year, section, number, expected_sha):
     import fitz
 
@@ -95,11 +193,13 @@ def extract_descriptive(*, pdf_bytes, year, section, number, expected_sha):
         pages[f"p{p}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
         texts.append("\n".join(_page_lines(page)))
     raw = "\n\n".join(texts)
+    layout, diagrams = structured_descriptive(doc, nums)
     if not re.search(r"第\s*"+str(number)+r"\s*問", raw):
         raise DescriptiveError("DESCRIPTIVE_TEXT_UNVERIFIED")
     return {
         "status": "ready", "kind": "descriptive", "year": year, "section": section,
         "number": number, "questionSha256": known, "pages": pages, "pageNumbers": nums,
+        "layout": layout, "diagrams": diagrams,
         "text": raw[:40000], "textComplete": len(raw) <= 40000,
         "gradingMode": "none", "solutionAvailable": False,
         "notice": "原本問題・図表の閲覧用です。公式模範解答の存在は確認されていません。自動採点しません。",
