@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v76.html';
+export const WIDGET_URI = 'ui://qlp/question-v77.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.76';
+export const WIDGET_VERSION = '2026-10-24.77';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -246,6 +246,10 @@ a{color:inherit}
         });
       }); };
       bindEnd(); return;
+    }
+    if (data.status === 'descriptiveActions') {
+      showDescriptiveActions(data);
+      return;
     }
     if (data.status === 'descriptiveQuestion' || data.status === 'descriptiveReveal') {
       showDescriptiveQuestion(data);
@@ -607,52 +611,153 @@ a{color:inherit}
     });
     bindEnd(); scrollUp();
   }
+
+  // 古いメッセージの画面を押して最新の問題を動かさない。
+  // storageイベントが利用可能な画面同士では、最新操作画面の出現と同時に旧ボタンを隠す。
+  var descriptiveScreen = null;
+  function descriptiveStorageKey(sid){ return 'qlp_current_descriptive_' + String(sid || ''); }
+  function obsoleteDescriptive(){
+    descriptiveScreen = null;
+    app.innerHTML = '<h2>以前の問題画面</h2><div class="notice" role="status">この画面の操作は終了しています。現在の問題、またはAI解説の直後にある最新の操作パネルを利用してください。</div>';
+  }
+  function descriptiveIsNewer(other, current){
+    return other && current && other.sessionId === current.sessionId &&
+      (Number(other.shownAt) > Number(current.shownAt) ||
+       (Number(other.shownAt) === Number(current.shownAt) &&
+        (other.questionId !== current.questionId || other.role === 'actions' && current.role !== 'actions')));
+  }
+  function publishDescriptive(q, role){
+    var item = { sessionId: state.sessionId, questionId: q.questionId,
+      shownAt: Number(q.shownAt) || 0, role: role };
+    descriptiveScreen = item;
+    try {
+      var key = descriptiveStorageKey(state.sessionId);
+      var prior = JSON.parse(localStorage.getItem(key) || 'null');
+      if (descriptiveIsNewer(prior, item)){ obsoleteDescriptive(); return false; }
+      localStorage.setItem(key, JSON.stringify(item));
+    } catch(e){}
+    return true;
+  }
+  try { window.addEventListener('storage', function(event){
+    if (!descriptiveScreen || event.key !== descriptiveStorageKey(descriptiveScreen.sessionId) || !event.newValue) return;
+    try {
+      var newer = JSON.parse(event.newValue);
+      if (descriptiveIsNewer(newer, descriptiveScreen)) obsoleteDescriptive();
+    } catch(e){}
+  }); } catch(e){}
+  async function requireCurrentDescriptive(q){
+    try {
+      var live = await callTool('restoreStudyView', { sessionId: state.sessionId });
+      var current = live && live.question;
+      var ok = current && current.questionId === q.questionId &&
+        Number(current.shownAt || 0) === Number(q.shownAt || 0) &&
+        (live.status === 'descriptiveQuestion' || live.status === 'descriptiveReveal');
+      if (ok) return true;
+    } catch(e){}
+    obsoleteDescriptive();
+    return false;
+  }
+  async function goDescriptiveNext(q){
+    if (!await requireCurrentDescriptive(q)) return;
+    var n = q.number === 11 ? 21 : q.number === 21 ? 22 : 11;
+    var y = Number(q.year) || 2025;
+    try {
+      var v = await callTool('openDescriptiveQuestion', {
+        sessionId: state.sessionId, year: y, section: n === 11 ? '午前の部' : '午後の部', number: n
+      });
+      if (!v || v.error || v.status !== 'descriptiveQuestion') throw new Error('DESCRIPTIVE_NEXT_FAILED');
+      render(v);
+    } catch(e){ app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">次の記述式を開けませんでした。もう一度操作してください。</div>'); }
+  }
+  function bindDescriptiveNavigation(q){
+    var next = document.getElementById('nextDescriptive');
+    if (next) next.onclick = function(){ goDescriptiveNext(q); };
+    var back = document.getElementById('backDescriptive');
+    if (back) back.onclick = async function(){
+      if (await requireCurrentDescriptive(q)) showDescriptiveMenu(q.year);
+    };
+    var mcq = document.getElementById('returnMcq');
+    if (mcq) mcq.onclick = async function(){
+      if (!await requireCurrentDescriptive(q)) return;
+      nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId, question: '択一式に戻る' }).then(render); });
+    };
+  }
+  function descriptiveMenuButtons(){
+    return '<div class="row"><button id="nextDescriptive">次の記述式へ</button>' +
+      '<button id="backDescriptive">年度・問題を選び直す</button>' +
+      '<button id="returnMcq">択一式に戻る</button></div>';
+  }
+  // 解説の「下」に表示する。原本本文・表・図のデータをここでは受け取らない。
+  function showDescriptiveActions(d){
+    var q = d.question || {};
+    state.question = null; state.answered = false;
+    app.innerHTML = '<h2>解説後の操作｜' + esc(q.year) + '年度 ' + esc(q.section) +
+      ' 問' + esc(q.number) + '</h2>' +
+      '<div class="notice">ここが現在の問題の操作パネルです。上の古い問題画面のボタンは使わないでください。</div>' +
+      descriptiveMenuButtons() + endBar();
+    if (!publishDescriptive(q, 'actions')) return;
+    scrollUp(); bindEnd(); bindDescriptiveNavigation(q);
+  }
   function showDescriptiveQuestion(d){
     var q = d.question || {};
     state.question = null; state.answered = false;
     var label = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
     var already = d.status === 'descriptiveReveal';
-    var h = '<h2>' + esc(label) + '</h2>' +
-      '<div class="notice">記述式・採点なし。択一式の正答率には加えません。</div>';
-    // 検証済みの文字・表・図ブロックを順番どおり表示。原本ページ全体は画像化して見せない。
+    if (already){
+      // 解説の前に問題や図をもう一度表示しない。AIは保存済み原本を別経路から取得できる。
+      app.innerHTML = '<h2>' + esc(label) + '｜解説へ</h2>' +
+        '<div class="notice" role="status">元の問題を繰り返さず、AI参考解説をこの下の会話に表示します。解説の最後に最新の操作パネルが表示されます。</div>' +
+        '<div class="notice">【操作パネルが下に出ない場合】解説を読み終えたら、この位置まで上に戻り、下のボタンを押してください。</div>' +
+        '<div class="row"><button id="fallbackDescriptiveActions">解説後の操作パネルを開く（上に戻った場合）</button></div>';
+      if (!publishDescriptive(q, 'reveal')) return;
+      scrollUp();
+      document.getElementById('fallbackDescriptiveActions').onclick = async function(){
+        this.disabled = true;
+        try {
+          if (!await requireCurrentDescriptive(q)) return;
+          var response = await callTool('showDescriptiveActions', { sessionId: state.sessionId, questionId: q.questionId });
+          if (!response || response.status !== 'descriptiveActions') throw new Error('ACTIONS_UNAVAILABLE');
+          render(response);
+        } catch(e){
+          var old = document.getElementById('fallbackDescriptiveActions'); if(old) old.disabled = false;
+          app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">操作パネルを取得できませんでした。会話で「今の問題の操作メニューを表示」と入力してください。</div>');
+        }
+      };
+      return;
+    }
     var blocks = (q.layout || []).map(descriptiveBlockHtml).join('');
-    h += '<details class="descriptive-source" id="descriptiveSource"' + (already ? '' : ' open') + '>' +
-      '<summary>' + (already ? '問題・表・図を再表示' : '問題文・表・図') + '</summary>' +
+    var h = '<h2>' + esc(label) + '</h2>' +
+      '<div class="notice">記述式・採点なし。択一式の正答率には加えません。</div>' +
+      '<details class="descriptive-source" id="descriptiveSource" open>' +
+      '<summary>問題文・表・図</summary>' +
       (blocks || '<div class="notice" role="alert">問題・表・図の照合が必要です。出題を停止してください。</div>') + '</details>';
     if (safeUrl(q.sourceUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
-    h += '<div class="notice">公式模範解答は確認できていません。表示する解答はAIによる参考解答であり、正誤判定は行いません。</div>';
-    if (!already && blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
-    else if (already) h += '<div class="notice" role="status">参考解答の表示操作を受け付けました。参考解答はこの画面の下の会話で表示します。</div>';
-    h += '<div class="row"><button id="nextDescriptive">次の記述式へ</button><button id="backDescriptive">年度・問題を選び直す</button><button id="returnMcq">択一式に戻る</button></div>' + endBar();
-    app.innerHTML = h; scrollUp(); bindFigures(); bindEnd();
+    h += '<div class="notice">公式模範解答は確認できていません。AIの参考解答は自動採点しません。</div>';
+    if (blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
+    h += '<div class="notice">解説を表示した後は、解説の下にある最新の操作パネルを使用してください。見当たらない場合は上に戻る必要があります。</div>';
+    h += descriptiveMenuButtons() + endBar();
+    app.innerHTML = h;
+    if (!publishDescriptive(q, 'question')) return;
+    scrollUp(); bindFigures(); bindEnd(); bindDescriptiveNavigation(q);
     var answer = document.getElementById('showDescriptiveSolution');
     if (answer) answer.onclick = async function(){
       answer.disabled = true;
       try {
-        var r = await callTool('revealDescriptiveAnswer', { sessionId: state.sessionId });
-        if (!r || r.error || r.status !== 'descriptiveReveal' ||
-            r.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
-        render(r);
+        if (!await requireCurrentDescriptive(q)) return;
+        var response = await callTool('revealDescriptiveAnswer', { sessionId: state.sessionId, questionId: q.questionId });
+        if (!response || response.error || response.status !== 'descriptiveReveal' ||
+            response.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
+        render(response);
         var isLand = q.number === 11 || q.number === 21;
         await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、公式模範解答とは区別してください。自動採点はしないでください。',
-          isLand ? label + 'のAI参考解答・解説をお願いします。土地の座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。' : label + 'の建物のAI参考解答・解説をお願いします。問題に不要な三角関数・複素数の座標計算を追加しないでください（自動採点なし）。');
-      } catch(e) {
+          isLand ? label + 'のAI参考解答・解説をお願いします。土地の座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。' :
+            label + 'の建物のAI参考解答・解説をお願いします。不要な三角関数・複素数の座標計算を加えないでください（自動採点なし）。');
+      } catch(e){
         var err = document.getElementById('descriptiveRevealError');
         if (!err) app.insertAdjacentHTML('beforeend','<div class="notice" id="descriptiveRevealError" role="alert"></div>');
-        document.getElementById('descriptiveRevealError').textContent = '参考解答の依頼ができませんでした。改めて「参考解答を表示」と送ってください。';
+        document.getElementById('descriptiveRevealError').textContent = '参考解説を依頼できませんでした。もう一度「参考解答を表示」と送ってください。';
         if (answer.isConnected) answer.disabled = false;
       }
-    };
-    document.getElementById('nextDescriptive').onclick = function(){
-      var n = q.number === 11 ? 21 : q.number === 21 ? 22 : 11;
-      var y = Number(q.year) || 2025;
-      showDescriptiveMenu(y);
-      var b = app.querySelector('button[data-desc="' + n + '"]');
-      if (b) b.click();
-    };
-    document.getElementById('backDescriptive').onclick = function(){ showDescriptiveMenu(q.year); };
-    document.getElementById('returnMcq').onclick = function(){
-      nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId, question: '択一式に戻る' }).then(render); });
     };
   }
   // 正答はツールの結果にもチャットにも含めず、登録済み問題IDと利用者回答だけをエンジンに渡す。
