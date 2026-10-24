@@ -16,6 +16,7 @@ export function widgetHtml() {
 @media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a;--acc:#8ab4f8;--accbg:#22304a;--ok:#79e6a0;--ng:#ff9696}}
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
+#app.is-old{min-height:0;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
@@ -244,6 +245,7 @@ a{color:inherit}
     // 重要: ボタンだけを無効化すると古い問題・長い解説が残り、iPhoneで学習が進むほど縦に伸びる。
     // 古いDOMは完全に破棄し、学習の記録自体はエンジンに保持する。
     app.style.opacity = '';
+    app.classList.add('is-old');
     app.innerHTML = '<div class="old-screen" role="status">' +
       '<span>前の学習画面は閉じました</span>' +
       '<button type="button" id="reopenStudy">ここで現在の学習を開く</button></div>';
@@ -1807,6 +1809,7 @@ a{color:inherit}
       // 復元結果は新しい時刻で届く。古い画面を手動で開いたときだけロック解除する。
       if (locked && !manual) return;
       locked = false;
+      app.classList.remove('is-old');
       app.style.opacity = '';
       // 復旧した枠を最新として通知し、先に開かれた操作不能な枠と競合させない。
       if (manual) {
