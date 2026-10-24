@@ -120,7 +120,7 @@ export const TOOLS = [
   },
   {
     name: 'getDescriptiveContext',
-    description: '記述式の参考解答を作成する場合だけ、現在の同一セッションに登録した公式問題文・年度・部・出典・ページ番号を読み取る。公式模範解答は未確認。自動採点しない。土地家屋調査士の座標計算は、問題の原本で数値と方位を検証してから三角関数と複素数の両方の解法と照合結果を示す。',
+    description: '記述式の参考解答を作成する場合だけ、現在の同一セッションに登録した公式問題文・年度・部・出典・ページ番号を読み取る。公式模範解答は未確認。自動採点しない。土地家屋調査士の土地（午前問11・午後問21）で座標計算が必要な場合だけ、原本で数値と方位を検証してから三角関数と複素数の両方の解法と照合結果を示す。建物（午後問22）には不要な座標計算を追加しない。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/context`],
   },
@@ -454,7 +454,7 @@ export function forModel(body) {
       year: body.question?.year, section: body.question?.section,
       number: body.question?.number, gradingMode: 'none',
       howToProceed: body.status === 'descriptiveReveal'
-        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。座標計算なら三角関数と複素数（方位定義を原本照合）の両方で解き、結果を照合する。チャットに長い問題文・表・図を再掲せず、解答・解説だけ表示する。採点はしない。'
+        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。土地（午前問11・午後問21）の座標計算だけ三角関数と複素数（方位定義を原本照合）の両方で解き、結果を照合する。建物（午後問22）には不要な座標計算を追加しない。チャットに長い問題文・表・図を再掲せず、解答・解説だけ表示する。採点はしない。'
         : '公式原本の記述式問題は学習画面に表示済み。択一式の番号回答や採点は行わず、解答・解説を表示ボタンの押下を待つ。',
     };
   }
