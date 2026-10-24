@@ -51,6 +51,11 @@ def find_descriptive_pages(doc, section, number):
         if i > start:
             if not lines or APPENDIX.match(lines[0]):
                 break
+            # 旧年度の関数表は見出しが「度 sin cos tan」で始まる。
+            # 問題の図とは無関係な付録を記述式の本文・表に混入させない。
+            header = "".join(lines[:8]).lower()
+            if "度" in header and all(w in header for w in ("sin", "cos", "tan")):
+                break
             match = next((HEADER.match(line) for line in lines[:3] if HEADER.match(line)), None)
             if match and int(match.group(1)) != number:
                 break
