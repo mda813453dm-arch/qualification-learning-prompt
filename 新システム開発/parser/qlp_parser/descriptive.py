@@ -79,8 +79,14 @@ def structured_descriptive(doc, nums):
     check_text = lambda v: re.sub(r"\s+", "", _norm(v)).replace("，", ",")
     for table in tables:
         rows = table.get("rows", [])
-        if not rows or any(len(row) != len(rows[0]) for row in rows) or len(rows) < 2 or len(rows[0]) < 2:
+        # PDF由来の結合セルは抽出器によって末尾の空欄が省略される。
+        # 存在しない数値は作らず、行の列幅だけ空欄で揃える。
+        columns = max((len(row) for row in rows), default=0)
+        if len(rows) < 2 or columns < 2:
+            continue
+        if columns > 15 or len(rows) > 100:
             raise DescriptiveError("DESCRIPTIVE_TABLE_STRUCTURE_INVALID")
+        rows = [list(row) + [""] * (columns - len(row)) for row in rows]
         # セルがページのテキスト層に実在するかを独立照合。
         corpus = "".join(check_text(doc[pg-1].get_text("text", clip=b)) for pg, b in table["_boxes"])
         for row in rows:
