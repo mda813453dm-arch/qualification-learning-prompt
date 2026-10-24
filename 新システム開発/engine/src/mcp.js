@@ -115,8 +115,10 @@ export const TOOLS = [
     name: 'revealDescriptiveAnswer',
     appOnly: true, uiOnly: true,
     description: '公式の記述式問題を開いた後に、採点せず参考解答を確認する操作を記録する。公式の模範解答は生成しない。',
-    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
-    api: a => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/reveal`],
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId,
+      questionId: { type: 'string', description: '現在表示している記述式の問題ID（旧画面の誤操作防止）' } } },
+    api: a => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/reveal`,
+      a.questionId ? { questionId: a.questionId } : {}],
   },
   {
     name: 'getDescriptiveContext',
