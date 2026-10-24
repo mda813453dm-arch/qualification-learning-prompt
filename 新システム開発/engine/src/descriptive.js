@@ -17,9 +17,9 @@ export function descriptiveSpec(year, section, number, pins) {
 }
 export function requestedDescriptive(text) {
   const t = String(text ?? '').normalize('NFKC');
-  const q = /(?:第\s*)?問\s*(11|21|22)/.exec(t);
+  const q = /(?:第\s*(11|21|22)\s*問|問\s*(11|21|22))/.exec(t);
   if (!q) return null;
-  const number = Number(q[1]);
+  const number = Number(q[1] || q[2]);
   const y = /20(?:22|23|24|25)/.exec(t)?.[0] ?? null;
   const r = /(?:令和|R)\s*([4-7])/.exec(t)?.[1] ?? null;
   const year = y ? Number(y) : r ? Number(r) + 2018 : 2025;
