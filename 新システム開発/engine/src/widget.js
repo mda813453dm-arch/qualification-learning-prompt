@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v72.html';
+export const WIDGET_URI = 'ui://qlp/question-v73.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.72';
+export const WIDGET_VERSION = '2026-10-24.73';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -202,6 +202,10 @@ a{color:inherit}
         });
       }); };
       bindEnd(); return;
+    }
+    if (data.status === 'descriptiveQuestion' || data.status === 'descriptiveReveal') {
+      showDescriptiveQuestion(data);
+      return;
     }
     if (data.status === 'restoredGrade') {
       // 採点済みの問を先に同一問題として描き、その上に正答と続きの操作を復元する。
@@ -503,6 +507,9 @@ a{color:inherit}
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
     if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
+    if (/^land_surveyor:/.test(String(q.questionId || ''))) {
+      h += '<div class="row"><button id="descriptiveMenuStart">記述式（午前11・午後21/22）を開く</button></div>';
+    }
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
@@ -513,6 +520,8 @@ a{color:inherit}
     bindFigures();
     scrollUp();
     bindEnd();
+    var descButton = document.getElementById('descriptiveMenuStart');
+    if (descButton) descButton.onclick = function(){ showDescriptiveMenu(q.year); };
     // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
     var chosen = null;
     app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){
@@ -521,6 +530,84 @@ a{color:inherit}
     document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
+  }
+  function showDescriptiveMenu(year){
+    year = Number(year) || 2025;
+    app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
+      '<div class="notice">記述式は自動採点しません。午前・午後の択一式の成績にも加えません。</div>' +
+      '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
+      [2025,2024,2023,2022].map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
+      '<div class="choices"><button data-desc="11">午前の部・問11（記述式）</button>' +
+      '<button data-desc="21">午後の部・問21（土地）</button>' +
+      '<button data-desc="22">午後の部・問22（建物）</button></div>' +
+      '<div id="descriptiveError" class="notice" aria-live="polite"></div>' + endBar();
+    app.querySelectorAll('button[data-desc]').forEach(function(button){
+      button.onclick = async function(){
+        var number = Number(button.getAttribute('data-desc'));
+        var y = Number(document.getElementById('descriptiveYear').value);
+        button.disabled = true;
+        var error = document.getElementById('descriptiveError');
+        error.textContent = '公式原本から問題を読み込んでいます…';
+        try {
+          var d = await callTool('openDescriptiveQuestion', {
+            sessionId: state.sessionId, year: y,
+            section: number === 11 ? '午前の部' : '午後の部', number: number
+          });
+          if (!d || d.error || d.status !== 'descriptiveQuestion') throw new Error('DESCRIPTIVE_SOURCE_UNAVAILABLE');
+          render(d);
+        } catch(e) {
+          button.disabled = false;
+          error.textContent = '公式原本を検証して表示できませんでした。同じボタンで再試行できます。';
+        }
+      };
+    });
+    bindEnd(); scrollUp();
+  }
+  function showDescriptiveQuestion(d){
+    var q = d.question || {};
+    state.question = null; state.answered = false;
+    var label = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
+    var already = d.status === 'descriptiveReveal';
+    var h = '<h2>' + esc(label) + '</h2>' +
+      '<div class="notice">記述式・採点なし。択一式の正答率には加えません。原本を拡大して読めます。</div>' +
+      '<div class="stem">' + stemHtml(q.text || '') + '</div>';
+    (q.pages || []).forEach(function(page,i){ if (page.url && safeUrl(page.url)) {
+      h += '<div class="notice">公式原本 ' + esc(page.page) + 'ページ</div>' + figureHtml(page.url,i);
+    } });
+    if (safeUrl(q.sourceUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
+    h += '<div class="notice">公式模範解答は確認できていません。表示する解答はAIによる参考解答であり、正誤判定は行いません。</div>';
+    if (!already) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
+    else h += '<div class="notice" role="status">参考解答の表示操作を受け付けました。参考解答はこの画面の下の会話で表示します。</div>';
+    h += '<div class="row"><button id="nextDescriptive">次の記述式へ</button><button id="backDescriptive">記述式一覧</button><button id="returnMcq">択一式に戻る</button></div>' + endBar();
+    app.innerHTML = h; scrollUp(); bindFigures(); bindEnd();
+    var answer = document.getElementById('showDescriptiveSolution');
+    if (answer) answer.onclick = async function(){
+      answer.disabled = true;
+      try {
+        var r = await callTool('revealDescriptiveAnswer', { sessionId: state.sessionId });
+        if (!r || r.error || r.status !== 'descriptiveReveal' ||
+            r.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
+        render(r);
+        await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、公式模範解答とは区別してください。自動採点はしないでください。',
+          label + 'のAI参考解答・解説を表示してください（自動採点なし）。');
+      } catch(e) {
+        var err = document.getElementById('descriptiveRevealError');
+        if (!err) app.insertAdjacentHTML('beforeend','<div class="notice" id="descriptiveRevealError" role="alert"></div>');
+        document.getElementById('descriptiveRevealError').textContent = '参考解答の依頼ができませんでした。改めて「参考解答を表示」と送ってください。';
+        if (answer.isConnected) answer.disabled = false;
+      }
+    };
+    document.getElementById('nextDescriptive').onclick = function(){
+      var n = q.number === 11 ? 21 : q.number === 21 ? 22 : 11;
+      var y = Number(q.year) || 2025;
+      showDescriptiveMenu(y);
+      var b = app.querySelector('button[data-desc="' + n + '"]');
+      if (b) b.click();
+    };
+    document.getElementById('backDescriptive').onclick = function(){ showDescriptiveMenu(q.year); };
+    document.getElementById('returnMcq').onclick = function(){
+      nextBelow(function(){ return callTool('nextQuestion', { sessionId: state.sessionId, question: '択一式に戻る' }).then(render); });
+    };
   }
   // 正答はツールの結果にもチャットにも含めず、登録済み問題IDと利用者回答だけをエンジンに渡す。
   function showConfirmationQuestion(d){
