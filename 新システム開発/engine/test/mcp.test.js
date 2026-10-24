@@ -126,6 +126,30 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
+test('ChatGPTから測量士補の2026年度問6をIDなしで指定しても初期確認へ戻らず公式採点まで進む', async () => {
+  const env = makeEnv({ answers:[3,1,4,2,1,5], figureOn:[] });
+  const app = async (name,args) => (await rpc(env,'tools/call',
+    {name,arguments:args},{path:'/app'})).body.result;
+  const start = await app('startSession', {
+    qualificationId:SRC.qualificationId,sources:[SRC],
+    requestedQuestion:{year:2026,questionNumber:6},
+  });
+  assert.equal(start.isError, undefined,JSON.stringify(start.structuredContent));
+  assert.equal(start.structuredContent.status,'question');
+  assert.equal(start._meta.qlp.question.questionNumber,6);
+  assert.equal(start._meta.qlp.question.year,2026);
+  assert.equal(start._meta.qlp.onboarding,undefined,'学習段階のボタンではなく問題を即表示');
+  assert.equal(start._meta.qlp.question.correctAnswer,undefined,'出題時に正答は非公開');
+  const sid=start._meta.qlp.sessionId;
+  const qid=start._meta.qlp.question.questionId;
+  assert.ok(sid && qid);
+  const graded=await app('submitAnswer',{sessionId:sid,questionId:qid,value:'5'});
+  assert.equal(graded._meta.qlp.grade.correct,true);
+  const unavailable=await app('nextQuestion',{sessionId:sid,question:'2025年度 問6'});
+  assert.equal(unavailable._meta.qlp.status,'questionUnavailable');
+  assert.equal(unavailable._meta.qlp.question,undefined,'別の年度にすり替えない');
+});
+
 test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面へ進み、履歴から次の問題を出す', async () => {
   const env = makeEnv();
   const callUi = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
