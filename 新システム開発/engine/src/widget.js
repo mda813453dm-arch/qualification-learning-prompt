@@ -30,11 +30,11 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .descriptive-explanation{font-size:16px;line-height:1.8;overflow-wrap:anywhere;margin:8px 0 18px}
 .descriptive-explanation p{margin:10px 0 16px;white-space:normal;line-height:1.85}
-.descriptive-explanation h2{color:var(--fg);font-size:19px;margin:24px 0 10px;line-height:1.5;border-bottom:1px solid var(--line);padding-bottom:7px}
+.descriptive-explanation h2{color:var(--fg);background:transparent;border-radius:0;font-size:19px;margin:24px 0 10px;line-height:1.5;border-bottom:1px solid var(--line);padding:0 0 7px}
 .descriptive-explanation h3{color:var(--fg);font-size:17px;margin:20px 0 9px;line-height:1.5}
 .descriptive-explanation ul,.descriptive-explanation ol{padding-left:1.5em;margin:8px 0}
 .descriptive-explanation code{background:var(--btn);border-radius:4px;padding:1px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
-.descriptive-explanation .equation{background:var(--accbg);padding:7px 10px;border-radius:8px;overflow-wrap:anywhere}
+.descriptive-explanation .equation{background:var(--accbg);padding:10px 12px;border-radius:8px;overflow-x:auto;overflow-wrap:normal;white-space:pre-wrap;font-size:15px;line-height:1.75}.descriptive-explanation .math-inline{font-family:ui-monospace,Menlo,monospace;font-size:.94em;overflow-wrap:anywhere}.descriptive-explanation .question-table td,.descriptive-explanation .question-table th{text-align:left;white-space:normal;vertical-align:top;min-width:4em}.descriptive-explanation .table-scroll{margin:14px 0}.descriptive-explanation pre{white-space:pre-wrap;overflow-x:auto;background:var(--btn);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.6}
 .descriptive-actions{border-top:2px solid var(--line);padding-top:14px;margin-top:12px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
@@ -94,13 +94,28 @@ a{color:inherit}
   // HTMLやJavaScriptを解説文から実行させない。
   function explanationInline(s){
     return esc(s).replace(/\\x60([^\\x60\\n]+)\\x60/g, '<code>$1</code>')
-      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>');
+      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>')
+      .replace(/\\\\\\((.*?)\\\\\\)/g, '<span class="math-inline">$1</span>');
   }
   function explanationHtml(markdown){
     var lines = String(markdown || '').replace(/\\r\\n/g,'\\n').split('\\n'), html = [], i = 0;
     while (i < lines.length) {
       var line = lines[i];
       if (!line.trim()){ i++; continue; }
+      // 数式の独立行とコードブロックは文章に吸収せず、読みやすい塊として描画する。
+      if (/^\\s*(?:\$\$|\\\\\\[)\\s*$/.test(line)) {
+        var endMark = line.trim() === '$' ? '$' : '\\\\]';
+        var mathLines=[]; i++;
+        while(i<lines.length && lines[i].trim() !== endMark) mathLines.push(lines[i++]);
+        if(i<lines.length)i++;
+        html.push('<p class="equation">'+esc(mathLines.join('\\n'))+'</p>');continue;
+      }
+      if (/^\\s*\x60\x60\x60/.test(line)) {
+        var codeLines=[];i++;
+        while(i<lines.length && !/^\\s*\x60\x60\x60/.test(lines[i])) codeLines.push(lines[i++]);
+        if(i<lines.length)i++;
+        html.push('<pre><code>'+esc(codeLines.join('\\n'))+'</code></pre>');continue;
+      }
       if (/^\\s*\\|.*\\|\\s*$/.test(line) && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '')) {
         var tableLines=[line, lines[i+1]]; i+=2;
         while(i<lines.length && /^\\s*\\|.*\\|\\s*$/.test(lines[i])) tableLines.push(lines[i++]);
@@ -120,8 +135,8 @@ a{color:inherit}
         !/^\\s*[-*]\\s+/.test(lines[i]) &&
         !( /^\\s*\\|.*\\|\\s*$/.test(lines[i]) && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '') )) paragraph.push(lines[i++]);
       if (!paragraph.length){i++;continue;}
-      var eq = paragraph.length === 1 && /^(?:S\\s*=|[A-Za-zα-ωΑ-ΩΔθ]\\s*=)/.test(paragraph[0].trim());
-      html.push('<p'+(eq?' class="equation"':'')+'>'+paragraph.map(explanationInline).join('\\n')+'</p>');
+      var eq = paragraph.length === 1 && /^(?:S\\s*=|[A-Za-zα-ωΑ-ΩΔθ]\\s*=|[0-9A-Z]+\\s*=)/.test(paragraph[0].trim());
+      html.push('<p'+(eq?' class="equation"':'')+'>'+paragraph.map(explanationInline).join('<br>')+'</p>');
     }
     return html.join('');
   }
