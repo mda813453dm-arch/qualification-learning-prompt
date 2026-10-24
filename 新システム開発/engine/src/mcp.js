@@ -138,7 +138,7 @@ export const TOOLS = [
   },
   {
     name: 'showDescriptiveActions',
-    description: '【記述式解説の必須出力先】getDescriptiveContextで資料を確認し、通常と複素数による詳しい解説を内部で完成させたら、その全文をexplanationMarkdownに渡す。AI解説と「次の記述式へ／年度・問題を選び直す／択一式に戻る／学習終了」のボタンを同じ学習画面に連続表示する。解説本文を先にチャットへ出さない。sessionIdとquestionIdは取得値をそのまま使い、採点しない。成功後はチャットに解説を重複出力しない。旧UIからの呼出しではexplanationMarkdownを省略可能だが、モデルから呼ぶときは必須。ツールが使えない場合だけ本文解説と番号選択肢をチャットに表示し、ボタンを表示済みと決して言わない。',
+    description: '【記述式解説の必須出力先】getDescriptiveContextで資料を確認し、通常と複素数による詳しい解説を内部で完成させたら、その全文をexplanationMarkdownに渡す。AI解説と「次の記述式へ／年度・問題を選び直す／択一式に戻る／学習終了」のボタンを同じ学習画面に連続表示する。解説本文を先にチャットへ出さない。sessionIdとquestionIdは直前のgetDescriptiveContextが返した現在の同一セッション・同一問題の値を使う。古い画面や過去の会話にあったIDを流用しない。409 DESCRIPTIVE_ACTIONS_STALEの場合、推測で再送せず現在のセッションのgetDescriptiveContextを再取得し、利用者が指定した年度・部・問と一致するか照合する。一致しなければopenDescriptiveQuestionで指定問題を開き直し、解答表示を行ってから登録する。採点しない。成功後はチャットに解説を重複出力しない。旧UIからの呼出しではexplanationMarkdownを省略可能だが、モデルから呼ぶときは必須。ツールが使えない場合だけ本文解説と番号選択肢をチャットに表示し、ボタンを表示済みと決して言わない。',
     inputSchema: { type: 'object', required: ['sessionId', 'questionId'],
       additionalProperties: false, properties: { sessionId, questionId: { type: 'string' },
         explanationMarkdown: { type: 'string', maxLength: 40000,
@@ -493,7 +493,7 @@ export function forModel(body) {
       year: body.question?.year, section: body.question?.section,
       number: body.question?.number, gradingMode: 'none',
       howToProceed: body.status === 'descriptiveReveal'
-        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。土地（午前問11・午後問21）の座標計算・面積計算が必要な小問では三角関数と複素数（通常の座標法も含み、方位・座標・頂点順序を原本照合）の両方を解説する。面積は省略せずConjgとImagを使い、A→B→G→EならAbs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、対角線AGとBEならAbs(Imag((A-G)*Conjg(B-E)))/2で計算する。複素数は関数電卓で再現できるようArg/Abs/Conjg/Real/Imag・r∠θ・a+bi・STO/RCL/M等から必要な機能名と実際の入力式・途中結果を示し、最後に計算を照合する。DEG設定と角度象限・丸めを明示し、機種ごとの固定キー操作は発明しない。建物（午後問22）には不要な座標計算を追加しない。問題文・表・図を再掲せず、AI参考解説の全文をMarkdownで内部作成し、チャット本文に先出しせずshowDescriptiveActions({sessionId,questionId,explanationMarkdown:解説全文})を呼ぶ。これにより解説と操作ボタンが同一画面内で縦に連続表示され、次の問題を開くとボタンも消える。成功後は解説をチャットに二重表示しない。土地の全年度の午前11・午後21の該当小問では、何を求めるか→原本数値・条件→計算の理由→通常解法→複素数と関数電卓による解法→検算・丸めの順を基本に丁寧に説明する。公式模範解答と称さず採点しない。ツールが呼べない・失敗した場合は解説本文と番号選択肢をチャットの最後に表示するが、押せるボタンを出したとは言わない。'
+        ? '利用者が「解答・解説を表示」を押した。AIが参考解答を提示する場合、先にgetDescriptiveContextで当該原本問題を読み、公式模範解答と呼ばず、図表・数値を確認できない場合は推測で補わない。土地（午前問11・午後問21）の座標計算・面積計算が必要な小問では三角関数と複素数（通常の座標法も含み、方位・座標・頂点順序を原本照合）の両方を解説する。面積は省略せずConjgとImagを使い、A→B→G→EならAbs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、対角線AGとBEならAbs(Imag((A-G)*Conjg(B-E)))/2で計算する。複素数は関数電卓で再現できるようArg/Abs/Conjg/Real/Imag・r∠θ・a+bi・STO/RCL/M等から必要な機能名と実際の入力式・途中結果を示し、最後に計算を照合する。DEG設定と角度象限・丸めを明示し、機種ごとの固定キー操作は発明しない。建物（午後問22）には不要な座標計算を追加しない。問題文・表・図を再掲せず、AI参考解説の全文をMarkdownで内部作成し、チャット本文に先出しせずshowDescriptiveActions({sessionId,questionId,explanationMarkdown:解説全文})を呼ぶ。これにより解説と操作ボタンが同一画面内で縦に連続表示され、次の問題を開くとボタンも消える。成功後は解説をチャットに二重表示しない。土地の全年度の午前11・午後21では、問1から最後の小問まで各設問を省略せず、目的→原本数値・条件→根拠→通常解法（座標法・三角関数など）→該当する場合だけ複素数・関数電卓による別解→検算・丸めの順に解説する。複素数だけの解説は禁止。見出しは『## 問1』など、数式は本文から独立した行、座標はMarkdown表、途中計算は適度に改行し、長文一段落にしない。『公式模範解答ではない』の注意は冒頭1回のみ。回答できない小問は推測せず未確認と明記する。公式模範解答と称さず採点しない。ツールが呼べない・失敗した場合は解説本文と番号選択肢をチャットの最後に表示するが、押せるボタンを出したとは言わない。'
         : '公式原本の記述式問題は学習画面に表示済み。択一式の番号回答や採点は行わず、解答・解説を表示ボタンの押下を待つ。',
     };
   }
