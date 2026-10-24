@@ -55,6 +55,13 @@ jobs:
                   assert result['status']=='ready' and result['gradingMode']=='none'
                   assert result['pageNumbers'] and len(result['pages'])==len(result['pageNumbers'])
                   assert result['textComplete'] and result['text']
+                  layout=result.get('layout',[])
+                  tables=[b for b in layout if b.get('kind')=='table']
+                  diagrams=[b for b in layout if b.get('kind')=='figure']
+                  assert layout and all(b.get('kind') in ('text','table','figure') for b in layout)
+                  assert len(diagrams)==len(result.get('diagrams',{}))
+                  assert all(b['file'] in result['diagrams'] for b in diagrams)
                   print('PASS',year,section,'問'+str(number),'pages',result['pageNumbers'],
+                        'tables',len(tables),'figures',len(diagrams),'blocks',len(layout),
                         'textlen',len(result['text']),flush=True)
           PY
