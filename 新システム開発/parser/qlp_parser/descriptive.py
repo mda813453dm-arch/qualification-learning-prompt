@@ -107,7 +107,7 @@ def structured_descriptive(doc, nums):
                     # 登記記録の結合セルでは、PDFのテキスト層が視覚行の順序と
                     # 異なることがある。行列は原本の罫線から採り、セルを構成する
                     # 数値および文字を独立に照合する。並びを推測・追加しない。
-                    numeric = re.findall(r"\\d+(?:\\.\\d+)?", token)
+                    numeric = re.findall(r"\d+(?:\.\d+)?", token)
                     if any(num not in corpus for num in numeric) or any(
                             c.isalpha() and c not in corpus for c in token):
                         raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED")
