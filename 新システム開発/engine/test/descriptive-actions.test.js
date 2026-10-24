@@ -97,6 +97,21 @@ test('土地の座標計算だけ機種非依存の関数電卓ガイドを返�
       assert.ok(names.includes(f),'calculator function '+f);
     assert.ok(calc.settings.some(x=>x.includes('DEG')));
     assert.ok(calc.examples.some(x=>x.includes('Δz')));
+    const area=answer.body.areaExplanation;
+    assert.ok(area && area.when.includes('面積'), 'land area method must be explicit');
+    assert.ok(area.polygon.includes('Conjg(B)'), 'point-name polygon formula');
+    assert.ok(area.polygon.includes('Imag('), 'extract imaginary part');
+    assert.ok(area.polygon.includes('/2'), 'halve the doubled signed area');
+    assert.ok(area.diagonals.includes('(A-G)*Conjg(B-E)'), 'diagonal area alternative');
+    assert.ok(area.triangle.includes('Conjg(C-A)'), 'triangle subdivision alternative');
+    assert.deepEqual(area.vertexOrderExample,['A','B','G','E']);
+    assert.equal(area.memoryExample['点G'],'変数C');
+    assert.match(area.caution,/未丸め/);
+    assert.ok(calc.examples.some(x=>x.includes('A*Conjg(B)')));
+    assert.ok(calc.examples.some(x=>x.includes('(A-G)*Conjg(B-E)')));
+    assert.ok(calc.notes.some(x=>x.includes('ConjgとImag')));
+    assert.match(answer.body.coordinateExplanationGuidance,/面積計算/);
+
     assert.ok(calc.notes.some(x=>x.includes('M+/M-')));
     assert.match(answer.body.coordinateExplanationGuidance,/途中丸め/);
   }
@@ -106,5 +121,33 @@ test('土地の座標計算だけ機種非依存の関数電卓ガイドを返�
   assert.equal(building.body.number,22);
   assert.deepEqual(building.body.coordinateExplanationMethods,[]);
   assert.equal(building.body.calculatorExplanation,null);
+  assert.equal(building.body.areaExplanation,null,'建物には土地の面積計算ガイドを付けない');
   assert.match(building.body.coordinateExplanationGuidance,/建物記述式/);
+});
+
+test('複素数Conjgの多角形周回式と対角線式は同じ面積を返す',()=>{
+  // Imag(z*Conjg(w)) = y_z*x_w - x_z*y_w。外周A,B,G,Eの対角線式と一致する。
+  const imagProductConjg=(z,w)=>z[1]*w[0]-z[0]*w[1];
+  const A=[0,0],B=[4,0],G=[3,2],E=[0,2];
+  const vertices=[A,B,G,E];
+  const polygon=Math.abs(vertices.reduce((total,v,i)=>
+    total+imagProductConjg(v,vertices[(i+1)%vertices.length]),0))/2;
+  const sub=(a,b)=>[a[0]-b[0],a[1]-b[1]];
+  const diagonal=Math.abs(imagProductConjg(sub(A,G),sub(B,E)))/2;
+  assert.equal(polygon,7);
+  assert.equal(diagonal,7);
+  assert.equal(polygon,diagonal);
+  // 三角形へ分割しても面積は一致する。
+  const triangle=(a,b,c)=>Math.abs(imagProductConjg(sub(b,a),sub(c,a)))/2;
+  assert.equal(triangle(A,B,G)+triangle(A,G,E),7);
+});
+
+test('表示用に丸めたG座標では面積が変わるため最終丸めに注意',()=>{
+  const imagProductConjg=(z,w)=>z[1]*w[0]-z[0]*w[1];
+  const vertices=[[205.41,204.33],[206.13,213.40],[197.06,214.29],[196.11,202.38]];
+  const area=Math.abs(vertices.reduce((sum,z,i)=>sum+
+    imagProductConjg(z,vertices[(i+1)%4]),0))/2;
+  assert.ok(Math.abs(area-95.9081)<1e-8,'rounded G source gives area 95.9081');
+  assert.notEqual(Math.floor(area*100)/100,95.92,
+    'do not falsely assert that rounded point yields the reference solution');
 });
