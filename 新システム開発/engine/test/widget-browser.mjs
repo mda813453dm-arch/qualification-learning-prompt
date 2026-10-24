@@ -490,6 +490,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForTimeout(200);
     await page.evaluate(() => {
       const w = document.getElementById('lateFirstOutput').contentWindow;
+      if (!w.openai) w.openai = {};
       w.openai.toolOutput = window.lateQuestion;
       w.dispatchEvent(new w.Event('openai:set_globals'));
     });
