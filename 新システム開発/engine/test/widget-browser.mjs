@@ -500,6 +500,33 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
     assert.equal(await ui.locator('input[name=ans]').count(), 0);
 
+    // 明示された問6が別分野でも、解説/確認/実践を選ぶ画面に差し替えず直接表示する。
+    const namedQ6 = { status:'question', sessionId,
+      explicitQuestion:true, fieldChanged:true,
+      fieldNotice:'分野が変わります：測量に関する法規 → 多角測量',
+      question:{ questionId:'surveyor:2026:main:6', year:2026, section:'main',
+        questionNumber:6, kind:'new', fieldName:'多角測量',
+        stem:'問6の公式問題本文（テスト用）',
+        choices:['公式選択肢1','公式選択肢2','公式選択肢3','公式選択肢4','公式選択肢5'],
+        figures:[] },
+    };
+    await page.evaluate(r=>window.deliver(r), result(namedQ6));
+    await ui.getByRole('heading',{name:'2026年度 問6'}).waitFor();
+    assert.equal(await ui.locator('input[name=ans]').count(),5,'直接指定した問6の全選択肢を表示');
+    assert.match(await ui.locator('.stem').innerText(),/問6の公式問題本文/);
+    assert.equal(await ui.getByRole('button',{name:/解説あり（解説→確認問題→実践問題）/}).count(),0,
+      '指定問なのに別分野の学習方法を聞き直さない');
+    assert.equal(await ui.getByRole('button',{name:/実践問題から/}).count(),0);
+    assert.equal(await ui.getByRole('button',{name:'解答する'}).count(),0,'回答選択前は採点しない');
+    await ui.locator('input[name=ans][value="5"]').check();
+    await ui.getByRole('button',{name:'解答する'}).waitFor();
+
+    // 通常の自動選題で本当に分野移行するときは従来のメニューを残す。
+    await page.evaluate(r=>window.deliver(r),result({...namedQ6,explicitQuestion:false}));
+    await ui.getByRole('button',{name:/実践問題から/}).waitFor();
+    assert.equal(await ui.getByRole('heading',{name:'2026年度 問6'}).count(),0,
+      '通常の分野移行だけは従来どおり開始方法を選べる');
+
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
     // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。
     await page.evaluate(({ html, question }) => {
