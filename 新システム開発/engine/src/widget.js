@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v77.html';
+export const WIDGET_URI = 'ui://qlp/question-v78.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.77';
+export const WIDGET_VERSION = '2026-10-24.78';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -707,8 +707,8 @@ a{color:inherit}
     if (already){
       // 解説の前に問題や図をもう一度表示しない。AIは保存済み原本を別経路から取得できる。
       app.innerHTML = '<h2>' + esc(label) + '｜解説へ</h2>' +
-        '<div class="notice" role="status">元の問題を繰り返さず、AI参考解説をこの下の会話に表示します。解説の最後に最新の操作パネルが表示されます。</div>' +
-        '<div class="notice">【操作パネルが下に出ない場合】解説を読み終えたら、この位置まで上に戻り、下のボタンを押してください。</div>' +
+        '<div class="notice" role="status">元の問題を繰り返さず、AI参考解説をこの下の会話に表示します。操作パネルはAIが取得できた場合にのみ表示されます。表示されない場合は解説末尾の番号選択肢を利用してください。</div>' +
+        '<div class="notice">【操作パネルが下に出ない場合】解説の末尾で番号を返信して進むか、ここまで上に戻って下のボタンを押してください。</div>' +
         '<div class="row"><button id="fallbackDescriptiveActions">解説後の操作パネルを開く（上に戻った場合）</button></div>';
       if (!publishDescriptive(q, 'reveal')) return;
       scrollUp();
