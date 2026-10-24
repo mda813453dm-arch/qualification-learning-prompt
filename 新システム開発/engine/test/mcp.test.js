@@ -98,8 +98,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v74\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.74');
+  assert.match(WIDGET_URI, /question-v75\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-24.75');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
@@ -1066,7 +1066,7 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
   assert.equal((await officialLibrary(env.STORE, cat, '0.8.2', T0)).stored.length, 0);
   await writeResult(env.STORE, p, parsed, { 'q.png': PNG }, T0);
   const shared = await officialLibrary(env.STORE, cat, '0.8.2', T0);
-  assert.deepEqual(shared.stored, [{ year: 2025, section: '午後の部', questions: 20 }]);
+  assert.deepEqual(shared.stored, [{ year: 2025, section: '午後の部', questions: 20, writtenQuestions: 2 }]);
   assert.equal(shared.completeYears.length, 0, '午前が未保存なら年度全体は保存済みと呼ばない');
   assert.equal(shared.missing.length, 7);
 
