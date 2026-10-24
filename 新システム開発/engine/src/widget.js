@@ -181,6 +181,8 @@ a{color:inherit}
   var myAt = 0, locked = false, bc = null;
   function lockOld(){
     if (locked) return; locked = true;
+    // 記述式では旧問のボタンを残さず、誤押下の余地をなくす。
+    if (descriptiveScreen){ obsoleteDescriptive(); return; }
     app.querySelectorAll('button,input,a.btn').forEach(function(b){ b.disabled = true; });
     app.style.opacity = '.65';
     // 古い画面から戻っても終了操作へ到達できるよう、復元ボタンだけは無効化しない。
