@@ -1332,6 +1332,18 @@ async function route(request, env, url, now) {
           [key]: { ...oldHistory, revealedAt: updated.revealedAt, gradingMode: 'none' } } }, now);
       return json(200, descriptiveView(updated, id, true));
     }
+    // AIの解説が終わった後の操作パネル用。本文や図は返さない。
+    // 旧問のAIが遅れて操作パネルを要求しても、現在の問題と一致しなければ拒否する。
+    if (method === 'GET' && parts[4] === 'actions' && parts.length === 5) {
+      const cur = state.descriptiveCurrent;
+      const expected = url.searchParams.get('questionId');
+      if (!cur?.revealedAt || !expected || expected !== cur.questionId)
+        throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
+      return json(200, { status: 'descriptiveActions', sessionId: id,
+        question: { questionId: cur.questionId, year: cur.year, section: cur.section,
+          number: cur.number, shownAt: cur.shownAt }, gradingMode: 'none',
+        notice: 'AI参考解説の続きです。この操作パネルにある現在の問題のボタンを押してください。' });
+    }
     if (method === 'GET' && parts[4] === 'context' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
       if (!cur?.text || !cur?.pageNumbers?.length) throw new HttpError(404, 'DESCRIPTIVE_NOT_OPEN');
@@ -1339,8 +1351,11 @@ async function route(request, env, url, now) {
         questionId: cur.questionId, year: cur.year, section: cur.section, number: cur.number,
         officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
-        coordinateExplanationMethods: ['trigonometry', 'complex_numbers'],
-        coordinateExplanationGuidance: '座標計算が含まれるときは原本で座標・方位を確認し、三角関数と複素数の両方の解法と一致確認を示す。方位が北をX軸正方向とする場合はz=X+iYを用い、複素数の偏角の符号と0〜360度の変換を明示する。読めない表・図の数値は推測しない。',
+        coordinateExplanationMethods: cur.number === 22 ? [] : ['trigonometry', 'complex_numbers'],
+        coordinateExplanationGuidance: cur.number === 22
+          ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算は追加しない。'
+          : '土地の座標計算が含まれるときは原本で座標・方位を確認し、三角関数と複素数の両方の解法と一致確認を示す。方位が北をX軸正方向とする場合はz=X+iYを用い、複素数の偏角の符号と0〜360度の変換を明示する。読めない表・図の数値は推測しない。',
+        afterExplanation: { tool: 'showDescriptiveActions', sessionId: id, questionId: cur.questionId },
         gradingMode: 'none', officialModelAnswerVerified: false,
         notice: '模範解答は確認できません。AIの参考解答を提示する場合は公式正答と称さず、原本の図表を読めない部分は推測で補わない。' });
     }
