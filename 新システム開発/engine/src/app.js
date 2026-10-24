@@ -1367,10 +1367,23 @@ async function route(request, env, url, now) {
         questionId: cur.questionId, year: cur.year, section: cur.section, number: cur.number,
         officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
-        coordinateExplanationMethods: cur.number === 22 ? [] : ['trigonometry', 'complex_numbers'],
+        coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
         coordinateExplanationGuidance: cur.number === 22
-          ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算は追加しない。'
-          : '土地の座標計算が含まれるときは原本で座標・方位を確認し、三角関数と複素数の両方の解法と一致確認を示す。方位が北をX軸正方向とする場合はz=X+iYを用い、複素数の偏角の符号と0〜360度の変換を明示する。読めない表・図の数値は推測しない。',
+          ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算や関数電卓による座標操作は追加しない。'
+          : '土地の座標計算を要する小問では原本の数値・方位定義・丸め規則を確認してから、(1)三角関数、(2)複素数、(3)関数電卓の機能名で具体的な入力式・結果、(4)両解法の数値照合を示す。北がX軸正方向・東がY軸正方向ならz=X+iY、zB=zA+r∠θ、X=Real(zB)、Y=Imag(zB)。度数法(DEG)でArg(zB-zA)の象限および0〜360度への正規化に注意する。conjgは必要な演算のときだけ用いる。PDFで確認できない図・表の数値は推測せず、指定の丸め以前に不要な途中丸めをしない。',
+        calculatorExplanation: [11, 21].includes(cur.number) ? {
+          format: 'generic-function-names-not-model-specific-button-sequences',
+          assumedModels: ['Canon F-789SG', 'CASIO fx-JP series'],
+          settings: ['複素数モード', 'DEG（度数法）', '直交形式a+bi／極形式r∠θを必要に応じて切替'],
+          functions: ['arg/Arg（偏角）', 'Abs（距離）', 'conjg/Conj（共役）', 'real/Real/ReP（実部）', 'imag/Imag/ImP（虚部）', 'r∠θ（極形式）', 'a+bi（直交形式）', 'STO（記憶）', 'RCL（呼出し）', 'M（対応するメモリー変数・メモリー操作）'],
+          examples: ['zA=XA+iYA', 'Δz=zB-zA', 'θ=(arg(Δz)+360) mod 360', 'r=Abs(Δz)', 'zB=zA+r∠θ', 'XB=real(zB)', 'YB=imag(zB)'],
+          notes: [
+            '機種ごとに表示名・メニュー・STO/RCLの操作方法・Mメモリーの仕様が違う。物理キーの固定手順を発明しない。',
+            'conjg/Conjとreal/imagは必要な計算で使い、機能を使用するためだけの不要な操作は加えない。',
+            'STO/RCLは対応機種の変数メモリーとして説明し、MとM+/M-を混同しない。複素数の記憶ができない場合は実部と虚部を個別保存する。',
+            '北X・東Yの符号、角度の向き、度分秒変換と問題指定の四捨五入／切り捨てを優先して確認する。',
+          ],
+        } : null,
         afterExplanation: { tool: 'showDescriptiveActions', sessionId: id, questionId: cur.questionId },
         gradingMode: 'none', officialModelAnswerVerified: false,
         notice: '模範解答は確認できません。AIの参考解答を提示する場合は公式正答と称さず、原本の図表を読めない部分は推測で補わない。' });
