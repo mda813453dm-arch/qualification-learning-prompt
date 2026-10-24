@@ -55,6 +55,17 @@ jobs:
                   assert result['status']=='ready' and result['gradingMode']=='none'
                   assert result['pageNumbers'] and len(result['pages'])==len(result['pageNumbers'])
                   assert result['textComplete'] and result['text']
+                  assert isinstance(result.get('layout'),list) and result['layout'], 'layout missing'
+                  assert all(b['kind'] in ('text','table','figure') for b in result['layout'])
+                  assert all(b.get('file') in result['diagrams'] for b in result['layout'] if b['kind']=='figure')
+                  kinds = {name:sum(b['kind']==name for b in result['layout']) for name in ('text','table','figure')}
+                  if year==2025 and section=='午前の部' and number==11:
+                    assert kinds['table']>=2, '2025 morning 11 needs both observation and survey tables'
+                    assert kinds['figure']>=1, '2025 morning 11 needs official boundary diagram'
+                    assert any('243' in str(b['rows']) for b in result['layout'] if b['kind']=='table'), 'official angles lost'
+                    assert any('200.00' in str(b['rows']) for b in result['layout'] if b['kind']=='table'), 'survey coordinates lost'
+                  print('LAYOUT',year,section,number,kinds,
+                    'figPages',[b['page'] for b in result['layout'] if b['kind']=='figure'],flush=True)
                   layout=result.get('layout',[])
                   tables=[b for b in layout if b.get('kind')=='table']
                   diagrams=[b for b in layout if b.get('kind')=='figure']
