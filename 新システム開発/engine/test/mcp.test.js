@@ -75,7 +75,7 @@ test('記述式解説の末尾にモデルが最新問専用の操作画面を�
   const oldPanel = TOOLS.find((t) => t.name === 'getDescriptiveActions');
   assert.ok(oldPanel?.appOnly && oldPanel?.uiOnly, '復旧専用の取得経路は利用者の画面だけ');
   assert.equal(oldPanel.api({sessionId:'s',questionId:'q'})[0], 'GET');
-  assert.equal(nav.api({sessionId:'s',questionId:'q',explanationMarkdown:'## 問1'})[0], 'POST');
+  assert.equal(TOOLS.find((t) => t.name === 'showDescriptiveActions').api({sessionId:'s',questionId:'q',explanationMarkdown:'## 問1'})[0], 'POST');
   assert.match(INSTRUCTIONS, /showDescriptiveActions/);
   const view = forModel({ status:'descriptiveActions', sessionId:'session',
     explanationMarkdown: '解説を下の画面に表示',
@@ -121,7 +121,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v82\.html/);
+  assert.match(WIDGET_URI, /question-v83\.html/);
   assert.equal(WIDGET_VERSION, '2026-10-24.82');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
