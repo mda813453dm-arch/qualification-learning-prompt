@@ -464,6 +464,36 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
     assert.equal(await ui.locator('input[name=ans]').count(), 0);
 
+    // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
+    // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。
+    await page.evaluate(({ html, question }) => {
+      const late = document.createElement('iframe');
+      late.id = 'lateFirstOutput'; late.style.cssText = 'width:100%;height:400px;border:0';
+      window.addEventListener('message', e => {
+        if (e.source !== late.contentWindow) return;
+        const m = e.data;
+        if (!m || m.jsonrpc !== '2.0' || !m.id) return;
+        if (m.method === 'ui/initialize') {
+          late.contentWindow.postMessage({ jsonrpc:'2.0', id:m.id, result:{ protocolVersion:'2026-01-26', hostCapabilities:{} } }, '*');
+        } else if (m.method === 'tools/call') {
+          late.contentWindow.postMessage({ jsonrpc:'2.0', id:m.id, result:{ structuredContent:{ status:'recorded' } } }, '*');
+        } else {
+          late.contentWindow.postMessage({ jsonrpc:'2.0', id:m.id, result:{} }, '*');
+        }
+      });
+      late.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:null};<\\/script><script>');
+      document.body.appendChild(late);
+      window.lateQuestion = question;
+    }, { html: widgetHtml(), question });
+    const lateUi = page.frameLocator('#lateFirstOutput');
+    await lateUi.locator('#recoverStudy').waitFor({ state:'hidden', timeout:4000 }).catch(() => {});
+    await page.waitForTimeout(200);
+    await page.evaluate(() => {
+      const w = document.getElementById('lateFirstOutput').contentWindow;
+      w.openai.toolOutput = window.lateQuestion;
+      w.dispatchEvent(new w.Event('openai:set_globals'));
+    });
+    await lateUi.getByText('試験用の問題文').waitFor({ timeout:5000 });
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
