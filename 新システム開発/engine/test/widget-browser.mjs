@@ -81,7 +81,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
               question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
                 year: args.year, section: args.section, number: args.number, kind: 'descriptive',
-                gradingMode: 'none', text: '公式の記述式問題文と資料',
+                gradingMode: 'none', text: '第21問\n観測結果\n器械点  視準点\nT1  T2  0°\n見取図\nA\nB\nC',
                 pages: [{ page: 24, url: 'https://qlp.test/figure.png' }],
                 sourceUrl: 'https://www.moj.go.jp/content/001450011.pdf' } };
             reply({ structuredContent: window.lastDescriptive });
@@ -394,16 +394,26 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '記述式（午前11・午後21/22）を開く' }).click();
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
     await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
-    assert.match(await ui.locator('#app').innerText(), /公式の記述式問題文と資料/);
+    assert.equal(await ui.locator('#descriptiveSource[open]').count(), 1, '最初は原本ページを表示する');
+    assert.equal(await ui.getByRole('button', { name: '公式原本24ページを拡大' }).count(), 1);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /器械点  視準点|見取図\s+A\s+B/, '表や図をPDFテキスト層から偽の文章にしない');
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
     const beforeDescriptiveGrade = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
     await ui.getByText('参考解答の表示操作を受け付けました。', { exact: false }).waitFor();
+    assert.equal(await ui.locator('#descriptiveSource:not([open])').count(), 1, '解説の前に長い問題文・表・図を折りたたむ');
+    assert.equal(await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).count(), 0, '解説ボタンは繰り返し表示しない');
+    await ui.getByText('問題・表・図を再表示').click();
+    assert.equal(await ui.locator('#descriptiveSource[open]').count(), 1, '必要なら原本を再表示できる');
     const descCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'revealDescriptiveAnswer').length);
     assert.ok(descCalls >= 1);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), beforeDescriptiveGrade,
       '解答ボタンで正誤判定ツールを呼ばない');
-    assert.match((await page.evaluate(() => window.followups)).at(-1), /AI参考解答/);
+    assert.match((await page.evaluate(() => window.followups)).at(-1), /三角関数と複素数の両方/);
+    await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
+    await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
+    await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
+    await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
     await ui.getByRole('button', { name: '次の記述式へ' }).click();
     await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
     assert.equal(await ui.locator('input[name=ans]').count(), 0);

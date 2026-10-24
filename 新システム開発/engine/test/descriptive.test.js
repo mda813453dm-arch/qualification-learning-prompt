@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { descriptiveSpec, requestedDescriptive, descriptiveView } from '../src/descriptive.js';
 import { CATALOG } from '../src/catalog.js';
 import { renderDescriptive } from '../src/parser-client.js';
+import { forModel } from '../src/mcp.js';
 
 const pins = CATALOG.land_surveyor.officialPdfPins;
 
@@ -43,6 +44,18 @@ test('記述式の画面・解答表示には正答番号・正誤・自動採�
     assert.equal(result.question.choices,undefined);
     assert.equal(result.status,revealed?'descriptiveReveal':'descriptiveQuestion');
   }
+});
+
+test('記述式のAI解説では原本を再掲せず三角関数・複素数を指示する', () => {
+  const spec = descriptiveSpec(2025,'午前の部',11,pins);
+  const full = descriptiveView({ ...spec, text:'原本本文・観測成果の表',
+    pages:[{page:14,url:'https://example.test/original.png'}] }, 'session', true);
+  const context = forModel(full);
+  assert.equal(context.gradingMode, 'none');
+  assert.equal(context.question, undefined);
+  assert.match(context.howToProceed, /三角関数と複素数/);
+  assert.match(context.howToProceed, /再掲せず/);
+  assert.doesNotMatch(JSON.stringify(context), /原本本文・観測成果の表/);
 });
 
 test('記述式パーサーが返す本文・出典SHA・画像枚数を検証し、偽パケットは拒否する', async () => {

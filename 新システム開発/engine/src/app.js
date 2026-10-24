@@ -1319,6 +1319,8 @@ async function route(request, env, url, now) {
         questionId: cur.questionId, year: cur.year, section: cur.section, number: cur.number,
         officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
+        coordinateExplanationMethods: ['trigonometry', 'complex_numbers'],
+        coordinateExplanationGuidance: '座標計算が含まれるときは原本で座標・方位を確認し、三角関数と複素数の両方の解法と一致確認を示す。方位が北をX軸正方向とする場合はz=X+iYを用い、複素数の偏角の符号と0〜360度の変換を明示する。読めない表・図の数値は推測しない。',
         gradingMode: 'none', officialModelAnswerVerified: false,
         notice: '模範解答は確認できません。AIの参考解答を提示する場合は公式正答と称さず、原本の図表を読めない部分は推測で補わない。' });
     }

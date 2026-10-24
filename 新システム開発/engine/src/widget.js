@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v73.html';
+export const WIDGET_URI = 'ui://qlp/question-v74.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.73';
+export const WIDGET_VERSION = '2026-10-24.74';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -20,6 +20,8 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
 .fig{margin:10px 0}.fig-open{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:zoom-in}.fig-open img{display:block;width:100%;height:auto}.fig-hint{font-size:13px;color:var(--sub)}
+.descriptive-source{margin:12px 0}.descriptive-source summary{cursor:pointer;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}
+.descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
 .choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -77,6 +79,14 @@ a{color:inherit}
   function stemHtml(t){ return String(t == null ? '' : t).replace(/([。？！])[ \u3000]*(?=[^\\s」』）)])/g, '$1\\n').replace(/ ([a-eａ-ｅ]\\. )/g, '\\n$1').split(/\\n+/).filter(Boolean).map(function(l){ return '<p>' + esc(l) + '</p>'; }).join(''); }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   function figureHtml(u, i){ return '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(safeUrl(u)) + '" aria-label="公式の問題の図' + (i + 1) + 'を拡大"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></button><div class="fig-hint">図をタップして拡大できます</div></div>'; }
+  function descriptivePageHtml(page, i){
+    var url = safeUrl(page && page.url), number = String(page && page.page || i + 1);
+    if (!url) return '';
+    return '<div class="descriptive-page"><div class="notice">公式原本 ' + esc(number) + 'ページ</div>' +
+      '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(url) + '" aria-label="公式原本' + esc(number) + 'ページを拡大">' +
+      '<img alt="公式原本' + esc(number) + 'ページ。問題文・表・図を原本の配置のまま表示" src="' + esc(url) + '"></button>' +
+      '<div class="fig-hint">ページをタップすると拡大して読めます</div></div></div>';
+  }
   function bindFigures(){ app.querySelectorAll('.fig-open').forEach(function(b){ b.onclick = function(){
     var overlay = document.createElement('div'); overlay.className = 'fig-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-label', b.getAttribute('aria-label'));
     overlay.innerHTML = '<div class="fig-controls"><button type="button" data-close>閉じる</button><button type="button" data-minus aria-label="縮小">−</button><button type="button" data-plus aria-label="拡大">＋</button></div><div class="fig-scroll"><img alt="拡大した公式の問題の図" src="' + esc(b.getAttribute('data-figure')) + '"></div>';
@@ -569,16 +579,18 @@ a{color:inherit}
     var label = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
     var already = d.status === 'descriptiveReveal';
     var h = '<h2>' + esc(label) + '</h2>' +
-      '<div class="notice">記述式・採点なし。択一式の正答率には加えません。原本を拡大して読めます。</div>' +
-      '<div class="stem">' + stemHtml(q.text || '') + '</div>';
-    (q.pages || []).forEach(function(page,i){ if (page.url && safeUrl(page.url)) {
-      h += '<div class="notice">公式原本 ' + esc(page.page) + 'ページ</div>' + figureHtml(page.url,i);
-    } });
+      '<div class="notice">記述式・採点なし。択一式の正答率には加えません。</div>';
+    // PDF の text(sort=True) は表を行列として維持できず、見取図の点名も本文に混ぜる。
+    // 記述式では正確な原本ページを優先し、抽出テキストを偽の表や図として再構成しない。
+    var pages = (q.pages || []).map(descriptivePageHtml).join('');
+    h += '<details class="descriptive-source" id="descriptiveSource"' + (already ? '' : ' open') + '>' +
+      '<summary>' + (already ? '問題・表・図を再表示' : '公式原本の問題・表・図') + '</summary>' +
+      (pages || '<div class="notice" role="alert">公式原本の画像を確認できません。出題を停止してください。</div>') + '</details>';
     if (safeUrl(q.sourceUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
     h += '<div class="notice">公式模範解答は確認できていません。表示する解答はAIによる参考解答であり、正誤判定は行いません。</div>';
-    if (!already) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
-    else h += '<div class="notice" role="status">参考解答の表示操作を受け付けました。参考解答はこの画面の下の会話で表示します。</div>';
-    h += '<div class="row"><button id="nextDescriptive">次の記述式へ</button><button id="backDescriptive">記述式一覧</button><button id="returnMcq">択一式に戻る</button></div>' + endBar();
+    if (!already && pages) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
+    else if (already) h += '<div class="notice" role="status">参考解答の表示操作を受け付けました。参考解答はこの画面の下の会話で表示します。</div>';
+    h += '<div class="row"><button id="nextDescriptive">次の記述式へ</button><button id="backDescriptive">年度・問題を選び直す</button><button id="returnMcq">択一式に戻る</button></div>' + endBar();
     app.innerHTML = h; scrollUp(); bindFigures(); bindEnd();
     var answer = document.getElementById('showDescriptiveSolution');
     if (answer) answer.onclick = async function(){
@@ -589,7 +601,7 @@ a{color:inherit}
             r.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
         render(r);
         await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、公式模範解答とは区別してください。自動採点はしないでください。',
-          label + 'のAI参考解答・解説を表示してください（自動採点なし）。');
+          label + 'のAI参考解答・解説をお願いします。座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。');
       } catch(e) {
         var err = document.getElementById('descriptiveRevealError');
         if (!err) app.insertAdjacentHTML('beforeend','<div class="notice" id="descriptiveRevealError" role="alert"></div>');
