@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v85.html';
+export const WIDGET_URI = 'ui://qlp/question-v86.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.85';
+export const WIDGET_VERSION = '2026-10-24.86';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -238,14 +238,18 @@ a{color:inherit}
   // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
   var myAt = 0, locked = false, bc = null;
   function lockOld(){
-    if (locked) return; locked = true;
-    // 記述式では旧問のボタンを残さず、誤押下の余地をなくす。
-    if (descriptiveScreen){ obsoleteDescriptive(); return; }
-    app.querySelectorAll('button,input,a.btn').forEach(function(b){ b.disabled = true; });
-    app.style.opacity = '.65';
-    // 古い画面から戻っても終了操作へ到達できるよう、復元ボタンだけは無効化しない。
-    app.insertAdjacentHTML('beforeend', '<div class="notice">別の学習画面が開かれています。今の学習をこの画面で再開できます。</div><div class="row"><button id="reopenStudy">今の学習画面を再開</button></div>');
+    if (locked) return;
+    locked = true;
+    descriptiveScreen = null;
+    // 重要: ボタンだけを無効化すると古い問題・長い解説が残り、iPhoneで学習が進むほど縦に伸びる。
+    // 古いDOMは完全に破棄し、学習の記録自体はエンジンに保持する。
+    app.style.opacity = '';
+    app.innerHTML = '<div class="old-screen" role="status">' +
+      '<span>前の学習画面は閉じました</span>' +
+      '<button type="button" id="reopenStudy">ここで現在の学習を開く</button></div>';
     document.getElementById('reopenStudy').onclick = function(){ restoreFromServer(true); };
+    try { window.scrollTo(0, 0); } catch(e) {}
+    fit();
   }
   function stamp(data){
     var at = Number(data && data.at) || 0; if (!at || locked) return;
@@ -253,6 +257,11 @@ a{color:inherit}
     try { var last = Number(localStorage.getItem('qlp_at')) || 0; if (last > myAt) { lockOld(); return; } if (myAt > last) localStorage.setItem('qlp_at', String(myAt)); } catch (e) {}
     try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
   }
+  // BroadcastChannelの通知を受け取れないiPhoneブラウザでは、localStorage更新でも旧画面を閉じる。
+  window.addEventListener('storage', function(e){
+    if (e.key !== 'qlp_at' || locked || !myAt) return;
+    if (Number(e.newValue) > myAt) lockOld();
+  });
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     if (locked) return;
@@ -706,7 +715,7 @@ a{color:inherit}
   function descriptiveStorageKey(sid){ return 'qlp_current_descriptive_' + String(sid || ''); }
   function obsoleteDescriptive(){
     descriptiveScreen = null;
-    app.innerHTML = '<h2>以前の問題画面</h2><div class="notice" role="status">この画面の操作は終了しています。現在の問題、またはAI解説の直後にある最新の操作パネルを利用してください。</div>';
+    lockOld();
   }
   function descriptiveIsNewer(other, current){
     return other && current && other.sessionId === current.sessionId &&
