@@ -225,6 +225,17 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
   assert.equal(m2.question.display.replace(/\n\n▶ 図が見えにくいときは：[^\n]+/, ''), `問2の本文\n\n${new TextDecoder().decode(SVG)}\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五`);
   assert.equal(n2.figures[0].svgFile, undefined);
   assert.equal(q.display, '問1の本文\n\n1　一\n\n2　二\n\n3　三\n\n4　四\n\n5　五');
+  // 測量士補は図がある設問でも五肢択一。記述式の「採点なし」を適用しない。
+  const answerWithDiagram = await call(env, 'POST', `/v1/sessions/${sessionId}/answer`,
+    { questionId: n2.questionId, value: '1' });
+  assert.equal(answerWithDiagram.status, 200);
+  assert.equal(answerWithDiagram.body.grade.correct, true, '図の有無に関わらず公式正答で採点');
+  assert.equal(answerWithDiagram.body.grade.correctAnswer, 1);
+  const storedAfterFigure = await env.STORE.get(`ses/${sessionId}`, 'json');
+  assert.equal(storedAfterFigure.state.history[n2.questionId].result, 'confident_correct',
+    '図のある問題も正答率・復習用に採点記録を保存');
+  assert.equal(storedAfterFigure.state.history[n2.questionId].source.number, 2);
+
 });
 
 test('間違えた問は翌日の復習で最初に出る', async () => {
