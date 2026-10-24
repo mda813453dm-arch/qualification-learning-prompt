@@ -147,7 +147,6 @@ export const TOOLS = [
       { questionId: a.questionId, explanationMarkdown: a.explanationMarkdown }],
   },
   {
-  {
     name: 'getDescriptiveActions',
     appOnly: true, uiOnly: true,
     description: '旧画面の復元専用。現在の記述式の解説・操作ボタンを読取専用で表示する。AIからの参考解説登録には使用しない。',
