@@ -29,8 +29,9 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-source{margin:12px 0}.descriptive-source summary{cursor:pointer;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .descriptive-explanation{font-size:16px;line-height:1.8;overflow-wrap:anywhere;margin:8px 0 18px}
-.descriptive-explanation p{margin:8px 0 14px;white-space:pre-wrap}
-.descriptive-explanation h3{color:var(--fg);font-size:17px;margin:17px 0 6px}
+.descriptive-explanation p{margin:10px 0 16px;white-space:normal;line-height:1.85}
+.descriptive-explanation h2{color:var(--fg);font-size:19px;margin:24px 0 10px;line-height:1.5;border-bottom:1px solid var(--line);padding-bottom:7px}
+.descriptive-explanation h3{color:var(--fg);font-size:17px;margin:20px 0 9px;line-height:1.5}
 .descriptive-explanation ul,.descriptive-explanation ol{padding-left:1.5em;margin:8px 0}
 .descriptive-explanation code{background:var(--btn);border-radius:4px;padding:1px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
 .descriptive-explanation .equation{background:var(--accbg);padding:7px 10px;border-radius:8px;overflow-wrap:anywhere}
