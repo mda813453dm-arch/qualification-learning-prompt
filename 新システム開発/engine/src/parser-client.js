@@ -150,3 +150,33 @@ export async function renderPages({ endpoint, token, fetch: doFetch = fetch, byt
   const display = typeof v?.display === 'string' && v.display.length <= 60000 ? v.display : null;
   return { pageCount: v?.pageCount, matchedPage: v?.matchedPage ?? null, pages: decodeAssets(v?.pages), excerpt, tables, figures, display };
 }
+
+/** SHA固定の土地家屋調査士記述式。答案の正誤や公式模範解答は生成しない。 */
+export async function renderDescriptive({ endpoint, token, fetch: doFetch = fetch, bytes, sha256, year, section, number, timeoutMs = 180000 }) {
+  if (!/^(https:\/\/|http:\/\/(127\.0\.0\.1|localhost)(:\\d+)?(\/|$))/.test(endpoint ?? '')) throw new Error('PARSER_URL_INVALID');
+  let response;
+  try {
+    response = await doFetch(`${endpoint.replace(/\/$/, '')}/v1/descriptive`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ pdf: { base64: toBase64(bytes), sha256 }, year, section, number }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) { throw new IngestError('DESCRIPTIVE_PARSER_UNREACHABLE', { error: String(error?.message ?? error) }); }
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw new IngestError(data.error ?? 'DESCRIPTIVE_PARSER_FAILED');
+  }
+  const result = await response.json();
+  const pages = decodeAssets(result.pages);
+  if (result.kind !== 'descriptive' || result.status !== 'ready' ||
+      result.year !== year || result.section !== section || result.number !== number ||
+      result.questionSha256 !== sha256 ||
+      !Array.isArray(result.pageNumbers) || !result.pageNumbers.length ||
+      result.pageNumbers.length > 12 ||
+      result.pageNumbers.some(n => !Number.isInteger(n) || !pages[`p${n}.png`]) ||
+      typeof result.text !== 'string' || !result.text.trim() || result.gradingMode !== 'none') {
+    throw new IngestError('DESCRIPTIVE_PARSER_RESULT_UNVERIFIED');
+  }
+  return { ...result, pages };
+}
