@@ -94,6 +94,8 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
             p.verification?.visual === 'question_level_pdf_graphics_checked')));
     if (valid) {
       stored.push({ year: item.year, section: item.section, questions: item.count,
+        ...(cat.qualificationId === 'land_surveyor' && [2022,2023,2024,2025].includes(item.year)
+          ? { writtenQuestions: item.section === '午前の部' ? 1 : 2 } : {}),
         ...(item.partial ? { partial: true, excludedQuestions: item.excludedCount } : {}) });
       sources.push({
         qualificationId: cat.qualificationId, adapter: spec.uploadAdapter,
