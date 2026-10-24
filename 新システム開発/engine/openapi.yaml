@@ -124,6 +124,19 @@ paths:
       responses:
         '200':
           description: 原本の問題文とページ番号。公式模範解答は含めない
+  /v1/sessions/{sessionId}/descriptive/actions:
+    get:
+      operationId: showDescriptiveActions
+      x-openai-isConsequential: false
+      summary: AI参考解説を書き終えた直後の現在の記述式問題の操作パネル。問題文・表・図を再掲せず表示する
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+        - { name: questionId, in: query, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 現在の記述式の操作パネル。解説表示済みの問題に限る
+        '409':
+          description: 解説未表示・旧問題の照合不一致を拒否
   /v1/sessions/{sessionId}/next:
     post:
       operationId: nextQuestion
