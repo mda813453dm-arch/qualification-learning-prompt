@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v74.html';
+export const WIDGET_URI = 'ui://qlp/question-v75.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.74';
+export const WIDGET_VERSION = '2026-10-24.75';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -20,6 +20,12 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
 .fig{margin:10px 0}.fig-open{display:block;width:100%;padding:0;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:zoom-in}.fig-open img{display:block;width:100%;height:auto}.fig-hint{font-size:13px;color:var(--sub)}
+.descriptive-text{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0;line-height:1.75;font-size:16px}
+.table-scroll{overflow-x:auto;max-width:100%;margin:12px 0;-webkit-overflow-scrolling:touch}
+.question-table{border-collapse:collapse;min-width:max-content;width:100%;font-size:14px;line-height:1.5}
+.question-table caption{text-align:left;font-weight:700;margin-bottom:6px}
+.question-table th,.question-table td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+.question-table th{background:var(--accbg);font-weight:700}
 .descriptive-source{margin:12px 0}.descriptive-source summary{cursor:pointer;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
@@ -76,16 +82,41 @@ a{color:inherit}
   }); }
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function stemHtml(t){ return String(t == null ? '' : t).replace(/([。？！])[ \u3000]*(?=[^\\s」』）)])/g, '$1\\n').replace(/ ([a-eａ-ｅ]\\. )/g, '\\n$1').split(/\\n+/).filter(Boolean).map(function(l){ return '<p>' + esc(l) + '</p>'; }).join(''); }
+  function stemHtml(t){
+    var lines=String(t == null ? '' : t).split(/\r?\n/), out=[];
+    for(var i=0;i<lines.length;){
+      if (/^\s*\|.*\|\s*$/.test(lines[i] || '') && /^\s*\|[\s|:-]+\|\s*$/.test(lines[i+1] || '')) {
+        var arr=[lines[i]], j=i+2;
+        while(j<lines.length && /^\s*\|.*\|\s*$/.test(lines[j])) arr.push(lines[j++]);
+        var rows=arr.map(function(v){return v.trim().replace(/^\||\|$/g,'').split('|').map(function(c){return c.trim();});});
+        if(rows.length>1 && rows.every(function(r){return r.length===rows[0].length;})){
+          out.push(descriptiveBlockHtml({kind:'table',caption:'',rows:rows},i));i=j;continue;
+        }
+      }
+      if((lines[i] || '').trim())out.push('<p>'+esc(lines[i])+'</p>');
+      i++;
+    }
+    return out.join('');
+  }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   function figureHtml(u, i){ return '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(safeUrl(u)) + '" aria-label="公式の問題の図' + (i + 1) + 'を拡大"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></button><div class="fig-hint">図をタップして拡大できます</div></div>'; }
-  function descriptivePageHtml(page, i){
-    var url = safeUrl(page && page.url), number = String(page && page.page || i + 1);
-    if (!url) return '';
-    return '<div class="descriptive-page"><div class="notice">公式原本 ' + esc(number) + 'ページ</div>' +
-      '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(url) + '" aria-label="公式原本' + esc(number) + 'ページを拡大">' +
-      '<img alt="公式原本' + esc(number) + 'ページ。問題文・表・図を原本の配置のまま表示" src="' + esc(url) + '"></button>' +
-      '<div class="fig-hint">ページをタップすると拡大して読めます</div></div></div>';
+  // 問題文と表はネイティブ要素で表示する。公式図の画像だけ拡大できる。
+  function descriptiveBlockHtml(block, idx){
+    if (!block) return '';
+    if (block.kind === 'text') return '<p class="descriptive-text">' + esc(block.text || '') + '</p>';
+    if (block.kind === 'table') {
+      var rows = Array.isArray(block.rows) ? block.rows : [];
+      if (!rows.length) return '<div class="notice" role="alert">公式表を検証できません。</div>';
+      var cells = function(row, tag){
+        return '<tr>' + row.map(function(c){return '<' + tag + '>' + esc(c == null ? '' : c) + '</' + tag + '>';}).join('') + '</tr>';
+      };
+      return '<div class="table-scroll" role="region" tabindex="0" aria-label="公式問題の表"><table class="question-table">' +
+        (block.caption ? '<caption>' + esc(block.caption) + '</caption>' : '') +
+        '<thead>' + cells(rows[0], 'th') + '</thead><tbody>' + rows.slice(1).map(function(row){return cells(row, 'td');}).join('') +
+        '</tbody></table></div>';
+    }
+    if (block.kind === 'figure') return figureHtml(block.url, idx);
+    return '';
   }
   function bindFigures(){ app.querySelectorAll('.fig-open').forEach(function(b){ b.onclick = function(){
     var overlay = document.createElement('div'); overlay.className = 'fig-overlay'; overlay.setAttribute('role', 'dialog'); overlay.setAttribute('aria-label', b.getAttribute('aria-label'));
@@ -580,15 +611,14 @@ a{color:inherit}
     var already = d.status === 'descriptiveReveal';
     var h = '<h2>' + esc(label) + '</h2>' +
       '<div class="notice">記述式・採点なし。択一式の正答率には加えません。</div>';
-    // PDF の text(sort=True) は表を行列として維持できず、見取図の点名も本文に混ぜる。
-    // 記述式では正確な原本ページを優先し、抽出テキストを偽の表や図として再構成しない。
-    var pages = (q.pages || []).map(descriptivePageHtml).join('');
+    // 検証済みの文字・表・図ブロックを順番どおり表示。原本ページ全体は画像化して見せない。
+    var blocks = (q.layout || []).map(descriptiveBlockHtml).join('');
     h += '<details class="descriptive-source" id="descriptiveSource"' + (already ? '' : ' open') + '>' +
-      '<summary>' + (already ? '問題・表・図を再表示' : '公式原本の問題・表・図') + '</summary>' +
-      (pages || '<div class="notice" role="alert">公式原本の画像を確認できません。出題を停止してください。</div>') + '</details>';
+      '<summary>' + (already ? '問題・表・図を再表示' : '問題文・表・図') + '</summary>' +
+      (blocks || '<div class="notice" role="alert">問題・表・図の照合が必要です。出題を停止してください。</div>') + '</details>';
     if (safeUrl(q.sourceUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
     h += '<div class="notice">公式模範解答は確認できていません。表示する解答はAIによる参考解答であり、正誤判定は行いません。</div>';
-    if (!already && pages) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
+    if (!already && blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
     else if (already) h += '<div class="notice" role="status">参考解答の表示操作を受け付けました。参考解答はこの画面の下の会話で表示します。</div>';
     h += '<div class="row"><button id="nextDescriptive">次の記述式へ</button><button id="backDescriptive">年度・問題を選び直す</button><button id="returnMcq">択一式に戻る</button></div>' + endBar();
     app.innerHTML = h; scrollUp(); bindFigures(); bindEnd();
@@ -833,7 +863,7 @@ a{color:inherit}
       var detail = yearSections.map(function(section){
         var hit = saved.find(function(v){return v.year === year && v.section === section;});
         var sectionLabel = section === '年度共通' ? '本試験' : section === '午前の部' ? '午前' : section === '午後の部' ? '午後' : section;
-        return esc(sectionLabel) + '：' + (hit ? '<b>共有利用可（' + esc(hit.questions) + '問）</b>' : '未確認');
+        return esc(sectionLabel) + '：' + (hit ? '<b>共有利用可（' + esc(Number(hit.questions) + Number(hit.writtenQuestions || 0)) + '問）</b>' + (hit.writtenQuestions ? '<small>（択一' + esc(hit.questions) + '問・記述' + esc(hit.writtenQuestions) + '問）</small>' : '') : '未確認');
       }).join(' ／ ');
       return '<li><b>' + esc(year) + '年度</b>' + (detail ? '　' + detail : '　登録状況未確認') + '</li>';
     }).join('');
