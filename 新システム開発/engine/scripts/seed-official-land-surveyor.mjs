@@ -22,6 +22,7 @@ import { GcpStore } from '../src/gcp-store.js';
 import { ingestSource } from '../src/ingest.js';
 import { officialLibrary } from '../src/official-library.js';
 import { readResult } from '../src/cache.js';
+import { sourceKey } from '../src/source-store.js';
 
 const execFile = promisify(execFileCallback);
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -129,6 +130,27 @@ try {
     console.log('MORNING_2025_Q1_VERIFIED_TEXT',q1.stem.length,'characters');
   }
   const store = commit ? new GcpStore({bucket:'qualification-learning-qlp-figures'}) : new MemoryStore();
+  if (commit && textUpgrade) {
+    // Cloud Runから法務省サイトが403を返す場合も、今回SHA照合した原本で
+    // 記述式の問題と図表を表示できるよう、公式問題冊子の控えだけを共有保管する。
+    // 正答PDFには記述式の模範解答がないため、公式模範解答として扱わない。
+    for (const [year,pinsForYear] of pins) {
+      for (const section of ['午前の部','午後の部']) {
+        const info = officialFile(pinsForYear[section]);
+        const sourceUrl = MOJ + info.name;
+        const bytes = saved.get(sourceUrl);
+        assert(bytes?.length > 100 && await sha256Hex(bytes) === pinsForYear[section],
+          'DESCRIPTIVE_SOURCE_SHA_NOT_VERIFIED');
+        const key = await sourceKey(sourceUrl);
+        await store.put(key,bytes);
+        const again = await store.get(key,'arrayBuffer');
+        assert(again?.byteLength === bytes.byteLength &&
+          await sha256Hex(new Uint8Array(again)) === pinsForYear[section],
+          'DESCRIPTIVE_ARCHIVE_READBACK_FAILED');
+        console.log('DESCRIPTIVE_SOURCE_ARCHIVED',year,section,info.name,bytes.byteLength);
+      }
+    }
+  }
   const before = await officialLibrary(store,cat,PV,Date.now());
   const wanted = cat.validatedUploadYears.slice().sort((a,b)=>b-a).flatMap((year)=>
     cat.uploadSections.map((section)=>({year,section})));
