@@ -1007,6 +1007,11 @@ async function restoreStudyView(env, id, state, now) {
   const fields = studyFieldOrder(state, cat);
   const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
   const identity = { sessionId: id, learnerId: state.learnerId, studyId };
+  // 解説済みの公式問は、画面離脱後も解説全文＋次問/終了ボタンを同じ形で復元。
+  const published = state.publishedExplanation;
+  if (published?.questionId && state.lastExplanation?.grade?.questionId === published.questionId &&
+      published.menu?.body && published.menu.sessionId === id)
+    return { ...identity, status:'menu', menu:published.menu, restored:true };
   if (state.resumePending && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
     // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
     return { ...resumeReadyView(id, state), restored: true };
@@ -1777,6 +1782,49 @@ async function route(request, env, url, now) {
     const target = new URL(`/v1/sessions/${encodeURIComponent(savedRef.sessionId)}/explanation`, url);
     target.searchParams.set('questionId', savedRef.questionId);
     return handle(new Request(target, { method: 'GET', headers: request.headers }), env);
+  }
+
+  // AIが検証済みの採点結果を読んだ後だけ、解説全文と操作ボタンを同じ画面へ登録。
+  // 再採点・次問進行はしない。別問の古い照合番号は使えない。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'explanation-ref' &&
+      parts[3] === 'publish' && parts.length === 4) {
+    const ref = parts[2];
+    if (!/^E-[A-Za-z0-9_-]{16}$/.test(ref)) throw new HttpError(400, 'EXPLANATION_REF_INVALID');
+    const storedRef = await env.STORE.get(`eref/${ref}`, 'json');
+    if (!storedRef?.sessionId || !storedRef?.questionId) throw new HttpError(404, 'EXPLANATION_REF_EXPIRED');
+    const data = (await body(request)) ?? {};
+    const markdown = typeof data.body === 'string' ? data.body.trim() : '';
+    if (markdown.length < 120 || markdown.length > 16000)
+      throw new HttpError(422, 'EXPLANATION_BODY_INCOMPLETE');
+    if (/MCP app context|verifiedOfficialExplanation|["“]questionNumber["”]\s*:|["“]stem["”]\s*:|<script\b/i.test(markdown))
+      throw new HttpError(422, 'EXPLANATION_INTERNAL_DATA_REJECTED');
+    const { id, state } = await resolveSession(env, storedRef.sessionId, now);
+    const saved = state.lastExplanation;
+    const grade = saved?.grade ?? state.lastGrade;
+    if (!grade?.questionId || grade.questionId !== storedRef.questionId || grade.skipped ||
+        saved && saved.questionId !== grade.questionId)
+      throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');
+    // GETの検証済み照合機構と同じ条件を使い、必ず採点時に保存された公式正答と照合する。
+    const proofUrl = new URL(`/v1/sessions/${encodeURIComponent(id)}/explanation`, url);
+    proofUrl.searchParams.set('questionId', storedRef.questionId);
+    const proof = await handle(new Request(proofUrl, { method:'GET', headers:request.headers }), env);
+    if (!proof.ok) throw new HttpError(409, 'EXPLANATION_SOURCE_MISMATCH');
+    const ctx = await proof.json();
+    if (ctx.question?.questionId !== grade.questionId || ctx.grade?.questionId !== grade.questionId)
+      throw new HttpError(409, 'EXPLANATION_BINDING_MISMATCH');
+    const fieldChange = !!ctx.nextChoice?.fieldChange;
+    const menu = {
+      kind:'next', prompt:'次はどうしますか？', body:markdown,
+      sessionId:id, studyId:ctx.studyId, learnerId:ctx.learnerId, journey:ctx.journey,
+      choices:[fieldChange ? '次の分野の問題へ' : '次の問題へ',
+        ...(fieldChange ? ['この分野の実践問題を続ける', '総復習（間違えた問題）'] : []),
+        '今日はここまで（学習を終了）'],
+      actions:['next', ...(fieldChange ? ['continueField','review'] : []), 'end'],
+    };
+    const changed = { ...state, publishedExplanation: { questionId:grade.questionId, markdown,
+      menu, publishedAt:now } };
+    await saveSession(env, id, changed, now);
+    return json(200, { status:'menu', sessionId:id, menu, explanationQuestionId:grade.questionId });
   }
 
   // 解説の読取専用経路。次問の先取り・再採点・取り込みの進行を一切行わない。
