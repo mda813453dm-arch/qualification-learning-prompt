@@ -71,6 +71,11 @@ test('記述式解説の末尾にモデルが最新問専用の操作画面を�
   assert.match(nav.description, /explanationMarkdown/);
   assert.match(nav.description, /解説本文を先にチャットへ出さない/);
   assert.ok(nav.inputSchema.properties.explanationMarkdown);
+  assert.ok(nav.inputSchema.required.includes('explanationMarkdown'), 'モデルからのボタンのみ登録は禁止');
+  const oldPanel = TOOLS.find((t) => t.name === 'getDescriptiveActions');
+  assert.ok(oldPanel?.appOnly && oldPanel?.uiOnly, '復旧専用の取得経路は利用者の画面だけ');
+  assert.equal(oldPanel.api({sessionId:'s',questionId:'q'})[0], 'GET');
+  assert.equal(nav.api({sessionId:'s',questionId:'q',explanationMarkdown:'## 問1'})[0], 'POST');
   assert.match(INSTRUCTIONS, /showDescriptiveActions/);
   const view = forModel({ status:'descriptiveActions', sessionId:'session',
     explanationMarkdown: '解説を下の画面に表示',
