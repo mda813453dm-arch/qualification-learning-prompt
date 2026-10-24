@@ -436,9 +436,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
     await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
     assert.equal(await ui.locator('#descriptiveSource').count(), 0, '解説前の問題・表・図をDOMへ再出力しない');
+    assert.match(await ui.locator('#app').innerText(), /表示されない場合は解説末尾の番号選択肢/,'実際にUIが未表示でも誤案内しない');
     assert.equal(await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).count(), 0);
     assert.equal(await ui.getByRole('button', { name: '次の記述式へ' }).count(), 0, '解説前の画面に旧ナビゲーションを残さない');
-    assert.match(await ui.locator('#app').innerText(), /上に戻り.*ボタンを押して/,'戻る場合の注釈');
+    assert.match(await ui.locator('#app').innerText(), /上に戻って.*ボタンを押して/,'戻る場合の注釈');
     const descCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'revealDescriptiveAnswer').length);
     assert.ok(descCalls >= 1);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), beforeDescriptiveGrade,
