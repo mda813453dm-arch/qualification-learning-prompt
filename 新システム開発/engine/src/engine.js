@@ -256,7 +256,7 @@ function findByKeyword(state, items, plain) {
 
 export function findWanted(state, items, want, fields = {}) {
   const t = String(want ?? '').normalize('NFKC');
-  const num = /問\s*(\d{1,3})/.exec(t)?.[1] ?? /^\s*(\d{1,3})\s*$/.exec(t)?.[1];
+  const num = /問\s*(\d{1,3})/.exec(t)?.[1] ?? /第\s*(\d{1,3})\s*問/.exec(t)?.[1] ?? /^\s*(\d{1,3})\s*$/.exec(t)?.[1];
   if (!num) {
     const plain = t.replace(/\s/g, '');
     const fid = Object.keys(fields).find((k) => plain.includes(fields[k].replace(/\s/g, '')))
