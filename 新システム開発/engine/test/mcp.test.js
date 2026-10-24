@@ -122,7 +122,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   assert.match(WIDGET_URI, /question-v83\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.82');
+  assert.equal(WIDGET_VERSION, '2026-10-24.83');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
 });
 
