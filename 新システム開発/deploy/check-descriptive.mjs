@@ -74,7 +74,9 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   const restored=await api('GET',prefix+'/restore');
   assert.equal(restored.status,'descriptiveReveal');
   assert.equal(restored.question.questionId,d.question.questionId);
-  assert.deepEqual(restored.question.layout,d.question.layout,'restored layout must be unchanged');
+  assert.equal(restored.question.layout,undefined,'revealed/restored question does not re-send full original');
+  assert.equal(shown.question.layout,undefined,'reveal response is compact');
+  assert.equal(shown.question.text,undefined,'original text stays on server for AI reference only');
   const image=await fetch(d.question.pages[0].url,{signal:AbortSignal.timeout(30000)});
   assert.ok(image.ok,'official page image '+n);
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,4)],[137,80,78,71]);
