@@ -45,7 +45,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.exposeFunction('engineTool', tool);
     await page.exposeFunction('modelStep', async (message, delivered) => {
       // iOSのホストがassistant-only文脈を全て落とす失敗を再現する。
-      assert.match(message, /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/);
+      assert.match(message, /^2026年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/);
       assert.equal(delivered.content.length, 1, 'モデルには可視テキストだけを渡す');
       const ref = message.match(/照合番号：(E-[A-Za-z0-9_-]{16})/)[1];
       const before = toolCalls.length;
@@ -59,7 +59,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.equal(context.grade.correctAnswer, 3);
       assert.equal(toolCalls.length, before + 1, 'モデル役は公開済みのnextQuestionツールで公式根拠を読み取る');
       const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((choice, i) => `|${i + 1}|${choice}|`).join('\n')}`;
-      return { body };
+      const menu = await tool('showMenu', { kind:'next',
+        explanationRef:ref, sessionId:context.sessionId, studyId:context.studyId,
+        learnerId:context.learnerId,
+        body:body+'\\n1. 公式本文の前提を照合して選択肢を区別します。\\n2. 正答の選択肢の理由と計算手順を整理し、誤答の理由もすべて説明します。\\n3. 問題の図と条件に適合する結論を示します。',
+      });
+      assert.equal(menu.isError,undefined,JSON.stringify(menu.structuredContent));
+      assert.equal(menu._meta.qlp.status,'menu');
+      return { body, view:menu._meta.qlp };
     });
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
     await page.goto('https://qlp.test/');
@@ -83,7 +90,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
-          window.modelReplies.push(await window.modelStep(window.messages.at(-1), {content:[m.params.content[0]]}));
+          const replyView = await window.modelStep(window.messages.at(-1), {content:[m.params.content[0]]});
+          window.modelReplies.push(replyView);
+          deliver({ _meta:{ qlp:replyView.view } });
         }
       });
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
@@ -105,17 +114,22 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForFunction(() => window.modelReplies.length === 1);
     assert.match((await page.evaluate(() => window.modelReplies[0].body)), /AIによる解説（結合試験用）/);
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5', '学習画面の解説にも全体位置を示す');
-    assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 1, '本文は会話へ、次問操作は元の画面に残す');
+    await ui.getByRole('heading', {name:'AIによる解説（結合試験用）'}).waitFor();
+    assert.equal(await ui.getByRole('button', {name:'次の問題へ'}).count(),1,
+      'AI解説と同じ最新の学習画面に次問ボタンを設置');
+    assert.ok(await ui.locator('.md').evaluate(el =>
+      !!(el.compareDocumentPosition(document.querySelector('.choices')) & Node.DOCUMENT_POSITION_FOLLOWING)),
+      '解説本文の直後にボタンを配置する');
     assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '解説の重複依頼をしない');
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion' && /^E-/.test(c.args.sessionId)).length, 1, 'モデルの既存ツールから照合番号で公式根拠を取得');
-    assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 0, '解説本文はチャットに直接表示しメニューを重複表示しない');
+    assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 1, '検証済みの解説全文を一度だけ登録し、次問ボタンを生成');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion' && !/^E-/.test(c.args.sessionId)).length, 0, '解説中に通常の次問取得を実行しない');
     assert.equal(await page.evaluate(() => window.droppedContext), 0, '解説は遅延モデル文脈のACKや取落ちに依存しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 1);
-    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由を、保存済みの公式問題と学習状況に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
+    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
