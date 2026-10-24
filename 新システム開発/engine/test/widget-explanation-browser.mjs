@@ -143,7 +143,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
-    await ui.getByRole('button', { name: '次の問題へ', exact: true }).click();
+    await ui.locator('.choices button[data-n="1"]').click();
     await ui.getByText('問2の本文', { exact: true }).waitFor();
     assert.ok(toolCalls.filter(c => c.name === 'nextQuestion' && !/^E-/.test(c.args.sessionId)).length <= 1, '通常の次問取得は学習画面だけが管理する');
     assert.equal(await page.evaluate(() => window.messages.length), 1, '解説後の次問表示はAIへの依頼に依存しない');
