@@ -6,12 +6,10 @@ from qlp_parser.descriptive import DescriptiveError, extract_descriptive, find_d
 
 class DescriptiveTest(unittest.TestCase):
     def sample(self, section, headings):
-        import fitz
-        doc = fitz.open()
-        for title in headings:
-            p = doc.new_page()
-            p.insert_text((45, 90), title, fontsize=13)
-        return doc
+        class Page:
+            def __init__(self, text): self.text = text
+            def get_text(self, *args, **kwargs): return self.text
+        return [Page(title) for title in headings]
 
     def test_morning_11_stops_before_appendix(self):
         doc = self.sample("午前の部", ["第10問", "第11問", "計算資料", "関数表", "注意"])
