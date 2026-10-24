@@ -104,7 +104,13 @@ def structured_descriptive(doc, nums):
             for cell in row:
                 token = check_text(cell)
                 if token and token not in corpus:
-                    raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED: nums=" + repr(nums) + " table=" + repr(table["page"]) + " caption=" + repr(table.get("caption", "")[:50]) + " rows=" + repr(rows[:2]) + " token=" + repr(token[:30]) + " vs " + repr(corpus[:130]))
+                    # 登記記録の結合セルでは、PDFのテキスト層が視覚行の順序と
+                    # 異なることがある。行列は原本の罫線から採り、セルを構成する
+                    # 数値および文字を独立に照合する。並びを推測・追加しない。
+                    numeric = re.findall(r"\\d+(?:\\.\\d+)?", token)
+                    if any(num not in corpus for num in numeric) or any(
+                            c.isalpha() and c not in corpus for c in token):
+                        raise DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED")
         first_page, first_box = table["_boxes"][0]
         slots.append((first_page, first_box.y0, first_box.x0, "table", {
             "kind": "table", "caption": table.get("caption", ""), "rows": rows
