@@ -271,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, {"error": "NOT_FOUND"})
 
     def do_POST(self):  # noqa: N802
-        if self.path not in ("/v1/parse", "/v1/pages"):
+        if self.path not in ("/v1/parse", "/v1/pages", "/v1/descriptive"):
             self._send(404, {"error": "NOT_FOUND"})
             return
         if not self._authorized():
@@ -283,7 +283,21 @@ class Handler(BaseHTTPRequestHandler):
             return
         try:
             body = json.loads(self.rfile.read(length))
-            self._send(200, render_pages(body) if self.path == "/v1/pages" else parse_request(body))
+            if self.path == "/v1/descriptive":
+                from .descriptive import DescriptiveError, extract_descriptive
+                try:
+                    part = body.get("pdf") if isinstance(body, dict) else None
+                    if not isinstance(part, dict) or not isinstance(part.get("base64"), str):
+                        raise DescriptiveError("DESCRIPTIVE_PDF_REQUIRED")
+                    data = base64.b64decode(part["base64"], validate=True)
+                    result = extract_descriptive(
+                        pdf_bytes=data, year=body.get("year"), section=body.get("section"),
+                        number=body.get("number"), expected_sha=part.get("sha256"))
+                except (DescriptiveError, binascii.Error, ValueError) as error:
+                    raise BadRequest(str(error)) from error
+            else:
+                result = render_pages(body) if self.path == "/v1/pages" else parse_request(body)
+            self._send(200, result)
         except (BadRequest, json.JSONDecodeError) as e:
             self._send(400, {"error": str(e) if isinstance(e, BadRequest) else "BODY_INVALID"})
         except Exception as e:  # noqa: BLE001  想定外の失敗は理由を伏せて500
