@@ -108,7 +108,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               reply({ structuredContent: window.lastDescriptive });
             }
           }
-          else if (op === 'showDescriptiveActions') {
+          else if (op === 'getDescriptiveActions') {
             const q=window.lastDescriptive?.question;
             if (window.lastDescriptive?.status !== 'descriptiveReveal' ||
                 m.params.arguments.questionId !== q?.questionId)
