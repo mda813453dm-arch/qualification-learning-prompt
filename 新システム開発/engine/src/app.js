@@ -1324,6 +1324,9 @@ async function route(request, env, url, now) {
     if (method === 'POST' && parts[4] === 'reveal' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
       if (!cur) throw new HttpError(409, 'DESCRIPTIVE_NOT_OPEN');
+      const payload = await body(request).catch(() => ({}));
+      if (payload?.questionId && payload.questionId !== cur.questionId)
+        throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       const updated = { ...cur, revealedAt: cur.revealedAt ?? now };
       const key = cur.questionId;
       const oldHistory = state.descriptiveHistory?.[key] ?? {};
