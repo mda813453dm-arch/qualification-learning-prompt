@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v86.html';
+export const WIDGET_URI = 'ui://qlp/question-v87.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.86';
+export const WIDGET_VERSION = '2026-10-24.87';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -634,7 +634,7 @@ a{color:inherit}
       }); }); };
       bindEnd(); return;
     }
-    if (data.fieldChanged && !data.repeated && data.question.kind === 'new' && !data.itemAsked && (studyLid || state.sessionId)) {
+    if (data.fieldChanged && !data.explicitQuestion && !data.repeated && data.question.kind === 'new' && !data.itemAsked && (studyLid || state.sessionId)) {
       app.innerHTML = '<div class="notice"><b>' + esc(data.fieldNotice || '分野が変わります') + '</b></div>';
       var moved = Object.assign({}, data, { itemAsked: true });
       itemMenu(data.question.fieldName || '', studyLid || state.sessionId, function(){ studyField = data.question.fieldName || studyField; render(moved); });
