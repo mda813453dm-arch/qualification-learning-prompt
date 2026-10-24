@@ -93,6 +93,37 @@ paths:
                   sessionId: { type: string }
                   learnerId: { type: string, description: 引継ぎID。利用者に必ず伝える（別のチャットやAIで続けるときに使う） }
                   job: { $ref: '#/components/schemas/Job' }
+  /v1/sessions/{sessionId}/descriptive:
+    post:
+      operationId: openDescriptiveQuestion
+      x-openai-isConsequential: false
+      summary: 土地家屋調査士の記述式（午前11・午後21/22）を原本照合して開く。自動採点はしない
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [year, section, number]
+              properties:
+                year: { type: integer, enum: [2022, 2023, 2024, 2025] }
+                section: { type: string, enum: [午前の部, 午後の部] }
+                number: { type: integer, enum: [11, 21, 22] }
+      responses:
+        '200':
+          description: 原本PDFから検証済みの記述式問題。採点なし
+  /v1/sessions/{sessionId}/descriptive/context:
+    get:
+      operationId: getDescriptiveContext
+      x-openai-isConsequential: false
+      summary: 開いている記述式問題の原本文・出典を読み、AI参考解答の検証に利用する
+      parameters:
+        - { name: sessionId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 原本の問題文とページ番号。公式模範解答は含めない
   /v1/sessions/{sessionId}/next:
     post:
       operationId: nextQuestion
