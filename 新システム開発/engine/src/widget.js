@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v83.html';
+export const WIDGET_URI = 'ui://qlp/question-v84.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.83';
+export const WIDGET_VERSION = '2026-10-24.84';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -306,6 +306,34 @@ a{color:inherit}
         });
       }); };
       bindEnd(); return;
+    }
+    if (data.status === 'questionUnavailable') {
+      // 指定問が無いとき、別の問題や学習計画に置き換えず、その問だけ再検査する。
+      app.innerHTML = '<h2>指定した公式過去問を確認できません</h2>' +
+        '<div class="field">' + esc(data.requestedQuestion || '') + '</div>' +
+        '<div class="notice" role="status">' + esc(data.notice || '指定の問題は現在利用できません。') + '</div>' +
+        (data.sharedLibrary ? libraryHtml(data.sharedLibrary) : '') +
+        '<div class="row"><button id="retryRequestedQuestion">同じ問題を再確認する</button></div>' + endBar();
+      var retry = document.getElementById('retryRequestedQuestion');
+      retry.onclick = async function(){
+        retry.disabled = true;
+        retry.textContent = '同じ問題を確認しています…';
+        try {
+          var answer = await callTool('nextQuestion', {
+            sessionId: state.sessionId, question: data.requestedQuestion,
+          });
+          if (!answer || answer.error ||
+              !['question','questionUnavailable','waiting'].includes(answer.status))
+            throw new Error('DIRECT_QUESTION_RETRY_FAILED');
+          render(answer);
+        } catch(e) {
+          retry.disabled = false;
+          retry.textContent = '同じ問題を再確認する';
+          app.insertAdjacentHTML('beforeend',
+            '<div class="notice" role="alert">指定した問題の取得に失敗しました。同じボタンで再試行できます。</div>');
+        }
+      };
+      bindEnd(); scrollUp(); return;
     }
     if (data.status === 'descriptiveActions') {
       showDescriptiveActions(data);
