@@ -107,7 +107,7 @@ a{color:inherit}
         html.push(stemHtml(tableLines.join('\\n'))); continue;
       }
       var heading=line.match(/^\\s*#{1,4}\\s+(.+)$/);
-      if (heading){html.push('<h3>'+explanationInline(heading[1])+'</h3>');i++;continue;}
+      if (heading){var depth=(line.match(/^\\s*(#{1,4})/)||[])[1]?.length||3;html.push((depth<=2?'<h2>':'<h3>')+explanationInline(heading[1])+(depth<=2?'</h2>':'</h3>'));i++;continue;}
       if (/^\\s*[-*]\\s+/.test(line) || /^\\s*\\d+[.)]\\s+/.test(line)) {
         var ordered=/^\\s*\\d+[.)]\\s+/.test(line), list=[];
         while(i<lines.length && (ordered ? /^\\s*\\d+[.)]\\s+/ : /^\\s*[-*]\\s+/).test(lines[i])) {
