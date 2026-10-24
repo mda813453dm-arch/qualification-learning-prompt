@@ -78,6 +78,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           }
           else if (op === 'openDescriptiveQuestion') {
             const args = m.params.arguments;
+            window.restorePayload = null; // 新しい記述式を開いた後は旧択一の復元状態で上書きしない
             window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
               question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
                 year: args.year, section: args.section, number: args.number, kind: 'descriptive',
