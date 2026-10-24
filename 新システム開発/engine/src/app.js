@@ -347,9 +347,16 @@ async function openDescriptive(env, id, state, now, requested) {
   for (const n of pageNumbers)
     await env.STORE.put(`pgimg/${spec.sha}/${n}`, parsed.pages[`p${n}.png`], { expirationTtl: SESSION_TTL_S });
   const base = env.PUBLIC_BASE_URL ?? '';
+  const layout = [];
+  for (const block of parsed.layout) {
+    if (block.kind !== 'figure') { layout.push(block); continue; }
+    await env.STORE.put(`diagram/${spec.sha}/${spec.number}/${block.file}`,
+      parsed.diagrams[block.file], { expirationTtl: SESSION_TTL_S });
+    layout.push({ ...block, url: `${base}/v1/diagram/${spec.sha}/${spec.number}/${block.file}` });
+  }
   const current = {
     ...spec, sourceUrl: spec.url,
-    text: parsed.text,
+    text: parsed.text, layout,
     pageNumbers,
     pages: pageNumbers.map(n => ({ page: n, url: `${base}/v1/pageimg/${spec.sha}/p${n}.png` })),
     shownAt: now, revealedAt: null,
@@ -1131,6 +1138,19 @@ async function route(request, env, url, now) {
     const bytes = await env.STORE.get(`pgimg/${sha}/${m[1]}`, 'arrayBuffer');
     if (!bytes) throw new HttpError(404, 'PAGE_IMAGE_NOT_FOUND');
     return new Response(bytes, { headers: { 'content-type': 'image/png', 'cache-control': 'public, max-age=3600' } });
+  }
+
+  // SHA固定・公式原本から切り出した図のみ。ページ全体はこの表示経路で返さない。
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'diagram' && parts.length === 5) {
+    const sha = decodeURIComponent(parts[2]);
+    const number = Number(parts[3]);
+    const file = decodeURIComponent(parts[4]);
+    if (!/^[a-f0-9]{64}$/.test(sha) || ![11, 21, 22].includes(number) ||
+        !/^f\\d{1,2}\\.png$/.test(file)) throw new HttpError(404, 'DIAGRAM_NOT_FOUND');
+    const bytes = await env.STORE.get(`diagram/${sha}/${number}/${file}`, 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'DIAGRAM_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'image/png',
+      'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' } });
   }
 
   // 利用者が添付した過去問PDF（トークン不要。キーにPDFのSHA-256が入るので推測できない）。出題画面の「問題PDF」のリンク先
