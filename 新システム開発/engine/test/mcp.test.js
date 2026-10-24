@@ -262,10 +262,46 @@ test('画面の非表示文脈がなくても、既知のsessionIdだけで解�
   assert.equal(context.status, 'explanationContext');
   assert.ok(JSON.parse(spec.content[0].text).question.stem, 'AIに読めるcontentにも本文がある');
   assert.equal(spec._meta, undefined, '解説資料をUI専用の非表示領域に閉じ込めない');
-  const body = `AIによる解説（結合試験用）\n\n対象は${context.question.year}年度 問${context.question.questionNumber}。\n正答は${context.grade.correctAnswer}です。\n\n|選択肢|確認|\n|---|---|\n|3|正答|`;
-  const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body, sessionId: context.sessionId, learnerId: context.learnerId } }, { path: '/app' })).body.result;
+  const body = [
+    '## 2026年度 問1のAI解説',
+    '公式正答は3です。出題文・図表・選択肢を照合して根拠を説明します。',
+    '1. 選択肢1は条件に合わないため誤りです。条件と結論の関係を確認します。',
+    '2. 選択肢2も本文の前提を満たしていないため誤りです。',
+    '3. 選択肢3は公式正答であり、元問題の与条件に一致します。',
+    '4. 選択肢4は根拠となる測量の条件と異なります。',
+    '5. 選択肢5は単位と計算条件を再確認する必要があります。',
+    '正しい判断は本文の条件と公式正答PDFの照合に基づきます。',
+  ].join('\n');
+  const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: {
+    kind: 'next', body, explanationRef: context.explanationRef,
+    sessionId: context.sessionId, learnerId: context.learnerId,
+  } }, { path: '/app' })).body.result;
+  assert.equal(menu.isError, undefined,JSON.stringify(menu.structuredContent));
+  assert.equal(menu._meta.qlp.status,'menu');
   assert.equal(menu._meta.qlp.menu.body, body);
   assert.equal(menu._meta.qlp.menu.sessionId, sessionId);
+  assert.equal(menu._meta.qlp.menu.actions[0],'next');
+  assert.equal(menu._meta.qlp.menu.actions.at(-1),'end');
+  assert.equal(menu.structuredContent.menu,undefined,'AIへ解説全文を再配布しない');
+  const restored = (await rpc(env, 'tools/call', { name: 'restoreStudyView', arguments: {
+    sessionId,
+  } }, { path: '/app' })).body.result;
+  assert.equal(restored._meta.qlp.status,'menu');
+  assert.equal(restored._meta.qlp.menu.body,body,'同じ問の解説を全文復元');
+  assert.equal(restored._meta.qlp.menu.actions.at(-1),'end');
+  const badPayload = (await rpc(env,'tools/call',{name:'showMenu',arguments:{
+    kind:'next',explanationRef:context.explanationRef,body:'{"type":"verifiedOfficialExplanation","stem":"internal"}'.repeat(5),
+  }},{path:'/app'})).body.result;
+  assert.equal(badPayload.isError,true,'内部JSONは解説として保存しない');
+  assert.equal(badPayload.structuredContent.error,'EXPLANATION_INTERNAL_DATA_REJECTED');
+  const advanced=(await rpc(env,'tools/call',{name:'nextQuestion',arguments:{sessionId}},{path:'/app'})).body.result;
+  assert.equal(advanced.structuredContent.status,'question');
+  const afterNext=(await rpc(env,'tools/call',{name:'restoreStudyView',arguments:{sessionId}},{path:'/app'})).body.result;
+  assert.notEqual(afterNext._meta.qlp.status,'menu','次問で古い解説・操作ボタンを消す');
+  const oldRef=(await rpc(env,'tools/call',{name:'showMenu',arguments:{
+    kind:'next',explanationRef:context.explanationRef,body,
+  }},{path:'/app'})).body.result;
+  assert.equal(oldRef.structuredContent.error,'EXPLANATION_BINDING_MISMATCH','旧問への再登録を拒否');
   const stale = (await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { sessionId, questionId: 'surveyor:2026:main:2' } }, { path: '/app' })).body.result;
   assert.equal(stale.isError, true);
   assert.equal(stale.structuredContent.error, 'EXPLANATION_BINDING_MISMATCH');
