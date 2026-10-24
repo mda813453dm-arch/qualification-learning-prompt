@@ -28,8 +28,38 @@ export function requestedDescriptive(text) {
   if (t.includes('午後') && section !== '午後の部') return null;
   return { year, section, number };
 }
+/**
+ * AI作成の参考解説を公開する前に、関数電卓だけの断片的な説明を拒否する。
+ * 数値・公式正答の正しさはここでは保証せず、原本照合はモデルに求める。
+ */
+export function validateDescriptiveExplanation(markdown, current) {
+  if (typeof markdown !== 'string' || !markdown.trim() || markdown.length > 40000)
+    return { ok: false, code: 'DESCRIPTIVE_EXPLANATION_REQUIRED' };
+  const text = markdown.normalize('NFKC').trim();
+  if (text.length < 160) return { ok: false, code: 'DESCRIPTIVE_EXPLANATION_TOO_SHORT' };
+  if ([11, 21].includes(Number(current?.number))) {
+    // 土地の記述式は複数小問から成る。電卓の公式だけを送る実装漏れを検出する。
+    const headers = [...text.matchAll(/^\s*#{1,4}\s*(?:第\s*)?(?:問|設問|小問)\s*([0-9]{1,2})(?:\s|[：:（(]|$)/gm)];
+    const ids = new Set(headers.map((m) => Number(m[1])));
+    if (ids.size < 2) return { ok: false, code: 'DESCRIPTIVE_SUBQUESTIONS_MISSING' };
+    if (text.length < 700) return { ok: false, code: 'DESCRIPTIVE_EXPLANATION_TOO_SHORT' };
+    // 座標・登記の基本解法が欠け、複素数の入力例だけになる事故を阻止する。
+    if (!/(?:通常解法|座標法|三角関数|法的根拠|登記の根拠)/.test(text) ||
+        !/(?:根拠|理由|判断|検算)/.test(text))
+      return { ok: false, code: 'DESCRIPTIVE_NORMAL_METHOD_MISSING' };
+    // 元問題に地積計算が含まれる土地の問では電卓の別解も必須。
+    if (/(?:地積|面積)/.test(String(current?.text || '')) &&
+        (!/Conjg|Conj/i.test(text) || !/Imag|ImP/i.test(text)))
+      return { ok: false, code: 'DESCRIPTIVE_AREA_CALCULATOR_MISSING' };
+  }
+  return { ok: true };
+}
+
 export function descriptiveView(stored, sessionId, revealed = false) {
-  return { status: revealed ? 'descriptiveReveal' : 'descriptiveQuestion', sessionId,
+  const explanationMarkdown = revealed && typeof stored.explanationMarkdown === 'string'
+    ? stored.explanationMarkdown : '';
+  return { status: explanationMarkdown ? 'descriptiveActions' : revealed ? 'descriptiveReveal' : 'descriptiveQuestion', sessionId,
+    ...(explanationMarkdown ? { explanationMarkdown } : {}),
     question: { kind: 'descriptive', gradingMode: 'none', questionId: stored.questionId,
       year: stored.year, section: stored.section, number: stored.number,
       shownAt: stored.shownAt ?? null,
