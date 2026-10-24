@@ -58,7 +58,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.deepEqual(context.question.choices, first.question.choices);
       assert.equal(context.grade.correctAnswer, 3);
       assert.equal(toolCalls.length, before + 1, 'モデル役は公開済みのnextQuestionツールで公式根拠を読み取る');
-      const body = `AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((choice, i) => `|${i + 1}|${choice}|`).join('\n')}`;
+      const body = `## AIによる解説（結合試験用）\n\n${context.question.year}年度 問${context.question.questionNumber}の正答は${context.grade.correctAnswer}です。\n\n|番号|選択肢|\n|---|---|\n${context.question.choices.map((choice, i) => `|${i + 1}|${choice}|`).join('\n')}`;
       const menu = await tool('showMenu', { kind:'next',
         explanationRef:ref, sessionId:context.sessionId, studyId:context.studyId,
         learnerId:context.learnerId,
