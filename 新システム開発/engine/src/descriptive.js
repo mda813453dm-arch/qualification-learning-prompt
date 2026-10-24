@@ -32,6 +32,7 @@ export function descriptiveView(stored, sessionId, revealed = false) {
   return { status: revealed ? 'descriptiveReveal' : 'descriptiveQuestion', sessionId,
     question: { kind: 'descriptive', gradingMode: 'none', questionId: stored.questionId,
       year: stored.year, section: stored.section, number: stored.number,
+      shownAt: stored.shownAt ?? null,
       text: stored.text, pages: stored.pages, layout: stored.layout ?? [], sourceUrl: stored.sourceUrl,
       drawingAutoGraded: false },
     notice: revealed
