@@ -83,12 +83,12 @@ a{color:inherit}
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function stemHtml(t){
-    var lines=String(t == null ? '' : t).split(/\r?\n/), out=[];
+    var lines=String(t == null ? '' : t).split(/\\r?\\n/), out=[];
     for(var i=0;i<lines.length;){
-      if (/^\s*\|.*\|\s*$/.test(lines[i] || '') && /^\s*\|[\s|:-]+\|\s*$/.test(lines[i+1] || '')) {
+      if (/^\\s*\\|.*\\|\\s*$/.test(lines[i] || '') && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '')) {
         var arr=[lines[i]], j=i+2;
-        while(j<lines.length && /^\s*\|.*\|\s*$/.test(lines[j])) arr.push(lines[j++]);
-        var rows=arr.map(function(v){return v.trim().replace(/^\||\|$/g,'').split('|').map(function(c){return c.trim();});});
+        while(j<lines.length && /^\\s*\\|.*\\|\\s*$/.test(lines[j])) arr.push(lines[j++]);
+        var rows=arr.map(function(v){return v.trim().replace(/^\\||\\|$/g,'').split('|').map(function(c){return c.trim();});});
         if(rows.length>1 && rows.every(function(r){return r.length===rows[0].length;})){
           out.push(descriptiveBlockHtml({kind:'table',caption:'',rows:rows},i));i=j;continue;
         }
