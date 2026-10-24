@@ -116,11 +116,11 @@ def structured_descriptive(doc, nums):
         page_num, box = f["page"], fitz.Rect(f["bbox"])
         if box.width < 75 or box.height < 65:
             continue
-        if any((box & t).get_area() > box.get_area() * 0.12 for t in omitted.get(page_num, [])):
+        if any(((box & t).width * (box & t).height) > (box.width * box.height) * 0.12 for t in omitted.get(page_num, [])):
             continue
         page = doc[page_num-1]
         clip = box & page.rect
-        if clip.is_empty or clip.get_area() < 4500:
+        if clip.is_empty or (clip.width * clip.height) < 4500:
             continue
         num = len(images) + 1
         if num > 20:
@@ -142,9 +142,9 @@ def structured_descriptive(doc, nums):
             clean_lines = []
             for line in lines:
                 box = fitz.Rect(line["bbox"])
-                if box.get_area() <= 0:
+                if (box.width * box.height) <= 0:
                     continue
-                if any((box & excluded).get_area() / box.get_area() >= .48
+                if any(((box & excluded).width * (box & excluded).height) / (box.width * box.height) >= .48
                        for excluded in omitted.get(pg, [])):
                     continue
                 text = "".join(sp.get("text", "") for sp in line.get("spans", [])).strip()
