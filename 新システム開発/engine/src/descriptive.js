@@ -33,7 +33,8 @@ export function descriptiveView(stored, sessionId, revealed = false) {
     question: { kind: 'descriptive', gradingMode: 'none', questionId: stored.questionId,
       year: stored.year, section: stored.section, number: stored.number,
       shownAt: stored.shownAt ?? null,
-      text: stored.text, pages: stored.pages, layout: stored.layout ?? [], sourceUrl: stored.sourceUrl,
+      ...(revealed ? {} : { text: stored.text, pages: stored.pages, layout: stored.layout ?? [] }),
+      sourceUrl: stored.sourceUrl,
       drawingAutoGraded: false },
     notice: revealed
       ? '採点は行いません。公式模範解答は確認できていません。AI参考解答は公式正解ではありません。'
