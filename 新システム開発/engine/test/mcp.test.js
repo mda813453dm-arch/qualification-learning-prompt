@@ -8,7 +8,7 @@ import { writeResult } from '../src/cache.js';
 import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
-import { TOOLS } from '../src/mcp.js';
+import { TOOLS, forModel } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
