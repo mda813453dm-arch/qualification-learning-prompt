@@ -810,6 +810,7 @@ async function diagStep(env, id, state0, now, b) {
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
+  const explicitQuestion = isExactQuestionRequest(want);
   let state = state0;
   // アプリでは、このチャットで学習を開始（startStudy）するまで出題しない（学習計画の確認を飛ばさせない）
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
@@ -995,7 +996,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName,
     progress: learningProgress(state), ...(attach ? { figureCount: shown.figures.length } : {}) };
   return {
-    status: 'question', sessionId: id, repeated: !!pick.repeated, question, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
+    status: 'question', sessionId: id, repeated: !!pick.repeated, question,
+    // 明示指定の問は学習計画の分野移行メニューを挟まず出す。分野変更の事実のみ通知してよい。
+    explicitQuestion, fieldChanged: !!changed, fieldNotice, notice: job?.notice ?? null,
     // ChatGPT はこの欄のURLのファイルを取り込み、回答に添付として表示する（最大10個）
     ...(attach ? { openaiFileResponse: shown.figures.slice(0, 10).map((f) => f.url) } : {}),
   };
