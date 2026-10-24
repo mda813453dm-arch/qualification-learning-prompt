@@ -679,6 +679,13 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       }
       const [m, path, body] = tool.api(args);
       const res = await callApi(m, path, body);
+      // 明示指定の公式問は初期画面を経由しない。出題成功・対象問未登録の双方を同じ問題画面へ返す。
+      if (widget && tool.name === 'startSession' && args.requestedQuestion &&
+          res.status < 400 && res.body?.sessionId) {
+        const view = forModel(res.body);
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }],
+          structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
+      }
       // アプリでは、資格名を受けたらすぐ試験概要と免除・学習状況のボタンを画面に出す（AIが次に nextQuestion を呼ぶのに頼らない）
       if (widget && tool.name === 'startSession' && res.status < 400 && res.body?.sessionId && res.body.status !== 'resumeReady') {
         // 現行エンジンは最初の応答へ導入画面を含める。余分な nextQuestion を呼ばず1回で表示する。
