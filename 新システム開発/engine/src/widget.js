@@ -103,8 +103,8 @@ a{color:inherit}
       var line = lines[i];
       if (!line.trim()){ i++; continue; }
       // 数式の独立行とコードブロックは文章に吸収せず、読みやすい塊として描画する。
-      if (/^\\s*(?:\$\$|\\\\\\[)\\s*$/.test(line)) {
-        var endMark = line.trim() === '$' ? '$' : '\\\\]';
+      if (/^\\s*(?:\\$\\$|\\\\\\[)\\s*$/.test(line)) {
+        var endMark = line.trim() === '$$' ? '$$' : '\\\\]';
         var mathLines=[]; i++;
         while(i<lines.length && lines[i].trim() !== endMark) mathLines.push(lines[i++]);
         if(i<lines.length)i++;
