@@ -1770,8 +1770,16 @@ async function route(request, env, url, now) {
         // AIの自由文では午前・午後の区分を落とすことがあるため、
         // 公式問題の採点記録があれば、必ずエンジン側の出典IDから行を構成する。
         // 問1が同年度に二つあっても午前・午後を別問題として記録する。
-        if (graded.length) {
-          input = { ...input, contents: gradedQuestionContents(st.history, study.startedAt) };
+        const written = Object.entries(st.descriptiveHistory ?? {})
+          .filter(([, h]) => Number.isFinite(h?.viewedAt) && h.viewedAt >= study.startedAt)
+          .sort((a,b) => a[1].viewedAt - b[1].viewedAt);
+        if (graded.length || written.length) {
+          const mcq = graded.length ? gradedQuestionContents(st.history, study.startedAt) : [];
+          const records = written.map(([id,h]) => {
+            const label = sourceQuestionLabel({ year:h.year, section:h.section, number:h.number }, id);
+            return `${label}：記述式を閲覧${h.revealedAt ? '・AI参考解答の表示を依頼' : ''}（採点なし）`;
+          });
+          input = { ...input, contents: [...mcq, ...records] };
         }
         // 利用者が本文を手入力しなくても、実際の回答・復習予定から引継ぎを構成する。
         const fieldNames = cat?.fields ?? {};
