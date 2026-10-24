@@ -73,7 +73,7 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   const list=await post('tools/list',{});
   const tool=list.body.result.tools.find(t=>t.name==='showDescriptiveActions');
   assert.ok(tool?._meta?.['openai/outputTemplate']);
-  const response=await post('tools/call',{name:'showDescriptiveActions',arguments:{sessionId:SID,questionId:Q1}});
+  const response=await post('tools/call',{name:'getDescriptiveActions',arguments:{sessionId:SID,questionId:Q1}});
   assert.equal(response.status,200);
   assert.equal(response.body.result.structuredContent.status,'descriptiveActions');
   assert.equal(response.body.result._meta.qlp.question.text,undefined,'モデルと画面のどちらにも原本は再送しない');
@@ -83,13 +83,17 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
 test('AI解説全文を同じ画面でボタンの前に返し、別問への遅延解説や空本文は拒否する',async()=>{
   const e=env();await store(e,Q1,T0,T0+1);
   const route='/v1/sessions/'+SID+'/descriptive/actions';
-  const explanationMarkdown='## 問11の解法\n\n**方位角**と距離を計算します。\n\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
+  const explanationMarkdown='## 問1：状況整理\n\n'+ '原本の土地の条件を確認し、根拠と通常解法を座標法・三角関数で整理する。'.repeat(12) +
+    '\n\n## 問2：地積計算\n\n'+ '通常解法は座標法で行い、各点の座標から検算する。'.repeat(12) +
+    '\n\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
   const res=await send(e,'POST',route,{questionId:Q1,explanationMarkdown});
   assert.equal(res.status,200);
   assert.equal(res.body.status,'descriptiveActions');
   assert.equal(res.body.explanationMarkdown,explanationMarkdown,'省略せずモデルの解説を表示する');
   assert.equal(res.body.question.layout,undefined,'長い原本問題は再添付しない');
   assert.equal(res.body.grade,undefined,'採点しない');
+  const fragment=await send(e,'POST',route,{questionId:Q1,explanationMarkdown:'## 電卓による面積計算\nS=Abs(Imag(A*Conjg(B)))/2'});
+  assert.equal(fragment.status,422,'電卓だけの短い解説は登録できない');
   const invalid=await send(e,'POST',route,{questionId:Q1,explanationMarkdown:'  '});
   assert.equal(invalid.status,400);
   const wrong=await send(e,'POST',route,{questionId:Q2,explanationMarkdown});
