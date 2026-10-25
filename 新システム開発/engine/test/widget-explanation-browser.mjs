@@ -51,7 +51,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.exposeFunction('engineTool', tool);
     await page.exposeFunction('modelStep', async (message, delivered) => {
       // iOSのホストがassistant-only文脈を全て落とす失敗を再現する。
-      assert.match(message, /^2026年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/);
+      assert.match(message, /^2026年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/);
       assert.equal(delivered.content.length, 1, 'モデルには可視テキストだけを渡す');
       const ref = message.match(/照合番号：(E-[A-Za-z0-9_-]{16})/)[1];
       const before = toolCalls.length;
@@ -146,7 +146,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
     assert.equal(messages.length, 1, '3回の自動照合後にAI依頼は1回だけ送り、会話を重複させない');
-    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
+    assert.ok(messages.every(m => /^2026年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
       '内部セッションID・問題ID・AI指示をチャットに露出しない');
