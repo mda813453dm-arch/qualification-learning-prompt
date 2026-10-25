@@ -594,6 +594,38 @@ function widgetResource(baseUrl, uri = WIDGET_URI) {
   };
 }
 const WIDGET_TOOL_META = { ui: { resourceUri: WIDGET_URI }, 'openai/outputTemplate': WIDGET_URI, 'openai/widgetAccessible': true };
+/**
+ * 読取専用の公式解説参照は、KV反映直後やCloud Run初回接続の一時的失敗を
+ * 利用者へ返す前に最大3回まで自動再照合する。
+ * 同じ照合番号でのみGETし、出題・採点・セッション状態には触らない。
+ */
+async function readExplanationRef(callApi, ref) {
+  const path = '/v1/explanation-ref/' + encodeURIComponent(ref);
+  let last = null;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const result = await callApi('GET', path);
+      last = result;
+      if (result?.status < 400) {
+        if (attempt > 0) console.info(JSON.stringify({ event:'explanation_ref_recovered', attempts:attempt + 1 }));
+        return result;
+      }
+      const code = result?.body?.error;
+      const transient = [404, 408, 409, 425, 429, 500, 502, 503, 504].includes(result?.status) &&
+        (result?.status !== 409 || code === 'NO_GRADED_EXPLANATION' || code === 'EXPLANATION_SOURCE_MISMATCH') &&
+        (result?.status !== 404 || code === 'EXPLANATION_REF_EXPIRED' || code === 'EXPLANATION_QUESTION_NOT_FOUND');
+      if (!transient) break;
+    } catch (error) {
+      last = { status:503, body:{ error:'EXPLANATION_LOOKUP_TEMPORARY' } };
+    }
+    if (attempt < 2) await new Promise(resolve => setTimeout(resolve, attempt ? 240 : 90));
+  }
+  // 照合番号や個人情報はログに残さない。
+  console.warn(JSON.stringify({event:'explanation_ref_read_failed',
+    status:last?.status ?? 503, code:String(last?.body?.error ?? 'UNKNOWN').slice(0,80)}));
+  return last ?? { status:503, body:{error:'EXPLANATION_LOOKUP_TEMPORARY'} };
+}
+
 const ok = (id, result) => ({ jsonrpc: '2.0', id, result });
 const fail = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
 
@@ -645,7 +677,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       // 既存のモデル公開ツールからも一時照合番号を利用できるようにする。
       // 新規ツールがChatGPTの登録済み一覧にまだ反映されない場合の読取専用経路。
       if (tool.name === 'nextQuestion' && /^E-[A-Za-z0-9_-]{16}$/.test(String(args.sessionId || ''))) {
-        const result = await callApi('GET', `/v1/explanation-ref/${encodeURIComponent(args.sessionId)}`);
+        const result = await readExplanationRef(callApi, args.sessionId);
         if (result.status >= 400) return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify(result.body) }], structuredContent: result.body });
         const { question, grade } = result.body ?? {};
         if (!question?.questionId || question.questionId !== grade?.questionId) {
@@ -691,7 +723,9 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         return ok(id, { content: [{ type: 'text', text: JSON.stringify({ status: out.status, howToProceed: out.howToProceed }) }], structuredContent: { status: out.status, howToProceed: out.howToProceed }, _meta: { qlp: { ...out, at: Date.now() } } });
       }
       const [m, path, body] = tool.api(args);
-      const res = await callApi(m, path, body);
+      const res = m === 'GET' && /^\/v1\/explanation-ref\/E-[A-Za-z0-9_-]{16}$/.test(path)
+        ? await readExplanationRef(callApi, decodeURIComponent(path.split('/').at(-1)))
+        : await callApi(m, path, body);
       // 明示指定の公式問は初期画面を経由しない。出題成功・対象問未登録の双方を同じ問題画面へ返す。
       if (widget && tool.name === 'startSession' && args.requestedQuestion &&
           res.status < 400 && res.body?.sessionId) {
