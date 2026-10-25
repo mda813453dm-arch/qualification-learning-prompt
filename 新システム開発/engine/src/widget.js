@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v102.html';
+export const WIDGET_URI = 'ui://qlp/question-v103.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.102';
+export const WIDGET_VERSION = '2026-10-25.103';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -253,7 +253,7 @@ a{color:inherit}
   // ChatGPTホストが過去のiframeを破棄する場合はリース期限後に別枠へ自動復帰する。
   var myAt = 0, locked = false, bc = null;
   var frameId = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
-  var ownedSession = null, followerSession = null, refreshScheduled = false;
+  var ownedSession = null, followerSession = null, refreshScheduled = false, lastRenderedSignature = null;
   var frameLeasePrefix = 'qlp_fixed_frame_v102:', frameChangePrefix = 'qlp_frame_change_v102:';
   var FRAME_LEASE_MS = 18000;
   function leaseKey(sid){ return frameLeasePrefix + encodeURIComponent(String(sid)); }
@@ -333,7 +333,7 @@ a{color:inherit}
     }
   });
   // iframeが無くなった場合でも新しい枠で操作不能にならないよう有期限で引き継ぐ。
-  setInterval(function(){
+  function fixedFrameHeartbeat(){
     if (ownedSession && !locked) {
       var owner = readLease(ownedSession);
       if (liveLease(owner) && owner.id !== frameId) { releaseOwnedSession(); lockOld(); return; }
@@ -344,7 +344,10 @@ a{color:inherit}
       app.classList.remove('is-old');
       restoreFromServer(false);
     }
-  }, 5000);
+    // setTimeout is supported even in restricted/legacy MCP Apps host environments.
+    setTimeout(fixedFrameHeartbeat, 5000);
+  }
+  setTimeout(fixedFrameHeartbeat, 5000);
   function stamp(data){
     var sid = data && data.sessionId || state.sessionId || (input() && input().sessionId);
     if (sid && !claimFirstFrame(sid, false)) {
@@ -357,13 +360,24 @@ a{color:inherit}
     myAt = Math.max(myAt, Number(data && data.at) || 0);
     // 後から再生成されたツール結果はサーバーから読み直すため、旧時刻で上書きしない。
   }
+  function stableViewSignature(data){
+    if (!data || typeof data !== 'object') return '';
+    var copy = { ...data };
+    // エンジンの読取結果につく一時的な表示属性は学習状態の変更ではない。
+    delete copy.at; delete copy.restored;
+    try { return JSON.stringify(copy); } catch(e) { return ''; }
+  }
   var renderFocusTurn = 0;
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'lesson_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     // ロック中の新しい結果も最初の枠へ送るため、stampは先に通す。
     stamp(data);
     if (locked) return;
-    // 分岐ごとの表示更新が scrollUp を呼び忘れても、描画完了後に最新位置へ移動する。
+    // 復元は読取専用。内容が変わらない再取得でボタンや入力状態を破棄しない。
+    var nextSignature = stableViewSignature(data);
+    if (data.restored && hasView && nextSignature === lastRenderedSignature) return;
+    lastRenderedSignature = nextSignature;
+    // 分岐ごとの表示更新が scrollUp を呼び忘れても、描画完了後に最新位置へ移動する.
     // 採点や問題取得を再実行せず、表示位置だけを調整する。
     var thisRender = ++renderFocusTurn;
     Promise.resolve().then(function(){ if (!locked && thisRender === renderFocusTurn) scrollUp(); });
@@ -1988,6 +2002,14 @@ a{color:inherit}
   // 学習データを会話に添付せず、保存済みの進行状態だけを学習エンジンから読む。
   // 画面を行き来したときにも、採点・nextQuestion・startStudyは自動実行しない。
   var restoring = false, wasHidden = false;
+  // 通信通知が届かないiOSでも、最初の枠がサーバーの保存済み表示を取りに行く。
+  // 重複通知とポーリングはrestoringで重複排除し、学習の出題・採点は実行しない。
+  function studyViewPoll(){
+    if (ownedSession && !locked && !document.hidden && bridgeReady && !restoring)
+      restoreFromServer(false);
+    setTimeout(studyViewPoll, 4500);
+  }
+  setTimeout(studyViewPoll, 4500);
   async function restoreFromServer(manual){
     if (restoring) return;
     if (!state.sessionId) {
@@ -2008,6 +2030,8 @@ a{color:inherit}
         restored = await callTool('restoreStudyView', { sessionId: backup });
       }
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
+      // 通常の背景更新では、意味のある現在画面を汎用的な待機表示で上書きしない。
+      if (!manual && hasView && restored.status === 'restoreIdle') return;
       // 明示的な再開だけ所有枠を切り替える。自動復元は元の枠を奪わない。
       if (locked && !manual) return;
       if (manual && !claimFirstFrame(state.sessionId, true)) throw new Error('FRAME_CLAIM_FAILED');
@@ -2155,7 +2179,8 @@ a{color:inherit}
     // 新規のneedPlanは初回用の正規画面であり、起動直後に復元で置き換えない。
     // iOSで初回画面を描画した直後に restoreIdle に切り替わる症状を防ぐ。
     var explicitSession = !!(state.sessionId || input().sessionId || initial.sessionId);
-    if (explicitSession && hasView && !locked && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
+    if (explicitSession && !hasView) restoreFromServer(false);
+    else if (explicitSession && hasView && !locked && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
@@ -2171,7 +2196,10 @@ a{color:inherit}
   }
   if (window.openai) render(openaiOutput());
   setTimeout(function(){
-    if (!hasView) {
+    if (!hasView && !restoring) {
+      // toolOutputがホストから届かなかった場合にも復元を試みる。
+      // 別資格の古いIDを無条件に流用しない。
+      if (state.sessionId && bridgeReady) { restoreFromServer(false); return; }
       unavailable();
       // 古い資格のIDを使って自動復元しない。表示できない場合は利用者操作だけで復旧する。
     }
