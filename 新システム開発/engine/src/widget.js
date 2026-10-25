@@ -5,7 +5,7 @@
  */
 export const WIDGET_URI = 'ui://qlp/question-v94.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.96';
+export const WIDGET_VERSION = '2026-10-25.97';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1046,8 +1046,25 @@ a{color:inherit}
     if (em) em.onclick = function(){ endAction(em); };
     app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), entry = entries[Number(n) - 1], c = entry.choice;
-      var action = m.kind === 'next' ? (entry.action || (n === '1' ? 'next' : null)) : null;
+      var action = (m.kind === 'next' || m.kind === 'lesson') ? (entry.action || (m.kind === 'next' && n === '1' ? 'next' : null)) : null;
       if (action === 'end') { endAction(b); return; }
+      if (m.kind === 'lesson' && action === 'check') {
+        var lessonField = m.fieldName || loadIds().field || '今の分野';
+        var request = function(){
+          var retry = document.getElementById('lessonCheckRetry');
+          if (retry) { retry.disabled = true; retry.textContent = '確認問題を開いています…'; }
+          ask(lessonField + 'の確認問題・第1問へ進む');
+          if (retry) { retry.disabled = false; retry.textContent = '第1問が表示されない場合は再試行'; }
+        };
+        // 基礎解説をこの枠から消し、次の学習画面が来るまで短い案内だけ表示する。
+        // 古い解説や選択ボタンを残したまま別のチャット回答が下に積み上がるのを防ぐ。
+        app.innerHTML = '<h2>この分野の確認問題へ</h2><div class="notice" role="status">全3問の第1問を準備しています。問題は新しい学習枠に表示されます。</div>' +
+          '<div class="row"><button id="lessonCheckRetry">第1問が表示されない場合は再試行</button></div>';
+        scrollUp(true);
+        document.getElementById('lessonCheckRetry').onclick = request;
+        request();
+        return;
+      }
       if (action === 'explain') {
         if (m.body) { scrollUp(true); return; }
         loadExplanation((state.question && state.question.questionId) || null, true).catch(function(){
