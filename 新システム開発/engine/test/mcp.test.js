@@ -9,7 +9,7 @@ import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
-import { TOOLS, forModel, handleRpc } from '../src/mcp.js';
+import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
@@ -125,10 +125,43 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   assert.match(WIDGET_URI, /question-v94\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.96');
+  assert.equal(WIDGET_VERSION, '2026-10-25.97');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
+
+test('分野の基礎解説はチャットではなく同じ学習枠に表示し、確認問題へのボタンで進める', async () => {
+  const menuTool = TOOLS.find(x => x.name === 'showMenu');
+  assert.ok(menuTool, 'showMenu must be available to ChatGPT model');
+  assert.ok(menuTool.inputSchema.properties.kind.enum.includes('lesson'));
+  const args = {
+    kind: 'lesson', fieldName: '必修問題',
+    body: '## 必修問題｜基礎解説\\n\\n**患者安全**と感染対策を説明します。\\n\\n| 項目 | 考え方 |\\n|---|---|\\n| 観察 | バイタルを確認 |',
+    sessionId: 'current-session', studyId: 'current-study', learnerId: 'current-learner',
+  };
+  const lesson = menuTool.local(args);
+  assert.equal(lesson.status, 'menu');
+  assert.equal(lesson.menu.kind, 'lesson');
+  assert.deepEqual(lesson.menu.actions, ['check', 'end']);
+  assert.equal(lesson.menu.fieldName, '必修問題');
+  assert.equal(lesson.menu.body, args.body);
+  assert.equal(lesson.menu.sessionId, args.sessionId);
+  assert.match(forModel(lesson).howToProceed, /基礎解説全文.*同一の学習枠内/);
+  assert.equal(menuTool.local({ kind: 'lesson', fieldName: '必修問題' }), null, 'never show empty explanation');
+  assert.equal(menuTool.local({ kind: 'lesson', body: args.body }), null, 'field identity is required');
+  assert.match(appInstructions(), /基礎解説は必ず学習枠内/);
+  assert.match(appInstructions(), /showMenu\\(\\{kind:lesson/);
+  assert.doesNotMatch(appInstructions(), /その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）/);
+  const widget = widgetHtml();
+  assert.match(widget, /m.kind === 'lesson' && action === 'check'/);
+  assert.match(widget, /m.fieldName \\|\\| loadIds\\(\\).field/);
+  assert.match(widget, /lessonField \\+ 'の確認問題・第1問へ進む'/);
+  assert.match(widget, /app.innerHTML = '<h2>この分野の確認問題へ<\\/h2>'/);
+  assert.match(widget, /function scrollUp\\(noMark\\)/);
+  assert.match(widget, /app.scrollTop = 0/);
+  // This path does not use a chat text answer as the lesson display.
+  assert.match(menuTool.description, /チャットには書かず/);
+});
 
 test('回答と同時に公式正答・簡易解説を表示し、AIボタンは追加の詳しい解説だけを依頼する', () => {
   const html = widgetHtml();
