@@ -770,7 +770,7 @@ test('showMenu旧互換：新規学習の免除・学習状況・学習計画は
   assert.match((await app({ kind: 'status' })).structuredContent.howToProceed, /ラジオ式の質問を作りません/);
   const instructions = appInstructions();
   assert.match(instructions, /ChatGPT側で学習状況のラジオ式フォーム/);
-  assert.match(instructions, /showMenu\(kind=status\/plan\/item\/exempt\)を呼ばず/);
+  assert.match(instructions, /showMenu\(kind=status\/plan\/item\/exempt\)も呼ばない/);
 });
 
 test('初期の学習状況・学習計画は枠内の番号ボタンだけで選択し、AIが別の質問を作らない', () => {
@@ -1037,7 +1037,7 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(html.includes('overflow-wrap:anywhere'));
   // 短い文に対するAIの手順は、アプリのツールの説明にある
   assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
-  assert.ok(mcp.includes('「学習計画の希望：…」と送ってきたら'));
+  assert.ok(mcp.includes('学習計画の見直し・承認・分野開始も枠内のエンジンが処理する'));
   // 最初の公式過去問は画面から直接取得し、取得失敗時も同じ要求で復旧する。
   assert.ok(html.includes('function nextBelow(fallback, say)'));
   assert.ok(html.includes('await fallback();'));
