@@ -151,7 +151,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         }
       });
       window.descriptiveCounter = 0;
-      iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"}};<\/script><script>');
+      iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"},displayMode:"fullscreen",requestDisplayMode:async()=>({mode:"fullscreen"})};<\/script><script>');
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');

@@ -19,7 +19,7 @@ body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-se
 /* 学習画面の高さを一定にし、スクロール位置をChatGPT本体ではなくアプリ内部で管理する。 */
 #app.study-viewport{height:clamp(480px,175vw,720px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 /* ChatGPTの全画面表示では上部の閉じる操作・下部のチャット入力欄と重ならない余白を確保する。 */
-html.study-fullscreen #app.study-viewport{padding-top:calc(64px + env(safe-area-inset-top,0px))}
+html.study-fullscreen #app.study-viewport:not(.is-old){padding-top:calc(64px + env(safe-area-inset-top,0px))}
 #app.is-old{height:auto;min-height:0;max-height:none;overflow:visible;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
