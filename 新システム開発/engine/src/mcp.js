@@ -695,6 +695,22 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       if (tool.name === 'explainSpec' && !args.explanationRef && !args.sessionId) {
         return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'EXPLANATION_REFERENCE_REQUIRED' }) }], structuredContent: { error: 'EXPLANATION_REFERENCE_REQUIRED' } });
       }
+      // 「解説あり」の基礎解説を保存してから表示。画面復帰時に確認問題が割り込まない。
+      if (widget && tool.name === 'showMenu' && args.kind === 'lesson' && args.sessionId) {
+        const prepared = tool.local(args);
+        if (!prepared?.menu?.body) {
+          const error = { error: 'LESSON_BODY_REQUIRED' };
+          return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify(error) }], structuredContent: error });
+        }
+        const posted = await callApi('POST',
+          '/v1/sessions/' + encodeURIComponent(args.sessionId) + '/lesson',
+          { fieldName: args.fieldName, body: prepared.menu.body });
+        if (posted.status >= 400) return ok(id, { isError: true,
+          content: [{ type: 'text', text: JSON.stringify(posted.body) }], structuredContent: posted.body });
+        const visible = forModel(posted.body);
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(visible) }],
+          structuredContent: visible, _meta: { qlp: { ...posted.body, at: Date.now() } } });
+      }
       if (widget && tool.name === 'showMenu' && args.kind === 'next' && args.explanationRef) {
         const posted = await callApi('POST',
           `/v1/explanation-ref/${encodeURIComponent(args.explanationRef)}/publish`, { body:args.body });
