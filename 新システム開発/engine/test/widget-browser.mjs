@@ -452,9 +452,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(resumeCalls.find(x => x.name === 'startStudy').args.learnerId, 'testlearner');
 
     // iPhone回帰：基礎解説をChatGPT通常本文に書かず、解説と遷移ボタンを同じ枠に表示する。
-    const longLesson = '## 必修問題｜基礎解説\\n\\n**患者安全**を理解しましょう。\\n\\n' +
-      '| 項目 | 考え方 |\\n|---|---|\\n| 観察 | 客観的な情報を確認 |\\n\\n' +
-      Array.from({length: 26}, (_, i) => '- 重要な学習項目 ' + (i + 1)).join('\\n');
+    const longLesson = '## 必修問題｜基礎解説\n\n**患者安全**を理解しましょう。\n\n' +
+      '| 項目 | 考え方 |\n|---|---|\n| 観察 | 客観的な情報を確認 |\n\n' +
+      Array.from({length: 26}, (_, i) => '- 重要な学習項目 ' + (i + 1)).join('\n');
     await page.evaluate(r => window.deliver(r), result({status:'menu', sessionId,
       menu:{kind:'lesson', sessionId, studyId:'test-study', learnerId:'testlearner',
         fieldName:'必修問題', body:longLesson,
