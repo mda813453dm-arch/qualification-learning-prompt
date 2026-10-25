@@ -820,6 +820,14 @@ async function diagStep(env, id, state0, now, b) {
   throw new HttpError(400, 'DIAG_ACTION_INVALID');
 }
 
+/** 旧版では解説開始時に、未作成の確認問題を誤って登録していた。
+ * count=0 かつ challenge 未作成なら利用者はまだ確認問題を開始していない。 */
+function prematureExplanationConfirmation(state) {
+  const c = state.confirmation;
+  return state.itemMode === 'explain' && !!state.set?.fieldId &&
+    c?.fieldId === state.set.fieldId && c.count === 0 && !c.challenge;
+}
+
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
@@ -836,7 +844,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
     return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
   }
-  if (state.itemMode === 'explain' && state.set?.fieldId && !state.confirmation && !want) {
+  if (state.itemMode === 'explain' && state.set?.fieldId && (!state.confirmation || prematureExplanationConfirmation(state)) && !want) {
     const lesson = state.publishedLesson;
     if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
       return { status: 'menu', sessionId: id, menu: lesson.menu };
@@ -844,7 +852,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
       notice: '解説を表示してから確認問題へ進みます。' };
   }
-  if (state.confirmation && state.confirmation.count < 3) {
+  if (state.confirmation && state.confirmation.count < 3 && !prematureExplanationConfirmation(state)) {
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'confirmation_pending', sessionId: id,
       fieldName: cat?.fields?.[state.confirmation.fieldId] ?? '今の分野',
@@ -1049,7 +1057,7 @@ async function restoreStudyView(env, id, state, now) {
   }
   // 「解説あり」では解説が確定する前に確認問題の状態を作らない。
   // 戻る操作でも保存した解説・ボタンを優先し、確認問題に飛ばさない。
-  if (state.itemMode === 'explain' && state.set?.fieldId && !state.confirmation) {
+  if (state.itemMode === 'explain' && state.set?.fieldId && (!state.confirmation || prematureExplanationConfirmation(state))) {
     const lesson = state.publishedLesson;
     if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
       return { ...identity, status: 'menu', menu: lesson.menu, restored: true };
@@ -1763,7 +1771,8 @@ async function route(request, env, url, now) {
     const fid = state.set?.fieldId;
     const fieldName = cat?.fields?.[fid];
     const markdown = typeof b.body === 'string' ? b.body.trim() : '';
-    if (state.itemMode !== 'explain' || state.confirmation || !fid || !fieldName)
+    if (state.itemMode !== 'explain' ||
+        (state.confirmation && !prematureExplanationConfirmation(state)) || !fid || !fieldName)
       throw new HttpError(409, 'LESSON_NOT_ACTIVE');
     if (fieldName !== b.fieldName) throw new HttpError(409, 'LESSON_FIELD_MISMATCH');
     if (markdown.length < 50 || markdown.length > 16000)
@@ -1772,7 +1781,8 @@ async function route(request, env, url, now) {
     const menu = { kind: 'lesson', prompt: '解説の次は、この分野の確認問題（全3問）へ進みます。',
       choices: ['確認問題へ進む', '今日はここまで（学習を終了）'], actions: ['check', 'end'],
       body: markdown, fieldName, sessionId: id, studyId, learnerId: state.learnerId };
-    await saveSession(env, id, { ...state, publishedLesson: { fieldId: fid, menu, publishedAt: now } }, now);
+    await saveSession(env, id, { ...state, confirmation: null,
+      publishedLesson: { fieldId: fid, menu, publishedAt: now } }, now);
     return json(200, { status: 'menu', sessionId: id, menu });
   }
 
