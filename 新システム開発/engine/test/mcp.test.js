@@ -8,6 +8,7 @@ import { writeResult } from '../src/cache.js';
 import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
+import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
@@ -123,11 +124,24 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v88\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.88');
+  assert.match(WIDGET_URI, /question-v89\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.89');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
+
+test('解説の依頼文は資格共通の判断根拠とし、計算の有無は問題の内容で決める', () => {
+  const html = widgetHtml();
+  assert.match(html, /各選択肢の判断根拠を、公式資料に基づいて解説してください。/);
+  assert.doesNotMatch(html, /各選択肢の理由と計算手順を、公式資料に基づいて解説してください。/);
+  const legal = explainHow({stage:4,fieldName:'宅地建物取引業法と関係法令'});
+  assert.match(legal, /計算を要しない設問では、条文・判例・定義・要件・例外・判断過程/);
+  assert.match(legal, /不要な断り書きを付けない/);
+  const calculation = explainHow({stage:3,fieldName:'測量の座標計算'});
+  assert.match(calculation, /計算を要する設問では使用する式・数値の代入・途中過程・単位・検算/);
+  assert.match(calculation, /座標・面積等の計算では、その問題に適切な関数電卓の操作方法/);
+  assert.match(calculation, /計算を要する問題では、手順を1行ずつの表/);
+});
 
 test('初回の公式解説が一時的に503→404でも、同じ照合番号で自動再照合して表示可能にする', async () => {
   const ref='E-AbCdEfGhIjKlMnOp';
