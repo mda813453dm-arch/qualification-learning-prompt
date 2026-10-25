@@ -1367,7 +1367,7 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   const before = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
   const original = JSON.parse(await env.STORE.get('ses/' + sessionId));
-  assert.equal(original.confirmation, null, '解説時に確認問題は未開始');
+  assert.equal(original.confirmation ?? null, null, '解説時に確認問題は未開始');
   // 不具合発生済みの旧セッションも学習履歴を失わず解説へ復旧させる。
   await env.STORE.put('ses/' + sessionId, JSON.stringify({ ...original,
     confirmation: { fieldId: original.set.fieldId, count: 0, correct: 0, challenge: null } }));
