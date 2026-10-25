@@ -611,6 +611,49 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('heading',{name:'2026年度 問6'}).count(),0,
       '通常の分野移行だけは従来どおり開始方法を選べる');
 
+    // v104: モデルの解説配信が接続切断で消えても学習画面と回復操作を維持。
+    // モデルからshowMenuが一度も届かない実機ログの状況を模擬する。
+    const pendingLesson = {status:'lesson_pending',sessionId:'test-disconnected-lesson',
+      fieldName:'基礎法学',notice:'AIの解説を準備しています。'};
+    await page.evaluate(({ pending })=>{
+      window.rejectMessage=true;
+      window.restorePayload=pending;
+      window.deliver({ _meta:{qlp:pending}, structuredContent:{status:pending.status} });
+    },{pending:pendingLesson});
+    await ui.getByRole('heading',{name:'基礎法学｜基礎解説'}).waitFor();
+    const answerCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length);
+    const nextCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length);
+    await ui.getByRole('button',{name:'AI解説を再依頼'}).click();
+    await ui.getByText('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。').waitFor();
+    assert.equal(await ui.getByRole('button',{name:'AI解説を再依頼'}).isEnabled(),true,'送信失敗でも操作可能');
+    await ui.getByRole('button',{name:'解説の登録状況を確認'}).click();
+    await ui.getByText('解説はまだ登録されていません。AI解説を再依頼できます。').waitFor();
+    assert.equal(await ui.getByRole('button',{name:'AI解説を再依頼'}).count(),1,'配信失敗時は同一枠で再依頼できる');
+    await page.evaluate(({ pending })=>{
+      window.rejectMessage=false;
+      const lesson = {status:'menu',sessionId:pending.sessionId,
+        menu:{kind:'lesson',sessionId:pending.sessionId,fieldName:pending.fieldName,
+          studyId:'test-study',learnerId:'testlearner',
+          body:'## 基礎法学｜基礎解説\\n\\n法律上の権利と義務は、対象となる事実関係を区別して理解します。',
+          prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
+          choices:['確認問題へ進む','今日はここまで（学習を終了）'],actions:['check','end']}};
+      window.restorePayload=lesson;
+    },{pending:pendingLesson});
+    await ui.getByRole('button',{name:'解説の登録状況を確認'}).click();
+    await ui.getByRole('button',{name:'1 確認問題へ進む'}).waitFor();
+    assert.equal(await ui.locator('.old-screen').count(),0,'後から受信したAI解説は元の枠を閉じない');
+    assert.match(await ui.locator('.md').innerText(),/法律上の権利と義務/);
+    assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length),answerCallsBefore,'解説再試行は再採点しない');
+    assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length),nextCallsBefore,'解説再試行は次問を勝手に出さない');
+    // 解説を省略する明示操作だけがモードを変更する。
+    await page.evaluate(({ pending })=>{
+      window.restorePayload=pending;
+      window.deliver({ _meta:{qlp:pending}, structuredContent:{status:pending.status} });
+    },{pending:pendingLesson});
+    await ui.getByRole('button',{name:'解説を省略して確認問題から始める'}).click();
+    await ui.getByRole('heading',{name:'確認問題 1 / 3問'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='chooseItem'&&m.params.arguments.mode==='check').length) > 0,true);
+
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
     // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。
     await page.evaluate(({ html, question }) => {
