@@ -108,7 +108,8 @@ test('取り込みジョブが完了でも利用可能な問題が0件なら全�
   assert.equal(result.status, 200);
   assert.equal(result.body.status, 'sourceUnavailable');
   assert.equal(result.body.sessionId, sessionId);
-  assert.match(result.body.notice, /公式過去問が0件/);
+  assert.match(result.body.notice, /現在利用できる公式過去問を確認できません/);
+  assert.doesNotMatch(result.body.notice, /共有保存|URL台帳|リポジトリ/);
   assert.notEqual(result.body.notice, '問題を準備しています。');
 });
 
