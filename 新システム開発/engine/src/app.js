@@ -836,6 +836,11 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
     return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
   }
+  if (state.itemMode === 'explain' && state.set?.fieldId && !state.confirmation && !want) {
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      notice: '解説を表示してから確認問題へ進みます。' };
+  }
   if (state.confirmation && state.confirmation.count < 3) {
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'confirmation_pending', sessionId: id,
@@ -1038,6 +1043,15 @@ async function restoreStudyView(env, id, state, now) {
   if (state.resumePending && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
     // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
     return { ...resumeReadyView(id, state), restored: true };
+  }
+  // 「解説あり」では解説が確定する前に確認問題の状態を作らない。
+  // 戻る操作でも保存した解説・ボタンを優先し、確認問題に飛ばさない。
+  if (state.itemMode === 'explain' && state.set?.fieldId && !state.confirmation) {
+    const lesson = state.publishedLesson;
+    if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
+      return { ...identity, status: 'menu', menu: lesson.menu, restored: true };
+    return { ...identity, status: 'lesson_pending', fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      notice: 'この分野の解説はまだ表示されていません。解説を表示してから確認問題へ進んでください。' };
   }
   const check = state.confirmation;
   if (check?.count >= 3) {
@@ -1558,7 +1572,10 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'confirmation' && parts[4] === 'register' && parts.length === 5) {
     const b = (await body(request).catch(() => ({}))) ?? {};
     const { id, state } = await resolveSession(env, parts[2], now);
-    const check = state.confirmation;
+    // 旧版の学習画面では「解説あり」の直後に第1問を登録することがある。
+    // 解説表示時は未開始に保ち、最初の登録時にのみ確認問題へ移行する。
+    const check = state.confirmation ?? (state.itemMode === 'explain' && state.set?.fieldId
+      ? { fieldId: state.set.fieldId, count: 0, correct: 0, challenge: null } : null);
     if (!check || check.count >= 3) throw new HttpError(409, 'CONFIRMATION_NOT_ACTIVE');
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     const fieldName = cat?.fields?.[check.fieldId] ?? '今の分野';
@@ -1576,7 +1593,8 @@ async function route(request, env, url, now) {
       throw new HttpError(400, 'CONFIRMATION_QUESTION_INVALID');
     }
     const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, createdAt: now };
-    await saveSession(env, id, { ...state, confirmation: { ...check, challenge } }, now);
+    await saveSession(env, id, { ...state, itemMode: 'check', publishedLesson: null,
+      confirmation: { ...check, challenge } }, now);
     return json(200, { status: 'confirmation_question', sessionId: id, challengeId: challenge.id,
       question, choices, position: check.count + 1, total: 3, fieldName, journey });
   }
@@ -1734,6 +1752,27 @@ async function route(request, env, url, now) {
     return json(200, await attachPdf(env, id, state, b, url, now));
   }
 
+  // 基礎解説の全文を現在の学習分野に結びつけて保存。復元時も解説＋操作ボタンを同じ画面に出す。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'lesson' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+    const fid = state.set?.fieldId;
+    const fieldName = cat?.fields?.[fid];
+    const markdown = typeof b.body === 'string' ? b.body.trim() : '';
+    if (state.itemMode !== 'explain' || state.confirmation || !fid || !fieldName)
+      throw new HttpError(409, 'LESSON_NOT_ACTIVE');
+    if (fieldName !== b.fieldName) throw new HttpError(409, 'LESSON_FIELD_MISMATCH');
+    if (markdown.length < 50 || markdown.length > 16000)
+      throw new HttpError(422, 'LESSON_BODY_INCOMPLETE');
+    const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
+    const menu = { kind: 'lesson', prompt: '解説の次は、この分野の確認問題（全3問）へ進みます。',
+      choices: ['確認問題へ進む', '今日はここまで（学習を終了）'], actions: ['check', 'end'],
+      body: markdown, fieldName, sessionId: id, studyId, learnerId: state.learnerId };
+    await saveSession(env, id, { ...state, publishedLesson: { fieldId: fid, menu, publishedAt: now } }, now);
+    return json(200, { status: 'menu', sessionId: id, menu });
+  }
+
   // 項目開始（U07）：学習する分野と進め方を控える。分野は以後の過去問の出題先になる（AIに頼らない）
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'item' && parts.length === 4) {
     const b = (await body(request).catch(() => ({}))) ?? {};
@@ -1745,8 +1784,13 @@ async function route(request, env, url, now) {
     if (!studyFieldOrder(state, cat).includes(fid)) throw new HttpError(409, 'FIELD_EXEMPT', '免除対象の分野は今回の学習計画に含めません。');
     // 選んだ分野から1まとまり（3問）を出す。そのあとは学習計画の順に戻る（同じ分野に固定しない）
     const set = state.set?.fieldId === fid && state.set.count < SET_SIZE ? state.set : { fieldId: fid, count: 0, years: [] };
-    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
-      confirmation: mode === 'practice' ? null : { fieldId: fid, count: 0, correct: 0, challenge: null } }, now);
+    // check の再押下は同じ問題・3問カウンタを保持。explain は解説が終わるまで確認問題未開始。
+    const existingCheck = mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count < 3
+      ? state.confirmation : null;
+    if (mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count >= 3)
+      throw new HttpError(409, 'CONFIRMATION_ALREADY_COMPLETE');
+    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode, publishedLesson: null,
+      confirmation: mode === 'check' ? (existingCheck ?? { fieldId: fid, count: 0, correct: 0, challenge: null }) : null }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
       journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length } });
   }
