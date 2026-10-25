@@ -1366,11 +1366,12 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   assert.equal(chosen.mode, 'explain');
   const before = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
-  const original = JSON.parse(await env.STORE.get('ses/' + sessionId));
+  const stored = JSON.parse(await env.STORE.get('ses/' + sessionId));
+  const original = stored.state;
   assert.equal(original.confirmation ?? null, null, '解説時に確認問題は未開始');
-  // 不具合発生済みの旧セッションも学習履歴を失わず解説へ復旧させる。
-  await env.STORE.put('ses/' + sessionId, JSON.stringify({ ...original,
-    confirmation: { fieldId: original.set.fieldId, count: 0, correct: 0, challenge: null } }));
+  // 保存領域は {savedAt,state} 形式。旧版の確認問題状態だけを再現する。
+  await env.STORE.put('ses/' + sessionId, JSON.stringify({ ...stored, state: { ...original,
+    confirmation: { fieldId: original.set.fieldId, count: 0, correct: 0, challenge: null } } }));
   const legacy = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(legacy.status, 'lesson_pending', '旧版の偽の確認問題状態は表示しない');
 
