@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v87.html';
+export const WIDGET_URI = 'ui://qlp/question-v88.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-24.87';
+export const WIDGET_VERSION = '2026-10-25.88';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1601,11 +1601,27 @@ a{color:inherit}
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
     var args = { sessionId: state.sessionId };
     if (questionId) args.questionId = questionId;
-    var ctx = await callTool('explainSpec', args);
+    // 初回のツール登録・MCP接続・照合番号保存の時間差を、本人に押し直させずここで吸収する。
+    // 同じ採点済み問の読取GETだけを最大3回再実行。採点や次問の進行には触れない。
+    var ctx = null, lastError = null;
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        ctx = await callTool('explainSpec', args);
+        lastError = null;
+      } catch (error) {
+        lastError = error;
+        ctx = null;
+      }
+      if (ctx && ctx.status === 'explanationContext' && !ctx.error) break;
+      if (ctx && /^(?:EXPLANATION_BINDING_MISMATCH|EXPLANATION_SOURCE_MISMATCH)$/.test(String(ctx.error || '')))
+        throw new Error('EXPLANATION_CONTEXT_STALE');
+      if (attempt < 2) await new Promise(function(done){ setTimeout(done, attempt ? 240 : 90); });
+    }
     if (!ctx || ctx.error || ctx.status !== 'explanationContext' ||
         ctx.sessionId !== state.sessionId || !ctx.question || !ctx.grade ||
         ctx.question.questionId !== ctx.grade.questionId ||
-        (questionId && ctx.grade.questionId !== questionId)) throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
+        (questionId && ctx.grade.questionId !== questionId))
+      throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
     renderVerifiedExplanation(ctx);
     if (requestAi) await requestAdaptiveExplanation(ctx);
   }
