@@ -451,6 +451,39 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(resumeCalls.filter(x => x.name === 'startSession').length, 0, '初回の学習セッションを作り直さない');
     assert.equal(resumeCalls.find(x => x.name === 'startStudy').args.learnerId, 'testlearner');
 
+    // iPhone回帰：基礎解説をChatGPT通常本文に書かず、解説と遷移ボタンを同じ枠に表示する。
+    const longLesson = '## 必修問題｜基礎解説\\n\\n**患者安全**を理解しましょう。\\n\\n' +
+      '| 項目 | 考え方 |\\n|---|---|\\n| 観察 | 客観的な情報を確認 |\\n\\n' +
+      Array.from({length: 26}, (_, i) => '- 重要な学習項目 ' + (i + 1)).join('\\n');
+    await page.evaluate(r => window.deliver(r), result({status:'menu', sessionId,
+      menu:{kind:'lesson', sessionId, studyId:'test-study', learnerId:'testlearner',
+        fieldName:'必修問題', body:longLesson,
+        prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
+        choices:['確認問題へ進む','今日はここまで（学習を終了）'],
+        actions:['check','end']}}));
+    await ui.getByRole('heading',{name:'必修問題｜基礎解説'}).waitFor();
+    assert.equal(await ui.locator('.md table').count(),1,'Markdown表を学習枠内に表示');
+    assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),1);
+    const prevFollowups = await page.evaluate(() => window.followups.length);
+    await ui.locator('#app').evaluate(el => {el.scrollTop=500;});
+    assert.ok(await ui.locator('#app').evaluate(el=>el.scrollTop)>0,'長文は枠内でスクロール');
+    await page.evaluate(r=>window.deliver(r),result({status:'menu',sessionId,
+      menu:{kind:'lesson',sessionId,studyId:'test-study',learnerId:'testlearner',
+        fieldName:'必修問題',body:longLesson,prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
+        choices:['確認問題へ進む','今日はここまで（学習を終了）'],actions:['check','end']}}));
+    await page.waitForFunction(() => {
+      const el=document.querySelector('iframe')?.contentDocument?.querySelector('#app');
+      return !!el && el.scrollTop===0;
+    });
+    await ui.getByRole('button',{name:'確認問題へ進む'}).click();
+    await ui.getByRole('heading',{name:'この分野の確認問題へ'}).waitFor();
+    assert.equal(await ui.locator('.md').count(),0,'確認問題への遷移後は前の基礎解説を消す');
+    assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),0,'旧ボタンを残さない');
+    await page.waitForFunction(n => window.followups.length > n, prevFollowups);
+    assert.equal((await page.evaluate(() => window.followups)).at(-1),'必修問題の確認問題・第1問へ進む');
+    // 一度の押下で第1問の登録依頼だけを送信する。
+    assert.equal(await page.evaluate(n => window.followups.length-n,prevFollowups),1);
+
     // 土地家屋調査士の記述式は午前11/午後21/22を画像・本文で表示し、採点しない。
     await page.evaluate(() => window.deliver({ structuredContent: {
       status: 'question', sessionId: 'test-session', question: {
