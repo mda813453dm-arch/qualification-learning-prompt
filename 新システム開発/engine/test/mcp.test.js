@@ -1353,3 +1353,45 @@ test('資格別の共有年度・試験区分の表示とAI個別解説の起動
   assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
   assert.match(html, /loadExplanation\(q.questionId, true\)/, '解説ボタンは本人の問題IDを渡す');
 });
+
+test('解説ありは解説を先に保存・復元し、確認問題は利用者の操作後だけ開始する', async () => {
+  const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [] });
+  const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const start = await app('startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const sessionId = start.structuredContent.sessionId;
+  const learnerId = start.structuredContent.learnerId;
+  await app('startStudy', { learnerId, qualificationName: '測量士補' });
+  const fieldName = CATALOG[SRC.qualificationId].fields.s1;
+  const chosen = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  assert.equal(chosen.mode, 'explain');
+  const before = (await app('restoreStudyView', { sessionId }))._meta.qlp;
+  assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
+  const original = JSON.parse(await env.STORE.get('ses/' + sessionId));
+  assert.equal(original.confirmation, null, '解説時に確認問題は未開始');
+
+  const lessonBody = '## 必修問題の解説\n必要な原則を具体例とともに説明します。最初に要点を読み、理解を確認してから確認問題3問へ進みます。';
+  const lesson = await app('showMenu', { kind: 'lesson', sessionId, learnerId, fieldName, body: lessonBody });
+  assert.equal(lesson.isError, undefined, JSON.stringify(lesson));
+  assert.equal(lesson._meta.qlp.menu.body, lessonBody);
+  const restored = (await app('restoreStudyView', { sessionId }))._meta.qlp;
+  assert.equal(restored.status, 'menu', '画面再開時は確認問題でなく解説を復元');
+  assert.equal(restored.menu.kind, 'lesson');
+  assert.equal(restored.menu.body, lessonBody);
+  assert.deepEqual(restored.menu.actions, ['check', 'end']);
+
+  const check = (await app('chooseItem', { sessionId, fieldName, mode: 'check' })).structuredContent;
+  assert.equal(check.mode, 'check');
+  const pending = (await app('restoreStudyView', { sessionId }))._meta.qlp;
+  assert.equal(pending.status, 'confirmation_pending');
+  assert.equal(pending.position, 1);
+  // 同じ開始操作を再送しても問題数や登録済み問題を巻き戻さない。
+  const question = (await app('registerConfirmationQuestion', {
+    sessionId, question: '測量に関する法規について正しい選択肢を選んでください。',
+    choices: ['選択肢A', '選択肢B', '選択肢C'], correctAnswer: 2,
+  }))._meta.qlp;
+  assert.equal(question.status, 'confirmation_question');
+  await app('chooseItem', { sessionId, fieldName, mode: 'check' });
+  const same = (await app('restoreStudyView', { sessionId }))._meta.qlp;
+  assert.equal(same.challengeId, question.challengeId);
+  assert.equal(same.position, 1);
+});
