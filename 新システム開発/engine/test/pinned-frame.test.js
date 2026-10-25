@@ -5,9 +5,9 @@ import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget.js';
 
 const html = widgetHtml();
 const embedded = html.split('<script>')[1]?.split('</script>')[0];
-test('v102 embeds syntactically valid study widget and retains single scroll surface', () => {
-  assert.equal(WIDGET_VERSION, '2026-10-25.102');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v102.html');
+test('v103 embeds syntactically valid study widget and retains single scroll surface', () => {
+  assert.equal(WIDGET_VERSION, '2026-10-25.103');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v103.html');
   assert.ok(embedded, 'widget script must be present');
   assert.doesNotThrow(() => new vm.Script(embedded));
   assert.match(html, /height:auto;max-height:none;overflow:visible/);
@@ -63,7 +63,7 @@ function browserFixture() {
       restoreFromServer: async (manual) => { restores.push(manual); },
       localStorage: store, BroadcastChannel: Broadcast,
       setInterval: callback => intervals.push(callback),
-      setTimeout: callback => { tasks.push(callback); return tasks.length; },
+      setTimeout: (callback, delay) => { if (delay === 5000) intervals.push(callback); else tasks.push(callback); return tasks.length; },
       Date: { now: () => clock },
       Math: Object.assign(Object.create(Math), { random: () => num / 100 }),
       encodeURIComponent, JSON, Number, String, Object, Error
