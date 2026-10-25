@@ -1368,6 +1368,11 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
   const original = JSON.parse(await env.STORE.get('ses/' + sessionId));
   assert.equal(original.confirmation, null, '解説時に確認問題は未開始');
+  // 不具合発生済みの旧セッションも学習履歴を失わず解説へ復旧させる。
+  await env.STORE.put('ses/' + sessionId, JSON.stringify({ ...original,
+    confirmation: { fieldId: original.set.fieldId, count: 0, correct: 0, challenge: null } }));
+  const legacy = (await app('restoreStudyView', { sessionId }))._meta.qlp;
+  assert.equal(legacy.status, 'lesson_pending', '旧版の偽の確認問題状態は表示しない');
 
   const lessonBody = '## 必修問題の解説\n必要な原則を具体例とともに説明します。最初に要点を読み、理解を確認してから確認問題3問へ進みます。';
   const lesson = await app('showMenu', { kind: 'lesson', sessionId, learnerId, fieldName, body: lessonBody });
