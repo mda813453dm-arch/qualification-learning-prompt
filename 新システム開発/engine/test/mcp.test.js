@@ -8,7 +8,7 @@ import { writeResult } from '../src/cache.js';
 import { officialLibrary } from '../src/official-library.js';
 import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
-import { TOOLS, forModel } from '../src/mcp.js';
+import { TOOLS, forModel, handleRpc } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
@@ -103,7 +103,8 @@ test('解説取得ツールをChatGPTモデルへ公開し、照合番号なし�
   assert.deepEqual(t._meta.ui.visibility, ['model', 'app'], '解説取得は両方に明示公開');
   const fallback = tools.find(x => x.name === 'nextQuestion');
   assert.match(fallback.description, /公式解説資料の安全な取得/);
-  assert.match(t.description, /必ず最初に/);
+  assert.match(t.description, /初回失敗/);
+  assert.match(t.description, /自動再照合/);
   assert.match(t.description, /showMenu/);
   const r = await rpc(env, 'tools/call', { name: 'explainSpec', arguments: { correct: false, selected: '1', correctAnswer: '3', fieldName: '測量に関する法規' } }, { path: '/app' });
   assert.equal(r.body.result.isError, true);
@@ -122,9 +123,54 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v87\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-24.87');
-  assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の解説専用/);
+  assert.match(WIDGET_URI, /question-v88\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.88');
+  assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
+});
+
+
+test('初回の公式解説が一時的に503→404でも、同じ照合番号で自動再照合して表示可能にする', async () => {
+  const ref='E-AbCdEfGhIjKlMnOp';
+  let calls=0;
+  const api=async(method,path) => {
+    assert.equal(method,'GET','再試行は読取だけ');
+    assert.equal(path, '/v1/explanation-ref/'+ref,'別の問や次問への遷移は禁止');
+    calls++;
+    return calls===1 ? {status:503,body:{error:'EXPLANATION_LOOKUP_TEMPORARY'}} :
+      calls===2 ? {status:404,body:{error:'EXPLANATION_REF_EXPIRED'}} :
+      {status:200,body:{status:'explanationContext',
+        explanationRef:ref,question:{questionId:'q041:2025:main:10'},
+        grade:{questionId:'q041:2025:main:10',correctAnswer:3}}};
+  };
+  const result=await handleRpc({jsonrpc:'2.0',id:201,method:'tools/call',
+    params:{name:'nextQuestion',arguments:{sessionId:ref}}},api,{widget:true});
+  assert.equal(calls,3);
+  assert.equal(result.result.isError,false);
+  assert.equal(result.result.structuredContent.grade.correctAnswer,3);
+  assert.equal(result.result.structuredContent.question.questionId,'q041:2025:main:10');
+});
+
+test('初回のexplainSpecも一時エラーなら自動回復し、別問ID不一致は再試行でごまかさない', async () => {
+  const ref='E-AbCdEfGhIjKlMnOp';
+  let tries=0;
+  const transient=await handleRpc({jsonrpc:'2.0',id:202,method:'tools/call',
+    params:{name:'explainSpec',arguments:{explanationRef:ref}}},
+    async()=> {
+      tries++;
+      if (tries===1) throw new Error('transient Cloud Run network error');
+      return {status:200,body:{status:'explanationContext',
+        question:{questionId:'q041:2025:main:10'},grade:{questionId:'q041:2025:main:10',correctAnswer:3}}};
+    },{widget:true});
+  assert.equal(tries,2);
+  assert.equal(transient.result.isError,false);
+  assert.equal(transient.result.structuredContent.status,'explanationContext');
+  let mismatches=0;
+  const wrong=await handleRpc({jsonrpc:'2.0',id:203,method:'tools/call',
+    params:{name:'nextQuestion',arguments:{sessionId:ref}}},
+    async()=> {mismatches++;return {status:409,body:{error:'EXPLANATION_BINDING_MISMATCH'}};},{widget:true});
+  assert.equal(wrong.result.isError,true);
+  assert.equal(wrong.result.structuredContent.error,'EXPLANATION_BINDING_MISMATCH');
+  assert.equal(mismatches,1,'異なる問題の照合を自動再試行で通してはいけない');
 });
 
 test('ChatGPTから測量士補の2026年度問6をIDなしで指定しても初期確認へ戻らず公式採点まで進む', async () => {
