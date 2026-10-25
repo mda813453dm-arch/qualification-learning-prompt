@@ -729,9 +729,8 @@ const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualification
       [`f${String(i + 1).padStart(2, '0')}`, field])),
     fieldVerification: qualificationFields.entries[x.sourceId].verification,
     fieldSourceUrl: qualificationFields.entries[x.sourceId].sourceUrl,
-    overview: [
-      ['過去問', '公式問題と正答の確認が完了したものから利用できます。未確認の問題は出題しません'],
-    ],
+    // 過去問の登録状況とPDF検証手順は、過去問取込画面でのみ案内。
+    overview: [],
     overviewOnly: true,
     uploadAdapter: 'generic_mc',
     urlCatalog: {
