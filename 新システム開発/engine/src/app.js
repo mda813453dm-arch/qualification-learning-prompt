@@ -837,6 +837,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
   }
   if (state.itemMode === 'explain' && state.set?.fieldId && !state.confirmation && !want) {
+    const lesson = state.publishedLesson;
+    if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
+      return { status: 'menu', sessionId: id, menu: lesson.menu };
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
       notice: '解説を表示してから確認問題へ進みます。' };
