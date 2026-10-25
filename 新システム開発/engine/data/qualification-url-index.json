@@ -1,0 +1,1810 @@
+{
+  "sourceRepository": "mda813453dm-arch/shikaku-kakomon-urls",
+  "sourceFiles": [
+    "index.csv",
+    "shikaku_kakomon_urls.csv.gz"
+  ],
+  "qualificationCount": 103,
+  "urlRecordCount": 4184,
+  "linkedUrlCount": 4023,
+  "urlVerification": "NOT_VERIFIED_FOR_QUESTION_GRADING",
+  "qualifications": [
+    {
+      "sourceId": "q001",
+      "name": "FP技能検定1級",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "一般社団法人金融財政事情研究会（きんざい）",
+      "pastExamPage": "https://www.kinzai.or.jp/fp/news-fp",
+      "urlRecordCount": 10,
+      "linkedUrlCount": 10,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q002",
+      "name": "FP技能検定2級",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "日本FP協会",
+      "pastExamPage": "https://www.jafp.or.jp/exam/mohan/",
+      "urlRecordCount": 12,
+      "linkedUrlCount": 12,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q003",
+      "name": "FP技能検定3級",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "日本FP協会",
+      "pastExamPage": "https://www.jafp.or.jp/exam/mohan/",
+      "urlRecordCount": 12,
+      "linkedUrlCount": 12,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q004",
+      "name": "ITサービスマネージャ試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 66,
+      "linkedUrlCount": 65,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q005",
+      "name": "ITストラテジスト試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 66,
+      "linkedUrlCount": 65,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q006",
+      "name": "ITパスポート試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/questions.html",
+      "urlRecordCount": 20,
+      "linkedUrlCount": 20,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q007",
+      "name": "JLPT（N1〜N5）",
+      "group": "観光・語学・教育",
+      "type": "民間検定",
+      "organization": "国際交流基金・日本国際教育支援協会",
+      "pastExamPage": "https://www.jlpt.jp/samples/sampleindex.html",
+      "urlRecordCount": 2,
+      "linkedUrlCount": 0,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q008",
+      "name": "TOEIC Listening ＆ Reading",
+      "group": "観光・語学・教育",
+      "type": "民間検定",
+      "organization": "一般財団法人国際ビジネスコミュニケーション協会（IIBC）",
+      "pastExamPage": "https://www.iibc-global.org/toeic/test/lr/about/format/sample01.html",
+      "urlRecordCount": 2,
+      "linkedUrlCount": 0,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q009",
+      "name": "ウェブデザイン技能検定",
+      "group": "IT・情報",
+      "type": "国家検定",
+      "organization": "特定非営利活動法人インターネットスキル認定普及協会",
+      "pastExamPage": "https://www.webdesign.gr.jp/measures/publication/",
+      "urlRecordCount": 23,
+      "linkedUrlCount": 21,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q010",
+      "name": "エンベデッドシステムスペシャリスト試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 59,
+      "linkedUrlCount": 58,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q011",
+      "name": "キャリアコンサルタント",
+      "group": "労務・キャリア",
+      "type": "国家資格",
+      "organization": "日本キャリア開発協会（JCDA）／キャリアコンサルティング協議会",
+      "pastExamPage": "https://www.jcda-careerex.org/past/",
+      "urlRecordCount": 21,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q012",
+      "name": "システムアーキテクト試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 66,
+      "linkedUrlCount": 65,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q013",
+      "name": "システム監査技術者試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 59,
+      "linkedUrlCount": 58,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q014",
+      "name": "データベーススペシャリスト試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 59,
+      "linkedUrlCount": 58,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q015",
+      "name": "ネットワークスペシャリスト試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 66,
+      "linkedUrlCount": 65,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q016",
+      "name": "プロジェクトマネージャ試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 59,
+      "linkedUrlCount": 58,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q017",
+      "name": "ボイラー技士",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "公益財団法人安全衛生技術試験協会",
+      "pastExamPage": "https://www.exam.or.jp/lckohyo/",
+      "urlRecordCount": 8,
+      "linkedUrlCount": 6,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q018",
+      "name": "マンション管理士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "公益財団法人マンション管理センター",
+      "pastExamPage": "https://www.mankan.org/kakomondai.html",
+      "urlRecordCount": 20,
+      "linkedUrlCount": 14,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q019",
+      "name": "一級建築士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益財団法人建築技術教育普及センター",
+      "pastExamPage": "https://www.jaeic.or.jp/shiken/1k/1k-mondai.html",
+      "urlRecordCount": 56,
+      "linkedUrlCount": 56,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q020",
+      "name": "不動産鑑定士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "国土交通省",
+      "pastExamPage": "https://www.mlit.go.jp/totikensangyo/kanteishi/shiken02.html",
+      "urlRecordCount": 49,
+      "linkedUrlCount": 45,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q021",
+      "name": "中小企業診断士",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "一般社団法人中小企業診断士協会（日本中小企業診断士協会連合会）",
+      "pastExamPage": "https://www.jf-cmca.jp/contents/010_c_/shikenmondai.html",
+      "urlRecordCount": 146,
+      "linkedUrlCount": 146,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q022",
+      "name": "二級建築士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益財団法人建築技術教育普及センター",
+      "pastExamPage": "https://www.jaeic.or.jp/shiken/2k/2k-mondai.html",
+      "urlRecordCount": 48,
+      "linkedUrlCount": 48,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q023",
+      "name": "介護福祉士",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "公益財団法人社会福祉振興・試験センター（SSSC）",
+      "pastExamPage": "https://www.sssc.or.jp/kaigo/past_exam/index.html",
+      "urlRecordCount": 44,
+      "linkedUrlCount": 42,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q024",
+      "name": "作業主任者",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "公益財団法人安全衛生技術試験協会",
+      "pastExamPage": "https://www.exam.or.jp/lckohyo/",
+      "urlRecordCount": 12,
+      "linkedUrlCount": 10,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q025",
+      "name": "作業環境測定士",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "公益財団法人安全衛生技術試験協会",
+      "pastExamPage": "https://www.exam.or.jp/emkohyo/",
+      "urlRecordCount": 23,
+      "linkedUrlCount": 22,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q026",
+      "name": "作業療法士",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp260424-08_09.html",
+      "urlRecordCount": 31,
+      "linkedUrlCount": 30,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q027",
+      "name": "保健師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp260424-03_04_05.html",
+      "urlRecordCount": 27,
+      "linkedUrlCount": 24,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q028",
+      "name": "保育士",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "一般社団法人全国保育士養成協議会",
+      "pastExamPage": "https://www.hoyokyo.or.jp/exam/pasttest/past-test.html",
+      "urlRecordCount": 20,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q029",
+      "name": "全国通訳案内士",
+      "group": "観光・語学・教育",
+      "type": "国家資格",
+      "organization": "日本政府観光局（JNTO）",
+      "pastExamPage": "https://www.jnto.go.jp/projects/visitor-support/interpreter-guide-exams/past-exam-archives/",
+      "urlRecordCount": 76,
+      "linkedUrlCount": 75,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q030",
+      "name": "公認会計士",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "金融庁 公認会計士・監査審査会",
+      "pastExamPage": "https://www.fsa.go.jp/cpaaob/kouninkaikeishi-shiken/kakoshiken.html",
+      "urlRecordCount": 136,
+      "linkedUrlCount": 132,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q031",
+      "name": "公認心理師",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "一般財団法人日本心理研修センター",
+      "pastExamPage": "https://www.jccpp.or.jp/shiken/shikenjoho/",
+      "urlRecordCount": 30,
+      "linkedUrlCount": 30,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q032",
+      "name": "助産師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp260424-03_04_05.html",
+      "urlRecordCount": 31,
+      "linkedUrlCount": 28,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q033",
+      "name": "医師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/kouseiroudoushou/shikaku_shiken/ishi/",
+      "urlRecordCount": 73,
+      "linkedUrlCount": 71,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q034",
+      "name": "危険物取扱者",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "一般財団法人消防試験研究センター",
+      "pastExamPage": "https://www.shoubo-shiken.or.jp/kikenbutsu/exercise.html",
+      "urlRecordCount": 4,
+      "linkedUrlCount": 3,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q035",
+      "name": "司法書士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "法務省",
+      "pastExamPage": "https://www.moj.go.jp/shikaku_saiyo_index3.html",
+      "urlRecordCount": 19,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q036",
+      "name": "司法試験",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "法務省",
+      "pastExamPage": "https://www.moj.go.jp/jinji/shihoushiken/shiken_ronbunshiken.html",
+      "urlRecordCount": 30,
+      "linkedUrlCount": 28,
+      "listedYears": [
+        2025,
+        2024,
+        2022,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q037",
+      "name": "司法試験予備試験",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "法務省",
+      "pastExamPage": "https://www.moj.go.jp/jinji/shihoushiken/shiken_ronbunshiken.html",
+      "urlRecordCount": 29,
+      "linkedUrlCount": 27,
+      "listedYears": [
+        2025,
+        2024,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q038",
+      "name": "土地家屋調査士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "法務省",
+      "pastExamPage": "https://www.moj.go.jp/shikaku_saiyo_index5.html",
+      "urlRecordCount": 18,
+      "linkedUrlCount": 15,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q039",
+      "name": "土木施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人全国建設研修センター",
+      "pastExamPage": "https://www.jctc.jp/mondai/",
+      "urlRecordCount": 18,
+      "linkedUrlCount": 13,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q040",
+      "name": "基本情報技術者試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/index.html",
+      "urlRecordCount": 17,
+      "linkedUrlCount": 16,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q041",
+      "name": "宅地建物取引士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "一般財団法人不動産適正取引推進機構（RETIO）",
+      "pastExamPage": "https://www.retio.or.jp/exam/past_ques_ans/other/",
+      "urlRecordCount": 13,
+      "linkedUrlCount": 11,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q042",
+      "name": "実用英語技能検定（英検）",
+      "group": "観光・語学・教育",
+      "type": "民間検定",
+      "organization": "公益財団法人日本英語検定協会",
+      "pastExamPage": "https://www.eiken.or.jp/eiken/exam/grade_1/",
+      "urlRecordCount": 42,
+      "linkedUrlCount": 42,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q043",
+      "name": "小型船舶操縦士",
+      "group": "運輸・自動車",
+      "type": "国家資格",
+      "organization": "一般財団法人日本海洋レジャー安全・振興協会（指定試験機関）",
+      "pastExamPage": "https://www.jmra.or.jp/faqs_cat/subjects",
+      "urlRecordCount": 3,
+      "linkedUrlCount": 2,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q044",
+      "name": "工事担任者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "公益財団法人日本データ通信協会",
+      "pastExamPage": "https://www.dekyo.or.jp/shiken/charge/exam",
+      "urlRecordCount": 41,
+      "linkedUrlCount": 41,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q045",
+      "name": "建築施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人建設業振興基金",
+      "pastExamPage": "https://www.fcip-shiken.jp/about/index.html",
+      "urlRecordCount": 8,
+      "linkedUrlCount": 6,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q046",
+      "name": "弁理士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "特許庁",
+      "pastExamPage": "https://www.jpo.go.jp/news/benrishi/shiken-mondai/index.html",
+      "urlRecordCount": 173,
+      "linkedUrlCount": 169,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q047",
+      "name": "応用情報技術者試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 62,
+      "linkedUrlCount": 61,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q048",
+      "name": "情報セキュリティマネジメント試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/sg_fe/koukai/index.html",
+      "urlRecordCount": 9,
+      "linkedUrlCount": 8,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q049",
+      "name": "情報処理安全確保支援士試験",
+      "group": "IT・情報",
+      "type": "国家試験",
+      "organization": "独立行政法人情報処理推進機構（IPA）",
+      "pastExamPage": "https://www.ipa.go.jp/shiken/mondai-kaiotu/index.html",
+      "urlRecordCount": 112,
+      "linkedUrlCount": 111,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q050",
+      "name": "愛玩動物看護師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "一般財団法人動物看護師統一認定機構（指定試験機関）",
+      "pastExamPage": "https://www.ccrvn.jp/aigan.shiken.mondai.kakoshiken.html",
+      "urlRecordCount": 16,
+      "linkedUrlCount": 16,
+      "listedYears": [
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q051",
+      "name": "技術士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益社団法人日本技術士会",
+      "pastExamPage": "https://www.engineer.or.jp/c_categories/index02021.html",
+      "urlRecordCount": 24,
+      "linkedUrlCount": 20,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q052",
+      "name": "救急救命士",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "一般財団法人日本救急医療財団（指定試験機関）／厚生労働省",
+      "pastExamPage": "https://qqzaidan.jp/siken/",
+      "urlRecordCount": 7,
+      "linkedUrlCount": 5,
+      "listedYears": [
+        2025,
+        2022,
+        2017,
+        2016
+      ]
+    },
+    {
+      "sourceId": "q053",
+      "name": "旅行業務取扱管理者",
+      "group": "観光・語学・教育",
+      "type": "国家資格",
+      "organization": "一般社団法人全国旅行業協会（国内）／一般社団法人日本旅行業協会（総合）",
+      "pastExamPage": "https://www.anta.or.jp/exam/shiken/kakomon.html",
+      "urlRecordCount": 40,
+      "linkedUrlCount": 40,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q054",
+      "name": "日商簿記検定試験",
+      "group": "会計・税務・金融・経営",
+      "type": "民間検定",
+      "organization": "商工会議所（検定サイト）",
+      "pastExamPage": "https://www.kentei.ne.jp/bookkeeping/class1/1qkako",
+      "urlRecordCount": 25,
+      "linkedUrlCount": 23,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q055",
+      "name": "日本漢字能力検定（漢検）",
+      "group": "観光・語学・教育",
+      "type": "民間検定",
+      "organization": "公益財団法人日本漢字能力検定協会",
+      "pastExamPage": "https://www.kanken.or.jp/kanken/grades/sample/",
+      "urlRecordCount": 10,
+      "linkedUrlCount": 10,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q056",
+      "name": "木造建築士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益財団法人建築技術教育普及センター",
+      "pastExamPage": "https://www.jaeic.or.jp/shiken/mk/mk-mondai.html",
+      "urlRecordCount": 50,
+      "linkedUrlCount": 50,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q057",
+      "name": "歯科医師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/kouseiroudoushou/shikaku_shiken/shikaishi/",
+      "urlRecordCount": 19,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q058",
+      "name": "浄化槽管理士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益財団法人日本環境整備教育センター",
+      "pastExamPage": "https://www.jeces.or.jp/pages/173/",
+      "urlRecordCount": 10,
+      "linkedUrlCount": 9,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q059",
+      "name": "海事代理士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "国土交通省",
+      "pastExamPage": "https://www.mlit.go.jp/about/file000049.html",
+      "urlRecordCount": 38,
+      "linkedUrlCount": 36,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q060",
+      "name": "海技士",
+      "group": "運輸・自動車",
+      "type": "国家資格",
+      "organization": "国土交通省",
+      "pastExamPage": "https://www.mlit.go.jp/maritime/maritime_tk1_000111.html",
+      "urlRecordCount": 169,
+      "linkedUrlCount": 168,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q061",
+      "name": "消防設備士",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "一般財団法人消防試験研究センター",
+      "pastExamPage": "https://www.shoubo-shiken.or.jp/shoubou/exercise.html",
+      "urlRecordCount": 3,
+      "linkedUrlCount": 2,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q062",
+      "name": "測量士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "国土地理院",
+      "pastExamPage": "https://www.gsi.go.jp/LAW/SHIKEN/past.html",
+      "urlRecordCount": 25,
+      "linkedUrlCount": 24,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2019
+      ]
+    },
+    {
+      "sourceId": "q063",
+      "name": "測量士補",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "国土地理院",
+      "pastExamPage": "https://www.gsi.go.jp/LAW/SHIKEN/past.html",
+      "urlRecordCount": 14,
+      "linkedUrlCount": 13,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2020,
+        2018
+      ]
+    },
+    {
+      "sourceId": "q064",
+      "name": "無線従事者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "公益財団法人日本無線協会",
+      "pastExamPage": "https://www.nichimu.or.jp/kshiken/siken/index.html",
+      "urlRecordCount": 280,
+      "linkedUrlCount": 277,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q065",
+      "name": "獣医師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "農林水産省",
+      "pastExamPage": "https://www.maff.go.jp/j/syouan/tikusui/zyui/shiken/shiken.html",
+      "urlRecordCount": 30,
+      "linkedUrlCount": 30,
+      "listedYears": [
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q066",
+      "name": "理学療法士",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp260424-08_09.html",
+      "urlRecordCount": 31,
+      "linkedUrlCount": 30,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q067",
+      "name": "理容師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "公益財団法人理容師美容師試験研修センター",
+      "pastExamPage": "https://www.rbc.or.jp/exam/past_question/",
+      "urlRecordCount": 24,
+      "linkedUrlCount": 23,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q068",
+      "name": "登録日本語教員（日本語教員試験）",
+      "group": "観光・語学・教育",
+      "type": "国家資格",
+      "organization": "文部科学省",
+      "pastExamPage": "https://www.mext.go.jp/a_menu/nihongo_kyoiku/mext_00004.html",
+      "urlRecordCount": 2,
+      "linkedUrlCount": 1,
+      "listedYears": [
+        2025
+      ]
+    },
+    {
+      "sourceId": "q069",
+      "name": "登録販売者",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "東京都保健医療局（都道府県試験の代表例）",
+      "pastExamPage": "https://www.hokeniryo.metro.tokyo.lg.jp/anzen/iyaku/tourokushiken",
+      "urlRecordCount": 16,
+      "linkedUrlCount": 12,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q070",
+      "name": "看護師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp260424-03_04_05.html",
+      "urlRecordCount": 31,
+      "linkedUrlCount": 28,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q071",
+      "name": "社会保険労務士",
+      "group": "労務・キャリア",
+      "type": "国家資格",
+      "organization": "社会保険労務士試験センター（全国社会保険労務士会連合会）",
+      "pastExamPage": "https://www.sharosi-siken.or.jp/results/",
+      "urlRecordCount": 6,
+      "linkedUrlCount": 5,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q072",
+      "name": "社会福祉士",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "公益財団法人社会福祉振興・試験センター（SSSC）",
+      "pastExamPage": "https://www.sssc.or.jp/shakai/past_exam/index.html",
+      "urlRecordCount": 63,
+      "linkedUrlCount": 60,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q073",
+      "name": "税理士",
+      "group": "会計・税務・金融・経営",
+      "type": "国家資格",
+      "organization": "国税庁",
+      "pastExamPage": "https://www.nta.go.jp/taxes/zeirishi/zeirishishiken/zeirishi.htm",
+      "urlRecordCount": 85,
+      "linkedUrlCount": 83,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018
+      ]
+    },
+    {
+      "sourceId": "q074",
+      "name": "第一種電気主任技術者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "一般財団法人電気技術者試験センター",
+      "pastExamPage": "https://www.shiken.or.jp/chief/first/qa/",
+      "urlRecordCount": 65,
+      "linkedUrlCount": 61,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019
+      ]
+    },
+    {
+      "sourceId": "q075",
+      "name": "第一種電気工事士",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "一般財団法人電気技術者試験センター",
+      "pastExamPage": "https://www.shiken.or.jp/construction/first/qa/",
+      "urlRecordCount": 41,
+      "linkedUrlCount": 40,
+      "listedYears": [
+        2025,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q076",
+      "name": "第三種電気主任技術者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "一般財団法人電気技術者試験センター",
+      "pastExamPage": "https://www.shiken.or.jp/chief/third/qa/",
+      "urlRecordCount": 70,
+      "linkedUrlCount": 70,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q077",
+      "name": "第二種電気主任技術者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "一般財団法人電気技術者試験センター",
+      "pastExamPage": "https://www.shiken.or.jp/chief/second/qa/",
+      "urlRecordCount": 65,
+      "linkedUrlCount": 61,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019
+      ]
+    },
+    {
+      "sourceId": "q078",
+      "name": "第二種電気工事士",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "一般財団法人電気技術者試験センター",
+      "pastExamPage": "https://www.shiken.or.jp/construction/second/qa/",
+      "urlRecordCount": 105,
+      "linkedUrlCount": 104,
+      "listedYears": [
+        2025,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q079",
+      "name": "管工事施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人全国建設研修センター",
+      "pastExamPage": "https://www.jctc.jp/mondai/",
+      "urlRecordCount": 13,
+      "linkedUrlCount": 9,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q080",
+      "name": "管理栄養士",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/0000089299.html",
+      "urlRecordCount": 6,
+      "linkedUrlCount": 4,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q081",
+      "name": "管理業務主任者",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "一般社団法人マンション管理業協会",
+      "pastExamPage": "https://www.kanrikyo.or.jp/kanri/mondaiseikai/index.html",
+      "urlRecordCount": 20,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q082",
+      "name": "精神保健福祉士",
+      "group": "福祉・心理・栄養",
+      "type": "国家資格",
+      "organization": "公益財団法人社会福祉振興・試験センター（SSSC）",
+      "pastExamPage": "https://www.sssc.or.jp/seishin/past_exam/index.html",
+      "urlRecordCount": 23,
+      "linkedUrlCount": 21,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q083",
+      "name": "給水装置工事主任技術者",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "公益財団法人給水工事技術振興財団",
+      "pastExamPage": "https://www.kyuukou.or.jp/shiken/jyuken-kakomon.html",
+      "urlRecordCount": 16,
+      "linkedUrlCount": 15,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q084",
+      "name": "美容師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "公益財団法人理容師美容師試験研修センター",
+      "pastExamPage": "https://www.rbc.or.jp/exam/past_question/",
+      "urlRecordCount": 24,
+      "linkedUrlCount": 23,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q085",
+      "name": "臨床工学技士",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "公益財団法人医療機器センター（指定試験機関）",
+      "pastExamPage": "https://www.jaame.or.jp/ce/past-test.html",
+      "urlRecordCount": 15,
+      "linkedUrlCount": 15,
+      "listedYears": [
+        2025,
+        2024,
+        2023,
+        2022,
+        2021
+      ]
+    },
+    {
+      "sourceId": "q086",
+      "name": "臨床検査技師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp220421-07.html",
+      "urlRecordCount": 12,
+      "linkedUrlCount": 10,
+      "listedYears": [
+        2026,
+        2022,
+        2021,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q087",
+      "name": "自動車整備士",
+      "group": "運輸・自動車",
+      "type": "国家資格",
+      "organization": "国土交通省",
+      "pastExamPage": "https://www.mlit.go.jp/jidosha/jidosha_tk9_000031.html",
+      "urlRecordCount": 11,
+      "linkedUrlCount": 11,
+      "listedYears": []
+    },
+    {
+      "sourceId": "q088",
+      "name": "航空従事者",
+      "group": "運輸・自動車",
+      "type": "国家資格",
+      "organization": "国土交通省",
+      "pastExamPage": "https://www.mlit.go.jp/koku/koku_fr10_000025.html",
+      "urlRecordCount": 378,
+      "linkedUrlCount": 378,
+      "listedYears": [
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018
+      ]
+    },
+    {
+      "sourceId": "q089",
+      "name": "薬剤師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/kenkou_iryou/iyakuhin/yakuzaishi-kokkashiken/index.html",
+      "urlRecordCount": 16,
+      "linkedUrlCount": 15,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q090",
+      "name": "行政書士",
+      "group": "法務・不動産・知的財産",
+      "type": "国家資格",
+      "organization": "一般財団法人行政書士試験研究センター",
+      "pastExamPage": "https://gyosei-shiken.or.jp/doc/exam/index.html",
+      "urlRecordCount": 14,
+      "linkedUrlCount": 12,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019
+      ]
+    },
+    {
+      "sourceId": "q091",
+      "name": "衛生管理者",
+      "group": "安全衛生・防災",
+      "type": "国家資格",
+      "organization": "公益財団法人安全衛生技術試験協会",
+      "pastExamPage": "https://www.exam.or.jp/lckohyo/",
+      "urlRecordCount": 6,
+      "linkedUrlCount": 4,
+      "listedYears": [
+        2026,
+        2025
+      ]
+    },
+    {
+      "sourceId": "q092",
+      "name": "製菓衛生師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "東京都保健医療局（都道府県試験の代表例）",
+      "pastExamPage": "https://www.hokeniryo.metro.tokyo.lg.jp/anzen/shikaku/csh_menkyo/chori_seika/seika/siken_qa",
+      "urlRecordCount": 6,
+      "linkedUrlCount": 6,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q093",
+      "name": "言語聴覚士",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "公益財団法人医療研修推進財団（指定試験機関）／厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/general/sikaku/successlist/2026/siken21/about.html",
+      "urlRecordCount": 11,
+      "linkedUrlCount": 10,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q094",
+      "name": "計量士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "経済産業省",
+      "pastExamPage": "https://www.meti.go.jp/policy/economy/hyojun/techno_infra/23_kakomon.html",
+      "urlRecordCount": 50,
+      "linkedUrlCount": 45,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q095",
+      "name": "診療放射線技師",
+      "group": "医療・医薬",
+      "type": "国家資格",
+      "organization": "厚生労働省",
+      "pastExamPage": "https://www.mhlw.go.jp/seisakunitsuite/bunya/kenkou_iryou/iryou/topics/tp240424-06.html",
+      "urlRecordCount": 37,
+      "linkedUrlCount": 35,
+      "listedYears": [
+        2026,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q096",
+      "name": "調理師",
+      "group": "生活・食・動物",
+      "type": "国家資格",
+      "organization": "公益社団法人調理技術技能センター（30都県の試験を受託実施）",
+      "pastExamPage": "https://chouri-ggc.or.jp/chourishishiken/past_questions/",
+      "urlRecordCount": 6,
+      "linkedUrlCount": 6,
+      "listedYears": [
+        2025,
+        2024,
+        2023
+      ]
+    },
+    {
+      "sourceId": "q097",
+      "name": "賃貸不動産経営管理士",
+      "group": "法務・不動産・知的財産",
+      "type": "民間資格",
+      "organization": "賃貸不動産経営管理士協議会",
+      "pastExamPage": "https://www.chintaikanrishi.jp/exam/past/",
+      "urlRecordCount": 20,
+      "linkedUrlCount": 18,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020,
+        2019,
+        2018,
+        2017
+      ]
+    },
+    {
+      "sourceId": "q098",
+      "name": "通関士",
+      "group": "貿易・通関",
+      "type": "国家資格",
+      "organization": "財務省・税関",
+      "pastExamPage": "https://www.customs.go.jp/tsukanshi/",
+      "urlRecordCount": 30,
+      "linkedUrlCount": 30,
+      "listedYears": [
+        2025,
+        2024,
+        2023,
+        2022,
+        2021,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q099",
+      "name": "造園施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人全国建設研修センター",
+      "pastExamPage": "https://www.jctc.jp/mondai/",
+      "urlRecordCount": 13,
+      "linkedUrlCount": 9,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q100",
+      "name": "運行管理者",
+      "group": "運輸・自動車",
+      "type": "国家資格",
+      "organization": "公益財団法人運行管理者試験センター",
+      "pastExamPage": "https://www.unkan.or.jp/past.html",
+      "urlRecordCount": 8,
+      "linkedUrlCount": 8,
+      "listedYears": [
+        2023,
+        2022
+      ]
+    },
+    {
+      "sourceId": "q101",
+      "name": "電気工事施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人建設業振興基金",
+      "pastExamPage": "https://www.fcip-shiken.jp/about/index.html",
+      "urlRecordCount": 7,
+      "linkedUrlCount": 5,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    },
+    {
+      "sourceId": "q102",
+      "name": "電気通信主任技術者",
+      "group": "電気・通信",
+      "type": "国家資格",
+      "organization": "公益財団法人日本データ通信協会",
+      "pastExamPage": "https://www.dekyo.or.jp/shiken/chief/exam",
+      "urlRecordCount": 35,
+      "linkedUrlCount": 35,
+      "listedYears": [
+        2026,
+        2025,
+        2024,
+        2023,
+        2022,
+        2020
+      ]
+    },
+    {
+      "sourceId": "q103",
+      "name": "電気通信工事施工管理技士",
+      "group": "建築・建設・測量・技術",
+      "type": "国家資格",
+      "organization": "一般財団法人全国建設研修センター",
+      "pastExamPage": "https://www.jctc.jp/mondai/",
+      "urlRecordCount": 13,
+      "linkedUrlCount": 9,
+      "listedYears": [
+        2026,
+        2025,
+        2024
+      ]
+    }
+  ]
+}

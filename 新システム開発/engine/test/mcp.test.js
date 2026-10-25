@@ -125,7 +125,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   assert.match(WIDGET_URI, /question-v94\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.94');
+  assert.equal(WIDGET_VERSION, '2026-10-25.95');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -906,13 +906,16 @@ test('アプリ：宅建を始めると nextQuestion の画面データに試験
 
 test('全資格：概要は公式ページの記載（台帳）を出し、出典と未掲載の注記が付く', () => {
   for (const c of Object.values(CATALOG)) {
-    assert.ok(c.overview?.length >= 4, c.name);
+    // 新規移行した資格はURL台帳だけが根拠。試験時間・合格基準等の未確認情報を
+    // 実在する4項目へ水増ししてはならない。
+    assert.ok(c.urlCatalog ? c.overview?.length >= 1 : c.overview?.length >= 4, c.name);
     assert.ok(c.overview.every(([k, v]) => k && v), c.name);
     const ov = overviewFor(c.qualificationId);
     assert.equal(ov.title, '■試験概要', c.name);
     assert.ok(ov.lines.some((l) => /^公式：/.test(l)) && ov.lines.includes('参考（非公式）：なし'), c.name);
     assert.ok(ov.lines.some((l) => /^合格基準/.test(l)), c.name);
     assert.match(ov.source, /^https:\/\//);
+    if (c.urlCatalog) assert.ok(ov.lines.some((l) => /原本.*未実施|正答.*検証/.test(l)), c.name);
   }
   assert.ok(overviewFor('q041').lines.some((l) => /試験時間：午後1時〜午後3時/.test(l)));
 });

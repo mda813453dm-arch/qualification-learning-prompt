@@ -292,13 +292,26 @@ async function sessionFromLearner(env, lid, now) {
 
 /** 学習の開始（startStudy）で決めた資格名から、エンジンが出題する資格の番号を探す（無ければ null）。 */
 function catalogIdByName(name) {
-  const t = String(name ?? '').replace(/\s/g, '');
+  const norm = (v) => String(v ?? '').normalize('NFKC').replace(/\s/g, '');
+  const t = norm(name);
   if (!t) return null;
-  const names = (x) => [x.name, ...(x.aliases ?? [])];
-  const exact = Object.values(CATALOG).find((x) => names(x).some((a) => t.includes(a)));
-  if (exact) return exact.qualificationId;
+  const names = (x) => [x.name, ...(x.aliases ?? [])].map(norm).filter(Boolean);
+  const entries = Object.values(CATALOG);
+  // 「獣医師」は「医師」を含み、「愛玩動物看護師」は「看護師」を含む。
+  // 必ず完全一致を先に調べ、部分一致は最も長い呼称を採用する。
+  const exact = entries.filter((x) => names(x).includes(t));
+  if (exact.length === 1) return exact[0].qualificationId;
+  if (exact.length > 1) return null;
+  const embedded = entries.flatMap((x) => names(x)
+    .filter((a) => a.length >= 2 && t.includes(a))
+    .map((a) => ({ qualificationId: x.qualificationId, length: a.length })));
+  if (embedded.length) {
+    const longest = Math.max(...embedded.map((x) => x.length));
+    const ids = [...new Set(embedded.filter((x) => x.length === longest).map((x) => x.qualificationId))];
+    return ids.length === 1 ? ids[0] : null;
+  }
   // 短い呼び方（「宅地建物」など）は、当てはまる資格が1つだけのときに限る（「FP」だけでは2級か3級か決めない）
-  const part = [...new Set(Object.values(CATALOG).filter((x) => names(x).some((a) => a.includes(t))).map((x) => x.qualificationId))];
+  const part = [...new Set(entries.filter((x) => names(x).some((a) => a.includes(t))).map((x) => x.qualificationId))];
   return part.length === 1 ? part[0] : null;
 }
 
@@ -842,6 +855,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
         fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
         officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+        ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
         validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
         ...(cat.privateLicensedUpload ? {
           permissionedUpload: true,
@@ -851,6 +865,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         } : {}),
         notice: existing?.state === 'failed'
           ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
+          : cat.urlCatalog
+            ? `公式過去問の参照URLを${cat.urlCatalog.urlRecordCount}件登録しましたが、出題・採点に使える問題と正答の原本照合は未完了です。公式の問題PDFと正答PDFを同じ年度・試験区分で添付すると検証できます。AI作成確認問題での学習も選べます。`
           : cat.privateLicensedUpload
             ? 'この資格の過去問には利用許諾の確認が必要です。事前保存・自動取得・他ユーザーとの共有はしません。権利者から利用許諾を得た方だけ、年度ごとに確認した後に問題PDFを添付できます。'
             : 'サイトからの自動取得はできません。2022～2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
@@ -876,6 +892,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
       fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
       officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
       ...(cat.privateLicensedUpload ? {
         permissionedUpload: true,
@@ -883,7 +900,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         availableUploadYears: cat.availableUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
       } : {}),
-      notice: cat.privateLicensedUpload
+      notice: cat.urlCatalog
+        ? `公式URL台帳に掲載されている${cat.urlCatalog.urlRecordCount}件は、検証済みの問題データではありません。公式問題・公式正答PDFを同年度・同区分で添付して検証するか、AI作成確認問題を選んでください。`
+        : cat.privateLicensedUpload
         ? (cat.officialAnswerHtml
           ? 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題PDFを添付してください。正答は公式の年度別正解ページで確認します。'
           : 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題・正答PDFを添付してください。')
@@ -899,6 +918,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
       qualificationName: cat?.name ?? state.qualificationId, fieldName: cat?.fields?.[fid] ?? '最初の分野',
       officialUrl: cat?.pastExamPage ?? null, sourceAttachmentSupported: !!cat?.uploadAdapter,
+      ...(cat?.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       sharedLibrary: publicLibraryView(shared), validatedUploadYears: cat?.validatedUploadYears ?? [],
       job: jobView(job),
       notice: job?.state === 'failed'
@@ -1078,6 +1098,7 @@ async function restoreStudyView(env, id, state, now) {
     return { ...identity, status: 'sourceUnavailable',
       qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
       officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       validatedUploadYears: cat.validatedUploadYears ?? [],
       sharedLibrary: publicLibraryView(await libraryFor(env, state.qualificationId, now)),
       ...(cat.privateLicensedUpload ? {
@@ -1086,7 +1107,9 @@ async function restoreStudyView(env, id, state, now) {
         availableUploadYears: cat.availableUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
       } : {}),
-      notice: cat.privateLicensedUpload
+      notice: cat.urlCatalog
+        ? `公式過去問の参照先${cat.urlCatalog.urlRecordCount}件を登録済みです。出題・採点用の原本は未検証です。年度と試験区分を揃えた公式問題・正答PDFを添付するか、AI作成確認問題から学習できます。`
+        : cat.privateLicensedUpload
         ? '許諾未確認のPDFは自動取得・共有保存しません。許諾を得た利用者本人だけ年度別に取り込めます。'
         : '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
   }
@@ -2341,7 +2364,9 @@ export function overviewFor(qid) {
         c.officialAnswerHtml
           ? '※公式問題の掲載には許諾が必要です。自動取得・共有保存はせず、利用者が許諾を得た場合に限り年度を選び、本人専用として問題PDFを添付できます。正答は公式の年度別HTMLを参照します。'
           : '※公式過去問の権利者による許諾は未取得です。自動取得・共有保存はせず、利用者が許諾を得た場合だけ年度を選び、本人専用として問題・正答PDFを添付できます。',
-      ] : c.overviewOnly ? [c.uploadAdapter
+      ] : c.overviewOnly ? [c.urlCatalog
+        ? '※別リポジトリから公式過去問の参照URL一覧を移行しました。出題可能な問題・公式正答としての検証は別途必要です。公式問題・公式正答のPDFを同年度・同区分で添付した場合のみ汎用択一解析を試み、検証できない問は出題しません。記述式の自動採点は行いません。'
+        : c.uploadAdapter
         ? '※公式PDFのサイトからの自動取得はできません。システムに共有保存済みの年度・部は全利用者が再添付なしで利用でき、未保存分は問題・正答PDFの検証が必要です。記述式は自動採点しません。'
         : '※公式過去問の自動解析・出題は未対応です。AI作成確認問題は公式問題と区別します。'] : []),
       ...(c.subjects?.length ? ['公式の試験科目・出題範囲：', ...c.subjects.map((x, i) => `　${i + 1}. ${x}`)] : []),

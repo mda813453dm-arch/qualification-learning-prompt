@@ -5,7 +5,7 @@
  */
 export const WIDGET_URI = 'ui://qlp/question-v94.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.94';
+export const WIDGET_VERSION = '2026-10-25.95';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -560,13 +560,16 @@ a{color:inherit}
       var official = safeUrl(data.officialUrl);
       var library = data.sharedLibrary || null;
       var missing = library && Array.isArray(library.missing) ? library.missing : [];
-      var canAttach = !!data.sourceAttachmentSupported && missing.length > 0;
-      app.innerHTML = '<h2>公式過去問の共有保存</h2>' + libraryHtml(library) +
+      var ref = data.urlCatalog || null;
+      var canAttach = !!data.sourceAttachmentSupported && (missing.length > 0 || !!ref);
+      app.innerHTML = '<h2>' + (ref ? '公式過去問の参照先・取込状況' : '公式過去問の共有保存') + '</h2>' +
+        (ref ? '<div class="notice">登録済みの公式過去問URL記録：<b>' + esc(ref.urlRecordCount) + '件</b>（リンクあり' + esc(ref.linkedUrlCount) + '件）。<b>問題・正答の照合済み出題データとは別です。</b></div>' : '') +
+        libraryHtml(library) +
         '<div class="notice" role="status">' + esc(data.notice || '利用できる公式問題を確認してください。') + '</div>' +
         (official ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(official) + '">公式過去問掲載ページを開く ›</a></div>' : '') +
         '<div class="choices">' +
           '<button id="sourceRefresh"><b>1</b><span>共有保存状況を更新して、利用できる問題を開く</span></button>' +
-          (canAttach ? '<button id="sourceAttach"><b>2</b><span>共有に未保存の年度・部だけPDFを添付する</span></button>' : '') +
+          (canAttach ? '<button id="sourceAttach"><b>2</b><span>' + (ref ? '公式問題・正答PDFを添付して検証する' : '共有に未保存の年度・部だけPDFを添付する') + '</span></button>' : '') +
           '<button id="sourceAiCheck"><b>' + (canAttach ? '3' : '2') + '</b><span>同じ分野のAI作成確認問題を解く（3問）</span></button></div>' + endBar();
       document.getElementById('sourceRefresh').onclick = async function(){
         this.disabled = true;
@@ -587,8 +590,9 @@ a{color:inherit}
       if (canAttach) document.getElementById('sourceAttach').onclick = function(){
         this.disabled = true;
         var names = missing.map(function(x){ return x.year + '年度・' + x.section; }).join('、');
-        app.insertAdjacentHTML('beforeend', '<div class="notice" role="status"><b>未保存：</b>' + esc(names) +
-          '<div>追加したい年度・部の公式問題PDFと、同じ年度の公式正答PDFを、ChatGPTの入力欄の「＋」から添付して送信してください。PDFが添付されるまでは、取り込みは始まりません。以前に別のチャットへ添付しただけのPDFは、この画面には自動登録されません。</div></div>');
+        app.insertAdjacentHTML('beforeend', '<div class="notice" role="status">' +
+          (ref ? '<b>公式原本の検証待ち</b>' : '<b>未保存：</b>' + esc(names)) +
+          '<div>追加したい年度・試験区分の公式問題PDFと、同じ年度・区分の公式正答PDFを、ChatGPTの入力欄の「＋」から添付して送信してください。PDFの実際の年度と試験区分も指定してください。記述式や図の一致を確認できない問題は自動採点しません。PDFが添付されるまでは、取り込みは始まりません。以前に別のチャットへ添付しただけのPDFは、この画面には自動登録されません。</div></div>');
         // ファイルのない状態でui/messageを送らない。会話の内部処理ログが出る旧不具合の原因。
       };
       document.getElementById('sourceAiCheck').onclick = async function(){

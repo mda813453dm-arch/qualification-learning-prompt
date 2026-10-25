@@ -3,6 +3,7 @@
  * 公式PDFのURLはプログラムが持つ（AIに探させない）。URLは公式サイトで確認済みのものだけを書く。
  */
 import ipaManifest from '../data/ipa-official-source-manifest.json' with { type: 'json' };
+import qualificationUrlIndex from '../data/qualification-url-index.json' with { type: 'json' };
 
 // 記述式の午後問題は、既存の四択エンジンで誤採点するため出題対象にしない。
 // 原本PDFは保存済み。午後の採点UI実装後に別途開放する。
@@ -12,7 +13,7 @@ const ipaSources = (name, adapter) => ipaManifest.items
       : ['春期午前', '秋期午前', '10月午前'].includes(item.section)))
   .map(({ year, section, questionUrl, answerUrl }) => ({ adapter, year, section, questionUrl, answerUrl }));
 
-export const CATALOG = {
+const BASE_CATALOG = {
   fe: {
     qualificationId: 'fe',
     org: '独立行政法人情報処理推進機構（IPA）',
@@ -687,6 +688,48 @@ export const CATALOG = {
     ],
   },
 };
+
+/**
+ * 103資格の登録簿を本エンジンの単一資格台帳に統合する。
+ * 既存の専用パーサー・検証済み正答・共有資料がある資格は、必ずその設定を優先する。
+ * URL台帳を移しただけの資格では、未検証のPDFを自動採点用の sources にしない。
+ */
+function sourceNameMatchesExisting(name, catalog) {
+  const key = String(name).normalize('NFKC').replace(/\s/g, '');
+  return Object.values(catalog).some((c) =>
+    [c.name, ...(c.aliases ?? [])].some((alias) => {
+      const t = String(alias).normalize('NFKC').replace(/\s/g, '');
+      return t === key || t.startsWith(`${key}（`) || t.startsWith(`${key}(`);
+    }));
+}
+
+const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualifications
+  .filter((x) => !sourceNameMatchesExisting(x.name, BASE_CATALOG))
+  .map((x) => [x.sourceId, {
+    qualificationId: x.sourceId,
+    name: x.name,
+    aliases: [x.name],
+    org: x.organization,
+    officialSite: x.pastExamPage,
+    overviewSource: x.pastExamPage,
+    pastExamPage: x.pastExamPage,
+    fields: { general: '試験全般（分野の詳細は未確認）' },
+    overview: [
+      ['公式過去問の参照先', `URL台帳${x.urlRecordCount}件（リンクあり${x.linkedUrlCount}件）。問題原本・公式正答との照合は未実施`],
+      ...(x.listedYears.length ? [['参照先台帳の掲載年度', x.listedYears.join('・')]] : []),
+    ],
+    overviewOnly: true,
+    uploadAdapter: 'generic_mc',
+    urlCatalog: {
+      sourceId: x.sourceId,
+      urlRecordCount: x.urlRecordCount,
+      linkedUrlCount: x.linkedUrlCount,
+      listedYears: x.listedYears,
+    },
+    sources: [],
+  }]));
+
+export const CATALOG = { ...BASE_CATALOG, ...urlCatalogEntries };
 
 /**
  * 学習の段階（マスタープロンプト U03・ChatGPT開発版の仕様：未着手／基礎／応用／過去問）。
