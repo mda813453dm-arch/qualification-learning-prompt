@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v103\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.103');
+  assert.match(WIDGET_URI, /question-v104\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.104');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -133,6 +133,10 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
 test('分野の基礎解説はチャットではなく同じ学習枠に表示し、確認問題へのボタンで進める', async () => {
   const menuTool = TOOLS.find(x => x.name === 'showMenu');
   assert.ok(menuTool, 'showMenu must be available to ChatGPT model');
+  const listedForModel = (await rpc(makeEnv(), 'tools/list', {}, { path: '/app' })).body.result.tools.find(t => t.name === 'showMenu');
+  assert.deepEqual(listedForModel._meta.ui.visibility, ['model', 'app'], 'AIが解説本文を登録できるモデル公開ツール');
+  assert.equal(listedForModel._meta['openai/outputTemplate'], WIDGET_URI);
+
   assert.ok(menuTool.inputSchema.properties.kind.enum.includes('lesson'));
   const args = {
     kind: 'lesson', fieldName: '必修問題',
