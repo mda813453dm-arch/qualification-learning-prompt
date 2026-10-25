@@ -201,13 +201,14 @@ export const TOOLS = [
     name: 'registerConfirmationQuestion',
     appOnly: true,
     description: '解説あり／確認問題からを選んだ通常の同一分野3問に使う。AIが作った各問の本文・全選択肢・正答を出題前に登録する。エンジンが1/3から問数と進捗バーを表示し、採点・3問完了時の実践問題への移動を画面で行う。チャットに問題や選択肢を直接書かない。3連続誤答による強制補強にはregisterRemediationQuestionを使う。',
-    inputSchema: { type: 'object', required: ['sessionId', 'question', 'choices', 'correctAnswer'], properties: {
+    inputSchema: { type: 'object', required: ['sessionId', 'question', 'choices', 'correctAnswer', 'explanation'], properties: {
       sessionId, question: { type: 'string', minLength: 10, maxLength: 2000 },
       choices: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'string' } },
       correctAnswer: { type: 'integer', description: '出題前に確定した正答の選択肢番号（1から）' },
+       explanation: { type: 'string', minLength: 12, maxLength: 2500, description: '回答直後に表示する簡易解説。正答の根拠と紛らわしい選択肢の違いを2〜5文で説明し、出題前に正答と整合を確認する。' },
     } },
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/confirmation/register`,
-      { question: a.question, choices: a.choices, correctAnswer: a.correctAnswer }],
+      { question: a.question, choices: a.choices, correctAnswer: a.correctAnswer, explanation: a.explanation }],
   },
   {
     name: 'answerConfirmationQuestion',
@@ -482,6 +483,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v86.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v94.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v97.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v98.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v99.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -565,7 +567,7 @@ export function appInstructions() {
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
   const noInvent = '\n**強制補強：同一分野の公式実践3問連続誤答後は、短い補強説明のあとAI作成確認問題を1問作る。必ず登録前に本文・全選択肢・正答番号を固定し、registerRemediationQuestion を呼ぶ。返った画面が出題するので、AIは問題をチャットへ書き直さない。採点・誤答時の再出題・正解時の公式問題再開は画面とエンジンが制御する。未登録の確認問題で実践問題へ進まない。**\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 番号で選んでもらう確認（学習の開始・項目の進め方・続きから・次の問題へ）は、チャットに「1：…」と書かず、必ず `showMenu` を呼んで選択ボタンで出す。学習計画は、この仕様の順（学習の進め方→最初の分野と理由→進め方）で示す。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDF（公式の問題PDF・正答PDF）を添付したら、`attachPdf` を呼んでエンジンに渡す。** PDFの中身をAIが書き写して出題・採点しない。';
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
-  const confirmationFlow = '\n【通常の確認問題】「確認問題から」の場合は直ちに第1問を登録。「解説あり」の場合は解説をshowMenu(kind=lesson)へ表示し、利用者が「確認問題へ進む」を押した後にだけ第1問を登録する。同じ分野のAI作成問題を必ず1問ずつregisterConfirmationQuestionに登録する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
+  const confirmationFlow = '\n【通常の確認問題】「確認問題から」の場合は直ちに第1問を登録。「解説あり」の場合は解説をshowMenu(kind=lesson)へ表示し、利用者が「確認問題へ進む」を押した後にだけ第1問を登録する。同じ分野のAI作成問題を必ず1問ずつ、正答の理由と誤答との違いを説明する簡易解説explanationを付けてregisterConfirmationQuestionに登録する。採点直後は正誤・正答・保存済み簡易解説を同時表示する。画面が第1問から全体の学習位置と確認問題1/3を別々のプログレスバーで表示し、正答を保存して採点する。答えをAIが採点したり、問題を会話に直接書いたりしない。第3問の後は画面で同じ分野の実践問題を選べる。学習結果の選択肢をAIが独自に作らない。解説の開始時には分野の学習画面に全体の進捗を表示する。\n';
   const lessonFlow = '\n【基礎解説は必ず学習枠内】利用者が「○○を解説から始めます。」と送ったら、学習段階に合うその分野の基礎解説全文を内部でまとめ、必ずshowMenu({kind:lesson,fieldName:○○,body:解説全文,sessionId:現在のID,studyId,learnerId})で学習画面に表示する。ChatGPTのチャット本文には解説を一切書かない。確認問題はここでは作らず、「確認問題へ進む」ボタンが押されて「○○の確認問題・第1問へ進む」が届いたときだけregisterConfirmationQuestionを呼び、全3問の第1問を出す。画面遷移のたびに旧学習枠は閉じる。基礎解説の後にkind=nextを呼ばない。解説を先にチャットへ出してしまう経路は使用しない。\n';
   const explanationFlow = '\n【採点後のAI解説：必ず参照照合】画面から「照合番号：E-...」を含む解説依頼が届いたら、モデルに既に公開されているnextQuestion({sessionId: 照合番号})で採点済み問題の解説資料を読み取る。この番号を渡すときに限り読取専用であり、通常の次問処理を実行しない。両経路とも同じ公式問題・正答と学習履歴を取得する。問題文・全選択肢・公式正答・理解度・苦手履歴を同一セッションから取得し、戻り値のquestion.questionId === grade.questionIdを確認する。正答番号・年度・問番号を推測しない。取得した根拠に基づき、法律問題では法的根拠、計算問題では式・代入・途中値・検算を学習状況に合わせてMarkdownにまとめる。採点時に表示済みの正誤・公式正答番号・選択肢原文一覧は繰り返さず、AIの詳しい解説部分だけをshowMenu(kind=next,body=全文,explanationRef=照合番号,sessionId=取得した値,studyId,learnerId)へ渡す。チャットに解説やJSONを貼らない。最初の取得が失敗した場合、利用者に再操作を求める前に必ず同じE-照合番号をexplainSpec({explanationRef:E-照合番号})で再照合する。両経路とも失敗なら直前会話や隠し文脈だけで解説せず、画面の「解説を再表示」を案内する。E-照合番号を渡す読取専用nextQuestionだけは解説資料の取得時に使用する。実セッションIDで次問へ進むnextQuestion・submitAnswer・startSessionは解説中に呼ばない。完成時にshowMenu(kind=next,body=全文,explanationRef=照合番号)を1回呼ぶ。次問・終了操作は元の学習画面のボタンが管理する。公式図表が必要で画像を確認できない場合は推測で内容を補わない。\n';
   const descriptiveFlow = '\n【土地家屋調査士の記述式参考解答】解答依頼を受けたらgetDescriptiveContextで現在の同一問題の原本資料を取得する。長い問題文・表・図は画面で閲覧済みなのでチャットへ再掲せず、解答と途中計算・根拠のみ表示する。土地（午前問11・午後問21）の座標計算・面積計算を必要とする小問では原本の図表・頂点順・丸めを確認し、通常の計算と複素数計算の両方で解く。面積だけ座標法で終わらず、ConjgとImagを用いてA→B→G→EならAbs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、対角線AGとBEならAbs(Imag((A-G)*Conjg(B-E)))/2の関数電卓入力式と計算過程・検算を必ず示す。点名の座標を変数に登録し未丸め値で計算後、指定どおりに面積を処理する。複素数では、関数電卓の機能名（Arg/Abs/Conjg/Real/Imag・極形式r∠θ・直交形式a+bi・STO/RCL/M等）を用いた入力式、途中値、結果と照合を示す。原本の点T1、T2、Aなどは各点の複素数座標を最初に電卓の変数へ登録し、以降はarg(T2-T1)、arg(A-T1)、Abs(A-T1)のように点名変数を使う。直接arg(-12.99-7.50i)のような差分数値だけの式を主形式にしない。電卓の変数名が点名と違う場合は対応表を示す。複素数全体を保存できない機種では実部と虚部を別々に保存する。機種別のキー順は不要。建物（午後問22）に座標計算を追加しない。図や表の読めない値を推測して正答と称さない.公式模範解答ではないと明示し、採点はしない。土地の全年度の午前11・午後21では、各小問の目的・根拠・途中計算・検算・丸めを丁寧に示し、複素数で解ける小問は関数電卓の入力式と通常解法をともに示す。AI参考解説全文をMarkdown形式で内部作成したら、解説をチャットに先出しせずshowDescriptiveActions({sessionId:原本のセッションID,questionId:原本の問題ID,explanationMarkdown:全文})を呼ぶ。学習画面が解説の直下にボタンを描画し、次の問題へ移る際は画面全体を置き換える。成功後は本文をチャットに繰り返さない。これが使えないときは、解説本文と『1：次の記述式へ／2：年度・問題を選び直す／3：択一式へ戻る／4：学習終了』を通常チャットで提示するが、ボタン表示成功とは言わない。\n';
