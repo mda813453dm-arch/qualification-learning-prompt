@@ -27,8 +27,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   };
   let id = 1;
   const toolCalls = [];
+  let transientFirstExplanationReads = 2;
   const tool = async (name, args) => {
     toolCalls.push({ name, args });
+    // 実機で多発した「初回だけ照合が取得できない」を模擬。利用者の二度押しは行わない。
+    if (name === 'explainSpec' && transientFirstExplanationReads > 0) {
+      transientFirstExplanationReads--;
+      return { isError:true, structuredContent:{ error:'EXPLANATION_LOOKUP_TEMPORARY' } };
+    }
     const response = await request('/app', { jsonrpc: '2.0', id: id++, method: 'tools/call', params: { name, arguments: args } });
     assert.equal(response.error, undefined, JSON.stringify(response));
     return response.result;
@@ -117,7 +123,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       };
       throw new Error('EXPLANATION_CHAT_DISPATCH_FAILED '+JSON.stringify(context).slice(0,2600)+' '+e.message);
     });
-    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '保存した採点データを解説前に自動取得');
+    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 3,
+      '初回2回の一時失敗を学習画面内で自動回復し、再度押す必要をなくす');
     assert.match(await ui.locator('#app').innerText(), /正答は3です/);
     assert.equal(await ui.getByRole('button', { name: 'AI解説を再依頼' }).count(), 0, '成功した解説画面に無意味な再依頼を表示しない');
     assert.equal(await ui.getByRole('button', { name: '公式正答を再表示' }).count(), 0, '正答表示中の無意味な再表示を表示しない');
@@ -130,7 +137,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.ok(await ui.locator('.md').evaluate(el =>
       !!(el.compareDocumentPosition(document.querySelector('.choices')) & Node.DOCUMENT_POSITION_FOLLOWING)),
       '解説本文の直後にボタンを配置する');
-    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 1, '解説の重複依頼をしない');
+    assert.equal(toolCalls.filter(c => c.name === 'explainSpec').length, 3, 'GETの自動再試行は3回まで');
     assert.equal(toolCalls.filter(c => c.name === 'nextQuestion' && /^E-/.test(c.args.sessionId)).length, 1, 'モデルの既存ツールから照合番号で公式根拠を取得');
     assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 1, '検証済みの解説全文を一度だけ登録し、次問ボタンを生成');
     assert.equal(toolCalls.filter(c => c.name === 'submitAnswer').length, 1);
@@ -138,7 +145,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.droppedContext), 0, '解説は遅延モデル文脈のACKや取落ちに依存しない');
     assert.equal(await page.evaluate(() => window.droppedWidgetState), 0, '入力欄の添付を作らない');
     const messages = await page.evaluate(() => window.messages);
-    assert.equal(messages.length, 1);
+    assert.equal(messages.length, 1, '3回の自動照合後にAI依頼は1回だけ送り、会話を重複させない');
     assert.ok(messages.every(m => /^2026年度 問1の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。\（照合番号：E-[A-Za-z0-9_-]{16}\）$/.test(m)),
       '会話に表示するのは解説依頼と短い照合番号だけ');
     assert.ok(messages.every(m => !m.includes(knownSessionId) && !m.includes(first.question.questionId)),
