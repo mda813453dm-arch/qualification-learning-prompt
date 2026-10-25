@@ -4,6 +4,7 @@
  */
 import ipaManifest from '../data/ipa-official-source-manifest.json' with { type: 'json' };
 import qualificationUrlIndex from '../data/qualification-url-index.json' with { type: 'json' };
+import qualificationFields from '../data/qualification-fields.json' with { type: 'json' };
 
 // 記述式の午後問題は、既存の四択エンジンで誤採点するため出題対象にしない。
 // 原本PDFは保存済み。午後の採点UI実装後に別途開放する。
@@ -703,6 +704,16 @@ function sourceNameMatchesExisting(name, catalog) {
     }));
 }
 
+// A mismatch must fail before startup, not silently display the wrong syllabus.
+for (const item of qualificationUrlIndex.qualifications) {
+  if (sourceNameMatchesExisting(item.name, BASE_CATALOG)) continue;
+  const entry = qualificationFields.entries[item.sourceId];
+  if (!entry || entry.name !== item.name || !Array.isArray(entry.fields) ||
+      entry.fields.length < 2 || entry.fields.some((f) => !String(f).trim())) {
+    throw new Error(`Qualification fields invalid or missing: ${item.sourceId}`);
+  }
+}
+
 const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualifications
   .filter((x) => !sourceNameMatchesExisting(x.name, BASE_CATALOG))
   .map((x) => [x.sourceId, {
@@ -713,7 +724,11 @@ const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualification
     officialSite: x.pastExamPage,
     overviewSource: x.pastExamPage,
     pastExamPage: x.pastExamPage,
-    fields: { general: '試験全般（分野の詳細は未確認）' },
+    // 公式試験科目との照合が済んだ分野と、学習用の仮分類を混同しない。
+    fields: Object.fromEntries(qualificationFields.entries[x.sourceId].fields.map((field, i) =>
+      [`f${String(i + 1).padStart(2, '0')}`, field])),
+    fieldVerification: qualificationFields.entries[x.sourceId].verification,
+    fieldSourceUrl: qualificationFields.entries[x.sourceId].sourceUrl,
     overview: [
       ['公式過去問の参照先', `URL台帳${x.urlRecordCount}件（リンクあり${x.linkedUrlCount}件）。問題原本・公式正答との照合は未実施`],
       ...(x.listedYears.length ? [['参照先台帳の掲載年度', x.listedYears.join('・')]] : []),
