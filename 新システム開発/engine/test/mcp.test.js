@@ -915,7 +915,7 @@ test('全資格：概要は公式ページの記載（台帳）を出し、出�
     assert.ok(ov.lines.some((l) => /^公式：/.test(l)) && ov.lines.includes('参考（非公式）：なし'), c.name);
     assert.ok(ov.lines.some((l) => /^合格基準/.test(l)), c.name);
     assert.match(ov.source, /^https:\/\//);
-    if (c.urlCatalog) assert.ok(ov.lines.some((l) => /原本.*未実施|正答.*検証/.test(l)), c.name);
+    if (c.urlCatalog) assert.ok(ov.lines.some((l) => /未確認の問題は出題しません/.test(l)), c.name);
   }
   assert.ok(overviewFor('q041').lines.some((l) => /試験時間：午後1時〜午後3時/.test(l)));
 });
