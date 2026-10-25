@@ -61,7 +61,8 @@ test('旧ブリッジのメタデータが遅れて届いても表示し、標�
 
 test('無応答は有限時間で案内に変わり、後から結果が来れば復帰する', async () => {
   const h = host();
-  [...h.timers.values()].find((t) => t.ms === 5000).fn();
+  // The widget also schedules its lease heartbeat at 5000 ms; choose the RPC initialize timeout.
+  [...h.timers.values()].filter((t) => t.ms === 5000).at(-1).fn();
   await new Promise(setImmediate);
   assert.match(h.app.innerHTML, /学習画面との接続が切れています/);
   h.emit({ jsonrpc: '2.0', method: 'ui/notifications/tool-result', params: menuResult });
