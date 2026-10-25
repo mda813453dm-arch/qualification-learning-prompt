@@ -730,8 +730,7 @@ const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualification
     fieldVerification: qualificationFields.entries[x.sourceId].verification,
     fieldSourceUrl: qualificationFields.entries[x.sourceId].sourceUrl,
     overview: [
-      ['公式過去問の参照先', `URL台帳${x.urlRecordCount}件（リンクあり${x.linkedUrlCount}件）。問題原本・公式正答との照合は未実施`],
-      ...(x.listedYears.length ? [['参照先台帳の掲載年度', x.listedYears.join('・')]] : []),
+      ['過去問', '公式問題と正答の確認が完了したものから利用できます。未確認の問題は出題しません'],
     ],
     overviewOnly: true,
     uploadAdapter: 'generic_mc',
