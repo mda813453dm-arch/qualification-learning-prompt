@@ -866,7 +866,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         notice: existing?.state === 'failed'
           ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
           : cat.urlCatalog
-            ? `公式過去問の参照URLを${cat.urlCatalog.urlRecordCount}件登録しましたが、出題・採点に使える問題と正答の原本照合は未完了です。公式の問題PDFと正答PDFを同じ年度・試験区分で添付すると検証できます。AI作成確認問題での学習も選べます。`
+            ? '公式過去問は現在準備中です。公式の問題PDFと正答PDFを同じ年度・試験区分で添付すると確認できます。AI作成確認問題でも学習できます。'
           : cat.privateLicensedUpload
             ? 'この資格の過去問には利用許諾の確認が必要です。事前保存・自動取得・他ユーザーとの共有はしません。権利者から利用許諾を得た方だけ、年度ごとに確認した後に問題PDFを添付できます。'
             : 'サイトからの自動取得はできません。2022～2025年度の午前・午後は、公式問題PDFと公式正答PDFをこのチャットへ添付すると原本を照合して出題できます。記述式の自動採点は未対応です。' };
@@ -901,7 +901,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
       } : {}),
       notice: cat.urlCatalog
-        ? `公式URL台帳に掲載されている${cat.urlCatalog.urlRecordCount}件は、検証済みの問題データではありません。公式問題・公式正答PDFを同年度・同区分で添付して検証するか、AI作成確認問題を選んでください。`
+        ? '公式過去問は現在準備中です。公式問題と正答のPDFを同じ年度・試験区分で添付するか、AI作成確認問題を選んでください。'
         : cat.privateLicensedUpload
         ? (cat.officialAnswerHtml
           ? 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題PDFを添付してください。正答は公式の年度別正解ページで確認します。'
