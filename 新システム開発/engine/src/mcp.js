@@ -696,6 +696,10 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'EXPLANATION_REFERENCE_REQUIRED' }) }], structuredContent: { error: 'EXPLANATION_REFERENCE_REQUIRED' } });
       }
       // 「解説あり」の基礎解説を保存してから表示。画面復帰時に確認問題が割り込まない。
+      if (widget && tool.name === 'showMenu' && args.kind === 'lesson' && !args.sessionId) {
+        const error = { error: 'LESSON_SESSION_REQUIRED' };
+        return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify(error) }], structuredContent: error });
+      }
       if (widget && tool.name === 'showMenu' && args.kind === 'lesson' && args.sessionId) {
         const prepared = tool.local(args);
         if (!prepared?.menu?.body) {
