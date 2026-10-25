@@ -568,7 +568,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const global = await libraryFor(env, state.qualificationId, now);
   if (adapter !== 'generic_mc' && global?.stored.some((x) => x.year === year && x.section === section))
     return { status: 'attachedAlready', sessionId: id, year, section,
-      notice: `${year}年度・${section}は共有保存済みです。PDFの再添付は不要です。`,
+      notice: `${year}年度・${section}の公式問題は利用できます。PDFの再添付は不要です。`,
       sharedLibrary: publicLibraryView(global) };
   const have = (job?.sources ?? []).find((x) => x.year === year && x.section === section && x.status === 'done');
   if (have) return { status: 'attachedAlready', sessionId: id, year, section,
@@ -922,7 +922,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         ? (cat.officialAnswerHtml
           ? 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題PDFを添付してください。正答は公式の年度別正解ページで確認します。'
           : 'この年度の問題は本人専用の取込が必要です。許諾確認後に、その年度の問題・正答PDFを添付してください。')
-        : '今回の学習対象の公式問題は共有保存されていません。未保存の部だけPDFを添付してください。' };
+        : '今回利用できる公式問題を確認できません。必要な年度・試験区分の問題・正答PDFを登録してください。' };
   }
   // 汎用資格共通：問題を一件も読めない状態を「全問終了」と誤判定しない。
   // 既存の学習履歴を消さず、共有ライブラリを確認・更新する操作へ戻す。
@@ -938,8 +938,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       sharedLibrary: publicLibraryView(shared), validatedUploadYears: cat?.validatedUploadYears ?? [],
       job: jobView(job),
       notice: job?.state === 'failed'
-        ? '公式過去問の取得または検証に失敗しました。保存状況を更新し、利用可能な年度の問題を確認してください。'
-        : '現在利用できる公式過去問が0件です。未登録・保存データを読み出せない状態と、全問終了は異なります。共有保存状況を更新してください。' };
+        ? '公式過去問の取得または確認に失敗しました。過去問の利用状況を再確認するか、PDFを登録してください。'
+        : '現在利用できる公式過去問を確認できません。必要に応じて公式PDFを登録するか、AI作成確認問題で学習できます。' };
   }
   const prevField = state.current?.fieldId ?? null;
   // 再開のとき「新しい問題から」を選んだら、前回答えていない問を今回は出さずに別の問へ進む（記録には残さない）
@@ -1133,10 +1133,10 @@ async function restoreStudyView(env, id, state, now) {
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
       } : {}),
       notice: cat.urlCatalog
-        ? `公式過去問の参照先${cat.urlCatalog.urlRecordCount}件を登録済みです。出題・採点用の原本は未検証です。年度と試験区分を揃えた公式問題・正答PDFを添付するか、AI作成確認問題から学習できます。`
+        ? '公式過去問は現在準備中です。公式問題・正答PDFを同じ年度・試験区分で登録するか、AI作成確認問題から学習できます。'
         : cat.privateLicensedUpload
         ? '許諾未確認のPDFは自動取得・共有保存しません。許諾を得た利用者本人だけ年度別に取り込めます。'
-        : '公式問題・正答のPDFは共有に未保存の部だけ必要です。AI作成確認問題でも学習できます。' };
+        : '利用したい年度・試験区分の公式問題を確認できない場合は、問題・正答PDFを登録してください。AI作成確認問題でも学習できます。' };
   }
   // 初回の公式概要・学習状況選択が終わっていないセッションは「再開済み」に偽装しない。
   // 引継ぎセッションは上の resumePending 分岐で明示的に復元される。
@@ -1735,7 +1735,7 @@ async function route(request, env, url, now) {
     }
     return json(200, { status: 'officialLibrary', sessionId: id,
       sharedLibrary: publicLibraryView(shared),
-      notice: '共有保存済みの公式過去問だけを表示しています。' });
+      notice: '利用できる公式過去問の年度・問題数を表示しています。' });
   }
 
   // 著作権の許諾を要する資格：年度別の本人確認後だけ、本人専用の保存・解析を認める。
