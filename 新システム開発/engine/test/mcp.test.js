@@ -125,7 +125,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   assert.match(WIDGET_URI, /question-v101\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.101');
+  assert.equal(WIDGET_VERSION, '2026-10-25.103');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1080,7 +1080,7 @@ test('解説の本文のURLは、押して開けるリンクにする', () => {
 test('解説の依頼に問題文を載せない／新しい画面が出たら古い画面のボタンを押せなくする', () => {
   const h = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
   assert.ok(!h.includes('qtext'));
-  assert.ok(h.includes('function lockOld') && h.includes("BroadcastChannel('qlp-widget')") && h.includes('stamp(data);'));
+  assert.ok(h.includes('function lockOld') && h.includes("BroadcastChannel('qlp-fixed-study-frame-v103')") && h.includes('stamp(data);'));
 });
 
 test('「今日はここまで」は問題の画面に出さず、解説・次へのメニューと一緒に出す', () => {
