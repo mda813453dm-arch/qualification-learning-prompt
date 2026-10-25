@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v98.html';
+export const WIDGET_URI = 'ui://qlp/question-v99.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.98';
+export const WIDGET_VERSION = '2026-10-25.99';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -16,9 +16,11 @@ export function widgetHtml() {
 @media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a;--acc:#8ab4f8;--accbg:#22304a;--ok:#79e6a0;--ng:#ff9696}}
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
-/* 学習画面の高さを一定にし、スクロール位置をChatGPT本体ではなくアプリ内部で管理する。 */
-#app.study-viewport{height:clamp(480px,175vw,720px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
-/* ChatGPTの全画面表示では上部の閉じる操作・下部のチャット入力欄と重ならない余白を確保する。 */
+/* 二重縦スクロールを避ける: iframeの内容は自然高さ、ChatGPT側が縦方向にスクロールする。
+   iframeへの高さ通知はfit()/ResizeObserverが担当し、内容に上限を設けない。 */
+#app.study-viewport{height:auto;max-height:none;overflow:visible;overscroll-behavior:auto;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+html,body{height:auto;min-height:0;overflow:visible}
+/* 全画面は利用者・ホストによる選択時だけ対応する。学習中の強制切替はしない。 */
 html.study-fullscreen #app.study-viewport:not(.is-old){padding-top:calc(64px + env(safe-area-inset-top,0px))}
 #app.is-old{height:auto;min-height:0;max-height:none;overflow:visible;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
@@ -64,7 +66,10 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-b{padding:6px 14px 10px}
 .ov-r{padding:8px 0;border-bottom:1px solid var(--line)}.ov-r:last-child{border-bottom:0}
 .ov-r{display:grid;grid-template-columns:6.2em 1fr;gap:2px 10px;align-items:baseline}
-.ov-r .ov-k{display:block}
+ .ov-r .ov-k{display:block}
+.ov-r.full{display:block}
+.ov-r.full .ov-v{display:block;width:100%;line-height:1.7}
+@media (max-width:520px){.ov-r:not(.full){grid-template-columns:minmax(0,1fr);gap:0}.ov-r .ov-k{padding-bottom:2px}.ov-r .ov-v{overflow-wrap:anywhere}}
 .ov-r.major .ov-v{font-weight:700}
 .ov-r.tone-date .ov-k{color:#1557b0}.ov-r.tone-score .ov-k{color:#0a7d32}.ov-r.tone-fee .ov-k{color:#b45309}.ov-r.tone-note .ov-k{color:#6b5b95}
 .ov-r.minor .ov-k{font-weight:600}.ov-r.minor .ov-v{color:var(--sub)}
@@ -86,8 +91,8 @@ a{color:inherit}
 <script>
 (function(){
   var app = document.getElementById('app');
-  // iframe自身の高さ(100vh等)に連動させると、ホストへの高さ通知と相互に増幅する。
-  // 幅ベースの一定高さにすることで、その循環と遷移時の外側スクロールずれを避ける。
+  // 内容による自然高さ。#appにvhや高さ制限を設けないことで内側の縦スクロールを廃止。
+  // ChatGPTホストが大きな高さを拒否する場合、完全な単一スクロールは保証できない。
   if (app.classList && app.classList.add) app.classList.add('study-viewport');
   var state = { sessionId: null, question: null, answered: false, privateLicensedUpload: false };
   var pending = {}, rid = 1, bridgeReady = false, hasView = false;
@@ -1163,7 +1168,7 @@ a{color:inherit}
       var m = l.match(/^[\\u3000 ]+\\d+\\.\\s*(.*)$/);
       if (m) { if (list) list.push(m[1]); return; }
       var i = l.indexOf('：');
-      if (i < 0) { rows += '<div class="ov-r"><span class="ov-v">' + esc(l) + '</span></div>'; return; }
+      if (i < 0) { rows += '<div class="ov-r full"><span class="ov-v">' + esc(l) + '</span></div>'; return; }
       var k = l.slice(0, i), v = l.slice(i + 1);
       if (!v) { list = []; rows += '<div class="ov-r"><span class="ov-k">' + esc(k) + '</span>@@LIST@@</div>'; return; }
       rows += '<div class="ov-r ' + (OV_MAJOR.test(k) ? 'major' : OV_MINOR.test(k) ? 'minor' : '') + ' ' + ovTone(k) + '"><span class="ov-k">' + esc(k) + '</span><span class="ov-v">' + esc(v) + '</span></div>';
@@ -2010,10 +2015,10 @@ a{color:inherit}
     function align(){
       if (turn !== latestFocusTurn || locked || !latest.isConnected) return;
       try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
-      // 外側のChatGPTチャットは手を触れず、画面内容を保持する内部スクローラだけを戻す。
-      // これなら直前の選択肢が下にあっても、表示更新後に本文先頭へ戻れる。
-      if (app.classList && app.classList.contains('study-viewport')) app.scrollTop = 0;
-      else { try { window.scrollTo(0, 0); } catch(e) {} }
+      // 内部縦スクロールは持たない。画面先頭にある最新表示へ移動を依頼する。
+      // ChatGPT本体の位置はホスト管理のため確実な制御はできない。
+      try { window.scrollTo(0, 0); } catch(e) {}
+      try { latest.scrollIntoView({behavior:'instant',block:'start',inline:'nearest'}); } catch(e) {}
     }
     align();
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){
@@ -2022,7 +2027,7 @@ a{color:inherit}
     });
     setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 160);
   }
-  // 全画面で表示する（チャットの途中に枠が固定され、上下にスクロールし直す手間をなくす）。アプリが断ったら、今のまま続ける
+  // 自動で全画面に移動しない。ChatGPT本体の縦スクロールを維持し、二重スクロールを避ける。
   var fullAsked = false;
   function syncDisplayMode(){
     var classes = document.documentElement && document.documentElement.classList;
@@ -2040,8 +2045,8 @@ a{color:inherit}
       if (bridgeReady) rpc('ui/request-display-mode', { mode: 'fullscreen' }).then(syncDisplayMode).catch(function(){});
     } catch (e) {}
   }
-  try { document.addEventListener('click', function(){ goFull(); }, true); } catch (e) {}
-  // 画面の実際の高さ（#app）で測る。documentElement.scrollHeight は枠の高さを下回らないので、内容が短くなっても枠が縮まなかった
+  // iPhoneではクリックで全画面に切り替えると二重のスクロール画面が生まれるため自動呼出ししない。
+  // 内容の自然高さでホストに枠サイズを伝える。旧枠に置き換わった場合も縮む。
   function fit(){
     var h = Math.ceil(app.offsetHeight) + 2;
     try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
@@ -2062,7 +2067,7 @@ a{color:inherit}
     notify('ui/notifications/initialized', {});
     fit();
     diag('bridge_ready');
-    goFull();
+    // 長い問題や解説はチャット側に自然な縦長の枠として表示する。
     // 同じセッションの画面が再生成された場合、現在の回答待ち・採点画面へ復元する。
     var stored = loadIds();
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
