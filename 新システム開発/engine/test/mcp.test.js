@@ -150,15 +150,15 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
   assert.equal(menuTool.local({ kind: 'lesson', fieldName: '必修問題' }), null, 'never show empty explanation');
   assert.equal(menuTool.local({ kind: 'lesson', body: args.body }), null, 'field identity is required');
   assert.match(appInstructions(), /基礎解説は必ず学習枠内/);
-  assert.match(appInstructions(), /showMenu\\(\\{kind:lesson/);
+  assert.ok(appInstructions().includes('showMenu({kind:lesson'));
   assert.doesNotMatch(appInstructions(), /その分野の解説をチャットに書き（この場合だけ showMenu は呼ばない）/);
   const widget = widgetHtml();
-  assert.match(widget, /m.kind === 'lesson' && action === 'check'/);
-  assert.match(widget, /m.fieldName \\|\\| loadIds\\(\\).field/);
-  assert.match(widget, /lessonField \\+ 'の確認問題・第1問へ進む'/);
-  assert.match(widget, /app.innerHTML = '<h2>この分野の確認問題へ<\\/h2>'/);
-  assert.match(widget, /function scrollUp\\(noMark\\)/);
-  assert.match(widget, /app.scrollTop = 0/);
+  assert.ok(widget.includes("m.kind === 'lesson' && action === 'check'"));
+  assert.ok(widget.includes("m.fieldName || loadIds().field"));
+  assert.ok(widget.includes("lessonField + 'の確認問題・第1問へ進む'"));
+  assert.ok(widget.includes("app.innerHTML = '<h2>この分野の確認問題へ</h2>'"));
+  assert.ok(widget.includes('function scrollUp(noMark)'));
+  assert.ok(widget.includes('app.scrollTop = 0'));
   // This path does not use a chat text answer as the lesson display.
   assert.match(menuTool.description, /チャットには書かず/);
 });
