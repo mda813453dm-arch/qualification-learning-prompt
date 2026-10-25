@@ -254,7 +254,7 @@ a{color:inherit}
   var myAt = 0, locked = false, bc = null;
   var frameId = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
   var ownedSession = null, followerSession = null, refreshScheduled = false, lastRenderedSignature = null;
-  var frameLeasePrefix = 'qlp_fixed_frame_v102:', frameChangePrefix = 'qlp_frame_change_v102:';
+  var frameLeasePrefix = 'qlp_fixed_frame_v103:', frameChangePrefix = 'qlp_frame_change_v103:';
   var FRAME_LEASE_MS = 18000;
   function leaseKey(sid){ return frameLeasePrefix + encodeURIComponent(String(sid)); }
   function readLease(sid){
@@ -319,7 +319,7 @@ a{color:inherit}
     if (ownedSession && String(msg.sessionId) === ownedSession) scheduleFirstFrameRefresh(ownedSession);
   }
   try {
-    bc = new BroadcastChannel('qlp-fixed-study-frame-v102');
+    bc = new BroadcastChannel('qlp-fixed-study-frame-v103');
     bc.onmessage = function(e){ onFrameMessage(e && e.data); };
   } catch(e){}
   window.addEventListener('storage', function(e){
