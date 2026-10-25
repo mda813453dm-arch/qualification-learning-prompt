@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v98\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.98');
+  assert.match(WIDGET_URI, /question-v99\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.99');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -158,7 +158,9 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
   assert.ok(widget.includes("lessonField + 'の確認問題・第1問へ進む'"));
   assert.ok(widget.includes('この分野の確認問題へ'));
   assert.ok(widget.includes('function scrollUp(noMark)'));
-  assert.ok(widget.includes('app.scrollTop = 0'));
+  assert.ok(widget.includes('window.scrollTo(0, 0)'));
+  assert.ok(widget.includes('latest.scrollIntoView({behavior:'));
+  assert.match(widget, /#app\.study-viewport\{height:auto;max-height:none;overflow:visible/);
   // This path does not use a chat text answer as the lesson display.
   assert.match(menuTool.description, /チャットには書かず/);
 });
@@ -175,17 +177,22 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
 });
 
-test('学習枠を一定高さの独立スクローラにし、ChatGPT本体を動かさず先頭へ戻す', () => {
+test('学習枠の二重縦スクロールを廃止して自然高さにし、旧枠は縮小する', () => {
   const html = widgetHtml();
   assert.match(html, /class="latest" tabindex="-1"/);
   assert.match(html, /latest\.focus\(\{ preventScroll: true \}\)/);
-  assert.match(html, /#app\.study-viewport\{height:clamp\(480px,175vw,720px\);overflow-y:auto/);
+  assert.match(html, /#app\.study-viewport\{height:auto;max-height:none;overflow:visible/);
+  assert.match(html, /html,body\{height:auto;min-height:0;overflow:visible\}/);
   assert.match(html, /app\.classList\.add\('study-viewport'\)/);
-  assert.match(html, /app\.scrollTop = 0/);
-  assert.doesNotMatch(html, /latest\.scrollIntoView\(/, '外側のChatGPTチャットを動かすAPIを使用しない');
+  assert.doesNotMatch(html, /#app\.study-viewport\{height:clamp/);
+  assert.match(html, /latest\.scrollIntoView\(\{behavior:'instant',block:'start'/);
+  assert.doesNotMatch(html, /document\.addEventListener\('click', function\(\)\{ goFull\(\); \}/,
+    '利用者のタップを全画面への自動切替に使わない');
   assert.match(html, /if \(turn === latestFocusTurn\) \{ fit\(\); align\(\); \}/);
   assert.match(html, /Promise\.resolve\(\)\.then\(function\(\)\{ if \(!locked && thisRender === renderFocusTurn\) scrollUp\(\); \}\)/);
-  assert.match(html, /if \(!latest\) \{/);
+  assert.match(html, /#app\.is-old\{height:auto;min-height:0/);
+  assert.match(html, /class="ov-r full"/, 'ラベルのない項目は列幅で押しつぶさない');
+  assert.match(html, /@media \(max-width:520px\)\{\.ov-r:not\(\.full\)/, '狭い画面では項目名と値を縦に並べる');
 });
 
 test('解説の依頼文は資格共通の判断根拠とし、計算の有無は問題の内容で決める', () => {
@@ -948,7 +955,7 @@ test('全資格：概要は公式ページの記載（台帳）を出し、出�
     assert.ok(ov.lines.some((l) => /^公式：/.test(l)) && ov.lines.includes('参考（非公式）：なし'), c.name);
     assert.ok(ov.lines.some((l) => /^合格基準/.test(l)), c.name);
     assert.match(ov.source, /^https:\/\//);
-    if (c.urlCatalog) assert.ok(ov.lines.some((l) => /未確認の問題は出題しません/.test(l)), c.name);
+    if (c.urlCatalog) assert.ok(!ov.lines.some((l) => /PDFを同じ年度|未確認の問題は出題しません|公式問題と正答の確認が完了/.test(l)), c.name);
   }
   assert.ok(overviewFor('q041').lines.some((l) => /試験時間：午後1時〜午後3時/.test(l)));
 });
