@@ -27,7 +27,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const chosen = await tool('chooseItem', { sessionId: session.sessionId, fieldName, mode: 'explain' });
   assert.equal(chosen.structuredContent.mode, 'explain');
   const register = () => tool('registerConfirmationQuestion', { sessionId: session.sessionId,
-    question: '同じ分野の確認問題です。正しい選択肢はどれですか。', choices: ['選択肢A', '選択肢B', '選択肢C'], correctAnswer: 2 });
+    question: '同じ分野の確認問題です。正しい選択肢はどれですか。', choices: ['選択肢A', '選択肢B', '選択肢C'], correctAnswer: 2,
+     explanation: '正答は選択肢Bです。AとCは条件が異なるため正答になりません。' });
   // まず解説を表示し、利用者が「確認問題へ進む」を押すまでは問題を登録しない。
   const lesson = await tool('showMenu', { kind: 'lesson', sessionId: session.sessionId,
     fieldName, body: '## 測量に関する法規の解説\\n土地の測量に必要な法令の基本を整理します。理解してから確認問題3問に進み、最後に実践問題で確認します。' });
