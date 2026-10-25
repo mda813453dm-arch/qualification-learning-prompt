@@ -2359,6 +2359,11 @@ export function overviewFor(qid) {
       ...(c.overview ?? []).map(([k, v]) => `${k}：${v}`),
       // U18：公式ページで確かめられなかった項目は「未確認」と示す（推測で埋めない）
       ...OVERVIEW_REQUIRED.filter(([, re]) => !(c.overview ?? []).some(([k]) => re.test(k))).map(([k]) => `${k}：未確認`),
+      ...(c.fieldVerification ? [
+        c.fieldVerification === 'official'
+          ? '分野の確認状況：公式の試験範囲と照合済み（学習用に整理しています）'
+          : '分野の確認状況：学習用の分類です。公式試験科目との照合は順次行います',
+      ] : []),
       `学習用の分野分け：${Object.values(c.fields).map((f, i) => `${i + 1}. ${f}`).join('／')}`,
       ...(c.privateLicensedUpload ? [
         c.officialAnswerHtml
