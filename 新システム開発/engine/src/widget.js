@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v99.html';
+export const WIDGET_URI = 'ui://qlp/question-v100.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.99';
+export const WIDGET_VERSION = '2026-10-25.100';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -925,7 +925,11 @@ a{color:inherit}
     var j = d.journey || {};
     app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
       '<h2>確認問題 ' + esc(d.position) + ' / 3問の結果</h2>' + (d.restored ? '<div class="result ok">3問の回答を完了しています</div>' : '<div class="result ' + (d.correct ? 'ok' : 'ng') + '">' + (d.correct ? '正解' : '不正解') + '</div>') +
-      (d.restored ? '<div class="stem">3問中 ' + esc(d.correctCount) + '問正解。次の学習を選べます。</div>' : '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>') +
+      (d.restored ? '<div class="stem">3問中 ' + esc(d.correctCount) + '問正解。次の学習を選べます。</div>' : '<div class="stem">正答：' + esc(d.correctAnswer) + '　現在 ' + esc(d.correctCount) + ' / 3問正解</div>' +
+        '<section class="stem confirmation-summary" aria-label="採点後の簡易解説"><b>■簡易解説</b>' +
+        (d.explanation ? '<p>' + esc(d.explanation).replace(/\\n/g,'<br>') + '</p>' :
+          '<p>正答は「' + esc(d.correctChoice || ('選択肢 ' + d.correctAnswer)) + '」です。' +
+          'この問題には理由の保存がありません。次の問題からは解説も登録します。</p>') + '</section>') +
       (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>この分野を続ける（同じ分野の実践問題へ）</span></button>' +
         (d.nextFieldName ? '<button id="confirmationNextField"><b>2</b><span>次の分野の実践問題へ</span></button>' : '') +
         '<button id="confirmationReview"><b>' + (d.nextFieldName ? 3 : 2) + '</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>' + (d.nextFieldName ? 4 : 3) + '</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
