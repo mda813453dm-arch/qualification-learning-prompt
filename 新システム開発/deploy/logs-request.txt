@@ -36,3 +36,5 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-21 22:16 JST sanitized attachment failure HTTP status inspection only, no deployment or file content
 2026-10-23T02:00:00Z read-only investigation of iPhone explanation reconnect failure reported at 2026-10-23 10:34 JST; no learner data changes.
 2026-10-23T06:55:00Z user iPhone @資格学習 宅建 at 15:52 JST produced '問題を準備しています。' with only review/end. Read app mcp_rpc/widget_ui and error metadata; do not read learner IDs or answers or write learner data.
+
+2026-10-26 01:08 JST: user iOS administrative scrivener foundation law lesson failed twice after v103; diagnostic Cloud Run mcp_rpc, widget_ui, /app statuses (redact tokens, IDs, content). Read-only; root cause diagnosis.
