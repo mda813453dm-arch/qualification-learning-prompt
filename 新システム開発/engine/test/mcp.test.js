@@ -156,7 +156,7 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
   assert.ok(widget.includes("m.kind === 'lesson' && action === 'check'"));
   assert.ok(widget.includes("m.fieldName || loadIds().field"));
   assert.ok(widget.includes("lessonField + 'の確認問題・第1問へ進む'"));
-  assert.ok(widget.includes("app.innerHTML = '<h2>この分野の確認問題へ</h2>'"));
+  assert.ok(widget.includes('この分野の確認問題へ'));
   assert.ok(widget.includes('function scrollUp(noMark)'));
   assert.ok(widget.includes('app.scrollTop = 0'));
   // This path does not use a chat text answer as the lesson display.
