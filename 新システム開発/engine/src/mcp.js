@@ -200,8 +200,8 @@ export const TOOLS = [
   {
     name: 'registerConfirmationQuestion',
     appOnly: true,
-    description: '解説あり／確認問題からを選んだ通常の同一分野3問に使う。AIが作った各問の本文・全選択肢・正答を出題前に登録する。エンジンが1/3から問数と進捗バーを表示し、採点・3問完了時の実践問題への移動を画面で行う。チャットに問題や選択肢を直接書かない。3連続誤答による強制補強にはregisterRemediationQuestionを使う。',
-    inputSchema: { type: 'object', required: ['sessionId', 'question', 'choices', 'correctAnswer', 'explanation'], properties: {
+    description: '解説あり／確認問題からを選んだ通常の同一分野3問に使う。AIが作った各問の本文・全選択肢・正答・簡易解説explanationを出題前に登録する。旧版の互換性のためexplanationはAPI上は省略可能だが、新規問題では必ず付ける。エンジンが1/3から問数と進捗バーを表示し、採点・3問完了時の実践問題への移動を画面で行う。チャットに問題や選択肢を直接書かない。3連続誤答による強制補強にはregisterRemediationQuestionを使う。',
+    inputSchema: { type: 'object', required: ['sessionId', 'question', 'choices', 'correctAnswer'], properties: {
       sessionId, question: { type: 'string', minLength: 10, maxLength: 2000 },
       choices: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'string' } },
       correctAnswer: { type: 'integer', description: '出題前に確定した正答の選択肢番号（1から）' },
