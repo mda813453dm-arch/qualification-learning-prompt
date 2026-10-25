@@ -153,11 +153,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         }
       });
       window.descriptiveCounter = 0;
-      iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"},displayMode:"fullscreen",requestDisplayMode:async()=>({mode:"fullscreen"})};<\/script><script>');
+      iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"},displayMode:"inline",notifyIntrinsicHeight(h){if(window.frameElement)window.frameElement.style.height=Math.ceil(h)+"px";}};<\/script><script>');
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
+    // ラベルなしの注意行は狭い2列グリッドに入れず、横幅をすべて使う。
+    await ui.locator('#app').evaluate(el=>{
+      const note=document.createElement('div'); note.className='ov-r full';
+      note.innerHTML='<span class="ov-v">ここは試験概要の全文表示テストです。'.repeat(8)+'</span>';
+      el.querySelector('.ov-b')?.appendChild(note);
+    });
+    assert.equal(await ui.locator('.ov-r.full').last().evaluate(el=>getComputedStyle(el).display),'block');
+    assert.ok(await ui.locator('.ov-r.full').last().evaluate(el=>el.querySelector('.ov-v').getBoundingClientRect().width > 220),
+      '概要のラベルなし行を細い列へ押し込まない');
     // 新規資格の導入画面を、起動直後に旧セッションのrestoreIdleで上書きしない。
     await page.waitForTimeout(300);
     assert.equal(await page.evaluate(() => window.calls.filter(c => c.params?.name === 'restoreStudyView').length), 0,
@@ -196,18 +205,22 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'redisplayQuestion').length), 0);
     assert.deepEqual(await page.evaluate(() => window.followups), [], '実践問題の出題はChatGPT依存ではない');
-    // iPhone実機報告の回帰: 長い問題で選択肢まで下にスクロールした後も、次の表示は
-    // ChatGPT本体のスクロールに依存せず、固定高さの学習枠内だけを先頭へ戻す。
-    const stableHeight = await ui.locator('#app').evaluate(el => {
+    // 長文は内部の縦スクロールで隠さず、ホストへ自然な高さを通知して全文を表示。
+    const longQuestionHeight = await ui.locator('#app').evaluate(el => {
       const filler = document.createElement('div');
       filler.textContent = '長文問題の画面位置テスト '.repeat(180);
       el.insertBefore(filler, el.querySelector('.choices'));
-      const height = el.clientHeight;
-      if (el.scrollHeight <= height) throw new Error('学習枠が内部スクロールしない');
-      el.scrollTop = el.scrollHeight;
-      if (el.scrollTop < 100) throw new Error('スクロールを再現できない');
-      return height;
+      return { clientHeight:el.clientHeight, scrollHeight:el.scrollHeight,
+        overflowY:getComputedStyle(el).overflowY,
+        documentHeight:el.ownerDocument.documentElement.scrollHeight };
     });
+    assert.equal(longQuestionHeight.overflowY, 'visible', '長文でもアプリ要素自体は縦スクロールしない');
+    assert.ok(Math.abs(longQuestionHeight.clientHeight-longQuestionHeight.scrollHeight)<4,'長い問題も全文を表示');
+    await page.waitForFunction(() => {
+      const iframe=document.querySelector('iframe');
+      const app=iframe?.contentDocument?.querySelector('#app');
+      return !!app && iframe.getBoundingClientRect().height >= app.scrollHeight-5;
+    }, null, {timeout:5000});
     await ui.locator('input[name=ans][value="3"]').check();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 0);
     await ui.getByRole('button', { name: '解答する' }).click();
@@ -216,12 +229,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('.latest').count(), 1, '採点画面の最新マーカーを重複させない');
     assert.equal(await ui.locator('.latest').evaluate(el => el.ownerDocument.activeElement === el), true,
       '採点後に「ここが最新の表示です」へフォーカスする');
-    assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0,
-      '問題の末尾から回答しても新しい採点画面は内部先頭に戻る');
-    assert.equal(await ui.locator('#app').evaluate(el => el.clientHeight), stableHeight,
-      '画面遷移で学習枠自体の高さが変わらずチャットが飛ばない');
-    assert.ok(await ui.locator('.latest').evaluate(el => el.getBoundingClientRect().top < 80),
-      'ウィジェット内部でも最新の表示が最上部に来る');
+    const gradedLayout=await ui.locator('#app').evaluate(el=>({
+      height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,scrollTop:el.scrollTop
+    }));
+    assert.equal(gradedLayout.overflowY,'visible','採点・解説画面も内部縦スクロールしない');
+    assert.ok(Math.abs(gradedLayout.scrollHeight-gradedLayout.height)<4);
+    assert.equal(gradedLayout.scrollTop,0);
+    assert.ok(gradedLayout.height < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、枠高も縮む');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /公式正答・簡易解説/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /各選択肢と正答の位置/);
@@ -467,28 +481,23 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('.md table').count(),1,'Markdown表を学習枠内に表示');
     assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),1);
     const prevFollowups = await page.evaluate(() => window.followups.length);
-    await ui.locator('#app').evaluate(el => {el.scrollTop=500;});
-    assert.ok(await ui.locator('#app').evaluate(el=>el.scrollTop)>0,'長文は枠内でスクロール');
+    const lessonSize=await ui.locator('#app').evaluate(el=>({
+      height:el.clientHeight,scrollHeight:el.scrollHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY
+    }));
+    assert.equal(lessonSize.overflowY,'visible','長い基礎解説も枠内ではスクロールさせない');
+    assert.ok(lessonSize.height > 500,'基礎解説とボタンの全文が長い自然高で表示される');
+    assert.ok(Math.abs(lessonSize.height-lessonSize.scrollHeight)<4,'解説本文を切り詰めない');
+    await page.waitForFunction(() => {
+      const iframe=document.querySelector('iframe');
+      const app=iframe?.contentDocument?.querySelector('#app');
+      return !!app && iframe.getBoundingClientRect().height >= app.scrollHeight-5;
+    },null,{timeout:5000});
     await page.evaluate(r=>window.deliver(r),result({status:'menu',sessionId,
       menu:{kind:'lesson',sessionId,studyId:'test-study',learnerId:'testlearner',
         fieldName:'必修問題',body:longLesson,prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
         choices:['確認問題へ進む','今日はここまで（学習を終了）'],actions:['check','end']}}));
-    try {
-      await page.waitForFunction(() => {
-        const el=document.querySelector('iframe')?.contentDocument?.querySelector('#app');
-        return !!el && el.scrollTop===0;
-      }, null, { timeout: 4000 });
-    } catch (e) {
-      const debug = await page.evaluate(() => {
-        const frame = document.querySelector('iframe');
-        const el = frame?.contentDocument?.querySelector('#app');
-        return { hasIframe: !!frame, origin: frame?.contentWindow?.location?.href,
-          hasDoc: !!frame?.contentDocument, hasApp: !!el,
-          scrollTop: el?.scrollTop, clientHeight: el?.clientHeight, scrollHeight: el?.scrollHeight,
-          className: el?.className, snippet: el?.innerText?.slice(0, 180) };
-      }).catch(err => ({ debugError: String(err) }));
-      throw new Error('Lesson scroll reset diagnostic: ' + JSON.stringify(debug), { cause: e });
-    }
+    assert.equal(await ui.locator('#app').evaluate(el=>el.scrollTop),0,'解説の再表示でも内側のスクロールは発生しない');
+    assert.equal(await ui.locator('.latest').count(),1);
     await ui.getByRole('button',{name:'確認問題へ進む'}).click();
     await ui.getByRole('heading',{name:'この分野の確認問題へ'}).waitFor();
     assert.equal(await ui.locator('.md').count(),0,'確認問題への遷移後は前の基礎解説を消す');
