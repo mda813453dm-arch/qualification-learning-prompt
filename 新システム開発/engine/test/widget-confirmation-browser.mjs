@@ -28,7 +28,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   assert.equal(chosen.structuredContent.mode, 'explain');
   const register = () => tool('registerConfirmationQuestion', { sessionId: session.sessionId,
     question: '同じ分野の確認問題です。正しい選択肢はどれですか。', choices: ['選択肢A', '選択肢B', '選択肢C'], correctAnswer: 2 });
-  const first = await register();
+  // まず解説を表示し、利用者が「確認問題へ進む」を押すまでは問題を登録しない。
+  const lesson = await tool('showMenu', { kind: 'lesson', sessionId: session.sessionId,
+    fieldName, body: '## 測量に関する法規の解説\\n土地の測量に必要な法令の基本を整理します。理解してから確認問題3問に進み、最後に実践問題で確認します。' });
+  assert.equal(lesson._meta?.qlp?.menu?.kind, 'lesson');
+  const first = lesson;
   const browser = await engine.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
@@ -54,6 +58,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       iframe.srcdoc = html; document.body.appendChild(iframe);
     }, { html: widgetHtml(), first });
     const ui = page.frameLocator('iframe');
+    await ui.getByRole('button', { name: /確認問題へ進む/ }).waitFor();
+    assert.equal(await ui.getByRole('heading', { name: /AI作成確認問題・第1問/ }).count(), 0,
+      '解説の画面では第1問を先に表示しない');
+    await ui.getByRole('button', { name: /確認問題へ進む/ }).click();
     for (let i = 1; i <= 3; i++) {
       await ui.getByRole('heading', { name: `${fieldName}｜AI作成確認問題・第${i}問` }).waitFor();
       assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), String(1+i));
