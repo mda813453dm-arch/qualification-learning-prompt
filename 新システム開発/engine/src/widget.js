@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v91.html';
+export const WIDGET_URI = 'ui://qlp/question-v92.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.91';
+export const WIDGET_VERSION = '2026-10-25.92';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1669,11 +1669,11 @@ a{color:inherit}
         (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     return '<section class="stem official-answer-summary" aria-label="採点後の簡易解説">' +
-      '<b>■公式正答・簡易解説</b>' +
+      '<b>■公式正答・簡易解説（採点と同時に表示）</b>' +
       '<p>正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + ' です。' +
       (g.dontKnow ? '正答を確認して復習しましょう。' : g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
       (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
-      '<p>各選択肢の詳しい判断根拠と必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
+      '<p>ここまでは保存済みの公式正答との照合です。選択肢ごとの判断根拠や必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
@@ -1696,11 +1696,20 @@ a{color:inherit}
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
     // 強制補強中は「次の問題へ」ボタンを一切出さない。
     if (g.checkSuggested) {
-      app.innerHTML = h + officialAnswerSummary(q, g) + endBar();
+      app.innerHTML = h + officialAnswerSummary(q, g) + '<div class="row"><button id="checkExp">AIの詳しい解説を追加</button></div>' + endBar();
       var mandatory = document.getElementById('check');
       mandatory.onclick = function(){
         this.disabled = true;
         ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。確認問題をregisterRemediationQuestionへ先に登録し、利用者の回答を画面側で採点してください。正解時だけ同じ分野の公式実践問題へ戻してください。', (q.fieldName || 'この分野') + 'の確認問題で基本を確かめる');
+      };
+      document.getElementById('checkExp').onclick = function(){
+        var b = document.getElementById('checkExp');
+        b.disabled = true;
+        b.textContent = 'AI解説を追加しています…';
+        loadExplanation(q.questionId, true).catch(function(){
+          if (b.isConnected) { b.disabled = false; b.textContent = 'AI解説の追加を再試行'; }
+          if (!document.getElementById('explanationError')) app.insertAdjacentHTML('beforeend', '<div class="notice" id="explanationError" role="alert">AI解説の依頼に失敗しました。公式正答・簡易解説はそのまま表示しています。</div>');
+        });
       };
       bindEnd();
       return;
