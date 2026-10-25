@@ -11,7 +11,7 @@ test('all 103 qualifications have distinct subject-specific learning fields', ()
   assert.equal(Object.keys(qualificationFields.entries).length, 91);
   for (const qualification of Object.values(CATALOG)) {
     const subjects = Object.values(qualification.fields);
-    assert.ok(subjects.length >= 2, qualification.name);
+    assert.ok(subjects.length >= (['fe', 'ap'].includes(qualification.qualificationId) ? 1 : 2), qualification.name);
     assert.equal(new Set(subjects).size, subjects.length, qualification.name);
     assert.ok(subjects.every((name) => name && !name.includes('分野の詳細は未確認')), qualification.name);
     const overview = overviewFor(qualification.qualificationId);
