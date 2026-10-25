@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v88.html';
+export const WIDGET_URI = 'ui://qlp/question-v89.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.88';
+export const WIDGET_VERSION = '2026-10-25.89';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1593,7 +1593,7 @@ a{color:inherit}
       throw new Error('EXPLANATION_REFERENCE_MISSING');
     if (!bridgeReady) await ready;
     var label=(q.year ? q.year+'年度 ' : '')+'問'+q.questionNumber;
-    var visible=label+'の各選択肢の理由と計算手順を、公式資料に基づいて解説してください。（照合番号：'+ctx.explanationRef+'）';
+    var visible=label+'の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：'+ctx.explanationRef+'）';
     // 画面のボタンで同じ依頼を2回出さず、復旧時も同一問を対象とする。
     return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]});
   }
