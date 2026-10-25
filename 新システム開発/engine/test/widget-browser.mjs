@@ -630,7 +630,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       });
       late.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:null};</script><script>');
       document.body.appendChild(late);
-      window.lateQuestion = question;
+      // 別学習セッションとして後着を検証。固定枠の同一セッション所有権とは独立。
+      window.lateQuestion = { ...question, sessionId: 'test-late-first-output' };
     }, { html: widgetHtml(), question });
     const lateUi = page.frameLocator('#lateFirstOutput');
     await lateUi.locator('#recoverStudy').waitFor({ state:'hidden', timeout:4000 }).catch(() => {});
