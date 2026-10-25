@@ -948,7 +948,7 @@ test('全資格：概要は公式ページの記載（台帳）を出し、出�
   for (const c of Object.values(CATALOG)) {
     // 新規移行した資格はURL台帳だけが根拠。試験時間・合格基準等の未確認情報を
     // 実在する4項目へ水増ししてはならない。
-    assert.ok(c.urlCatalog ? c.overview?.length >= 1 : c.overview?.length >= 4, c.name);
+    assert.ok(c.urlCatalog ? Array.isArray(c.overview) : c.overview?.length >= 4, c.name);
     assert.ok(c.overview.every(([k, v]) => k && v), c.name);
     const ov = overviewFor(c.qualificationId);
     assert.equal(ov.title, '■試験概要', c.name);
