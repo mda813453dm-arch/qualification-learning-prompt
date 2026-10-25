@@ -61,7 +61,7 @@ test('看護師の直接入力で学習開始画面を生成し、URLと未検�
   assert.equal(session.state.qualificationId, 'q070');
   const overview = overviewFor('q070');
   assert.match(overview.lines.join('\n'), /厚生労働省/);
-  assert.match(overview.lines.join('\n'), /公式問題と正答の確認が完了したものから利用/);
+  assert.doesNotMatch(overview.lines.join('\n'), /過去問は現在準備中|公式問題と正答の確認|PDFを同じ年度|未確認の問題は出題/);
   assert.ok(overview.pastExamPage?.startsWith('https://www.mhlw.go.jp/'));
   const study = await handle(new Request('https://engine.example/v1/study/start', {
     method: 'POST', headers: { authorization: 'Bearer test-token', 'content-type': 'application/json' },
