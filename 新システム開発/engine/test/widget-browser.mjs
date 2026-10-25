@@ -201,8 +201,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
-    await ui.getByRole('button', { name: '2 解説を見る' }).click();
-    await ui.getByRole('heading', { name: '2025年度 問1の公式正答照合' }).waitFor();
+    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).click();
+    await ui.locator('.official-answer-summary').waitFor();
     await page.waitForFunction(() => window.followups.length === 1);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 1, '解説は採点記録を読み出す');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
@@ -301,7 +301,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.ok(await ui.locator('#app').evaluate(el => el.getBoundingClientRect().height < 95),
       '長い過去問の画面をiPhoneでも高さ95px未満に縮める');
     await ui.getByRole('button', { name: 'ここで現在の学習を開く' }).click();
-    await ui.getByRole('button', { name: '2 解説を見る' }).waitFor();
+    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'restoreStudyView').length), 1);
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
