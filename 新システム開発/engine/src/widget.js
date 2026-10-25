@@ -1622,8 +1622,8 @@ a{color:inherit}
         ctx.question.questionId !== ctx.grade.questionId ||
         (questionId && ctx.grade.questionId !== questionId))
       throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
-    renderVerifiedExplanation(ctx);
     if (requestAi) await requestAdaptiveExplanation(ctx);
+    else renderVerifiedExplanation(ctx);
   }
   function renderVerifiedExplanation(ctx){
     var q = ctx.question, g = ctx.grade;
@@ -1655,6 +1655,25 @@ a{color:inherit}
       } catch(e) { var b = document.getElementById('explanationNext'); if(b) b.disabled = false; }
     };
 
+  }
+  function officialAnswerSummary(q, g){
+    if (!q || !g || g.skipped) return '';
+    var choices = Array.isArray(q.choices) ? q.choices : [];
+    var accepted = g.acceptedAnswers || [g.correctAnswer];
+    var items = choices.map(function(c, i){
+      var n = i + 1;
+      var correct = accepted.some(function(a){ return String(a) === String(n); });
+      var selected = String(g.selected) === String(n);
+      return '<li><b>' + esc(n) + '</b>　' + esc(c) +
+        (correct ? '　<b>【公式正答】</b>' : '') +
+        (selected ? '　【あなたの回答】' : '') + '</li>';
+    }).join('');
+    return '<section class="stem official-answer-summary" aria-label="採点後の簡易解説">' +
+      '<b>■簡易解説（公式正答の確認）</b>' +
+      '<p>正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + ' です。' +
+      (g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
+      (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
+      '<p>判断の根拠や計算過程は「AIの詳しい解説」で確認できます。</p></section>';
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
@@ -1719,10 +1738,11 @@ a{color:inherit}
     app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice' + Math.min(3, progress.fieldQuestion || 1), q.fieldName) +
       gradeBanner(g, label) +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
+      officialAnswerSummary(q, g) +
       (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
       '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
-      '<button id="exp"><b>2</b><span>解説を見る</span></button>' +
+      '<button id="exp"><b>2</b><span>AIの詳しい解説を追加</span></button>' +
       (fieldChange ? '<button id="continueField"><b>3</b><span>この分野の実践問題を続ける</span></button><button id="review"><b>4</b><span>総復習（間違えた問題）</span></button>' : '') +
       '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>今日はここまで（学習を終了）</span></button></div>';
     scrollUp();
@@ -1738,10 +1758,14 @@ a{color:inherit}
       }
     };
     document.getElementById('exp').onclick = function(){
-      app.querySelector('.choices').outerHTML = '<div class="notice">採点済みの問題を確認しています。</div><div class="row"><button id="retryDisplay">解説を再表示</button></div>' + endBar();
-      document.getElementById('retryDisplay').onclick = sendDisplay;
-      bindEnd();
-      sendDisplay();
+      var b = document.getElementById('exp');
+      if (b) { b.disabled = true; b.querySelector('span').textContent = 'AI解説を追加しています…'; }
+      loadExplanation(q.questionId, true).catch(function(){
+        var retry = document.getElementById('exp');
+        if (retry) { retry.disabled = false; retry.querySelector('span').textContent = 'AI解説の追加を再試行'; }
+        var msg = document.getElementById('explanationError');
+        if (!msg) app.insertAdjacentHTML('beforeend', '<div class="notice" id="explanationError" role="alert">AI解説の依頼に失敗しました。採点結果はそのまま保持しています。</div>');
+      });
     };
     if (fieldChange) document.getElementById('review').onclick = function(){
       nextBelow(async function(){
