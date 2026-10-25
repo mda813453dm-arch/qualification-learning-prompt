@@ -274,7 +274,7 @@ a{color:inherit}
   });
   var renderFocusTurn = 0;
   function render(data){
-    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
+    if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'lesson_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
@@ -445,6 +445,18 @@ a{color:inherit}
     if (data.status === 'remediation_question') {
       showRemediationQuestion(data);
       return;
+    }
+    if (data.status === 'lesson_pending') {
+      var lessonField = data.fieldName || '今の分野';
+      app.innerHTML = '<h2>' + esc(lessonField) + '｜解説</h2>' +
+        '<div class="notice">' + esc(data.notice || 'まずこの分野の解説を表示します。') + '</div>' +
+        '<div class="row"><button id="resumeLesson">解説を表示する</button></div>' + endBar();
+      document.getElementById('resumeLesson').onclick = async function(){
+        this.disabled = true;
+        await ask(lessonField + 'を解説から始めます。');
+        if (this.isConnected) this.disabled = false;
+      };
+      bindEnd(); scrollUp(); return;
     }
     if (data.status === 'confirmation_question') { showConfirmationQuestion(data); return; }
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
@@ -1056,8 +1068,15 @@ a{color:inherit}
           checkRequested = true;
           var retry = document.getElementById('lessonCheckRetry');
           if (retry) { retry.disabled = true; retry.textContent = '確認問題を開いています…'; }
-          try { await ask(lessonField + 'の確認問題・第1問へ進む'); }
-          finally {
+          try {
+            // 解説を確認した利用者が明示的に押してから確認問題の状態を作る。
+            var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: lessonField, mode: 'check' });
+            if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check')
+              throw new Error('CONFIRMATION_START_FAILED');
+            await ask(lessonField + 'の確認問題・第1問へ進む');
+          } catch (e) {
+            app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">確認問題の開始に失敗しました。学習状態を保持したまま再試行できます。</div>');
+          } finally {
             checkRequested = false;
             if (retry && retry.isConnected) {
               retry.disabled = false;
