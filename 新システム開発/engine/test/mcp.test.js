@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v99\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.99');
+  assert.match(WIDGET_URI, /question-v100\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.100');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -168,6 +168,8 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
 test('回答と同時に公式正答・簡易解説を表示し、AIボタンは追加の詳しい解説だけを依頼する', () => {
   const html = widgetHtml();
   assert.match(html, /公式正答・簡易解説（採点と同時に表示）/);
+  assert.match(html, /confirmation-summary/);
+  assert.match(html, /d\.explanation/);
   assert.match(html, /officialAnswerSummary\(q, g\)/);
   assert.ok(html.includes('id="checkExp"'));
   assert.ok(html.includes('id="dkExp"'));
@@ -542,7 +544,7 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
   const choice = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
   assert.deepEqual(choice.journey, { fieldIndex: 1, fieldTotal: Object.keys(CATALOG[SRC.qualificationId].fields).length });
   for (let i = 1; i <= 3; i++) {
-    const args = { sessionId, question: `確認問題の第${i}問の本文です。`, choices: ['A', 'B', 'C'], correctAnswer: 2 };
+    const args = { sessionId, question: `確認問題の第${i}問の本文です。`, choices: ['A', 'B', 'C'], correctAnswer: 2, explanation: '選択肢Bが正答です。AとCは設問の条件を満たしません。' };
     const q = (await app('registerConfirmationQuestion', args))._meta.qlp;
     assert.equal(q.position, i);
     assert.equal(q.total, 3);
@@ -552,6 +554,8 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
     assert.equal(repeated.challengeId, q.challengeId);
     const answer = (await app('answerConfirmationQuestion', { sessionId, challengeId: q.challengeId, selected: i === 2 ? '1' : '2' })).structuredContent;
     assert.equal(answer.position, i);
+    assert.equal(answer.explanation, args.explanation);
+    assert.equal(answer.correctChoice, 'B');
     assert.equal(answer.complete, i === 3);
     assert.equal(answer.correctCount, i === 3 ? 2 : 1);
     if (i === 3) assert.equal(answer.nextFieldName, CATALOG[SRC.qualificationId].fields.s2);
