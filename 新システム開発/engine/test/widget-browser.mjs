@@ -199,6 +199,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '解答する' }).click();
     await ui.locator('#exp').waitFor();
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /公式正答・簡易解説/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /各選択肢と正答の位置/);
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 0,
+      '回答時にAI解説取得を起動しない');
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
     assert.deepEqual(answer, { sessionId, questionId: question.question.questionId, value: '3', confidence: 'sure' });
     await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).click();
