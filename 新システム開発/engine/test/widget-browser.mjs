@@ -174,6 +174,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: '2 免除を利用しない' }).count(), 1,
       '初回用の免除・学習状況確認画面を維持する');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
+    assert.equal(await ui.locator('input[type=radio]').count(),0,'学習状況はラジオではなく番号ボタン');
+    assert.equal(await ui.locator('.choices button').count(),4,'学習状況は固定4択');
     await ui.getByRole('button', { name: '4 過去問演習中' }).click();
     // 押下結果が同じ位置に可視表示され、直後の二度押しも旧画面では無視される。
     await ui.locator('#stageAck').waitFor();
@@ -181,6 +183,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: '4 過去問演習中' }).isDisabled(), true);
     await ui.locator('[data-n="4"]').evaluate(b => b.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 })));
     await ui.getByRole('button', { name: /この学習計画で始める/ }).waitFor();
+    assert.equal(await ui.getByRole('button', { name: /学習計画を見直す/ }).count(),1);
+    assert.equal(await ui.getByRole('button', { name: /初期診断で苦手分野を調べる/ }).count(),1);
+    assert.equal(await ui.getByRole('button', { name: '4 今は学習しない' }).count(),1);
+    assert.equal(await ui.getByRole('button', { name: /承認して始める|手直しする/ }).count(),0,
+      'AIの旧学習計画選択肢を混ぜない');
     assert.match(await ui.locator('#app').innerText(), /画面は「学習計画」に切り替わりました/);
     // 実機の回帰：学習段階4の1タップが、描画し直した計画の「4 今は学習しない」を
     // 触っていないのに押した扱いになって学習計画を閉じないようにする。
@@ -372,18 +379,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       window.deliver({ _meta: { qlp: { status:'sourceUnavailable', sessionId, fieldName:'午後の部',
         sourceAttachmentSupported:true, sharedLibrary:library, notice:'未保存の公式問題を確認しています。' } } });
     }, { library, sessionId });
-    await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).waitFor();
+    await ui.getByRole('button', { name: /公式問題・正答PDFを登録する/ }).waitFor();
     assert.match(await ui.locator('#app').innerText(), /2025年度/);
-    assert.match(await ui.locator('#app').innerText(), /共有保存済みと確認できた年度はありません/);
+    assert.match(await ui.locator('#app').innerText(), /利用できる公式過去問の年度を確認できませんでした/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /共有保存|共有利用|URL台帳|別リポジトリ/);
+    assert.equal(await ui.locator('.choices button').count(),2,'PDF登録とAI確認問題のみを主な選択肢にする');
     const previousMessageCount = await page.evaluate(() => window.followups.length);
     const priorAttachCount = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
-    await ui.getByRole('button', { name: /共有に未保存の年度・部だけPDFを添付する/ }).click();
-    assert.match(await ui.locator('#app').innerText(), /PDFが添付されるまでは、取り込みは始まりません/);
+    await ui.getByRole('button', { name: /公式問題・正答PDFを登録する/ }).click();
+    assert.match(await ui.locator('#app').innerText(), /添付するまで登録は始まりません/);
     assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
       '添付がないボタンで新しい会話を送らない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), priorAttachCount,
       '空のPDFの取り込みを始めない');
-    await ui.getByRole('button', { name: /共有保存状況を更新/ }).click();
+    await ui.getByRole('button', { name: /過去問をもう一度確認する/ }).click();
     await page.waitForFunction(() => window.calls.some(m => m.params?.name === 'getOfficialLibrary'));
     assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
       '保存済み年度の照会も利用者チャットに内部内容を送信しない');
