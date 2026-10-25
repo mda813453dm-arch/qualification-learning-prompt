@@ -77,7 +77,7 @@ test('看護師の直接入力で学習開始画面を生成し、URLと未検�
   assert.equal(body.status, 'sourceUnavailable');
   assert.equal(body.urlCatalog.sourceId, 'q070');
   assert.equal(body.sourceAttachmentSupported, true);
-  assert.match(body.notice, /原本.*未検証|問題.*正答.*照合/);
+  assert.match(body.notice, /問題PDFと正答PDFを同じ年度・試験区分で添付すると確認できます/);
 });
 
 test('医師・獣医師／看護師・愛玩動物看護師の部分一致を取り違えない', async () => {
