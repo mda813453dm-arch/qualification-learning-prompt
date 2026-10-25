@@ -17,7 +17,7 @@ export function widgetHtml() {
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
 /* 学習画面の高さを一定にし、スクロール位置をChatGPT本体ではなくアプリ内部で管理する。 */
-#app.study-viewport{height:clamp(480px,175vw,720px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:auto;scroll-padding-top:0;overflow-anchor:none;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+#app.study-viewport{height:clamp(480px,175vw,720px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
 /* ChatGPTの全画面表示では上部の閉じる操作・下部のチャット入力欄と重ならない余白を確保する。 */
 html.study-fullscreen #app.study-viewport:not(.is-old){padding-top:calc(64px + env(safe-area-inset-top,0px))}
 #app.is-old{height:auto;min-height:0;max-height:none;overflow:visible;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
@@ -2012,11 +2012,8 @@ a{color:inherit}
       try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
       // 外側のChatGPTチャットは手を触れず、画面内容を保持する内部スクローラだけを戻す。
       // これなら直前の選択肢が下にあっても、表示更新後に本文先頭へ戻れる。
-      if (app.classList && app.classList.contains('study-viewport')) {
-        // 長文を同じ内容で再表示した際も、ブラウザのスクロール位置維持を解除する。
-        app.scrollTop = 0;
-        try { app.scrollTo({ top: 0, left: 0, behavior: 'instant' }); } catch(e) {}
-      } else { try { window.scrollTo(0, 0); } catch(e) {} }
+      if (app.classList && app.classList.contains('study-viewport')) app.scrollTop = 0;
+      else { try { window.scrollTo(0, 0); } catch(e) {} }
     }
     align();
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){
@@ -2024,7 +2021,6 @@ a{color:inherit}
       fit(); align();
     });
     setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 160);
-    setTimeout(function(){ if (turn === latestFocusTurn) align(); }, 420);
   }
   // 全画面で表示する（チャットの途中に枠が固定され、上下にスクロールし直す手間をなくす）。アプリが断ったら、今のまま続ける
   var fullAsked = false;
