@@ -334,22 +334,16 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         grade: { correct: true, selected: '3', correctAnswer: '3' }, at: Date.now() + 12000 };
       window.deliver({ ...nextQuestion, at: Date.now() - 5000 });
     }, { question, nextQuestion, sessionId });
-    // v103: 他枠の新着通知では最初の枠を閉じない。
-    // 明示的に所有権が移転した場合だけ、元枠を短い復旧案内へ縮小する。
-    await ui.locator('#app').evaluate(({ sessionId }) => {
-      const key = 'qlp_fixed_frame_v103:' + encodeURIComponent(sessionId);
-      const lease = JSON.stringify({ id: 'other-frame-took-over', time: Date.now() });
-      localStorage.setItem(key, lease);
-      window.dispatchEvent(new StorageEvent('storage', { key, newValue: lease }));
-    }, { sessionId });
-    await ui.getByRole('button', { name: 'この枠で再開' }).waitFor();
-    assert.equal(await ui.locator('.old-screen').count(),1,'旧表示はコンパクトな1行へ移行');
-    assert.equal(await ui.locator('.stem').count(),0,'以前の問題文・選択肢・解説をDOMから除去');
-    assert.equal(await ui.locator('.study-progress').count(),0,'前の進捗バーも残さない');
-    assert.ok(await ui.locator('#app').evaluate(el => el.getBoundingClientRect().height < 95),
-      '長い過去問の画面をiPhoneでも高さ95px未満に縮める');
-    await ui.getByRole('button', { name: 'この枠で再開' }).click();
+    // v103の受入基準: 次の表示が届いても元の枠は閉じない。保存した採点は同じ枠に復元する。
+    assert.equal(await ui.locator('.old-screen').count(), 0, '同じセッションの初期枠は継続使用');
+    // iOSの画面復帰イベントを擬似送信して、エンジンの既存状態だけを取得する。
+    await ui.locator('#app').evaluate(() => {
+      const returned = new Event('pageshow');
+      Object.defineProperty(returned, 'persisted', { value: true });
+      window.dispatchEvent(returned);
+    });
     await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
+    assert.equal(await ui.locator('.old-screen').count(), 0, '復元後も同じ最初の学習枠を使う');
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
     assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'restoreStudyView').length) >= 1, '再開時に学習画面を取得した');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
