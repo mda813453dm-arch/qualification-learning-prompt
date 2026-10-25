@@ -110,7 +110,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.getByRole('progressbar', { name: 'この分野の実践問題の位置' }).getAttribute('aria-valuenow'), /1/);
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
-    await ui.getByRole('button', { name: '2 解説を見る', exact: true }).click();
+    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加', exact: true }).click();
     // モデルの応答が速い場合、公式照合画面は即座にAI解説メニューへ切り替わる。
     // 不安定な中間画面ではなく、最終的な解説＋ボタンを検証する。
     await ui.getByRole('heading', {name:'AIによる解説（結合試験用）'}).waitFor();
@@ -165,7 +165,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       }
     }
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(),
-      ['次の分野の問題へ', '解説を見る', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+      ['次の分野の問題へ', 'AIの詳しい解説を追加', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '7');
     await ui.locator('#review').click();
     await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
