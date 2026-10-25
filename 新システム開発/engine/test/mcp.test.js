@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v100\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.100');
+  assert.match(WIDGET_URI, /question-v101\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.101');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -646,7 +646,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.deepEqual(tagged.structuredContent.onboarding.map((x) => x.kind), ['exempt', 'status'], 'アプリ名を含む資格表記も宅建の導入画面へ進む');
   assert.equal(tagged.structuredContent.overview.title, '■試験概要');
   const menu = await app('tools/call', { name: 'showMenu', arguments: { kind: 'plan' } });
-  assert.equal(menu._meta.qlp.menu.choices[0], '承認して始める');
+  assert.equal(menu._meta.qlp.menu.choices[0], 'この学習計画で始める');
   assert.equal(menu.structuredContent.menu, undefined);
   assert.equal((await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'plan' } })).body.error.code, -32602);
   const res = (await app('resources/list', {})).resources;
@@ -763,13 +763,29 @@ test('showMenu：免除の確認と学習状況も、エンジンの固定の選
   assert.equal((await app({ kind: 'status' }))._meta.qlp.menu.choices.length, 4);
 });
 
-test('showMenu：免除のあとは学習状況、学習状況のあとは学習計画へ進むよう、AIに次の1手を伝える', async () => {
+test('showMenu旧互換：新規学習の免除・学習状況・学習計画はエンジン画面で進み、AI独自のフォームを作らない', async () => {
   const env = makeEnv();
   const app = async (args) => (await rpc(env, 'tools/call', { name: 'showMenu', arguments: args }, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
-  assert.match((await app({ kind: 'exempt' })).structuredContent.howToProceed, /kind=status/);
-  assert.match((await app({ kind: 'status' })).structuredContent.howToProceed, /kind=plan/);
+  assert.match((await app({ kind: 'exempt' })).structuredContent.howToProceed, /エンジンの同じ画面/);
+  assert.match((await app({ kind: 'status' })).structuredContent.howToProceed, /ラジオ式の質問を作りません/);
+  const instructions = appInstructions();
+  assert.match(instructions, /ChatGPT側で学習状況のラジオ式フォーム/);
+  assert.match(instructions, /showMenu\(kind=status\/plan\/item\/exempt\)を呼ばず/);
 });
 
+test('初期の学習状況・学習計画は枠内の番号ボタンだけで選択し、AIが別の質問を作らない', () => {
+  const html = widgetHtml();
+  assert.match(html, /m\.choices\.map\(function\(c, i\)\{ return '<button data-n="/);
+  assert.match(html, /この学習計画で始める/);
+  assert.match(html, /学習計画を見直す/);
+  assert.match(html, /初期診断で苦手分野を調べる/);
+  assert.match(html, /今は学習しない/);
+  assert.match(html, /function onboard\(steps, got\)/);
+  assert.match(html, /callTool\('saveProfile'/);
+  const tool = TOOLS.find(x => x.name === 'showMenu');
+  assert.deepEqual(tool.local({kind:'plan'}).menu.choices, ['この学習計画で始める','学習計画を見直す']);
+  assert.match(tool.description, /showMenu\(kind=exempt\/status\/plan\/item\)を呼んではならない/);
+});
 test('宅建は試験概要の直下に免除→学習状況のボタン、免除なしの資格は学習状況だけ', () => {
   assert.deepEqual(onboardingSteps('q041').map((x) => x.kind), ['exempt', 'status']);
   assert.ok(overviewFor('q041').lines.some((l) => /免除制度：登録講習/.test(l)));
@@ -1349,8 +1365,12 @@ test('PDF未添付のボタンはAIへの会話メッセージを起動せず、
   assert.ok(a > 0 && b > a);
   const block = html.slice(a,b);
   assert.ok(!block.includes("ask("), '空の取り込み依頼を会話へ送信してはいけない');
-  assert.ok(block.includes("以前に別のチャットへ添付しただけのPDF"), '共有保存と別チャットの添付を区別する');
-  assert.ok(html.includes('共有利用可（'), '検証済みで共有利用できる年度を利用者へ表示する');
+  assert.ok(block.includes('ChatGPTの入力欄'), '実際のPDF添付方法だけを表示する');
+  assert.ok(html.includes('利用可能（'), '検証済み年度と利用可能問題数のみを表示する');
+  assert.ok(html.includes('公式問題・正答PDFを登録する'));
+  assert.ok(!html.includes('共有保存状況を更新して'), '内部共有の選択肢は出さない');
+  assert.ok(!html.includes('登録済みの公式過去問URL記録'), '内部URL台帳の件数は表示しない');
+  assert.ok(html.includes('過去問をもう一度確認する'));
 });
 
 
@@ -1358,7 +1378,7 @@ test('資格別の共有年度・試験区分の表示とAI個別解説の起動
   const html = widgetHtml();
   assert.match(html, /sectionsByYear/, '資格ごとに保存している区分を使用する');
   assert.doesNotMatch(html, /\['午前の部', '午後の部'\]\.map/, '全資格に午前・午後を一律に追加しない');
-  assert.match(html, /共有利用可（/, '本当に保存できている年度だけを表示する');
+  assert.match(html, /利用可能（/, '本当に利用できる年度だけを表示する');
   assert.match(html, /async function loadExplanation\(questionId, requestAi\)/);
   assert.match(html, /await callTool\('explainSpec', args\)/, '採点済み問題をエンジンから確認する');
   assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
