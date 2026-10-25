@@ -19,6 +19,9 @@ assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.explanationRef, '学習参照番号による復元ツールが公開されている');
 assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.explanationRef,
   '検証済み解説全文を操作ボタンと同じ画面に登録できる');
+assert.deepEqual(list.tools.find(t => t.name === 'showMenu')?._meta?.ui?.visibility,
+  ['model','app'], '解説本文の登録ツールをAIから直接呼び出せる');
+
 assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visibility, ['model','app'], '解説取得をモデルと画面に公開');
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
@@ -32,6 +35,10 @@ assert.ok(!resource.contents[0].text.includes('verifiedOfficialExplanation') &&
 assert.ok(!resource.contents[0].text.includes("rpc('ui/update-model-context',{content:blocks})"), 'ACKしたのに文脈が欠落する経路に依存しない');
 assert.ok(resource.contents[0].text.includes('照合番号：'), '公式問題に対応する照合番号をAIへ渡す');
 assert.ok(resource.contents[0].text.includes('var explicitSession ='), 'UIは現在の資格の明示的なセッションがある場合にだけ復元する');
+assert.ok(resource.contents[0].text.includes('function showPendingLesson(data)'), '接続断でも解説待ちの操作画面を維持');
+assert.ok(resource.contents[0].text.includes('解説の登録状況を確認') &&
+  resource.contents[0].text.includes('AI解説を再依頼'), '学習中断なしでモデルの解説登録を再試行できる');
+
 assert.ok(!resource.contents[0].text.includes('staleEntry ||'), '初回の導入画面を古いセッションで上書きしない');
 assert.ok(resource.contents[0].text.includes('資格の確認なしに'), '再開画面の資格識別を保持する');
 assert.ok(resource.contents[0].text.includes("q.section === '午前の部' || q.section === '午後の部'"), '公式の問題見出しに午前・午後の区分を表示する');
