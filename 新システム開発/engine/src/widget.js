@@ -1050,11 +1050,20 @@ a{color:inherit}
       if (action === 'end') { endAction(b); return; }
       if (m.kind === 'lesson' && action === 'check') {
         var lessonField = m.fieldName || loadIds().field || '今の分野';
-        var request = function(){
+        var checkRequested = false;
+        var request = async function(){
+          if (checkRequested || locked) return;
+          checkRequested = true;
           var retry = document.getElementById('lessonCheckRetry');
           if (retry) { retry.disabled = true; retry.textContent = '確認問題を開いています…'; }
-          ask(lessonField + 'の確認問題・第1問へ進む');
-          if (retry) { retry.disabled = false; retry.textContent = '第1問が表示されない場合は再試行'; }
+          try { await ask(lessonField + 'の確認問題・第1問へ進む'); }
+          finally {
+            checkRequested = false;
+            if (retry && retry.isConnected) {
+              retry.disabled = false;
+              retry.textContent = '第1問が表示されない場合は再試行';
+            }
+          }
         };
         // 基礎解説をこの枠から消し、次の学習画面が来るまで短い案内だけ表示する。
         // 古い解説や選択ボタンを残したまま別のチャット回答が下に積み上がるのを防ぐ。
