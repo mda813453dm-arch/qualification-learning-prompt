@@ -1,0 +1,1282 @@
+{
+  "schemaVersion": 1,
+  "updatedOn": "2026-10-25",
+  "policy": "official: official subject names checked; provisional: study-topic classification pending official syllabus review. Not a validated question packet or guarantee of official exam coverage.",
+  "entries": {
+    "q001": {
+      "name": "FP技能検定1級",
+      "fields": [
+        "ライフプランニングと資金計画",
+        "リスク管理",
+        "金融資産運用",
+        "タックスプランニング",
+        "不動産",
+        "相続・事業承継",
+        "実技（資産相談・提案）"
+      ],
+      "verification": "official",
+      "sourceUrl": "https://www.kinzai.or.jp/fp/fp_specifications.html",
+      "reviewedOn": "2026-10-25"
+    },
+    "q004": {
+      "name": "ITサービスマネージャ試験",
+      "fields": [
+        "ITサービスマネジメント",
+        "サービス設計・移行",
+        "サービス運用",
+        "継続的改善",
+        "セキュリティ・リスク管理",
+        "事例・記述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q005": {
+      "name": "ITストラテジスト試験",
+      "fields": [
+        "経営戦略・IT戦略",
+        "事業モデル・DX推進",
+        "IT投資・ガバナンス",
+        "情報システム戦略",
+        "事例・論述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q007": {
+      "name": "JLPT（N1〜N5）",
+      "fields": [
+        "文字・語彙",
+        "文法",
+        "読解",
+        "聴解"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q008": {
+      "name": "TOEIC Listening ＆ Reading",
+      "fields": [
+        "写真描写・応答",
+        "会話・説明文の聴解",
+        "短文穴埋め",
+        "長文穴埋め",
+        "読解"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q009": {
+      "name": "ウェブデザイン技能検定",
+      "fields": [
+        "インターネット・Web基礎",
+        "HTML・CSS・画面設計",
+        "デザイン・アクセシビリティ",
+        "Webシステムとセキュリティ",
+        "関連法規・職業倫理",
+        "実技制作"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q010": {
+      "name": "エンベデッドシステムスペシャリスト試験",
+      "fields": [
+        "組込みハードウェア",
+        "リアルタイムOS・ソフトウェア",
+        "制御・通信・センサー",
+        "組込みシステム設計",
+        "安全性・品質・セキュリティ",
+        "事例・記述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q011": {
+      "name": "キャリアコンサルタント",
+      "fields": [
+        "キャリア理論",
+        "カウンセリング理論・技能",
+        "労働市場・関係法令",
+        "メンタルヘルスと倫理",
+        "キャリア形成支援",
+        "論述・面接実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q012": {
+      "name": "システムアーキテクト試験",
+      "fields": [
+        "システム企画・要件定義",
+        "アーキテクチャ設計",
+        "データ・インタフェース設計",
+        "品質・性能・非機能要件",
+        "移行・運用設計",
+        "論述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q013": {
+      "name": "システム監査技術者試験",
+      "fields": [
+        "システム監査の計画",
+        "リスク・内部統制",
+        "監査手続・証拠評価",
+        "監査報告・改善提案",
+        "セキュリティ・ガバナンス",
+        "論述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q014": {
+      "name": "データベーススペシャリスト試験",
+      "fields": [
+        "関係データベース・SQL",
+        "論理設計・正規化",
+        "物理設計・性能",
+        "トランザクション・障害回復",
+        "データ保護・セキュリティ",
+        "事例・記述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q015": {
+      "name": "ネットワークスペシャリスト試験",
+      "fields": [
+        "ネットワーク基礎・TCP/IP",
+        "ルーティング・スイッチング",
+        "無線・クラウドネットワーク",
+        "ネットワーク設計・運用",
+        "セキュリティ・障害対策",
+        "事例・記述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q016": {
+      "name": "プロジェクトマネージャ試験",
+      "fields": [
+        "プロジェクト計画・スコープ",
+        "コスト・品質・納期",
+        "チーム・ステークホルダー",
+        "リスク・調達・変更管理",
+        "プロジェクト評価",
+        "論述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q017": {
+      "name": "ボイラー技士",
+      "fields": [
+        "ボイラーの構造",
+        "ボイラーの取扱い",
+        "燃料・燃焼",
+        "関係法令",
+        "実務上の安全対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q019": {
+      "name": "一級建築士",
+      "fields": [
+        "学科I（計画）",
+        "学科II（環境・設備）",
+        "学科III（法規）",
+        "学科IV（構造）",
+        "学科V（施工）",
+        "設計製図"
+      ],
+      "verification": "official",
+      "sourceUrl": "https://www.jaeic.or.jp/shiken/1k/about-exam.html",
+      "reviewedOn": "2026-10-25"
+    },
+    "q020": {
+      "name": "不動産鑑定士",
+      "fields": [
+        "民法",
+        "経済学",
+        "会計学",
+        "不動産に関する行政法規",
+        "不動産鑑定評価理論",
+        "論文・演習"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q022": {
+      "name": "二級建築士",
+      "fields": [
+        "建築計画",
+        "建築法規",
+        "建築構造",
+        "建築施工",
+        "設計製図"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q023": {
+      "name": "介護福祉士",
+      "fields": [
+        "人間の尊厳と自立",
+        "介護の基本",
+        "社会の理解",
+        "人間関係とコミュニケーション",
+        "コミュニケーション技術",
+        "生活支援技術",
+        "こころとからだのしくみ",
+        "発達と老化の理解",
+        "認知症の理解",
+        "障害の理解",
+        "医療的ケア",
+        "介護過程",
+        "総合問題"
+      ],
+      "verification": "official",
+      "sourceUrl": "https://www.mhlw.go.jp/stf/newpage_74538.html",
+      "reviewedOn": "2026-10-25"
+    },
+    "q024": {
+      "name": "作業主任者",
+      "fields": [
+        "作業主任者の職務・選任",
+        "対象作業の設備・作業方法",
+        "保護具・安全管理",
+        "関係法令",
+        "技能講習・作業別対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q025": {
+      "name": "作業環境測定士",
+      "fields": [
+        "労働衛生一般",
+        "関係法令",
+        "デザイン・サンプリング",
+        "分析概論",
+        "選択科目（有機溶剤・特定化学物質等）"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q026": {
+      "name": "作業療法士",
+      "fields": [
+        "基礎医学・人体の構造機能",
+        "臨床医学",
+        "作業療法評価学",
+        "身体障害作業療法",
+        "精神障害作業療法",
+        "発達障害作業療法",
+        "地域・生活支援"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q027": {
+      "name": "保健師",
+      "fields": [
+        "公衆衛生看護学",
+        "疫学",
+        "保健統計学",
+        "保健医療福祉行政論",
+        "地域保健活動",
+        "健康危機管理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q028": {
+      "name": "保育士",
+      "fields": [
+        "保育原理",
+        "教育原理・社会的養護",
+        "子ども家庭福祉",
+        "社会福祉",
+        "保育の心理学",
+        "子どもの保健",
+        "子どもの食と栄養",
+        "保育実習理論",
+        "実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q029": {
+      "name": "全国通訳案内士",
+      "fields": [
+        "外国語",
+        "日本地理",
+        "日本歴史",
+        "一般常識",
+        "通訳案内の実務",
+        "口述試験"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q030": {
+      "name": "公認会計士",
+      "fields": [
+        "財務会計論",
+        "管理会計論",
+        "監査論",
+        "企業法",
+        "租税法",
+        "経営学等の選択科目",
+        "論文式対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q031": {
+      "name": "公認心理師",
+      "fields": [
+        "心理学の基礎",
+        "心理学研究法・統計",
+        "臨床心理学と心理支援",
+        "健康・医療心理学",
+        "福祉・教育・司法・産業領域",
+        "関係法規・職業倫理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q032": {
+      "name": "助産師",
+      "fields": [
+        "基礎助産学",
+        "助産診断・技術学",
+        "地域母子保健",
+        "助産管理",
+        "妊娠・分娩・産褥期の支援",
+        "新生児・乳児のケア"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q033": {
+      "name": "医師",
+      "fields": [
+        "医学総論・公衆衛生",
+        "内科系疾患",
+        "外科系疾患",
+        "小児科・産婦人科",
+        "精神科・神経系",
+        "救急・臨床判断",
+        "必修問題・臨床実地"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q034": {
+      "name": "危険物取扱者",
+      "fields": [
+        "危険物に関する法令",
+        "基礎的な物理学・化学",
+        "危険物の性質・火災予防・消火",
+        "類別の専門知識"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q035": {
+      "name": "司法書士",
+      "fields": [
+        "民法",
+        "不動産登記法",
+        "商法・会社法",
+        "商業登記法",
+        "憲法・刑法・民事訴訟法等",
+        "記述式・口述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q036": {
+      "name": "司法試験",
+      "fields": [
+        "憲法",
+        "行政法",
+        "民法",
+        "商法",
+        "民事訴訟法",
+        "刑法",
+        "刑事訴訟法",
+        "選択科目・論文式"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q037": {
+      "name": "司法試験予備試験",
+      "fields": [
+        "憲法・行政法",
+        "民法・商法・民事訴訟法",
+        "刑法・刑事訴訟法",
+        "一般教養",
+        "論文式実務基礎",
+        "口述試験"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q039": {
+      "name": "土木施工管理技士",
+      "fields": [
+        "土木工学・施工管理",
+        "施工計画",
+        "工程・品質・安全管理",
+        "土木関係法規",
+        "施工経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q042": {
+      "name": "実用英語技能検定（英検）",
+      "fields": [
+        "語彙・文法",
+        "読解",
+        "リスニング",
+        "ライティング",
+        "スピーキング"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q043": {
+      "name": "小型船舶操縦士",
+      "fields": [
+        "小型船舶の基礎・操縦者の心得",
+        "船舶運航法規",
+        "航海・気象",
+        "機関・整備",
+        "実技操船・安全"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q044": {
+      "name": "工事担任者",
+      "fields": [
+        "電気通信技術の基礎",
+        "端末設備・接続技術",
+        "ネットワーク・セキュリティ",
+        "関係法規"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q045": {
+      "name": "建築施工管理技士",
+      "fields": [
+        "建築学",
+        "施工管理法",
+        "工程・品質・安全管理",
+        "法規",
+        "実地・経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q046": {
+      "name": "弁理士",
+      "fields": [
+        "特許・実用新案",
+        "意匠",
+        "商標",
+        "著作権・不正競争防止",
+        "条約",
+        "論文・口述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q048": {
+      "name": "情報セキュリティマネジメント試験",
+      "fields": [
+        "情報セキュリティ管理",
+        "リスクアセスメント",
+        "情報資産保護と対策",
+        "法務・コンプライアンス",
+        "組織・技術・管理対策",
+        "科目B（事例）"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q049": {
+      "name": "情報処理安全確保支援士試験",
+      "fields": [
+        "セキュリティ技術",
+        "セキュリティマネジメント",
+        "ネットワーク・システム防御",
+        "インシデント対応",
+        "法務・ガバナンス",
+        "事例・記述対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q050": {
+      "name": "愛玩動物看護師",
+      "fields": [
+        "動物の構造・機能",
+        "動物疾病・治療補助",
+        "動物看護学",
+        "動物の行動・栄養・福祉",
+        "関連法規・動物愛護",
+        "臨床動物看護"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q051": {
+      "name": "技術士",
+      "fields": [
+        "基礎科目（科学技術全般）",
+        "適性科目（技術者倫理）",
+        "専門科目（部門別）",
+        "必須科目",
+        "選択科目・論文",
+        "口頭試験"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q052": {
+      "name": "救急救命士",
+      "fields": [
+        "基礎医学",
+        "臨床医学",
+        "救急救命処置",
+        "搬送・病院前救護",
+        "医療倫理・関係法規"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q053": {
+      "name": "旅行業務取扱管理者",
+      "fields": [
+        "旅行業法・約款",
+        "国内旅行実務",
+        "海外旅行実務",
+        "国内地理",
+        "海外地理",
+        "運賃・料金計算"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q054": {
+      "name": "日商簿記検定試験",
+      "fields": [
+        "商業簿記",
+        "会計学",
+        "工業簿記",
+        "原価計算",
+        "財務諸表",
+        "級別の仕訳・記帳"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q055": {
+      "name": "日本漢字能力検定（漢検）",
+      "fields": [
+        "漢字の読み",
+        "漢字の書き取り",
+        "部首・画数・筆順",
+        "熟語・四字熟語",
+        "同音異字・同訓異字",
+        "級別の国語知識"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q056": {
+      "name": "木造建築士",
+      "fields": [
+        "建築計画",
+        "建築法規",
+        "建築構造",
+        "建築施工",
+        "設計製図"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q057": {
+      "name": "歯科医師",
+      "fields": [
+        "医学・歯科医学総論",
+        "解剖・生理・病理",
+        "歯科保存・補綴",
+        "口腔外科",
+        "小児歯科・矯正歯科",
+        "歯科公衆衛生",
+        "臨床実地"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q058": {
+      "name": "浄化槽管理士",
+      "fields": [
+        "浄化槽概論",
+        "浄化槽行政",
+        "浄化槽の構造・機能",
+        "保守点検・清掃",
+        "水質管理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q059": {
+      "name": "海事代理士",
+      "fields": [
+        "海商法・海上運送法規",
+        "船舶登記・登録",
+        "船員・安全関係法令",
+        "海事申請実務",
+        "口述・記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q060": {
+      "name": "海技士",
+      "fields": [
+        "航海",
+        "運用",
+        "法規",
+        "気象・通信",
+        "機関",
+        "口述・実技（区分別）"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q061": {
+      "name": "消防設備士",
+      "fields": [
+        "消防関係法令",
+        "基礎知識（機械・電気）",
+        "消防用設備の構造・機能",
+        "点検・整備",
+        "実技（鑑別・製図）"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q062": {
+      "name": "測量士",
+      "fields": [
+        "測量に関する法規及び関連国際条約",
+        "測地測量",
+        "測図測量・地理情報システム",
+        "三次元点群測量",
+        "応用測量"
+      ],
+      "verification": "official",
+      "sourceUrl": "https://www.gsi.go.jp/sokuryosidou/examsubjects.html",
+      "reviewedOn": "2026-10-25"
+    },
+    "q064": {
+      "name": "無線従事者",
+      "fields": [
+        "無線工学",
+        "法規",
+        "通信術",
+        "英語（区分別）",
+        "資格種別の専門知識"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q065": {
+      "name": "獣医師",
+      "fields": [
+        "獣医学総論・解剖生理",
+        "感染症・寄生虫",
+        "病理・薬理",
+        "内科・外科",
+        "繁殖・公衆衛生",
+        "臨床・実地"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q066": {
+      "name": "理学療法士",
+      "fields": [
+        "解剖・生理・運動学",
+        "病理・臨床医学",
+        "理学療法評価学",
+        "運動療法",
+        "物理療法",
+        "地域・生活期理学療法"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q067": {
+      "name": "理容師",
+      "fields": [
+        "衛生管理技術",
+        "理容理論",
+        "皮膚科学",
+        "関係法規・制度",
+        "実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q068": {
+      "name": "登録日本語教員（日本語教員試験）",
+      "fields": [
+        "日本語教育の基礎",
+        "言語と社会",
+        "言語と心理",
+        "言語と教育",
+        "言語一般",
+        "応用・実践"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q069": {
+      "name": "登録販売者",
+      "fields": [
+        "医薬品に共通する特性と基本知識",
+        "人体の働きと医薬品",
+        "主な医薬品とその作用",
+        "薬事に関する法規と制度",
+        "医薬品の適正使用・安全対策"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q070": {
+      "name": "看護師",
+      "fields": [
+        "必修問題",
+        "人体の構造と機能",
+        "疾病の成り立ちと回復の促進",
+        "健康支援と社会保障制度",
+        "基礎看護学",
+        "成人看護学",
+        "老年看護学",
+        "小児看護学",
+        "母性看護学",
+        "精神看護学",
+        "地域・在宅看護論",
+        "看護の統合と実践"
+      ],
+      "verification": "official",
+      "sourceUrl": "https://www.mhlw.go.jp/content/10800000/001562615.pdf",
+      "reviewedOn": "2026-10-25"
+    },
+    "q071": {
+      "name": "社会保険労務士",
+      "fields": [
+        "労働基準法・労働安全衛生法",
+        "労災保険法",
+        "雇用保険法",
+        "労働保険徴収法",
+        "健康保険法",
+        "国民年金法",
+        "厚生年金保険法",
+        "労務管理・社会保険一般常識"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q072": {
+      "name": "社会福祉士",
+      "fields": [
+        "医学概論",
+        "心理学と心理的支援",
+        "社会福祉の原理と政策",
+        "社会保障",
+        "権利擁護・法制度",
+        "地域福祉・ソーシャルワーク",
+        "高齢者・障害者・児童家庭福祉"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q073": {
+      "name": "税理士",
+      "fields": [
+        "簿記論",
+        "財務諸表論",
+        "所得税法",
+        "法人税法",
+        "相続税法",
+        "消費税法等の選択税法"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q074": {
+      "name": "第一種電気主任技術者",
+      "fields": [
+        "理論",
+        "電力",
+        "機械",
+        "法規"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q075": {
+      "name": "第一種電気工事士",
+      "fields": [
+        "電気に関する基礎理論",
+        "配電理論・配線設計",
+        "電気応用",
+        "電気機器・工事施工",
+        "検査・法令",
+        "技能試験"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q076": {
+      "name": "第三種電気主任技術者",
+      "fields": [
+        "理論",
+        "電力",
+        "機械",
+        "法規"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q077": {
+      "name": "第二種電気主任技術者",
+      "fields": [
+        "理論",
+        "電力",
+        "機械",
+        "法規"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q078": {
+      "name": "第二種電気工事士",
+      "fields": [
+        "電気に関する基礎理論",
+        "配電理論・配線設計",
+        "電気機器・器具",
+        "電気工事の施工方法",
+        "検査方法・配線図",
+        "法令",
+        "技能試験"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q079": {
+      "name": "管工事施工管理技士",
+      "fields": [
+        "施工管理法",
+        "設備工学",
+        "空調・衛生設備",
+        "建築設備法規",
+        "施工経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q080": {
+      "name": "管理栄養士",
+      "fields": [
+        "社会・環境と健康",
+        "人体の構造と機能・疾病",
+        "食べ物と健康",
+        "基礎栄養学",
+        "応用栄養学",
+        "栄養教育論",
+        "臨床栄養学",
+        "公衆栄養学",
+        "給食経営管理論"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q081": {
+      "name": "管理業務主任者",
+      "fields": [
+        "マンションの管理に関する法令・実務",
+        "管理組合の会計",
+        "建物・設備の維持保全",
+        "適正化法・関係法令",
+        "管理事務報告・管理委託"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q082": {
+      "name": "精神保健福祉士",
+      "fields": [
+        "精神疾患とその治療",
+        "精神保健の課題と支援",
+        "精神保健福祉制度",
+        "ソーシャルワークの理論・方法",
+        "地域生活支援",
+        "社会福祉の基礎"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q083": {
+      "name": "給水装置工事主任技術者",
+      "fields": [
+        "公衆衛生概論",
+        "水道行政",
+        "給水装置工事法",
+        "給水装置の構造・性能",
+        "給水装置計画・施工・検査",
+        "給水装置の管理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q084": {
+      "name": "美容師",
+      "fields": [
+        "衛生管理技術",
+        "美容理論",
+        "皮膚科学",
+        "関係法規・制度",
+        "実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q085": {
+      "name": "臨床工学技士",
+      "fields": [
+        "医学概論・解剖生理",
+        "臨床工学の基礎",
+        "医用電気電子・情報",
+        "呼吸療法装置",
+        "体外循環装置",
+        "血液浄化装置",
+        "医療機器安全管理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q086": {
+      "name": "臨床検査技師",
+      "fields": [
+        "医学総論・解剖生理",
+        "臨床検査総論",
+        "血液・生化学検査",
+        "微生物・免疫検査",
+        "病理組織・細胞診",
+        "生理機能検査",
+        "医療安全・法令"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q087": {
+      "name": "自動車整備士",
+      "fields": [
+        "自動車の構造・機能",
+        "エンジン・動力伝達",
+        "シャシ・電装",
+        "点検・整備・故障診断",
+        "保安基準・法令",
+        "実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q088": {
+      "name": "航空従事者",
+      "fields": [
+        "航空法規",
+        "航空工学",
+        "航空気象",
+        "航法",
+        "航空通信",
+        "操縦・整備の区分別実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q089": {
+      "name": "薬剤師",
+      "fields": [
+        "物理",
+        "化学",
+        "生物",
+        "衛生",
+        "薬理",
+        "薬剤",
+        "病態・薬物治療",
+        "法規・制度・倫理",
+        "実務"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q091": {
+      "name": "衛生管理者",
+      "fields": [
+        "関係法令",
+        "労働衛生（有害業務）",
+        "労働衛生（有害業務以外）",
+        "労働生理",
+        "第1種・第2種の範囲差"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q092": {
+      "name": "製菓衛生師",
+      "fields": [
+        "衛生法規",
+        "公衆衛生学",
+        "食品学",
+        "食品衛生学",
+        "栄養学",
+        "製菓理論・実技"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q093": {
+      "name": "言語聴覚士",
+      "fields": [
+        "基礎医学",
+        "臨床医学",
+        "音声・言語・聴覚科学",
+        "失語・高次脳機能障害",
+        "言語発達障害",
+        "音声・構音障害",
+        "聴覚障害",
+        "摂食嚥下障害"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q094": {
+      "name": "計量士",
+      "fields": [
+        "計量関係法規",
+        "計量管理概論",
+        "基礎計量学",
+        "環境計量（濃度・騒音・振動）",
+        "一般計量（質量・体積・長さ等）"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q095": {
+      "name": "診療放射線技師",
+      "fields": [
+        "基礎医学",
+        "放射線物理学",
+        "放射線化学・生物学",
+        "医用画像情報学",
+        "撮影・画像診断技術",
+        "核医学検査技術",
+        "放射線治療技術",
+        "放射線安全管理"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q096": {
+      "name": "調理師",
+      "fields": [
+        "公衆衛生学",
+        "食品学",
+        "栄養学",
+        "食品衛生学",
+        "調理理論",
+        "食文化概論"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q098": {
+      "name": "通関士",
+      "fields": [
+        "関税法・関税定率法",
+        "関税の計算",
+        "外国為替及び外国貿易法",
+        "通関業法",
+        "通関書類作成・実務"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q099": {
+      "name": "造園施工管理技士",
+      "fields": [
+        "施工管理法",
+        "造園工学",
+        "施工計画",
+        "工程・品質・安全管理",
+        "関係法規",
+        "施工経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q100": {
+      "name": "運行管理者",
+      "fields": [
+        "道路運送法・貨物自動車運送事業法",
+        "道路運送車両法",
+        "道路交通法",
+        "労働基準法",
+        "運行管理実務・事故防止",
+        "旅客・貨物の区分"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q101": {
+      "name": "電気工事施工管理技士",
+      "fields": [
+        "電気工学",
+        "電気設備工事",
+        "施工管理法",
+        "工程・品質・安全管理",
+        "関係法規",
+        "実地・経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q102": {
+      "name": "電気通信主任技術者",
+      "fields": [
+        "電気通信システム",
+        "専門的能力（伝送交換・線路）",
+        "電気通信技術",
+        "関係法規",
+        "通信設備の安全・保守"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    },
+    "q103": {
+      "name": "電気通信工事施工管理技士",
+      "fields": [
+        "電気通信工学",
+        "施工管理法",
+        "ネットワーク工事",
+        "工程・品質・安全管理",
+        "関係法規",
+        "施工経験記述"
+      ],
+      "verification": "provisional",
+      "sourceUrl": null,
+      "reviewedOn": null
+    }
+  }
+}
