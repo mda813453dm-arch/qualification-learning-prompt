@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v103.html';
+export const WIDGET_URI = 'ui://qlp/question-v104.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.103';
+export const WIDGET_VERSION = '2026-10-25.104';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -546,16 +546,8 @@ a{color:inherit}
       return;
     }
     if (data.status === 'lesson_pending') {
-      var lessonField = data.fieldName || '今の分野';
-      app.innerHTML = '<h2>' + esc(lessonField) + '｜解説</h2>' +
-        '<div class="notice">' + esc(data.notice || 'まずこの分野の解説を表示します。') + '</div>' +
-        '<div class="row"><button id="resumeLesson">解説を表示する</button></div>' + endBar();
-      document.getElementById('resumeLesson').onclick = async function(){
-        this.disabled = true;
-        await ask(lessonField + 'を解説から始めます。');
-        if (this.isConnected) this.disabled = false;
-      };
-      bindEnd(); scrollUp(); return;
+      showPendingLesson(data);
+      return;
     }
     if (data.status === 'confirmation_question') { showConfirmationQuestion(data); return; }
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
@@ -1124,6 +1116,89 @@ a{color:inherit}
     closeList();
     return out.join('');
   }
+  // AI側のツール接続が不安定でも「解説待ち」の正規学習画面は消さない。
+  // 再要求は新しい出題・採点を行わず、同じセッションの学習内容だけを読み直す。
+  function showPendingLesson(data){
+    var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
+    if (sid) state.sessionId = sid;
+    saveIds();
+    var j = data.journey || {};
+    var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
+    app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
+      '<div class="notice" role="status">' + esc(data.notice || 'AIの解説を準備しています。解説が届くまで学習状態は保持されます。') + '</div>' +
+      '<div id="lessonConnection" class="notice" role="status">解説が表示されない場合は、まず「解説の登録状況を確認」を押してください。必要なときだけAIに再依頼できます。</div>' +
+      '<div class="row"><button id="refreshLesson" type="button">解説の登録状況を確認</button>' +
+      '<button id="resumeLesson" type="button">AI解説を再依頼</button></div>' +
+      '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>' + endBar();
+    function lessonNotice(message){
+      var slot = document.getElementById('lessonConnection');
+      if (slot) slot.textContent = message;
+    }
+    var refreshing = false;
+    async function readPublishedLesson(){
+      if (refreshing || !state.sessionId || locked) return false;
+      refreshing = true;
+      var b = document.getElementById('refreshLesson');
+      if (b) { b.disabled = true; b.textContent = '確認しています…'; }
+      try {
+        var result = await callTool('restoreStudyView', { sessionId: state.sessionId });
+        if (result && result.status === 'menu' && result.menu && result.menu.kind === 'lesson' &&
+            result.menu.fieldName === field && result.menu.body) {
+          render(result);
+          return true;
+        }
+        if (result && result.status === 'lesson_pending')
+          lessonNotice('解説はまだ登録されていません。AI解説を再依頼できます。');
+        else
+          lessonNotice('学習状態が更新されています。「学習画面を復元」で最新状態を確認してください。');
+      } catch(e){
+        lessonNotice('学習状態の確認に失敗しました。通信回復後に同じボタンで再試行してください。');
+      } finally {
+        refreshing = false;
+        if (b && b.isConnected) { b.disabled = false; b.textContent = '解説の登録状況を確認'; }
+      }
+      return false;
+    }
+    document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    var requesting = false;
+    document.getElementById('resumeLesson').onclick = async function(){
+      if (requesting || locked) return;
+      requesting = true;
+      var button = this;
+      button.disabled = true;
+      button.textContent = 'AI解説を依頼しています…';
+      try {
+        var response = await ask(field + 'を解説から始めます。');
+        if (!response || response.isError)
+          lessonNotice('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。');
+        else {
+          lessonNotice('AI解説を依頼しました。表示されないときは「解説の登録状況を確認」を押してください。');
+          setTimeout(function(){
+            if (!locked && button.isConnected && Date.now() - lastLocalInteractionAt > 1600)
+              readPublishedLesson();
+          }, 3500);
+        }
+      } finally {
+        requesting = false;
+        if (button.isConnected) { button.disabled = false; button.textContent = 'AI解説を再依頼'; }
+      }
+    };
+    document.getElementById('lessonSkip').onclick = async function(){
+      var b = this;
+      b.disabled = true;
+      try {
+        var chosen = await callTool('chooseItem', { sessionId: sid, fieldName: field, mode: 'check' });
+        if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check')
+          throw new Error('LESSON_SKIP_FAILED');
+        render({ status: 'confirmation_pending', sessionId: sid, position: 1, total: 3, fieldName: field,
+          notice: '解説を省略して確認問題に切り替えました。下のボタンで第1問を作成します。' });
+      } catch(e){
+        b.disabled = false;
+        lessonNotice('進め方を変更できませんでした。学習状態を保持しています。再試行してください。');
+      }
+    };
+    bindEnd(); scrollUp();
+  }
   function showMenu(m){
     if (m.sessionId) state.sessionId = m.sessionId;
     if (m.studyId) currentStudyId = m.studyId;
@@ -1644,16 +1719,33 @@ a{color:inherit}
         return;
       }
       if (mode === 'practice') { nextBelow(proceed, field ? field + 'を実践問題から始めます。' : '実践問題から始めます。'); return; }
-      // 続きのボタンは、解説・確認問題の「下」に出る（AIが最後に showMenu を呼ぶ）。ここには押すボタンを置かない（上まで戻らせない）
+      // AI/ホストの接続が切れても、先に同じ枠へ復元可能な操作ボタンを出す。
+      // 解説確定前に確認問題を自動開始しない。
       var j = chosen?.journey || {};
-      app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, mode === 'explain' ? 'explain' : 'check1', field) +
-        (mode === 'check' ? localBar('この分野の確認問題', 1, 3) : '') +
-        '<div class="notice"><b>' + esc(field) + '：' + esc(mode === 'explain' ? '解説あり' : '確認問題から') + '</b>で進めます。' + (mode === 'explain' ? '解説と確認問題' : '確認問題') + 'は、この下に出ます。確認問題は全3問です。</div>';
+      if (mode === 'explain') {
+        render({ status:'lesson_pending', sessionId: chosen?.sessionId || learner, fieldName:field,
+          journey:j, notice:'AIの基礎解説を準備しています。接続が切れても学習状態は保持されます。' });
+        ask(field + 'を解説から始めます。').then(function(reply){
+          if (!reply || reply.isError) {
+            var node = document.getElementById('lessonConnection');
+            if (node) node.textContent = 'AI解説の依頼に失敗しました。画面のボタンから再試行できます。';
+          }
+        });
+        return;
+      }
+      app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check1', field) +
+        localBar('この分野の確認問題', 1, 3) +
+        '<div class="notice"><b>' + esc(field) + '：確認問題から</b>進めます。確認問題は全3問です。</div>' +
+        '<div class="row"><button id="retryCheckStart" type="button">確認問題の第1問を表示する</button></div>';
       scrollUp(true);
-      // チャットに出る文は短い普通の言葉だけにする（AIへの手順は、アプリのツールの説明に書いてある）
-      ask(mode === 'explain'
-        ? field + 'を解説から始めます。'
-        : field + 'を確認問題から始めます。');
+      document.getElementById('retryCheckStart').onclick = function(){
+        this.disabled = true;
+        ask(field + 'の確認問題・第1問へ進む').then(function(reply){
+          var btn = document.getElementById('retryCheckStart');
+          if (btn && btn.isConnected) btn.disabled = false;
+        });
+      };
+      ask(field + 'を確認問題から始めます。');
     };
     if (itemAlways) { go(itemAlways); return; }
     var modes = [['explain', '解説あり（解説→確認問題→実践問題）'], ['check', '確認問題から（解説なし）'], ['practice', '実践問題から（解説も確認問題もなし）']];
