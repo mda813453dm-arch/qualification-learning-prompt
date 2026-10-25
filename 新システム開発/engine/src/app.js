@@ -1800,7 +1800,8 @@ async function route(request, env, url, now) {
     // check の再押下は同じ問題・3問カウンタを保持。explain は解説が終わるまで確認問題未開始。
     const existingCheck = mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count < 3
       ? state.confirmation : null;
-    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode, publishedLesson: null,
+    await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
+      publishedLesson: null, publishedExplanation: null,
       confirmation: mode === 'check' ? (existingCheck ?? { fieldId: fid, count: 0, correct: 0, challenge: null }) : null }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
       journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length } });
