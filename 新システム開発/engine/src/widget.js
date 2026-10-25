@@ -5,7 +5,7 @@
  */
 export const WIDGET_URI = 'ui://qlp/question-v94.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.95';
+export const WIDGET_VERSION = '2026-10-25.96';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
