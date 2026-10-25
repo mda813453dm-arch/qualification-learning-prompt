@@ -2002,12 +2002,21 @@ a{color:inherit}
   // 学習データを会話に添付せず、保存済みの進行状態だけを学習エンジンから読む。
   // 画面を行き来したときにも、採点・nextQuestion・startStudyは自動実行しない。
   var restoring = false, wasHidden = false;
+  // タップ中の読取再描画でボタンをDOMから外さない。ホスト通知による更新は通常どおり処理。
+  var lastLocalInteractionAt = 0;
+  if (typeof document.addEventListener === 'function') {
+    document.addEventListener('pointerdown', function(){ lastLocalInteractionAt = Date.now(); }, true);
+    document.addEventListener('keydown', function(){ lastLocalInteractionAt = Date.now(); }, true);
+  }
   // 通信通知が届かないiOSでも、最初の枠がサーバーの保存済み表示を取りに行く。
   // 重複通知とポーリングはrestoringで重複排除し、学習の出題・採点は実行しない。
   function studyViewPoll(){
-    if (ownedSession && !locked && !document.hidden && bridgeReady && !restoring)
+    // 操作中や直後はUIに触らず、操作が止まった時だけ同期する。
+    // フレーム間の更新通知はscheduleFirstFrameRefreshで別途即座に反映する。
+    if (ownedSession && !locked && !document.hidden && bridgeReady && !restoring &&
+        Date.now() - lastLocalInteractionAt > 30000)
       restoreFromServer(false);
-    setTimeout(studyViewPoll, 4500);
+    setTimeout(studyViewPoll, 12000);
   }
   setTimeout(studyViewPoll, 4500);
   async function restoreFromServer(manual){
