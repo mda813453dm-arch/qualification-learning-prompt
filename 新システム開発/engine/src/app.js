@@ -1603,7 +1603,9 @@ async function route(request, env, url, now) {
       choices.some((v) => !v || v.length > 500) || !Number.isInteger(correct) || correct < 1 || correct > choices.length) {
       throw new HttpError(400, 'CONFIRMATION_QUESTION_INVALID');
     }
-    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, createdAt: now };
+    const explanation = typeof b.explanation === 'string' ? b.explanation.trim() : '';
+    if (explanation && (explanation.length < 12 || explanation.length > 2500)) throw new HttpError(400, 'CONFIRMATION_EXPLANATION_INVALID');
+    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, explanation, createdAt: now };
     await saveSession(env, id, { ...state, itemMode: 'check', publishedLesson: null,
       confirmation: { ...check, challenge } }, now);
     return json(200, { status: 'confirmation_question', sessionId: id, challengeId: challenge.id,
@@ -1626,6 +1628,8 @@ async function route(request, env, url, now) {
     const nextFieldName = cat?.fields?.[fieldIds[fieldIds.indexOf(check.fieldId) + 1]] ?? null;
     return json(200, { status: 'confirmation_result', sessionId: id, fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       position: count, total: 3, correct, correctAnswer: check.challenge.correctAnswer,
+       explanation: check.challenge.explanation || '', correctChoice: check.challenge.choices[check.challenge.correctAnswer - 1],
+       selectedChoice: check.challenge.choices[selected - 1],
       correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
       nextFieldName,
       journey: { fieldIndex: fieldIds.indexOf(check.fieldId) + 1, fieldTotal: fieldIds.length } });
