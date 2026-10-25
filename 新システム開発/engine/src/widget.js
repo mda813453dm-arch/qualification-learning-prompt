@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v100.html';
+export const WIDGET_URI = 'ui://qlp/question-v101.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.100';
+export const WIDGET_VERSION = '2026-10-25.101';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -548,7 +548,7 @@ a{color:inherit}
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed') throw new Error('RIGHTS_CONFIRM_FAILED');
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>' + esc(year) +
             '年度の確認を受け付けました。</b><div>このチャットの「＋」から、該当年度の' + esc(fileHint) +
-            'PDFを添付するまでは取り込みません。他の利用者には共有されません。</div></div>';
+            'PDFを添付すると登録を開始できます。</div></div>';
           ack.checked = false;
         } catch(e) {
           ack.checked = false;
@@ -579,15 +579,14 @@ a{color:inherit}
       var missing = library && Array.isArray(library.missing) ? library.missing : [];
       var ref = data.urlCatalog || null;
       var canAttach = !!data.sourceAttachmentSupported && (missing.length > 0 || !!ref);
-      app.innerHTML = '<h2>' + (ref ? '公式過去問の参照先・取込状況' : '公式過去問の共有保存') + '</h2>' +
-        (ref ? '<div class="notice">登録済みの公式過去問URL記録：<b>' + esc(ref.urlRecordCount) + '件</b>（リンクあり' + esc(ref.linkedUrlCount) + '件）。<b>問題・正答の照合済み出題データとは別です。</b></div>' : '') +
+      app.innerHTML = '<h2>公式過去問の利用・登録</h2>' +
         libraryHtml(library) +
         '<div class="notice" role="status">' + esc(data.notice || '利用できる公式問題を確認してください。') + '</div>' +
         (official ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(official) + '">公式過去問掲載ページを開く ›</a></div>' : '') +
         '<div class="choices">' +
-          '<button id="sourceRefresh"><b>1</b><span>共有保存状況を更新して、利用できる問題を開く</span></button>' +
-          (canAttach ? '<button id="sourceAttach"><b>2</b><span>' + (ref ? '公式問題・正答PDFを添付して検証する' : '共有に未保存の年度・部だけPDFを添付する') + '</span></button>' : '') +
-          '<button id="sourceAiCheck"><b>' + (canAttach ? '3' : '2') + '</b><span>同じ分野のAI作成確認問題を解く（3問）</span></button></div>' + endBar();
+                    (canAttach ? '<button id="sourceAttach"><b>1</b><span>公式問題・正答PDFを登録する</span></button>' : '') +
+          '<button id="sourceAiCheck"><b>' + (canAttach ? '2' : '1') + '</b><span>AI作成確認問題を解く（3問）</span></button></div>' +
+          '<div class="row"><button id="sourceRefresh" class="quiet">過去問をもう一度確認する</button></div>' + endBar();
       document.getElementById('sourceRefresh').onclick = async function(){
         this.disabled = true;
         try {
@@ -598,7 +597,7 @@ a{color:inherit}
           var next = await callTool('nextQuestion', { sessionId: state.sessionId });
           if (next && !next.error && next.status !== 'sourceUnavailable') { render(next); return; }
           render({ ...data, sharedLibrary: latest.sharedLibrary,
-            notice: next?.notice || '公式問題をまだ読み出せません。共有保存状況を確認してください。' });
+            notice: 'まだ利用できる公式問題を確認できません。公式PDFの登録、またはAI確認問題を選んでください。' });
         } catch(e) {
           this.disabled = false;
           app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">保存状況を確認できませんでした。もう一度押してください。</div>');
@@ -608,8 +607,8 @@ a{color:inherit}
         this.disabled = true;
         var names = missing.map(function(x){ return x.year + '年度・' + x.section; }).join('、');
         app.insertAdjacentHTML('beforeend', '<div class="notice" role="status">' +
-          (ref ? '<b>公式原本の検証待ち</b>' : '<b>未保存：</b>' + esc(names)) +
-          '<div>追加したい年度・試験区分の公式問題PDFと、同じ年度・区分の公式正答PDFを、ChatGPTの入力欄の「＋」から添付して送信してください。PDFの実際の年度と試験区分も指定してください。記述式や図の一致を確認できない問題は自動採点しません。PDFが添付されるまでは、取り込みは始まりません。以前に別のチャットへ添付しただけのPDFは、この画面には自動登録されません。</div></div>');
+          '<b>公式問題・正答PDFの登録</b>' +
+          '<div>利用する年度と試験区分の公式問題PDFと公式正答PDFを、ChatGPTの入力欄「＋」から添付してください。年度と試験区分も指定してください。確認できない問題は出題しません。添付するまで登録は始まりません。</div></div>');
         // ファイルのない状態でui/messageを送らない。会話の内部処理ログが出る旧不具合の原因。
       };
       document.getElementById('sourceAiCheck').onclick = async function(){
@@ -1151,16 +1150,15 @@ a{color:inherit}
       var detail = yearSections.map(function(section){
         var hit = saved.find(function(v){return v.year === year && v.section === section;});
         var sectionLabel = section === '年度共通' ? '本試験' : section === '午前の部' ? '午前' : section === '午後の部' ? '午後' : section;
-        return esc(sectionLabel) + '：' + (hit ? '<b>共有利用可（' + esc(Number(hit.questions) + Number(hit.writtenQuestions || 0)) + '問）</b>' + (hit.writtenQuestions ? '<small>（択一' + esc(hit.questions) + '問・記述' + esc(hit.writtenQuestions) + '問）</small>' : '') : '未確認');
+        return esc(sectionLabel) + '：' + (hit ? '<b>利用可能（' + esc(Number(hit.questions) + Number(hit.writtenQuestions || 0)) + '問）</b>' + (hit.writtenQuestions ? '<small>（択一' + esc(hit.questions) + '問・記述' + esc(hit.writtenQuestions) + '問）</small>' : '') : '未確認');
       }).join(' ／ ');
       return '<li><b>' + esc(year) + '年度</b>' + (detail ? '　' + detail : '　登録状況未確認') + '</li>';
     }).join('');
-    return '<div class="notice"><b>公式過去問の共通利用状況</b>' +
-      (range ? '<div><b>利用可能年度：' + esc(range) + '</b>（共有保存の確認済みデータ）</div>' :
-        '<div>現在、共有保存済みと確認できた年度はありません。個別の学習データの未登録を意味するものではありません。</div>') +
+    return '<div class="notice"><b>公式過去問の利用状況</b>' +
+      (range ? '<div><b>利用可能年度：' + esc(range) + '</b></div>' :
+        '<div>現在、利用できる公式過去問の年度を確認できませんでした。</div>') +
       '<ul class="ov-l">' + row + '</ul>' +
-      (saved.length ? '<div>共有利用可の問題は、ほかの利用者も再添付なしで使えます。</div>' : '') +
-      (missing.length ? '<div>「未確認」の年度・回は追加の登録状況を照合してください。確認済みの年度には再添付不要です。</div>' : '') +
+      (missing.length ? '<div>利用できない年度・回は、必要に応じて問題PDFと正答PDFを登録してください。</div>' : '') +
       '</div>';
   }
   function ovHtml(){
@@ -1242,7 +1240,7 @@ a{color:inherit}
       '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
       '<div class="choices"><button id="startStudy"><b>1</b><span>この学習計画で始める</span></button>' +
       '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
-      '<button id="diag"' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? ' disabled' : '') + '><b>3</b><span>' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? '初期診断（共有保存済みの過去問なし）' : '初期診断で苦手分野を調べる') + '</span></button>' +
+      '<button id="diag"' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? ' disabled' : '') + '><b>3</b><span>' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? '初期診断（利用可能な過去問なし）' : '初期診断で苦手分野を調べる') + '</span></button>' +
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
     guardNewPlanActions();
