@@ -57,7 +57,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             if (!q.includes('宅建')) reply({ isError: true, structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } });
             else reply({ structuredContent: { ...first._meta.qlp, sessionId: 'test-session-startup-recovered' } });
           }
-          else if (op === 'chooseItem') reply({ structuredContent: { status: 'item', journey: { fieldIndex: 1, fieldTotal: 8 } } });
+          else if (op === 'chooseItem') reply({ structuredContent: { status: 'item',
+            mode: m.params.arguments.mode, fieldName: m.params.arguments.fieldName,
+            journey: { fieldIndex: 1, fieldTotal: 8 } } });
           else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
