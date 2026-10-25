@@ -471,10 +471,22 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       menu:{kind:'lesson',sessionId,studyId:'test-study',learnerId:'testlearner',
         fieldName:'必修問題',body:longLesson,prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
         choices:['確認問題へ進む','今日はここまで（学習を終了）'],actions:['check','end']}}));
-    await page.waitForFunction(() => {
-      const el=document.querySelector('iframe')?.contentDocument?.querySelector('#app');
-      return !!el && el.scrollTop===0;
-    });
+    try {
+      await page.waitForFunction(() => {
+        const el=document.querySelector('iframe')?.contentDocument?.querySelector('#app');
+        return !!el && el.scrollTop===0;
+      }, null, { timeout: 4000 });
+    } catch (e) {
+      const debug = await page.evaluate(() => {
+        const frame = document.querySelector('iframe');
+        const el = frame?.contentDocument?.querySelector('#app');
+        return { hasIframe: !!frame, origin: frame?.contentWindow?.location?.href,
+          hasDoc: !!frame?.contentDocument, hasApp: !!el,
+          scrollTop: el?.scrollTop, clientHeight: el?.clientHeight, scrollHeight: el?.scrollHeight,
+          className: el?.className, snippet: el?.innerText?.slice(0, 180) };
+      }).catch(err => ({ debugError: String(err) }));
+      throw new Error('Lesson scroll reset diagnostic: ' + JSON.stringify(debug), { cause: e });
+    }
     await ui.getByRole('button',{name:'確認問題へ進む'}).click();
     await ui.getByRole('heading',{name:'この分野の確認問題へ'}).waitFor();
     assert.equal(await ui.locator('.md').count(),0,'確認問題への遷移後は前の基礎解説を消す');
