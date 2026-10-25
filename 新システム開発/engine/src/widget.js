@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v90.html';
+export const WIDGET_URI = 'ui://qlp/question-v91.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.90';
+export const WIDGET_VERSION = '2026-10-25.91';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1669,11 +1669,11 @@ a{color:inherit}
         (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     return '<section class="stem official-answer-summary" aria-label="採点後の簡易解説">' +
-      '<b>■簡易解説（公式正答の確認）</b>' +
+      '<b>■公式正答・簡易解説</b>' +
       '<p>正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + ' です。' +
-      (g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
+      (g.dontKnow ? '正答を確認して復習しましょう。' : g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
       (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
-      '<p>判断の根拠や計算過程は「AIの詳しい解説」で確認できます。</p></section>';
+      '<p>各選択肢の詳しい判断根拠と必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
@@ -1696,7 +1696,7 @@ a{color:inherit}
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
     // 強制補強中は「次の問題へ」ボタンを一切出さない。
     if (g.checkSuggested) {
-      app.innerHTML = h + endBar();
+      app.innerHTML = h + officialAnswerSummary(q, g) + endBar();
       var mandatory = document.getElementById('check');
       mandatory.onclick = function(){
         this.disabled = true;
@@ -1721,7 +1721,9 @@ a{color:inherit}
     if (g.dontKnow) {
       (g.acceptedAnswers || [g.correctAnswer]).forEach(function(n){ var ck = app.querySelector('.choices .opt[data-n="' + n + '"]'); if (ck) ck.classList.add('correct'); });
       var dpdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
-      app.insertAdjacentHTML('beforeend', '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div><div class="stem">正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div><div class="row"><button id="dkExp">解説を見る</button><button id="next">次の問題へ</button></div>');
+      app.innerHTML = '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div>' +
+        officialAnswerSummary(q, g) + '<div class="stem">解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div>' +
+        '<div class="row"><button id="dkExp">AIの詳しい解説を追加</button><button id="next">次の問題へ</button></div>';
       nextBtn();
       document.getElementById('dkExp').onclick = async function(){
         this.disabled = true;
@@ -1730,7 +1732,7 @@ a{color:inherit}
       };
       return;
     }
-    // 採点のあと：■採点（固定4行）→ ■解説の確認（U14）。次へ進むボタンは画面に置き、AIに任せない
+    // 採点後は正誤・公式正答・全選択肢の簡易解説を即時表示。AIは詳しい判断根拠だけを下部の新しい枠に追加。
     var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
     var fieldChange = state.next?.status === 'question' && state.next.question?.kind === 'new' &&
       q.fieldName && state.next.question.fieldName && q.fieldName !== state.next.question.fieldName;
