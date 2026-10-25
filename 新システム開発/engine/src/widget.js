@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v93.html';
+export const WIDGET_URI = 'ui://qlp/question-v94.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.93';
+export const WIDGET_VERSION = '2026-10-25.94';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -16,7 +16,11 @@ export function widgetHtml() {
 @media (prefers-color-scheme:dark){:root{--fg:#eee;--sub:#aaa;--line:#444;--bg:#1e1e1e;--btn:#2a2a2a;--acc:#8ab4f8;--accbg:#22304a;--ok:#79e6a0;--ng:#ff9696}}
 body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;color:var(--fg);background:var(--bg)}
 #app{padding:12px 14px;min-height:120px;box-sizing:border-box}
-#app.is-old{min-height:0;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
+/* 学習画面の高さを一定にし、スクロール位置をChatGPT本体ではなくアプリ内部で管理する。 */
+#app.study-viewport{height:clamp(480px,175vw,720px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px))}
+/* ChatGPTの全画面表示では上部の閉じる操作・下部のチャット入力欄と重ならない余白を確保する。 */
+html.study-fullscreen #app.study-viewport{padding-top:calc(64px + env(safe-area-inset-top,0px))}
+#app.is-old{height:auto;min-height:0;max-height:none;overflow:visible;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
 h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margin:0 0 10px;padding:9px 12px;border-radius:10px;line-height:1.4}
 .field{display:inline-block;color:var(--acc);background:var(--accbg);font-weight:700;font-size:15px;margin-bottom:8px;padding:3px 10px;border-radius:999px}
 .stem{white-space:pre-wrap;margin:10px 0;font-size:16px;line-height:1.8}.stem p{margin:0 0 .75em;white-space:pre-wrap}.stem p:last-child{margin-bottom:0}
@@ -82,6 +86,9 @@ a{color:inherit}
 <script>
 (function(){
   var app = document.getElementById('app');
+  // iframe自身の高さ(100vh等)に連動させると、ホストへの高さ通知と相互に増幅する。
+  // 幅ベースの一定高さにすることで、その循環と遷移時の外側スクロールずれを避ける。
+  if (app.classList && app.classList.add) app.classList.add('study-viewport');
   var state = { sessionId: null, question: null, answered: false, privateLicensedUpload: false };
   var pending = {}, rid = 1, bridgeReady = false, hasView = false;
   function rpc(method, params){ return new Promise(function(res, rej){
@@ -1904,8 +1911,8 @@ a{color:inherit}
   // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
   // 新しい場面の先頭に印を付け、フォーカスとスクロールを同じ位置へ揃える。
-  // ChatGPTホストのスクロール位置は直接制御できないが、フォーカスと scrollIntoView により
-  // iPhoneでも可能な限り画面の先頭を表示する。遅延リサイズ後にも有限回だけ位置を合わせる。
+  // ChatGPTホストのスクロール位置は直接制御できない。学習枠の高さを固定し、
+  // 遷移時はその枠内だけを先頭に戻す（外側の会話を動かす scrollIntoView は避ける）。
   // 初回の過去問は学習画面が直接 nextQuestion を取得する。
   // 再試行も同じ要求を使い、まだ出題されていない問題へ redisplayQuestion を呼ばない。
   function nextBelow(fallback, say){
@@ -1954,8 +1961,10 @@ a{color:inherit}
     function align(){
       if (turn !== latestFocusTurn || locked || !latest.isConnected) return;
       try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
-      try { latest.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'nearest' }); } catch(e) {}
-      try { window.scrollTo(0, 0); } catch(e) {}
+      // 外側のChatGPTチャットは手を触れず、画面内容を保持する内部スクローラだけを戻す。
+      // これなら直前の選択肢が下にあっても、表示更新後に本文先頭へ戻れる。
+      if (app.classList && app.classList.contains('study-viewport')) app.scrollTop = 0;
+      else { try { window.scrollTo(0, 0); } catch(e) {} }
     }
     align();
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){
@@ -1966,11 +1975,20 @@ a{color:inherit}
   }
   // 全画面で表示する（チャットの途中に枠が固定され、上下にスクロールし直す手間をなくす）。アプリが断ったら、今のまま続ける
   var fullAsked = false;
+  function syncDisplayMode(){
+    var classes = document.documentElement && document.documentElement.classList;
+    if (!classes) return;
+    if (window.openai && window.openai.displayMode === 'fullscreen') classes.add('study-fullscreen');
+    else classes.remove('study-fullscreen');
+  }
   function goFull(){
     if (fullAsked) return; fullAsked = true;
     try {
-      if (window.openai && window.openai.requestDisplayMode) { window.openai.requestDisplayMode({ mode: 'fullscreen' }); return; }
-      if (bridgeReady) rpc('ui/request-display-mode', { mode: 'fullscreen' }).catch(function(){});
+      if (window.openai && window.openai.requestDisplayMode) {
+        Promise.resolve(window.openai.requestDisplayMode({ mode: 'fullscreen' })).then(syncDisplayMode).catch(function(){});
+        return;
+      }
+      if (bridgeReady) rpc('ui/request-display-mode', { mode: 'fullscreen' }).then(syncDisplayMode).catch(function(){});
     } catch (e) {}
   }
   try { document.addEventListener('click', function(){ goFull(); }, true); } catch (e) {}
@@ -1983,6 +2001,7 @@ a{color:inherit}
   try { new ResizeObserver(fit).observe(app); } catch (e) {}
   fit();
   window.addEventListener('openai:set_globals', function(){
+    syncDisplayMode();
     // iOSではMCPブリッジ初期化後に初回toolOutputが到着する場合がある。
     // bridgeReadyで遮断すると初回問題が描画されず、利用者の再要求で初めて表示される。
     if (window.openai && !hasView) render(openaiOutput());

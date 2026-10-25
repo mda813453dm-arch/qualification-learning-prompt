@@ -194,6 +194,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'redisplayQuestion').length), 0);
     assert.deepEqual(await page.evaluate(() => window.followups), [], '実践問題の出題はChatGPT依存ではない');
+    // iPhone実機報告の回帰: 長い問題で選択肢まで下にスクロールした後も、次の表示は
+    // ChatGPT本体のスクロールに依存せず、固定高さの学習枠内だけを先頭へ戻す。
+    const stableHeight = await ui.locator('#app').evaluate(el => {
+      const filler = document.createElement('div');
+      filler.textContent = '長文問題の画面位置テスト '.repeat(180);
+      el.insertBefore(filler, el.querySelector('.choices'));
+      const height = el.clientHeight;
+      if (el.scrollHeight <= height) throw new Error('学習枠が内部スクロールしない');
+      el.scrollTop = el.scrollHeight;
+      if (el.scrollTop < 100) throw new Error('スクロールを再現できない');
+      return height;
+    });
     await ui.locator('input[name=ans][value="3"]').check();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 0);
     await ui.getByRole('button', { name: '解答する' }).click();
@@ -202,6 +214,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('.latest').count(), 1, '採点画面の最新マーカーを重複させない');
     assert.equal(await ui.locator('.latest').evaluate(el => el.ownerDocument.activeElement === el), true,
       '採点後に「ここが最新の表示です」へフォーカスする');
+    assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0,
+      '問題の末尾から回答しても新しい採点画面は内部先頭に戻る');
+    assert.equal(await ui.locator('#app').evaluate(el => el.clientHeight), stableHeight,
+      '画面遷移で学習枠自体の高さが変わらずチャットが飛ばない');
     assert.ok(await ui.locator('.latest').evaluate(el => el.getBoundingClientRect().top < 80),
       'ウィジェット内部でも最新の表示が最上部に来る');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);

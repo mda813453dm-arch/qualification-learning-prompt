@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v93\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.93');
+  assert.match(WIDGET_URI, /question-v94\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.94');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -142,11 +142,14 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
 });
 
-test('画面遷移後は最新表示の先頭をフォーカスし、サイズ変更後にも一度だけ再調整する', () => {
+test('学習枠を一定高さの独立スクローラにし、ChatGPT本体を動かさず先頭へ戻す', () => {
   const html = widgetHtml();
   assert.match(html, /class="latest" tabindex="-1"/);
   assert.match(html, /latest\.focus\(\{ preventScroll: true \}\)/);
-  assert.match(html, /latest\.scrollIntoView\(\{ behavior: 'auto', block: 'start', inline: 'nearest' \}\)/);
+  assert.match(html, /#app\.study-viewport\{height:clamp\(480px,175vw,720px\);overflow-y:auto/);
+  assert.match(html, /app\.classList\.add\('study-viewport'\)/);
+  assert.match(html, /app\.scrollTop = 0/);
+  assert.doesNotMatch(html, /latest\.scrollIntoView\(/, '外側のChatGPTチャットを動かすAPIを使用しない');
   assert.match(html, /if \(turn === latestFocusTurn\) \{ fit\(\); align\(\); \}/);
   assert.match(html, /Promise\.resolve\(\)\.then\(function\(\)\{ if \(!locked && thisRender === renderFocusTurn\) scrollUp\(\); \}\)/);
   assert.match(html, /if \(!latest\) \{/);
@@ -1055,7 +1058,7 @@ test('最新の画面へ進むと前の問題・解説本文・選択肢を破�
   assert.ok(fn.includes('app.innerHTML =') && fn.includes('old-screen'), '旧DOMを丸ごと破棄する');
   assert.ok(!fn.includes("app.insertAdjacentHTML('beforeend'"),'長い旧解説の下に通知を追加しない');
   assert.ok(!fn.includes("app.style.opacity = '.65'"), '古い問題を半透明のまま残さない');
-  assert.ok(html.includes("#app.is-old{min-height:0"),'旧枠の高さを縮める');
+  assert.ok(html.includes("#app.is-old{height:auto;min-height:0"),'旧枠の高さを縮めて独立スクロールも解除する');
   assert.ok(html.includes("window.addEventListener('storage'"),'iOSではlocalStorageでも画面更新を通知する');
   assert.ok(html.includes("app.classList.remove('is-old')"),'手動で現在の画面を開いたときは旧表示解除');
 });
