@@ -198,6 +198,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 0);
     await ui.getByRole('button', { name: '解答する' }).click();
     await ui.locator('#exp').waitFor();
+    await ui.locator('.latest').waitFor();
+    assert.equal(await ui.locator('.latest').count(), 1, '採点画面の最新マーカーを重複させない');
+    assert.equal(await ui.locator('.latest').evaluate(el => el.ownerDocument.activeElement === el), true,
+      '採点後に「ここが最新の表示です」へフォーカスする');
+    assert.ok(await ui.locator('.latest').evaluate(el => el.getBoundingClientRect().top < 80),
+      'ウィジェット内部でも最新の表示が最上部に来る');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /公式正答・簡易解説/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /各選択肢と正答の位置/);

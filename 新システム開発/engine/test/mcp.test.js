@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v92\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-25.92');
+  assert.match(WIDGET_URI, /question-v93\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-25.93');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -140,6 +140,16 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\);/);
   assert.match(html, /else renderVerifiedExplanation\(ctx\);/);
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
+});
+
+test('画面遷移後は最新表示の先頭をフォーカスし、サイズ変更後にも一度だけ再調整する', () => {
+  const html = widgetHtml();
+  assert.match(html, /class="latest" tabindex="-1"/);
+  assert.match(html, /latest\.focus\(\{ preventScroll: true \}\)/);
+  assert.match(html, /latest\.scrollIntoView\(\{ behavior: 'auto', block: 'start', inline: 'nearest' \}\)/);
+  assert.match(html, /if \(turn === latestFocusTurn\) \{ fit\(\); align\(\); \}/);
+  assert.match(html, /Promise\.resolve\(\)\.then\(function\(\)\{ if \(!locked && thisRender === renderFocusTurn\) scrollUp\(\); \}\)/);
+  assert.match(html, /if \(!latest\) \{/);
 });
 
 test('解説の依頼文は資格共通の判断根拠とし、計算の有無は問題の内容で決める', () => {

@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v92.html';
+export const WIDGET_URI = 'ui://qlp/question-v93.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.92';
+export const WIDGET_VERSION = '2026-10-25.93';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -72,6 +72,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
 .latest{font-size:13px;font-weight:700;color:var(--acc);background:var(--accbg);border-radius:8px;padding:4px 10px;margin-bottom:8px}
+.latest:focus{outline:2px solid var(--acc);outline-offset:2px}
 .study-progress{padding:8px 10px 10px;margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--accbg)}
 .study-progress .progress-head{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:700;color:var(--acc)}
 .study-progress .progress-track{height:9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:6px 0}
@@ -264,11 +265,16 @@ a{color:inherit}
     if (e.key !== 'qlp_at' || locked || !myAt) return;
     if (Number(e.newValue) > myAt) lockOld();
   });
+  var renderFocusTurn = 0;
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     if (locked) return;
     stamp(data);
     if (locked) return;
+    // 分岐ごとの表示更新が scrollUp を呼び忘れても、描画完了後に最新位置へ移動する。
+    // 採点や問題取得を再実行せず、表示位置だけを調整する。
+    var thisRender = ++renderFocusTurn;
+    Promise.resolve().then(function(){ if (!locked && thisRender === renderFocusTurn) scrollUp(); });
     if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) state.privateLicensedUpload = false;
     if (data.sessionId) state.sessionId = data.sessionId;
     if (data.permissionedUpload || (data.question && /^(q097|q090):/.test(String(data.question.questionId || ''))))
@@ -1007,6 +1013,7 @@ a{color:inherit}
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
+    scrollUp();
     var endAction = async function(em){
       em.disabled = true;
       var ids = loadIds(), lid = currentStudyId || ids.studyId || studyLid || ids.lid || state.sessionId || ids.sid;
@@ -1048,6 +1055,7 @@ a{color:inherit}
       }
       // 解説の本文は、ボタンを押したあとも枠に残す（選んだ内容だけ1行にする）
       app.innerHTML = body + '<div class="notice">' + esc(m.prompt) + '</div><div class="result ok">' + esc(n + '：' + c) + '</div>';
+      scrollUp();
       ask(n + '：' + c, c);
     }; });
   }
@@ -1895,8 +1903,9 @@ a{color:inherit}
   });
   // 画面の高さをアプリ側に伝える（iPhone のアプリで、枠だけ出て中身が出ないのを防ぐ）
   // 新しい場面は枠の上から見せる（枠の中で下にスクロールしたままだと、上の内容が見えない）
-  // 新しい場面の一番上に印を付け、どこが最新の表示か分かるようにする
-  // 続きがこの下のチャットに出る画面（初期診断の案内・答え合わせ）には印を付けない（最新の表示は次の問題の画面）
+  // 新しい場面の先頭に印を付け、フォーカスとスクロールを同じ位置へ揃える。
+  // ChatGPTホストのスクロール位置は直接制御できないが、フォーカスと scrollIntoView により
+  // iPhoneでも可能な限り画面の先頭を表示する。遅延リサイズ後にも有限回だけ位置を合わせる。
   // 初回の過去問は学習画面が直接 nextQuestion を取得する。
   // 再試行も同じ要求を使い、まだ出題されていない問題へ redisplayQuestion を呼ばない。
   function nextBelow(fallback, say){
@@ -1929,10 +1938,31 @@ a{color:inherit}
     document.getElementById('nextHere').onclick = requestSame;
     requestSame();
   }
+  var latestFocusTurn = 0;
   function scrollUp(noMark){
-    try { window.scrollTo(0, 0); } catch (e) {}
-    if (noMark) return;
-    app.insertAdjacentHTML('afterbegin', '<div class="latest">▼ ここが最新の表示です</div>');
+    if (!app || typeof app.querySelector !== 'function') return;
+    // noMark は従来の画面で使われているが、最新の画面には常に目印を付ける。
+    // 同じ画面内で再表示した場合は既存の目印を使い、二重に挿入しない。
+    var latest = app.querySelector('.latest');
+    if (!latest) {
+      app.insertAdjacentHTML('afterbegin', '<div class="latest" tabindex="-1">▼ ここが最新の表示です</div>');
+      latest = app.querySelector('.latest');
+    } else if (app.firstElementChild !== latest) {
+      app.insertBefore(latest, app.firstChild);
+    }
+    var turn = ++latestFocusTurn;
+    function align(){
+      if (turn !== latestFocusTurn || locked || !latest.isConnected) return;
+      try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
+      try { latest.scrollIntoView({ behavior: 'auto', block: 'start', inline: 'nearest' }); } catch(e) {}
+      try { window.scrollTo(0, 0); } catch(e) {}
+    }
+    align();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){
+      if (turn !== latestFocusTurn) return;
+      fit(); align();
+    });
+    setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 160);
   }
   // 全画面で表示する（チャットの途中に枠が固定され、上下にスクロールし直す手間をなくす）。アプリが断ったら、今のまま続ける
   var fullAsked = false;
