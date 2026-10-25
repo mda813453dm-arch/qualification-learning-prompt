@@ -134,9 +134,9 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   const html = widgetHtml();
   assert.match(html, /公式正答・簡易解説（採点と同時に表示）/);
   assert.match(html, /officialAnswerSummary\(q, g\)/);
-  assert.match(html, /id=\\"checkExp\\"/);
-  assert.match(html, /id=\\"dkExp\\"/);
-  assert.match(html, /id=\\"exp\\"/);
+  assert.ok(html.includes('id="checkExp"'));
+  assert.ok(html.includes('id="dkExp"'));
+  assert.ok(html.includes('id="exp"'));
   assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\);/);
   assert.match(html, /else renderVerifiedExplanation\(ctx\);/);
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
