@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v101.html';
+export const WIDGET_URI = 'ui://qlp/question-v102.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.101';
+export const WIDGET_VERSION = '2026-10-25.102';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -249,38 +249,118 @@ a{color:inherit}
       '<div class="progress-track" role="progressbar" aria-label="' + esc(label) + 'の位置" aria-valuemin="0" aria-valuemax="' + esc(total) + '" aria-valuenow="' + esc(position) + '"><div class="progress-fill" style="width:' + esc(Math.round(100 * position / total)) + '%"></div></div>' +
       '<div class="progress-detail">この問題を含めて残り ' + esc(total - position + 1) + '問</div></div>';
   }
-  // いちばん下の画面だけを操作できるようにする：新しい画面が出たら、上に残った古い画面のボタンは押せなくする（エンジンの時刻 at で新旧を決める。画面どうしは BroadcastChannel と localStorage で知らせる）
+  // 1セッション1固定枠。最初に開いた枠が表示を担当し、後続ツール結果の枠は通知だけ行う。
+  // ChatGPTホストが過去のiframeを破棄する場合はリース期限後に別枠へ自動復帰する。
   var myAt = 0, locked = false, bc = null;
+  var frameId = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+  var ownedSession = null, followerSession = null, refreshScheduled = false;
+  var frameLeasePrefix = 'qlp_fixed_frame_v102:', frameChangePrefix = 'qlp_frame_change_v102:';
+  var FRAME_LEASE_MS = 18000;
+  function leaseKey(sid){ return frameLeasePrefix + encodeURIComponent(String(sid)); }
+  function readLease(sid){
+    try { return JSON.parse(localStorage.getItem(leaseKey(sid)) || 'null'); } catch(e){ return null; }
+  }
+  function liveLease(record){ return record && record.id && Number.isFinite(Number(record.time)) && Date.now() - Number(record.time) < FRAME_LEASE_MS && Date.now() >= Number(record.time); }
+  function releaseOwnedSession(){
+    if (!ownedSession) return;
+    try { var old = readLease(ownedSession); if (old && old.id === frameId) localStorage.removeItem(leaseKey(ownedSession)); } catch(e){}
+    ownedSession = null;
+  }
+  function claimFirstFrame(sid, force){
+    if (!sid) return true;
+    sid = String(sid);
+    if (ownedSession && ownedSession !== sid) releaseOwnedSession();
+    var current = readLease(sid);
+    if (!force && liveLease(current) && current.id !== frameId) { followerSession = sid; return false; }
+    try {
+      localStorage.setItem(leaseKey(sid), JSON.stringify({ id: frameId, time: Date.now() }));
+      var confirmed = readLease(sid);
+      if (confirmed && confirmed.id !== frameId && liveLease(confirmed)) { followerSession = sid; return false; }
+    } catch(e) { /* 保存禁止の環境では単一枠内の通常操作を維持する */ }
+    ownedSession = sid;
+    followerSession = null;
+    return true;
+  }
+  function isFirstFrame(sid){
+    var owner = readLease(sid);
+    return ownedSession === sid && (!liveLease(owner) || owner.id === frameId);
+  }
   function lockOld(){
     if (locked) return;
     locked = true;
     descriptiveScreen = null;
-    // 重要: ボタンだけを無効化すると古い問題・長い解説が残り、iPhoneで学習が進むほど縦に伸びる。
-    // 古いDOMは完全に破棄し、学習の記録自体はエンジンに保持する。
     app.style.opacity = '';
     app.classList.add('is-old');
     app.innerHTML = '<div class="old-screen" role="status">' +
-      '<span>前の学習画面は閉じました</span>' +
-      '<button type="button" id="reopenStudy">ここで現在の学習を開く</button></div>';
+      '<span>学習内容は最初の枠で更新されます</span>' +
+      '<button type="button" id="reopenStudy">この枠で再開</button></div>';
     document.getElementById('reopenStudy').onclick = function(){ restoreFromServer(true); };
-    try { window.scrollTo(0, 0); } catch(e) {}
     fit();
   }
-  function stamp(data){
-    var at = Number(data && data.at) || 0; if (!at || locked) return;
-    if (at > myAt) myAt = at;
-    try { var last = Number(localStorage.getItem('qlp_at')) || 0; if (last > myAt) { lockOld(); return; } if (myAt > last) localStorage.setItem('qlp_at', String(myAt)); } catch (e) {}
-    try { if (!bc) { bc = new BroadcastChannel('qlp-widget'); bc.onmessage = function(e){ var d = e && e.data; if (d && d.at > myAt && myAt) lockOld(); }; } bc.postMessage({ at: myAt }); } catch (e) {}
+  function announceChange(sid, at){
+    if (!sid) return;
+    var msg = { kind: 'updated', sessionId: String(sid), from: frameId, at: Number(at) || Date.now() };
+    try { if (bc) bc.postMessage(msg); } catch(e){}
+    try { localStorage.setItem(frameChangePrefix + encodeURIComponent(String(sid)), JSON.stringify(msg)); } catch(e){}
   }
-  // BroadcastChannelの通知を受け取れないiPhoneブラウザでは、localStorage更新でも旧画面を閉じる。
+  function scheduleFirstFrameRefresh(sid){
+    if (!sid || !isFirstFrame(sid) || locked || refreshScheduled) return;
+    refreshScheduled = true;
+    setTimeout(function(){
+      refreshScheduled = false;
+      if (!isFirstFrame(sid) || locked) return;
+      if (restoring) { scheduleFirstFrameRefresh(sid); return; }
+      // 採点や次問取得を繰り返さず、保存された最新の表示状態だけを復元する。
+      restoreFromServer(false);
+    }, 180);
+  }
+  function onFrameMessage(msg){
+    if (!msg || msg.kind !== 'updated' || msg.from === frameId) return;
+    if (ownedSession && String(msg.sessionId) === ownedSession) scheduleFirstFrameRefresh(ownedSession);
+  }
+  try {
+    bc = new BroadcastChannel('qlp-fixed-study-frame-v102');
+    bc.onmessage = function(e){ onFrameMessage(e && e.data); };
+  } catch(e){}
   window.addEventListener('storage', function(e){
-    if (e.key !== 'qlp_at' || locked || !myAt) return;
-    if (Number(e.newValue) > myAt) lockOld();
+    if (!e.key) return;
+    if (ownedSession && e.key === frameChangePrefix + encodeURIComponent(ownedSession) && e.newValue) {
+      try { onFrameMessage(JSON.parse(e.newValue)); } catch(err){}
+    }
+    if (ownedSession && e.key === leaseKey(ownedSession)) {
+      var current = readLease(ownedSession);
+      if (liveLease(current) && current.id !== frameId) { releaseOwnedSession(); lockOld(); }
+    }
   });
+  // iframeが無くなった場合でも新しい枠で操作不能にならないよう有期限で引き継ぐ。
+  setInterval(function(){
+    if (ownedSession && !locked) {
+      var owner = readLease(ownedSession);
+      if (liveLease(owner) && owner.id !== frameId) { releaseOwnedSession(); lockOld(); return; }
+      try { localStorage.setItem(leaseKey(ownedSession), JSON.stringify({ id: frameId, time: Date.now() })); } catch(e){}
+    } else if (locked && followerSession && claimFirstFrame(followerSession, false)) {
+      // 元の枠が消えたときだけ、残った枠を復元して利用可能にする。
+      locked = false;
+      app.classList.remove('is-old');
+      restoreFromServer(false);
+    }
+  }, 5000);
+  function stamp(data){
+    var sid = data && data.sessionId || state.sessionId || (input() && input().sessionId);
+    if (sid && !claimFirstFrame(sid, false)) {
+      state.sessionId = String(sid);
+      // 後続ツール結果は必ず元の枠へ更新を通知する。新たな操作枠を増やさない。
+      announceChange(sid, data && data.at);
+      lockOld();
+      return;
+    }
+    myAt = Math.max(myAt, Number(data && data.at) || 0);
+    // 後から再生成されたツール結果はサーバーから読み直すため、旧時刻で上書きしない。
+  }
   var renderFocusTurn = 0;
   function render(data){
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'lesson_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
-    if (locked) return;
+    // ロック中の新しい結果も最初の枠へ送るため、stampは先に通す。
     stamp(data);
     if (locked) return;
     // 分岐ごとの表示更新が scrollUp を呼び忘れても、描画完了後に最新位置へ移動する。
@@ -1928,17 +2008,13 @@ a{color:inherit}
         restored = await callTool('restoreStudyView', { sessionId: backup });
       }
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
-      // 復元結果は新しい時刻で届く。古い画面を手動で開いたときだけロック解除する。
+      // 明示的な再開だけ所有枠を切り替える。自動復元は元の枠を奪わない。
       if (locked && !manual) return;
+      if (manual && !claimFirstFrame(state.sessionId, true)) throw new Error('FRAME_CLAIM_FAILED');
       locked = false;
       app.classList.remove('is-old');
       app.style.opacity = '';
-      // 復旧した枠を最新として通知し、先に開かれた操作不能な枠と競合させない。
-      if (manual) {
-        myAt = Math.max(Date.now(), myAt + 1);
-        try { localStorage.setItem('qlp_at', String(myAt)); } catch (e) {}
-        try { if (bc) bc.postMessage({ at: myAt }); } catch (e) {}
-      }
+      if (manual) myAt = Math.max(Date.now(), myAt + 1);
       state.question = null; state.next = null; state.answered = false;
       render(restored);
     } catch (e) {
