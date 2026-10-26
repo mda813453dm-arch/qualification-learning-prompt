@@ -243,3 +243,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-26 14:48 JST deploy v108: fix iPhone repeated blank frames by using data-only getStudySnapshot for all widget-internal restoration and polling; preserve explicit handoff frame, AI confirmation 3-question state, no paid model API.
 
 2026-10-26 v109: no new frames for confirmation/model tools; data-only snapshot, confirmation-next same-frame pending and retry; mobile CI #40277392674 PASS, engine CI #40277392670 PASS; no paid AI API.
+
+2026-10-26 v109 follow-up: eliminate contradictory restoreStudyView model instructions during ordinary question-display failure; use data-only getStudySnapshot for existing frame, explicit handoff only for new frame. Engine CI #40277923540 PASS; v109 engine CI #40277392670 and browser #40277392674 PASS. Preserve learning state, no paid API, main/master_prompt.txt untouched.
