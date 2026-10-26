@@ -1455,7 +1455,8 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   const check = (await app('chooseItem', { sessionId, fieldName, mode: 'check' })).structuredContent;
   assert.equal(check.mode, 'check');
   const replay = await app('showMenu', { kind:'lesson', lessonRef:chosen.lessonRef, body:lessonBody });
-  assert.equal(replay._meta.qlp.menu.body, lessonBody, '後から同じ照会番号を送っても保存済みの教材を変えない');
+  assert.equal(replay.isError, true, '確認問題開始後の古い照会番号は拒否される');
+  assert.equal(replay.structuredContent.error, 'LESSON_NOT_ACTIVE');
   const pending = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(pending.status, 'confirmation_pending');
   assert.equal(pending.position, 1);
