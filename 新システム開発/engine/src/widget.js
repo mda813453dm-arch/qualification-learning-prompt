@@ -903,25 +903,23 @@ a{color:inherit}
         var ready = validated.indexOf(year) >= 0;
         var has = personal.indexOf(year) >= 0;
         return '<option value="' + esc(year) + '"' + (!ready || has ? ' disabled' : '') + '>' +
-          esc(year) + '年度 — ' + (has ? '本人用に取込済み' : ready ? '取込準備済み' : '原本検証待ち') + '</option>';
+          esc(year) + '年度' + (has ? '（登録済み）' : '') + '</option>';
       }).join('');
       var selected = years.find(function(year){ return validated.indexOf(year) >= 0 && personal.indexOf(year) < 0; });
       app.innerHTML = '<h2>過去問の年度別取り込み（本人専用）</h2>' +
         '<div class="notice"><b>著作権・利用許諾の確認</b><div>当システムは' + esc(data.qualificationName || 'この資格') +
         'の過去問を事前に保存・自動取得・共有配布しません。権利者から必要な許諾を得た方だけ、ご自身の学習用に年度ごとに添付できます。</div></div>' +
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
-        '<ul class="ov-l">' + years.map(function(year){
-          return '<li>' + esc(year) + '年度：' + (personal.indexOf(year) >= 0 ? '本人用に取込済み' :
-            validated.indexOf(year) >= 0 ? '未登録・取り込み準備済み' : '原本検証待ち（取り込み不可）') + '</li>';
-        }).join('') + '</ul>' +
-        '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' +
+        (personal.length ? '<div class="notice"><b>登録済み年度：</b>' + personal.map(function(year){ return esc(year) + '年度'; }).join('・') + '</div>' : '') +
+        (personal.length ? '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' : '') +
         (personal.length ? '<div class="notice">取り込んだ年度の過去問から出題します。</div>' :
-          '<div class="notice">現在、出題できる公式過去問は未登録です。先に年度を選び、必要なPDFを添付してください。</div>') +
-        (selected === undefined ? '<div class="notice">現在、追加可能な年度はありません。</div>' :
+          '<div class="notice">公式過去問は未登録です。下の手順でPDFを登録すると、過去問を解くボタンが表示されます。</div>') +
+        (selected === undefined ? '<div class="notice">現在、この画面で追加できる年度はありません。登録済み年度を確認してください。</div>' :
+          '<div class="notice"><b>取り込み方法</b><div>① 取り込みたい年度を選ぶ（複数年度は1年度ずつ登録できます）。</div><div>② 公式ページで利用条件を確認し、必要な許諾を得ている場合はチェックを入れる。</div><div>③ 「PDFの添付へ進む」を押す。</div><div>④ チャット入力欄の「＋」からその年度の' + esc(isHtmlAnswer ? '問題PDF' : '問題PDFと正答PDF') + 'を添付して送信する。</div><div>⑤ 取り込み状況を確認し、登録完了後に過去問を解く。</div><div>表示されている年度以外の資料については、登録できると断定せず対応状況を確認してください。</div></div>' +
           '<label for="licensedYear"><b>取り込む年度</b></label>' +
           '<select id="licensedYear" style="display:block;width:100%;font:inherit;padding:9px;margin:8px 0">' + choices + '</select>' +
           '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>私は選択した年度の問題・正答PDFをこのシステムに送信し、個人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-          '<button id="licensedConfirm" disabled>この年度の取込を許可して添付へ進む</button>') +
+          '<button id="licensedConfirm" disabled>PDFの添付へ進む</button>') +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') +
         '</div><div class="row"><button id="licensedRefresh">取り込み状況を確認</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
       document.getElementById('licensedStart').onclick = async function(){
@@ -954,8 +952,8 @@ a{color:inherit}
           var r = await callTool('confirmUploadRights', { sessionId: state.sessionId, year: year, confirmed: true });
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed') throw new Error('RIGHTS_CONFIRM_FAILED');
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>' + esc(year) +
-            '年度の確認を受け付けました。</b><div>このチャットの「＋」から、該当年度の' + esc(fileHint) +
-            'PDFを添付すると登録を開始できます。</div></div>';
+            '年度の確認を受け付けました。</b><div>このチャットの入力欄にある「＋」を押して、' + esc(fileHint) +
+            '添付後に送信してください。送信だけでは登録完了ではありません。登録状況を確認してください。</div></div>';
           ack.checked = false;
         } catch(e) {
           ack.checked = false;
