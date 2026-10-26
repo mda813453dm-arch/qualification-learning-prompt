@@ -8,7 +8,7 @@ export const WIDGET_MIME = 'text/html;profile=mcp-app';
 export const WIDGET_VERSION = '2026-10-26.112';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
-const PREPARED_LESSONS = {
+export const PREPARED_LESSONS = {
   "基礎法学": {
     "intro": [
       "法は社会生活の権利・義務や手続を定めるルールです。まず「誰に、どのような要件で、どんな効果が生じるか」の順に読みます。",
