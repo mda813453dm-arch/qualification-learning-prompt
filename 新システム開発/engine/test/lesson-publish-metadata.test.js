@@ -36,4 +36,6 @@ test('AI explanation publication does not mount a second study widget', async ()
   assert.equal(handoff._meta.ui.resourceUri, WIDGET_URI);
   assert.equal(handoff._meta['openai/outputTemplate'], WIDGET_URI);
   assert.match(lesson.description, /showMenu/);
+  assert.match(lesson.description, /lessonRef/);
+  assert.equal(lesson.inputSchema.properties.lessonRef.pattern, '^L-[A-Za-z0-9_-]{16}$');
 });
