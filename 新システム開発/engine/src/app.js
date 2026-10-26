@@ -1793,7 +1793,7 @@ async function route(request, env, url, now) {
     const fieldName = cat?.fields?.[fid];
     const markdown = typeof b.body === 'string' ? b.body.trim() : '';
     // 再送は保存済みの同じ解説を返し、別の説明に上書きしない。
-    if (byRef && requestFieldId === fid && state.publishedLesson?.requestRef === requestRef &&
+    if (byRef && state.itemMode === 'explain' && requestFieldId === fid && state.publishedLesson?.requestRef === requestRef &&
         state.publishedLesson.menu?.sessionId === id)
       return json(200, { status: 'menu', sessionId: id, menu: state.publishedLesson.menu });
     if (state.itemMode !== 'explain' ||
