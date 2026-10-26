@@ -651,7 +651,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       window.deliver({ _meta:{qlp:pending}, structuredContent:{status:pending.status} });
     },{pending:pendingLesson});
     await ui.getByRole('button',{name:'解説を省略して確認問題から始める'}).click();
-    await ui.getByRole('heading',{name:'確認問題 1 / 3問'}).waitFor();
+    await ui.getByRole('heading',{name:'確認問題・第1問を準備中（全3問）'}).waitFor();
     assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='chooseItem'&&m.params.arguments.mode==='check').length) > 0,true);
 
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
