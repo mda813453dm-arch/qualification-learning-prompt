@@ -193,7 +193,15 @@ export const TOOLS = [
     name: 'restoreStudyView',
     appOnly: true,
     uiOnly: true,
-    description: '明示的な引継ぎ・新しい会話での再開専用。通常の問題進行・解説登録・確認問題の後には絶対に呼ばない（新しい学習枠が増えるため）。既存枠内の更新にはgetStudySnapshotを使う。出題・採点・学習記録は変更しない。',
+    description: '互換用の読取専用復元。新しい画面枠は生成しない。通常の進行・解説後には呼ばず、同一枠の再描画にはgetStudySnapshotを使用する。引継ぎ時に新しい会話で画面を開く場合だけopenHandoffViewを使う。出題・採点・履歴は変更しない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
+  },
+  {
+    name: 'openHandoffView',
+    appOnly: true,
+    uiOnly: true,
+    description: '引継ぎID・引継ぎデータのimportHandoff成功直後にだけ1回呼ぶ。新しい会話で操作可能な学習枠を明示的に開く。既存の学習枠がある通常進行・解説登録・確認問題中には呼ばない。保存済み状態を読むだけで出題・採点は変更しない。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
   },
@@ -201,7 +209,7 @@ export const TOOLS = [
     name: 'getStudySnapshot',
     appOnly: true,
     uiOnly: true,
-    description: '既存の学習枠の内部更新専用。現在の保存済み表示を読取専用で取得する。新しい学習枠を生成しない。モデルからの明示的な引継ぎ復元はrestoreStudyViewを使う。',
+    description: '既存の学習枠の内部更新専用。現在の保存済み表示を読取専用で取得する。新しい学習枠を生成しない。モデルからの明示的な引継ぎ画面開始はopenHandoffViewを使う。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
   },
@@ -502,7 +510,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v106.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v107.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v108.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
+const WIDGET_TOOLS = new Set(['showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -598,7 +606,7 @@ export function appInstructions() {
 const APP_START_DESC = '利用者から「2026年度 問6」のような指定があれば、資格名とrequestedQuestionを指定して公式問題を直接開く。指定問が未登録なら別の問を出さない。通常は資格の学習準備を始める。資格台帳には103資格を統合済み（「看護師」「愛玩動物看護師」「医師」「獣医師」なども登録済み）。ただし追加した公式URLの記録は出題・採点可能な問題原本ではなく、原本と公式正答が未検証ならPDF添付やAI作成確認問題を案内する。公式PDFは自動取得できる資格だけ裏で取り込む。qualificationId には、利用者が入力した資格名をそのまま入れる（例：「測量士補」「宅建」「看護師」）。sources は空の配列 [] にする（取得可能ならエンジンが公式サイトから集め、必要な資格は後から本人添付を案内する）。ユーザー入力が「@資格学習 看護師」の場合は qualificationId に必ず「看護師」のみを指定する。「資格学習」はアプリ名であり資格名ではない。資格名が読み取れないときは、このツールを呼ばず、「受験する資格名を教えてください。」とだけ聞く（資格の選択肢を自分で作らない）。';
 
 const APP_FLOW = {
-  importHandoff: '引継ぎデータやIDから再開するときはimportHandoffを使用し、戻り値のsessionIdでrestoreStudyViewを必ず1回呼ぶ。復元した画面の「学習を再開する」を待つ。初回の試験概要・免除・学習状況は出さず、startSessionも呼ばない。',
+  importHandoff: '引継ぎデータやIDから再開するときはimportHandoffを使用し、戻り値のsessionIdでopenHandoffViewを1回だけ呼ぶ。復元した画面の「学習を再開する」を待つ。初回の試験概要・免除・学習状況は出さず、startSessionも呼ばない。',
   nextQuestion: '【公式過去問の直接指定】既存sessionIdがあり、利用者が「2026年度 問6」のように問を指定したらquestionにそのまま指定内容を渡す。学習計画の途中でも明示指定だけは直接出題する。未登録・別区分なら別の問にすり替えない。sessionIdが不明ならstartSessionのrequestedQuestionを使用する。【記述式AI参考解説の後のみ】もしshowDescriptiveActionsがモデル側で呼び出せない場合、既存のnextQuestion({sessionId:現在の実セッションID,question:「記述式解説後の操作メニュー:」+現在のquestionId})で現在問の操作画面を読取専用取得できる。解説が完了してからだけ実行する。この特殊なquestionは問題を進めない。解説完了前・別問IDでは無効。両ツールが使えない場合は解説末尾に番号選択肢を出し、未表示なのにボタンを出したと宣言しない。【公式解説資料の安全な取得】学習画面から「照合番号：E-英数字16文字」が届いた場合、説明する前に、モデルから既に利用可能なnextQuestion({sessionId:照合番号})をまず呼ぶ。E-番号のときは読取専用で次問へ進まない。初回に失敗してもそこで諦めず、同じ番号をexplainSpec({explanationRef:照合番号})へ渡して自動再照合する。戻り値のstatusがexplanationContextでquestion.questionIdとgrade.questionIdが一致したら、各選択肢の根拠と計算をMarkdownの全文にまとめ、showMenu(kind=next,body=全文,explanationRef=照合番号,sessionId=取得した値,studyId,learnerId)で解説とその下のボタンを表示する。チャットへ直接解説を書かない。データが読めなければ推測しない。解説資料の再取得にexplainSpecがモデル側で利用可能なら、その読取専用ツールを使ってもよい。照合番号で資料を読むときは、実セッションIDの入力やユーザーへの問題文の再添付を要求しない。【通常の出題】【順番：通常のAI作成確認問題はregisterConfirmationQuestionへ登録して画面で採点する。3問終了後の「同じ分野の実践問題へ」は画面が直接処理する。公式問題は解説を見せる前に次の問題へ進めない】公式過去問の解説依頼にはE-照合番号で読取専用nextQuestion({sessionId:E-照合番号})を先に呼び、失敗したらexplainSpec({explanationRef:E-照合番号})を試し、サーバーの採点済み問題に基づいてMarkdown全文を作り、showMenu(kind=next,body=全文,explanationRef=照合番号)に送ってボタンと一緒に表示する。内部JSONや解説をチャットに書かない。非表示文脈だけで採点や解説をしない。次問・終了ボタンは画面で管理する。利用者が「次の問題へ」と答えたときに、このツールを呼ぶ。【画面から送られる短い文】利用者が「○○を解説から始めます。」と送ってきたら、その分野の学習段階に合った基礎解説全文をMarkdownで内部作成し、本文は一文字もチャットに書かず、必ず showMenu({kind:lesson,fieldName:その分野名,body:解説全文,sessionId:現在のセッションID,studyId,learnerId}) を呼ぶ。学習画面には解説と「確認問題へ進む／学習終了」を同じ枠の中に表示する。AIは次の確認問題を自動作成しない。利用者が画面の「確認問題へ進む」を押すと「○○の確認問題・第1問へ進む」が送られるので、そのときだけ registerConfirmationQuestion に本文・全選択肢・固定正答を登録し、3問中第1問の画面を出す。解説のチャット表示、解説のないボタン表示、解説と別枠の確認問題の自動連続生成を禁止する。「○○を確認問題から始めます。」または「○○の確認問題・第1問へ進む」と送ってきたら、解説を再表示せず、registerConfirmationQuestion で同分野の第1問を出す。以後は画面の「次の確認問題へ」が押されたときだけ同じ分野の第2問、第3問を同ツールへ登録する。問数・全体の位置はエンジンの画面が第1問から表示する。3問の採点後は画面に「同じ分野の実践問題へ」などの選択肢が出る。AIは独自の結果メニューやプログレスバーを作らず、次の分野へ自動で進めない。「○○を実践問題から始めます。」「次の問題へ」と送ってきたら、このツールを呼んで過去問を登録する。学習画面は最初の枠が保存状態を読んで更新する。新しい学習枠を作るためにrestoreStudyViewを呼ばない。AIはその前後に長い文を書かない。「今日はここまで。学習を終了します。」と送ってきたら、すぐ endStudy を呼ぶ（studyId は startStudy の結果の値、sessionId は今の学習の sessionId）。終了ログと引継ぎデータは画面に出るので、チャットに書き直さない。通常の3問の確認問題は画面が採点するため、AIはshowMenu(kind=next)を呼ばない。公式過去問の詳しい解説は検証済みexplainSpecの全データに基づき作成し、showMenu({kind=next,body:解説全文,explanationRef:照合番号,sessionId:取得したID,studyId,learnerId})を呼んで解説本文の直下に次問・終了ボタンを新しく表示する。生JSONや内部指示、解説本文をチャットに表示しない。',
   startSession: '【指定問の直接出題が優先】利用者が「2026年度 問6を出して」のように過去問番号を指定した場合は、startSession({qualificationId:会話で既知の資格名,sources:[],requestedQuestion:{year:2026,questionNumber:6}})を直接呼んで問題を出す。引継ぎIDを伴う場合はlearnerIdも渡し、学習記録を維持する。セッションIDが不明でも「出題できません」と答えず、この呼び出しを行う。結果がquestionUnavailableなら指定した問の未登録・取得待ちだけを案内し、他の問題を推測して出さない。通常の初期学習だけは次の順序を守る。【引継ぎIDがある場合はimportHandoffを優先する。startSessionは初回用】初回学習の【利用コード】エンジンが ACCESS_CODE_REQUIRED を返したら、「noteの記事に書かれた利用コードを入力してください」とだけ伝えて入力を待ち、入力されたコードをそのまま accessCode に入れて、もう一度呼ぶ。コードを推測・補完・提案しない。DAILY_LIMIT なら hint をそのまま伝えて終える。【学習の始め方：この順で進め、飛ばさない。資格名が入力されていたら、まずこのツールを呼ぶ】①このツールは必ず試験概要と学習条件の画面を先に出す。公式サイトから自動取り込みできる資格だけ裏で取得する。PDFの利用者添付が必要な資格は、承認後の問題画面で添付方法を案内する。「セッション」など内部用語は利用者に見せない。②試験概要はエンジンが画面に出すので、AIは概要を書かず、学習の案内と過去問の取得状況だけ短く伝える。③このツールの結果として、エンジンが画面に試験概要を出し、その直下に免除（制度がある資格だけ）と学習状況のボタンを出す（nextQuestion は呼ばない）。AIは showMenu（kind=exempt / status）を呼ばず、ChatGPT標準の質問・選択肢の画面も使わず、押されるまで待つ。④学習状況を選んだらエンジンが保存し、同じ枠に学習計画と固定の4ボタン「この学習計画で始める／学習計画を見直す／初期診断で苦手分野を調べる／今は学習しない」を表示する。AIは別の学習計画を書かず、showMenu(kind=status/plan/item/exempt)を呼ばず、ChatGPT標準のラジオ選択や独自の承認メニューを作らない。⑤学習計画の見直し・承認・分野開始も枠内のエンジンが処理する。既存の枠が残る場合は枠内の再取得（getStudySnapshot）を使い、通常進行でrestoreStudyViewを呼ばない。既存枠が失われたときだけ利用者の明示的な再開操作でrestoreStudyViewを使い、過去の段階を繰り返さない。',
   startStudy: '通常は学習計画の「この学習計画で始める」ボタンがエンジンから呼び出す。新規学習の承認や分野の進め方は枠内で完結するため、AIはshowMenu(kind=item)や別の質問フォームを追加しない。明示された再開時でも既存の学習状態を尊重する。',
@@ -684,7 +692,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: (name === 'startSession' || name === 'restoreStudyView') ? WIDGET_TOOL_META : LESSON_PUBLISH_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: (name === 'startSession' || name === 'openHandoffView') ? WIDGET_TOOL_META : LESSON_PUBLISH_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
