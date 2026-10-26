@@ -636,6 +636,11 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(nq._meta.ui.resourceUri, undefined);
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
   assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], WIDGET_URI);
+  const startup = tools.find(t => t.name === 'startSession').description;
+  assert.match(startup, /getStudySnapshot/);
+  assert.match(startup, /既存枠が失われたときだけ/);
+  assert.doesNotMatch(startup, /同一セッションのrestoreStudyViewまたはnextQuestion/);
+
   const snapshotTool = tools.find(x => x.name === 'getStudySnapshot');
   assert.ok(snapshotTool, 'background restoration tool exists');
   assert.equal(snapshotTool._meta?.['openai/outputTemplate'], undefined, 'background restore cannot create a new widget');
