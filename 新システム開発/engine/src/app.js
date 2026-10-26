@@ -1792,9 +1792,21 @@ async function route(request, env, url, now) {
     const fid = state.set?.fieldId;
     const fieldName = cat?.fields?.[fid];
     const markdown = typeof b.body === 'string' ? b.body.trim() : '';
-    // 再送は保存済みの同じ解説を返し、別の説明に上書きしない。
-    if (byRef && state.itemMode === 'explain' && requestFieldId === fid && state.publishedLesson?.requestRef === requestRef &&
-        state.publishedLesson.menu?.sessionId === id)
+    // 既に表示した教材への追補は学習者の明示操作がある場合だけ。通常の再送では本文を上書きしない。
+    const matchingPublishedLesson = byRef && state.itemMode === 'explain' && requestFieldId === fid &&
+      state.publishedLesson?.requestRef === requestRef && state.publishedLesson.menu?.sessionId === id &&
+      (!state.confirmation || prematureExplanationConfirmation(state));
+    if (matchingPublishedLesson && b.enhance === true) {
+      const old = state.publishedLesson;
+      if (old.enhancedAt) return json(200, { status: 'menu', sessionId: id, menu: old.menu });
+      if (markdown.length < 50 || markdown.length > 9000) throw new HttpError(422, 'LESSON_BODY_INCOMPLETE');
+      const combined = old.menu.body + '\n\n---\n\n## AIによる補足解説\n\n' + markdown;
+      if (combined.length > 16000) throw new HttpError(422, 'LESSON_BODY_TOO_LONG');
+      const menu = { ...old.menu, body: combined, aiEnhanced: true };
+      await saveSession(env, id, { ...state, publishedLesson: { ...old, menu, enhancedAt: now } }, now);
+      return json(200, { status: 'menu', sessionId: id, menu });
+    }
+    if (matchingPublishedLesson)
       return json(200, { status: 'menu', sessionId: id, menu: state.publishedLesson.menu });
     if (state.itemMode !== 'explain' ||
         (state.confirmation && !prematureExplanationConfirmation(state)) || !fid || !fieldName)
@@ -1809,7 +1821,8 @@ async function route(request, env, url, now) {
     const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
     const menu = { kind: 'lesson', prompt: '解説の次は、この分野の確認問題（全3問）へ進みます。',
       choices: ['確認問題へ進む', '今日はここまで（学習を終了）'], actions: ['check', 'end'],
-      body: markdown, fieldName, sessionId: id, studyId, learnerId: state.learnerId };
+      body: markdown, fieldName, sessionId: id, studyId, learnerId: state.learnerId,
+      ...(b.prepared === true ? { prepared: true, lessonRef: requestRef } : {}) };
     await saveSession(env, id, { ...state, confirmation: null, pendingLessonRef: null,
       publishedLesson: { fieldId: fid, menu, publishedAt: now, ...(requestRef ? { requestRef } : {}) } }, now);
     return json(200, { status: 'menu', sessionId: id, menu });
