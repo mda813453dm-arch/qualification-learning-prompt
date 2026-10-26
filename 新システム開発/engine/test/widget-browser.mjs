@@ -125,7 +125,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             status: 'explanationContext', explanationRef: 'E-abcdefghABCDEFGH', sessionId: 'test-session', question: question.question,
             grade: { questionId: question.question.questionId, correct: true, selected: '3', correctAnswer: '3' }
           } });
-          else if (op === 'restoreStudyView') reply({ structuredContent: window.restorePayload || window.lastDescriptive || nextQuestion });
+          else if (op === 'getStudySnapshot') reply({ structuredContent: window.restorePayload || window.lastDescriptive || nextQuestion });
            else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: window.privateLibrary || {
              status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
            } } });
@@ -169,7 +169,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '概要のラベルなし行を細い列へ押し込まない');
     // 新規資格の導入画面を、起動直後に旧セッションのrestoreIdleで上書きしない。
     await page.waitForTimeout(300);
-    assert.equal(await page.evaluate(() => window.calls.filter(c => c.params?.name === 'restoreStudyView').length), 0,
+    assert.equal(await page.evaluate(() => window.calls.filter(c => c.params?.name === 'getStudySnapshot').length), 0,
       '新規の資格／初回学習では自動復元APIを呼ばない');
     assert.equal(await ui.getByRole('button', { name: '2 免除を利用しない' }).count(), 1,
       '初回用の免除・学習状況確認画面を維持する');
@@ -345,7 +345,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
     assert.equal(await ui.locator('.old-screen').count(), 0, '復元後も同じ最初の学習枠を使う');
     assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
-    assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'restoreStudyView').length) >= 1, '再開時に学習画面を取得した');
+    assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length) >= 1, '再開時に学習画面を取得した');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
     await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
