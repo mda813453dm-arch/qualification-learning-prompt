@@ -14,10 +14,14 @@ test('AI explanation publication does not mount a second study widget', async ()
   const first = tools.find(t => t.name === 'startSession');
   const restored = tools.find(t => t.name === 'restoreStudyView');
   const handoff = tools.find(t => t.name === 'openHandoffView');
+  const importer = tools.find(t => t.name === 'importHandoff');
   assert.ok(lesson);
   assert.ok(first);
   assert.ok(restored);
   assert.ok(handoff);
+  assert.ok(importer);
+  assert.match(importer.description, /openHandoffView/);
+  assert.doesNotMatch(importer.description, /sessionIdでrestoreStudyView/);
   assert.deepEqual(lesson._meta.ui.visibility, ['model', 'app']);
   assert.equal(lesson._meta.ui.resourceUri, undefined);
   assert.equal(lesson._meta['openai/outputTemplate'], undefined);
