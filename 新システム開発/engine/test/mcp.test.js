@@ -1562,9 +1562,9 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
       sessionId,challengeId:given._meta.qlp.challengeId,selected:String(q.correctAnswer)
     });
     assert.notEqual(graded.isError,true,JSON.stringify(graded));
-    assert.equal(graded._meta.qlp.correct,true);
-    assert.equal(graded._meta.qlp.explanation,q.explanation);
-    assert.equal(graded._meta.qlp.complete,i===2);
+    assert.equal(graded.structuredContent.correct,true);
+    assert.equal(graded.structuredContent.explanation,q.explanation);
+    assert.equal(graded.structuredContent.complete,i===2);
   }
   const restored = await app('restoreStudyView',{sessionId});
   assert.equal(restored._meta.qlp.status,'confirmation_result');
