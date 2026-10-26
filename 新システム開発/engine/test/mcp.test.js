@@ -1091,7 +1091,7 @@ test('解説の本文は showMenu の body に入れ、画面のボタンの上�
   assert.equal(show.local({ kind: 'next', body: 'あ'.repeat(17000) }).menu.body.length, 16000);
   assert.ok(mcp.includes('の body に入れて呼ぶ'));
   assert.ok(!mcp.includes('まず答え合わせと解説を書き、最後に showMenu'));
-  assert.ok(html.includes('function md(src)') && html.includes("var body = m.body ? '<div class=\"md\">'"));
+  assert.ok(html.includes('function md(src)') && html.includes('var body = preparedBase +'), '元の教材にAI本文を追加する');
   // 待ち画面（解説は下に出ます）に「終了」ボタンを置かない
   assert.ok(!html.includes("は、この下に出ます。少し待つと文章が出てきます。終わると、その下に進むためのボタンが出ます（出ないときは「次の問題へ」と送ってください）。</div>' + endBar()"));
 });
