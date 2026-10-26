@@ -39,6 +39,11 @@ assert.ok(resource.contents[0].text.includes('function showPendingLesson(data)')
 assert.ok(resource.contents[0].text.includes('解説の登録状況を確認') &&
   resource.contents[0].text.includes('AI解説を再依頼'), '学習中断なしでモデルの解説登録を再試行できる');
 
+assert.ok(resource.contents[0].text.includes("data.menu?.kind === 'lesson'") &&
+  resource.contents[0].text.includes('claimFirstFrame(sid, true)'),
+  'iPhoneで古い学習枠が休止しても新しいAI解説を受信枠に表示');
+assert.ok(resource.contents[0].text.includes('再度、学習画面を復元'),
+  '復元応答が遅い場合も操作ボタンを固定しない');
 assert.ok(!resource.contents[0].text.includes('staleEntry ||'), '初回の導入画面を古いセッションで上書きしない');
 assert.ok(resource.contents[0].text.includes('資格の確認なしに'), '再開画面の資格識別を保持する');
 assert.ok(resource.contents[0].text.includes("q.section === '午前の部' || q.section === '午後の部'"), '公式の問題見出しに午前・午後の区分を表示する');
