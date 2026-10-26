@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v112.html';
+export const WIDGET_URI = 'ui://qlp/question-v113.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.112';
+export const WIDGET_VERSION = '2026-10-26.113';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -818,7 +818,7 @@ a{color:inherit}
         localBar('この分野の確認問題', position, 3) +
         '<h2>確認問題・第' + esc(position) + '問（全3問）</h2>' +
         '<div id="preparedCheckStatus" class="notice" role="status">' +
-        (bankReady ? '確認問題を学習エンジンから直接表示します。AIの応答待ちは不要です。' :
+        (bankReady ? '確認問題を表示します。少しお待ちください。' :
           esc(data.notice || 'AI作成の確認問題の登録を待っています。')) + '</div>' +
         '<div class="row"><button id="continueConfirmation">' + (bankReady ? '同じ枠に第' + esc(position) + '問を表示' : '第' + esc(position) + '問を作成・登録') + '</button></div>' + endBar();
       var idForConfirmation = state.sessionId;
@@ -914,12 +914,34 @@ a{color:inherit}
           return '<li>' + esc(year) + '年度：' + (personal.indexOf(year) >= 0 ? '本人用に取込済み' :
             validated.indexOf(year) >= 0 ? '未登録・取り込み準備済み' : '原本検証待ち（取り込み不可）') + '</li>';
         }).join('') + '</ul>' +
+        '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' +
+        (personal.length ? '<div class="notice">取り込んだ年度の過去問から出題します。</div>' :
+          '<div class="notice">現在、出題できる公式過去問は未登録です。先に年度を選び、必要なPDFを添付してください。</div>') +
         (selected === undefined ? '<div class="notice">現在、追加可能な年度はありません。</div>' :
           '<label for="licensedYear"><b>取り込む年度</b></label>' +
           '<select id="licensedYear" style="display:block;width:100%;font:inherit;padding:9px;margin:8px 0">' + choices + '</select>' +
           '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>私は選択した年度の問題・正答PDFをこのシステムに送信し、個人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
           '<button id="licensedConfirm" disabled>この年度の取込を許可して添付へ進む</button>') +
-        '<div id="licensedHelp" role="status"></div><div class="row"><button id="licensedRefresh">取込済み年度を更新</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
+        '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') +
+        '</div><div class="row"><button id="licensedRefresh">取り込み状況を確認</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
+      document.getElementById('licensedStart').onclick = async function(){
+        if (!personal.length) {
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status">公式過去問はまだ登録されていません。年度を選び、許諾確認後に公式問題PDFを添付してください。添付が完了したらこのボタンから解けます。</div>';
+          document.getElementById('licensedYear')?.scrollIntoView({block:'center'});
+          return;
+        }
+        this.disabled = true;
+        try {
+          var next = await callTool('nextQuestion', {sessionId: state.sessionId});
+          if (!next || next.error || !['question','waiting','finished','sourceUnavailable','remediation'].includes(next.status)) throw new Error('LICENSED_PRACTICE_UNAVAILABLE');
+          if (next.status === 'sourceUnavailable') {
+            render({...data, refreshMessage:'取り込んだPDFの確認が完了していません。しばらくしてから取り込み状況を確認してください。'});
+          } else render(next);
+        } catch(e) {
+          this.disabled = false;
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">過去問を開けませんでした。取り込み状況を確認してから再試行してください。</div>';
+        }
+      };
       var ack = document.getElementById('licensedAck');
       if (ack) ack.onchange = function(){ document.getElementById('licensedConfirm').disabled = !this.checked; };
       var confirm = document.getElementById('licensedConfirm');
@@ -944,11 +966,20 @@ a{color:inherit}
         this.disabled = true;
         try {
           var latest = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
-          if (!latest || latest.error || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
-          render({ ...data, ...latest, status: 'sourceUnavailable' });
+          if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
+          var newPersonal = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
+          if (newPersonal.length) {
+            var next = await callTool('nextQuestion', {sessionId:state.sessionId});
+            if (next && !next.error && ['question','waiting','finished','remediation'].includes(next.status)) { render(next); return; }
+          }
+          var difference = newPersonal.filter(function(year){return personal.indexOf(year) < 0;});
+          var message = difference.length ? difference.join('・') + '年度の登録を確認しました。問題の準備が終わると出題できます。' :
+            newPersonal.length ? '取り込み状況を確認しました。問題の準備が終わると出題できます。' :
+              '取り込み状況を確認しました。まだ公式過去問は登録されていません。年度を選んでPDFを添付してください。';
+          render({ ...data, ...latest, status:'sourceUnavailable', refreshMessage:message });
         } catch(e) {
           this.disabled = false;
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">取込状況の更新に失敗しました。もう一度押してください。</div>';
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">取り込み状況を確認できませんでした。もう一度押してください。</div>';
         }
       };
       document.getElementById('licensedAi').onclick = function(){
@@ -1295,7 +1326,7 @@ a{color:inherit}
     app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
       localBar('この分野の確認問題', d.position, 3) +
       '<h2>' + esc(d.fieldName) + '｜確認問題・第' + esc(d.position) + '問</h2>' +
-      '<div class="notice">公式過去問ではありません。正答を出題前にエンジンへ固定した学習問題です。</div>' +
+      '<div class="notice">理解度を確かめる練習問題です（公式過去問ではありません）。</div>' +
       '<div class="stem">' + esc(d.question) + '</div><div class="choices">' +
       (d.choices || []).map(function(c,i){ return '<label class="opt"><input type="radio" name="confirmationAnswer" value="' + (i+1) + '"><b>' + (i+1) + '</b><span>' + esc(c) + '</span></label>'; }).join('') +
       '</div><div class="row"><button id="submitConfirmation" disabled>解答する</button></div>' + endBar();
@@ -1320,8 +1351,8 @@ a{color:inherit}
         (d.explanation ? '<p>' + esc(d.explanation).replace(/\\n/g,'<br>') + '</p>' :
           '<p>正答は「' + esc(d.correctChoice || ('選択肢 ' + d.correctAnswer)) + '」です。' +
           'この問題には理由の保存がありません。次の問題からは解説も登録します。</p>') + '</section>') +
-      (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>この分野を続ける（同じ分野の実践問題へ）</span></button>' +
-        (d.nextFieldName ? '<button id="confirmationNextField"><b>2</b><span>次の分野の実践問題へ</span></button>' : '') +
+      (d.complete ? '<h2>次の学習を選択</h2><div class="choices"><button id="confirmationPractice"><b>1</b><span>同じ分野の公式過去問を解く</span></button>' +
+        (d.nextFieldName ? '<button id="confirmationNextField"><b>2</b><span>次の分野の学習へ</span></button>' : '') +
         '<button id="confirmationReview"><b>' + (d.nextFieldName ? 3 : 2) + '</b><span>今回の分野を詳しく復習</span></button><button id="confirmationWrong"><b>' + (d.nextFieldName ? 4 : 3) + '</b><span>間違えた問題を総復習</span></button></div>' + endBar() :
         '<div class="row"><button id="confirmationNext">次の確認問題へ（残り ' + esc(3-d.position) + '問）</button></div>' + endBar());
     scrollUp(); bindEnd();
@@ -1348,7 +1379,14 @@ a{color:inherit}
         } catch (e) { b.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">実践問題へ進めませんでした。このボタンで再試行してください。</div>'); }
       };
       document.getElementById('confirmationPractice').onclick = function(){ openPractice(this, d.fieldName); };
-      if (d.nextFieldName) document.getElementById('confirmationNextField').onclick = function(){ openPractice(this, d.nextFieldName); };
+      if (d.nextFieldName) document.getElementById('confirmationNextField').onclick = function(){
+        app.innerHTML = '<div class="notice">次は「' + esc(d.nextFieldName) + '」です。学習方法を選んでください。</div>';
+        itemMenu(d.nextFieldName, state.sessionId, async function(){
+          var next = await callTool('nextQuestion', {sessionId:state.sessionId});
+          if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(next.status)) throw new Error('NEXT_FIELD_UNAVAILABLE');
+          render(next);
+        });
+      };
       document.getElementById('confirmationReview').onclick = function(){ ask(d.fieldName + 'を詳しく復習します。解説を表示してください。', '今回の分野を詳しく復習'); };
       document.getElementById('confirmationWrong').onclick = async function(){
         this.disabled = true;
@@ -1361,7 +1399,7 @@ a{color:inherit}
   }
   function showRemediationQuestion(d){
     if (d.sessionId) state.sessionId = d.sessionId;
-    var h = '<h2>AI作成確認問題</h2><div class="notice">公式過去問ではありません。出題前に正答を固定した確認問題です。</div>' +
+    var h = '<h2>AI作成確認問題</h2><div class="notice">理解度を確かめる練習問題です（公式過去問ではありません）。</div>' +
       '<div class="stem">' + esc(d.question || '') + '</div><div class="choices" id="remediationChoices">' +
       (d.choices || []).map(function(c,i){
         var n = String(i+1);

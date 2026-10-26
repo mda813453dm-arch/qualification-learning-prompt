@@ -77,7 +77,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         assert.equal(await ui.locator('iframe').count(), 0, 'the existing widget must not embed another study frame');
       }
     }
-    await ui.getByRole('button', { name: /同じ分野の実践問題へ/ }).click();
+    await ui.getByRole('button', { name: /同じ分野の公式過去問を解く/ }).click();
     await ui.getByRole('progressbar', { name: 'この分野の実践問題の位置' }).waitFor();
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5');
     assert.match(await ui.locator('#app').innerText(), /問1の本文/);

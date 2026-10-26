@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v112\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-26.112');
+  assert.match(WIDGET_URI, /question-v113\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-26.113');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -569,7 +569,7 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
   const after = await app('registerConfirmationQuestion', { sessionId, question: '4問目を登録しないための文章です。', choices: ['A', 'B'], correctAnswer: 1 });
   assert.equal(after.structuredContent.error, 'CONFIRMATION_NOT_ACTIVE');
   const html = readFileSync(new URL('../src/widget.js', import.meta.url), 'utf8');
-  assert.match(html, /同じ分野の実践問題へ/);
+  assert.match(html, /同じ分野の公式過去問を解く/);
   assert.match(html, /localBar\('この分野の確認問題', d.position, 3\)/);
   assert.match(html, /journeyBar\(j.fieldIndex, j.fieldTotal, 'check' \+ d.position/);
   const practice = (await app('chooseItem', { sessionId, fieldName, mode: 'practice' })).structuredContent;
@@ -1529,7 +1529,7 @@ test('行政書士の内蔵基礎教材は全6分野・各3問、正答と簡易
   assert.match(html, /理解度に合わせたAI解説を追加（任意）/);
   assert.match(html, /registerPreparedConfirmation/);
   assert.match(html, /if \(!preparedLessons\[field\]\) ask\(lessonRequestMessage/);
-  assert.match(html, /正答を出題前にエンジンへ固定した学習問題です/);
+  assert.match(html, /理解度を確かめる練習問題です（公式過去問ではありません）/);
   assert.doesNotMatch(html, /問題は新しい学習枠に表示されます/);
 });
 

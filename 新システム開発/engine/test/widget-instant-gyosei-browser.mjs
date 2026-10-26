@@ -1,4 +1,4 @@
-// v112: iPhone-width end-to-end regression. No model replies allowed.
+// v113: iPhone-width end-to-end regression. No model replies allowed.
 // Prepared administrative-scrivener foundation -> 3 confirmation questions -> official source status.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -92,12 +92,22 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     assert.equal(toolCalls.filter(t=>t.name==='registerConfirmationQuestion').length,3);
     assert.equal(toolCalls.filter(t=>t.name==='answerConfirmationQuestion').length,3);
     assert.equal(await ui.locator('iframe').count(),0,'no nested study frames');
-    await ui.getByRole('button',{name:/同じ分野の実践問題へ/}).click();
+    await ui.getByRole('button',{name:/同じ分野の公式過去問を解く/}).waitFor();
+    await ui.getByRole('button',{name:/次の分野の学習へ/}).waitFor();
+    assert.doesNotMatch(await ui.locator('#app').innerText(),/次の分野の実践問題へ/,'next field never silently chooses practice');
+    await ui.getByRole('button',{name:/同じ分野の公式過去問を解く/}).click();
     await ui.getByRole('heading',{name:/過去問の年度別取り込み|公式過去問の利用・登録/}).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(),/実践問題へ進めませんでした/);
+    await ui.getByRole('button',{name:'公式過去問を解く'}).click();
+    assert.match(await ui.locator('#app').innerText(),/公式過去問はまだ登録されていません/,'no official question is invented');
+    const beforeRefresh=toolCalls.filter(t=>t.name==='getOfficialLibrary').length;
+    await ui.getByRole('button',{name:'取り込み状況を確認'}).click();
+    await ui.getByText(/取り込み状況を確認しました。まだ公式過去問は登録されていません/).waitFor();
+    assert.equal(toolCalls.filter(t=>t.name==='getOfficialLibrary').length,beforeRefresh+1);
+    assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'refresh and unavailable guidance need no AI response');
     const restored=await tool('restoreStudyView',{sessionId});
     assert.ok(restored._meta?.qlp,'study record survives progression');
     assert.deepEqual(errors,[],'no JavaScript exceptions');
-    console.log(`${browserName}: PASS v112 instant foundation, 3 graded confirmations, no AI calls, same frame, safe missing-PDF practice (375px)`);
+    console.log(`${browserName}: PASS v113 instant foundation, 3 graded confirmations, explicit source state, no AI calls, same frame (375px)`);
   }finally{await browser.close();}
 }
