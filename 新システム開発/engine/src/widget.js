@@ -560,7 +560,7 @@ a{color:inherit}
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
     if (data.status === 'confirmation_pending') {
       app.innerHTML = '<h2>確認問題・第' + esc(data.position) + '問を準備中（全3問）</h2><div class="notice">' + esc(data.notice || '前の問題は保存されています。次の問題を表示するまでお待ちください。') + '</div><div class="row"><button id="continueConfirmation">第' + esc(data.position) + '問を表示する</button></div>' + endBar();
-      document.getElementById('continueConfirmation').onclick = function(){ this.disabled = true; ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を見る'); };
+      document.getElementById('continueConfirmation').onclick = async function(){ var button = this; button.disabled = true; await ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を作成して学習画面に登録する'); if (button.isConnected) button.disabled = false; };
       // AIが確認問題を登録しても新しい枠を作らない。元枠が読取専用で確認する。
       var checkPollId = ++confirmationPollGeneration;
       var checkDelays = [2000, 3000, 5000, 8000, 12000];
@@ -1042,7 +1042,13 @@ a{color:inherit}
     scrollUp(); bindEnd();
     if (!d.complete) document.getElementById('confirmationNext').onclick = function(){
       this.disabled = true;
-      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + (d.position+1) + '問/全3問が出るまで待ってください。', d.fieldName + 'の確認問題・第' + (d.position+1) + '問を見る');
+      // UIを先に同じ学習枠の待機画面へ遷移させる。モデルが返らなくても再依頼できる。
+      var nextPosition = Number(d.position) + 1;
+      render({ status: 'confirmation_pending', sessionId: state.sessionId,
+        fieldName: d.fieldName, position: nextPosition, total: 3,
+        notice: '第' + nextPosition + '問を作成・登録しています。登録後はこの枠に自動表示します。' });
+      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + nextPosition + '問/全3問が出るまで待ってください。',
+        d.fieldName + 'の確認問題・第' + nextPosition + '問を作成して学習画面に登録する');
     };
     else {
       var openPractice = async function(b, target){
