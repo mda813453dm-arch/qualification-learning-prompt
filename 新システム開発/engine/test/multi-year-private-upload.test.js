@@ -61,3 +61,27 @@ test('まとめ許諾は10ファイルを超えて流用できず別セッショ
   const b = await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
   assert.equal((await req(env,'POST','/v1/sessions/'+b.body.sessionId+'/attach',{year:2020,question:{download_url:'https://uploads.example/2020.pdf'}})).status,403);
 });
+
+test('新年度は公式掲載一覧で年度と正解を照合した場合のみ採点用に登録する', async () => {
+  const {env} = setup();
+  env.fetchText = async () => '<a href="/doc/exam/r8ans.html">令和８年度試験問題の正解</a>';
+  const a = await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const path='/v1/sessions/'+a.body.sessionId;
+  await req(env,'POST',path+'/upload-permission',{year:0,confirmed:true});
+  const r = await req(env,'POST',path+'/attach',{year:2026,question:{download_url:'https://uploads.example/2026.pdf'}});
+  assert.equal(r.status,200,JSON.stringify(r.body));
+  assert.equal(r.body.status,'attached');
+  const job = await readJob(env.STORE,'q090~'+a.body.learnerId);
+  assert.equal(job.sources[0].answerUrl,'https://gyosei-shiken.or.jp/doc/exam/r8ans.html');
+});
+test('公式一覧の外部ドメイン・年度違いの正答リンクは利用しない',async()=>{
+  const {env}=setup();
+  env.fetchText=async()=>'<a href="https://evil.example/r8ans.html">令和８年度試験問題の正解</a><a href="/doc/exam/r8ans.html">令和９年度試験問題の正解</a>';
+  const a=await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const path='/v1/sessions/'+a.body.sessionId;
+  await req(env,'POST',path+'/upload-permission',{year:0,confirmed:true});
+  const r=await req(env,'POST',path+'/attach',{year:2026,question:{download_url:'https://uploads.example/2026.pdf'}});
+  assert.equal(r.status,200,JSON.stringify(r.body));
+  assert.equal(r.body.status,'pendingOfficialAnswer');
+  assert.equal(await readJob(env.STORE,'q090~'+a.body.learnerId),null);
+});
