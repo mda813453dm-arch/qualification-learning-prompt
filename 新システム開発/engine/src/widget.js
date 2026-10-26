@@ -1343,7 +1343,7 @@ a{color:inherit}
           var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: target, mode: 'practice' });
           if (!chosen || chosen.error || chosen.status !== 'item') throw new Error('ITEM_UNAVAILABLE');
           var next = await callTool('nextQuestion', { sessionId: state.sessionId, question: target });
-          if (!next || next.error || !['question','waiting','finished','remediation'].includes(next.status)) throw new Error('NEXT_UNAVAILABLE');
+          if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(next.status)) throw new Error('NEXT_UNAVAILABLE');
           render(next);
         } catch (e) { b.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">実践問題へ進めませんでした。このボタンで再試行してください。</div>'); }
       };
