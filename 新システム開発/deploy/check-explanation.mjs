@@ -50,6 +50,14 @@ assert.ok(!resource.contents[0].text.includes("rpc('ui/update-model-context',{co
 assert.ok(resource.contents[0].text.includes('照合番号：'), '公式問題に対応する照合番号をAIへ渡す');
 assert.ok(resource.contents[0].text.includes('var explicitSession ='), 'UIは現在の資格の明示的なセッションがある場合にだけ復元する');
 assert.ok(resource.contents[0].text.includes('function showPendingLesson(data)'), '接続断でも解説待ちの操作画面を維持');
+assert.ok(resource.contents[0].text.includes('基礎解説（学習システム内蔵）') &&
+  resource.contents[0].text.includes('var preparedLessons = ') &&
+  resource.contents[0].text.includes('基礎法学'),
+  'v112: 行政書士の内蔵基礎教材をAI応答待ちなしで描画する');
+assert.ok(resource.contents[0].text.includes('registerPreparedConfirmation') &&
+  resource.contents[0].text.includes('if (!preparedLessons[field])') &&
+  resource.contents[0].text.includes('quickGuideCheck'),
+  'v112: AIの返答を待たず確認問題を直接エンジン登録し、同じ枠に表示する');
 assert.ok(resource.contents[0].text.includes('解説の登録状況を確認') &&
   resource.contents[0].text.includes('AI解説を再依頼'), '学習中断なしでモデルの解説登録を再試行できる');
 
