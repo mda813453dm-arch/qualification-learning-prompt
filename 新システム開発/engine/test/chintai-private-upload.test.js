@@ -73,7 +73,7 @@ test('年度別の本人による許諾確認を経ない限りPDFを取得も�
   assert.equal(blocked.body.error, 'UPLOAD_PERMISSION_REQUIRED');
   assert.equal(received.length, 0, '権利未確認では一時添付先にもアクセスしない');
   assert.equal((await call(env, 'POST', url + '/upload-permission', { year: 2025, confirmed: false })).status, 403);
-  assert.equal((await call(env, 'POST', url + '/upload-permission', { year: 2024, confirmed: true })).status, 422);
+  assert.equal((await call(env, 'POST', url + '/upload-permission', { year: 2024, confirmed: true })).status, 200, '過去の対象年度も許諾確認できる');
   const confirm = await call(env, 'POST', url + '/upload-permission', { year: 2025, confirmed: true });
   assert.equal(confirm.status, 200, JSON.stringify(confirm.body));
   assert.equal(confirm.body.status, 'uploadPermissionConfirmed');
