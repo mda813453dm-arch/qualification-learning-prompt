@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v105.html';
+export const WIDGET_URI = 'ui://qlp/question-v106.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.105';
+export const WIDGET_VERSION = '2026-10-26.106';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -373,6 +373,8 @@ a{color:inherit}
   }
   var renderFocusTurn = 0;
   function render(data){
+    if (data && data.status !== 'lesson_pending') lessonPollGeneration++;
+
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'lesson_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     // ロック中の新しい結果も最初の枠へ送るため、stampは先に通す。
     stamp(data);
@@ -1122,6 +1124,7 @@ a{color:inherit}
   }
   // AI側のツール接続が不安定でも「解説待ち」の正規学習画面は消さない。
   // 再要求は新しい出題・採点を行わず、同じセッションの学習内容だけを読み直す。
+  var lessonPollGeneration = 0;
   function showPendingLesson(data){
     var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
     if (sid) state.sessionId = sid;
@@ -1164,6 +1167,20 @@ a{color:inherit}
       return false;
     }
     document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    // 解説の登録が済んだら、元の学習枠だけを更新する（新しいMCP表示枠を生成しない）。
+    // 読取専用・回数上限付き。古いセッションや別画面への遷移後は停止する。
+    var lessonPollId = ++lessonPollGeneration;
+    var lessonPollDelays = [2500, 5500, 10000, 16000];
+    function pollLesson(index){
+      if (index >= lessonPollDelays.length || lessonPollId !== lessonPollGeneration) return;
+      setTimeout(async function(){
+        if (lessonPollId !== lessonPollGeneration || locked || state.sessionId !== sid ||
+            !document.getElementById('refreshLesson')) return;
+        var done = await readPublishedLesson();
+        if (!done && lessonPollId === lessonPollGeneration) pollLesson(index + 1);
+      }, lessonPollDelays[index]);
+    }
+    pollLesson(0);
     var requesting = false;
     document.getElementById('resumeLesson').onclick = async function(){
       if (requesting || locked) return;
