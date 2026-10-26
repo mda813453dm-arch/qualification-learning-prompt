@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v104.html';
+export const WIDGET_URI = 'ui://qlp/question-v105.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-25.104';
+export const WIDGET_VERSION = '2026-10-26.105';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -255,7 +255,7 @@ a{color:inherit}
   var frameId = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
   var ownedSession = null, followerSession = null, refreshScheduled = false, lastRenderedSignature = null;
   var frameLeasePrefix = 'qlp_fixed_frame_v103:', frameChangePrefix = 'qlp_frame_change_v103:';
-  var FRAME_LEASE_MS = 18000;
+  var FRAME_LEASE_MS = 8000;
   function leaseKey(sid){ return frameLeasePrefix + encodeURIComponent(String(sid)); }
   function readLease(sid){
     try { return JSON.parse(localStorage.getItem(leaseKey(sid)) || 'null'); } catch(e){ return null; }
@@ -345,14 +345,18 @@ a{color:inherit}
       restoreFromServer(false);
     }
     // setTimeout is supported even in restricted/legacy MCP Apps host environments.
-    setTimeout(fixedFrameHeartbeat, 5000);
+    setTimeout(fixedFrameHeartbeat, 2000);
   }
-  setTimeout(fixedFrameHeartbeat, 5000);
+  setTimeout(fixedFrameHeartbeat, 2000);
   function stamp(data){
     var sid = data && data.sessionId || state.sessionId || (input() && input().sessionId);
+    // iOSは画面外の古いiframeを休止することがある。
+    // 新しく登録されたAI解説は、現在表示されている枠へ確実に表示する。
+    // 他の枠はlease変更を検出して操作不能にする（同時編集を防ぐ）。
+    if (sid && data && data.status === 'menu' && data.menu?.kind === 'lesson' &&
+        data.menu.body && !data.restored) claimFirstFrame(sid, true);
     if (sid && !claimFirstFrame(sid, false)) {
       state.sessionId = String(sid);
-      // 後続ツール結果は必ず元の枠へ更新を通知する。新たな操作枠を増やさない。
       announceChange(sid, data && data.at);
       lockOld();
       return;
@@ -2123,6 +2127,7 @@ a{color:inherit}
     restoring = true;
     var button = document.getElementById('reopenStudy') || document.getElementById('recoverStudy');
     if (button) { button.disabled = true; button.textContent = '復元しています…'; }
+    var buttonGuard = setTimeout(function(){ if (restoring && button && button.isConnected) { button.disabled = false; button.textContent = '再度、学習画面を復元'; } }, 9000);
     try {
       var restored = await callTool('restoreStudyView', { sessionId: state.sessionId });
       if (!restored || restored.error || !restored.status || restored.status === 'error') {
@@ -2147,7 +2152,7 @@ a{color:inherit}
       var err = document.getElementById('restoreError');
       if (!err) { app.insertAdjacentHTML('beforeend', '<div id="restoreError" class="notice" role="alert"></div>'); err = document.getElementById('restoreError'); }
       err.textContent = '学習状態を復元できませんでした。同じボタンで再試行できます。';
-    } finally { restoring = false; }
+    } finally { clearTimeout(buttonGuard); restoring = false; }
   }
   if (typeof document.addEventListener === 'function') document.addEventListener('visibilitychange', function(){
     if (document.hidden) { wasHidden = true; return; }
