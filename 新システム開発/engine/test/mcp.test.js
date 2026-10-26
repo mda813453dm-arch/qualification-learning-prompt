@@ -1471,3 +1471,33 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   assert.equal(same.challengeId, question.challengeId);
   assert.equal(same.position, 1);
 });
+
+
+test('AI解説の照会番号は当該分野・最新依頼だけに紐づき、古い番号から学習状態を変えられない', async () => {
+  const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [] });
+  const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
+  const start = await app('startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const sessionId = start.structuredContent.sessionId;
+  await app('startStudy', { learnerId: start.structuredContent.learnerId, qualificationName: '測量士補' });
+  const fieldName = CATALOG[SRC.qualificationId].fields.s1;
+  const first = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  const latest = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  assert.notEqual(first.lessonRef, latest.lessonRef, '最新の解説依頼で照会番号を更新');
+  const textBody = '## 測量に関する法規の基礎解説\n公式の手続を読み、測量の基本原則と法的効果の区別を理解します。具体例で確かめて確認問題へ進みます。';
+  const stale = await app('showMenu', { kind: 'lesson', lessonRef: first.lessonRef, body: textBody });
+  assert.equal(stale.isError, true);
+  assert.equal(stale.structuredContent.error, 'LESSON_REQUEST_STALE');
+  const unknown = await app('showMenu', { kind: 'lesson', lessonRef: 'L-0000000000000000', body: textBody });
+  assert.equal(unknown.isError, true);
+  assert.equal(unknown.structuredContent.error, 'LESSON_REQUEST_NOT_FOUND');
+  const pending = (await app('getStudySnapshot', { sessionId }))._meta.qlp;
+  assert.equal(pending.status, 'lesson_pending');
+  assert.equal(pending.lessonRef, latest.lessonRef, '不正な解説登録で最新依頼を変えない');
+  const good = await app('showMenu', { kind: 'lesson', lessonRef: latest.lessonRef, body: textBody });
+  assert.equal(good.isError, undefined, JSON.stringify(good));
+  assert.equal(good._meta.qlp.menu.body, textBody);
+  const saved = (await app('getStudySnapshot', { sessionId }))._meta.qlp;
+  assert.equal(saved.status, 'menu');
+  assert.equal(saved.menu.sessionId, sessionId);
+  assert.equal(saved.menu.body, textBody);
+});
