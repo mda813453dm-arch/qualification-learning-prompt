@@ -560,7 +560,7 @@ a{color:inherit}
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
     if (data.status === 'confirmation_pending') {
       app.innerHTML = '<h2>確認問題・第' + esc(data.position) + '問を準備中（全3問）</h2><div class="notice">' + esc(data.notice || '前の問題は保存されています。次の問題を表示するまでお待ちください。') + '</div><div class="row"><button id="continueConfirmation">第' + esc(data.position) + '問を表示する</button></div>' + endBar();
-      document.getElementById('continueConfirmation').onclick = async function(){ var button = this; button.disabled = true; await ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を作成して学習画面に登録する'); if (button.isConnected) button.disabled = false; };
+      document.getElementById('continueConfirmation').onclick = async function(){ var button = this; button.disabled = true; var guard = setTimeout(function(){ if (button.isConnected) button.disabled = false; }, 10000); try { await ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を作成して学習画面に登録する'); } finally { clearTimeout(guard); if (button.isConnected) button.disabled = false; } };
       // AIが確認問題を登録しても新しい枠を作らない。元枠が読取専用で確認する。
       var checkPollId = ++confirmationPollGeneration;
       var checkDelays = [2000, 3000, 5000, 8000, 12000];
