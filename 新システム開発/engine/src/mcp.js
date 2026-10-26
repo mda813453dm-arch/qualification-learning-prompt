@@ -297,13 +297,13 @@ export const TOOLS = [
     name: 'confirmUploadRights',
     appOnly: true,
     uiOnly: true,
-    description: '権利者の許諾が必要な資格だけ。ユーザーが学習画面で指定年度の保存・解析許諾を取得したとチェックした場合に限り記録する。PDFはこの操作では取得も保存もしない。',
+    description: '権利者の許諾が必要な資格だけ。ユーザーが添付予定のすべてのPDFの保存・解析許諾を確認したとチェックした場合のみ記録する。year=0 は最大10ファイルの一括許諾で、従来の年度指定も利用できる。PDFはこの操作では取得も保存もしない。',
     inputSchema: {
       type: 'object',
       required: ['sessionId', 'year', 'confirmed'],
       properties: {
         sessionId,
-        year: { type: 'integer', description: 'ユーザーが許諾確認した年度' },
+        year: { type: 'integer', description: '0なら最大10件の一括確認。正の年度なら従来の年度別確認' },
         confirmed: { type: 'boolean', const: true },
       },
     },
