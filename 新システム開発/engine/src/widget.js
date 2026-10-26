@@ -922,7 +922,7 @@ a{color:inherit}
           '<button id="licensedConfirm" disabled>PDFの添付へ進む</button>') +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') +
         '</div><div class="row"><button id="licensedRefresh">取り込み状況を確認</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
-      document.getElementById('licensedStart').onclick = async function(){
+      if (document.getElementById('licensedStart')) document.getElementById('licensedStart').onclick = async function(){
         if (!personal.length) {
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status">公式過去問はまだ登録されていません。年度を選び、許諾確認後に公式問題PDFを添付してください。添付が完了したらこのボタンから解けます。</div>';
           document.getElementById('licensedYear')?.scrollIntoView({block:'center'});
