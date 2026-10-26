@@ -221,10 +221,10 @@ export const TOOLS = [
       sessionId, question: { type: 'string', minLength: 10, maxLength: 2000 },
       choices: { type: 'array', minItems: 2, maxItems: 5, items: { type: 'string' } },
       correctAnswer: { type: 'integer', description: '出題前に確定した正答の選択肢番号（1から）' },
-       explanation: { type: 'string', minLength: 12, maxLength: 2500, description: '回答直後に表示する簡易解説。正答の根拠と紛らわしい選択肢の違いを2〜5文で説明し、出題前に正答と整合を確認する。' },
+       explanation: { type: 'string', minLength: 12, maxLength: 2500, description: '回答直後に表示する簡易解説。正答の根拠と紛らわしい選択肢の違いを2〜5文で説明し、出題前に正答と整合を確認する。' }, prepared: {type:'boolean', description:'事前検証済みの確認問題を画面から登録したときにtrue。AI作成問題のときは省略する。'},
     } },
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/confirmation/register`,
-      { question: a.question, choices: a.choices, correctAnswer: a.correctAnswer, explanation: a.explanation }],
+      { question: a.question, choices: a.choices, correctAnswer: a.correctAnswer, explanation: a.explanation, prepared:a.prepared===true }],
   },
   {
     name: 'answerConfirmationQuestion',
