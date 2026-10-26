@@ -21,6 +21,16 @@ assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.ex
   '検証済み解説全文を操作ボタンと同じ画面に登録できる');
 assert.deepEqual(list.tools.find(t => t.name === 'showMenu')?._meta?.ui?.visibility,
   ['model','app'], '解説本文の登録ツールをAIから直接呼び出せる');
+const restore = list.tools.find(t => t.name === 'restoreStudyView');
+const handoff = list.tools.find(t => t.name === 'openHandoffView');
+assert.ok(restore && handoff, '読取専用復元と新規引継ぎ画面を別ツールにする');
+assert.deepEqual(restore._meta?.ui?.visibility, ['model','app'], '通常の復元はデータ専用');
+assert.equal(restore._meta?.ui?.resourceUri, undefined, '復元による新しい学習枠を禁止');
+assert.equal(restore._meta?.['openai/outputTemplate'], undefined, '復元による新しいウィジェットを禁止');
+assert.equal(handoff._meta?.ui?.resourceUri, WIDGET_URI, '引継ぎ時だけ新しい画面枠を開く');
+assert.equal(handoff._meta?.['openai/outputTemplate'], WIDGET_URI, '引継ぎ時のみ表示テンプレートを持つ');
+assert.match(list.tools.find(t => t.name === 'importHandoff')?.description || '',
+  /openHandoffView/, '引継ぎ指示が古い復元ツールを参照しない');
 
 assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visibility, ['model','app'], '解説取得をモデルと画面に公開');
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
