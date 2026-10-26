@@ -237,3 +237,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-26T04:22:00Z deploy lesson publication data-only: no second UI template, preserve adaptive ChatGPT explanations, no new AI API (ef89e3c4)
 
 2026-10-26 v106: data-only AI lesson publication + bounded original-widget refresh; CI engine #40269154591 / UI #40269154656 success. No paid model API.
+
+2026-10-26 v107: iPhone administrative scrivener multiple blank frames fix: model progress tools data-only, original frame auto-refresh confirmation; engine #40275513082 and 375px browser #40275513097 both success. No paid model API.
