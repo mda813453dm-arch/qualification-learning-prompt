@@ -6,14 +6,16 @@ import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget.js';
 const html = widgetHtml();
 const embedded = html.split('<script>')[1]?.split('</script>')[0];
 test('v106 embeds syntactically valid study widget and retains single scroll surface', () => {
-  assert.equal(WIDGET_VERSION, '2026-10-26.106');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v106.html');
+  assert.equal(WIDGET_VERSION, '2026-10-26.107');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v107.html');
   assert.ok(embedded, 'widget script must be present');
   assert.doesNotThrow(() => new vm.Script(embedded));
   assert.match(html, /height:auto;max-height:none;overflow:visible/);
   assert.match(embedded, /restoreStudyView/);
   assert.match(embedded, /lessonPollDelays/);
   assert.match(embedded, /lessonPollGeneration/);
+  assert.match(embedded, /confirmationPollGeneration/);
+  assert.match(embedded, /checkPublished/);
 });
 
 // Evaluate the actual ownership code with two independent widget frames and
