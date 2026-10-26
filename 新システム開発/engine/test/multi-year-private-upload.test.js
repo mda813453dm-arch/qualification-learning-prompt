@@ -38,13 +38,13 @@ test('行政書士のまとめ許諾は年度選択なしで複数PDFを受け�
     assert.equal(r.body.year,year);
     assert.equal(r.body.section,'年度共通');
   }
-  const older = await req(env,'POST',path+'/attach',file(2019));
+  const older = await req(env,'POST',path+'/attach',file(2017));
   assert.equal(older.status,200,JSON.stringify(older.body));
   assert.equal(older.body.status,'pendingOfficialAnswer');
-  assert.equal(older.body.year,2019);
+  assert.equal(older.body.year,2017);
   const library = await req(env,'GET',path+'/official-library');
   assert.equal(library.status,200);
-  assert.ok(library.body.pendingOfficialAnswerYears.includes(2019));
+  assert.ok(library.body.pendingOfficialAnswerYears.includes(2017));
   const job = await readJob(env.STORE,'q090~'+start.body.learnerId);
   assert.deepEqual(job.sources.map(s => s.year),[2020,2025]);
   assert.equal(received.length,3);
