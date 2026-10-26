@@ -489,6 +489,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v101.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v102.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v103.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v104.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v105.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'getOfficialLibrary']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -610,7 +611,9 @@ function widgetResource(baseUrl, uri = WIDGET_URI) {
 }
 const WIDGET_TOOL_META = { ui: { resourceUri: WIDGET_URI }, 'openai/outputTemplate': WIDGET_URI, 'openai/widgetAccessible': true };
 // showMenuはAIが作成した本文の受け渡し先。モデル非公開だと学習方法保存後に解説が永遠に届かない。
-const LESSON_PUBLISH_META = { ...WIDGET_TOOL_META, ui: { ...WIDGET_TOOL_META.ui, visibility: ['model', 'app'] } };
+// 解説登録はデータ専用。画面テンプレートを付けるとChatGPTが別の学習枠を作る。
+// 最初のstartSession枠が保存済み解説をrestoreStudyViewで受け取る。
+const LESSON_PUBLISH_META = { ui: { visibility: ['model', 'app'] }, 'openai/widgetAccessible': true };
 /**
  * 読取専用の公式解説参照は、KV反映直後やCloud Run初回接続の一時的失敗を
  * 利用者へ返す前に最大3回まで自動再照合する。
