@@ -60,6 +60,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'chooseItem') reply({ structuredContent: { status: 'item',
             mode: m.params.arguments.mode, fieldName: m.params.arguments.fieldName,
             journey: { fieldIndex: 1, fieldTotal: 8 } } });
+          else if (op === 'registerConfirmationQuestion') {
+            const args = m.params.arguments;
+            window.preparedQuestionCalls = (window.preparedQuestionCalls || 0) + 1;
+            reply({ structuredContent: {
+              status:'confirmation_question', sessionId:args.sessionId,
+              challengeId:'prepared-mock-' + window.preparedQuestionCalls,
+              question:args.question, choices:args.choices,
+              position:1, total:3, fieldName:'基礎法学',
+              journey:{fieldIndex:1,fieldTotal:6}
+            } });
+          }
           else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
@@ -623,12 +634,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:'試験用未登録分野｜基礎解説'}).waitFor();
     const answerCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length);
     const nextCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length);
-    await ui.getByRole('button',{name:'AI解説を再依頼'}).click();
+    assert.match(await ui.locator('#app').innerText(), /基礎解説（学習システム内蔵）/, 'AIが返答しなくても内蔵教材を即表示');
+    await ui.getByRole('button',{name:'理解度に合わせたAI解説を追加（任意）'}).click();
     await ui.getByText('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。').waitFor();
-    assert.equal(await ui.getByRole('button',{name:'AI解説を再依頼'}).isEnabled(),true,'送信失敗でも操作可能');
+    assert.equal(await ui.getByRole('button',{name:'理解度に合わせたAI解説を追加（任意）'}).isEnabled(),true,'送信失敗でも基礎教材は操作可能');
     await ui.getByRole('button',{name:'解説の登録状況を確認'}).click();
     await ui.getByText('解説はまだ登録されていません。AI解説を再依頼できます。').waitFor();
-    assert.equal(await ui.getByRole('button',{name:'AI解説を再依頼'}).count(),1,'配信失敗時は同一枠で再依頼できる');
+    assert.equal(await ui.getByRole('button',{name:'理解度に合わせたAI解説を追加（任意）'}).count(),1,'配信失敗時は同一枠で再依頼できる');
     await page.evaluate(({ pending })=>{
       window.rejectMessage=false;
       const lesson = {status:'menu',sessionId:pending.sessionId,
@@ -645,14 +657,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('.md').innerText(),/法律上の権利と義務/);
     assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length),answerCallsBefore,'解説再試行は再採点しない');
     assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length),nextCallsBefore,'解説再試行は次問を勝手に出さない');
-    // 解説を省略する明示操作だけがモードを変更する。
+    // 事前準備された基礎解説はモデル無しで読み、確認問題も同じ枠へ直接登録する。
     await page.evaluate(({ pending })=>{
       window.restorePayload=pending;
       window.deliver({ _meta:{qlp:pending}, structuredContent:{status:pending.status} });
     },{pending:pendingLesson});
-    await ui.getByRole('button',{name:'解説を省略して確認問題から始める'}).click();
-    await ui.getByRole('heading',{name:'確認問題・第1問を準備中（全3問）'}).waitFor();
+    const followupsBeforeNative = await page.evaluate(() => window.followups.length);
+    await ui.getByRole('button',{name:'基礎解説を読み終えたら確認問題へ（全3問）'}).click();
+    await ui.getByRole('heading',{name:'基礎法学｜確認問題・第1問'}).waitFor();
     assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='chooseItem'&&m.params.arguments.mode==='check').length) > 0,true);
+    assert.equal(await page.evaluate(()=>window.preparedQuestionCalls),1,'内蔵確認問題の第1問をエンジンへ一度だけ登録');
+    assert.equal(await page.evaluate(()=>window.followups.length),followupsBeforeNative,'内蔵確認問題の開始ではChatGPTへメッセージを送らない');
 
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
     // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。
