@@ -249,3 +249,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-26 v110: user-approved Cloud Run deployment; data-only restoreStudyView prevents repeated embedded study frames, explicit openHandoffView mounts only for importHandoff; regression source 6135f85c35332ebf85341aae1589b3e740b1c611; main/master_prompt.txt protected.
 
 2026-10-26 v110 final corrective deployment: remove contradictory model restore paths; preserve explicit handoff mount only; regression commit 5d244dd2dc6c8ee6a9c0cea844eb921f17d372aa; same approved deployment, no paid model API.
+2026-10-26 v110 final approved deploy: after frame-restore and handoff command audit, resource v110 with v109 legacy, regression test and production metadata assertions; verified source 756c86628958114bb641b6d26cda85765170831b; protect main/master_prompt.txt; no paid AI API.
