@@ -15,6 +15,9 @@ test('v111 embeds syntactically valid study widget and retains single scroll sur
   assert.doesNotMatch(embedded, /callTool\('restoreStudyView'/);
   assert.match(embedded, /lessonPollDelays/);
   assert.match(embedded, /lessonPollGeneration/);
+  assert.match(embedded, /publishManualLesson/);
+  assert.match(embedded, /callTool\('showMenu', args\)/);
+  assert.match(embedded, /manualLessonBody/);
   assert.match(embedded, /confirmationPollGeneration/);
   assert.match(embedded, /checkPublished/);
 });
