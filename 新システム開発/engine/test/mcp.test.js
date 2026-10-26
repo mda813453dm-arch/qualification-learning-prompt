@@ -10,7 +10,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -125,7 +125,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   assert.match(WIDGET_URI, /question-v111\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-26.111');
+  assert.equal(WIDGET_VERSION, '2026-10-26.112');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1505,4 +1505,69 @@ test('AI解説の照会番号は当該分野・最新依頼だけに紐づき、
   assert.equal(saved.status, 'menu');
   assert.equal(saved.menu.sessionId, sessionId);
   assert.equal(saved.menu.body, textBody);
+});
+
+
+test('行政書士の内蔵基礎教材は全6分野・各3問、正答と簡易解説を事前確定している', () => {
+  const fields = Object.values(CATALOG.gyosei.fields);
+  assert.deepEqual(Object.keys(PREPARED_LESSONS).sort(), fields.slice().sort());
+  for(const field of fields){
+    const entry = PREPARED_LESSONS[field];
+    assert.ok(entry.intro.length >= 3, field + ': 導入の要点');
+    assert.ok(entry.example.length >= 15 && entry.pitfall.length >= 15, field + ': 具体例と注意点');
+    assert.equal(entry.questions.length, 3, field + ': 確認3問');
+    for(const q of entry.questions){
+      assert.ok(q.question.length >= 10);
+      assert.equal(q.choices.length, 3);
+      assert.ok(Number.isInteger(q.correctAnswer) && q.correctAnswer >= 1 && q.correctAnswer <= 3);
+      assert.ok(q.explanation.length >= 12);
+      assert.ok(q.choices.every(c => c.length > 0));
+    }
+  }
+  const html = widgetHtml();
+  assert.match(html, /基礎解説（学習システム内蔵）/);
+  assert.match(html, /理解度に合わせたAI解説を追加（任意）/);
+  assert.match(html, /registerPreparedConfirmation/);
+  assert.match(html, /if \(!preparedLessons\[field\]\) ask\(lessonRequestMessage/);
+  assert.match(html, /正答を出題前にエンジンへ固定した学習問題です/);
+  assert.doesNotMatch(html, /問題は新しい学習枠に表示されます/);
+});
+
+test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録し、正誤・簡易解説・完了を保持する', async () => {
+  const env = makeEnv();
+  const app = async (name,args) => (await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
+  const started = await app('startSession',{qualificationId:'行政書士',sources:[]});
+  assert.equal(started.isError,undefined,JSON.stringify(started));
+  const {sessionId,learnerId} = started.structuredContent;
+  const open = await app('startStudy',{learnerId,qualificationName:'行政書士'});
+  assert.equal(open.isError,undefined,JSON.stringify(open));
+  const fieldName = '基礎法学';
+  const explained = await app('chooseItem',{sessionId,fieldName,mode:'explain'});
+  assert.equal(explained.structuredContent.mode,'explain');
+  assert.match(explained.structuredContent.lessonRef,/^L-[A-Za-z0-9_-]{16}$/);
+  const pending = (await app('getStudySnapshot',{sessionId}))._meta.qlp;
+  assert.equal(pending.status,'lesson_pending');
+  const check = await app('chooseItem',{sessionId,fieldName,mode:'check'});
+  assert.equal(check.structuredContent.mode,'check');
+  const bank = PREPARED_LESSONS[fieldName].questions;
+  for(let i=0;i<3;i++){
+    const q=bank[i];
+    const given = await app('registerConfirmationQuestion',{
+      sessionId,question:q.question,choices:q.choices,correctAnswer:q.correctAnswer,explanation:q.explanation
+    });
+    assert.equal(given.isError,undefined,JSON.stringify(given));
+    assert.equal(given._meta.qlp.status,'confirmation_question');
+    assert.equal(given._meta.qlp.position,i+1);
+    const graded = await app('answerConfirmationQuestion',{
+      sessionId,challengeId:given._meta.qlp.challengeId,selected:String(q.correctAnswer)
+    });
+    assert.equal(graded.isError,undefined,JSON.stringify(graded));
+    assert.equal(graded._meta.qlp.correct,true);
+    assert.equal(graded._meta.qlp.explanation,q.explanation);
+    assert.equal(graded._meta.qlp.complete,i===2);
+  }
+  const restored = await app('restoreStudyView',{sessionId});
+  assert.equal(restored._meta.qlp.status,'confirmation_result');
+  assert.equal(restored._meta.qlp.correctCount,3);
+  assert.equal(restored._meta.qlp.complete,true);
 });
