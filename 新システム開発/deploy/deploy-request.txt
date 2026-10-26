@@ -261,3 +261,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-27 行政書士2020年度PDF取り込み不具合対応: 単一区分を年度共通へ強制正規化、誤った区分名でも受理、未許諾時はPDFを取得しない。model向けのsection省略・許諾エラー案内を補強。Source 512cfb19246ad3a1519b053766c4ab8e04e940c6, engine CI #40366138569 PASS, mobile widget CI #40366138619 PASS. main/master_prompt.txt unchanged; no paid AI API.
 
 2026-10-27 行政書士取り込みUI改善と公式HTML正答案内: 取り込み準備済み一覧を非表示、手順を明示、本人登録済み年度だけ出題ボタン表示、行政書士は正答PDF不要・公式Web正答を照合。source 54d69937389912476b3ff1cf79b4c1a2f785f0fa。main/master_prompt.txt保護、追加有料API不使用。
+
+2026-10-27 v114機能パッチ（v113 UI URI互換）: 行政書士など本人専用過去問の単年度ドロップダウンを廃止。最大10PDF/回の同時添付権利確認（year=0で一括）、各ファイルの年度ごとの個別検証と非公開保存、旧年・新年度で公式正答未検証なら採点保留。出題ボタンは登録済みだけ。追加テスト multi-year-private-upload.test.js。source a9198acf7554f6fdf6761d6e1d6d76413c6a8d61。main/master_prompt.txt非変更。追加有料APIなし。
