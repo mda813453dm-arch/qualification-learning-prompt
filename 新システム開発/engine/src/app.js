@@ -1830,8 +1830,10 @@ async function route(request, env, url, now) {
     const existingCheck = mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count < 3
       ? state.confirmation : null;
     // 照会番号により、AIが既存のsessionIdを覚えていなくても元の学習枠へ保存できる。
-    const lessonRef = mode === 'explain' ? 'L-' + randomBytes(12).toString('base64url') : null;
-    if (lessonRef) await env.STORE.put(lessonRefKey(lessonRef), JSON.stringify({ sessionId: id, fieldId: fid, createdAt: now }), { expirationTtl: SESSION_TTL_S });
+    const pendingSameField = mode === 'explain' && state.itemMode === 'explain' && state.set?.fieldId === fid &&
+      state.pendingLessonRef && !state.publishedLesson && (!state.confirmation || prematureExplanationConfirmation(state));
+    const lessonRef = mode === 'explain' ? (pendingSameField ? state.pendingLessonRef : 'L-' + randomBytes(12).toString('base64url')) : null;
+    if (lessonRef && !pendingSameField) await env.STORE.put(lessonRefKey(lessonRef), JSON.stringify({ sessionId: id, fieldId: fid, createdAt: now }), { expirationTtl: SESSION_TTL_S });
     await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
       pendingLessonRef: lessonRef, publishedLesson: null, publishedExplanation: null,
       confirmation: mode === 'check' ? (existingCheck ?? { fieldId: fid, count: 0, correct: 0, challenge: null }) : null }, now);
