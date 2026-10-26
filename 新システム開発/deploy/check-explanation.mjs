@@ -21,6 +21,10 @@ assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.ex
   '検証済み解説全文を操作ボタンと同じ画面に登録できる');
 assert.deepEqual(list.tools.find(t => t.name === 'showMenu')?._meta?.ui?.visibility,
   ['model','app'], '解説本文の登録ツールをAIから直接呼び出せる');
+assert.equal(list.tools.find(t => t.name === 'showMenu')?.inputSchema?.properties?.lessonRef?.pattern,
+  '^L-[A-Za-z0-9_-]{16}$', '基礎解説照会番号だけで元の学習枠に登録する定義が公開されている');
+assert.equal(list.tools.find(t => t.name === 'showMenu')?._meta?.['openai/outputTemplate'],
+  undefined, '解説登録は別の学習枠を生成しない');
 const restore = list.tools.find(t => t.name === 'restoreStudyView');
 const handoff = list.tools.find(t => t.name === 'openHandoffView');
 assert.ok(restore && handoff, '読取専用復元と新規引継ぎ画面を別ツールにする');
@@ -49,6 +53,9 @@ assert.ok(resource.contents[0].text.includes('function showPendingLesson(data)')
 assert.ok(resource.contents[0].text.includes('解説の登録状況を確認') &&
   resource.contents[0].text.includes('AI解説を再依頼'), '学習中断なしでモデルの解説登録を再試行できる');
 
+assert.ok(resource.contents[0].text.includes('lessonRequestMessage(field, chosen?.lessonRef)') &&
+  resource.contents[0].text.includes('lessonRequestMessage(field, lessonRef)'),
+  '初回と再依頼に同じ照会番号を付けてAIの登録を促す');
 assert.ok(resource.contents[0].text.includes("data.menu?.kind === 'lesson'") &&
   resource.contents[0].text.includes('claimFirstFrame(sid, true)'),
   'iPhoneで古い学習枠が休止しても新しいAI解説を受信枠に表示');
@@ -65,6 +72,13 @@ assert.equal(spec.structuredContent?.error, 'EXPLANATION_REFERENCE_REQUIRED', '�
 const missing = await rpc('tools/call', { name: 'explainSpec', arguments: { sessionId: '00000000-0000-0000-0000-000000000000' } });
 assert.equal(missing.isError, true);
 assert.equal(missing.structuredContent.error, 'SESSION_NOT_FOUND', '本番にも読取経路があり、未知の学習を作り直さない');
+const missingLesson = await rpc('tools/call', { name: 'showMenu', arguments: {
+  kind: 'lesson', lessonRef: 'L-0000000000000000',
+  body: '行政法の基礎では行政機関の権限と手続を区別します。要点を具体例とともに整理し、関連する行政作用の違いを確かめます。'
+} });
+assert.equal(missingLesson.isError, true);
+assert.equal(missingLesson.structuredContent.error, 'LESSON_REQUEST_NOT_FOUND',
+  '存在しない解説照会番号では学習状態を変更できない');
 const missingRef = await rpc('tools/call', { name: 'explainSpec', arguments: { explanationRef: 'E-0000000000000000' } });
 assert.equal(missingRef.isError, true);
 assert.equal(missingRef.structuredContent.error, 'EXPLANATION_REF_EXPIRED', '参照番号だけのモデル呼出しが公開され、未知の番号は安全に拒否');
