@@ -1483,8 +1483,11 @@ test('AI解説の照会番号は当該分野・最新依頼だけに紐づき、
   await app('startStudy', { learnerId: start.structuredContent.learnerId, qualificationName: '測量士補' });
   const fieldName = CATALOG[SRC.qualificationId].fields.s1;
   const first = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  const repeat = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
+  assert.equal(repeat.lessonRef, first.lessonRef, '二重タップでは照会番号を変えない');
+  await app('chooseItem', { sessionId, fieldName, mode: 'check' });
   const latest = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
-  assert.notEqual(first.lessonRef, latest.lessonRef, '最新の解説依頼で照会番号を更新');
+  assert.notEqual(first.lessonRef, latest.lessonRef, '学習方法を変更して再び解説を開始したときは新しい照会番号を作る');
   const textBody = '## 測量に関する法規の基礎解説\n公式の手続を読み、測量の基本原則と法的効果の区別を理解します。具体例で確かめて確認問題へ進みます。';
   const stale = await app('showMenu', { kind: 'lesson', lessonRef: first.lessonRef, body: textBody });
   assert.equal(stale.isError, true);
