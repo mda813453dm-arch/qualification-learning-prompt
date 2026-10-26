@@ -501,7 +501,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('#app').evaluate(el=>el.scrollTop),0,'解説の再表示でも内側のスクロールは発生しない');
     assert.equal(await ui.locator('.latest').count(),1);
     await ui.getByRole('button',{name:'確認問題へ進む'}).click();
-    await ui.getByRole('heading',{name:'この分野の確認問題へ'}).waitFor();
+    await ui.getByRole('heading',{name:/確認問題・第1問/}).waitFor();
     assert.equal(await ui.locator('.md').count(),0,'確認問題への遷移後は前の基礎解説を消す');
     assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),0,'旧ボタンを残さない');
     await page.waitForFunction(n => window.followups.length > n, prevFollowups);
