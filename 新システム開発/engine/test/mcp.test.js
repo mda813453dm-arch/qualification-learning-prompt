@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v107\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-26.107');
+  assert.match(WIDGET_URI, /question-v108\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-26.108');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -636,6 +636,12 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(nq._meta.ui.resourceUri, undefined);
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
   assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], WIDGET_URI);
+  const snapshotTool = tools.find(x => x.name === 'getStudySnapshot');
+  assert.ok(snapshotTool, 'background restoration tool exists');
+  assert.equal(snapshotTool._meta?.['openai/outputTemplate'], undefined, 'background restore cannot create a new widget');
+  assert.equal(snapshotTool._meta?.ui?.resourceUri, undefined);
+  assert.equal(tools.find(x => x.name === 'restoreStudyView')._meta['openai/outputTemplate'], WIDGET_URI,
+    'explicit model handoff restoration still creates a widget');
   for (const name of ['registerConfirmationQuestion', 'submitAnswer', 'nextQuestion', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'showDescriptiveActions']) {
     const t = tools.find(x => x.name === name);
     assert.ok(t, name + ' exists');
