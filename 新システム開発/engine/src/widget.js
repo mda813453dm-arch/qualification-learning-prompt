@@ -1635,7 +1635,11 @@ a{color:inherit}
     if (m.studyId) currentStudyId = m.studyId;
     if (m.learnerId) studyLid = m.learnerId;
     saveIds();
-    var body = m.body ? '<div class="md">' + md(m.body) + '</div>' : '';
+    // 任意のAI補足が登録されたときも、先に読んでいた内蔵教材を消さず同じ枠に続けて表示する。
+    var preparedBase = m.kind === 'lesson' && m.fieldName && preparedLessons[m.fieldName]
+      ? preparedGuideHtml(m.fieldName) : '';
+    var body = preparedBase + (m.body ? (preparedBase ? '<h2>AIによる詳しい補足解説</h2>' : '') +
+      '<div class="md">' + md(m.body) + '</div>' : '');
     // 解説済みのときは「解説を見る」を再表示しない（旧サーバーからの回答にも対応）。
     var entries = (m.choices || []).map(function(c,i){ return { choice:c, action:m.actions ? m.actions[i] : null }; })
       .filter(function(x){ return !(m.kind === 'next' && m.body && (x.action === 'explain' || (!m.actions && x.choice === '解説を見る'))); });
