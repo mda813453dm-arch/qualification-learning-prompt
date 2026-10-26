@@ -1454,7 +1454,7 @@ a{color:inherit}
     try {
       var data = await callTool('registerConfirmationQuestion', {
         sessionId: sid, question: question.question, choices: question.choices,
-        correctAnswer: question.correctAnswer, explanation: question.explanation
+        correctAnswer: question.correctAnswer, explanation: question.explanation, prepared:true
       });
       if (!data || data.error || data.status !== 'confirmation_question') throw new Error('PREPARED_CONFIRMATION_FAILED');
       if (state.sessionId === sid && !locked) render(data);
