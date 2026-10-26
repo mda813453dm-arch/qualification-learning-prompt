@@ -852,6 +852,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       return { status: 'menu', sessionId: id, menu: lesson.menu };
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(state.set.fieldId) + 1, fieldTotal: studyFieldOrder(state, cat).length },
       ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: '解説を表示してから確認問題へ進みます。' };
   }
@@ -1065,6 +1066,7 @@ async function restoreStudyView(env, id, state, now) {
     if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
       return { ...identity, status: 'menu', menu: lesson.menu, restored: true };
     return { ...identity, status: 'lesson_pending', fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      journey: { fieldIndex: fields.indexOf(state.set.fieldId) + 1, fieldTotal: fields.length },
       ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: 'この分野の解説はまだ表示されていません。解説を表示してから確認問題へ進んでください。' };
   }
