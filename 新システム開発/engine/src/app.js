@@ -530,6 +530,14 @@ async function keepPrivateAttached(env, bytes, origin, learnerId) {
   return link;
 }
 const uploadRightsKey = (sessionId, year) => `upload-rights/${sessionId}/${year}`;
+const uploadBatchRightsKey = (sessionId) => `upload-rights/${sessionId}/batch`;
+const licensedPendingIndexKey = (learnerId, qid) => `licensed-pending/${learnerId}/${qid}/index`;
+const licensedPendingKey = (learnerId, qid, year) => `licensed-pending/${learnerId}/${qid}/${year}`;
+const MAX_LICENSED_BATCH_FILES = 10;
+async function licensedPendingYears(env, state) {
+  const list = await env.STORE.get(licensedPendingIndexKey(state.learnerId, state.qualificationId), 'json');
+  return [...new Set((Array.isArray(list) ? list : []).filter((year) => Number.isInteger(year)))].sort((a,b) => a-b);
+}
 
 /**
  * 利用者が添付した過去問PDFを取り込みに足す。エンジンが読める資格（読み方の決まっている資格）だけ。
@@ -542,9 +550,9 @@ async function attachPdf(env, id, state, b, url, now) {
   if (!adapter || !ADAPTERS.has(adapter)) throw new HttpError(422, 'ATTACH_NOT_SUPPORTED',
     'この資格のPDF解析はまだ接続されていません。');
   const year = Number(b.year);
-  if (!Number.isInteger(year) || year < 1990 || year > 2100)
+  if (!Number.isInteger(year) || year < 1900 || year > 2200)
     throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', 'PDFの表紙で実施年度（西暦）を確認してください。');
-  if (adapter !== 'generic_mc' && Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
+  if (!cat?.privateLicensedUpload && adapter !== 'generic_mc' && Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
   const section = adapter === 'generic_mc' ? String(b.section ?? '').trim()
     : cat?.uploadSections
@@ -556,14 +564,18 @@ async function attachPdf(env, id, state, b, url, now) {
   if (adapter !== 'generic_mc' && cat?.uploadSections && !cat.uploadSections.includes(section))
     throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', `試験区分は${cat.uploadSections.join('・')}から選んでください。`);
   const officialAnswerHtml = adapter === 'generic_mc' ? null : (cat?.officialAnswerHtml?.[year] ?? null);
-  if (cat?.uploadSections && !b.answer && !officialAnswerHtml)
+  if (cat?.uploadSections && !b.answer && !officialAnswerHtml && !cat?.privateLicensedUpload)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
+  let batchRights = null;
   if (cat?.privateLicensedUpload) {
-    // PDF取得前に年度別・当該セッションの本人による権利確認を必須とする。
+    // 利用者が明示許諾した同一セッション内の複数年度だけ。過去のセッションには使えない。
     const rights = await env.STORE.get(uploadRightsKey(id, year), 'json');
-    if (rights?.confirmed !== true || rights?.learnerId !== state.learnerId)
+    batchRights = await env.STORE.get(uploadBatchRightsKey(id), 'json');
+    const individuallyConfirmed = rights?.confirmed === true && rights?.learnerId === state.learnerId;
+    const batchConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId && Number(batchRights.remaining) > 0;
+    if (!individuallyConfirmed && !batchConfirmed)
       throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED',
-        'この年度の過去問を保存・解析する許諾の確認が必要です。学習画面から年度を選び、権利確認を行ってください。');
+        '添付PDFの保存・解析には利用許諾の確認が必要です。学習画面の確認欄にチェックしてください。');
   }
   const jobId = sessionJobId(state);
   const job = await readJob(env.STORE, jobId);
@@ -581,6 +593,21 @@ async function attachPdf(env, id, state, b, url, now) {
     ? (bytes) => keepPrivateAttached(env, bytes, origin, state.learnerId)
     : (bytes) => keepAttached(env, bytes, origin);
   const questionUrl = await savePdf(await fetchAttached(env, b.question));
+  if (batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId) {
+    await env.STORE.put(uploadBatchRightsKey(id),
+      JSON.stringify({ ...batchRights, remaining: Math.max(0, Number(batchRights.remaining) - 1) }),
+      { expirationTtl: SESSION_TTL_S });
+  }
+  if (cat?.privateLicensedUpload && !officialAnswerHtml && !b.answer) {
+    // 正答URLを推測しない。問題PDFは本人用に保管し、同年度の公式正答が確定するまで採点しない。
+    const key = licensedPendingIndexKey(state.learnerId, state.qualificationId);
+    const years = await licensedPendingYears(env, state);
+    if (!years.includes(year)) await env.STORE.put(key, JSON.stringify([...years, year].sort((a,b)=>a-b));
+    await env.STORE.put(licensedPendingKey(state.learnerId, state.qualificationId, year),
+      JSON.stringify({ year, section, questionUrl, receivedAt: now }));
+    return { status: 'pendingOfficialAnswer', sessionId: id, year, section,
+      notice: `${year}年度の問題PDFを本人専用に受け取りました。公式正答ページの検証が未完了なので、この年度は採点・出題を保留しています。他の年度の登録は続けられます。` };
+  }
   // 行政書士だけ正答が公式HTML。利用者は問題PDFだけ添付し、正答は登録済み公式URLに固定する。
   // 任意の外部URLを利用者入力から取得しない（SSRF/偽正答対策）。
   const answerUrl = officialAnswerHtml || (b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null);
@@ -883,6 +910,8 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
           answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
           availableUploadYears: cat.availableUploadYears ?? [],
           personalUploadedYears: (existing?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+          pendingOfficialAnswerYears: await licensedPendingYears(env, state),
+          maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         } : {}),
         notice: existing?.state === 'failed'
           ? (cat.officialAnswerHtml ? '問題PDFの検証・取り込みに失敗しました。同年度の公式Web正答と照合するため、正答PDFは不要です。登録状態を確認し、原因が解消してから再試行してください。' : '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。')
@@ -1737,6 +1766,8 @@ async function route(request, env, url, now) {
         availableUploadYears: cat.availableUploadYears ?? [],
         validatedUploadYears: cat.validatedUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        pendingOfficialAnswerYears: await licensedPendingYears(env, state),
+        maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         sharedLibrary: null,
         notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
     }
@@ -1754,10 +1785,18 @@ async function route(request, env, url, now) {
     const cat = catalogFor(state.qualificationId);
     if (!cat?.privateLicensedUpload) throw new HttpError(422, 'UPLOAD_PERMISSION_NOT_APPLICABLE');
     const year = Number(b.year);
-    if (!Number.isInteger(year) || !cat.validatedUploadYears?.includes(year))
-      throw new HttpError(422, 'UPLOAD_YEAR_UNAVAILABLE', 'この年度はまだ取込検証が完了していません。');
     if (b.confirmed !== true)
       throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED', '利用者自身の許諾確認が必要です。');
+    if (b.allYears === true) {
+      await env.STORE.put(uploadBatchRightsKey(id),
+        JSON.stringify({ confirmed: true, learnerId: state.learnerId, remaining: MAX_LICENSED_BATCH_FILES, confirmedAt: now }),
+        { expirationTtl: SESSION_TTL_S });
+      return json(200, { status: 'uploadPermissionConfirmed', sessionId: id, allYears: true,
+        maxBatchFiles: MAX_LICENSED_BATCH_FILES,
+        notice: `添付する最大${MAX_LICENSED_BATCH_FILES}ファイルの利用許諾を確認しました。年度選択は不要です。問題PDFをまとめて添付してください。年度と公式正答をそれぞれ独立に検証します。` });
+    }
+    if (!Number.isInteger(year) || year < 1900 || year > 2200)
+      throw new HttpError(422, 'UPLOAD_YEAR_UNAVAILABLE', '添付PDFの年度を確認してください。');
     await env.STORE.put(uploadRightsKey(id, year),
       JSON.stringify({ confirmed: true, learnerId: state.learnerId, year, confirmedAt: now }),
       { expirationTtl: SESSION_TTL_S });
