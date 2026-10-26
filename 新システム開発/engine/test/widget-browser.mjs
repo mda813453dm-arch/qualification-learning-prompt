@@ -634,7 +634,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:'試験用未登録分野｜基礎解説'}).waitFor();
     const answerCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length);
     const nextCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length);
-    assert.equal(await ui.locator('.descriptive-explanation').count(),0,'内蔵教材が無い資格ではAI解説を偽造しない');
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /基礎解説（学習システム内蔵）/, '未登録分野に内蔵教材を表示しない');
     await ui.getByRole('button',{name:'AI解説を再依頼'}).click();
     await ui.getByText('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。').waitFor();
     assert.equal(await ui.getByRole('button',{name:'AI解説を再依頼'}).isEnabled(),true,'送信失敗でも操作可能');
