@@ -636,6 +636,12 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(nq._meta.ui.resourceUri, undefined);
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
   assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], WIDGET_URI);
+  for (const name of ['registerConfirmationQuestion', 'submitAnswer', 'nextQuestion', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'showDescriptiveActions']) {
+    const t = tools.find(x => x.name === name);
+    assert.ok(t, name + ' exists');
+    assert.equal(t._meta?.['openai/outputTemplate'], undefined, name + ' must not open another frame');
+    assert.equal(t._meta?.ui?.resourceUri, undefined, name + ' must not attach widget');
+  }
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
   assert.ok(Array.isArray(opened._meta.qlp.onboarding));
   assert.ok(opened._meta.qlp.overview);
