@@ -654,6 +654,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.deepEqual(opened.structuredContent.onboarding.map((s) => s.kind), ['exempt', 'status'], 'iOSで_metaが消えても導入画面が表示できる');
   assert.equal(opened.structuredContent.overview.title, '■試験概要');
   assert.ok(opened.structuredContent.sessionId);
+  const snapshot = await app('tools/call', { name: 'getStudySnapshot',
+    arguments: { sessionId: opened.structuredContent.sessionId } });
+  assert.equal(snapshot.structuredContent.sessionId, opened.structuredContent.sessionId);
+  assert.equal(snapshot._meta, undefined, 'background snapshot must not generate a new widget');
   // 実機で「@資格学習 宅建」を指定したのに、AIがアプリ名だけを資格として送ってしまった回帰例。
   const appNameOnly = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '資格学習', sources: [] } });
   assert.equal(appNameOnly.isError, true, 'アプリ名だけで資格を推測しない');
