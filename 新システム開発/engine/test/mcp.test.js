@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v109\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-26.109');
+  assert.match(WIDGET_URI, /question-v110\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-26.110');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -295,19 +295,21 @@ test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面
   env.clock = () => T0 + 10000;
   const list = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
   const importer = list.find(x => x.name === 'importHandoff');
-  assert.equal(importer._meta, undefined, '旧ChatGPTでも動くように引継ぎ受付はUIなし、既存復元ツールで画面を出す');
+  assert.equal(importer._meta, undefined, '引継ぎ受付自体は新しいUIを作らない');
   const restoreTool = list.find(x => x.name === 'restoreStudyView');
-  assert.equal(restoreTool._meta['openai/outputTemplate'], WIDGET_URI, '既存の画面復元ツールから再開画面を出す');
+  assert.equal(restoreTool._meta['openai/outputTemplate'], undefined, '通常復元は学習枠を増やさない');
+  const handoffTool = list.find(x => x.name === 'openHandoffView');
+  assert.equal(handoffTool._meta['openai/outputTemplate'], WIDGET_URI, '引継ぎ時だけ新しい学習枠を開く');
   const resumed = await callUi('importHandoff', { handoff: '引継ぎID：' + opened.learnerId });
   assert.equal(resumed.isError, false);
   assert.equal(resumed.structuredContent.status, 'resumeReady');
   assert.equal(resumed._meta, undefined, '引継ぎの読込み自体は新しい画面ツールへの依存を追加しない');
-  assert.equal(resumed.structuredContent.nextTool, 'restoreStudyView');
-  assert.match(resumed.structuredContent.howToProceed, /必ず続けてrestoreStudyView/);
+  assert.equal(resumed.structuredContent.nextTool, 'openHandoffView');
+  assert.match(resumed.structuredContent.howToProceed, /必ず続けてopenHandoffView/);
   assert.equal(resumed.structuredContent.answeredCount, 1);
   assert.equal(resumed.structuredContent.onboarding, undefined);
   assert.equal(resumed.structuredContent.overview, undefined);
-  const current = await callUi('restoreStudyView', { sessionId: resumed.structuredContent.sessionId });
+  const current = await callUi('openHandoffView', { sessionId: resumed.structuredContent.sessionId });
   assert.equal(current.structuredContent.status, 'resumeReady');
   assert.equal(current._meta.qlp.status, 'resumeReady');
   assert.equal(current._meta.qlp.answeredCount, 1);
@@ -645,8 +647,10 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok(snapshotTool, 'background restoration tool exists');
   assert.equal(snapshotTool._meta?.['openai/outputTemplate'], undefined, 'background restore cannot create a new widget');
   assert.equal(snapshotTool._meta?.ui?.resourceUri, undefined);
-  assert.equal(tools.find(x => x.name === 'restoreStudyView')._meta['openai/outputTemplate'], WIDGET_URI,
-    'explicit model handoff restoration still creates a widget');
+  assert.equal(tools.find(x => x.name === 'restoreStudyView')._meta['openai/outputTemplate'], undefined,
+    'read-only restoration cannot create a widget');
+  assert.equal(tools.find(x => x.name === 'openHandoffView')._meta['openai/outputTemplate'], WIDGET_URI,
+    'explicit imported handoff opens the only new widget');
   for (const name of ['registerConfirmationQuestion', 'submitAnswer', 'nextQuestion', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'showDescriptiveActions']) {
     const t = tools.find(x => x.name === name);
     assert.ok(t, name + ' exists');
