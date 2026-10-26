@@ -1787,7 +1787,7 @@ async function route(request, env, url, now) {
     const year = Number(b.year);
     if (b.confirmed !== true)
       throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED', '利用者自身の許諾確認が必要です。');
-    if (b.allYears === true) {
+    if (b.allYears === true || b.year === 0) {
       await env.STORE.put(uploadBatchRightsKey(id),
         JSON.stringify({ confirmed: true, learnerId: state.learnerId, remaining: MAX_LICENSED_BATCH_FILES, confirmedAt: now }),
         { expirationTtl: SESSION_TTL_S });
