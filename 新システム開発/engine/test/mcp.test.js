@@ -124,8 +124,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v110\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-26.110');
+  assert.match(WIDGET_URI, /question-v111\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-26.111');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1056,7 +1056,9 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(html.includes('var visible = actionLabel || text;'), '会話には操作名だけを渡す');
   assert.ok(html.includes("content:[{type:'text',text:visible}]") && !html.includes('.concat(blocks)'), 'iPhoneの会話へ送るのは照合番号付き短文だけ。根拠は読取ツールから取得');
   assert.ok(!html.includes('setWidgetState'), '保存時に不要な添付を増やさない');
-  assert.ok(html.includes("field + 'を解説から始めます。'"));
+  assert.ok(html.includes('lessonRequestMessage(field, chosen?.lessonRef)'));
+  assert.ok(html.includes('lessonRequestMessage(field, lessonRef)'));
+  assert.match(html, /照会番号/);
   assert.ok(html.includes('function planEditMenu()'));
   assert.ok(html.includes("callTool('saveStudyPlan'"), '計画確定は学習開始の承認後だけ');
   // 続きのボタンは解説・確認問題の「下」に出す（画面の上に押すボタンを置かない）
@@ -1065,7 +1067,7 @@ test('画面からチャットに送る文は短い普通の言葉だけ。AIへ
   assert.ok(!html.includes('苦手分野を調べる（おすすめ）'));
   assert.ok(html.includes('overflow-wrap:anywhere'));
   // 短い文に対するAIの手順は、アプリのツールの説明にある
-  assert.ok(mcp.includes('「○○を解説から始めます。」と送ってきたら'));
+  assert.ok(mcp.includes('「○○の基礎解説を作成して学習画面に登録してください。」と送ってきたら'));
   assert.ok(mcp.includes('学習計画の見直し・承認・分野開始も枠内のエンジンが処理する'));
   // 最初の公式過去問は画面から直接取得し、取得失敗時も同じ要求で復旧する。
   assert.ok(html.includes('function nextBelow(fallback, say)'));
@@ -1424,8 +1426,10 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   const fieldName = CATALOG[SRC.qualificationId].fields.s1;
   const chosen = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
   assert.equal(chosen.mode, 'explain');
+  assert.match(chosen.lessonRef, /^L-[A-Za-z0-9_-]{16}$/);
   const before = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
+  assert.equal(before.lessonRef, chosen.lessonRef, '照会番号は元の学習枠へ復元される');
   const stored = JSON.parse(await env.STORE.get('ses/' + sessionId));
   const original = stored.state;
   assert.equal(original.confirmation ?? null, null, '解説時に確認問題は未開始');
@@ -1436,9 +1440,12 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   assert.equal(legacy.status, 'lesson_pending', '旧版の偽の確認問題状態は表示しない');
 
   const lessonBody = '## 必修問題の解説\n必要な原則を具体例とともに説明します。最初に要点を読み、理解を確認してから確認問題3問へ進みます。';
-  const lesson = await app('showMenu', { kind: 'lesson', sessionId, learnerId, fieldName, body: lessonBody });
+  // 開始セッションIDがモデルに見えていなくても照会番号だけで解説登録できる。
+  const lesson = await app('showMenu', { kind: 'lesson', lessonRef:chosen.lessonRef, body: lessonBody });
   assert.equal(lesson.isError, undefined, JSON.stringify(lesson));
   assert.equal(lesson._meta.qlp.menu.body, lessonBody);
+  const duplicate = await app('showMenu', { kind:'lesson', lessonRef:chosen.lessonRef, body:'別の説明で先ほどの解説を上書きしようとしても、表示済みの教材は変更されません。' });
+  assert.equal(duplicate._meta.qlp.menu.body, lessonBody, '同じ照会番号の再送は上書きしない');
   const restored = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(restored.status, 'menu', '画面再開時は確認問題でなく解説を復元');
   assert.equal(restored.menu.kind, 'lesson');
@@ -1447,6 +1454,8 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
 
   const check = (await app('chooseItem', { sessionId, fieldName, mode: 'check' })).structuredContent;
   assert.equal(check.mode, 'check');
+  const replay = await app('showMenu', { kind:'lesson', lessonRef:chosen.lessonRef, body:lessonBody });
+  assert.equal(replay._meta.qlp.menu.body, lessonBody, '後から同じ照会番号を送っても保存済みの教材を変えない');
   const pending = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(pending.status, 'confirmation_pending');
   assert.equal(pending.position, 1);
