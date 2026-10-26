@@ -40,3 +40,5 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-26 01:08 JST: user iOS administrative scrivener foundation law lesson failed twice after v103; diagnostic Cloud Run mcp_rpc, widget_ui, /app statuses (redact tokens, IDs, content). Read-only; root cause diagnosis.
 
 2026-10-26 12:06 JST read-only investigation after v104 iPhone failure at 12:01-12:03 JST: repeated model messages '接続が中断', persistent '復元しています...' in pinned frame. Inspect mcp_rpc, widget_ui, HTTP /app, /mcp and v1 errors from 2026-10-26 02:55-03:10 UTC, redact learner/session/tokens. Do not alter learner state.
+
+2026-10-26 12:57 JST v105 iPhone 12:55 JST retry failure. Read-only check 03:48-04:02 UTC: mcp_rpc showMenu/restoreStudyView/chooseItem and HTTP statuses, widget_ui, errors. Redact session IDs, question text, user identifiers. No learner state changes.
