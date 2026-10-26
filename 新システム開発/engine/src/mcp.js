@@ -611,7 +611,8 @@ function widgetResource(baseUrl, uri = WIDGET_URI) {
 }
 const WIDGET_TOOL_META = { ui: { resourceUri: WIDGET_URI }, 'openai/outputTemplate': WIDGET_URI, 'openai/widgetAccessible': true };
 // showMenuはAIが作成した本文の受け渡し先。モデル非公開だと学習方法保存後に解説が永遠に届かない。
-// 解説登録はデータ専用。画面テンプレートを付けるとChatGPTが別の学習枠を作る。
+// 初回起動と明示的な引継ぎ復元だけが学習枠を生成する。
+// 確認問題の登録・次問・採点・解説登録はデータ専用。テンプレートを付けると毎回新しい学習枠が生成される。
 // 最初のstartSession枠が保存済み解説をrestoreStudyViewで受け取る。
 const LESSON_PUBLISH_META = { ui: { visibility: ['model', 'app'] }, 'openai/widgetAccessible': true };
 /**
@@ -672,7 +673,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: name === 'showMenu' ? LESSON_PUBLISH_META : WIDGET_TOOL_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: (name === 'startSession' || name === 'restoreStudyView') ? WIDGET_TOOL_META : LESSON_PUBLISH_META } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
