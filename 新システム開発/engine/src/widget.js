@@ -811,9 +811,36 @@ a{color:inherit}
     if (data.status === 'confirmation_question') { showConfirmationQuestion(data); return; }
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
     if (data.status === 'confirmation_pending') {
-      app.innerHTML = '<h2>確認問題・第' + esc(data.position) + '問を準備中（全3問）</h2><div class="notice">' + esc(data.notice || '前の問題は保存されています。次の問題を表示するまでお待ちください。') + '</div><div class="row"><button id="continueConfirmation">第' + esc(data.position) + '問を表示する</button></div>' + endBar();
-      document.getElementById('continueConfirmation').onclick = async function(){ var button = this; button.disabled = true; var guard = setTimeout(function(){ if (button.isConnected) button.disabled = false; }, 10000); try { await ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を作成して学習画面に登録する'); } finally { clearTimeout(guard); if (button.isConnected) button.disabled = false; } };
-      // AIが確認問題を登録しても新しい枠を作らない。元枠が読取専用で確認する。
+      var position = Number(data.position) || 1;
+      var bank = preparedLessons[data.fieldName] && preparedLessons[data.fieldName].questions;
+      var bankReady = !!(bank && bank[position-1]);
+      app.innerHTML = journeyBar(data.journey?.fieldIndex, data.journey?.fieldTotal, 'check' + position, data.fieldName) +
+        localBar('この分野の確認問題', position, 3) +
+        '<h2>確認問題・第' + esc(position) + '問（全3問）</h2>' +
+        '<div id="preparedCheckStatus" class="notice" role="status">' +
+        (bankReady ? '確認問題を学習エンジンから直接表示します。AIの応答待ちは不要です。' :
+          esc(data.notice || 'AI作成の確認問題の登録を待っています。')) + '</div>' +
+        '<div class="row"><button id="continueConfirmation">' + (bankReady ? '同じ枠に第' + esc(position) + '問を表示' : '第' + esc(position) + '問を作成・登録') + '</button></div>' + endBar();
+      var idForConfirmation = state.sessionId;
+      document.getElementById('continueConfirmation').onclick = async function(){
+        var button = this; button.disabled = true;
+        try {
+          if (bankReady) await registerPreparedConfirmation(data.fieldName, position, idForConfirmation);
+          else await ask(data.fieldName + 'の確認問題第' + position + '問をregisterConfirmationQuestionに登録して画面に表示してください。',
+            data.fieldName + 'の確認問題・第' + position + '問を作成して学習画面に登録する');
+        } finally { if (button.isConnected) button.disabled = false; }
+      };
+      if (bankReady) {
+        // 出題前に教材内の正答・全選択肢・簡易解説をエンジンへ登録する。採点は必ずエンジン側。
+        // 二重実行でも既存challengeがあればエンジンが同じ問を返す。
+        Promise.resolve().then(function(){
+          if (!locked && idForConfirmation === state.sessionId &&
+              document.getElementById('continueConfirmation'))
+            registerPreparedConfirmation(data.fieldName, position, idForConfirmation);
+        });
+        bindEnd(); return;
+      }
+      // 他資格のAI作成問題は従来どおりだが、登録前に新しい枠を作ることはしない。
       var checkPollId = ++confirmationPollGeneration;
       var checkDelays = [2000, 3000, 5000, 8000, 12000];
       function checkPublished(index){
@@ -974,11 +1001,16 @@ a{color:inherit}
         try {
           var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: name, mode: 'check' });
           if (!chosen || chosen.error || chosen.status !== 'item') throw new Error('ITEM_NOT_RECORDED');
-          app.innerHTML = journeyBar(chosen.journey && chosen.journey.fieldIndex, chosen.journey && chosen.journey.fieldTotal, 'check1', name) +
-            localBar('この分野のAI作成確認問題', 1, 3) +
-            '<div class="notice">AIが作成する問題です。公式過去問ではありません。</div>' + endBar();
-          bindEnd();
-          ask(name + 'を確認問題から始めます。');
+          if (preparedLessons[name]) {
+            render({status:'confirmation_pending',sessionId:state.sessionId,fieldName:name,
+              position:1,total:3,journey:chosen.journey});
+          } else {
+            app.innerHTML = journeyBar(chosen.journey && chosen.journey.fieldIndex, chosen.journey && chosen.journey.fieldTotal, 'check1', name) +
+              localBar('この分野のAI作成確認問題', 1, 3) +
+              '<div class="notice">AIが作成する問題です。公式過去問ではありません。</div>' + endBar();
+            bindEnd();
+            ask(name + 'を確認問題から始めます。');
+          }
         } catch(e) {
           var retry = document.getElementById('sourceAiCheck');
           if (retry) retry.disabled = false;
@@ -1262,7 +1294,8 @@ a{color:inherit}
     var j = d.journey || {};
     app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check' + d.position, d.fieldName) +
       localBar('この分野の確認問題', d.position, 3) +
-      '<h2>' + esc(d.fieldName) + '｜AI作成確認問題・第' + esc(d.position) + '問</h2>' +
+      '<h2>' + esc(d.fieldName) + '｜確認問題・第' + esc(d.position) + '問</h2>' +
+      '<div class="notice">公式過去問ではありません。正答を出題前にエンジンへ固定した学習問題です。</div>' +
       '<div class="stem">' + esc(d.question) + '</div><div class="choices">' +
       (d.choices || []).map(function(c,i){ return '<label class="opt"><input type="radio" name="confirmationAnswer" value="' + (i+1) + '"><b>' + (i+1) + '</b><span>' + esc(c) + '</span></label>'; }).join('') +
       '</div><div class="row"><button id="submitConfirmation" disabled>解答する</button></div>' + endBar();
@@ -1298,9 +1331,10 @@ a{color:inherit}
       var nextPosition = Number(d.position) + 1;
       render({ status: 'confirmation_pending', sessionId: state.sessionId,
         fieldName: d.fieldName, position: nextPosition, total: 3,
-        notice: '第' + nextPosition + '問を作成・登録しています。登録後はこの枠に自動表示します。' });
-      ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + nextPosition + '問/全3問が出るまで待ってください。',
-        d.fieldName + 'の確認問題・第' + nextPosition + '問を作成して学習画面に登録する');
+        journey: d.journey, notice: '第' + nextPosition + '問を登録します。同じ枠に表示します。' });
+      if (!preparedLessons[d.fieldName])
+        ask(d.fieldName + 'の確認問題の次の1問を作成し、registerConfirmationQuestionに本文・選択肢・固定した正答を登録してください。画面に第' + nextPosition + '問/全3問が出るまで待ってください。',
+          d.fieldName + 'の確認問題・第' + nextPosition + '問を作成して学習画面に登録する');
     };
     else {
       var openPractice = async function(b, target){
@@ -1647,7 +1681,9 @@ a{color:inherit}
             var chosen = await callTool('chooseItem', { sessionId: state.sessionId, fieldName: lessonField, mode: 'check' });
             if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check')
               throw new Error('CONFIRMATION_START_FAILED');
-            await ask(lessonField + 'の確認問題・第1問へ進む');
+            render({status:'confirmation_pending',sessionId:state.sessionId,fieldName:lessonField,
+              position:1,total:3,journey:m.journey,notice:'確認問題の第1問を同じ学習枠に表示します。'});
+            if (!preparedLessons[lessonField]) await ask(lessonField + 'の確認問題・第1問へ進む');
           } catch (e) {
             app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">確認問題の開始に失敗しました。学習状態を保持したまま再試行できます。</div>');
           } finally {
@@ -1660,7 +1696,7 @@ a{color:inherit}
         };
         // 基礎解説をこの枠から消し、次の学習画面が来るまで短い案内だけ表示する。
         // 古い解説や選択ボタンを残したまま別のチャット回答が下に積み上がるのを防ぐ。
-        app.innerHTML = '<h2>この分野の確認問題へ</h2><div class="notice" role="status">全3問の第1問を準備しています。問題は新しい学習枠に表示されます。</div>' +
+        app.innerHTML = '<h2>この分野の確認問題へ</h2><div class="notice" role="status">全3問の第1問を準備しています。問題は同じ学習枠に表示されます。</div>' +
           '<div class="row"><button id="lessonCheckRetry">第1問が表示されない場合は再試行</button></div>';
         scrollUp(true);
         document.getElementById('lessonCheckRetry').onclick = request;
@@ -2121,13 +2157,19 @@ a{color:inherit}
       var j = chosen?.journey || {};
       if (mode === 'explain') {
         render({ status:'lesson_pending', sessionId: chosen?.sessionId || learner, fieldName:field,
-          lessonRef: chosen?.lessonRef, journey:j, notice:'AIの基礎解説を準備しています。接続が切れても学習状態は保持されます。' });
-        ask(lessonRequestMessage(field, chosen?.lessonRef)).then(function(reply){
+          lessonRef: chosen?.lessonRef, journey:j,
+          notice:preparedLessons[field] ? '基礎解説を表示しました。AIの追加解説は任意です。' : 'AIの基礎解説を準備しています。' });
+        if (!preparedLessons[field]) ask(lessonRequestMessage(field, chosen?.lessonRef)).then(function(reply){
           if (!reply || reply.isError) {
             var node = document.getElementById('lessonConnection');
             if (node) node.textContent = 'AI解説の依頼に失敗しました。画面のボタンから再試行できます。';
           }
         });
+        return;
+      }
+      if (preparedLessons[field]) {
+        render({status:'confirmation_pending',sessionId:chosen?.sessionId || learner,
+          fieldName:field,position:1,total:3,journey:j,notice:'第1問をエンジンから直接表示します。'});
         return;
       }
       app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, 'check1', field) +
