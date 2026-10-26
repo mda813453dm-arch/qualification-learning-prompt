@@ -12,12 +12,24 @@ test('AI explanation publication does not mount a second study widget', async ()
   const tools = result.result.tools;
   const lesson = tools.find(t => t.name === 'showMenu');
   const first = tools.find(t => t.name === 'startSession');
+  const restored = tools.find(t => t.name === 'restoreStudyView');
+  const handoff = tools.find(t => t.name === 'openHandoffView');
   assert.ok(lesson);
   assert.ok(first);
+  assert.ok(restored);
+  assert.ok(handoff);
   assert.deepEqual(lesson._meta.ui.visibility, ['model', 'app']);
   assert.equal(lesson._meta.ui.resourceUri, undefined);
   assert.equal(lesson._meta['openai/outputTemplate'], undefined);
   assert.equal(first._meta.ui.resourceUri, WIDGET_URI);
   assert.equal(first._meta['openai/outputTemplate'], WIDGET_URI);
+  // Ordinary restoration must never add a second embedded frame.
+  assert.deepEqual(restored._meta.ui.visibility, ['model', 'app']);
+  assert.equal(restored._meta.ui.resourceUri, undefined);
+  assert.equal(restored._meta['openai/outputTemplate'], undefined);
+  // A handoff into a new conversation is the only explicit restoration
+  // operation allowed to mount a widget.
+  assert.equal(handoff._meta.ui.resourceUri, WIDGET_URI);
+  assert.equal(handoff._meta['openai/outputTemplate'], WIDGET_URI);
   assert.match(lesson.description, /showMenu/);
 });
