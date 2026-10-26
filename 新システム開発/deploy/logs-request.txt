@@ -38,3 +38,5 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-23T06:55:00Z user iPhone @資格学習 宅建 at 15:52 JST produced '問題を準備しています。' with only review/end. Read app mcp_rpc/widget_ui and error metadata; do not read learner IDs or answers or write learner data.
 
 2026-10-26 01:08 JST: user iOS administrative scrivener foundation law lesson failed twice after v103; diagnostic Cloud Run mcp_rpc, widget_ui, /app statuses (redact tokens, IDs, content). Read-only; root cause diagnosis.
+
+2026-10-26 12:06 JST read-only investigation after v104 iPhone failure at 12:01-12:03 JST: repeated model messages '接続が中断', persistent '復元しています...' in pinned frame. Inspect mcp_rpc, widget_ui, HTTP /app, /mcp and v1 errors from 2026-10-26 02:55-03:10 UTC, redact learner/session/tokens. Do not alter learner state.
