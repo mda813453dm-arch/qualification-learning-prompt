@@ -555,6 +555,8 @@ const BASE_CATALOG = {
     validatedUploadYears: [2020, 2021, 2022, 2023, 2024, 2025],
     // 公式の正解は PDF ではなく年度別のHTML。添付後に指定年度のURLを使い、AIは生成しない。
     officialAnswerHtml: {
+      2018: 'https://www.gyosei-shiken.or.jp/doc/exam/h30ans.html',
+      2019: 'https://gyosei-shiken.or.jp/doc/exam/r1ans.html',
       2020: 'https://gyosei-shiken.or.jp/doc/exam/r2ans.html',
       2021: 'https://gyosei-shiken.or.jp/doc/exam/r3ans.html',
       2022: 'https://gyosei-shiken.or.jp/doc/exam/r4ans.html',
