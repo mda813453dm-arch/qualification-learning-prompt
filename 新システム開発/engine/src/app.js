@@ -1079,7 +1079,7 @@ async function restoreStudyView(env, id, state, now) {
   if (check && check.count < 3) {
     const c = check.challenge;
     if (c?.id) return { ...identity, status: 'confirmation_question', challengeId: c.id,
-      question: c.question, choices: c.choices, position: check.count + 1, total: 3,
+      question: c.question, choices: c.choices, prepared: c.prepared === true, position: check.count + 1, total: 3,
       fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
     return { ...identity, status: 'confirmation_pending', position: check.count + 1, total: 3,
@@ -1599,7 +1599,7 @@ async function route(request, env, url, now) {
     const journey = { fieldIndex, fieldTotal: fieldOrder.length };
     if (check.challenge?.id) return json(200, { status: 'confirmation_question', sessionId: id,
       challengeId: check.challenge.id, question: check.challenge.question, choices: check.challenge.choices,
-      position: check.count + 1, total: 3, fieldName, journey, repeated: true });
+      prepared: check.challenge.prepared === true, position: check.count + 1, total: 3, fieldName, journey, repeated: true });
     const question = typeof b.question === 'string' ? b.question.trim() : '';
     const choices = Array.isArray(b.choices) ? b.choices.map((v) => typeof v === 'string' ? v.trim() : '') : [];
     const correct = Number(b.correctAnswer);
@@ -1609,11 +1609,11 @@ async function route(request, env, url, now) {
     }
     const explanation = typeof b.explanation === 'string' ? b.explanation.trim() : '';
     if (explanation && (explanation.length < 12 || explanation.length > 2500)) throw new HttpError(400, 'CONFIRMATION_EXPLANATION_INVALID');
-    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, explanation, createdAt: now };
+    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, explanation, prepared: b.prepared === true, createdAt: now };
     await saveSession(env, id, { ...state, itemMode: 'check', publishedLesson: null,
       confirmation: { ...check, challenge } }, now);
     return json(200, { status: 'confirmation_question', sessionId: id, challengeId: challenge.id,
-      question, choices, position: check.count + 1, total: 3, fieldName, journey });
+      question, choices, prepared: challenge.prepared, position: check.count + 1, total: 3, fieldName, journey });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'confirmation' && parts[4] === 'answer' && parts.length === 5) {
@@ -1632,7 +1632,7 @@ async function route(request, env, url, now) {
     const nextFieldName = cat?.fields?.[fieldIds[fieldIds.indexOf(check.fieldId) + 1]] ?? null;
     return json(200, { status: 'confirmation_result', sessionId: id, fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       position: count, total: 3, correct, correctAnswer: check.challenge.correctAnswer,
-       explanation: check.challenge.explanation || '', correctChoice: check.challenge.choices[check.challenge.correctAnswer - 1],
+       explanation: check.challenge.explanation || '', prepared: check.challenge.prepared === true, correctChoice: check.challenge.choices[check.challenge.correctAnswer - 1],
        selectedChoice: check.challenge.choices[selected - 1],
       correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
       nextFieldName,
