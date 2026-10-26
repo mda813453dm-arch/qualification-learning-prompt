@@ -951,10 +951,6 @@ a{color:inherit}
           var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
           if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
-          if (uploaded.length) {
-            var next = await callTool('nextQuestion', {sessionId: state.sessionId});
-            if (next && !next.error && ['question','waiting','finished','remediation'].includes(next.status)) { render(next); return; }
-          }
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears.filter(function(y){return !uploaded.includes(y);}) : [];
           var msg = uploaded.length ? '登録済み：' + uploaded.join('・') + '年度。' : '出題できる公式過去問はまだ登録されていません。';
           if (staged.length) msg += ' 正答確認待ち：' + staged.join('・') + '年度。';
