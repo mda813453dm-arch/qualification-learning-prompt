@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v113.html';
+export const WIDGET_URI = 'ui://qlp/question-v114.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.113';
+export const WIDGET_VERSION = '2026-10-27.114';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -892,70 +892,55 @@ a{color:inherit}
       return;
     }
     if (data.status === 'sourceUnavailable' && data.permissionedUpload) {
-      var years = Array.isArray(data.availableUploadYears) ? data.availableUploadYears : [];
-      var validated = Array.isArray(data.validatedUploadYears) ? data.validatedUploadYears : [];
-      var personal = Array.isArray(data.personalUploadedYears) ? data.personalUploadedYears : [];
+      var personal = Array.isArray(data.personalUploadedYears) ? [...new Set(data.personalUploadedYears)] : [];
+      var pending = Array.isArray(data.pendingOfficialAnswerYears) ? [...new Set(data.pendingOfficialAnswerYears)].filter(function(y){ return !personal.includes(y); }) : [];
+      var maxBatch = Number.isInteger(data.maxBatchFiles) && data.maxBatchFiles > 0 ? data.maxBatchFiles : 10;
       var isHtmlAnswer = data.answerFormat === 'html' || /行政書士/.test(data.qualificationName || '');
-      var fileHint = isHtmlAnswer ? '公式問題PDFを1点添付してください。正答は公式サイトの同年度の正解ページと照合します。' :
-        '公式問題PDFと同年度の公式正答PDFを2点添付してください。';
       var officialLink = safeUrl(data.officialUrl);
-      var choices = years.map(function(year){
-        var ready = validated.indexOf(year) >= 0;
-        var has = personal.indexOf(year) >= 0;
-        return '<option value="' + esc(year) + '"' + (!ready || has ? ' disabled' : '') + '>' +
-          esc(year) + '年度' + (has ? '（登録済み）' : '') + '</option>';
-      }).join('');
-      var selected = years.find(function(year){ return validated.indexOf(year) >= 0 && personal.indexOf(year) < 0; });
-      app.innerHTML = '<h2>過去問の年度別取り込み（本人専用）</h2>' +
-        '<div class="notice"><b>著作権・利用許諾の確認</b><div>当システムは' + esc(data.qualificationName || 'この資格') +
-        'の過去問を事前に保存・自動取得・共有配布しません。権利者から必要な許諾を得た方だけ、ご自身の学習用に年度ごとに添付できます。</div></div>' +
+      var uploadHint = isHtmlAnswer ? '各年度の公式問題PDF（正答PDFは不要です）' : '各年度の公式問題PDFと正答PDF';
+      app.innerHTML = '<h2>過去問PDFのまとめ取り込み（本人専用）</h2>' +
+        '<div class="notice"><b>著作権・利用許諾の確認</b><div>過去問を自動取得・他の利用者へ共有配布しません。添付するすべてのファイルについて、権利者から必要な許諾を得ている場合だけ本人用に保存・解析できます。</div></div>' +
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
-        (personal.length ? '<div class="notice"><b>登録済み年度：</b>' + personal.map(function(year){ return esc(year) + '年度'; }).join('・') + '</div>' : '') +
+        (personal.length ? '<div class="notice"><b>出題できる登録済み年度：</b>' + personal.map(function(y){ return esc(y) + '年度'; }).join('・') + '</div>' : '') +
+        (pending.length ? '<div class="notice"><b>公式正答の確認待ち：</b>' + pending.map(function(y){return esc(y) + '年度';}).join('・') + '<div>問題PDFは受け取り済みです。公式正答の年度照合が終わるまで出題・採点はしません。</div></div>' : '') +
         (personal.length ? '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' : '') +
-        (personal.length ? '<div class="notice">取り込んだ年度の過去問から出題します。</div>' :
-          '<div class="notice">公式過去問は未登録です。下の手順でPDFを登録すると、過去問を解くボタンが表示されます。</div>') +
-        (selected === undefined ? '<div class="notice">現在、この画面で追加できる年度はありません。登録済み年度を確認してください。</div>' :
-          '<div class="notice"><b>取り込み方法</b><div>① 取り込みたい年度を選ぶ（複数年度は1年度ずつ登録できます）。</div><div>② 公式ページで利用条件を確認し、必要な許諾を得ている場合はチェックを入れる。</div><div>③ 「PDFの添付へ進む」を押す。</div><div>④ チャット入力欄の「＋」からその年度の' + esc(isHtmlAnswer ? '問題PDF' : '問題PDFと正答PDF') + 'を添付して送信する。</div><div>⑤ 取り込み状況を確認し、登録完了後に過去問を解く。</div><div>表示されている年度以外の資料については、登録できると断定せず対応状況を確認してください。</div></div>' +
-          '<label for="licensedYear"><b>取り込む年度</b></label>' +
-          '<select id="licensedYear" style="display:block;width:100%;font:inherit;padding:9px;margin:8px 0">' + choices + '</select>' +
-          '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>私は選択した年度の問題・正答PDFをこのシステムに送信し、個人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-          '<button id="licensedConfirm" disabled>PDFの添付へ進む</button>') +
-        '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') +
-        '</div><div class="row"><button id="licensedRefresh">取り込み状況を確認</button><button id="licensedAi">AI作成確認問題を解く</button></div>' + endBar();
-      if (document.getElementById('licensedStart')) document.getElementById('licensedStart').onclick = async function(){
-        if (!personal.length) {
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status">公式過去問はまだ登録されていません。年度を選び、許諾確認後に公式問題PDFを添付してください。添付が完了したらこのボタンから解けます。</div>';
-          document.getElementById('licensedYear')?.scrollIntoView({block:'center'});
-          return;
-        }
+        (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
+        '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
+        '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。</div>' +
+        '<div>② 「PDFの添付へ進む」を押す。</div>' +
+        '<div>③ チャットの入力欄にある「＋」から、' + esc(uploadHint) + 'を複数まとめて添付し、送信する。</div>' +
+        '<div>④ 「取り込み状況を確認」で登録を確認する。取り込んだ各PDFの年度と正答は別々に照合します。</div>' +
+        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>（行政書士は1年度1PDFなので最大' + esc(maxBatch) + '年度分）。これを超える場合は次のまとまりに分けてください。古い年度・新しい年度も添付できますが、公式正答の確認ができない年度は採点保留です。</div></div>' +
+        '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての問題・正答資料について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
+        '<button id="licensedConfirm" type="button" disabled>PDFの添付へ進む</button>' +
+        '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
+        '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
+      var practice = document.getElementById('licensedStart');
+      if (practice) practice.onclick = async function(){
         this.disabled = true;
         try {
           var next = await callTool('nextQuestion', {sessionId: state.sessionId});
           if (!next || next.error || !['question','waiting','finished','sourceUnavailable','remediation'].includes(next.status)) throw new Error('LICENSED_PRACTICE_UNAVAILABLE');
-          if (next.status === 'sourceUnavailable') {
-            render({...data, refreshMessage:'取り込んだPDFの確認が完了していません。しばらくしてから取り込み状況を確認してください。'});
-          } else render(next);
+          if (next.status === 'sourceUnavailable') render({...data, refreshMessage:'登録済み問題の出題準備中です。取り込み状況を確認してください。'});
+          else render(next);
         } catch(e) {
           this.disabled = false;
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">過去問を開けませんでした。取り込み状況を確認してから再試行してください。</div>';
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">過去問を開けませんでした。取り込み状況を確認してください。</div>';
         }
       };
       var ack = document.getElementById('licensedAck');
-      if (ack) ack.onchange = function(){ document.getElementById('licensedConfirm').disabled = !this.checked; };
       var confirm = document.getElementById('licensedConfirm');
-      if (confirm) confirm.onclick = async function(){
+      ack.onchange = function(){ confirm.disabled = !this.checked; };
+      confirm.onclick = async function(){
         if (!ack.checked) return;
-        var year = Number(document.getElementById('licensedYear').value);
-        if (!validated.includes(year) || personal.includes(year)) return;
         this.disabled = true;
         try {
-          var r = await callTool('confirmUploadRights', { sessionId: state.sessionId, year: year, confirmed: true });
-          if (!r || r.error || r.status !== 'uploadPermissionConfirmed') throw new Error('RIGHTS_CONFIRM_FAILED');
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>' + esc(year) +
-            '年度の確認を受け付けました。</b><div>このチャットの入力欄にある「＋」を押して、' + esc(fileHint) +
-            '添付後に送信してください。送信だけでは登録完了ではありません。登録状況を確認してください。</div></div>';
+          var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, allYears: true, confirmed: true});
+          if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>添付の許諾確認を受け付けました。</b><div>入力欄の「＋」から最大' + esc(maxBatch) + 'ファイルをまとめて添付・送信してください。送信後「取り込み状況を確認」で結果を確認します。</div></div>';
           ack.checked = false;
         } catch(e) {
+          this.disabled = false;
           ack.checked = false;
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">許諾確認を記録できませんでした。もう一度確認してください。</div>';
         }
@@ -963,18 +948,18 @@ a{color:inherit}
       document.getElementById('licensedRefresh').onclick = async function(){
         this.disabled = true;
         try {
-          var latest = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
+          var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
           if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
-          var newPersonal = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
-          if (newPersonal.length) {
-            var next = await callTool('nextQuestion', {sessionId:state.sessionId});
+          var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
+          if (uploaded.length) {
+            var next = await callTool('nextQuestion', {sessionId: state.sessionId});
             if (next && !next.error && ['question','waiting','finished','remediation'].includes(next.status)) { render(next); return; }
           }
-          var difference = newPersonal.filter(function(year){return personal.indexOf(year) < 0;});
-          var message = difference.length ? difference.join('・') + '年度の登録を確認しました。問題の準備が終わると出題できます。' :
-            newPersonal.length ? '取り込み状況を確認しました。問題の準備が終わると出題できます。' :
-              '取り込み状況を確認しました。まだ公式過去問は登録されていません。年度を選んでPDFを添付してください。';
-          render({ ...data, ...latest, status:'sourceUnavailable', refreshMessage:message });
+          var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears.filter(function(y){return !uploaded.includes(y);}) : [];
+          var msg = uploaded.length ? '登録済み：' + uploaded.join('・') + '年度。' : '出題できる公式過去問はまだ登録されていません。';
+          if (staged.length) msg += ' 正答確認待ち：' + staged.join('・') + '年度。';
+          else if (!uploaded.length) msg += ' 許諾確認後、問題PDFをまとめて添付してください。';
+          render({...data, ...latest, status:'sourceUnavailable', refreshMessage:msg});
         } catch(e) {
           this.disabled = false;
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">取り込み状況を確認できませんでした。もう一度押してください。</div>';
