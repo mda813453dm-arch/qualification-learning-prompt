@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v106.html';
+export const WIDGET_URI = 'ui://qlp/question-v107.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.106';
+export const WIDGET_VERSION = '2026-10-26.107';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -374,6 +374,7 @@ a{color:inherit}
   var renderFocusTurn = 0;
   function render(data){
     if (data && data.status !== 'lesson_pending') lessonPollGeneration++;
+    if (data && data.status !== 'confirmation_pending') confirmationPollGeneration++;
 
     if (!data || (!data.onboarding && !data.planReady && !data.menu && !data.question && !data.grade && !data.screen && !data.notice && !data.display && !data.error && !data.sessionId && !['waiting', 'finished', 'needPlan', 'toolError', 'reviewEmpty', 'figure', 'diagPreview', 'diagResult', 'remediation', 'remediation_question', 'remediation_retry', 'remediation_complete', 'confirmation_question', 'confirmation_result', 'confirmation_pending', 'lesson_pending', 'diagIntro', 'restoredGrade', 'restoreIdle', 'sourceUnavailable'].includes(data.status))) return;
     // ロック中の新しい結果も最初の枠へ送るため、stampは先に通す。
@@ -558,8 +559,21 @@ a{color:inherit}
     if (data.status === 'confirmation_question') { showConfirmationQuestion(data); return; }
     if (data.status === 'confirmation_result') { showConfirmationResult(data); return; }
     if (data.status === 'confirmation_pending') {
-      app.innerHTML = '<h2>確認問題 ' + esc(data.position) + ' / 3問</h2><div class="notice">' + esc(data.notice) + '</div><div class="row"><button id="continueConfirmation">確認問題を続ける</button></div>' + endBar();
+      app.innerHTML = '<h2>確認問題・第' + esc(data.position) + '問を準備中（全3問）</h2><div class="notice">' + esc(data.notice || '前の問題は保存されています。次の問題を表示するまでお待ちください。') + '</div><div class="row"><button id="continueConfirmation">第' + esc(data.position) + '問を表示する</button></div>' + endBar();
       document.getElementById('continueConfirmation').onclick = function(){ this.disabled = true; ask(data.fieldName + 'の確認問題第' + data.position + '問をregisterConfirmationQuestionに登録して画面に表示してください。', data.fieldName + 'の確認問題・第' + data.position + '問を見る'); };
+      // AIが確認問題を登録しても新しい枠を作らない。元枠が読取専用で確認する。
+      var checkPollId = ++confirmationPollGeneration;
+      var checkDelays = [2000, 3000, 5000, 8000, 12000];
+      function checkPublished(index){
+        if (index >= checkDelays.length || checkPollId !== confirmationPollGeneration) return;
+        setTimeout(async function(){
+          if (checkPollId !== confirmationPollGeneration || locked || !state.sessionId ||
+              !document.getElementById('continueConfirmation')) return;
+          if (!restoring) await restoreFromServer(false);
+          if (checkPollId === confirmationPollGeneration) checkPublished(index + 1);
+        }, checkDelays[index]);
+      }
+      checkPublished(0);
       bindEnd(); return;
     }
     if (data.status === 'remediation_retry') {
@@ -1125,6 +1139,7 @@ a{color:inherit}
   // AI側のツール接続が不安定でも「解説待ち」の正規学習画面は消さない。
   // 再要求は新しい出題・採点を行わず、同じセッションの学習内容だけを読み直す。
   var lessonPollGeneration = 0;
+  var confirmationPollGeneration = 0;
   function showPendingLesson(data){
     var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
     if (sid) state.sessionId = sid;
