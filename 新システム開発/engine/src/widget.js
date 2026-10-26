@@ -895,7 +895,7 @@ a{color:inherit}
       var years = Array.isArray(data.availableUploadYears) ? data.availableUploadYears : [];
       var validated = Array.isArray(data.validatedUploadYears) ? data.validatedUploadYears : [];
       var personal = Array.isArray(data.personalUploadedYears) ? data.personalUploadedYears : [];
-      var isHtmlAnswer = data.answerFormat === 'html';
+      var isHtmlAnswer = data.answerFormat === 'html' || /行政書士/.test(data.qualificationName || '');
       var fileHint = isHtmlAnswer ? '公式問題PDFを1点添付してください。正答は公式サイトの同年度の正解ページと照合します。' :
         '公式問題PDFと同年度の公式正答PDFを2点添付してください。';
       var officialLink = safeUrl(data.officialUrl);
