@@ -60,11 +60,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { html: widgetHtml(), first });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: /確認問題へ進む/ }).waitFor();
-    assert.equal(await ui.getByRole('heading', { name: /AI作成確認問題・第1問/ }).count(), 0,
+    assert.equal(await ui.getByRole('heading', { name: /確認問題・第1問/ }).count(), 0,
       '解説の画面では第1問を先に表示しない');
     await ui.getByRole('button', { name: /確認問題へ進む/ }).click();
     for (let i = 1; i <= 3; i++) {
-      await ui.getByRole('heading', { name: `${fieldName}｜AI作成確認問題・第${i}問` }).waitFor();
+      await ui.getByRole('heading', { name: `${fieldName}｜確認問題・第${i}問` }).waitFor();
       assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), String(1+i));
       assert.equal(await ui.getByRole('progressbar', { name: 'この分野の確認問題の位置' }).getAttribute('aria-valuenow'), String(i));
       assert.match(await ui.locator('.study-progress').last().innerText(), new RegExp(`残り ${4-i}問`));
@@ -73,7 +73,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await ui.getByRole('heading', { name: `確認問題 ${i} / 3問の結果` }).waitFor();
       if (i < 3) {
         await ui.getByRole('button', { name: /次の確認問題へ/ }).click();
-        await ui.getByRole('heading', { name: new RegExp('確認問題・第' + (i+1) + '問を準備中') }).waitFor();
+        await ui.getByRole('heading', { name: new RegExp('確認問題・第' + (i+1) + '問') }).waitFor();
         assert.equal(await ui.locator('iframe').count(), 0, 'the existing widget must not embed another study frame');
       }
     }
