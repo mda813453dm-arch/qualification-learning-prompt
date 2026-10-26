@@ -1394,6 +1394,43 @@ a{color:inherit}
     closeList();
     return out.join('');
   }
+  // 行政書士6分野の事前点検済み入門教材を、AIを待たず同一枠に即時表示する。
+  // 生成型AIは任意の追加解説。事前準備の教材をAI生成文や公式過去問と偽らない。
+  function preparedGuideHtml(field){
+    var lesson = preparedLessons[field];
+    if (!lesson) return '';
+    var stage = Number(onboardProfile && onboardProfile.stage) || 1;
+    var lead = stage >= 3
+      ? '学習済みの方は重要語を確認した後、具体例と混同しやすい点を重点的に読んでください。'
+      : '初学者の方は太字の用語を自分の言葉で説明できるか確かめながら読みましょう。';
+    return '<section class="descriptive-explanation" aria-label="すぐ読める基礎解説">' +
+      '<div class="notice"><b>基礎解説（学習システム内蔵）</b>：待ち時間なしで表示する導入教材です。AIの個別解説とは区別しています。</div>' +
+      '<p>' + esc(lead) + '</p>' +
+      lesson.intro.map(function(t){return '<p>' + esc(t) + '</p>';}).join('') +
+      '<h3>具体例</h3><p>' + esc(lesson.example) + '</p>' +
+      '<h3>間違えやすい点</h3><p>' + esc(lesson.pitfall) + '</p>' +
+      '</section>';
+  }
+  var preparedConfirmationBusy = false;
+  async function registerPreparedConfirmation(field, position, sid){
+    var lesson = preparedLessons[field], n = Number(position);
+    var question = lesson && lesson.questions && lesson.questions[n-1];
+    if (!question || preparedConfirmationBusy || locked || !sid) return false;
+    preparedConfirmationBusy = true;
+    try {
+      var data = await callTool('registerConfirmationQuestion', {
+        sessionId: sid, question: question.question, choices: question.choices,
+        correctAnswer: question.correctAnswer, explanation: question.explanation
+      });
+      if (!data || data.error || data.status !== 'confirmation_question') throw new Error('PREPARED_CONFIRMATION_FAILED');
+      if (state.sessionId === sid && !locked) render(data);
+      return true;
+    } catch (error) {
+      var notice = document.getElementById('preparedCheckStatus');
+      if (notice) notice.textContent = '確認問題の保存に失敗しました。学習状態は保持されています。同じボタンで再試行できます。';
+      return false;
+    } finally { preparedConfirmationBusy = false; }
+  }
   // AI側のツール接続が不安定でも「解説待ち」の正規学習画面は消さない。
   // 再要求は新しい出題・採点を行わず、同じセッションの学習内容だけを読み直す。
   var lessonPollGeneration = 0;
@@ -1405,16 +1442,21 @@ a{color:inherit}
   function showPendingLesson(data){
     var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
     var lessonRef = data.lessonRef || '';
+    var quickGuide = preparedGuideHtml(field);
+    var hasPrepared = !!quickGuide;
     if (sid) state.sessionId = sid;
     saveIds();
     var j = data.journey || {};
     var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
     app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
-      '<div class="notice" role="status">' + esc(data.notice || 'AIの解説を準備しています。解説が届くまで学習状態は保持されます。') + '</div>' +
-      '<div id="lessonConnection" class="notice" role="status">解説が表示されない場合は、まず「解説の登録状況を確認」を押してください。必要なときだけAIに再依頼できます。</div>' +
-      '<div class="row"><button id="refreshLesson" type="button">解説の登録状況を確認</button>' +
-      '<button id="resumeLesson" type="button">AI解説を再依頼</button></div>' +
-      '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>' +
+      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button">基礎解説を読み終えたら確認問題へ（全3問）</button></div>' :
+        '<div class="notice" role="status">' + esc(data.notice || 'AIの基礎解説の登録を待っています。') + '</div>') +
+      '<div id="lessonConnection" class="notice" role="status">' +
+        (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
+                     : '解説が表示されない場合は、登録状況を確認するかAIへ再依頼できます。') + '</div>' +
+      '<div class="row"><button id="refreshLesson" type="button">AI解説の登録状況を確認</button>' +
+      '<button id="resumeLesson" type="button">' + (hasPrepared ? '理解度に合わせたAI解説を追加（任意）' : 'AI解説を再依頼') + '</button></div>' +
+      (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>') +
       '<details id="manualLesson" hidden><summary>AIの解説がチャット側に表示された場合</summary>' +
       '<p class="notice">チャットに出た解説文をコピーして貼り付けると、この学習枠に保存して学習を続けられます。</p>' +
       '<textarea id="manualLessonBody" rows="7" maxlength="16000" aria-label="チャットからコピーした基礎解説全文" style="box-sizing:border-box;width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"></textarea>' +
@@ -1451,6 +1493,21 @@ a{color:inherit}
       return false;
     }
     document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    var quickCheck = document.getElementById('quickGuideCheck');
+    if (quickCheck) quickCheck.onclick = async function(){
+      var button = this;
+      button.disabled = true;
+      try {
+        var chosen = await callTool('chooseItem', { sessionId: sid, fieldName: field, mode:'check' });
+        if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check')
+          throw new Error('PREPARED_LESSON_CHECK_START_FAILED');
+        render({status:'confirmation_pending',sessionId:sid,fieldName:field,position:1,total:3,
+          journey:chosen.journey,notice:'基礎解説を確認しました。確認問題を学習枠内に登録します。'});
+      } catch(e){
+        button.disabled = false;
+        lessonNotice('確認問題へ切り替えられませんでした。このボタンから再試行できます。');
+      }
+    };
     // モデルが登録ツールを呼ばず、本文だけをチャットに出してしまった場合の無料・確実な復旧経路。
     // ボタンによる明示操作で同じエンジン登録を実行し、セッションの状態を確認してから表示する。
     document.getElementById('publishManualLesson').onclick = async function(){
@@ -1480,7 +1537,7 @@ a{color:inherit}
     // 解説の登録が済んだら、元の学習枠だけを更新する（新しいMCP表示枠を生成しない）。
     // 読取専用・回数上限付き。古いセッションや別画面への遷移後は停止する。
     var lessonPollId = ++lessonPollGeneration;
-    var lessonPollDelays = [2500, 5500, 10000, 16000];
+    var lessonPollDelays = hasPrepared ? [1500, 3500, 4500] : [2500, 5500, 10000, 16000];
     function pollLesson(index){
       if (lessonPollId !== lessonPollGeneration) return;
       if (index >= lessonPollDelays.length) {
@@ -1496,7 +1553,8 @@ a{color:inherit}
         if (!done && lessonPollId === lessonPollGeneration) pollLesson(index + 1);
       }, lessonPollDelays[index]);
     }
-    pollLesson(0);
+    // 内蔵教材は即時表示済み。追加AIの依頼前に30秒以上の無意味な自動照合を開始しない。
+    if (!hasPrepared) pollLesson(0);
     var requesting = false;
     document.getElementById('resumeLesson').onclick = async function(){
       if (requesting || locked) return;
@@ -1509,7 +1567,8 @@ a{color:inherit}
         if (!response || response.isError)
           lessonNotice('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。');
         else {
-          lessonNotice('AI解説を依頼しました。表示されないときは「解説の登録状況を確認」を押してください。');
+          if (hasPrepared) pollLesson(0);
+          lessonNotice('AIの追加解説を依頼しました。内蔵の基礎解説で学習を続けられます。');
           setTimeout(function(){
             if (!locked && button.isConnected && Date.now() - lastLocalInteractionAt > 1600)
               readPublishedLesson();
@@ -1517,10 +1576,11 @@ a{color:inherit}
         }
       } finally {
         requesting = false;
-        if (button.isConnected) { button.disabled = false; button.textContent = 'AI解説を再依頼'; }
+        if (button.isConnected) { button.disabled = false; button.textContent = hasPrepared ? '理解度に合わせたAI解説を追加（任意）' : 'AI解説を再依頼'; }
       }
     };
-    document.getElementById('lessonSkip').onclick = async function(){
+    var lessonSkip = document.getElementById('lessonSkip');
+    if (lessonSkip) lessonSkip.onclick = async function(){
       var b = this;
       b.disabled = true;
       try {
@@ -1528,7 +1588,7 @@ a{color:inherit}
         if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check')
           throw new Error('LESSON_SKIP_FAILED');
         render({ status: 'confirmation_pending', sessionId: sid, position: 1, total: 3, fieldName: field,
-          notice: '解説を省略して確認問題に切り替えました。下のボタンで第1問を作成します。' });
+          notice: '確認問題に切り替えました。同じ枠に第1問を表示します。' });
       } catch(e){
         b.disabled = false;
         lessonNotice('進め方を変更できませんでした。学習状態を保持しています。再試行してください。');
