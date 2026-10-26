@@ -625,13 +625,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // v104: モデルの解説配信が接続切断で消えても学習画面と回復操作を維持。
     // モデルからshowMenuが一度も届かない実機ログの状況を模擬する。
     const pendingLesson = {status:'lesson_pending',sessionId:'test-disconnected-lesson',
-      fieldName:'試験用未登録分野',notice:'AIの解説を準備しています。'};
+      fieldName:'基礎法学',notice:'AIの解説を準備しています。'};
     await page.evaluate(({ pending })=>{
       window.rejectMessage=true;
       window.restorePayload=pending;
       window.deliver({ _meta:{qlp:pending}, structuredContent:{status:pending.status} });
     },{pending:pendingLesson});
-    await ui.getByRole('heading',{name:'試験用未登録分野｜基礎解説'}).waitFor();
+    await ui.getByRole('heading',{name:'基礎法学｜基礎解説'}).waitFor();
     const answerCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='submitAnswer').length);
     const nextCallsBefore=await page.evaluate(()=>window.calls.filter(m=>m.params?.name==='nextQuestion').length);
     assert.match(await ui.locator('#app').innerText(), /基礎解説（学習システム内蔵）/, 'AIが返答しなくても内蔵教材を即表示');
