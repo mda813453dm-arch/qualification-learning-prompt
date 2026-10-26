@@ -135,7 +135,7 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
   assert.ok(menuTool, 'showMenu must be available to ChatGPT model');
   const listedForModel = (await rpc(makeEnv(), 'tools/list', {}, { path: '/app' })).body.result.tools.find(t => t.name === 'showMenu');
   assert.deepEqual(listedForModel._meta.ui.visibility, ['model', 'app'], 'AIが解説本文を登録できるモデル公開ツール');
-  assert.equal(listedForModel._meta['openai/outputTemplate'], WIDGET_URI);
+  assert.equal(listedForModel._meta['openai/outputTemplate'], undefined, '解説登録では別の学習枠を生成しない');
 
   assert.ok(menuTool.inputSchema.properties.kind.enum.includes('lesson'));
   const args = {
