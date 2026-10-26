@@ -85,3 +85,22 @@ test('公式一覧の外部ドメイン・年度違いの正答リンクは利�
   assert.equal(r.body.status,'pendingOfficialAnswer');
   assert.equal(await readJob(env.STORE,'q090~'+a.body.learnerId),null);
 });
+
+test('保留していた旧年度PDFは公式正答を検証できたら再添付なしに登録処理へ戻る', async()=>{
+  const {env,received}=setup();
+  env.fetchText=async()=> '';
+  const a=await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const path='/v1/sessions/'+a.body.sessionId;
+  await req(env,'POST',path+'/upload-permission',{year:0,confirmed:true});
+  const first=await req(env,'POST',path+'/attach',{year:2017,question:{download_url:'https://uploads.example/2017.pdf'}});
+  assert.equal(first.body.status,'pendingOfficialAnswer');
+  assert.equal(received.length,1);
+  await env.STORE.put('official-answer-index/html','<a href="/doc/exam/h29ans.html">平成２９年度試験問題の正解</a>');
+  const checked=await req(env,'GET',path+'/official-library');
+  assert.equal(checked.status,200,JSON.stringify(checked.body));
+  const job=await readJob(env.STORE,'q090~'+a.body.learnerId);
+  assert.equal(job.sources[0].year,2017);
+  assert.equal(job.sources[0].answerUrl,'https://gyosei-shiken.or.jp/doc/exam/h29ans.html');
+  assert.equal(received.length,1,'原本PDFは再添付せず保存済みの本人用控えを使う');
+  assert.ok(!checked.body.pendingOfficialAnswerYears.includes(2017));
+});
