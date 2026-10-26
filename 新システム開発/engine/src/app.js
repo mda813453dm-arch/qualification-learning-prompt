@@ -572,6 +572,29 @@ async function licensedPendingYears(env, state) {
   const list = await env.STORE.get(licensedPendingIndexKey(state.learnerId, state.qualificationId), 'json');
   return [...new Set((Array.isArray(list) ? list : []).filter((year) => Number.isInteger(year)))].sort((a,b) => a-b);
 }
+/** 保留中の本人用PDFは公式正答が確認できた時に再添付なしで復元する。 */
+async function resumeLicensedPending(env, state, now) {
+  const cat = catalogFor(state.qualificationId);
+  if (!cat?.privateLicensedUpload || !cat?.officialAnswerHtml) return;
+  const id = sessionJobId(state);
+  let job = await readJob(env.STORE, id);
+  let promoted = false;
+  for (const year of await licensedPendingYears(env, state)) {
+    if (job?.sources?.some((x) => x.year === year)) continue;
+    const url = await officialAnswerHtmlFor(env, cat, year);
+    if (!url) continue;
+    const p = await env.STORE.get(licensedPendingKey(state.learnerId, state.qualificationId, year), 'json');
+    if (!p?.questionUrl || !p.section) continue;
+    const source = checkSources([{ adapter: cat.uploadAdapter, year, section: p.section,
+      questionUrl: p.questionUrl, answerUrl: url, privateLicensedUpload: true }],
+      state.qualificationId, state.learnerId);
+    await startJob(env.STORE, id, source, now, { persistent: true });
+    await markEngineSources(env, source);
+    job = await readJob(env.STORE, id);
+    promoted = true;
+  }
+  if (promoted) await kickIngest(env, id, now);
+}
 
 /**
  * 利用者が添付した過去問PDFを取り込みに足す。エンジンが読める資格（読み方の決まっている資格）だけ。
@@ -1793,6 +1816,7 @@ async function route(request, env, url, now) {
     const shared = await libraryFor(env, state.qualificationId, now);
     const cat = catalogFor(state.qualificationId);
     if (cat?.privateLicensedUpload) {
+      await resumeLicensedPending(env, state, now);
       const job = await readJob(env.STORE, sessionJobId(state));
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
@@ -1800,7 +1824,7 @@ async function route(request, env, url, now) {
         availableUploadYears: cat.availableUploadYears ?? [],
         validatedUploadYears: cat.validatedUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
-        pendingOfficialAnswerYears: await licensedPendingYears(env, state),
+        pendingOfficialAnswerYears: (await licensedPendingYears(env, state)).filter((year) => !(job?.sources ?? []).some((x) => x.year === year && x.status !== 'failed')),
         maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         sharedLibrary: null,
         notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
