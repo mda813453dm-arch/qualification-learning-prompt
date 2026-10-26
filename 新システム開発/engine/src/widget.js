@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v107.html';
+export const WIDGET_URI = 'ui://qlp/question-v108.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.107';
+export const WIDGET_VERSION = '2026-10-26.108';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1163,7 +1163,7 @@ a{color:inherit}
       var b = document.getElementById('refreshLesson');
       if (b) { b.disabled = true; b.textContent = '確認しています…'; }
       try {
-        var result = await callTool('restoreStudyView', { sessionId: state.sessionId });
+        var result = await callTool('getStudySnapshot', { sessionId: state.sessionId });
         if (result && result.status === 'menu' && result.menu && result.menu.kind === 'lesson' &&
             result.menu.fieldName === field && result.menu.body) {
           render(result);
@@ -2161,11 +2161,11 @@ a{color:inherit}
     if (button) { button.disabled = true; button.textContent = '復元しています…'; }
     var buttonGuard = setTimeout(function(){ if (restoring && button && button.isConnected) { button.disabled = false; button.textContent = '再度、学習画面を復元'; } }, 9000);
     try {
-      var restored = await callTool('restoreStudyView', { sessionId: state.sessionId });
+      var restored = await callTool('getStudySnapshot', { sessionId: state.sessionId });
       if (!restored || restored.error || !restored.status || restored.status === 'error') {
         var previous = loadIds(), backup = studyLid || previous.lid;
         if (!backup || backup === state.sessionId) throw new Error('RESTORE_UNAVAILABLE');
-        restored = await callTool('restoreStudyView', { sessionId: backup });
+        restored = await callTool('getStudySnapshot', { sessionId: backup });
       }
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
       // 通常の背景更新では、意味のある現在画面を汎用的な待機表示で上書きしない。
