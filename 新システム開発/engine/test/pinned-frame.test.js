@@ -5,7 +5,7 @@ import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget.js';
 
 const html = widgetHtml();
 const embedded = html.split('<script>')[1]?.split('</script>')[0];
-test('v104 embeds syntactically valid study widget and retains single scroll surface', () => {
+test('v105 embeds syntactically valid study widget and retains single scroll surface', () => {
   assert.equal(WIDGET_VERSION, '2026-10-26.105');
   assert.equal(WIDGET_URI, 'ui://qlp/question-v105.html');
   assert.ok(embedded, 'widget script must be present');
@@ -63,7 +63,7 @@ function browserFixture() {
       restoreFromServer: async (manual) => { restores.push(manual); },
       localStorage: store, BroadcastChannel: Broadcast,
       setInterval: callback => intervals.push(callback),
-      setTimeout: (callback, delay) => { if (delay === 5000) intervals.push(callback); else tasks.push(callback); return tasks.length; },
+      setTimeout: (callback, delay) => { if (delay === 2000) intervals.push(callback); else tasks.push(callback); return tasks.length; },
       Date: { now: () => clock },
       Math: Object.assign(Object.create(Math), { random: () => num / 100 }),
       encodeURIComponent, JSON, Number, String, Object, Error
@@ -82,6 +82,16 @@ function browserFixture() {
   }
   return { makeFrame, flush, advance: ms => { clock += ms; }, values };
 }
+
+test('newly published AI lesson is visible in the receiving frame even if the original iframe is suspended', () => {
+  const b = browserFixture(), first = b.makeFrame(), second = b.makeFrame();
+  first.stamp({ sessionId:'study-A', at:1 });
+  second.stamp({ sessionId:'study-A', status:'menu',
+    menu:{kind:'lesson',body:'## 法律の基礎\\n\\n権利と義務の区別を確認します。'},at:2 });
+  assert.equal(second.locked,false,'new lesson should not be hidden behind a stale first frame');
+  assert.equal(second.ownedSession,'study-A');
+  assert.equal(first.locked,true,'old frame cannot accept competing answers');
+});
 
 test('first frame stays active, duplicate frame relays the update', () => {
   const b = browserFixture(), first = b.makeFrame(), second = b.makeFrame();
