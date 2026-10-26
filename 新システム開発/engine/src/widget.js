@@ -935,7 +935,7 @@ a{color:inherit}
         if (!ack.checked) return;
         this.disabled = true;
         try {
-          var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, allYears: true, confirmed: true});
+          var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>添付の許諾確認を受け付けました。</b><div>入力欄の「＋」から最大' + esc(maxBatch) + 'ファイルをまとめて添付・送信してください。送信後「取り込み状況を確認」で結果を確認します。</div></div>';
           ack.checked = false;
