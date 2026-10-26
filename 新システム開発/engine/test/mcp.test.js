@@ -124,7 +124,7 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v111\.html/);
+  assert.match(WIDGET_URI, /question-v112\.html/);
   assert.equal(WIDGET_VERSION, '2026-10-26.112');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
@@ -1545,7 +1545,7 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
   const explained = await app('chooseItem',{sessionId,fieldName,mode:'explain'});
   assert.equal(explained.structuredContent.mode,'explain');
   assert.match(explained.structuredContent.lessonRef,/^L-[A-Za-z0-9_-]{16}$/);
-  const pending = (await app('getStudySnapshot',{sessionId}))._meta.qlp;
+  const pending = (await app('getStudySnapshot',{sessionId})).structuredContent;
   assert.equal(pending.status,'lesson_pending');
   const check = await app('chooseItem',{sessionId,fieldName,mode:'check'});
   assert.equal(check.structuredContent.mode,'check');
