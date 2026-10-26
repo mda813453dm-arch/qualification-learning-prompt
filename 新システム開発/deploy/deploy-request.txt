@@ -247,3 +247,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-26 v109 follow-up: eliminate contradictory restoreStudyView model instructions during ordinary question-display failure; use data-only getStudySnapshot for existing frame, explicit handoff only for new frame. Engine CI #40277923540 PASS; v109 engine CI #40277392670 and browser #40277392674 PASS. Preserve learning state, no paid API, main/master_prompt.txt untouched.
 
 2026-10-26 v110: user-approved Cloud Run deployment; data-only restoreStudyView prevents repeated embedded study frames, explicit openHandoffView mounts only for importHandoff; regression source 6135f85c35332ebf85341aae1589b3e740b1c611; main/master_prompt.txt protected.
+
+2026-10-26 v110 final corrective deployment: remove contradictory model restore paths; preserve explicit handoff mount only; regression commit 5d244dd2dc6c8ee6a9c0cea844eb921f17d372aa; same approved deployment, no paid model API.
