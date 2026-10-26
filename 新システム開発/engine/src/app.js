@@ -2297,8 +2297,8 @@ async function route(request, env, url, now) {
     }
     return json(201, {
       ...resumeReadyView(id, state),
-      nextTool: 'restoreStudyView',
-      howToProceed: '引継ぎ履歴を復元しました。必ず続けてrestoreStudyView({sessionId:この応答のsessionId})を呼び、既存の学習画面に再開ボタンを出してください。初回の試験概要・免除・学習状況・計画へ戻らず、利用者の再開操作を待ちます。',
+      nextTool: 'openHandoffView',
+      howToProceed: '引継ぎ履歴を復元しました。必ず続けてopenHandoffView({sessionId:この応答のsessionId})を1回だけ呼び、新しい会話の学習画面に再開ボタンを出してください。初回の試験概要・免除・学習状況・計画へ戻らず、利用者の再開操作を待ちます。',
       withheld: state.withheld.map((w) => ({ ...w, message: WITHHELD_MESSAGES[w.reason] })),
       job: jobView(job),
     });
