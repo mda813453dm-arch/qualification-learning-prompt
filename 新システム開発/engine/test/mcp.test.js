@@ -1561,7 +1561,7 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
     const graded = await app('answerConfirmationQuestion',{
       sessionId,challengeId:given._meta.qlp.challengeId,selected:String(q.correctAnswer)
     });
-    assert.equal(graded.isError,undefined,JSON.stringify(graded));
+    assert.notEqual(graded.isError,true,JSON.stringify(graded));
     assert.equal(graded._meta.qlp.correct,true);
     assert.equal(graded._meta.qlp.explanation,q.explanation);
     assert.equal(graded._meta.qlp.complete,i===2);
