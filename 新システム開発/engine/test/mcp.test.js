@@ -68,7 +68,7 @@ test('記述式解説の末尾にモデルが最新問専用の操作画面を�
   const tools = (await rpc(env, 'tools/list', {})).body.result.tools;
   const nav = tools.find(x => x.name === 'showDescriptiveActions');
   assert.ok(nav, '解説後の専用ツールはモデルに公開');
-  assert.equal(nav._meta['openai/outputTemplate'], WIDGET_URI);
+  assert.equal(nav._meta['openai/outputTemplate'], undefined);
   assert.match(nav.description, /explanationMarkdown/);
   assert.match(nav.description, /解説本文を先にチャットへ出さない/);
   assert.ok(nav.inputSchema.properties.explanationMarkdown);
@@ -632,8 +632,8 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.ok((await app('initialize', { protocolVersion: '2025-06-18', capabilities: {} })).capabilities.resources);
   const tools = (await app('tools/list', {})).tools;
   const nq = tools.find((t) => t.name === 'nextQuestion');
-  assert.equal(nq._meta['openai/outputTemplate'], WIDGET_URI);
-  assert.equal(nq._meta.ui.resourceUri, WIDGET_URI);
+  assert.equal(nq._meta['openai/outputTemplate'], undefined);
+  assert.equal(nq._meta.ui.resourceUri, undefined);
   // 資格名を受けたら、startSession の結果としてすぐ試験概要と免除・学習状況のボタンを画面に出す（AIの次の呼び出しに頼らない）
   assert.equal(tools.find((t) => t.name === 'startSession')._meta['openai/outputTemplate'], WIDGET_URI);
   const opened = await app('tools/call', { name: 'startSession', arguments: { qualificationId: '宅建', sources: [] } });
