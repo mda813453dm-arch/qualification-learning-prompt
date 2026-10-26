@@ -72,7 +72,7 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   const post=(method,params)=>send(e,'POST','/mcp',{jsonrpc:'2.0',id:1,method,params});
   const list=await post('tools/list',{});
   const tool=list.body.result.tools.find(t=>t.name==='showDescriptiveActions');
-  assert.ok(tool?._meta?.['openai/outputTemplate']);
+  assert.equal(tool?._meta?.['openai/outputTemplate'], undefined, '記述式の操作メニュー登録では新しい枠を増やさない');
   const complete='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
     '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
     '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
