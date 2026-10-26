@@ -42,3 +42,5 @@ Fri Oct 16 11:48:06 UTC 2026
 2026-10-26 12:06 JST read-only investigation after v104 iPhone failure at 12:01-12:03 JST: repeated model messages '接続が中断', persistent '復元しています...' in pinned frame. Inspect mcp_rpc, widget_ui, HTTP /app, /mcp and v1 errors from 2026-10-26 02:55-03:10 UTC, redact learner/session/tokens. Do not alter learner state.
 
 2026-10-26 12:57 JST v105 iPhone 12:55 JST retry failure. Read-only check 03:48-04:02 UTC: mcp_rpc showMenu/restoreStudyView/chooseItem and HTTP statuses, widget_ui, errors. Redact session IDs, question text, user identifiers. No learner state changes.
+
+2026-10-26 14:34 JST v106 user iPhone 行政書士 基礎法学: first lesson appeared; confirmation question #2/#3 generated multiple blank frames stuck restoring. Read-only log analysis for 05:20-05:40 UTC: MCP tool names/status and widget_ui only, redact all identifiers and content. Do not modify learning state.
