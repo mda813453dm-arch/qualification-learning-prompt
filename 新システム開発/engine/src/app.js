@@ -548,12 +548,13 @@ async function attachPdf(env, id, state, b, url, now) {
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
   const section = adapter === 'generic_mc' ? String(b.section ?? '').trim()
     : cat?.uploadSections
-      ? String(b.section ?? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : '')).trim()
+      // 単一区分の資格は区分をエンジンが決定する。AIの「本試験」「main」等の言い換えで登録を妨げない。
+      ? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : String(b.section ?? '').trim())
       : (cat?.sources?.find((x) => x.year === year)?.section ?? base?.section ?? String(b.section ?? '').trim());
   if (!section || section.length > 50) throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '試験区分を指定してください。');
   if (adapter === 'generic_mc' && !b.answer) throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '共通解析では同年度・同区分の公式正答PDFが必須です。');
   if (adapter !== 'generic_mc' && cat?.uploadSections && !cat.uploadSections.includes(section))
-    throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '午前の部か午後の部を指定してください。');
+    throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', `試験区分は${cat.uploadSections.join('・')}から選んでください。`);
   const officialAnswerHtml = adapter === 'generic_mc' ? null : (cat?.officialAnswerHtml?.[year] ?? null);
   if (cat?.uploadSections && !b.answer && !officialAnswerHtml)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');

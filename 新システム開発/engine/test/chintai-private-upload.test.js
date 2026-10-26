@@ -106,7 +106,7 @@ test('行政書士は年度別許諾確認後、本人の問題PDFと当該年�
   assert.equal(start.status, 201);
   assert.equal(await readJob(env.STORE, 'q090~' + start.body.learnerId), null);
   const url = '/v1/sessions/' + start.body.sessionId;
-  const body = { year: 2025, question: files.question };
+  const body = { year: 2025, section: '本試験', question: files.question };
   const blocked = await call(env, 'POST', url + '/attach', body);
   assert.equal(blocked.status, 403);
   assert.equal(received.length, 0);
@@ -119,6 +119,7 @@ test('行政書士は年度別許諾確認後、本人の問題PDFと当該年�
   assert.equal(received.length, 1, '行政書士は正解HTMLの添付を要求しない');
   const job = await readJob(env.STORE, 'q090~' + start.body.learnerId);
   assert.equal(job.sources.length, 1);
+  assert.equal(job.sources[0].section, '年度共通', 'AIが一般的な区分名を渡しても唯一の公式区分で検証する');
   assert.equal(job.sources[0].owner, start.body.learnerId);
   assert.equal(job.sources[0].privateLicensedUpload, true);
   assert.ok(job.sources[0].questionUrl.includes('/v1/private-source/'));
@@ -127,4 +128,23 @@ test('行政書士は年度別許諾確認後、本人の問題PDFと当該年�
   const other = await call(env, 'POST', '/v1/sessions', { qualificationId: 'q090' });
   const otherBlocked = await call(env, 'POST', '/v1/sessions/' + other.body.sessionId + '/attach', body);
   assert.equal(otherBlocked.status, 403, '本人許諾を他の利用者へ引き継がない');
+});
+
+test('行政書士2020年度はAIが区分を誤指定しても年度共通で取り込み、未許諾ならPDFを取得しない', async () => {
+  const { env, received } = envForTest();
+  const started = await call(env, 'POST', '/v1/sessions', { qualificationId: '行政書士' });
+  assert.equal(started.status, 201);
+  const url = '/v1/sessions/' + started.body.sessionId;
+  const uploaded = { year: 2020, section: '午後の部', question: files.question };
+  const before = await call(env, 'POST', url + '/attach', uploaded);
+  assert.equal(before.status, 403, '区分の言い換えより先に本人の許諾を確認する');
+  assert.equal(before.body.error, 'UPLOAD_PERMISSION_REQUIRED');
+  assert.equal(received.length, 0);
+  assert.equal((await call(env, 'POST', url + '/upload-permission', { year: 2020, confirmed: true })).status, 200);
+  const accepted = await call(env, 'POST', url + '/attach', uploaded);
+  assert.equal(accepted.status, 200, JSON.stringify(accepted.body));
+  assert.equal(accepted.body.section, '年度共通');
+  assert.equal(received.length, 1, '行政書士では問題PDFのみ受け取る');
+  const job = await readJob(env.STORE, 'q090~' + started.body.learnerId);
+  assert.equal(job.sources[0].answerUrl, CATALOG.gyosei.officialAnswerHtml[2020]);
 });
