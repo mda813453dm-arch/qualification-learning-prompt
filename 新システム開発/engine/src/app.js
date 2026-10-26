@@ -534,6 +534,37 @@ const uploadBatchRightsKey = (sessionId) => `upload-rights/${sessionId}/batch`;
 const licensedPendingIndexKey = (learnerId, qid) => `licensed-pending/${learnerId}/${qid}/index`;
 const licensedPendingKey = (learnerId, qid, year) => `licensed-pending/${learnerId}/${qid}/${year}`;
 const MAX_LICENSED_BATCH_FILES = 10;
+/** 行政書士の未登録年度は公式一覧の「年度・正解」リンクから探す。URLの法則を推測しない。 */
+async function officialAnswerHtmlFor(env, cat, year) {
+  if (cat?.officialAnswerHtml?.[year]) return cat.officialAnswerHtml[year];
+  if (cat?.qualificationId !== 'q090' || year < 1989 || !cat.pastExamPage) return null;
+  const page = new URL(cat.pastExamPage);
+  if (!['gyosei-shiken.or.jp', 'www.gyosei-shiken.or.jp'].includes(page.hostname) ||
+      !page.pathname.startsWith('/doc/exam/')) return null;
+  const cacheKey = `official-answer-index/${year}`;
+  const cached = await env.STORE.get(cacheKey);
+  if (cached && /^https:\/\/(www\.)?gyosei-shiken\.or\.jp\/doc\/exam\/[A-Za-z0-9_-]+ans\.html$/.test(cached)) return cached;
+  let html;
+  try { html = await (env.fetchText ?? defaultFetchText)(page.href); }
+  catch { return null; }
+  if (typeof html !== 'string') return null;
+  const normal = (v) => v.replace(/[０-９]/g, (d) => String(d.charCodeAt(0) - 0xff10))
+    .replace(/&nbsp;|&#160;|\s|　/g, '').replace(/<[^>]*>/g, '');
+  const eraNumber = year >= 2019 ? year - 2018 : year - 1988;
+  const labels = year === 2019 ? ['令和元年度', '令和1年度'] :
+    [`${year >= 2019 ? '令和' : '平成'}${eraNumber}年度`];
+  for (const m of html.matchAll(/<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
+    const label = normal(m[2]);
+    if (!labels.some((v) => label.includes(v)) || !/(正解|正答)/.test(label)) continue;
+    let link;
+    try { link = new URL(m[1].replace(/&amp;/g, '&'), page.href); } catch { continue; }
+    if (link.protocol !== 'https:' || !['gyosei-shiken.or.jp', 'www.gyosei-shiken.or.jp'].includes(link.hostname) ||
+        !/^\/doc\/exam\/[A-Za-z0-9_-]+ans\.html$/.test(link.pathname) || link.search || link.hash) continue;
+    await env.STORE.put(cacheKey, link.href, { expirationTtl: 30 * 24 * 60 * 60 });
+    return link.href;
+  }
+  return null;
+}
 async function licensedPendingYears(env, state) {
   const list = await env.STORE.get(licensedPendingIndexKey(state.learnerId, state.qualificationId), 'json');
   return [...new Set((Array.isArray(list) ? list : []).filter((year) => Number.isInteger(year)))].sort((a,b) => a-b);
@@ -563,7 +594,7 @@ async function attachPdf(env, id, state, b, url, now) {
   if (adapter === 'generic_mc' && !b.answer) throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '共通解析では同年度・同区分の公式正答PDFが必須です。');
   if (adapter !== 'generic_mc' && cat?.uploadSections && !cat.uploadSections.includes(section))
     throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', `試験区分は${cat.uploadSections.join('・')}から選んでください。`);
-  const officialAnswerHtml = adapter === 'generic_mc' ? null : (cat?.officialAnswerHtml?.[year] ?? null);
+  const officialAnswerHtml = adapter === 'generic_mc' ? null : await officialAnswerHtmlFor(env, cat, year);
   if (cat?.uploadSections && !b.answer && !officialAnswerHtml && !cat?.privateLicensedUpload)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
   let batchRights = null;
