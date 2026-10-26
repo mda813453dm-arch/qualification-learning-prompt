@@ -1430,6 +1430,8 @@ test('解説ありは解説を先に保存・復元し、確認問題は利用�
   const before = (await app('restoreStudyView', { sessionId }))._meta.qlp;
   assert.equal(before.status, 'lesson_pending', '解説を表示する前に確認問題へ飛ばない');
   assert.equal(before.lessonRef, chosen.lessonRef, '照会番号は元の学習枠へ復元される');
+  const repeatedExplain = (await app('chooseItem', { sessionId, fieldName, mode:'explain' })).structuredContent;
+  assert.equal(repeatedExplain.lessonRef, chosen.lessonRef, '二重タップでも同じ解説依頼を保持しAIの登録先を失わない');
   const stored = JSON.parse(await env.STORE.get('ses/' + sessionId));
   const original = stored.state;
   assert.equal(original.confirmation ?? null, null, '解説時に確認問題は未開始');
