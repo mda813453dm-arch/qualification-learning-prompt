@@ -5,9 +5,9 @@ import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget.js';
 
 const html = widgetHtml();
 const embedded = html.split('<script>')[1]?.split('</script>')[0];
-test('v111 embeds syntactically valid study widget and retains single scroll surface', () => {
-  assert.equal(WIDGET_VERSION, '2026-10-26.111');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v111.html');
+test('v112 embeds syntactically valid study widget and retains single scroll surface', () => {
+  assert.equal(WIDGET_VERSION, '2026-10-26.112');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v112.html');
   assert.ok(embedded, 'widget script must be present');
   assert.doesNotThrow(() => new vm.Script(embedded));
   assert.match(html, /height:auto;max-height:none;overflow:visible/);
@@ -15,6 +15,10 @@ test('v111 embeds syntactically valid study widget and retains single scroll sur
   assert.doesNotMatch(embedded, /callTool\('restoreStudyView'/);
   assert.match(embedded, /lessonPollDelays/);
   assert.match(embedded, /lessonPollGeneration/);
+  assert.match(embedded, /preparedGuideHtml/);
+  assert.match(embedded, /registerPreparedConfirmation/);
+  assert.match(embedded, /quickGuideCheck/);
+  assert.match(embedded, /preparedLessons\[data.fieldName\]/);
   assert.match(embedded, /publishManualLesson/);
   assert.match(embedded, /callTool\('showMenu', args\)/);
   assert.match(embedded, /manualLessonBody/);
