@@ -1492,13 +1492,13 @@ test('AI解説の照会番号は当該分野・最新依頼だけに紐づき、
   const unknown = await app('showMenu', { kind: 'lesson', lessonRef: 'L-0000000000000000', body: textBody });
   assert.equal(unknown.isError, true);
   assert.equal(unknown.structuredContent.error, 'LESSON_REQUEST_NOT_FOUND');
-  const pending = (await app('getStudySnapshot', { sessionId }))._meta.qlp;
+  const pending = (await app('getStudySnapshot', { sessionId })).structuredContent;
   assert.equal(pending.status, 'lesson_pending');
   assert.equal(pending.lessonRef, latest.lessonRef, '不正な解説登録で最新依頼を変えない');
   const good = await app('showMenu', { kind: 'lesson', lessonRef: latest.lessonRef, body: textBody });
   assert.equal(good.isError, undefined, JSON.stringify(good));
   assert.equal(good._meta.qlp.menu.body, textBody);
-  const saved = (await app('getStudySnapshot', { sessionId }))._meta.qlp;
+  const saved = (await app('getStudySnapshot', { sessionId })).structuredContent;
   assert.equal(saved.status, 'menu');
   assert.equal(saved.menu.sessionId, sessionId);
   assert.equal(saved.menu.body, textBody);
