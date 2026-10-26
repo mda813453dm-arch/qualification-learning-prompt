@@ -544,10 +544,13 @@ async function officialAnswerHtmlFor(env, cat, year) {
   const cacheKey = `official-answer-index/${year}`;
   const cached = await env.STORE.get(cacheKey);
   if (cached && /^https:\/\/(www\.)?gyosei-shiken\.or\.jp\/doc\/exam\/[A-Za-z0-9_-]+ans\.html$/.test(cached)) return cached;
-  let html;
-  try { html = await (env.fetchText ?? defaultFetchText)(page.href); }
-  catch { return null; }
-  if (typeof html !== 'string') return null;
+  let html = await env.STORE.get('official-answer-index/html');
+  if (typeof html !== 'string') {
+    try { html = await (env.fetchText ?? defaultFetchText)(page.href); }
+    catch { return null; }
+    if (typeof html !== 'string') return null;
+    await env.STORE.put('official-answer-index/html', html, { expirationTtl: 15 * 60 });
+  }
   const normal = (v) => v.replace(/[０-９]/g, (d) => String(d.charCodeAt(0) - 0xff10))
     .replace(/&nbsp;|&#160;|\s|　/g, '').replace(/<[^>]*>/g, '');
   const eraNumber = year >= 2019 ? year - 2018 : year - 1988;
