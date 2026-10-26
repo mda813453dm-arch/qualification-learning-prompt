@@ -1162,7 +1162,11 @@ a{color:inherit}
       '<div id="lessonConnection" class="notice" role="status">解説が表示されない場合は、まず「解説の登録状況を確認」を押してください。必要なときだけAIに再依頼できます。</div>' +
       '<div class="row"><button id="refreshLesson" type="button">解説の登録状況を確認</button>' +
       '<button id="resumeLesson" type="button">AI解説を再依頼</button></div>' +
-      '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>' + endBar();
+      '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>' +
+      '<details id="manualLesson" hidden><summary>AIの解説がチャット側に表示された場合</summary>' +
+      '<p class="notice">チャットに出た解説文をコピーして貼り付けると、この学習枠に保存して学習を続けられます。</p>' +
+      '<textarea id="manualLessonBody" rows="7" maxlength="16000" aria-label="チャットからコピーした基礎解説全文" style="box-sizing:border-box;width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"></textarea>' +
+      '<div class="row"><button id="publishManualLesson" type="button">この解説を学習枠に登録する</button></div></details>' + endBar();
     function lessonNotice(message){
       var slot = document.getElementById('lessonConnection');
       if (slot) slot.textContent = message;
@@ -1195,12 +1199,44 @@ a{color:inherit}
       return false;
     }
     document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    // モデルが登録ツールを呼ばず、本文だけをチャットに出してしまった場合の無料・確実な復旧経路。
+    // ボタンによる明示操作で同じエンジン登録を実行し、セッションの状態を確認してから表示する。
+    document.getElementById('publishManualLesson').onclick = async function(){
+      if (locked) return;
+      var body = document.getElementById('manualLessonBody').value.trim();
+      if (body.length < 50) {
+        lessonNotice('解説全文を貼り付けてください（50文字以上）。短い開始メッセージだけでは登録できません。');
+        return;
+      }
+      var button = this;
+      button.disabled = true;
+      try {
+        var args = { kind:'lesson', body:body, fieldName:field, sessionId:sid };
+        if (lessonRef) args.lessonRef = lessonRef;
+        var result = await callTool('showMenu', args);
+        if (result?.status === 'menu' && result.menu?.kind === 'lesson' && result.menu.body) {
+          render(result);
+          return;
+        }
+        lessonNotice('登録できませんでした。学習内容は維持しています。「解説の登録状況を確認」を押してください。');
+      } catch(e) {
+        lessonNotice('解説の登録ができませんでした。通信が回復したら再試行してください。');
+      } finally {
+        if (button.isConnected) button.disabled = false;
+      }
+    };
     // 解説の登録が済んだら、元の学習枠だけを更新する（新しいMCP表示枠を生成しない）。
     // 読取専用・回数上限付き。古いセッションや別画面への遷移後は停止する。
     var lessonPollId = ++lessonPollGeneration;
     var lessonPollDelays = [2500, 5500, 10000, 16000];
     function pollLesson(index){
-      if (index >= lessonPollDelays.length || lessonPollId !== lessonPollGeneration) return;
+      if (lessonPollId !== lessonPollGeneration) return;
+      if (index >= lessonPollDelays.length) {
+        var fallback = document.getElementById('manualLesson');
+        if (fallback) fallback.hidden = false;
+        lessonNotice('AI解説の登録をまだ確認できません。再依頼するか、チャットに表示された解説を下の方法で登録できます。');
+        return;
+      }
       setTimeout(async function(){
         if (lessonPollId !== lessonPollGeneration || locked || state.sessionId !== sid ||
             !document.getElementById('refreshLesson')) return;
