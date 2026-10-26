@@ -885,7 +885,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
           personalUploadedYears: (existing?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
         } : {}),
         notice: existing?.state === 'failed'
-          ? '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。'
+          ? (cat.officialAnswerHtml ? '問題PDFの検証・取り込みに失敗しました。同年度の公式Web正答と照合するため、正答PDFは不要です。登録状態を確認し、原因が解消してから再試行してください。' : '公式PDFの検証・取り込みに失敗しました。別資格の問題や正答を使わず、同年度・同部の問題PDFと正答PDFを再添付して再試行してください。')
           : cat.urlCatalog
             ? '公式過去問は現在準備中です。公式の問題PDFと正答PDFを同じ年度・試験区分で添付すると確認できます。AI作成確認問題でも学習できます。'
           : cat.privateLicensedUpload
