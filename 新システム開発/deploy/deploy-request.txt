@@ -265,3 +265,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-27 v114機能パッチ（v113 UI URI互換）: 行政書士など本人専用過去問の単年度ドロップダウンを廃止。最大10PDF/回の同時添付権利確認（year=0で一括）、各ファイルの年度ごとの個別検証と非公開保存、旧年・新年度で公式正答未検証なら採点保留。出題ボタンは登録済みだけ。追加テスト multi-year-private-upload.test.js。source a9198acf7554f6fdf6761d6e1d6d76413c6a8d61。main/master_prompt.txt非変更。追加有料APIなし。
 
 2026-10-27 multi-year v114 final: 年度プルダウンを廃止し1回最大10PDFの一括許諾と年度別検証を追加。2018・2019行政書士公式Web正答を確認済みURLで追加。将来年度は公式掲載一覧の同年度正答リンクのみ採用し、見つからない場合は本人専用に保留、公開後に再添付なしで取り込みを再開。v114 widget resource更新、年度間取り違え・外部リンク拒否・最大10件・保留復元テスト追加。Source cd82351f61b954c429c9d5e83705f334138ec8a5。main/master_prompt.txt編集なし、追加有料AI APIなし。
+
+2026-10-27 v114 final redeploy: staged PDF auto-resume after official index answer publication; 15-min cache for official index; public read-only verification GET /v1/release identifies build 2026-10-27-v114-batch10. code 6f1acf6fd8844544ffa033edbee617a423245550. No modification main/master_prompt.txt.
