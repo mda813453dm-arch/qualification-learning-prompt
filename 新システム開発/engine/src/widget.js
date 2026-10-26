@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v110.html';
+export const WIDGET_URI = 'ui://qlp/question-v111.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-26.110';
+export const WIDGET_VERSION = '2026-10-26.111';
 
 /** 画面の HTML。 */
 export function widgetHtml() {
@@ -1146,8 +1146,13 @@ a{color:inherit}
   // 再要求は新しい出題・採点を行わず、同じセッションの学習内容だけを読み直す。
   var lessonPollGeneration = 0;
   var confirmationPollGeneration = 0;
+  // チャットにはユーザーが理解できる短い依頼だけを送り、登録先は照会番号で判定する。
+  function lessonRequestMessage(field, ref){
+    return field + 'の基礎解説を作成して学習画面に登録してください。' + (ref ? '照会番号：' + ref + '。' : '');
+  }
   function showPendingLesson(data){
     var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
+    var lessonRef = data.lessonRef || '';
     if (sid) state.sessionId = sid;
     saveIds();
     var j = data.journey || {};
@@ -1175,8 +1180,10 @@ a{color:inherit}
           render(result);
           return true;
         }
-        if (result && result.status === 'lesson_pending')
+        if (result && result.status === 'lesson_pending') {
+          if (result.lessonRef && result.lessonRef !== lessonRef) { render(result); return false; }
           lessonNotice('解説はまだ登録されていません。AI解説を再依頼できます。');
+        }
         else
           lessonNotice('学習状態が更新されています。「学習画面を復元」で最新状態を確認してください。');
       } catch(e){
@@ -1210,7 +1217,7 @@ a{color:inherit}
       button.disabled = true;
       button.textContent = 'AI解説を依頼しています…';
       try {
-        var response = await ask(field + 'を解説から始めます。');
+        var response = await ask(lessonRequestMessage(field, lessonRef));
         if (!response || response.isError)
           lessonNotice('ChatGPTへの依頼を送れませんでした。接続が戻ってから再依頼できます。');
         else {
@@ -1766,8 +1773,8 @@ a{color:inherit}
       var j = chosen?.journey || {};
       if (mode === 'explain') {
         render({ status:'lesson_pending', sessionId: chosen?.sessionId || learner, fieldName:field,
-          journey:j, notice:'AIの基礎解説を準備しています。接続が切れても学習状態は保持されます。' });
-        ask(field + 'を解説から始めます。').then(function(reply){
+          lessonRef: chosen?.lessonRef, journey:j, notice:'AIの基礎解説を準備しています。接続が切れても学習状態は保持されます。' });
+        ask(lessonRequestMessage(field, chosen?.lessonRef)).then(function(reply){
           if (!reply || reply.isError) {
             var node = document.getElementById('lessonConnection');
             if (node) node.textContent = 'AI解説の依頼に失敗しました。画面のボタンから再試行できます。';
