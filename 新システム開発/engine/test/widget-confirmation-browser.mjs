@@ -54,7 +54,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         else if (m.method === 'ui/notifications/initialized') deliver(first);
         else if (m.method === 'tools/call') reply(await window.engineTool(m.params.name, m.params.arguments));
         else if (m.method === 'ui/update-model-context') reply({});
-        else if (m.method === 'ui/message') { reply({}); deliver(await window.registerNext()); }
+        else if (m.method === 'ui/message') { reply({}); setTimeout(async () => deliver(await window.registerNext()), 700); }
       });
       iframe.srcdoc = html; document.body.appendChild(iframe);
     }, { html: widgetHtml(), first });
@@ -71,7 +71,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await ui.locator('input[name=confirmationAnswer][value="2"]').check();
       await ui.getByRole('button', { name: '解答する' }).click();
       await ui.getByRole('heading', { name: `確認問題 ${i} / 3問の結果` }).waitFor();
-      if (i < 3) await ui.getByRole('button', { name: /次の確認問題へ/ }).click();
+      if (i < 3) {
+        await ui.getByRole('button', { name: /次の確認問題へ/ }).click();
+        await ui.getByRole('heading', { name: new RegExp('確認問題・第' + (i+1) + '問を準備中') }).waitFor();
+        assert.equal(await ui.locator('iframe').count(), 0, 'the existing widget must not embed another study frame');
+      }
     }
     await ui.getByRole('button', { name: /同じ分野の実践問題へ/ }).click();
     await ui.getByRole('progressbar', { name: 'この分野の実践問題の位置' }).waitFor();
