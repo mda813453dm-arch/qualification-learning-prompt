@@ -13,7 +13,7 @@
 import { CATALOG } from './catalog.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
-import { constants as cryptoConstants, createHmac } from 'node:crypto';
+import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
 import { readFigure } from './cache.js';
 import { SET_SIZE, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
@@ -37,6 +37,8 @@ export const DEFAULT_PARSER_VERSION = '0.8.2';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
 const SESSION_TTL_S = 26 * 60 * 60;
+const LESSON_REF_PATTERN = /^L-[A-Za-z0-9_-]{16}$/;
+const lessonRefKey = (ref) => `lesson/request/${ref}`;
 const SESSION_MS = 24 * 60 * 60 * 1000;
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
@@ -850,6 +852,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       return { status: 'menu', sessionId: id, menu: lesson.menu };
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: '解説を表示してから確認問題へ進みます。' };
   }
   if (state.confirmation && state.confirmation.count < 3 && !prematureExplanationConfirmation(state)) {
@@ -1062,6 +1065,7 @@ async function restoreStudyView(env, id, state, now) {
     if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
       return { ...identity, status: 'menu', menu: lesson.menu, restored: true };
     return { ...identity, status: 'lesson_pending', fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
+      ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: 'この分野の解説はまだ表示されていません。解説を表示してから確認問題へ進んでください。' };
   }
   const check = state.confirmation;
@@ -1767,26 +1771,47 @@ async function route(request, env, url, now) {
     return json(200, await attachPdf(env, id, state, b, url, now));
   }
 
-  // 基礎解説の全文を現在の学習分野に結びつけて保存。復元時も解説＋操作ボタンを同じ画面に出す。
-  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'lesson' && parts.length === 4) {
+  // 基礎解説は照会番号から安全に登録できる。旧sessionId経路も維持する。
+  if (method === 'POST' && parts[0] === 'v1' && parts.length === 4 &&
+      ((parts[1] === 'sessions' && parts[3] === 'lesson') ||
+       (parts[1] === 'lesson-requests' && parts[3] === 'publish'))) {
     const b = (await body(request).catch(() => ({}))) ?? {};
-    const { id, state } = await resolveSession(env, parts[2], now);
+    const byRef = parts[1] === 'lesson-requests';
+    let requestRef = null, requestFieldId = null, resolvedId = parts[2];
+    if (byRef) {
+      requestRef = parts[2];
+      if (!LESSON_REF_PATTERN.test(requestRef)) throw new HttpError(404, 'LESSON_REQUEST_NOT_FOUND');
+      const requestInfo = await env.STORE.get(lessonRefKey(requestRef), 'json');
+      if (!requestInfo?.sessionId || !requestInfo?.fieldId || now - Number(requestInfo.createdAt) >= SESSION_MS)
+        throw new HttpError(404, 'LESSON_REQUEST_NOT_FOUND');
+      resolvedId = requestInfo.sessionId;
+      requestFieldId = requestInfo.fieldId;
+    }
+    const { id, state } = await resolveSession(env, resolvedId, now);
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     const fid = state.set?.fieldId;
     const fieldName = cat?.fields?.[fid];
     const markdown = typeof b.body === 'string' ? b.body.trim() : '';
+    // 再送は保存済みの同じ解説を返し、別の説明に上書きしない。
+    if (byRef && requestFieldId === fid && state.publishedLesson?.requestRef === requestRef &&
+        state.publishedLesson.menu?.sessionId === id)
+      return json(200, { status: 'menu', sessionId: id, menu: state.publishedLesson.menu });
     if (state.itemMode !== 'explain' ||
         (state.confirmation && !prematureExplanationConfirmation(state)) || !fid || !fieldName)
       throw new HttpError(409, 'LESSON_NOT_ACTIVE');
-    if (fieldName !== b.fieldName) throw new HttpError(409, 'LESSON_FIELD_MISMATCH');
+    if (byRef && (requestFieldId !== fid || state.pendingLessonRef !== requestRef))
+      throw new HttpError(409, 'LESSON_REQUEST_STALE');
+    if (typeof b.fieldName === 'string' && b.fieldName.trim() && fieldName !== b.fieldName)
+      throw new HttpError(409, 'LESSON_FIELD_MISMATCH');
+    if (!byRef && fieldName !== b.fieldName) throw new HttpError(409, 'LESSON_FIELD_MISMATCH');
     if (markdown.length < 50 || markdown.length > 16000)
       throw new HttpError(422, 'LESSON_BODY_INCOMPLETE');
     const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
     const menu = { kind: 'lesson', prompt: '解説の次は、この分野の確認問題（全3問）へ進みます。',
       choices: ['確認問題へ進む', '今日はここまで（学習を終了）'], actions: ['check', 'end'],
       body: markdown, fieldName, sessionId: id, studyId, learnerId: state.learnerId };
-    await saveSession(env, id, { ...state, confirmation: null,
-      publishedLesson: { fieldId: fid, menu, publishedAt: now } }, now);
+    await saveSession(env, id, { ...state, confirmation: null, pendingLessonRef: null,
+      publishedLesson: { fieldId: fid, menu, publishedAt: now, ...(requestRef ? { requestRef } : {}) } }, now);
     return json(200, { status: 'menu', sessionId: id, menu });
   }
 
@@ -1804,10 +1829,14 @@ async function route(request, env, url, now) {
     // check の再押下は同じ問題・3問カウンタを保持。explain は解説が終わるまで確認問題未開始。
     const existingCheck = mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count < 3
       ? state.confirmation : null;
+    // 照会番号により、AIが既存のsessionIdを覚えていなくても元の学習枠へ保存できる。
+    const lessonRef = mode === 'explain' ? 'L-' + randomBytes(12).toString('base64url') : null;
+    if (lessonRef) await env.STORE.put(lessonRefKey(lessonRef), JSON.stringify({ sessionId: id, fieldId: fid, createdAt: now }), { expirationTtl: SESSION_TTL_S });
     await saveSession(env, id, { ...state, focusField: null, set, itemMode: mode,
-      publishedLesson: null, publishedExplanation: null,
+      pendingLessonRef: lessonRef, publishedLesson: null, publishedExplanation: null,
       confirmation: mode === 'check' ? (existingCheck ?? { fieldId: fid, count: 0, correct: 0, challenge: null }) : null }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
+      ...(lessonRef ? { lessonRef } : {}),
       journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length } });
   }
 
