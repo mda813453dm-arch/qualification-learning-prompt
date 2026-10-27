@@ -49,6 +49,7 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
       frame.style.cssText='width:100%;height:650px;border:0';
       const send=data=>frame.contentWindow.postMessage(data,'*');
       const deliver=result=>send({jsonrpc:'2.0',method:'ui/notifications/tool-result',params:result});
+      window.deliver=deliver;
       window.addEventListener('message',async event=>{
         if(event.source!==frame.contentWindow)return;
         const msg=event.data;
