@@ -639,7 +639,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const job = await readJob(env.STORE, jobId);
   // 他の利用者が登録済みなら、PDFを再取得せず共有済み結果を使う。
   const global = await libraryFor(env, state.qualificationId, now);
-  if (adapter !== 'generic_mc' && global?.stored.some((x) => x.year === year && x.section === section))
+  if (!cat?.privateLicensedUpload && adapter !== 'generic_mc' && global?.stored.some((x) => x.year === year && x.section === section))
     return { status: 'attachedAlready', sessionId: id, year, section,
       notice: `${year}年度・${section}の公式問題は利用できます。PDFの再添付は不要です。`,
       sharedLibrary: publicLibraryView(global) };
@@ -1822,13 +1822,15 @@ async function route(request, env, url, now) {
     const cat = catalogFor(state.qualificationId);
     if (cat?.privateLicensedUpload) {
       await resumeLicensedPending(env, state, now);
-      const job = await readJob(env.STORE, sessionJobId(state));
+      const job = await progress(env, sessionJobId(state), now);
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
         validatedUploadYears: cat.validatedUploadYears ?? [],
         personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        importingYears: (job?.sources ?? []).filter((x) => x.status === 'pending' || x.status === 'running').map((x) => x.year),
+        failedYears: (job?.sources ?? []).filter((x) => x.status === 'failed').map((x) => ({ year:x.year, reason:String(x.reason || '検証失敗').slice(0,110) })),
         pendingOfficialAnswerYears: (await licensedPendingYears(env, state)).filter((year) => !(job?.sources ?? []).some((x) => x.year === year && x.status !== 'failed')),
         maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         sharedLibrary: null,
