@@ -105,3 +105,18 @@ test('保留していた旧年度PDFは公式正答を検証できたら再添�
   assert.equal(received.length,1,'原本PDFは再添付せず保存済みの本人用控えを使う');
   assert.ok(!checked.body.pendingOfficialAnswerYears.includes(2017));
 });
+
+test('賃管の問題・正答PDFは2ファイルずつ消費し、計10ファイルを超えない',async()=>{
+  const {env,received}=setup();
+  const a=await req(env,'POST','/v1/sessions',{qualificationId:'q097'});
+  const path='/v1/sessions/'+a.body.sessionId;
+  await req(env,'POST',path+'/upload-permission',{year:0,confirmed:true});
+  for(let year=2020;year<2025;year++){
+    const r=await req(env,'POST',path+'/attach',{year,question:{download_url:'https://uploads.example/q'+year+'.pdf'},answer:{download_url:'https://uploads.example/a'+year+'.pdf'}});
+    assert.equal(r.status,200,JSON.stringify(r.body));
+  }
+  assert.equal(received.length,10);
+  const over=await req(env,'POST',path+'/attach',{year:2025,question:{download_url:'https://uploads.example/q2025.pdf'},answer:{download_url:'https://uploads.example/a2025.pdf'}});
+  assert.equal(over.status,403,JSON.stringify(over.body));
+  assert.equal(received.length,10,'許諾のファイル上限到達後は原本にアクセスしない');
+});
