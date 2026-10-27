@@ -8,6 +8,9 @@ on:
     paths:
       - '新システム開発/deploy/deploy-request.txt'
   workflow_dispatch:
+permissions:
+  contents: read
+  statuses: write
 concurrency:
   group: deploy-google-cloud
   cancel-in-progress: false
@@ -19,6 +22,12 @@ jobs:
       PROJECT: qualification-learning
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 配置前の回帰テスト
+        working-directory: 新システム開発/engine
+        run: npm test
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
@@ -45,8 +54,29 @@ jobs:
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
           node 新システム開発/deploy/check-descriptive.mjs
+      - name: 新しい取り込み画面の公開版を検証
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          node -e 'fetch(process.env.QLP_BASE_URL + "/v1/release").then(r => {if(!r.ok)throw Error("Release status " + r.status);return r.json()}).then(d => {if(d.build !== "2026-10-27-v114-batch10" || d.uploadBatchFiles !== 10 || d.yearSelectionRequired !== false)throw Error("Unexpected release: " + JSON.stringify(d));console.log("v114 public release verified", d)}).catch(e => {console.error(e);process.exit(1)})'
       - name: 学習者が貼るプロンプトを表示する（トークンは入っていない）
         run: |
           echo "===== 学習者が貼るプロンプト ここから ====="
           cat "$HOME/qlp-start-prompt.txt"
           echo "===== ここまで ====="
+
+      - name: 配置検証結果をコミット状態に記録
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QLP_JOB_STATUS: ${{ job.status }}
+          GH_REPO: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+          GH_RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$QLP_JOB_STATUS" = "success" ]; then
+            state=success
+          else
+            state=failure
+          fi
+          payload=$(printf '{"state":"%s","context":"qlp-cloud-run-deploy","description":"Cloud Run deployment and production checks","target_url":"https://github.com/%s/actions/runs/%s"}' "$state" "$GH_REPO" "$GH_RUN_ID")
+          curl --fail-with-body --retry 2 --silent --show-error -X POST             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "Content-Type: application/json"             -d "$payload" "https://api.github.com/repos/$GH_REPO/statuses/$GH_SHA"
