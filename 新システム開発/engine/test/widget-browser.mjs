@@ -141,7 +141,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
              status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
            } } });
            else if (op === 'confirmUploadRights') reply({ structuredContent: {
-             status: 'uploadPermissionConfirmed', sessionId: 'test-session', year: m.params.arguments.year,
+             status: 'uploadPermissionConfirmed', sessionId: 'test-session', year: m.params.arguments.year, allYears: m.params.arguments.year === 0, maxBatchFiles: 10,
            } });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
@@ -400,39 +400,43 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.waitForFunction(() => window.calls.some(m => m.params?.name === 'getOfficialLibrary'));
     assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
       '保存済み年度の照会も利用者チャットに内部内容を送信しない');
-    // 著作物使用許諾が必要な賃管：年度別チェックでのみ取込可。確認だけではPDFを送らない。
+    // 著作物使用許諾が必要な賃管：最大10PDFの一括確認。年度選択は不要で、確認だけでは取り込まない。
     await page.evaluate(r => window.deliver(r), result({
       status: 'sourceUnavailable', sessionId, permissionedUpload: true,
       qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
       availableUploadYears: [2015, 2016, 2017, 2023, 2025],
       validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [],
     }));
-    await ui.getByRole('heading', { name: '過去問の年度別取り込み（本人専用）' }).waitFor();
-    assert.match(await ui.locator('#app').innerText(), /2017年度：原本検証待ち/);
-    await ui.locator('#licensedYear').selectOption('2023');
-    const confirm = ui.getByRole('button', { name: 'この年度の取込を許可して添付へ進む' });
-    assert.equal(await confirm.isDisabled(), true, '利用許諾が未確認ならボタンは無効');
+    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /原本検証待ち|取込準備済み/);
+    assert.equal(await ui.locator('#licensedYear').count(),0,'取り込む年度を選択させない');
+    assert.match(await ui.locator('#app').innerText(), /最大10ファイル/);
+    assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),0,
+      '本人用の登録がゼロなら過去問を解くボタンを表示しない');
+    const confirm = ui.getByRole('button', { name: 'PDFの添付へ進む' });
+    assert.equal(await confirm.isDisabled(), true, '利用許諾が未確認なら無効');
     const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
     const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.locator('#licensedAck').check();
     await confirm.click();
-    await ui.getByText('2023年度の確認を受け付けました。', { exact: false }).waitFor();
+    await ui.getByText('添付の許諾確認を受け付けました。', { exact: false }).waitFor();
     const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
     assert.equal(confirmed.length, beforePermission + 1);
-    assert.deepEqual(confirmed.at(-1), { sessionId, year: 2023, confirmed: true });
+    assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
-      '年度確認だけではPDFの取り込みを始めない');
+      '許諾確認だけではPDFの取り込みを開始しない');
     await page.evaluate(() => {
       window.privateLibrary = {
         status: 'officialLibrary', permissionedUpload: true, sessionId: 'test-session',
         qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
-        availableUploadYears: [2015, 2016, 2017, 2023, 2025],
-        validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [2023],
+        personalUploadedYears: [2023], maxBatchFiles:10,
       };
     });
-    await ui.getByRole('button', { name: '別年度の過去問を取り込む' }).click();
-    await ui.getByRole('heading', { name: '過去問の年度別取り込み（本人専用）' }).waitFor();
-    assert.match(await ui.locator('#app').innerText(), /2023年度：本人用に取込済み/);
+    await ui.getByRole('button', { name: '取り込み状況を確認' }).click();
+    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /出題できる登録済み年度：2023年度/);
+    assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),1,
+      '登録済みになった場合にだけ出題ボタンが現れる');
     // 2026-10-23 iPhone: startSession資格名判定失敗を「問題準備中」と偽装せず再開できる。
     await page.evaluate(() => window.deliver({ isError: true,
       structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } }));
