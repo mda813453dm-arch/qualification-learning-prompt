@@ -910,8 +910,8 @@ a{color:inherit}
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。</div>' +
         '<div>② 「PDFの送信を許可する」を押す（この操作だけでは取り込みは始まりません）。</div>' +
         '<div>③ チャットの入力欄にある「＋」から、' + esc(uploadHint) + 'を複数まとめて添付し、送信する。</div>' +
-        '<div>④ 「取り込み状況を確認」で登録を確認する。取り込んだ各PDFの年度と正答は別々に照合します。</div>' +
-        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>（行政書士は1年度1PDFなので最大' + esc(maxBatch) + '年度分）。これを超える場合は次のまとまりに分けてください。古い年度・新しい年度も添付できますが、公式正答の確認ができない年度は採点保留です。</div></div>' +
+        '<div>④ 送信したPDFはシステム側で年度判定・公式正答照合・本人専用登録を進めます。「取り込み状況を確認」で完了状況を確認してください。</div>' +
+        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。年度の選択は不要で、異なる年度のPDFをまとめて送信できます。上限を超える場合は分けて送信してください。公式正答が未確認の年度は採点保留となります。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
         '<div class="row"><button id="licensedConfirm" type="button" disabled style="display:block;width:100%;min-height:64px;padding:16px 20px;font-size:18px;font-weight:700;line-height:1.5;text-align:center;border-radius:12px"><span style="display:block;white-space:nowrap">PDFの送信を許可する</span><span style="display:block;white-space:nowrap;font-size:0.82em">（最大' + esc(maxBatch) + 'ファイル）</span></button></div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
