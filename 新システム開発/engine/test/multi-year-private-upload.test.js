@@ -11,6 +11,7 @@ function setup() {
   return { received, env: { STORE: new MemoryStore(), API_TOKEN: token,
     PUBLIC_BASE_URL: 'https://engine.example', now: T0, clock: () => T0,
     selfFetch: async () => new Response('{}', { status: 200 }),
+    fetchText: async () => '',
     fetchAttached: async (u) => { received.push(u); return pdf('question'); } } };
 }
 async function req(env, method, path, data) {
