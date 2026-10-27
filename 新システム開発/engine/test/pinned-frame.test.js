@@ -5,9 +5,9 @@ import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget.js';
 
 const html = widgetHtml();
 const embedded = html.split('<script>')[1]?.split('</script>')[0];
-test('v115 embeds syntactically valid study widget and retains single scroll surface', () => {
-  assert.equal(WIDGET_VERSION, '2026-10-27.115');
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v115.html');
+test('v116 embeds syntactically valid study widget and retains single scroll surface', () => {
+  assert.equal(WIDGET_VERSION, '2026-10-27.116');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v116.html');
   assert.ok(embedded, 'widget script must be present');
   assert.doesNotThrow(() => new vm.Script(embedded));
   assert.match(html, /height:auto;max-height:none;overflow:visible/);
