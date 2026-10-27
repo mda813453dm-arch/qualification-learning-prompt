@@ -24,6 +24,13 @@ test('v115 embeds syntactically valid study widget and retains single scroll sur
   assert.match(embedded, /manualLessonBody/);
   assert.match(embedded, /confirmationPollGeneration/);
   assert.match(embedded, /checkPublished/);
+  assert.match(embedded, /quickGuidePractice/);
+  assert.match(embedded, /lessonPracticeDirect/);
+  assert.match(embedded, /lessonMenuPractice/);
+  assert.match(embedded, /openPracticeAfterLesson/);
+  assert.match(embedded, /mode:'practice'/);
+  assert.match(embedded, /callTool\('nextQuestion'/);
+
 });
 
 // Evaluate the actual ownership code with two independent widget frames and
