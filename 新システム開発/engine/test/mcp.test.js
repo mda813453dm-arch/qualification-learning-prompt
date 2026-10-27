@@ -58,9 +58,10 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const names = r.body.result.tools.map((t) => t.name);
   const yaml = readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8');
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
-  assert.deepEqual(names.sort(), ops.sort());
+  assert.deepEqual(names.sort(), [...ops, 'attachPdf'].sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 12);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 13);
+  assert.ok(names.includes('attachPdf'), '通常のチャットでもPDF登録ツールを公開する');
 });
 
 test('記述式解説の末尾にモデルが最新問専用の操作画面を配置する', async () => {
