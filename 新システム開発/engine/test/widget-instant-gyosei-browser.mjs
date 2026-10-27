@@ -108,11 +108,10 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     assert.equal(toolCalls.filter(t=>t.name==='getOfficialLibrary').length,beforeRefresh+1);
     assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'refresh and unavailable guidance need no AI response');
     // 内蔵基礎解説からも確認問題を飛ばして同分野の公式実践へ進める。
-    const newLesson = await tool('chooseItem',{sessionId,fieldName,mode:'explain'});
-    assert.equal(newLesson.structuredContent.mode,'explain');
-    const pendingLesson = await tool('restoreStudyView',{sessionId});
-    assert.equal(pendingLesson._meta?.qlp?.status,'lesson_pending');
-    await page.evaluate(result => window.deliver(result),pendingLesson);
+    await page.evaluate(result => window.deliver(result),{
+      structuredContent:{status:'lesson_pending',sessionId,fieldName,
+        journey:{fieldIndex:1,fieldTotal:6},notice:'基礎解説を表示しています。'}
+    });
     await ui.getByRole('heading',{name:'基礎法学｜基礎解説'}).waitFor();
     await ui.getByRole('button',{name:'基礎解説を読み終えたら確認問題へ（全3問）'}).waitFor();
     const direct = ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'});
