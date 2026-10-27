@@ -629,7 +629,8 @@ async function attachPdf(env, id, state, b, url, now) {
     const rights = await env.STORE.get(uploadRightsKey(id, year), 'json');
     batchRights = await env.STORE.get(uploadBatchRightsKey(id), 'json');
     const individuallyConfirmed = rights?.confirmed === true && rights?.learnerId === state.learnerId;
-    const batchConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId && Number(batchRights.remaining) > 0;
+    const attachmentCount = b.answer ? 2 : 1;
+    const batchConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId && Number(batchRights.remaining) >= attachmentCount;
     if (!individuallyConfirmed && !batchConfirmed)
       throw new HttpError(403, 'UPLOAD_PERMISSION_REQUIRED',
         '添付PDFの保存・解析には利用許諾の確認が必要です。学習画面の確認欄にチェックしてください。');
@@ -652,7 +653,7 @@ async function attachPdf(env, id, state, b, url, now) {
   const questionUrl = await savePdf(await fetchAttached(env, b.question));
   if (batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId) {
     await env.STORE.put(uploadBatchRightsKey(id),
-      JSON.stringify({ ...batchRights, remaining: Math.max(0, Number(batchRights.remaining) - 1) }),
+      JSON.stringify({ ...batchRights, remaining: Math.max(0, Number(batchRights.remaining) - (b.answer ? 2 : 1)) }),
       { expirationTtl: SESSION_TTL_S });
   }
   if (cat?.privateLicensedUpload && !officialAnswerHtml && !b.answer) {
