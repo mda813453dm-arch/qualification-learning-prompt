@@ -96,18 +96,20 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     await ui.getByRole('button',{name:/次の分野の学習へ/}).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(),/次の分野の実践問題へ/,'next field never silently chooses practice');
     await ui.getByRole('button',{name:/同じ分野の公式過去問を解く/}).click();
-    await ui.getByRole('heading',{name:/過去問の年度別取り込み|公式過去問の利用・登録/}).waitFor();
+    await ui.getByRole('heading',{name:/過去問PDFのまとめ取り込み|公式過去問の利用・登録/}).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(),/実践問題へ進めませんでした/);
-    await ui.getByRole('button',{name:'公式過去問を解く'}).click();
-    assert.match(await ui.locator('#app').innerText(),/公式過去問はまだ登録されていません/,'no official question is invented');
+    assert.equal(await ui.getByRole('button',{name:'公式過去問を解く'}).count(),0,'unregistered past papers do not show practice button');
+    assert.equal(await ui.locator('#licensedYear').count(),0,'no year picker');
+    assert.match(await ui.locator('#app').innerText(),/最大10ファイル/);
+    assert.match(await ui.locator('#app').innerText(),/公式過去問は未登録です/,'no official question is invented');
     const beforeRefresh=toolCalls.filter(t=>t.name==='getOfficialLibrary').length;
     await ui.getByRole('button',{name:'取り込み状況を確認'}).click();
-    await ui.getByText(/取り込み状況を確認しました。まだ公式過去問は登録されていません/).waitFor();
+    await ui.getByText(/出題できる公式過去問はまだ登録されていません/).waitFor();
     assert.equal(toolCalls.filter(t=>t.name==='getOfficialLibrary').length,beforeRefresh+1);
     assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'refresh and unavailable guidance need no AI response');
     const restored=await tool('restoreStudyView',{sessionId});
     assert.ok(restored._meta?.qlp,'study record survives progression');
     assert.deepEqual(errors,[],'no JavaScript exceptions');
-    console.log(`${browserName}: PASS v113 instant foundation, 3 graded confirmations, explicit source state, no AI calls, same frame (375px)`);
+    console.log(`${browserName}: PASS v114 instant foundation, 3 graded confirmations, explicit source state, no AI calls, same frame (375px)`);
   }finally{await browser.close();}
 }
