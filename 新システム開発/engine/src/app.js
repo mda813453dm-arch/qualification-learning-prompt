@@ -660,7 +660,7 @@ async function attachPdf(env, id, state, b, url, now) {
     // 正答URLを推測しない。問題PDFは本人用に保管し、同年度の公式正答が確定するまで採点しない。
     const key = licensedPendingIndexKey(state.learnerId, state.qualificationId);
     const years = await licensedPendingYears(env, state);
-    if (!years.includes(year)) await env.STORE.put(key, JSON.stringify([...years, year].sort((a,b)=>a-b));
+    if (!years.includes(year)) await env.STORE.put(key, JSON.stringify([...years, year].sort((a,b)=>a-b)));
     await env.STORE.put(licensedPendingKey(state.learnerId, state.qualificationId, year),
       JSON.stringify({ year, section, questionUrl, receivedAt: now }));
     return { status: 'pendingOfficialAnswer', sessionId: id, year, section,
