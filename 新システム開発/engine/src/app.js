@@ -1822,7 +1822,8 @@ async function route(request, env, url, now) {
     const cat = catalogFor(state.qualificationId);
     if (cat?.privateLicensedUpload) {
       await resumeLicensedPending(env, state, now);
-      const job = await progress(env, sessionJobId(state), now);
+      await progress(env, sessionJobId(state), now);
+      const job = await readJob(env.STORE, sessionJobId(state));
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
