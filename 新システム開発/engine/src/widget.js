@@ -1728,7 +1728,7 @@ a{color:inherit}
     };
     var em = document.getElementById('endMenu');
     if (em) em.onclick = function(){ endAction(em); };
-    app.querySelectorAll('.choices button').forEach(function(b){ b.onclick = function(){
+    app.querySelectorAll('.choices button[data-n]').forEach(function(b){ b.onclick = function(){
       var n = b.getAttribute('data-n'), entry = entries[Number(n) - 1], c = entry.choice;
       var action = (m.kind === 'next' || m.kind === 'lesson') ? (entry.action || (m.kind === 'next' && n === '1' ? 'next' : null)) : null;
       if (action === 'end') { endAction(b); return; }
