@@ -267,3 +267,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-27 multi-year v114 final: 年度プルダウンを廃止し1回最大10PDFの一括許諾と年度別検証を追加。2018・2019行政書士公式Web正答を確認済みURLで追加。将来年度は公式掲載一覧の同年度正答リンクのみ採用し、見つからない場合は本人専用に保留、公開後に再添付なしで取り込みを再開。v114 widget resource更新、年度間取り違え・外部リンク拒否・最大10件・保留復元テスト追加。Source cd82351f61b954c429c9d5e83705f334138ec8a5。main/master_prompt.txt編集なし、追加有料AI APIなし。
 
 2026-10-27 v114 final redeploy: staged PDF auto-resume after official index answer publication; 15-min cache for official index; public read-only verification GET /v1/release identifies build 2026-10-27-v114-batch10. code 6f1acf6fd8844544ffa033edbee617a423245550. No modification main/master_prompt.txt.
+
+2026-10-27 v114 app deploy final: 1回最大10 PDFの実ファイル上限を検証（行政書士問題1PDF/年、賃管問題・正答2PDF/年）。旧年度・新年度の年度選択不要、公式正答の正確な照合、正答未確認は保留、公開後の復旧。旧UI向けBrowser CI を新仕様へ修正。最新版 source 241e240baff41580aec340376c6a9cfff3a8ccd3. deploy requested by user for the iPhone ChatGPT MCP app. main/master_prompt.txt untouched.
