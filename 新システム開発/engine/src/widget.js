@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v114.html';
+export const WIDGET_URI = 'ui://qlp/question-v115.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-27.114';
+export const WIDGET_VERSION = '2026-10-27.115';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1490,6 +1490,29 @@ a{color:inherit}
   function lessonRequestMessage(field, ref){
     return field + 'の基礎解説を作成して学習画面に登録してください。' + (ref ? '照会番号：' + ref + '。' : '');
   }
+  // 解説から実践問題への共通経路。出題と採点は常にエンジンが制御する。
+  // 登録済みの公式過去問がなければ、従来の sourceUnavailable 画面で取り込み方法を案内する。
+  async function openPracticeAfterLesson(field, sid, button, notify){
+    if (!sid || !field || locked) return;
+    button.disabled = true;
+    var previous = button.textContent;
+    button.textContent = '実践問題を確認しています…';
+    try {
+      var chosen = await callTool('chooseItem', { sessionId:sid, fieldName:field, mode:'practice' });
+      if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'practice')
+        throw new Error('LESSON_PRACTICE_MODE_FAILED');
+      var next = await callTool('nextQuestion', { sessionId:sid, question:field });
+      if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable','fieldExhausted','questionUnavailable'].includes(next.status))
+        throw new Error('LESSON_PRACTICE_QUESTION_FAILED');
+      render(next);
+    } catch(e) {
+      if (button.isConnected) {
+        button.disabled = false;
+        button.textContent = previous;
+      }
+      notify('実践問題へ切り替えられませんでした。学習状態を保持しています。同じボタンで再試行してください。');
+    }
+  }
   function showPendingLesson(data){
     var field = data.fieldName || '今の分野', sid = data.sessionId || state.sessionId;
     var lessonRef = data.lessonRef || '';
@@ -1500,14 +1523,14 @@ a{color:inherit}
     var j = data.journey || {};
     var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
     app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
-      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button">基礎解説を読み終えたら確認問題へ（全3問）</button></div>' :
+      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button">基礎解説を読み終えたら確認問題へ（全3問）</button><button id="quickGuidePractice" type="button">実践問題（公式過去問）へ進む</button></div>' :
         '<div class="notice" role="status">' + esc(data.notice || 'AIの基礎解説の登録を待っています。') + '</div>') +
       '<div id="lessonConnection" class="notice" role="status">' +
         (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
                      : '解説が表示されない場合は、登録状況を確認するかAIへ再依頼できます。') + '</div>' +
       '<div class="row"><button id="refreshLesson" type="button">AI解説の登録状況を確認</button>' +
       '<button id="resumeLesson" type="button">' + (hasPrepared ? '理解度に合わせたAI解説を追加（任意）' : 'AI解説を再依頼') + '</button></div>' +
-      (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button></div>') +
+      (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button><button id="lessonPracticeDirect" type="button">実践問題（公式過去問）へ進む</button></div>') +
       '<details id="manualLesson" hidden><summary>AIの解説がチャット側に表示された場合</summary>' +
       '<p class="notice">チャットに出た解説文をコピーして貼り付けると、この学習枠に保存して学習を続けられます。</p>' +
       '<textarea id="manualLessonBody" rows="7" maxlength="16000" aria-label="チャットからコピーした基礎解説全文" style="box-sizing:border-box;width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"></textarea>' +
@@ -1544,6 +1567,10 @@ a{color:inherit}
       return false;
     }
     document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    var lessonPractice = document.getElementById('quickGuidePractice') || document.getElementById('lessonPracticeDirect');
+    if (lessonPractice) lessonPractice.onclick = function(){
+      openPracticeAfterLesson(field, sid, this, lessonNotice);
+    };
     var quickCheck = document.getElementById('quickGuideCheck');
     if (quickCheck) quickCheck.onclick = async function(){
       var button = this;
@@ -1661,7 +1688,8 @@ a{color:inherit}
     var entries = (m.choices || []).map(function(c,i){ return { choice:c, action:m.actions ? m.actions[i] : null }; })
       .filter(function(x){ return !(m.kind === 'next' && m.body && (x.action === 'explain' || (!m.actions && x.choice === '解説を見る'))); });
     var j = m.journey || {};
-    var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') + '</div>';
+    var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') +
+      (m.kind === 'lesson' ? '<button id="lessonMenuPractice" type="button"><b>' + (entries.length + 1) + '</b><span>実践問題（公式過去問）へ進む</span></button>' : '') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
     app.innerHTML = h;
@@ -1682,6 +1710,21 @@ a{color:inherit}
       // 終了に失敗した場合、現在の学習を終了成功と表示しない。
       em.disabled = false;
       app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">終了データを取得できませんでした。同じ「今日はここまで」を押して再試行してください。学習状態は次へ進めません。</div>');
+    };
+    var lessonMenuPractice = document.getElementById('lessonMenuPractice');
+    if (lessonMenuPractice) lessonMenuPractice.onclick = function(){
+      var menuField = m.fieldName || loadIds().field || '';
+      var button = this;
+      openPracticeAfterLesson(menuField, state.sessionId, button, function(message){
+        if (button.isConnected) {
+          var node = document.getElementById('lessonPracticeError');
+          if (!node) {
+            app.insertAdjacentHTML('beforeend', '<div class="notice" id="lessonPracticeError" role="alert"></div>');
+            node = document.getElementById('lessonPracticeError');
+          }
+          node.textContent = message;
+        }
+      });
     };
     var em = document.getElementById('endMenu');
     if (em) em.onclick = function(){ endAction(em); };
