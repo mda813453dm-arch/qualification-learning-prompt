@@ -107,9 +107,28 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     await ui.getByText(/出題できる公式過去問はまだ登録されていません/).waitFor();
     assert.equal(toolCalls.filter(t=>t.name==='getOfficialLibrary').length,beforeRefresh+1);
     assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'refresh and unavailable guidance need no AI response');
+    // 内蔵基礎解説からも確認問題を飛ばして同分野の公式実践へ進める。
+    const newLesson = await tool('chooseItem',{sessionId,fieldName,mode:'explain'});
+    assert.equal(newLesson.structuredContent.mode,'explain');
+    const pendingLesson = await tool('restoreStudyView',{sessionId});
+    assert.equal(pendingLesson._meta?.qlp?.status,'lesson_pending');
+    await page.evaluate(result => window.deliver(result),pendingLesson);
+    await ui.getByRole('heading',{name:'基礎法学｜基礎解説'}).waitFor();
+    await ui.getByRole('button',{name:'基礎解説を読み終えたら確認問題へ（全3問）'}).waitFor();
+    const direct = ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'});
+    await direct.waitFor();
+    const beforeDirect = toolCalls.length;
+    await direct.click();
+    await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
+    assert.equal(toolCalls[beforeDirect].name,'chooseItem');
+    assert.equal(toolCalls[beforeDirect].args.mode,'practice');
+    assert.equal(toolCalls[beforeDirect].args.fieldName,fieldName);
+    assert.equal(toolCalls[beforeDirect+1].name,'nextQuestion');
+    assert.equal(toolCalls[beforeDirect+1].args.question,fieldName);
+    assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'direct practice never asks model to create questions');
     const restored=await tool('restoreStudyView',{sessionId});
     assert.ok(restored._meta?.qlp,'study record survives progression');
     assert.deepEqual(errors,[],'no JavaScript exceptions');
-    console.log(`${browserName}: PASS v114 instant foundation, 3 graded confirmations, explicit source state, no AI calls, same frame (375px)`);
+    console.log(`${browserName}: PASS v115 instant foundation, 3 graded confirmations, explicit source state, no AI calls, same frame (375px)`);
   }finally{await browser.close();}
 }
