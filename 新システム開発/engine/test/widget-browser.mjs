@@ -497,6 +497,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:'必修問題｜基礎解説'}).waitFor();
     assert.equal(await ui.locator('.md table').count(),1,'Markdown表を学習枠内に表示');
     assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),1);
+    assert.equal(await ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'}).count(),1,
+      'AIの基礎解説も確認問題と公式実践問題をどちらも選べる');
     const prevFollowups = await page.evaluate(() => window.followups.length);
     const lessonSize=await ui.locator('#app').evaluate(el=>({
       height:el.clientHeight,scrollHeight:el.scrollHeight,scrollTop:el.scrollTop,overflowY:getComputedStyle(el).overflowY
@@ -509,6 +511,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       const app=iframe?.contentDocument?.querySelector('#app');
       return !!app && iframe.getBoundingClientRect().height >= app.scrollHeight-5;
     },null,{timeout:5000});
+    const beforePracticeCalls = await page.evaluate(() => window.calls.length);
+    await ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'}).click();
+    await ui.getByText('試験用の問題文').waitFor();
+    const practiceCalls = await page.evaluate(n => window.calls.slice(n).filter(m => m.params?.name === 'chooseItem' || m.params?.name === 'nextQuestion').map(m => ({name:m.params.name,args:m.params.arguments})), beforePracticeCalls);
+    assert.equal(practiceCalls.length,2,'解説から実践へ2回のエンジン呼び出しだけで遷移');
+    assert.deepEqual(practiceCalls[0],{name:'chooseItem',args:{sessionId,fieldName:'必修問題',mode:'practice'}});
+    assert.equal(practiceCalls[1].name,'nextQuestion');
+    assert.equal(practiceCalls[1].args.question,'必修問題');
+    assert.equal(await page.evaluate(n => window.followups.length-n,prevFollowups),0,
+      '過去問へ直行する操作はChatGPTへ回答やAI作問を要求しない');
+    // 同じ解説を再表示して、確認問題経路も引き続き機能することを検証する。
     await page.evaluate(r=>window.deliver(r),result({status:'menu',sessionId,
       menu:{kind:'lesson',sessionId,studyId:'test-study',learnerId:'testlearner',
         fieldName:'必修問題',body:longLesson,prompt:'解説の次は、この分野の確認問題（全3問）へ進みます。',
