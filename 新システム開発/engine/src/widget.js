@@ -476,6 +476,47 @@ a{color:inherit}
   // 画面用の全文は _meta.qlp（AIには渡らない）、無ければ structuredContent
   function full(r){ return r && ((r._meta && r._meta.qlp) || r.structuredContent || r); }
   function input(){ return (window.openai && window.openai.toolInput) || {}; }
+
+  // iPhone/MCP Appsのファイル機能を使い、AIのツール選択を経由せずPDFを登録する。
+  function yearFromPdfName(fileName) {
+    var n = String(fileName || '').normalize('NFKC').replace(/[\u3000\s]+/g, '');
+    var gregorian = n.match(/(?:^|[^0-9])((?:19|20)\d{2})(?=[^0-9]|$)/);
+    if (gregorian) return Number(gregorian[1]);
+    var reiwa = n.match(/(?:^|[^a-zA-Z0-9])(?:令和|R)0?(\d{1,2})(?=[^0-9]|$)/i);
+    if (reiwa && Number(reiwa[1]) >= 1 && Number(reiwa[1]) <= 99) return 2018 + Number(reiwa[1]);
+    var heisei = n.match(/(?:^|[^a-zA-Z0-9])(?:平成|H)0?(\d{1,2})(?=[^0-9]|$)/i);
+    if (heisei && Number(heisei[1]) >= 1 && Number(heisei[1]) <= 31) return 1988 + Number(heisei[1]);
+    return null;
+  }
+  function planLicensedUpload(files, htmlAnswers, maxFiles) {
+    if (!Array.isArray(files) || files.length < 1 || files.length > maxFiles)
+      throw new Error('PDFは一度に1〜' + maxFiles + 'ファイルを選んでください。');
+    var byYear = new Map();
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var name = String(f.name || f.fileName || '');
+      if (!/\.pdf$/i.test(name) && f.mimeType !== 'application/pdf' && f.type !== 'application/pdf')
+        throw new Error('PDF以外は登録できません：' + name);
+      if (typeof f.size === 'number' && f.size > 30 * 1024 * 1024)
+        throw new Error('30MBを超えるPDFは登録できません：' + name);
+      var year = yearFromPdfName(name);
+      if (!year) throw new Error('ファイル名から年度を確認できません：' + name + '。例：R2_Mondai.pdf または 2020_問題.pdf として選択してください。');
+      var isAnswer = /(?:answer|ans(?:wer)?|seikai|kaitou|解答|正答|正解)/i.test(name);
+      if (htmlAnswers && isAnswer) throw new Error('行政書士は問題PDFだけを選んでください：' + name);
+      var row = byYear.get(year) || { year:year, question:null, answer:null };
+      var field = isAnswer ? 'answer' : 'question';
+      if (row[field]) throw new Error(year + '年度の' + (isAnswer ? '正答' : '問題') + 'PDFが重複しています。');
+      row[field] = f;
+      byYear.set(year, row);
+    }
+    var list = Array.from(byYear.values()).sort(function(a,b){return a.year-b.year;});
+    for (var j = 0; j < list.length; j++) {
+      if (!list[j].question || (!htmlAnswers && !list[j].answer))
+        throw new Error(list[j].year + '年度の' + (!list[j].question ? '問題' : '正答') + 'PDFがありません。');
+    }
+    return list;
+  }
+
   // 診断：画面が動いたことを、エンジンの記録に残す（中身は送らない）。iPhone のアプリで画面が出ない原因を調べるため
   function diag(k){
     // 学習用メニューのスキーマ外の値を送らない。初期化完了後の専用ツールのみ。
