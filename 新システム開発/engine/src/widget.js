@@ -950,11 +950,15 @@ a{color:inherit}
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。</div>' +
         '<div>② 「PDFの送信を許可する」を押す（この操作だけでは取り込みは始まりません）。</div>' +
-        '<div>③ チャットの入力欄にある「＋」から、' + esc(uploadHint) + 'を複数まとめて添付し、送信する。</div>' +
-        '<div>④ 送信したPDFはシステム側で年度判定・公式正答照合・本人専用登録を進めます。「取り込み状況を確認」で完了状況を確認してください。</div>' +
-        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。年度の選択は不要で、異なる年度のPDFをまとめて送信できます。上限を超える場合は分けて送信してください。公式正答が未確認の年度は採点保留となります。</div></div>' +
+        '<div>③ この学習画面に表示される「PDFを選んで登録開始」から、' + esc(uploadHint) + 'をまとめて選択する。ChatGPTの会話に送信する必要はありません。</div>' +
+        '<div>④ 選択後すぐに年度ごとの本人専用登録が始まります。進行状況を確認し、取り込み完了後に公式過去問を解いてください。</div>' +
+        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて選択できます。年度はファイル名から判定し、PDF原本でも照合します。公式正答が確認できない年度は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
         '<div class="row"><button id="licensedConfirm" type="button" disabled style="display:block;width:100%;min-height:64px;padding:16px 20px;font-size:18px;font-weight:700;line-height:1.5;text-align:center;border-radius:12px"><span style="display:block;white-space:nowrap">PDFの送信を許可する</span><span style="display:block;white-space:nowrap;font-size:0.82em">（最大' + esc(maxBatch) + 'ファイル）</span></button></div>' +
+        '<div class="row"><button id="licensedPick" type="button" disabled style="display:block;width:100%;min-height:64px;font-size:18px;font-weight:700">PDFを選んで登録開始</button></div>' +
+        '<input id="licensedFiles" type="file" accept=".pdf,application/pdf" multiple style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none" aria-label="本人専用に登録する問題PDF">' +
+        '<div class="row"><button id="licensedReuse" type="button" disabled>ChatGPTに保存済みのPDFから登録</button></div>' +
+        '<div class="notice" role="status" id="licensedProgress">PDF選択後、AIの判断を待たず学習エンジンに登録します。</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -979,13 +983,108 @@ a{color:inherit}
         try {
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>PDFの送信を許可しました。取り込みはまだ始まっていません。</b><div>画面下の「＋」から最大' + esc(maxBatch) + 'ファイルを選び、青い送信ボタンで送信してください。送信後「取り込み状況を確認」で結果を確認します。</div></div>';
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>許諾確認が完了しました。</b><div>下の「PDFを選んで登録開始」を押してください。ファイルを選択すると本人専用の登録処理を開始します。</div></div>';
+          document.getElementById('licensedPick').disabled = false;
+          document.getElementById('licensedReuse').disabled = !(window.openai && typeof window.openai.selectFiles === 'function');
           ack.checked = false;
         } catch(e) {
           this.disabled = false;
           ack.checked = false;
           document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">許諾確認を記録できませんでした。もう一度確認してください。</div>';
         }
+      };
+      var pdfPicker = document.getElementById('licensedFiles');
+      var pdfButton = document.getElementById('licensedPick');
+      var reuseButton = document.getElementById('licensedReuse');
+      var progressBox = document.getElementById('licensedProgress');
+      function uploadProgress(message, alert) {
+        if (progressBox && progressBox.isConnected) {
+          progressBox.setAttribute('role', alert ? 'alert' : 'status');
+          progressBox.textContent = message;
+        }
+      }
+      async function registerSelectedPdfs(records) {
+        pdfButton.disabled = true;
+        reuseButton.disabled = true;
+        var planned;
+        try { planned = planLicensedUpload(records, isHtmlAnswer, maxBatch); }
+        catch (e) {
+          uploadProgress(String(e.message || e), true);
+          pdfButton.disabled = false;
+          reuseButton.disabled = !(window.openai && typeof window.openai.selectFiles === 'function');
+          return;
+        }
+        var host = window.openai;
+        if (!host || typeof host.getFileDownloadUrl !== 'function' ||
+            (planned.some(function(g){return !!g.question?.file;}) && typeof host.uploadFile !== 'function')) {
+          uploadProgress('この端末のChatGPTは画面内PDF登録機能に対応していません。アプリを最新版に更新してください。', true);
+          pdfButton.disabled = false;
+          return;
+        }
+        async function toUploadRef(item) {
+          var id = item.fileId || null;
+          if (!id && item.file) {
+            // ChatGPTのファイル領域に一時保存。利用者の公開ライブラリに共有しない。
+            var uploaded = await host.uploadFile(item.file);
+            id = uploaded && uploaded.fileId;
+          }
+          if (!id) throw new Error('PDFのファイルIDを取得できませんでした。');
+          var urlInfo = await host.getFileDownloadUrl({fileId:id});
+          var downloadUrl = urlInfo && (urlInfo.downloadUrl || urlInfo.download_url);
+          if (!/^https:\/\/\S+$/.test(String(downloadUrl || '')))
+            throw new Error('PDFの一時取得URLが発行されませんでした。');
+          return {download_url:downloadUrl, file_id:id, file_name:item.name || item.fileName || 'problem.pdf', mime_type:'application/pdf'};
+        }
+        var okYears = [], pendingYears = [], failedYears = [];
+        for (var i = 0; i < planned.length; i++) {
+          var item = planned[i];
+          try {
+            uploadProgress((i+1) + '/' + planned.length + '：' + item.year + '年度のPDFを受け取り、本人専用に登録しています。');
+            var problem = await toUploadRef(item.question);
+            var answer = item.answer ? await toUploadRef(item.answer) : undefined;
+            var response = await callTool('attachPdf', {
+              sessionId:state.sessionId, year:item.year, questionPdf:problem,
+              ...(answer ? {answerPdf:answer} : {})
+            });
+            if (!response || response.error || !['attached','attachedAlready','pendingOfficialAnswer'].includes(response.status))
+              throw new Error(response && (response.error || response.notice) || '登録エンジンから成功結果が返りませんでした。');
+            if (response.status === 'pendingOfficialAnswer') pendingYears.push(item.year);
+            else okYears.push(item.year);
+          } catch (e) {
+            failedYears.push(item.year + '年度（' + String(e.message || e).slice(0,110) + '）');
+          }
+        }
+        var messages = [];
+        if (okYears.length) messages.push('登録・検証を開始：' + okYears.join('・') + '年度');
+        if (pendingYears.length) messages.push('公式正答の確認待ち：' + pendingYears.join('・') + '年度');
+        if (failedYears.length) messages.push('未登録：' + failedYears.join('、'));
+        messages.push('「取り込み状況を確認」で出題可能になった年度を確認してください。');
+        uploadProgress(messages.join('。'), failedYears.length > 0);
+        pdfButton.disabled = false;
+        reuseButton.disabled = !(window.openai && typeof window.openai.selectFiles === 'function');
+      }
+      pdfButton.onclick = function(){
+        if (!this.disabled) pdfPicker.click();
+      };
+      pdfPicker.onchange = function(){
+        var fileList = Array.from(this.files || []).map(function(file){
+          return {name:file.name, type:file.type, size:file.size, file:file};
+        });
+        this.value = '';
+        if (fileList.length) registerSelectedPdfs(fileList);
+      };
+      reuseButton.onclick = async function(){
+        this.disabled = true;
+        try {
+          if (!(window.openai && typeof window.openai.selectFiles === 'function'))
+            throw new Error('この環境では保存済みファイルを選択できません。');
+          var selected = await window.openai.selectFiles();
+          if (Array.isArray(selected) && selected.length)
+            await registerSelectedPdfs(selected.map(function(f){
+              return {name:f.fileName, fileName:f.fileName, mimeType:f.mimeType, fileId:f.fileId};
+            }));
+        } catch(e) { uploadProgress(String(e.message || e), true); }
+        if (this.isConnected) this.disabled = false;
       };
       document.getElementById('licensedRefresh').onclick = async function(){
         this.disabled = true;
