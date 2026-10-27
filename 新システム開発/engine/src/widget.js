@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v115.html';
+export const WIDGET_URI = 'ui://qlp/question-v116.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-27.115';
+export const WIDGET_VERSION = '2026-10-27.116';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -937,6 +937,8 @@ a{color:inherit}
       var personal = Array.isArray(data.personalUploadedYears) ? [...new Set(data.personalUploadedYears)] : [];
       var pending = Array.isArray(data.pendingOfficialAnswerYears) ? [...new Set(data.pendingOfficialAnswerYears)].filter(function(y){ return !personal.includes(y); }) : [];
       var maxBatch = Number.isInteger(data.maxBatchFiles) && data.maxBatchFiles > 0 ? data.maxBatchFiles : 10;
+      var importing = Array.isArray(data.importingYears) ? data.importingYears : [];
+      var failedImports = Array.isArray(data.failedYears) ? data.failedYears : [];
       var isHtmlAnswer = data.answerFormat === 'html' || /行政書士/.test(data.qualificationName || '');
       var officialLink = safeUrl(data.officialUrl);
       var uploadHint = isHtmlAnswer ? '各年度の公式問題PDF（正答PDFは不要です）' : '各年度の公式問題PDFと正答PDF';
@@ -945,6 +947,8 @@ a{color:inherit}
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
         (personal.length ? '<div class="notice"><b>出題できる登録済み年度：</b>' + personal.map(function(y){ return esc(y) + '年度'; }).join('・') + '</div>' : '') +
         (pending.length ? '<div class="notice"><b>公式正答の確認待ち：</b>' + pending.map(function(y){return esc(y) + '年度';}).join('・') + '<div>問題PDFは受け取り済みです。公式正答の年度照合が終わるまで出題・採点はしません。</div></div>' : '') +
+        (importing.length ? '<div class="notice"><b>登録処理中：</b>' + importing.map(function(y){return esc(y) + '年度';}).join('・') + '</div>' : '') +
+        (failedImports.length ? '<div class="notice" role="alert"><b>登録に失敗：</b>' + failedImports.map(function(v){return esc(v.year) + '年度（' + esc(v.reason) + '）';}).join('・') + '</div>' : '') +
         (personal.length ? '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' : '') +
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
@@ -1093,8 +1097,12 @@ a{color:inherit}
           if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears.filter(function(y){return !uploaded.includes(y);}) : [];
+          var inProgress = Array.isArray(latest.importingYears) ? latest.importingYears : [];
+          var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
           var msg = uploaded.length ? '登録済み：' + uploaded.join('・') + '年度。' : '出題できる公式過去問はまだ登録されていません。';
           if (staged.length) msg += ' 正答確認待ち：' + staged.join('・') + '年度。';
+          if (inProgress.length) msg += ' 登録・検証中：' + inProgress.join('・') + '年度。';
+          if (errors.length) msg += ' 登録失敗：' + errors.map(function(x){return x.year + '年度（' + x.reason + '）';}).join('・') + '。';
           else if (!uploaded.length) msg += ' 許諾確認後、問題PDFをまとめて添付してください。';
           render({...data, ...latest, status:'sourceUnavailable', refreshMessage:msg});
         } catch(e) {
