@@ -64,6 +64,14 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   assert.ok(names.includes('attachPdf'), '通常のチャットでもPDF登録ツールを公開する');
 });
 
+test('通常の会話からもPDF登録ツールを呼べる（添付がなければ安全に拒否）', async () => {
+  const env = makeEnv();
+  const r = await rpc(env, 'tools/call', { name: 'attachPdf', arguments: {} });
+  assert.equal(r.body.result.isError, true);
+  assert.match(r.body.result.content[0].text, /ARGUMENT_REQUIRED/);
+  assert.doesNotMatch(r.body.result.content[0].text, /Unknown tool/);
+});
+
 test('記述式解説の末尾にモデルが最新問専用の操作画面を配置する', async () => {
   const env = makeEnv();
   const tools = (await rpc(env, 'tools/list', {})).body.result.tools;
