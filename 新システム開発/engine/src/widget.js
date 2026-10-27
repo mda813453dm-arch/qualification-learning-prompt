@@ -913,7 +913,7 @@ a{color:inherit}
         '<div>④ 「取り込み状況を確認」で登録を確認する。取り込んだ各PDFの年度と正答は別々に照合します。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>（行政書士は1年度1PDFなので最大' + esc(maxBatch) + '年度分）。これを超える場合は次のまとまりに分けてください。古い年度・新しい年度も添付できますが、公式正答の確認ができない年度は採点保留です。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><button id="licensedConfirm" type="button" disabled style="display:block;width:100%;min-height:64px;padding:16px 20px;font-size:18px;font-weight:700;line-height:1.5;text-align:center;border-radius:12px"><span style="display:block;white-space:nowrap">PDFの添付へ進む</span><span style="display:block;white-space:nowrap;font-size:0.82em">（最大' + esc(maxBatch) + 'ファイル）</span></button></div>' +
+        '<div class="row"><button id="licensedConfirm" type="button" disabled style="display:block;width:100%;min-height:64px;padding:16px 20px;font-size:18px;font-weight:700;line-height:1.5;text-align:center;border-radius:12px"><span style="display:block;white-space:nowrap">PDFの送信を許可する</span><span style="display:block;white-space:nowrap;font-size:0.82em">（最大' + esc(maxBatch) + 'ファイル）</span></button></div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -938,7 +938,7 @@ a{color:inherit}
         try {
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>添付の許諾確認を受け付けました。</b><div>入力欄の「＋」から最大' + esc(maxBatch) + 'ファイルをまとめて添付・送信してください。送信後「取り込み状況を確認」で結果を確認します。</div></div>';
+          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="status"><b>PDFの送信を許可しました。取り込みはまだ始まっていません。</b><div>画面下の「＋」から最大' + esc(maxBatch) + 'ファイルを選び、青い送信ボタンで送信してください。送信後「取り込み状況を確認」で結果を確認します。</div></div>';
           ack.checked = false;
         } catch(e) {
           this.disabled = false;
