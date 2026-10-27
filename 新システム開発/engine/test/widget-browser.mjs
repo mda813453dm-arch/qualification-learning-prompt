@@ -413,13 +413,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /最大10ファイル/);
     assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),0,
       '本人用の登録がゼロなら過去問を解くボタンを表示しない');
-    const confirm = ui.getByRole('button', { name: 'PDFの添付へ進む' });
+    const confirm = ui.getByRole('button', { name: /PDFの送信を許可する/ });
     assert.equal(await confirm.isDisabled(), true, '利用許諾が未確認なら無効');
     const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
     const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.locator('#licensedAck').check();
     await confirm.click();
-    await ui.getByText('添付の許諾確認を受け付けました。', { exact: false }).waitFor();
+    await ui.getByText('許諾確認が完了しました。', { exact: false }).waitFor();
+    assert.equal(await ui.locator('#licensedPick').isEnabled(), true, '許諾後は画面内でPDFを選べる');
     const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
     assert.equal(confirmed.length, beforePermission + 1);
     assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
