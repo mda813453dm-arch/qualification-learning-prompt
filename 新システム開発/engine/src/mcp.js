@@ -822,7 +822,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       }
       if ((widget && WIDGET_TOOLS.has(tool.name) || tool.name === 'showDescriptiveActions') && res.status < 400) {
         const view = forModel(res.body);
-        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
+        return ok(id, { ...(tool.name === 'attachPdf' ? { isError: false } : {}), content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
       }
       return ok(id, {
         isError: res.status >= 400,
