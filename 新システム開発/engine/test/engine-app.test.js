@@ -640,12 +640,12 @@ test('学習者ごとの取り込みに、まだ無い年度だけを後ろに�
   assert.deepEqual(merged.sources.map((s) => [s.year, s.status]), [[2026, 'done'], [2024, 'pending'], [2025, 'pending']]);
 });
 
-test('直近3年度の取り込みが済むまでは新しい問を出さず、4年度目より前は待たない', async () => {
+test('検証済みの問が1問でもあれば他年度が取り込み中でも出題できる', async () => {
   const { pickNext, newState } = await import('../src/engine.js');
   const state = newState({ qualificationId: 'q063', plan: {}, now: T0 });
   const items = [{ packet: { questionId: 'a', fieldId: 's1' } }];
   const job = (st) => ({ state: 'running', sources: [2026, 2025, 2024, 2023].map((year, i) => ({ year, status: st[i] })) });
-  assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'pending', 'pending', 'pending']) }).status, 'waiting');
+  assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'pending', 'pending', 'pending']) }).status, 'question');
   assert.equal(pickNext(state, items, { today: '2026-10-17', job: job(['done', 'done', 'failed', 'pending']) }).status, 'question');
 });
 
