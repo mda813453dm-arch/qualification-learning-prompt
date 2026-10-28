@@ -1641,3 +1641,15 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   assert.match(html,/確認問題へ（3問）/);
   assert.match(html,/公式過去問を解く/);
 });
+
+test('詳細解説E照合番号は無言で終了せず学習枠へ保存する指示がある',()=>{
+  assert.match(INSTRUCTIONS,/AI詳細解説の完了ゲート/);
+  assert.match(INSTRUCTIONS,/空の応答・無言で終了/);
+  assert.match(INSTRUCTIONS,/showMenu\(\{kind:"next"/);
+  const explain=TOOLS.find(t=>t.name==='explainSpec');
+  assert.match(explain.description,/再発防止/);
+  assert.match(explain.description,/showMenu/);
+  const html=widgetHtml();
+  assert.match(html,/aiPermissionNotice/);
+  assert.match(html,/アクセスを許可/);
+});
