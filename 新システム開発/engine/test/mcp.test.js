@@ -1604,3 +1604,17 @@ test('本人専用の過去問取り込み画面は登録済み問題と確認�
   assert.doesNotMatch(html,/id="licensedRefresh"/);
   assert.doesNotMatch(html,/id="licensedAi"/);
 });
+
+test('本人専用PDFの検証結果を見てから学習の次の選択肢を提示する',()=>{
+  const queued=forModel({status:'attachedBatch',sessionId:'s1',queued:6,failed:0});
+  assert.equal(queued.status,'attachedBatch');
+  assert.match(queued.howToProceed,/登録依頼は完了ではありません/);
+  const pending=forModel({status:'officialLibrary',sessionId:'s1',permissionedUpload:true,
+    importingYears:[2020,2021],readyYearDetails:[]});
+  assert.deepEqual(pending.nextChoices,['確認問題へ（3問）']);
+  const done=forModel({status:'officialLibrary',sessionId:'s1',permissionedUpload:true,
+    readyYearDetails:[{year:2020,questions:49,excluded:1}],importingYears:[2021]});
+  assert.deepEqual(done.readyYears,[{year:2020,questions:49,excluded:1}]);
+  assert.deepEqual(done.nextChoices,['公式過去問を解く','確認問題へ（3問）']);
+  assert.equal(done.readyYears.length,1,'解析中の年度を登録済みと数えない');
+});
