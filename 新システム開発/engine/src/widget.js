@@ -672,7 +672,7 @@ a{color:inherit}
   var licensedConsentSessionId = null;
   function render(data){
     // 添付受信・登録状況照会はデータ通知。別の学習枠を作らず、既存画面の自動照会が扱う。
-    if (data && ['officialLibrary','attached','attachedAlready','pendingOfficialAnswer','uploadPermissionConfirmed'].includes(data.status)) return;
+    if (data && ['officialLibrary','attached','attachedBatch','attachedAlready','pendingOfficialAnswer','uploadPermissionConfirmed'].includes(data.status)) return;
     licensedPollGeneration++;
     if (data && data.status !== 'lesson_pending') lessonPollGeneration++;
     if (data && data.status !== 'confirmation_pending') confirmationPollGeneration++;
