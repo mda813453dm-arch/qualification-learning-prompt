@@ -1593,3 +1593,14 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
   assert.equal(restored._meta.qlp.correctCount,3);
   assert.equal(restored._meta.qlp.complete,true);
 });
+
+test('本人専用の過去問取り込み画面は登録済み問題と確認問題への次の操作を持つ',()=>{
+  const html=widgetHtml();
+  assert.match(html,/readyYearDetails/);
+  assert.match(html,/licensedStart/);
+  assert.match(html,/licensedCheck/);
+  assert.match(html,/確認問題へ（3問）/);
+  assert.match(html,/登録状況は自動で更新します/);
+  assert.doesNotMatch(html,/id="licensedRefresh"/);
+  assert.doesNotMatch(html,/id="licensedAi"/);
+});
