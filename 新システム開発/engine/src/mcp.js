@@ -588,7 +588,27 @@ export function forModel(body) {
     return { status: 'sourceUnavailable', sessionId: body.sessionId,
       howToProceed: '公式過去問の利用状況と、必要な場合のPDF登録・AI確認問題ボタンは学習枠内に表示済み。保存方式や内部件数・共有方式は利用者に見せない。添付された実際のPDFが届くまで勝手に取り込みを進めない。' };
   }
+  if (body.status === 'attachedBatch' || body.status === 'attached') {
+    return { status:body.status, sessionId:body.sessionId,
+      ...(body.status === 'attachedBatch' ?
+        { queued:body.queued, existing:body.existing, failed:body.failed, pendingOfficialAnswer:body.pendingOfficialAnswer } :
+        { year:body.year }),
+      howToProceed:'PDFの受領・登録依頼は完了ではありません。勝手に「登録済み」と報告しないでください。既存の学習枠は開いたままgetOfficialLibraryで年度別の検証結果を確認し、出題可能な年度が1つでもできたら「公式過去問を解く／確認問題へ（3問）」を画面で選べるようにします。内部処理の説明だけで会話を終了しないでください。' };
+  }
   if (body.status === 'officialLibrary') {
+    if (body.permissionedUpload) {
+      const ready = Array.isArray(body.readyYearDetails) ? body.readyYearDetails : [];
+      const importing = Array.isArray(body.importingYears) ? body.importingYears : [];
+      const pending = Array.isArray(body.pendingOfficialAnswerYears) ? body.pendingOfficialAnswerYears : [];
+      const failed = Array.isArray(body.failedYears) ? body.failedYears : [];
+      return { status:'officialLibrary', sessionId:body.sessionId,
+        readyYears:ready, importingYears:importing, pendingAnswerYears:pending, failedYears:failed,
+        nextChoices: ready.length ? ['公式過去問を解く', '確認問題へ（3問）'] : ['確認問題へ（3問）'],
+        howToProceed:ready.length
+          ? '検証済みの公式過去問が使えます。新しい画面枠を作らず既存の学習枠にある「公式過去問を解く／確認問題へ（3問）」を案内し、利用者の選択を待ってください。'
+          : importing.length || pending.length ? '未完了の過去問を登録済みと報告しないでください。現在の学習枠では「確認問題へ（3問）」を選んで先に進めます。' :
+          '出題可能な公式過去問はありません。登録失敗した年度を明確にし、確認問題に進む選択肢を案内してください。' };
+    }
     return { status: 'officialLibrary', sessionId: body.sessionId,
       howToProceed: '利用可能な年度と試験区分は学習画面に表示済み。内部の保存方式は説明せず、操作ボタンの選択を待つ。' };
   }
