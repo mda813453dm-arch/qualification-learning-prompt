@@ -336,3 +336,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-28 v122: Fix 6-PDF upload followed by no next action. attachPdfBatch/attachPdf now publish a current-message widget instead of only a textual receipt; widget fetches official-library and renders per-year ready/processing/failed plus actionable official-practice and confirmation buttons. official-library includes fieldName so both buttons can operate. Preserve PDF permission and no claim of validation until done. Deploy only if full regression tests and smoke pass; do not edit protected main/master_prompt.txt.
 
 2026-10-28 v122 preflight retry: update the legacy regression assertion to expect a PDF upload result widget, since showing next-action buttons in the current chat turn is the intentional behavior. Re-run full tests and deploy after success.
+
+2026-10-28 v122 retry #2: update existing attachPdf test to inspect private _meta.qlp for notice and stored source after widget publication; model-facing structuredContent intentionally hides internal job details. Full regression then deploy and smoke.
