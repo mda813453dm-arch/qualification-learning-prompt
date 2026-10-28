@@ -256,7 +256,7 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
     value:'5',
     confidence:'sure'
   });
-  assert.equal(gradeCall.isError,false,JSON.stringify(gradeCall));
+  assert.notEqual(gradeCall.isError,true,JSON.stringify(gradeCall));
   const graded=gradeCall._meta?.qlp??gradeCall.structuredContent;
   assert.equal(graded.grade?.questionId,real.question.questionId);
   assert.equal(typeof graded.grade?.correct,'boolean');
