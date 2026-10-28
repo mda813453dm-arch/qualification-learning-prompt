@@ -1023,6 +1023,9 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   const app = async (method, params) => (await rpc(env, method, params, { token: null, path: `/app/${appKey(TOKEN)}` })).body.result;
   const listed = (await app('tools/list', {})).tools.find((t) => t.name === 'attachPdf');
   assert.deepEqual(listed._meta['openai/fileParams'], ['questionPdf', 'answerPdf']);
+  assert.equal(listed._meta['openai/outputTemplate'], undefined, 'PDF登録は新しい学習枠を生成しない');
+  const libMeta = (await app('tools/list', {})).tools.find((t) => t.name === 'getOfficialLibrary')._meta;
+  assert.equal(libMeta['openai/outputTemplate'], undefined, '登録状況照会はデータ専用');
   assert.match(listed.description, /行政書士など区分が一つだけの資格ではsectionを省略してよい/);
   assert.match(listed.description, /許諾未確認エラーを試験区分エラーと言い換えず/);
   // ChatGPT のファイル受渡し規約。file_id のrequired欠落は登録時INVALID_ARGUMENTになる。
