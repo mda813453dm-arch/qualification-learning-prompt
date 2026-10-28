@@ -1603,8 +1603,8 @@ a{color:inherit}
       '<div id="lessonConnection" class="notice" role="status">' +
         (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
                      : '解説が表示されない場合は、登録状況を確認するかAIへ再依頼できます。') + '</div>' +
-      '<div class="row"><button id="refreshLesson" type="button">AI解説の登録状況を確認</button>' +
-      '<button id="resumeLesson" type="button">' + (hasPrepared ? '理解度に合わせたAI解説を追加（任意）' : 'AI解説を再依頼') + '</button></div>' +
+      '<div class="row">' + (hasPrepared ? '' : '<button id="refreshLesson" type="button">AI解説の登録状況を確認</button>') +
+      '<button id="resumeLesson" type="button">' + (hasPrepared ? '理解度に合わせたAI解説を追加' : 'AI解説を再依頼') + '</button></div>' +
       (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button><button id="lessonPracticeDirect" type="button">実践問題（公式過去問）へ進む</button></div>') +
       '<details id="manualLesson" hidden><summary>AIの解説がチャット側に表示された場合</summary>' +
       '<p class="notice">チャットに出た解説文をコピーして貼り付けると、この学習枠に保存して学習を続けられます。</p>' +
@@ -1641,7 +1641,8 @@ a{color:inherit}
       }
       return false;
     }
-    document.getElementById('refreshLesson').onclick = readPublishedLesson;
+    var refreshLessonButton = document.getElementById('refreshLesson');
+    if (refreshLessonButton) refreshLessonButton.onclick = readPublishedLesson;
     var lessonPractice = document.getElementById('quickGuidePractice') || document.getElementById('lessonPracticeDirect');
     if (lessonPractice) lessonPractice.onclick = function(){
       openPracticeAfterLesson(field, sid, this, lessonNotice);
@@ -1701,7 +1702,7 @@ a{color:inherit}
       }
       setTimeout(async function(){
         if (lessonPollId !== lessonPollGeneration || locked || state.sessionId !== sid ||
-            !document.getElementById('refreshLesson')) return;
+            !document.getElementById(hasPrepared ? 'resumeLesson' : 'refreshLesson')) return;
         var done = await readPublishedLesson();
         if (!done && lessonPollId === lessonPollGeneration) pollLesson(index + 1);
       }, lessonPollDelays[index]);
@@ -1729,7 +1730,7 @@ a{color:inherit}
         }
       } finally {
         requesting = false;
-        if (button.isConnected) { button.disabled = false; button.textContent = hasPrepared ? '理解度に合わせたAI解説を追加（任意）' : 'AI解説を再依頼'; }
+        if (button.isConnected) { button.disabled = false; button.textContent = hasPrepared ? '理解度に合わせたAI解説を追加' : 'AI解説を再依頼'; }
       }
     };
     var lessonSkip = document.getElementById('lessonSkip');
