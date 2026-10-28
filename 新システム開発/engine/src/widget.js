@@ -1009,8 +1009,9 @@ a{color:inherit}
       var licensedGeneration = licensedPollGeneration;
       var lastStatusKey = JSON.stringify([personal, pending, importing, failedImports]);
       var pollCount = 0;
+      var pollLimit = importing.length ? 120 : 48;
       async function updateLicensedStatus(){
-        if (locked || licensedGeneration !== licensedPollGeneration || ++pollCount > 36) return;
+        if (locked || licensedGeneration !== licensedPollGeneration || ++pollCount > pollLimit) return;
         try {
           var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
           if (locked || licensedGeneration !== licensedPollGeneration) return;
@@ -1038,8 +1039,8 @@ a{color:inherit}
           var notice = document.getElementById('licensedAutoStatus');
           if (notice) notice.textContent = '登録状況を取得できません。接続が戻れば自動で再確認します。';
         }
-        if (!locked && licensedGeneration === licensedPollGeneration && pollCount < 36)
-          setTimeout(updateLicensedStatus, 8000);
+        if (!locked && licensedGeneration === licensedPollGeneration && pollCount < pollLimit)
+          setTimeout(updateLicensedStatus, 10000);
       }
       setTimeout(updateLicensedStatus, 2500);
       bindEnd(); return;
