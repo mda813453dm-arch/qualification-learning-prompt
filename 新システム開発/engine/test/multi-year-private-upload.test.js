@@ -165,3 +165,28 @@ test('一括登録は年度不明だけ失敗させ、他ファイルを止め�
   assert.equal(received.length,1);
   assert.deepEqual(result.body.results.map(x=>x.status),['failed','attached']);
 });
+
+test('PDF解析用の自己リクエストは1.5秒で切断せず、登録APIはすぐに返答する', async()=>{
+  const {env}=setup();
+  let workerSignal=null;
+  let workerStarted=0;
+  env.selfFetch=async (_url, options)=>{
+    workerStarted++;
+    workerSignal=options.signal;
+    await new Promise(resolve=>setTimeout(resolve,1700));
+    return new Response('{}',{status:200});
+  };
+  const s=await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const base='/v1/sessions/'+s.body.sessionId;
+  await req(env,'POST',base+'/upload-permission',{year:0,confirmed:true});
+  const begin=Date.now();
+  const response=await req(env,'POST',base+'/attach-batch',{
+    questionPdfs:[{file_name:'R2_mondai.pdf',download_url:'https://uploads.example/R2.pdf',file_id:'f2'}]
+  });
+  assert.equal(response.status,200,JSON.stringify(response.body));
+  assert.equal(response.body.queued,1);
+  assert.ok(Date.now()-begin < 1500,'長時間の解析を待たず登録処理受付を返す');
+  assert.equal(workerStarted,1);
+  await new Promise(resolve=>setTimeout(resolve,1750));
+  assert.equal(workerSignal.aborted,false,'解析ワーカーを1.5秒でAbortしない');
+});
