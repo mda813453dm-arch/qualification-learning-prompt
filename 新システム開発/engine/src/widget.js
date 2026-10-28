@@ -672,7 +672,16 @@ a{color:inherit}
   var licensedConsentSessionId = null;
   function render(data){
     // 添付受信・登録状況照会はデータ通知。別の学習枠を作らず、既存画面の自動照会が扱う。
-    if (data && ['officialLibrary','attached','attachedBatch','attachedAlready','pendingOfficialAnswer','uploadPermissionConfirmed'].includes(data.status)) return;
+    if (data && ['attached','attachedBatch','attachedAlready','pendingOfficialAnswer'].includes(data.status)) {
+      var sid = data.sessionId;
+      app.innerHTML = '<h2>PDF登録状況</h2><div class="notice">登録結果を確認しています。登録済みの過去問または確認問題から学習を続けられます。</div>';
+      if (sid) callTool('getOfficialLibrary',{sessionId:sid}).then(function(v){
+        if (v && v.status === 'officialLibrary' && v.permissionedUpload) render({...v,status:'sourceUnavailable'});
+        else app.innerHTML += '<div class="notice">登録状況を確認できません。元の学習枠で再確認してください。</div>';
+      }).catch(function(){app.innerHTML += '<div class="notice">接続できません。元の学習枠で再確認してください。</div>';});
+      return;
+    }
+    if (data && ['officialLibrary','uploadPermissionConfirmed'].includes(data.status)) return;
     licensedPollGeneration++;
     if (data && data.status !== 'lesson_pending') lessonPollGeneration++;
     if (data && data.status !== 'confirmation_pending') confirmationPollGeneration++;
