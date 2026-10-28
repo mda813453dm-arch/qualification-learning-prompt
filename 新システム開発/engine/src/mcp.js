@@ -825,6 +825,13 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         const view = forModel(res.body);
         return ok(id, { ...(tool.name === 'attachPdf' ? { isError: false } : {}), content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
       }
+      // 状況照会は新しい学習画面を生成しないデータ専用処理。
+      // ウィジェットには完全な年度別情報を渡し、AIの通常応答には公開しない。
+      if (widget && tool.name === 'getOfficialLibrary' && res.status < 400) {
+        const view = forModel(res.body);
+        return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }],
+          structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
+      }
       return ok(id, {
         isError: res.status >= 400,
         content: [{ type: 'text', text: JSON.stringify(res.body) }],
