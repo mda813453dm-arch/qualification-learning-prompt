@@ -1201,7 +1201,7 @@ a{color:inherit}
       h += '<div class="row"><button id="descriptiveMenuStart">記述式（午前11・午後21/22）を開く</button></div>';
     }
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
-    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button id="dk">分からない</button><button id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';
+    h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
     if (safeUrl(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
@@ -1212,12 +1212,21 @@ a{color:inherit}
     bindEnd();
     var descButton = document.getElementById('descriptiveMenuStart');
     if (descButton) descButton.onclick = function(){ showDescriptiveMenu(q.year); };
-    // 選択肢はラジオで選ぶ。選ぶと「解答する」ボタンが出る（触れただけでは採点しない）
-    var chosen = null;
+    // iPhone の再描画・タップイベントで一時変数が失われても、checked の実値から採点する。
     app.querySelectorAll('input[name=ans]').forEach(function(r){ r.onchange = function(){
-      chosen = r.value; document.getElementById('decrow').style.display = 'flex';
+      var row = document.getElementById('decrow');
+      if (row) row.style.display = 'flex';
     }; });
-    document.getElementById('decide').onclick = function(){ if (chosen) answer(chosen); };
+    var existingChoice = app.querySelector('input[name=ans]:checked');
+    if (existingChoice) document.getElementById('decrow').style.display = 'flex';
+    document.getElementById('decide').onclick = function(){
+      var selected = app.querySelector('input[name=ans]:checked');
+      if (selected) answer(selected.value);
+      else {
+        var status = document.getElementById('answerProgress');
+        if (status) { status.style.display = 'block'; status.textContent = '解答番号を選んでください。'; }
+      }
+    };
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
   }
@@ -2421,37 +2430,67 @@ a{color:inherit}
     }; });
   }
   async function answer(v){
-    if (state.answered || !state.question) return;
-    state.answered = true;
-    app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
-    var picked = app.querySelector('.choices .opt[data-n="' + v + '"]'); if (picked) picked.classList.add('picked');
-    if (v === 'スキップ') app.insertAdjacentHTML('beforeend', '<div id="skipProgress" class="notice" role="status">スキップして次の問題を開いています…</div>');
+    var progress = document.getElementById('answerProgress');
+    function showProgress(message, isError){
+      if (!progress || !progress.isConnected) return;
+      progress.style.display = 'block';
+      progress.setAttribute('role', isError ? 'alert' : 'status');
+      progress.textContent = message;
+    }
+    if (state.answered) { showProgress('採点処理中です。結果を確認しています。', false); return; }
+    if (!state.question || !state.sessionId || !state.question.questionId) {
+      showProgress('問題の情報を確認できません。学習画面の再表示が必要です。', true);
+      return;
+    }
+    var qid = state.question.questionId;
+    var sid = state.sessionId;
     var guess = document.getElementById('guess');
+    var confidence = guess && guess.checked ? 'guess' : 'sure';
+    state.answered = true;
+    // 押下直後に見える位置で進行を示し、通信を待つ間の二重採点を防ぐ。
+    showProgress(v === 'スキップ' ? 'スキップ処理中です…' : '解答を受け付けました。公式正答と照合しています…', false);
+    var submitButton = document.getElementById('decide');
+    if (submitButton) submitButton.textContent = '採点中…';
+    app.querySelectorAll('button,input').forEach(function(b){ b.disabled = true; });
+    var picked = app.querySelector('.choices .opt[data-n="' + v + '"]');
+    if (picked) picked.classList.add('picked');
     try {
-      var r = await callTool('submitAnswer', { sessionId: state.sessionId, questionId: state.question.questionId, value: String(v), confidence: guess && guess.checked ? 'guess' : 'sure' });
+      var r = await callTool('submitAnswer', { sessionId:sid, questionId:qid, value:String(v), confidence:confidence });
       if (r && (r.error === 'DAILY_LIMIT' || r.error === 'ACCESS_CODE_REQUIRED')) {
-        state.answered = false;
-        app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc(String(r.hint || '').replace(/（.*$/, '')) + '</div>');
-        return;
+        throw new Error(r.error);
       }
       if (!r || r.error || !r.grade) throw new Error('ANSWER_RESULT_MISSING');
+      if (r.grade.questionId && r.grade.questionId !== qid) throw new Error('ANSWER_QUESTION_MISMATCH');
       state.next = r.next || null;
       showGrade(r.grade);
+      return;
     } catch (e) {
-      // 採点がタイムアウトしてもサーバー側でスキップ済みのことがある。
-      // 保存済みの未回答問を確認し、別問への遷移が確定した場合だけ復帰する。
-      if (v === 'スキップ') {
-        try {
-          var recovered = await callTool('nextQuestion', { sessionId: state.sessionId });
-          var moved = recovered && !recovered.error &&
-            (recovered.status === 'question' && recovered.question && recovered.question.questionId !== state.question.questionId ||
-             ['waiting','finished','remediation','sourceUnavailable'].includes(recovered.status));
-          if (moved) { state.next = null; render(recovered); return; }
-        } catch (retryError) { /* 元の問題でスキップを再試行できるようにする */ }
-      }
-      state.answered = false; app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
-      var progress = document.getElementById('skipProgress'); if (progress) progress.remove();
-      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">' + (v === 'スキップ' ? 'スキップを完了できませんでした。もう一度押してください。' : '採点できませんでした。もう一度押してください。') + '</div>');
+      // APIの応答が途切れても、採点がサーバーへ保存された可能性がある。
+      // 同じ解答を自動再送せず、読取専用で正誤と現在問を照合する。
+      showProgress('通信状態を確認しています。回答は再送しません…', false);
+      try {
+        var saved = await callTool('getStudySnapshot', {sessionId:sid});
+        if (saved && !saved.error && saved.status === 'restoredGrade' &&
+            saved.grade && saved.grade.questionId === qid) {
+          render(saved);
+          return;
+        }
+        if (v === 'スキップ' && saved && !saved.error &&
+            (saved.status === 'question' && saved.question?.questionId !== qid ||
+             ['waiting','finished','remediation','sourceUnavailable'].includes(saved.status))) {
+          render(saved);
+          return;
+        }
+        // 別問や不明な状態へ飛ばさず、この問の回答を保持する。
+      } catch (readError) {}
+      state.answered = false;
+      app.querySelectorAll('button,input').forEach(function(b){ b.disabled = false; });
+      if (submitButton && submitButton.isConnected) submitButton.textContent = '解答する';
+      var message = e && e.message === 'DAILY_LIMIT' ? '本日の利用上限に達しました。回答は保持されています。' :
+        e && e.message === 'ACCESS_CODE_REQUIRED' ? '利用コードが必要です。回答は保持されています。' :
+        '採点結果を取得できませんでした。選択した回答を保持しています。同じボタンで再確認できます。';
+      showProgress(message, true);
+      if (progress && progress.isConnected) progress.scrollIntoView({block:'nearest',behavior:'instant'});
     }
   }
   // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
