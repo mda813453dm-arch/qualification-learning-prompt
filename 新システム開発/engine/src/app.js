@@ -596,6 +596,68 @@ async function resumeLicensedPending(env, state, now) {
   if (promoted) await kickIngest(env, id, now);
 }
 
+/** ChatGPT の複数ファイル用 MCP 入力。年度はファイル名の R/H/西暦を読み、原本との一致は解析器が確認する。 */
+function attachedYearFromName(name) {
+  const s = String(name ?? '').normalize('NFKC').replace(/\s+/g, '');
+  const western = s.match(/(?:^|[^0-9])((?:19|20)\d{2})(?!\d)/);
+  if (western) return Number(western[1]);
+  const reiwa = s.match(/(?:^|[^a-zA-Z0-9])(?:令和|R)0?(\d{1,2})(?!\d)/i);
+  if (reiwa && Number(reiwa[1]) >= 1) return 2018 + Number(reiwa[1]);
+  const heisei = s.match(/(?:^|[^a-zA-Z0-9])(?:平成|H)0?(\d{1,2})(?!\d)/i);
+  if (heisei && Number(heisei[1]) >= 1) return 1988 + Number(heisei[1]);
+  return null;
+}
+function attachedSectionFromName(name, sections) {
+  if (!Array.isArray(sections) || sections.length === 0) return undefined;
+  if (sections.length === 1) return sections[0];
+  const n = String(name ?? '').normalize('NFKC');
+  const morning = /午前|\bam\b|morning/i.test(n);
+  const afternoon = /午後|\bpm\b|afternoon/i.test(n);
+  if (morning === afternoon) return null;
+  return sections.find(s => (morning ? /午前/ : /午後/).test(s)) ?? null;
+}
+/** 複数添付を1回のアプリ呼出しで順次受け付ける。1ファイルの失敗で他の年度を止めない。 */
+async function attachPdfBatch(env, id, state, b, url, now) {
+  const files = Array.isArray(b.questionPdfs) ? b.questionPdfs : [];
+  const answerFiles = Array.isArray(b.answerPdfs) ? b.answerPdfs : [];
+  if (!files.length || files.length + answerFiles.length > MAX_LICENSED_BATCH_FILES)
+    throw new HttpError(400, 'ATTACH_BATCH_LIMIT', 'PDFは1回に最大10ファイルまで送信してください。');
+  const cat = catalogFor(state.qualificationId);
+  const answers = new Map();
+  for (const file of answerFiles) {
+    const year = attachedYearFromName(file?.file_name);
+    const section = attachedSectionFromName(file?.file_name, cat?.uploadSections);
+    if (year && section !== null) answers.set(year + ':' + (section ?? ''), file);
+  }
+  const results = [];
+  for (let index = 0; index < files.length; index++) {
+    const file = files[index];
+    const year = attachedYearFromName(file?.file_name) ?? (Array.isArray(b.years) ? Number(b.years[index]) : null);
+    const section = attachedSectionFromName(file?.file_name, cat?.uploadSections);
+    if (!year || section === null || !Number.isInteger(year)) {
+      results.push({ fileName: String(file?.file_name || '').slice(0,90), status:'failed',
+        reason: !year ? 'ファイル名から実施年度を判別できません。' : 'ファイル名から午前・午後の部を区別できません。' });
+      continue;
+    }
+    try {
+      const answer = answers.get(year + ':' + (section ?? ''));
+      const result = await attachPdf(env, id, state,
+        { year, ...(section ? {section} : {}), question: file, ...(answer ? {answer} : {}) }, url, now);
+      results.push({ year, status:result.status, notice:result.notice });
+    } catch (error) {
+      const code = error?.code || 'ATTACH_FAILED';
+      results.push({ year, status:'failed', reason:String(code).slice(0,90) });
+    }
+  }
+  const queued = results.filter(x => x.status === 'attached').length;
+  const existing = results.filter(x => x.status === 'attachedAlready').length;
+  const waiting = results.filter(x => x.status === 'pendingOfficialAnswer').length;
+  const failed = results.filter(x => x.status === 'failed').length;
+  return { status:'attachedBatch', sessionId:id, requested:files.length,
+    queued, existing, pendingOfficialAnswer:waiting, failed, results,
+    notice:'PDFの登録依頼を受け付けました。登録開始と検証完了は別です。学習枠の年度別状態が「登録済み」となった問題だけ出題できます。' };
+}
+
 /**
  * 利用者が添付した過去問PDFを取り込みに足す。エンジンが読める資格（読み方の決まっている資格）だけ。
  * 年度は添付PDFの表紙で確かめた年度を受け取り、分解のときに PDF の中の年度とも照合する（違えば取り込まない）
@@ -1871,6 +1933,14 @@ async function route(request, env, url, now) {
       { expirationTtl: SESSION_TTL_S });
     return json(200, { status: 'uploadPermissionConfirmed', sessionId: id, year,
       notice: `${year}年度の利用許諾確認を受け付けました。${cat.officialAnswerHtml ? '問題PDFを添付すると、公式の正答ページと照合します。' : '問題PDFと同年度の正答PDFを添付した場合のみ取り込みます。'}本人専用として保存します。` });
+  }
+
+  // ChatGPTが一度に送った複数年度を1呼出しで順次登録し、途中失敗も年度別に返す。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'attach-batch' && parts.length === 4) {
+    const b = (await body(request).catch(() => ({}))) ?? {};
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    return json(200, await attachPdfBatch(env, id, state, b, url, now));
   }
 
   // 利用者が添付した過去問PDF（U06「公式の問題・正答資料をこのチャットに添付する」）。
