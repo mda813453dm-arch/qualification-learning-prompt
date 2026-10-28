@@ -2614,22 +2614,8 @@ a{color:inherit}
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
-  function endBar(){ return '<div class="row" style="margin-top:14px">' +
-    (state.privateLicensedUpload ? '<button id="addLicensedYear">別年度の過去問を取り込む</button>' : '') +
-    '<button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
+  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
   function bindEnd(){
-    var add = document.getElementById('addLicensedYear');
-    if (add) add.onclick = async function(){
-      this.disabled = true;
-      try {
-        var options = await callTool('getOfficialLibrary', { sessionId: state.sessionId });
-        if (!options || options.error || !options.permissionedUpload) throw new Error('UPLOAD_OPTIONS_FAILED');
-        render({ ...options, status: 'sourceUnavailable' });
-      } catch(e) {
-        this.disabled = false;
-        app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">年度一覧を開けませんでした。もう一度押してください。</div>');
-      }
-    };
     var b = document.getElementById('endStudy'); if (!b) return;
     b.onclick = async function(){
       b.disabled = true;
