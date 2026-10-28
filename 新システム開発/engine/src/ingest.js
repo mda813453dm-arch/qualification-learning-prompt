@@ -226,14 +226,22 @@ export async function startJob(store, qualificationId, sources, now, { persisten
     if (!old.persistent) return old;
     let changed = false;
     for (const source of sources) {
-      const match = old.sources.find((s) => s.year === source.year && s.section === source.section);
-      if (match) {
-        if (match.status === 'failed') {
-          Object.assign(match, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
+      const samePdf = old.sources.find((s) => s.questionUrl === source.questionUrl);
+      if (samePdf) {
+        if (samePdf.status === 'failed') {
+          Object.assign(samePdf, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
           changed = true;
         }
         continue;
       }
+      const sameYear = old.sources.find((s) => s.year === source.year && s.section === source.section);
+      if (sameYear && sameYear.status === 'failed') {
+        Object.assign(sameYear, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
+        changed = true;
+        continue;
+      }
+      // 共通原本がある場合も、利用者の異なる添付原本は別ソースとして保持する。
+      // 本人専用で既に出題可能な年度は attachPdf 側で重複登録を防ぐ。
       old.sources.push({ ...source, status: 'pending' });
       changed = true;
     }
