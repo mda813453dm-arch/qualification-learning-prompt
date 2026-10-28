@@ -30,7 +30,7 @@ test('本人専用PDFの一部失敗後も過去の年度を保持し、失敗�
   assert.equal(retried.sources[1].reason,null);
   assert.match(retried.sources[1].questionUrl,/corrected/);
   // 再度同じ年度を指定しても二重登録にしない。
-  const duplicate = await startJob(store,id,[source(2024,'duplicate')],4000,{persistent:true});
+  const duplicate = await startJob(store,id,[source(2024)],4000,{persistent:true});
   assert.equal(duplicate.sources.length,3);
   assert.equal((await readJob(store,id)).sources.length,3);
   // 全件失敗でも次の年度の添付時に過去の失敗記録が消えない。
