@@ -642,7 +642,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     try {
       const answer = answers.get(year + ':' + (section ?? ''));
       const result = await attachPdf(env, id, state,
-        { year, ...(section ? {section} : {}), question: file, ...(answer ? {answer} : {}) }, url, now);
+        { year, ...(section ? {section} : {}), question: file, ...(answer ? {answer} : {}), deferProgress:true }, url, now);
       results.push({ year, status:result.status, notice:result.notice });
     } catch (error) {
       const code = error?.code || 'ATTACH_FAILED';
@@ -650,6 +650,8 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     }
   }
   const queued = results.filter(x => x.status === 'attached').length;
+  // 全年度を一つのジョブに追加した後にだけ解析を起動し、途中で追加分が上書きされる競合を減らす。
+  if (queued) await progress(env, sessionJobId(state), now).catch(() => {});
   const existing = results.filter(x => x.status === 'attachedAlready').length;
   const waiting = results.filter(x => x.status === 'pendingOfficialAnswer').length;
   const failed = results.filter(x => x.status === 'failed').length;
@@ -735,7 +737,7 @@ async function attachPdf(env, id, state, b, url, now) {
     ...((cat?.privateLicensedUpload || adapter === 'generic_mc') ? { privateLicensedUpload: true } : {}) }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
   await markEngineSources(env, sources);
-  const started = await progress(env, jobId, now);
+  const started = b.deferProgress === true ? await readJob(env.STORE, jobId) : await progress(env, jobId, now);
   return {
     status: 'attached',
     sessionId: id,
