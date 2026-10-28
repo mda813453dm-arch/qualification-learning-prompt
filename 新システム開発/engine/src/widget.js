@@ -953,12 +953,12 @@ a{color:inherit}
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
-        '<div>② 「PDFを選択して登録」から、' + esc(uploadHint) + 'をまとめて選ぶ。</div>' +
+        '<div>② 「PDFを添付する（最大10ファイル）」から、' + esc(uploadHint) + 'をまとめて選ぶ。</div>' +
         '<div>③ 年度ごとの取り込み状況を確認する。登録・正答照合が完了した年度から出題できます。</div>' +
         '<div>※チャット欄への添付だけでは学習エンジンへの登録は完了しません。必ずこの画面のファイル選択を使用してください。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて選択できます。年度はファイル名から判定し、PDF原本でも照合します。公式正答が確認できない年度は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><label id="licensedPick" aria-disabled="true" style="position:relative;display:block;width:100%;min-height:64px;padding:17px 16px;box-sizing:border-box;text-align:center;font-size:18px;font-weight:700;border:1px solid var(--border,#ccc);border-radius:12px;background:var(--surface,#f4f4f4);opacity:.5">PDFを選択して登録<input id="licensedFiles" type="file" accept=".pdf,application/pdf" multiple disabled style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" aria-label="PDFを選択して登録"></label></div>' +
+        '<div class="row"><label id="licensedPick" aria-disabled="true" style="position:relative;display:block;width:100%;min-height:64px;padding:17px 16px;box-sizing:border-box;text-align:center;font-size:18px;font-weight:700;border:1px solid var(--border,#ccc);border-radius:12px;background:var(--surface,#f4f4f4);opacity:.5">PDFを添付する（最大10ファイル）<input id="licensedFiles" type="file" accept=".pdf,application/pdf" multiple disabled style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" aria-label="PDFを添付する（最大10ファイル）"></label></div>' +
         '<div class="notice" role="status" id="licensedProgress">チェック後、この画面からPDFを選択してください。チャット添付のみでは登録されません。</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
@@ -989,7 +989,7 @@ a{color:inherit}
           pdfPicker.disabled = false;
           pdfButton.setAttribute('aria-disabled','false');
           pdfButton.style.opacity = '1';
-          progressBox.textContent = '許諾確認済みです。上の「PDFを選択して登録」からファイルを選んでください。';
+          progressBox.textContent = '許諾確認済みです。上の「PDFを添付する（最大10ファイル）」からファイルを選んでください。';
         } catch(e) {
           ack.disabled = false;
           ack.checked = false;
