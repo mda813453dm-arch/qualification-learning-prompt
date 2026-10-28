@@ -999,7 +999,7 @@ a{color:inherit}
       if (checkAction) checkAction.onclick = async function(){
         this.disabled = true;
         try {
-          var field = data.fieldName || studyField || Object.keys(preparedLessons)[0] || '';
+          var field = data.fieldName || studyField || '';
           if (!field) throw new Error('FIELD_NOT_READY');
           var chosen = await callTool('chooseItem', {sessionId:state.sessionId, fieldName:field, mode:'check'});
           if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check') throw new Error('CHECK_START_FAILED');
