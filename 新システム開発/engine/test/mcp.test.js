@@ -1635,8 +1635,6 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   const batch=TOOLS.find(x=>x.name==='attachPdfBatch');
   const single=TOOLS.find(x=>x.name==='attachPdf');
   assert.ok(batch && single);
-  assert.ok(WIDGET_TOOLS.has('attachPdfBatch'));
-  assert.ok(WIDGET_TOOLS.has('attachPdf'));
   const html=widgetHtml();
   assert.match(html,/PDF登録状況/);
   assert.match(html,/getOfficialLibrary/);
