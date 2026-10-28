@@ -501,7 +501,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:'必修問題｜基礎解説'}).waitFor();
     assert.equal(await ui.locator('.md table').count(),1,'Markdown表を学習枠内に表示');
     assert.equal(await ui.getByRole('button',{name:'確認問題へ進む'}).count(),1);
-    assert.equal(await ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'}).count(),1,
+    assert.equal(await ui.getByRole('button',{name:'公式過去問へ進む'}).count(),1,
       'AIの基礎解説も確認問題と公式実践問題をどちらも選べる');
     const prevFollowups = await page.evaluate(() => window.followups.length);
     const lessonSize=await ui.locator('#app').evaluate(el=>({
@@ -516,7 +516,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       return !!app && iframe.getBoundingClientRect().height >= app.scrollHeight-5;
     },null,{timeout:5000});
     const beforePracticeCalls = await page.evaluate(() => window.calls.length);
-    await ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'}).click();
+    await ui.getByRole('button',{name:'公式過去問へ進む'}).click();
     await ui.getByText('試験用の問題文').waitFor();
     const practiceCalls = await page.evaluate(n => window.calls.slice(n).filter(m => m.params?.name === 'chooseItem' || m.params?.name === 'nextQuestion').map(m => ({name:m.params.name,args:m.params.arguments})), beforePracticeCalls);
     assert.equal(practiceCalls.length,2,'解説から実践へ2回のエンジン呼び出しだけで遷移');
@@ -699,7 +699,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /基礎解説（学習システム内蔵）/,
       'AIの応答がなくても基礎解説全文を最初から表示');
     const followupsBeforeNative = await page.evaluate(() => window.followups.length);
-    await ui.getByRole('button',{name:/基礎解説を読み終えたら.*確認問題へ/}).click();
+    await ui.getByRole('button',{name:'確認問題へ（3問）'}).click();
     await ui.getByRole('heading',{name:'基礎法学｜確認問題・第1問'}).waitFor();
     assert.equal(await page.evaluate(()=>window.preparedQuestionCalls),1,
       '内蔵確認問題の第1問をエンジンへ一度だけ登録');
