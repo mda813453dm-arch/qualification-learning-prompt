@@ -1630,3 +1630,16 @@ test('資格名付きアプリ起動はエンジン必須で汎用学習メニ�
   assert.match(startup.description,/汎用メニューへフォールバックしない/);
   assert.match(appInstructions(),/startSession/);
 });
+
+test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
+  const batch=TOOLS.find(x=>x.name==='attachPdfBatch');
+  const single=TOOLS.find(x=>x.name==='attachPdf');
+  assert.ok(batch && single);
+  assert.ok(WIDGET_TOOLS.has('attachPdfBatch'));
+  assert.ok(WIDGET_TOOLS.has('attachPdf'));
+  const html=widgetHtml();
+  assert.match(html,/PDF登録状況/);
+  assert.match(html,/getOfficialLibrary/);
+  assert.match(html,/確認問題へ（3問）/);
+  assert.match(html,/公式過去問を解く/);
+});
