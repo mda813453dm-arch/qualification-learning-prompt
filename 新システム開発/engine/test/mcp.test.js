@@ -1618,3 +1618,15 @@ test('本人専用PDFの検証結果を見てから学習の次の選択肢を�
   assert.deepEqual(done.nextChoices,['公式過去問を解く','確認問題へ（3問）']);
   assert.equal(done.readyYears.length,1,'解析中の年度を登録済みと数えない');
 });
+
+test('資格名付きアプリ起動はエンジン必須で汎用学習メニューへの代替を禁止',()=>{
+  const text = readFileSync(new URL('../../deploy/gpt-instructions.txt',import.meta.url),'utf8');
+  assert.equal(INSTRUCTIONS,text,'MCPに配布する指示は正本と一致');
+  assert.match(text,/回答本文・選択肢・フォーム・学習メニューを一切生成する前に必ず startSession/);
+  assert.match(text,/通常のChatGPTメニューにフォールバックせず/);
+  assert.match(text,/汎用メニューは仕様違反として出力禁止/);
+  const startup=TOOLS.find(x=>x.name==='startSession');
+  assert.match(startup.description,/起動ゲート/);
+  assert.match(startup.description,/汎用メニューへフォールバックしない/);
+  assert.match(appInstructions(),/startSession/);
+});
