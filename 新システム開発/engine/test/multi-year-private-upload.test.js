@@ -236,7 +236,7 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   assert.equal(packets.length,4,'出題・採点用に検証された4問が取得できる');
   const app=async(name,args)=>{
     const response=await handle(new Request('https://engine.example/app',{
-      method:'POST',headers:{'content-type':'application/json'},
+      method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+token},
       body:JSON.stringify({jsonrpc:'2.0',id:100,method:'tools/call',params:{name,arguments:args}})
     }),env);
     return (await response.json()).result;
