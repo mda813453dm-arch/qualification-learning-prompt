@@ -1389,7 +1389,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-28-v122-attachment-next-actions', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-28-v123-answer-recovery', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 図（画像表示用。トークン不要。キーにSHA-256が入るので推測できない）
   // 学習者ごとの図は /v1/figure/own/<引継ぎID>/... 
