@@ -1824,7 +1824,10 @@ async function route(request, env, url, now) {
       await resumeLicensedPending(env, state, now);
       await progress(env, sessionJobId(state), now);
       const job = await readJob(env.STORE, sessionJobId(state));
+      const batchRights = await env.STORE.get(uploadBatchRightsKey(id), 'json');
+      const uploadPermissionConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId && Number(batchRights.remaining) > 0;
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
+        uploadPermissionConfirmed, remainingUploadFiles: uploadPermissionConfirmed ? Number(batchRights.remaining) : 0,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
