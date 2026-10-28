@@ -943,6 +943,8 @@ a{color:inherit}
     }
     if (data.status === 'sourceUnavailable' && data.permissionedUpload) {
       var personal = Array.isArray(data.personalUploadedYears) ? [...new Set(data.personalUploadedYears)] : [];
+      var readyDetails = Array.isArray(data.readyYearDetails) ? data.readyYearDetails : [];
+      var readyQuestions = readyDetails.reduce(function(sum, v){ return sum + (Number(v.questions) || 0); }, 0);
       var pending = Array.isArray(data.pendingOfficialAnswerYears) ? [...new Set(data.pendingOfficialAnswerYears)].filter(function(y){ return !personal.includes(y); }) : [];
       var maxBatch = Number.isInteger(data.maxBatchFiles) && data.maxBatchFiles > 0 ? data.maxBatchFiles : 10;
       var importing = Array.isArray(data.importingYears) ? data.importingYears : [];
@@ -953,11 +955,16 @@ a{color:inherit}
       app.innerHTML = '<h2>過去問PDFのまとめ取り込み（本人専用）</h2>' +
         '<div class="notice"><b>著作権・利用許諾の確認</b><div>過去問を自動取得・他の利用者へ共有配布しません。添付するすべてのファイルについて、権利者から必要な許諾を得ている場合だけ本人用に保存・解析できます。</div></div>' +
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
-        (personal.length ? '<div class="notice"><b>出題できる登録済み年度：</b>' + personal.map(function(y){ return esc(y) + '年度'; }).join('・') + '</div>' : '') +
+        (personal.length ? '<div class="notice"><b>出題可能：</b>' + (readyDetails.length ?
+          readyDetails.map(function(v){ return esc(v.year) + '年度 ' + esc(v.questions) + '問'; }).join('・') :
+          personal.map(function(y){ return esc(y) + '年度'; }).join('・')) +
+          (readyQuestions ? '<div>検証済みの計' + esc(readyQuestions) + '問から学習できます。</div>' : '') + '</div>' : '') +
         (pending.length ? '<div class="notice"><b>公式正答の確認待ち：</b>' + pending.map(function(y){return esc(y) + '年度';}).join('・') + '<div>問題PDFは受け取り済みです。公式正答の年度照合が終わるまで出題・採点はしません。</div></div>' : '') +
         (importing.length ? '<div class="notice"><b>登録処理中：</b>' + importing.map(function(y){return esc(y) + '年度';}).join('・') + '</div>' : '') +
         (failedImports.length ? '<div class="notice" role="alert"><b>登録に失敗：</b>' + failedImports.map(function(v){return esc(v.year) + '年度（' + esc(v.reason) + '）';}).join('・') + '</div>' : '') +
-        (personal.length ? '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div>' : '') +
+        '<div class="row">' +
+          (personal.length ? '<button id="licensedStart" type="button">公式過去問を解く</button>' : '') +
+          '<button id="licensedCheck" type="button">確認問題へ（3問）</button></div>' +
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
@@ -985,7 +992,23 @@ a{color:inherit}
           else render(next);
         } catch(e) {
           this.disabled = false;
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">過去問を開けませんでした。取り込み状況を確認してください。</div>';
+          document.getElementById('licensedHelp').textContent = '過去問を開けませんでした。出題できる年度があるか確認してください。';
+        }
+      };
+      var checkAction = document.getElementById('licensedCheck');
+      if (checkAction) checkAction.onclick = async function(){
+        this.disabled = true;
+        try {
+          var field = data.fieldName || studyField || Object.keys(preparedLessons)[0] || '';
+          if (!field) throw new Error('FIELD_NOT_READY');
+          var chosen = await callTool('chooseItem', {sessionId:state.sessionId, fieldName:field, mode:'check'});
+          if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check') throw new Error('CHECK_START_FAILED');
+          render({status:'confirmation_pending',sessionId:state.sessionId,fieldName:field,
+            position:1,total:3,notice:'確認問題に進みます。'});
+        } catch(e) {
+          this.disabled = false;
+          var out = document.getElementById('licensedHelp');
+          if(out) out.textContent = '確認問題を始められませんでした。学習内容を保持しています。';
         }
       };
       var ack = document.getElementById('licensedAck');
