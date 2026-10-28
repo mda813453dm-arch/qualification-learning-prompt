@@ -2504,7 +2504,18 @@ a{color:inherit}
     if (!bridgeReady) await ready;
     var label=(q.year ? q.year+'年度 ' : '')+'問'+q.questionNumber;
     var visible=label+'の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：'+ctx.explanationRef+'）';
-    // 画面のボタンで同じ依頼を2回出さず、復旧時も同一問を対象とする。
+    // ChatGPTが表示するアクセス許可ダイアログの位置はホスト側の管理。
+    // ダイアログが画面下部に出る前に、学習枠の最上部に目立つ案内を置く。
+    var oldNotice=document.getElementById('aiPermissionNotice');
+    if (oldNotice) oldNotice.remove();
+    var banner=document.createElement('div');
+    banner.id='aiPermissionNotice';
+    banner.setAttribute('role','status');
+    banner.style.cssText='position:sticky;top:0;z-index:50;padding:16px;margin:8px 0;border:2px solid #3b82f6;border-radius:12px;background:#eff6ff;color:#102c54;font-weight:700;line-height:1.6';
+    banner.textContent='AI詳細解説を依頼しています。ChatGPTの画面下部に「アクセスを許可」などの確認が表示された場合は、許可を選んでください。解説は確認後に表示されます。';
+    app.prepend(banner);
+    banner.scrollIntoView({block:'start',behavior:'instant'});
+    // 依頼だけで「解説完了」とせず、モデルがshowMenuへ保存するまで待機する。
     return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]});
   }
   async function loadExplanation(questionId, requestAi){
