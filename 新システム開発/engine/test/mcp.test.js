@@ -1051,7 +1051,7 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   assert.equal(r.isError, false);
   assert.equal(r.structuredContent.status, 'attached');
   assert.match(r.structuredContent.notice, /2019年度/);
-  const added = r.structuredContent.job.sources.find((x) => x.year === 2019);
+  const added = r.structuredContent.job.sources.find((x) => x.year === 2019 && /\/v1\/attached\//.test(x.questionUrl));
   assert.match(added.questionUrl, /\/v1\/attached\/[a-f0-9]{64}\.pdf$/);
   assert.equal(added.adapter, 'takken');
   const got = await handle(new Request(added.questionUrl), env);
@@ -1366,6 +1366,7 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
   const app = async (name,args) => (await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
   for (let n = 0; n < 2; n++) {
     const started = await app('startSession', { qualificationId: '土地家屋調査士', sources: [] });
+    assert.ok(started?._meta?.qlp, 'startSession must return app UI metadata: ' + JSON.stringify(started));
     const { sessionId, learnerId, overview } = started._meta.qlp;
     assert.equal(overview.sharedLibrary.totalQuestions, 20);
     assert.deepEqual(overview.sharedLibrary.missing.filter(x=>x.year===2025),
