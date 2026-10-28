@@ -1040,7 +1040,10 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
           permissionedUpload: true,
           answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
           availableUploadYears: cat.availableUploadYears ?? [],
-          personalUploadedYears: (existing?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+          personalUploadedYears: (existing?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => x.year),
+          readyYearDetails: (existing?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
+            year: x.year, section: x.section, questions: x.packetCount, excluded: x.excludedCount ?? 0,
+          })),
           pendingOfficialAnswerYears: await licensedPendingYears(env, state),
           maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         } : {}),
@@ -1079,7 +1082,10 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
         permissionedUpload: true,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
-        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => x.year),
+          readyYearDetails: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
+            year: x.year, section: x.section, questions: x.packetCount, excluded: x.excludedCount ?? 0,
+          })),
       } : {}),
       notice: cat.urlCatalog
         ? '公式過去問は現在準備中です。公式問題と正答のPDFを同じ年度・試験区分で添付するか、AI作成確認問題を選んでください。'
@@ -1297,7 +1303,10 @@ async function restoreStudyView(env, id, state, now) {
         permissionedUpload: true,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
-        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => x.year),
+          readyYearDetails: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
+            year: x.year, section: x.section, questions: x.packetCount, excluded: x.excludedCount ?? 0,
+          })),
       } : {}),
       notice: cat.urlCatalog
         ? '公式過去問は現在準備中です。公式問題・正答PDFを同じ年度・試験区分で登録するか、AI作成確認問題から学習できます。'
@@ -1905,7 +1914,10 @@ async function route(request, env, url, now) {
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
         validatedUploadYears: cat.validatedUploadYears ?? [],
-        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done').map((x) => x.year),
+        personalUploadedYears: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => x.year),
+          readyYearDetails: (job?.sources ?? []).filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
+            year: x.year, section: x.section, questions: x.packetCount, excluded: x.excludedCount ?? 0,
+          })),
         importingYears: (job?.sources ?? []).filter((x) => x.status === 'pending' || x.status === 'running').map((x) => x.year),
         failedYears: (job?.sources ?? []).filter((x) => x.status === 'failed').map((x) => ({ year:x.year, reason:String(x.reason || '検証失敗').slice(0,110) })),
         pendingOfficialAnswerYears: (await licensedPendingYears(env, state)).filter((year) => !(job?.sources ?? []).some((x) => x.year === year && x.status !== 'failed')),
