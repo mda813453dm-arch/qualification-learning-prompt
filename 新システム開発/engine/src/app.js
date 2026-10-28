@@ -758,11 +758,18 @@ async function kickIngest(env, qid, now) {
     await advance(env, qid, now, STEP_BUDGET_MS);
     return;
   }
+  // 解析は数分かかるため、1.5秒で Abort するとジョブが開始直後に中断される。
+  // 自己呼出しを短時間だけ受け付けて返答し、接続そのものは解析完了まで生かす。
+  // Cloud Run 側では自己呼出しのリクエストが動作中のため、CPU も維持される。
   const doFetch = env.selfFetch ?? fetch;
-  await doFetch(`${env.PUBLIC_BASE_URL}/v1/jobs/${encodeURIComponent(qid)}?run=all`, {
-    headers: { authorization: `Bearer ${env.API_TOKEN}` },
-    signal: AbortSignal.timeout(1500),
-  }).catch(() => {});
+  const worker = Promise.resolve().then(() => doFetch(
+    `${env.PUBLIC_BASE_URL}/v1/jobs/${encodeURIComponent(qid)}?run=all`, {
+      headers: { authorization: `Bearer ${env.API_TOKEN}` },
+      signal: AbortSignal.timeout(RUN_ALL_MS + 180000),
+    },
+  )).then((res) => { if (res && !res.ok) throw new Error('INGEST_WORKER_HTTP_' + res.status); })
+    .catch((error) => { console.warn('ingest-worker:', String(error?.message ?? error).slice(0,180)); });
+  await Promise.race([worker, new Promise((resolve) => setTimeout(resolve, 250))]);
 }
 
 /**
@@ -775,7 +782,9 @@ async function progress(env, qid, now) {
     job = await advance(env, qid, now, STEP_BUDGET_MS);
   } else {
     job = await readJob(env.STORE, qid);
-    if (job && (job.state === 'running' || staleSources(job, deps(env).parserVersion).length))
+    // すでに解析ワーカーが処理中なら、10秒ごとの画面更新で重複起動しない。
+    if (job && (!job.leaseUntil || job.leaseUntil <= now) &&
+        (job.state === 'running' || staleSources(job, deps(env).parserVersion).length))
       await kickIngest(env, qid, now);
     if (job) job = withNotice(job, now);
   }
