@@ -1057,8 +1057,8 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   const r = await app('tools/call', { name: 'attachPdf', arguments: { sessionId: sid, year: 2019, questionPdf: { download_url: 'https://files.example/q.pdf', file_id: 'f1' } } });
   assert.equal(r.isError, false);
   assert.equal(r.structuredContent.status, 'attached');
-  assert.match(r.structuredContent.notice, /2019年度/);
-  const added = r.structuredContent.job.sources.find((x) => x.year === 2019 && /\/v1\/attached\//.test(x.questionUrl));
+  assert.match(r._meta.qlp.notice, /2019年度/);
+  const added = r._meta.qlp.job.sources.find((x) => x.year === 2019 && /\/v1\/attached\//.test(x.questionUrl));
   assert.match(added.questionUrl, /\/v1\/attached\/[a-f0-9]{64}\.pdf$/);
   assert.equal(added.adapter, 'takken');
   const got = await handle(new Request(added.questionUrl), env);
