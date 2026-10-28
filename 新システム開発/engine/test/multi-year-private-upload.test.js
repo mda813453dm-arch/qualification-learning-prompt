@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { handle } from '../src/app.js';
 import { MemoryStore } from '../src/store.js';
 import { readJob } from '../src/ingest.js';
-import { pdf, T0 } from './helpers.js';
+import { availablePackets } from '../src/engine.js';
+import { assetsB64, fakeResult, pdf, T0 } from './helpers.js';
 
 const token = 'batch-licensed-test';
 function setup() {
@@ -189,4 +190,48 @@ test('PDF解析用の自己リクエストは1.5秒で切断せず、登録API�
   assert.equal(workerStarted,1);
   await new Promise(resolve=>setTimeout(resolve,1750));
   assert.equal(workerSignal.aborted,false,'解析ワーカーを1.5秒でAbortしない');
+});
+
+test('個人用2年度を解析完了まで進め、検証済み問題を出題候補として取得する',async()=>{
+  const {env}=setup();
+  env.PARSER_URL='https://parser.example';
+  env.PARSER_VERSION='0.8.2';
+  const question=(year)=>pdf('gyosei-question-'+year);
+  env.fetchAttached=async (link)=>question(link.includes('2020')?2020:2021);
+  env.fetchPdf=async (link)=>{
+    if (/ans\\.html$/.test(link)) return new TextEncoder().encode('<!doctype html><html>official answers</html>');
+    throw new Error('UNEXPECTED_FETCH:'+link);
+  };
+  env.parserFetch=async(_path, init)=>{
+    const input=JSON.parse(init.body);
+    const q=Uint8Array.from(Buffer.from(input.question.base64,'base64'));
+    const a=Uint8Array.from(Buffer.from(input.answer.base64,'base64'));
+    const parsed=await fakeResult({
+      src:{qualificationId:input.qualificationId,year:input.year,section:input.section,
+        questionUrl:input.question.url,answerUrl:input.answer.url},
+      qBytes:q,aBytes:a,figureOn:[],answers:[1,2],fieldIds:['g1','g1']
+    });
+    return new Response(JSON.stringify({result:parsed.result,assets:assetsB64(parsed.assets)}),{status:200});
+  };
+  env.selfFetch=async(link,options)=>handle(new Request(link,{headers:options.headers}),env);
+  const session=await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const base='/v1/sessions/'+session.body.sessionId;
+  await req(env,'POST',base+'/upload-permission',{year:0,confirmed:true});
+  const batch=await req(env,'POST',base+'/attach-batch',{questionPdfs:[2020,2021].map(year=>({
+    file_name:'R'+(year-2018)+'_mondai.pdf',file_id:'f'+year,download_url:'https://uploads.example/'+year+'.pdf'
+  }))});
+  assert.equal(batch.status,200,JSON.stringify(batch.body));
+  assert.equal(batch.body.queued,2);
+  let library;
+  for(let n=0;n<25;n++){
+    await new Promise(resolve=>setTimeout(resolve,80));
+    library=await req(env,'GET',base+'/official-library');
+    if(library.body.personalUploadedYears?.length===2)break;
+  }
+  assert.deepEqual(library.body.personalUploadedYears,[2020,2021],JSON.stringify(library.body));
+  assert.deepEqual(library.body.readyYearDetails.map(x=>x.questions),[2,2]);
+  const job=await readJob(env.STORE,'q090~'+session.body.learnerId);
+  assert.equal(job.sources.filter(x=>x.status==='done').length,2);
+  const packets=await availablePackets(env.STORE,job,T0);
+  assert.equal(packets.length,4,'出題・採点用に検証された4問が取得できる');
 });
