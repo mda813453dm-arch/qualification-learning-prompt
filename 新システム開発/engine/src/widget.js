@@ -305,7 +305,9 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .stage-ack{color:var(--acc);font-weight:700;padding:8px 12px;border-left:3px solid var(--acc);margin:4px 0 10px}
 .stage-arrived{font-weight:700;border-left:3px solid var(--acc);padding:8px 12px;margin:8px 0 12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
-button{word-break:keep-all;overflow-wrap:break-word;line-break:strict;text-wrap:pretty;max-width:100%;box-sizing:border-box}
+button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:balance;max-width:100%;box-sizing:border-box}
+.btn-line{display:block;white-space:nowrap}
+@media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px}}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
 .notice{font-size:14px;color:var(--sub);white-space:pre-wrap;line-height:1.6;margin:6px 0}
@@ -666,7 +668,10 @@ a{color:inherit}
     try { return JSON.stringify(copy); } catch(e) { return ''; }
   }
   var renderFocusTurn = 0;
+  var licensedPollGeneration = 0;
+  var licensedConsentSessionId = null;
   function render(data){
+    licensedPollGeneration++;
     if (data && data.status !== 'lesson_pending') lessonPollGeneration++;
     if (data && data.status !== 'confirmation_pending') confirmationPollGeneration++;
 
@@ -682,8 +687,9 @@ a{color:inherit}
     // 採点や問題取得を再実行せず、表示位置だけを調整する。
     var thisRender = ++renderFocusTurn;
     Promise.resolve().then(function(){ if (!locked && thisRender === renderFocusTurn) scrollUp(); });
-    if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) state.privateLicensedUpload = false;
+    if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) { state.privateLicensedUpload = false; licensedConsentSessionId = null; }
     if (data.sessionId) state.sessionId = data.sessionId;
+    if (data.uploadPermissionConfirmed === true) licensedConsentSessionId = state.sessionId;
     if (data.permissionedUpload || (data.question && /^(q097|q090):/.test(String(data.question.questionId || ''))))
       state.privateLicensedUpload = true;
     if (data.studyId) currentStudyId = data.studyId;
@@ -954,19 +960,24 @@ a{color:inherit}
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
         '<div>② 下のチャット欄（＋）に、' + esc(uploadHint) + 'を添付して送信する。</div>' +
-        '<div>③ 年度ごとの取り込み状況を確認する。登録・正答照合が完了した年度から出題できます。</div>' +
-        '<div>チャットに送信後、登録結果は「取り込み状況を確認」で確認してください。受信だけでは登録完了ではありません。</div>' +
-        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて選択できます。年度はファイル名から判定し、PDF原本でも照合します。公式正答が確認できない年度は採点を保留します。</div></div>' +
-        '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
+        '<div>③ 登録・正答照合が完了した年度から「公式過去問を解く」で進む。登録状況は自動で更新します。</div>' +
+        '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
+        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
+        '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
         '<div class="notice"><b>PDFは下のチャット欄（＋）から添付して送信してください。</b></div>' +
-        '<div class="notice" role="status" id="licensedProgress">チェック後、チャット欄（＋）からPDFを添付して送信してください。</div>' +
+        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。チャット欄（＋）からPDFを送信できます。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
-        '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
+        '<div class="notice" id="licensedAutoStatus" role="status">登録状況は自動で更新します。</div>' + endBar();
       var practice = document.getElementById('licensedStart');
       if (practice) practice.onclick = async function(){
         this.disabled = true;
         try {
-          var next = await callTool('nextQuestion', {sessionId: state.sessionId});
+          var field = data.fieldName || studyField || '';
+          if (field) {
+            var selection = await callTool('chooseItem', {sessionId:state.sessionId, fieldName:field, mode:'practice'});
+            if (!selection || selection.error || selection.status !== 'item') throw new Error('PRACTICE_SELECTION_FAILED');
+          }
+          var next = await callTool('nextQuestion', {sessionId:state.sessionId, ...(field ? {question:field} : {})});
           if (!next || next.error || !['question','waiting','finished','sourceUnavailable','remediation'].includes(next.status)) throw new Error('LICENSED_PRACTICE_UNAVAILABLE');
           if (next.status === 'sourceUnavailable') render({...data, refreshMessage:'登録済み問題の出題準備中です。取り込み状況を確認してください。'});
           else render(next);
@@ -984,6 +995,7 @@ a{color:inherit}
         try {
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
+          licensedConsentSessionId = state.sessionId;
           progressBox.textContent = '確認済みです。下のチャット欄（＋）にPDFを添付して送信してください。';
         } catch(e) {
           ack.disabled = false;
@@ -992,30 +1004,42 @@ a{color:inherit}
           progressBox.setAttribute('role','alert');
         }
       };
-      document.getElementById('licensedRefresh').onclick = async function(){
-        this.disabled = true;
+      var licensedGeneration = licensedPollGeneration;
+      var lastStatusKey = JSON.stringify([personal, pending, importing, failedImports]);
+      var pollCount = 0;
+      async function updateLicensedStatus(){
+        if (locked || licensedGeneration !== licensedPollGeneration || ++pollCount > 36) return;
         try {
           var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
-          if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) throw new Error('LIBRARY_REFRESH_FAILED');
+          if (locked || licensedGeneration !== licensedPollGeneration) return;
+          if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload)
+            throw new Error('LIBRARY_REFRESH_FAILED');
+          if (latest.uploadPermissionConfirmed) licensedConsentSessionId = state.sessionId;
+          var check = document.getElementById('licensedAck');
+          if (check && licensedConsentSessionId === state.sessionId) {
+            check.checked = true; check.disabled = true;
+            var progress = document.getElementById('licensedProgress');
+            if (progress) progress.textContent = '確認済みです。PDFはチャット欄（＋）から送信してください。';
+          }
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
-          var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears.filter(function(y){return !uploaded.includes(y);}) : [];
-          var inProgress = Array.isArray(latest.importingYears) ? latest.importingYears : [];
+          var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
+          var running = Array.isArray(latest.importingYears) ? latest.importingYears : [];
           var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
-          var msg = uploaded.length ? '登録済み：' + uploaded.join('・') + '年度。' : '出題できる公式過去問はまだ登録されていません。';
-          if (staged.length) msg += ' 正答確認待ち：' + staged.join('・') + '年度。';
-          if (inProgress.length) msg += ' 登録・検証中：' + inProgress.join('・') + '年度。';
-          if (errors.length) msg += ' 登録失敗：' + errors.map(function(x){return x.year + '年度（' + x.reason + '）';}).join('・') + '。';
-          else if (!uploaded.length) msg += ' 許諾確認後、問題PDFをまとめて添付してください。';
-          render({...data, ...latest, status:'sourceUnavailable', refreshMessage:msg});
-        } catch(e) {
-          this.disabled = false;
-          document.getElementById('licensedHelp').innerHTML = '<div class="notice" role="alert">取り込み状況を確認できませんでした。もう一度押してください。</div>';
+          var statusKey = JSON.stringify([uploaded, staged, running, errors]);
+          if (statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
+          var notice = document.getElementById('licensedAutoStatus');
+          if (notice) notice.textContent = running.length ? 'PDFを解析しています。登録状況を自動更新しています。'
+            : staged.length ? '公式正答の確認待ちです。確認できた年度から出題できます。'
+            : uploaded.length ? '登録済みの年度があります。「公式過去問を解く」から進めます。'
+            : 'まだ登録済み問題はありません。PDFの送信後に自動確認します。';
+        } catch(err) {
+          var notice = document.getElementById('licensedAutoStatus');
+          if (notice) notice.textContent = '登録状況を取得できません。接続が戻れば自動で再確認します。';
         }
-      };
-      document.getElementById('licensedAi').onclick = function(){
-        this.disabled = true;
-        ask((data.fieldName || '今の分野') + 'のAI作成確認問題を3問出してください。公式過去問ではないと明記してください。');
-      };
+        if (!locked && licensedGeneration === licensedPollGeneration && pollCount < 36)
+          setTimeout(updateLicensedStatus, 8000);
+      }
+      setTimeout(updateLicensedStatus, 2500);
       bindEnd(); return;
     }
     if (data.status === 'sourceUnavailable') {
@@ -1574,7 +1598,7 @@ a{color:inherit}
     var j = data.journey || {};
     var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
     app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
-      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button">基礎解説を読み終えたら確認問題へ（全3問）</button><button id="quickGuidePractice" type="button">実践問題（公式過去問）へ進む</button></div>' :
+      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button"><span class="btn-line">基礎解説を読み終えたら</span><span class="btn-line">確認問題へ（全3問）</span></button><button id="quickGuidePractice" type="button">実践問題（公式過去問）へ進む</button></div>' :
         '<div class="notice" role="status">' + esc(data.notice || 'AIの基礎解説の登録を待っています。') + '</div>') +
       '<div id="lessonConnection" class="notice" role="status">' +
         (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
