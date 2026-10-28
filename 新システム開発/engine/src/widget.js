@@ -307,8 +307,8 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
 button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:balance;max-width:100%;box-sizing:border-box}
 .btn-line{display:block;white-space:nowrap}
-@media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px}}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
+@media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px;max-width:100%;overflow-wrap:normal;word-break:keep-all}}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
 .notice{font-size:14px;color:var(--sub);white-space:pre-wrap;line-height:1.6;margin:6px 0}
 .notice b{color:var(--fg);font-size:15px}
@@ -1600,14 +1600,14 @@ a{color:inherit}
     var j = data.journey || {};
     var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
     app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
-      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button"><span class="btn-line">基礎解説を読み終えたら</span><span class="btn-line">確認問題へ（全3問）</span></button><button id="quickGuidePractice" type="button">実践問題（公式過去問）へ進む</button></div>' :
+      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button"><span class="btn-line">確認問題へ（3問）</span><span class="btn-line">基礎解説から進む</span></button><button id="quickGuidePractice" type="button">公式過去問へ進む</button></div>' :
         '<div class="notice" role="status">' + esc(data.notice || 'AIの基礎解説の登録を待っています。') + '</div>') +
       '<div id="lessonConnection" class="notice" role="status">' +
         (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
                      : '解説が表示されない場合は、登録状況を確認するかAIへ再依頼できます。') + '</div>' +
-      '<div class="row">' + (hasPrepared ? '' : '<button id="refreshLesson" type="button">AI解説の登録状況を確認</button>') +
-      '<button id="resumeLesson" type="button">' + (hasPrepared ? '理解度に合わせたAI解説を追加' : 'AI解説を再依頼') + '</button></div>' +
-      (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">解説を省略して確認問題から始める</button><button id="lessonPracticeDirect" type="button">実践問題（公式過去問）へ進む</button></div>') +
+      '<div class="row">' + (hasPrepared ? '' : '<button id="refreshLesson" type="button">解説の状態を確認</button>') +
+      '<button id="resumeLesson" type="button">' + (hasPrepared ? 'AI詳細解説を追加' : 'AI解説を再依頼') + '</button></div>' +
+      (hasPrepared ? '' : '<div class="row"><button id="lessonSkip" type="button">確認問題から始める</button><button id="lessonPracticeDirect" type="button">公式過去問へ進む</button></div>') +
       '<details id="manualLesson" hidden><summary>AIの解説がチャット側に表示された場合</summary>' +
       '<p class="notice">チャットに出た解説文をコピーして貼り付けると、この学習枠に保存して学習を続けられます。</p>' +
       '<textarea id="manualLessonBody" rows="7" maxlength="16000" aria-label="チャットからコピーした基礎解説全文" style="box-sizing:border-box;width:100%;font:inherit;border:1px solid var(--line);border-radius:8px;padding:10px"></textarea>' +
@@ -1732,7 +1732,7 @@ a{color:inherit}
         }
       } finally {
         requesting = false;
-        if (button.isConnected) { button.disabled = false; button.textContent = hasPrepared ? '理解度に合わせたAI解説を追加' : 'AI解説を再依頼'; }
+        if (button.isConnected) { button.disabled = false; button.textContent = hasPrepared ? 'AI詳細解説を追加' : 'AI解説を再依頼'; }
       }
     };
     var lessonSkip = document.getElementById('lessonSkip');
@@ -1767,9 +1767,9 @@ a{color:inherit}
       .filter(function(x){ return !(m.kind === 'next' && m.body && (x.action === 'explain' || (!m.actions && x.choice === '解説を見る'))); });
     var j = m.journey || {};
     var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') +
-      (m.kind === 'lesson' ? '<button id="lessonMenuPractice" type="button"><b>' + (entries.length + 1) + '</b><span>実践問題（公式過去問）へ進む</span></button>' : '') + '</div>';
+      (m.kind === 'lesson' ? '<button id="lessonMenuPractice" type="button"><b>' + (entries.length + 1) + '</b><span>公式過去問へ進む</span></button>' : '') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
-    if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">今日はここまで（学習を終了）</button></div>';
+    if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">学習を終了する</button></div>';
     app.innerHTML = h;
     scrollUp();
     var endAction = async function(em){
@@ -2593,7 +2593,7 @@ a{color:inherit}
       '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
       '<button id="exp"><b>2</b><span>AIの詳しい解説を追加</span></button>' +
       (fieldChange ? '<button id="continueField"><b>3</b><span>この分野の実践問題を続ける</span></button><button id="review"><b>4</b><span>総復習（間違えた問題）</span></button>' : '') +
-      '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>今日はここまで（学習を終了）</span></button></div>';
+      '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>学習を終了する</span></button></div>';
     scrollUp();
     nextBtn(); bindEnd();
     var sendDisplay = async function(){
@@ -2641,7 +2641,7 @@ a{color:inherit}
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
-  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">今日はここまで（学習を終了）</button></div>'; }
+  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">学習を終了する</button></div>'; }
   function bindEnd(){
     var b = document.getElementById('endStudy'); if (!b) return;
     b.onclick = async function(){
