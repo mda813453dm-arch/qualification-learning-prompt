@@ -199,7 +199,7 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   const question=(year)=>pdf('gyosei-question-'+year);
   env.fetchAttached=async (link)=>question(link.includes('2020')?2020:2021);
   env.fetchPdf=async (link)=>{
-    if (/ans\\.html$/.test(link)) return new TextEncoder().encode('<!doctype html><html>official answers</html>');
+    if (/ans\.html$/.test(link)) return new TextEncoder().encode('<!doctype html><html>official answers</html>');
     throw new Error('UNEXPECTED_FETCH:'+link);
   };
   env.parserFetch=async(_path, init)=>{
