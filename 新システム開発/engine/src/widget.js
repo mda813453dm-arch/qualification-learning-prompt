@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v117.html';
+export const WIDGET_URI = 'ui://qlp/question-v118.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-28.117';
+export const WIDGET_VERSION = '2026-10-28.118';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1600,7 +1600,7 @@ a{color:inherit}
     var j = data.journey || {};
     var header = journeyBar(j.fieldIndex, j.fieldTotal, 'explain', field);
     app.innerHTML = header + '<h2>' + esc(field) + '｜基礎解説</h2>' +
-      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button"><span class="btn-line">確認問題へ（3問）</span><span class="btn-line">基礎解説から進む</span></button><button id="quickGuidePractice" type="button">公式過去問へ進む</button></div>' :
+      (hasPrepared ? quickGuide + '<div class="row"><button id="quickGuideCheck" type="button"><span class="btn-line">確認問題へ（3問）</span></button><button id="quickGuidePractice" type="button">公式過去問へ進む</button></div>' :
         '<div class="notice" role="status">' + esc(data.notice || 'AIの基礎解説の登録を待っています。') + '</div>') +
       '<div id="lessonConnection" class="notice" role="status">' +
         (hasPrepared ? '必要な場合だけ、理解度に合わせたAIの詳しい解説を追加できます。AIの回答を待たなくても確認問題へ進めます。'
