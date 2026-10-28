@@ -220,12 +220,24 @@ export async function readJob(store, qualificationId) {
  */
 export async function startJob(store, qualificationId, sources, now, { persistent = false } = {}) {
   const old = await readJob(store, qualificationId);
-  if (old && old.state !== 'failed' && (old.persistent || now - old.startedAt < 24 * 60 * 60 * 1000)) {
-    // 学習者ごとの取り込みに、まだ無い年度が見つかったら後ろに足す（取り込み済みの年度はそのまま）
-    const have = new Set(old.sources.map((s) => s.questionUrl));
-    const added = old.persistent ? sources.filter((s) => !have.has(s.questionUrl)) : [];
-    if (!added.length) return old;
-    old.sources.push(...added.map((s) => ({ ...s, status: 'pending' })));
+  if (old && (old.persistent || (old.state !== 'failed' && now - old.startedAt < 24 * 60 * 60 * 1000))) {
+    // 本人専用の継続登録では、年度の一部が失敗しても他年度の結果を絶対に消さない。
+    // 同一年度・区分の失敗だけ再添付でリトライし、処理中・完了済みの問題は重複させない。
+    if (!old.persistent) return old;
+    let changed = false;
+    for (const source of sources) {
+      const match = old.sources.find((s) => s.year === source.year && s.section === source.section);
+      if (match) {
+        if (match.status === 'failed') {
+          Object.assign(match, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
+          changed = true;
+        }
+        continue;
+      }
+      old.sources.push({ ...source, status: 'pending' });
+      changed = true;
+    }
+    if (!changed) return old;
     await saveJob(store, old, now);
     return old;
   }
