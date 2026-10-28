@@ -953,13 +953,13 @@ a{color:inherit}
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
-        '<div>② 「PDFを添付する（最大10ファイル）」から、' + esc(uploadHint) + 'をまとめて選ぶ。</div>' +
+        '<div>② 下のチャット欄（＋）に、' + esc(uploadHint) + 'を添付して送信する。</div>' +
         '<div>③ 年度ごとの取り込み状況を確認する。登録・正答照合が完了した年度から出題できます。</div>' +
-        '<div>※チャット欄への添付だけでは学習エンジンへの登録は完了しません。必ずこの画面のファイル選択を使用してください。</div>' +
+        '<div>チャットに送信後、登録結果は「取り込み状況を確認」で確認してください。受信だけでは登録完了ではありません。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて選択できます。年度はファイル名から判定し、PDF原本でも照合します。公式正答が確認できない年度は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><label id="licensedPick" aria-disabled="true" style="position:relative;display:block;width:100%;min-height:64px;padding:17px 16px;box-sizing:border-box;text-align:center;font-size:18px;font-weight:700;border:1px solid var(--border,#ccc);border-radius:12px;background:var(--surface,#f4f4f4);opacity:.5">PDFを添付する（最大10ファイル）<input id="licensedFiles" type="file" accept=".pdf,application/pdf" multiple disabled style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer" aria-label="PDFを添付する（最大10ファイル）"></label></div>' +
-        '<div class="notice" role="status" id="licensedProgress">チェック後、この画面からPDFを選択してください。チャット添付のみでは登録されません。</div>' +
+        '<div class="notice"><b>PDFは下のチャット欄（＋）から添付して送信してください。</b></div>' +
+        '<div class="notice" role="status" id="licensedProgress">チェック後、チャット欄（＋）からPDFを添付して送信してください。</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="row"><button id="licensedRefresh" type="button">取り込み状況を確認</button><button id="licensedAi" type="button">AI作成確認問題を解く</button></div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -976,8 +976,6 @@ a{color:inherit}
         }
       };
       var ack = document.getElementById('licensedAck');
-      var pdfPicker = document.getElementById('licensedFiles');
-      var pdfButton = document.getElementById('licensedPick');
       var progressBox = document.getElementById('licensedProgress');
       ack.onchange = async function(){
         if (!this.checked) return;
@@ -986,90 +984,13 @@ a{color:inherit}
         try {
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
-          pdfPicker.disabled = false;
-          pdfButton.setAttribute('aria-disabled','false');
-          pdfButton.style.opacity = '1';
-          progressBox.textContent = '許諾確認済みです。上の「PDFを添付する（最大10ファイル）」からファイルを選んでください。';
+          progressBox.textContent = '確認済みです。下のチャット欄（＋）にPDFを添付して送信してください。';
         } catch(e) {
           ack.disabled = false;
           ack.checked = false;
           progressBox.textContent = '許諾確認を記録できませんでした。チェックを入れ直してください。';
           progressBox.setAttribute('role','alert');
         }
-      };
-      function uploadProgress(message, alert) {
-        if (progressBox && progressBox.isConnected) {
-          progressBox.setAttribute('role', alert ? 'alert' : 'status');
-          progressBox.textContent = message;
-        }
-      }
-      async function registerSelectedPdfs(records) {
-        pdfPicker.disabled = true;
-        pdfButton.setAttribute('aria-disabled','true');
-        var planned;
-        try { planned = planLicensedUpload(records, isHtmlAnswer, maxBatch); }
-        catch (e) {
-          uploadProgress(String(e.message || e), true);
-          pdfPicker.disabled = false;
-          pdfButton.setAttribute('aria-disabled','false');
-          return;
-        }
-        var host = window.openai;
-        if (!host || typeof host.getFileDownloadUrl !== 'function' ||
-            (planned.some(function(g){return !!g.question?.file;}) && typeof host.uploadFile !== 'function')) {
-          uploadProgress('この端末のChatGPTは画面内PDF登録機能に対応していません。アプリを最新版に更新してください。', true);
-          pdfPicker.disabled = false;
-          pdfButton.setAttribute('aria-disabled','false');
-          return;
-        }
-        async function toUploadRef(item) {
-          var id = item.fileId || null;
-          if (!id && item.file) {
-            // ChatGPTのファイル領域に一時保存。利用者の公開ライブラリに共有しない。
-            var uploaded = await host.uploadFile(item.file);
-            id = uploaded && uploaded.fileId;
-          }
-          if (!id) throw new Error('PDFのファイルIDを取得できませんでした。');
-          var urlInfo = await host.getFileDownloadUrl({fileId:id});
-          var downloadUrl = urlInfo && (urlInfo.downloadUrl || urlInfo.download_url);
-          if (!/^https:\\/\\/\\S+$/.test(String(downloadUrl || '')))
-            throw new Error('PDFの一時取得URLが発行されませんでした。');
-          return {download_url:downloadUrl, file_id:id, file_name:item.name || item.fileName || 'problem.pdf', mime_type:'application/pdf'};
-        }
-        var okYears = [], pendingYears = [], failedYears = [];
-        for (var i = 0; i < planned.length; i++) {
-          var item = planned[i];
-          try {
-            uploadProgress((i+1) + '/' + planned.length + '：' + item.year + '年度のPDFを受け取り、本人専用に登録しています。');
-            var problem = await toUploadRef(item.question);
-            var answer = item.answer ? await toUploadRef(item.answer) : undefined;
-            var response = await callTool('attachPdf', {
-              sessionId:state.sessionId, year:item.year, questionPdf:problem,
-              ...(answer ? {answerPdf:answer} : {})
-            });
-            if (!response || response.error || !['attached','attachedAlready','pendingOfficialAnswer'].includes(response.status))
-              throw new Error(response && (response.error || response.notice) || '登録エンジンから成功結果が返りませんでした。');
-            if (response.status === 'pendingOfficialAnswer') pendingYears.push(item.year);
-            else okYears.push(item.year);
-          } catch (e) {
-            failedYears.push(item.year + '年度（' + String(e.message || e).slice(0,110) + '）');
-          }
-        }
-        var messages = [];
-        if (okYears.length) messages.push('登録・検証を開始：' + okYears.join('・') + '年度');
-        if (pendingYears.length) messages.push('公式正答の確認待ち：' + pendingYears.join('・') + '年度');
-        if (failedYears.length) messages.push('未登録：' + failedYears.join('、'));
-        messages.push('「取り込み状況を確認」で出題可能になった年度を確認してください。');
-        uploadProgress(messages.join('。'), failedYears.length > 0);
-        pdfPicker.disabled = false;
-        pdfButton.setAttribute('aria-disabled','false');
-      }
-      pdfPicker.onchange = function(){
-        var fileList = Array.from(this.files || []).map(function(file){
-          return {name:file.name, type:file.type, size:file.size, file:file};
-        });
-        this.value = '';
-        if (fileList.length) registerSelectedPdfs(fileList);
       };
       document.getElementById('licensedRefresh').onclick = async function(){
         this.disabled = true;
