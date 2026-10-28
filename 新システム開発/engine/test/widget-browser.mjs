@@ -413,14 +413,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /最大10ファイル/);
     assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),0,
       '本人用の登録がゼロなら過去問を解くボタンを表示しない');
-    assert.equal(await ui.locator('#licensedFiles').isDisabled(), true, '利用許諾が未確認ならファイル選択は無効');
-    assert.equal(await ui.locator('#licensedConfirm').count(), 0, '重複した許諾確定ボタンを表示しない');
-    assert.equal(await ui.locator('#licensedReuse').count(), 0, '保存済みPDFの別ボタンを表示しない');
+    assert.equal(await ui.locator('#licensedFiles').count(), 0, '画面内PDFピッカーは不要');
+    assert.equal(await ui.locator('#licensedRefresh').count(), 0, '手動確認ボタンを削除し自動更新する');
+    assert.equal(await ui.locator('#licensedAi').count(), 0, '取り込み画面から不要なAI作問ボタンを削除する');
     const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
     const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.locator('#licensedAck').check();
     await ui.getByText('許諾確認済みです。', { exact: false }).waitFor();
-    assert.equal(await ui.locator('#licensedFiles').isEnabled(), true, 'チェックだけで許諾を登録しファイル選択できる');
+    assert.equal(await ui.locator('#licensedAck').isChecked(), true, 'チェックで許諾を記録する');
     const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
     assert.equal(confirmed.length, beforePermission + 1);
     assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
@@ -433,11 +433,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         personalUploadedYears: [2023], maxBatchFiles:10,
       };
     });
-    await ui.getByRole('button', { name: '取り込み状況を確認' }).click();
+    await ui.getByRole('button', { name: '公式過去問を解く' }).waitFor({timeout:12000});
     await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
     assert.match(await ui.locator('#app').innerText(), /出題できる登録済み年度：2023年度/);
     assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),1,
       '登録済みになった場合にだけ出題ボタンが現れる');
+    assert.equal(await ui.locator('#licensedAck').isChecked(),true,'自動更新後も許諾チェックが残る');
     // 2026-10-23 iPhone: startSession資格名判定失敗を「問題準備中」と偽装せず再開できる。
     await page.evaluate(() => window.deliver({ isError: true,
       structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } }));
@@ -696,7 +697,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /基礎解説（学習システム内蔵）/,
       'AIの応答がなくても基礎解説全文を最初から表示');
     const followupsBeforeNative = await page.evaluate(() => window.followups.length);
-    await ui.getByRole('button',{name:'基礎解説を読み終えたら確認問題へ（全3問）'}).click();
+    await ui.getByRole('button',{name:/基礎解説を読み終えたら.*確認問題へ/}).click();
     await ui.getByRole('heading',{name:'基礎法学｜確認問題・第1問'}).waitFor();
     assert.equal(await page.evaluate(()=>window.preparedQuestionCalls),1,
       '内蔵確認問題の第1問をエンジンへ一度だけ登録');
