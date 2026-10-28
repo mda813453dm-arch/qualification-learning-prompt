@@ -424,6 +424,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
     assert.equal(confirmed.length, beforePermission + 1);
     assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
+    await page.evaluate(r => window.deliver(r), result({status:'attached',sessionId,year:2023}));
+    assert.equal(await ui.locator('#licensedAck').isChecked(),true,'登録ツールの通知で許諾と表示を失わない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
       '許諾確認だけではPDFの取り込みを開始しない');
     await page.evaluate(() => {
