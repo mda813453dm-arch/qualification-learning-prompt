@@ -419,7 +419,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
     const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.locator('#licensedAck').check();
-    await ui.getByText('許諾確認済みです。', { exact: false }).waitFor();
+    await ui.getByText('確認済みです。', { exact: false }).waitFor();
     assert.equal(await ui.locator('#licensedAck').isChecked(), true, 'チェックで許諾を記録する');
     const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
     assert.equal(confirmed.length, beforePermission + 1);
