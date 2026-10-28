@@ -250,6 +250,20 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   assert.equal(real.status,'question',JSON.stringify(real));
   assert.ok([2020,2021].includes(real.question?.year));
   assert.equal(real.question?.choices?.length,5);
+  const gradeCall = await app('submitAnswer',{
+    sessionId:session.body.sessionId,
+    questionId:real.question.questionId,
+    value:'5',
+    confidence:'sure'
+  });
+  assert.equal(gradeCall.isError,false,JSON.stringify(gradeCall));
+  const graded=gradeCall._meta?.qlp??gradeCall.structuredContent;
+  assert.equal(graded.grade?.questionId,real.question.questionId);
+  assert.equal(typeof graded.grade?.correct,'boolean');
+  const saved=await app('getStudySnapshot',{sessionId:session.body.sessionId});
+  const restored=saved._meta?.qlp??saved.structuredContent;
+  assert.equal(restored.status,'restoredGrade');
+  assert.equal(restored.grade?.questionId,real.question.questionId);
 });
 
 test('1年度だけ検証済みなら他年度がOCR中でも公式過去問を出題可能',()=>{
