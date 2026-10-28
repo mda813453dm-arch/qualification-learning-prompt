@@ -58,10 +58,11 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const names = r.body.result.tools.map((t) => t.name);
   const yaml = readFileSync(new URL('../openapi.yaml', import.meta.url), 'utf8');
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
-  assert.deepEqual(names.sort(), [...ops, 'attachPdf'].sort());
+  assert.deepEqual(names.sort(), [...ops, 'attachPdf', 'attachPdfBatch'].sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 13);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 14);
   assert.ok(names.includes('attachPdf'), '通常のチャットでもPDF登録ツールを公開する');
+  assert.ok(names.includes('attachPdfBatch'), '複数年度のPDFを1回で送信するツールを公開する');
 });
 
 test('通常の会話からもPDF登録ツールを呼べる（添付がなければ安全に拒否）', async () => {
