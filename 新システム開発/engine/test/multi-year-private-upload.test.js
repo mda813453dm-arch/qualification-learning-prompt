@@ -234,4 +234,20 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   assert.equal(job.sources.filter(x=>x.status==='done').length,2);
   const packets=await availablePackets(env.STORE,job,T0);
   assert.equal(packets.length,4,'出題・採点用に検証された4問が取得できる');
+  const app=async(name,args)=>{
+    const response=await handle(new Request('https://engine.example/app',{
+      method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({jsonrpc:'2.0',id:100,method:'tools/call',params:{name,arguments:args}})
+    }),env);
+    return (await response.json()).result;
+  };
+  const started=await app('startStudy',{learnerId:session.body.learnerId,qualificationName:'行政書士'});
+  assert.notEqual(started.isError,true,JSON.stringify(started));
+  const chosen=await app('chooseItem',{sessionId:session.body.sessionId,fieldName:'基礎法学',mode:'practice'});
+  assert.equal(chosen.structuredContent.status,'item',JSON.stringify(chosen));
+  const next=await app('nextQuestion',{sessionId:session.body.sessionId,question:'基礎法学'});
+  const real=next._meta?.qlp??next.structuredContent;
+  assert.equal(real.status,'question',JSON.stringify(real));
+  assert.ok([2020,2021].includes(real.question?.year));
+  assert.equal(real.question?.choices?.length,5);
 });
