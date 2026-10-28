@@ -1910,6 +1910,7 @@ async function route(request, env, url, now) {
       const uploadPermissionConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId;
       const remainingUploadFiles = uploadPermissionConfirmed ? Math.max(0, Number(batchRights.remaining) || 0) : 0;
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
+        fieldName: cat.fields[state.set?.fieldId] ?? Object.values(cat.fields)[0] ?? '',
         uploadPermissionConfirmed, remainingUploadFiles,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
