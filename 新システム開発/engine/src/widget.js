@@ -2490,7 +2490,7 @@ a{color:inherit}
         e && e.message === 'ACCESS_CODE_REQUIRED' ? '利用コードが必要です。回答は保持されています。' :
         '採点結果を取得できませんでした。選択した回答を保持しています。同じボタンで再確認できます。';
       showProgress(message, true);
-      if (progress && progress.isConnected) progress.scrollIntoView({block:'nearest',behavior:'instant'});
+      if (progress && progress.isConnected) progress.scrollIntoView({block:'nearest',behavior:'auto'});
     }
   }
   // 解説はAIが学習履歴に応じて作る。公式正答だけはエンジンで検証し、AIの作り話を防ぐ。
