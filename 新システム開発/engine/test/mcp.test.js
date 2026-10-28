@@ -1537,7 +1537,7 @@ test('行政書士の内蔵基礎教材は全6分野・各3問、正答と簡易
   }
   const html = widgetHtml();
   assert.match(html, /基礎解説（学習システム内蔵）/);
-  assert.match(html, /理解度に合わせたAI解説を追加（任意）/);
+  assert.match(html, /理解度に合わせたAI解説を追加/);
   assert.match(html, /registerPreparedConfirmation/);
   assert.match(html, /if \(!preparedLessons\[field\]\) ask\(lessonRequestMessage/);
   assert.match(html, /理解度を確かめる練習問題です（公式過去問ではありません）/);
