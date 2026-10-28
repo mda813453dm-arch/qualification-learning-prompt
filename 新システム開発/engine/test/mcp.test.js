@@ -1635,6 +1635,9 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   const batch=TOOLS.find(x=>x.name==='attachPdfBatch');
   const single=TOOLS.find(x=>x.name==='attachPdf');
   assert.ok(batch && single);
+  const rpcSource=readFileSync(new URL('../src/mcp.js',import.meta.url),'utf8');
+  assert.match(rpcSource,/WIDGET_TOOLS = new Set\(\['attachPdfBatch', 'attachPdf'/, 'PDF送信結果にも学習画面を添付する');
+  assert.match(rpcSource,/tool\.name === 'attachPdf' \? \{ isError: false \}/, '登録受付を正常なツール結果として返す');
   const html=widgetHtml();
   assert.match(html,/過去問の登録状況/);
   assert.match(html,/登録状況を再確認/);
