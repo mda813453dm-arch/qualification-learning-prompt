@@ -542,6 +542,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v112.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v117.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v118.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v119.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v123.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v120.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v121.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v122.html');
