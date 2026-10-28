@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { handle } from '../src/app.js';
 import { MemoryStore } from '../src/store.js';
 import { readJob } from '../src/ingest.js';
-import { availablePackets } from '../src/engine.js';
+import { availablePackets, newState, pickNext } from '../src/engine.js';
 import { assetsB64, fakeResult, pdf, T0 } from './helpers.js';
 
 const token = 'batch-licensed-test';
@@ -250,4 +250,19 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   assert.equal(real.status,'question',JSON.stringify(real));
   assert.ok([2020,2021].includes(real.question?.year));
   assert.equal(real.question?.choices?.length,5);
+});
+
+test('1年度だけ検証済みなら他年度がOCR中でも公式過去問を出題可能',()=>{
+  const state=newState({ qualificationId:'q090',learnerId:'sample',now:T0 });
+  const packet={questionId:'q090:2022:年度共通:1',qualificationId:'q090',
+    year:2022, section:'年度共通', questionNumber:1, fieldId:'g1'};
+  const job={ state:'running', sources:[
+    {year:2025,status:'pending'}, {year:2024,status:'pending'}, {year:2023,status:'pending'},
+    {year:2022,status:'done',packetCount:1}
+  ]};
+  const pick=pickNext(state,[{packet,keyParts:{}}],{today:'2026-10-28',now:T0,job});
+  assert.equal(pick.status,'question','未検証の直近3年度が残っていても出題を止めない');
+  assert.equal(pick.item.packet.questionId,packet.questionId);
+  const none=pickNext(state,[],{today:'2026-10-28',now:T0,job});
+  assert.equal(none.status,'waiting','未検証のPDFだけなら問題を作らず待機する');
 });
