@@ -120,3 +120,48 @@ test('賃管の問題・正答PDFは2ファイルずつ消費し、計10ファ�
   assert.equal(over.status,403,JSON.stringify(over.body));
   assert.equal(received.length,10,'許諾のファイル上限到達後は原本にアクセスしない');
 });
+
+test('チャット添付6年度を1回の登録呼び出しで順番に受け取り、処理開始と完了を区別する', async () => {
+  const {env, received} = setup();
+  const start = await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const base = '/v1/sessions/' + start.body.sessionId;
+  const years = [2020,2021,2022,2023,2024,2025];
+  const files = years.map((year) => ({
+    file_name: 'R' + (year - 2018) + '_mondai.pdf',
+    download_url: 'https://uploads.example/' + year + '.pdf',
+    file_id: 'file_' + year,
+    mime_type: 'application/pdf'
+  }));
+  const before = await req(env,'POST',base+'/attach-batch',{questionPdfs:files});
+  assert.equal(before.status,200);
+  assert.equal(before.body.status,'attachedBatch');
+  assert.equal(before.body.failed,6);
+  assert.equal(received.length,0,'許諾が未確認ならPDF原本を一切取得しない');
+  await req(env,'POST',base+'/upload-permission',{year:0,confirmed:true});
+  const result = await req(env,'POST',base+'/attach-batch',{questionPdfs:files});
+  assert.equal(result.status,200,JSON.stringify(result.body));
+  assert.equal(result.body.status,'attachedBatch');
+  assert.equal(result.body.requested,6);
+  assert.equal(result.body.failed,0,JSON.stringify(result.body.results));
+  assert.equal(result.body.queued,6);
+  assert.equal(received.length,6);
+  const job = await readJob(env.STORE,'q090~' + start.body.learnerId);
+  assert.deepEqual(job.sources.map(x=>x.year),years);
+  assert.ok(job.sources.every(s=>s.status==='pending'),'受理時点で解析済みと装わない');
+});
+test('一括登録は年度不明だけ失敗させ、他ファイルを止めず、11件は原本取得前に拒否する', async()=>{
+  const {env,received}=setup();
+  const start=await req(env,'POST','/v1/sessions',{qualificationId:'q090'});
+  const base='/v1/sessions/'+start.body.sessionId;
+  await req(env,'POST',base+'/upload-permission',{year:0,confirmed:true});
+  const file=(name)=>({file_name:name,download_url:'https://uploads.example/'+name,file_id:'file_'+name});
+  const tooMany=await req(env,'POST',base+'/attach-batch',{questionPdfs:Array.from({length:11},(_,i)=>file('R'+(i+1)+'.pdf'))});
+  assert.equal(tooMany.status,400);
+  assert.equal(received.length,0);
+  const result=await req(env,'POST',base+'/attach-batch',{questionPdfs:[file('not-a-year.pdf'),file('R2_mondai.pdf')]});
+  assert.equal(result.status,200);
+  assert.equal(result.body.failed,1);
+  assert.equal(result.body.queued,1);
+  assert.equal(received.length,1);
+  assert.deepEqual(result.body.results.map(x=>x.status),['failed','attached']);
+});
