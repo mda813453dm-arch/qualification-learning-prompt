@@ -54,35 +54,23 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     const ui=page.frameLocator('iframe');
     await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
     assert.equal(await ui.locator('#licensedYear').count(),0);
-    assert.equal(await ui.locator('#licensedFiles').isDisabled(),true);
-    assert.equal(await ui.locator('#licensedConfirm').count(),0);
-    assert.equal(await ui.locator('#licensedReuse').count(),0);
+    assert.equal(await ui.locator('#licensedFiles').count(),0);
+    assert.equal(await ui.locator('#licensedRefresh').count(),0);
+    assert.equal(await ui.locator('#licensedPick').count(),0);
+    assert.equal(await ui.locator('#licensedStart').count(),0);
+    const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
-    await ui.getByText('許諾確認済みです。',{exact:false}).waitFor();
-    assert.equal(await ui.locator('#licensedFiles').isEnabled(),true);
-    const chooserEvent=page.waitForEvent('filechooser');
-    await ui.locator('#licensedPick').click();
-    const chooser=await chooserEvent;
-    await chooser.setFiles([
-      {name:'R2_Mondai(7).pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\nFake test A')},
-      {name:'R7_Mondai(6).pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\nFake test B')}
-    ]);
-    await ui.getByText(/登録・検証を開始：2020・2025年度/).waitFor();
-    const evidence=await page.evaluate(()=>({calls:window.calls,uploads:window.fakeUploads,downloads:window.fakeDownloads,followups:window.followups}));
-    const attached=evidence.calls.filter(c=>c.name==='attachPdf');
-    assert.equal(attached.length,2,JSON.stringify(evidence));
-    assert.deepEqual(attached.map(c=>c.args.year),[2020,2025]);
-    assert.ok(attached.every(c=>c.args.sessionId==='test-session'));
-    assert.ok(attached.every(c=>c.args.questionPdf?.file_id&&c.args.questionPdf?.download_url));
-    assert.ok(attached.every(c=>!c.args.answerPdf),'行政書士の正答PDFは不要');
-    assert.deepEqual(evidence.uploads,['R2_Mondai(7).pdf','R7_Mondai(6).pdf']);
-    assert.deepEqual(evidence.followups,[],'AIに送信・判断を依頼しない');
-    await ui.locator('#licensedFiles').setInputFiles(
-      {name:'problem.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7\nUnknown')}
-    );
-    await ui.getByText(/ファイル名から年度を確認できません/).waitFor();
-    assert.equal((await page.evaluate(()=>window.calls.filter(c=>c.name==='attachPdf'))).length,2,'不明年度は誤登録しない');
+    await ui.getByText('確認済みです。',{exact:false}).waitFor();
+    const calls=await page.evaluate(n=>window.calls.slice(n),before);
+    assert.equal(calls.filter(c=>c.name==='confirmUploadRights').length,1,'許諾記録は1回');
+    assert.equal(calls.filter(c=>c.name==='attachPdf').length,0,'ファイルを送信していないのに登録しない');
+    await ui.getByRole('button',{name:'公式過去問を解く'}).waitFor({timeout:12000});
+    assert.equal(await ui.locator('#licensedAck').isChecked(),true,'自動更新してもチェックを保持');
+    assert.equal(await ui.locator('#licensedAck').isDisabled(),true,'同じ許諾を二重登録しない');
+    assert.match(await ui.locator('#app').innerText(),/2020年度/);
+    assert.match(await ui.locator('#app').innerText(),/2025年度/);
+    assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
     assert.deepEqual(errors,[],name+' console errors: '+errors.join(','));
-    console.log(name+': PASS direct PDF upload (multi-year, library reuse, no AI, safe year handling)');
+    console.log(name+': PASS chat attachment guidance and auto status with retained consent');
   }finally{await browser.close();}
 }
