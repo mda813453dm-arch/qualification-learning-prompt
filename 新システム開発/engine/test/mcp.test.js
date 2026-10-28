@@ -1030,7 +1030,7 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   assert.equal(batch.inputSchema.properties.questionPdfs.type, 'array');
   assert.equal(batch.inputSchema.properties.questionPdfs.maxItems, 10);
   assert.deepEqual(batch.inputSchema.properties.questionPdfs.items.required, ['download_url', 'file_id']);
-  assert.equal(listed._meta['openai/outputTemplate'], undefined, 'PDF登録は新しい学習枠を生成しない');
+  assert.equal(listed._meta['openai/outputTemplate'], WIDGET_URI, 'PDF登録後は学習操作画面を表示する');
   const libMeta = (await app('tools/list', {})).tools.find((t) => t.name === 'getOfficialLibrary')._meta;
   assert.equal(libMeta['openai/outputTemplate'], undefined, '登録状況照会はデータ専用');
   assert.match(listed.description, /行政書士など区分が一つだけの資格ではsectionを省略してよい/);
