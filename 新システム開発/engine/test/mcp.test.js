@@ -1636,7 +1636,10 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   const single=TOOLS.find(x=>x.name==='attachPdf');
   assert.ok(batch && single);
   const html=widgetHtml();
-  assert.match(html,/PDF登録状況/);
+  assert.match(html,/過去問の登録状況/);
+  assert.match(html,/登録状況を再確認/);
+  assert.match(html,/PDFの再添付は不要です/);
+  assert.match(html,/state.sessionId = sid; saveIds\(\)/);
   assert.match(html,/getOfficialLibrary/);
   assert.match(html,/確認問題へ（3問）/);
   assert.match(html,/公式過去問を解く/);
