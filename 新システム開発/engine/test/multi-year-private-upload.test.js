@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handle } from '../src/app.js';
+import { handle, appKey } from '../src/app.js';
 import { MemoryStore } from '../src/store.js';
 import { readJob } from '../src/ingest.js';
 import { availablePackets, newState, pickNext } from '../src/engine.js';
@@ -235,7 +235,7 @@ test('個人用2年度を解析完了まで進め、検証済み問題を出題�
   const packets=await availablePackets(env.STORE,job,T0);
   assert.equal(packets.length,4,'出題・採点用に検証された4問が取得できる');
   const app=async(name,args)=>{
-    const response=await handle(new Request('https://engine.example/app',{
+    const response=await handle(new Request('https://engine.example/app/'+appKey(token),{
       method:'POST',headers:{'content-type':'application/json','authorization':'Bearer '+token},
       body:JSON.stringify({jsonrpc:'2.0',id:100,method:'tools/call',params:{name,arguments:args}})
     }),env);
