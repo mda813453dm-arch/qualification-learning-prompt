@@ -73,7 +73,7 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     assert.equal(await page.evaluate(()=>window.modelMessages.length),0,'no model interaction to render foundation');
     assert.equal(toolCalls.filter(t=>t.name==='registerConfirmationQuestion').length,0,'no question before student clicks');
 
-    await ui.getByRole('button',{name:/基礎解説を読み終えたら確認問題へ/}).click();
+    await ui.getByRole('button',{name:'確認問題へ（3問）'}).click();
     for(let pos=1;pos<=3;pos++){
       await ui.getByRole('heading',{name:`基礎法学｜確認問題・第${pos}問`}).waitFor({timeout:10000});
       const q=PREPARED_LESSONS[fieldName].questions[pos-1];
