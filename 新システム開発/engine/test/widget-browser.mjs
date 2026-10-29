@@ -357,11 +357,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     });
     await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
     assert.equal(await ui.locator('.old-screen').count(), 0, '復元後も同じ最初の学習枠を使う');
-    assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
+    assert.equal(await ui.getByRole('button', { name: '学習を終了する' }).count(), 1);
     assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length) >= 1, '再開時に学習画面を取得した');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
-    await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
+    await ui.getByRole('button', { name: '学習を終了する' }).click();
     assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文', '復元後でも学習終了できる');
     // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
     await page.evaluate(r => window.deliver(r), result(onboarding));
