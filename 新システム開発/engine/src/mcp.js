@@ -547,6 +547,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v120.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v121.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v122.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v124.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v125.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -608,11 +609,11 @@ export function forModel(body) {
       const failed = Array.isArray(body.failedYears) ? body.failedYears : [];
       return { status:'officialLibrary', sessionId:body.sessionId,
         readyYears:ready, importingYears:importing, pendingAnswerYears:pending, failedYears:failed,
-        nextChoices: ready.length ? ['公式過去問を解く', '確認問題へ（3問）'] : ['確認問題へ（3問）'],
+        nextChoices: ready.length ? ['公式過去問を解く'] : [],
         howToProceed:ready.length
-          ? '検証済みの公式過去問が使えます。新しい画面枠を作らず既存の学習枠にある「公式過去問を解く／確認問題へ（3問）」を案内し、利用者の選択を待ってください。'
-          : importing.length || pending.length ? '未完了の過去問を登録済みと報告しないでください。現在の学習枠では「確認問題へ（3問）」を選んで先に進めます。' :
-          '出題可能な公式過去問はありません。登録失敗した年度を明確にし、確認問題に進む選択肢を案内してください。' };
+          ? '検証済みの公式過去問が使えます。本人専用PDF登録画面の「公式過去問を解く」を案内し、利用者の選択を待ってください。'
+          : importing.length || pending.length ? '未完了の過去問を登録済みと報告しないでください。本人専用PDF登録画面の自動更新で処理状況を確認してください。確認問題へのボタンはこの画面に表示しません。' :
+          '出題可能な公式過去問はありません。登録失敗した年度と理由を明確に伝えてください。確認問題へのボタンはこの画面に表示しません。' };
     }
     return { status: 'officialLibrary', sessionId: body.sessionId,
       howToProceed: '利用可能な年度と試験区分は学習画面に表示済み。内部の保存方式は説明せず、操作ボタンの選択を待つ。' };

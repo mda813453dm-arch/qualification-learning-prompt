@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v125.html';
+export const WIDGET_URI = 'ui://qlp/question-v128.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-28.125';
+export const WIDGET_VERSION = '2026-10-30.128';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -980,8 +980,7 @@ a{color:inherit}
         (importing.length ? '<div class="notice"><b>登録処理中：</b>' + importing.map(function(y){return esc(y) + '年度';}).join('・') + '</div>' : '') +
         (failedImports.length ? '<div class="notice" role="alert"><b>登録に失敗：</b>' + failedImports.map(function(v){return esc(v.year) + '年度（' + esc(v.reason) + '）';}).join('・') + '</div>' : '') +
         '<div class="row">' +
-          (personal.length ? '<button id="licensedStart" type="button">公式過去問を解く</button>' : '') +
-          '<button id="licensedCheck" type="button">確認問題へ（3問）</button></div>' +
+          (personal.length ? '<button id="licensedStart" type="button">公式過去問を解く</button>' : '') + '</div>' +
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
@@ -1010,22 +1009,6 @@ a{color:inherit}
         } catch(e) {
           this.disabled = false;
           document.getElementById('licensedHelp').textContent = '過去問を開けませんでした。出題できる年度があるか確認してください。';
-        }
-      };
-      var checkAction = document.getElementById('licensedCheck');
-      if (checkAction) checkAction.onclick = async function(){
-        this.disabled = true;
-        try {
-          var field = data.fieldName || studyField || '';
-          if (!field) throw new Error('FIELD_NOT_READY');
-          var chosen = await callTool('chooseItem', {sessionId:state.sessionId, fieldName:field, mode:'check'});
-          if (!chosen || chosen.error || chosen.status !== 'item' || chosen.mode !== 'check') throw new Error('CHECK_START_FAILED');
-          render({status:'confirmation_pending',sessionId:state.sessionId,fieldName:field,
-            position:1,total:3,notice:'確認問題に進みます。'});
-        } catch(e) {
-          this.disabled = false;
-          var out = document.getElementById('licensedHelp');
-          if(out) out.textContent = '確認問題を始められませんでした。学習内容を保持しています。';
         }
       };
       var ack = document.getElementById('licensedAck');

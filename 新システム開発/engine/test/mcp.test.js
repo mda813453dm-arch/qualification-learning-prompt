@@ -134,8 +134,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v125\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-28.125');
+  assert.match(WIDGET_URI, /question-v128\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-30.128');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1594,12 +1594,16 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
   assert.equal(restored._meta.qlp.complete,true);
 });
 
-test('本人専用の過去問取り込み画面は登録済み問題と確認問題への次の操作を持つ',()=>{
+test('本人専用の過去問取り込み画面は確認問題へ誘導せず、登録済み問題の操作だけを出す',()=>{
   const html=widgetHtml();
   assert.match(html,/readyYearDetails/);
   assert.match(html,/licensedStart/);
-  assert.match(html,/licensedCheck/);
-  assert.match(html,/確認問題へ（3問）/);
+  const licensedStart=html.indexOf("if (data.status === 'sourceUnavailable' && data.permissionedUpload)");
+  const licensedEnd=html.indexOf("if (data.status === 'sourceUnavailable')",licensedStart+1);
+  const licensedScreen=html.slice(licensedStart,licensedEnd);
+  assert.ok(licensedStart >= 0 && licensedEnd > licensedStart);
+  assert.doesNotMatch(licensedScreen,/licensedCheck/);
+  assert.doesNotMatch(licensedScreen,/確認問題へ（3問）/);
   assert.match(html,/登録状況は自動で更新します/);
   assert.doesNotMatch(html,/id="licensedRefresh"/);
   assert.doesNotMatch(html,/id="licensedAi"/);
@@ -1611,11 +1615,11 @@ test('本人専用PDFの検証結果を見てから学習の次の選択肢を�
   assert.match(queued.howToProceed,/登録依頼は完了ではありません/);
   const pending=forModel({status:'officialLibrary',sessionId:'s1',permissionedUpload:true,
     importingYears:[2020,2021],readyYearDetails:[]});
-  assert.deepEqual(pending.nextChoices,['確認問題へ（3問）']);
+  assert.deepEqual(pending.nextChoices,[]);
   const done=forModel({status:'officialLibrary',sessionId:'s1',permissionedUpload:true,
     readyYearDetails:[{year:2020,questions:49,excluded:1}],importingYears:[2021]});
   assert.deepEqual(done.readyYears,[{year:2020,questions:49,excluded:1}]);
-  assert.deepEqual(done.nextChoices,['公式過去問を解く','確認問題へ（3問）']);
+  assert.deepEqual(done.nextChoices,['公式過去問を解く']);
   assert.equal(done.readyYears.length,1,'解析中の年度を登録済みと数えない');
 });
 

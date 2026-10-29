@@ -58,6 +58,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedRefresh').count(),0);
     assert.equal(await ui.locator('#licensedPick').count(),0);
     assert.equal(await ui.locator('#licensedStart').count(),0);
+    assert.equal(await ui.locator('#licensedCheck').count(),0,'本人専用PDF登録画面に確認問題のボタンを表示しない');
     const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
     await ui.getByText('確認済みです。',{exact:false}).waitFor();
