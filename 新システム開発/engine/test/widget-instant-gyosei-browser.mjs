@@ -116,8 +116,8 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
         journey:{fieldIndex:1,fieldTotal:6},notice:'基礎解説を表示しています。'}
     });
     await ui.getByRole('heading',{name:'基礎法学｜基礎解説'}).waitFor();
-    await ui.getByRole('button',{name:'基礎解説を読み終えたら確認問題へ（全3問）'}).waitFor();
-    const direct = ui.getByRole('button',{name:'実践問題（公式過去問）へ進む'});
+    await ui.getByRole('button',{name:'確認問題へ（3問）'}).waitFor();
+    const direct = ui.getByRole('button',{name:'公式過去問へ進む'});
     await direct.waitFor();
     const beforeDirect = toolCalls.length;
     await direct.click();
