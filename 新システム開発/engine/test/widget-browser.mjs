@@ -436,7 +436,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.evaluate(r => window.deliver(r), result({status:'attached',sessionId,year:2023}));
     await ui.getByRole('button', { name: '公式過去問を解く' }).waitFor({timeout:12000});
     await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
-    assert.match(await ui.locator('#app').innerText(), /出題できる登録済み年度：2023年度/);
+    assert.match(await ui.locator('#app').innerText(), /出題可能：2023年度/);
     assert.equal(await ui.locator('#licensedAck').isChecked(),true,'登録結果の更新後も許諾チェックを保持する');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
       '許諾確認だけではPDFの取り込みを開始しない');
