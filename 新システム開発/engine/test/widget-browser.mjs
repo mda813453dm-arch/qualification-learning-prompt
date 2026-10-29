@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 15306)
-Total output lines: 745
-
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -307,7 +304,152 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       question: 'この分野の基本事項として適切な説明はどれですか。',
       choices: ['不適切な説明', '適切な説明', '無関係な説明'],
     }));
-    await ui.getByText('AI作成確認問題', { exact: true }).waitFor()…3306 tokens truncated…etByRole('button', { name: 'この資格で開始する' }).click();
+    await ui.getByText('AI作成確認問題', { exact: true }).waitFor();
+    await ui.locator('input[name=remediationAnswer][value="1"]').check();
+    await ui.getByRole('button', { name: '解答する' }).click();
+    await ui.getByText('不正解', { exact: true }).waitFor();
+    const wrongCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
+    assert.deepEqual(wrongCheck, { sessionId, challengeId: 'test-check-1', selected: '1' }, '回答に正答・問題本文を混ぜない');
+    await page.evaluate(r => window.deliver(r), result({
+      status: 'remediation_question', sessionId, challengeId: 'test-check-2',
+      question: 'もう一度同じ分野の理解を確かめます。適切な説明はどれですか。',
+      choices: ['不適切な説明', '適切な説明', '無関係な説明'],
+    }));
+    await ui.locator('input[name=remediationAnswer][value="2"]').check();
+    await ui.getByRole('button', { name: '解答する' }).click();
+    await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
+    const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
+    assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
+    await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
+    await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
+    await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
+    assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 375), '図を画面幅より大きくできる');
+    await ui.getByRole('button', { name: '拡大', exact: true }).click();
+    assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
+    await ui.getByRole('button', { name: '閉じる' }).click();
+    const beforeSkip = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
+    const beforeSkipNext = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
+    // 採点結果の返答だけが失われ、サーバーはすでに次問へ進んだ状態を再現。
+    await page.evaluate(() => { window.dropSkipResponseOnce = true; });
+    await ui.getByRole('button', { name: 'スキップ', exact: true }).click();
+    await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), beforeSkip + 1);
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), beforeSkipNext + 1, '応答喪失時は保存済みの次問を確認して復旧');
+    assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 0, 'スキップ後に余分なボタンを挟まない');
+    // 別画面に移り古い枠が無効化されても、サーバーの同じ採点結果へ戻して終了できる。
+    const answersBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
+    const nextBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
+    await page.evaluate(({ question, nextQuestion, sessionId }) => {
+      window.restorePayload = { status: 'restoredGrade', sessionId, studyId: 'test-study',
+        question: question.question, next: nextQuestion,
+        grade: { correct: true, selected: '3', correctAnswer: '3' }, at: Date.now() + 12000 };
+      window.deliver({ ...nextQuestion, at: Date.now() - 5000 });
+    }, { question, nextQuestion, sessionId });
+    // v103の受入基準: 次の表示が届いても元の枠は閉じない。保存した採点は同じ枠に復元する。
+    assert.equal(await ui.locator('.old-screen').count(), 0, '同じセッションの初期枠は継続使用');
+    // iOSの画面復帰イベントを擬似送信して、エンジンの既存状態だけを取得する。
+    await ui.locator('#app').evaluate(() => {
+      const returned = new Event('pageshow');
+      Object.defineProperty(returned, 'persisted', { value: true });
+      window.dispatchEvent(returned);
+    });
+    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
+    assert.equal(await ui.locator('.old-screen').count(), 0, '復元後も同じ最初の学習枠を使う');
+    assert.equal(await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).count(), 1);
+    assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length) >= 1, '再開時に学習画面を取得した');
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), answersBeforeRestore, '復元で再採点しない');
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
+    await ui.getByRole('button', { name: '今日はここまで（学習を終了）' }).click();
+    assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文', '復元後でも学習終了できる');
+    // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
+    await page.evaluate(r => window.deliver(r), result(onboarding));
+    await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
+    await ui.getByRole('button', { name: '4 過去問演習中' }).click();
+    await ui.getByRole('button', { name: '4 今は学習しない' }).click();
+    // 間違えて計画の4を押しても、学習計画を即座に破棄せず戻れる。
+    assert.match(await ui.locator('#app').innerText(), /学習計画の確認画面から離れますか/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
+    await ui.getByRole('button', { name: '1 学習計画に戻る' }).click();
+    await ui.getByRole('button', { name: '4 今は学習しない' }).click();
+    await ui.getByRole('button', { name: '2 今は学習しない（終了を確認）' }).click();
+    assert.match(await ui.locator('#app').innerText(), /学習は開始していません。/);
+    const library = { supportedYears: [2025, 2024], stored: [],
+      missing: [
+        { year: 2025, section: '午前の部' }, { year: 2025, section: '午後の部' },
+        { year: 2024, section: '午前の部' }, { year: 2024, section: '午後の部' },
+      ], totalQuestions: 0, completeYears: [] };
+    await page.evaluate(({ library, sessionId }) => {
+      window.sharedLibrary = library;
+      window.deliver({ _meta: { qlp: { status:'sourceUnavailable', sessionId, fieldName:'午後の部',
+        sourceAttachmentSupported:true, sharedLibrary:library, notice:'未保存の公式問題を確認しています。' } } });
+    }, { library, sessionId });
+    await ui.getByRole('button', { name: /公式問題・正答PDFを登録する/ }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /2025年度/);
+    assert.match(await ui.locator('#app').innerText(), /利用できる公式過去問の年度を確認できませんでした/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /共有保存|共有利用|URL台帳|別リポジトリ/);
+    assert.equal(await ui.locator('.choices button').count(),2,'PDF登録とAI確認問題のみを主な選択肢にする');
+    const previousMessageCount = await page.evaluate(() => window.followups.length);
+    const priorAttachCount = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
+    await ui.getByRole('button', { name: /公式問題・正答PDFを登録する/ }).click();
+    assert.match(await ui.locator('#app').innerText(), /添付するまで登録は始まりません/);
+    assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
+      '添付がないボタンで新しい会話を送らない');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), priorAttachCount,
+      '空のPDFの取り込みを始めない');
+    await ui.getByRole('button', { name: /過去問をもう一度確認する/ }).click();
+    await page.waitForFunction(() => window.calls.some(m => m.params?.name === 'getOfficialLibrary'));
+    assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
+      '保存済み年度の照会も利用者チャットに内部内容を送信しない');
+    // 著作物使用許諾が必要な賃管：最大10PDFの一括確認。年度選択は不要で、確認だけでは取り込まない。
+    await page.evaluate(r => window.deliver(r), result({
+      status: 'sourceUnavailable', sessionId, permissionedUpload: true,
+      qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
+      availableUploadYears: [2015, 2016, 2017, 2023, 2025],
+      validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [],
+    }));
+    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /原本検証待ち|取込準備済み/);
+    assert.equal(await ui.locator('#licensedYear').count(),0,'取り込む年度を選択させない');
+    assert.match(await ui.locator('#app').innerText(), /最大10ファイル/);
+    assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),0,
+      '本人用の登録がゼロなら過去問を解くボタンを表示しない');
+    assert.equal(await ui.locator('#licensedFiles').count(), 0, '画面内PDFピッカーは不要');
+    assert.equal(await ui.locator('#licensedRefresh').count(), 0, '手動確認ボタンを削除し自動更新する');
+    assert.equal(await ui.locator('#licensedAi').count(), 0, '取り込み画面から不要なAI作問ボタンを削除する');
+    const beforePermission = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').length);
+    const beforePdf = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
+    await ui.locator('#licensedAck').check();
+    await ui.getByText('確認済みです。', { exact: false }).waitFor();
+    assert.equal(await ui.locator('#licensedAck').isChecked(), true, 'チェックで許諾を記録する');
+    const confirmed = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'confirmUploadRights').map(m => m.params.arguments));
+    assert.equal(confirmed.length, beforePermission + 1);
+    assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
+    await page.evaluate(r => window.deliver(r), result({status:'attached',sessionId,year:2023}));
+    assert.equal(await ui.locator('#licensedAck').isChecked(),true,'登録ツールの通知で許諾と表示を失わない');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
+      '許諾確認だけではPDFの取り込みを開始しない');
+    await page.evaluate(() => {
+      window.privateLibrary = {
+        status: 'officialLibrary', permissionedUpload: true, sessionId: 'test-session',
+        qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
+        personalUploadedYears: [2023], maxBatchFiles:10,
+      };
+    });
+    await ui.getByRole('button', { name: '公式過去問を解く' }).waitFor({timeout:12000});
+    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /出題できる登録済み年度：2023年度/);
+    assert.equal(await ui.getByRole('button', { name: '公式過去問を解く' }).count(),1,
+      '登録済みになった場合にだけ出題ボタンが現れる');
+    assert.equal(await ui.locator('#licensedAck').isChecked(),true,'自動更新後も許諾チェックが残る');
+    // 2026-10-23 iPhone: startSession資格名判定失敗を「問題準備中」と偽装せず再開できる。
+    await page.evaluate(() => window.deliver({ isError: true,
+      structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } }));
+    await ui.locator('#retryQualification').waitFor();
+    assert.match(await ui.locator('#app').innerText(), /資格名を認識できませんでした/);
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /問題を準備しています/);
+    assert.equal(await ui.getByRole('button', { name: '総復習（間違えた問題）' }).count(), 0);
+    await ui.locator('#retryQualification').fill('宅建');
+    await ui.getByRole('button', { name: 'この資格で開始する' }).click();
     await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
     const restarts = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'startSession').map(x => x.params.arguments));
     assert.equal(restarts.at(-1).qualificationId, '宅建');
