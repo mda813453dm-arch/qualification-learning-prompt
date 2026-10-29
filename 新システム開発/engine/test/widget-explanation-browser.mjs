@@ -165,7 +165,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       }
     }
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(),
-      ['次の分野の問題へ', 'AIの詳しい解説を追加', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+      ['次の分野の問題へ', 'AIの詳しい解説を追加', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '学習を終了する']);
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '7');
     await ui.locator('#review').click();
     await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
