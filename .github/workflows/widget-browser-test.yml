@@ -34,7 +34,8 @@ jobs:
         run: npm test
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.13'
+          # PyMuPDF の配布wheelが揃う安定版でパーサー試験を実行する。
+          python-version: '3.12'
       - name: 土地家屋調査士 午前・午後のPDFパーサー単体テスト（合成ページ）
         run: |
           python -m pip install -r 新システム開発/parser/requirements.txt

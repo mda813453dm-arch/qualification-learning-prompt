@@ -526,8 +526,20 @@ async function keepAttached(env, bytes, origin) {
 async function keepPrivateAttached(env, bytes, origin, learnerId) {
   const link = `${env.PUBLIC_BASE_URL || origin}/v1/private-source/${encodeURIComponent(learnerId)}/${crypto.randomUUID()}.pdf`;
   await env.STORE.put(await storedSourceKey(link), bytes);
-  // 公開GET経路を用意しない。問題PDFへの元リンクは表示されても公開取得できない。
   return link;
+}
+
+const PRIVATE_PDF_LINK_TTL_S = 10 * 60;
+function privatePdfViewUrl(env, sourceUrl, owner, now) {
+  if (!sourceUrl || !owner || !env.API_TOKEN) return sourceUrl;
+  let parsed;
+  try { parsed = new URL(sourceUrl); } catch { return sourceUrl; }
+  const match = /^\/v1\/private-source\/([^/]+)\/([0-9a-f-]{36})\.pdf$/.exec(parsed.pathname);
+  if (!match || decodeURIComponent(match[1]) !== owner) return sourceUrl;
+  const expires = Math.floor(now / 1000) + PRIVATE_PDF_LINK_TTL_S;
+  const sig = createHmac('sha256', env.API_TOKEN).update(`${parsed.pathname}\n${expires}`).digest('base64url');
+  parsed.search = new URLSearchParams({ expires: String(expires), sig }).toString();
+  return parsed.href;
 }
 const uploadRightsKey = (sessionId, year) => `upload-rights/${sessionId}/${year}`;
 const uploadBatchRightsKey = (sessionId) => `upload-rights/${sessionId}/batch`;
@@ -1180,6 +1192,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const names = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
   const fid = pick.item.packet.fieldId ?? null;
   const shown = present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  shown.questionPdfUrl = privatePdfViewUrl(env, shown.questionPdfUrl, pick.item.keyParts.owner, now);
   const { keyParts } = pick.item;
   const svgs = await Promise.all(shown.figures.map(async (f) => {
     if (!f.svgFile) return null;
@@ -1337,6 +1350,7 @@ async function redisplayView(env, id, state, now) {
   const item = items.find((x) => x.packet.questionId === cur.questionId);
   if (!item) throw new HttpError(404, 'CURRENT_QUESTION_NOT_FOUND');
   const shown = present(item, cur.kind || 'new', `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  shown.questionPdfUrl = privatePdfViewUrl(env, shown.questionPdfUrl, item.keyParts.owner, now);
   const { keyParts } = item;
   const svgs = await Promise.all(shown.figures.map(async (f) => {
     if (!f.svgFile) return null;
@@ -1391,6 +1405,27 @@ async function route(request, env, url, now) {
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
     return json(200, { build: '2026-10-28-v125-upload-followup-retry', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+
+  // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
+  if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
+    const learnerId = decodeURIComponent(parts[2]);
+    const file = decodeURIComponent(parts[3]);
+    const expires = Number(url.searchParams.get('expires'));
+    const signature = url.searchParams.get('sig') ?? '';
+    const path = `/v1/private-source/${encodeURIComponent(learnerId)}/${file}`;
+    const expected = env.API_TOKEN ? createHmac('sha256', env.API_TOKEN)
+      .update(`${path}\n${expires}`).digest('base64url') : '';
+    if (!validLearnerId(learnerId) || !/^[0-9a-f-]{36}\.pdf$/.test(file) ||
+        !Number.isSafeInteger(expires) || expires < Math.floor(now / 1000) ||
+        expires > Math.floor(now / 1000) + PRIVATE_PDF_LINK_TTL_S ||
+        !signature || !timingSafeEqual(signature, expected)) throw new HttpError(404, 'PRIVATE_PDF_NOT_FOUND');
+    const sourceUrl = `${env.PUBLIC_BASE_URL || url.origin}${path}`;
+    const bytes = await env.STORE.get(await storedSourceKey(sourceUrl), 'arrayBuffer');
+    if (!bytes) throw new HttpError(404, 'PRIVATE_PDF_NOT_FOUND');
+    return new Response(bytes, { headers: { 'content-type': 'application/pdf', 'content-disposition': 'inline',
+      'cache-control': 'private, no-store', 'x-content-type-options': 'nosniff',
+      'content-security-policy': "default-src 'none'; sandbox" } });
+  }
 
   // 図（画像表示用。トークン不要。キーにSHA-256が入るので推測できない）
   // 学習者ごとの図は /v1/figure/own/<引継ぎID>/... 

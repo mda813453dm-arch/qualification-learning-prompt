@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { CATALOG } from '../src/catalog.js';
 import { MemoryStore } from '../src/store.js';
 import { sourceKey } from '../src/source-store.js';
@@ -94,6 +95,21 @@ test('年度別の本人による許諾確認を経ない限りPDFを取得も�
   assert.ok(await env.STORE.get(await sourceKey(source.questionUrl), 'arrayBuffer'));
   assert.equal((await call(env, 'GET', new URL(source.questionUrl).pathname)).status, 404,
     '原本PDFは公開URLから取得不可');
+  const privatePath = new URL(source.questionUrl).pathname;
+  const expires = Math.floor(T0 / 1000) + 600;
+  const sig = createHmac('sha256', TOKEN).update(`${privatePath}\n${expires}`).digest('base64url');
+  const view = await handle(new Request(`https://engine.example${privatePath}?expires=${expires}&sig=${sig}`), env);
+  assert.equal(view.status, 200, '有効な本人用署名リンクから表示できる');
+  assert.equal(view.headers.get('content-type'), 'application/pdf');
+  assert.equal(view.headers.get('content-disposition'), 'inline');
+  assert.equal(view.headers.get('cache-control'), 'private, no-store');
+  assert.equal((await view.arrayBuffer()).byteLength > 0, true);
+  const denied = await handle(new Request(`https://engine.example${privatePath}?expires=${expires}&sig=invalid`), env);
+  assert.equal(denied.status, 404, '署名を改変したリンクからは取得できない');
+  const expired = expires - 601;
+  const expiredSig = createHmac('sha256', TOKEN).update(`${privatePath}\n${expired}`).digest('base64url');
+  const tooLate = await handle(new Request(`https://engine.example${privatePath}?expires=${expired}&sig=${expiredSig}`), env);
+  assert.equal(tooLate.status, 404, '期限切れリンクからは取得できない');
   const other = await call(env, 'POST', '/v1/sessions', { qualificationId: 'q097' });
   assert.equal(other.status, 201);
   assert.equal((await call(env, 'POST', '/v1/sessions/' + other.body.sessionId + '/attach', body)).status, 403,
