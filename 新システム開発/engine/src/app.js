@@ -632,10 +632,11 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   const results = [];
   for (let index = 0; index < files.length; index++) {
     const file = files[index];
-    const year = attachedYearFromName(file?.file_name) ?? (Array.isArray(b.years) ? Number(b.years[index]) : null);
-    const section = attachedSectionFromName(file?.file_name, cat?.uploadSections);
+    const fileName = typeof file === 'string' ? (() => { try { return decodeURIComponent(new URL(file).pathname.split('/').pop() || ''); } catch { return file; } })() : (file?.file_name ?? file?.name ?? file?.filename ?? file?.download_url ?? '');
+    const year = attachedYearFromName(fileName) ?? (Array.isArray(b.years) ? Number(b.years[index]) : null);
+    const section = attachedSectionFromName(fileName, cat?.uploadSections);
     if (!year || section === null || !Number.isInteger(year)) {
-      results.push({ fileName: String(file?.file_name || '').slice(0,90), status:'failed',
+      results.push({ fileName: String(fileName).slice(0,90), status:'failed',
         reason: !year ? 'ファイル名から実施年度を判別できません。' : 'ファイル名から午前・午後の部を区別できません。' });
       continue;
     }
@@ -646,7 +647,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
       results.push({ year, status:result.status, notice:result.notice });
     } catch (error) {
       const code = error?.code || 'ATTACH_FAILED';
-      results.push({ year, status:'failed', reason:String(code).slice(0,90) });
+      results.push({ year, status:'failed', reason:String(error?.message || code).slice(0,180), code });
     }
   }
   const queued = results.filter(x => x.status === 'attached').length;
