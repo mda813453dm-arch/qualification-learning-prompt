@@ -314,7 +314,7 @@ export const TOOLS = [
     // ChatGPTでPDFを送信した通常の会話ターンからも呼べる必要がある。
     // appOnlyを付けるとwidget=falseのtools/listから除外され、登録処理が呼べない。
     appOnly: false,
-    description: '利用者が現在のチャットで実際に新規添付した公式の問題PDFと正答PDFだけをエンジンへ渡す。既に共通保存されている部は再添付しない。行政書士は問題PDFのみで、正答は同年度の公式HTMLを使用する。許諾済みPDFだけを本人専用で保存する。複数添付はattachPdfBatchを優先する。受信・queuedは登録完了ではない。呼び出し成功後、必ずgetOfficialLibrary(sessionId)を呼び、年度別状態を確認する。importingYearsが残る間は「残り年度も添付してください」と案内して会話を終えず、10秒程度あけて再確認し、各年度がready・failed・pending answerのいずれかに確定するまで追跡する。既に添付されたPDFの再送は求めない。failedだけ理由を示し、他年度の結果を保持する。行政書士など区分が一つだけの資格ではsectionを省略してよい（エンジンが年度共通などの区分を確定する）。利用者本人が一括確認（最大10PDF）または年度別確認を済ませた場合のみ添付を受け付け、その本人に限って保存する。土地家屋調査士は午前・午後を明示し、正答PDFも必要。許諾未確認エラーを試験区分エラーと言い換えず、画面上の許諾確認操作を案内する。添付のないファイルを検索・取得したと報告しない。PDF本文をAIが写して出題・採点しない。',
+    description: '添付ターンで直ちに呼び出す。AIが会話文で外部送信の「はい」を別ターンに求めてから、このツールを呼ぶのは禁止（別ターンでは添付参照が渡らない）。ChatGPTの許可ダイアログで送信許可を処理する。利用者が現在のチャットで実際に新規添付した公式の問題PDFと正答PDFだけをエンジンへ渡す。既に共通保存されている部は再添付しない。行政書士は問題PDFのみで、正答は同年度の公式HTMLを使用する。許諾済みPDFだけを本人専用で保存する。複数添付はattachPdfBatchを優先する。受信・queuedは登録完了ではない。呼び出し成功後、必ずgetOfficialLibrary(sessionId)を呼び、年度別状態を確認する。importingYearsが残る間は「残り年度も添付してください」と案内して会話を終えず、10秒程度あけて再確認し、各年度がready・failed・pending answerのいずれかに確定するまで追跡する。既に添付されたPDFの再送は求めない。failedだけ理由を示し、他年度の結果を保持する。行政書士など区分が一つだけの資格ではsectionを省略してよい（エンジンが年度共通などの区分を確定する）。利用者本人が一括確認（最大10PDF）または年度別確認を済ませた場合のみ添付を受け付け、その本人に限って保存する。土地家屋調査士は午前・午後を明示し、正答PDFも必要。許諾未確認エラーを試験区分エラーと言い換えず、画面上の許諾確認操作を案内する。添付のないファイルを検索・取得したと報告しない。PDF本文をAIが写して出題・採点しない。',
     meta: { 'openai/fileParams': ['questionPdf', 'answerPdf'] },
     inputSchema: {
       type: 'object',
@@ -333,7 +333,7 @@ export const TOOLS = [
   {
     name: 'attachPdfBatch',
     appOnly: false,
-    description: '【複数PDFが同じチャットに添付されたとき優先】利用者がいま送った最大10個の問題PDFを1回の呼び出しですべて登録依頼する。全ファイルをquestionPdfs配列に入れる。行政書士は同年度の公式HTML正答を使い本人専用で保存する。R2/R7/H30/2025等から年度を判定し、年度選択を求めない。受信・queuedは完了ではない。呼び出し成功後は必ずgetOfficialLibrary(sessionId)で年度別状態を確認し、importingYearsが残る間は10秒程度あけて再確認する。各年度がready・failed・pending answerに確定するまで会話を終了せず、「残り年度も添付」と案内しない。再添付を求めない。結果queuedは解析開始、existingは既存登録、pendingOfficialAnswerは正答待ち、failedは未登録。許諾確認後だけ実行する。配列を渡せない場合のみattachPdfを使う。未添付ファイルを探したと装わない。',
+    description: '【複数PDFが同じチャットに添付されたとき優先】添付ターンで直ちに呼び出す。AIが会話文で外部送信の「はい」を別ターンに求めてから、このツールを呼ぶのは禁止（別ターンでは添付参照が渡らない）。ChatGPTの許可ダイアログで送信許可を処理する。利用者がいま送った最大10個の問題PDFを1回の呼び出しですべて登録依頼する。全ファイルをquestionPdfs配列に入れる。行政書士は同年度の公式HTML正答を使い本人専用で保存する。R2/R7/H30/2025等から年度を判定し、年度選択を求めない。受信・queuedは完了ではない。呼び出し成功後は必ずgetOfficialLibrary(sessionId)で年度別状態を確認し、importingYearsが残る間は10秒程度あけて再確認する。各年度がready・failed・pending answerに確定するまで会話を終了せず、「残り年度も添付」と案内しない。再添付を求めない。結果queuedは解析開始、existingは既存登録、pendingOfficialAnswerは正答待ち、failedは未登録。許諾確認後だけ実行する。配列を渡せない場合のみattachPdfを使う。未添付ファイルを探したと装わない。',
     meta: { 'openai/fileParams': ['questionPdfs', 'answerPdfs'] },
     inputSchema: {
       type:'object', required:['sessionId','questionPdfs'],

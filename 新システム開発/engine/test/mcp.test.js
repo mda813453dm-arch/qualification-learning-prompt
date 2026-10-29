@@ -45,6 +45,8 @@ test('initialize で接続版プロンプトを instructions として渡す（d
   assert.equal(r.body.result.protocolVersion, '2025-06-18');
   assert.ok(r.body.result.capabilities.tools);
   assert.equal(r.body.result.instructions, INSTRUCTIONS);
+  assert.match(INSTRUCTIONS, /添付ファイルがあるターンで登録ツールを直ちに呼ぶ/);
+  assert.match(INSTRUCTIONS, /「外部サービスへ送信してよいですか」.*別ターンに持ち越すのは禁止/);
   const gpt = new URL('../../deploy/gpt-instructions.txt', import.meta.url);
   if (existsSync(gpt)) assert.equal(INSTRUCTIONS, readFileSync(gpt, 'utf8'));
   // 通知には本文なしで 202
@@ -1035,6 +1037,7 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   assert.equal(libMeta['openai/outputTemplate'], undefined, '登録状況照会はデータ専用');
   assert.match(listed.description, /行政書士など区分が一つだけの資格ではsectionを省略してよい/);
   assert.match(listed.description, /許諾未確認エラーを試験区分エラーと言い換えず/);
+  assert.match(batch.description, /添付ターンで直ちに呼び出す/);
   // ChatGPT のファイル受渡し規約。file_id のrequired欠落は登録時INVALID_ARGUMENTになる。
   for (const name of listed._meta['openai/fileParams']) {
     const schema = listed.inputSchema.properties[name];
