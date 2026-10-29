@@ -1210,7 +1210,7 @@ a{color:inherit}
     }
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
-    if (safeUrl(q.questionPdfUrl) && !/\/v1\/private-source\//.test(q.questionPdfUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
+    if (safeUrl(q.questionPdfUrl) && !String(q.questionPdfUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
     // 再開直後の未回答問では、その場から学習を終了できるようにする。
@@ -1397,7 +1397,7 @@ a{color:inherit}
       '<details class="descriptive-source" id="descriptiveSource" open>' +
       '<summary>問題文・表・図</summary>' +
       (blocks || '<div class="notice" role="alert">問題・表・図の照合が必要です。出題を停止してください。</div>') + '</details>';
-    if (safeUrl(q.sourceUrl) && !/\/v1\/private-source\//.test(q.sourceUrl)) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
+    if (safeUrl(q.sourceUrl) && !String(q.sourceUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
     h += '<div class="notice">公式模範解答は確認できていません。AIの参考解答は自動採点しません。</div>';
     if (blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
     h += '<div class="notice">解説を表示した後は、解説の下にある最新の操作パネルを使用してください。見当たらない場合は上に戻る必要があります。</div>';
