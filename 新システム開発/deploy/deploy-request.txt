@@ -357,3 +357,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-28 v125 completion request (21:38 JST): User reports after uploading six administrative scrivener PDFs, only '6件受付' prose is shown and no next action. Require current-message outputTemplate for attachPdfBatch/attachPdf; render receipt as actionable current learning frame, fetch getOfficialLibrary, display verified years and official practice/confirmation choices; do not confuse accepted with validated. Run full engine tests, deploy Cloud Run and verify /v1/release 2026-10-28-v125-upload-followup-retry plus 100% traffic. Do not change main or master_prompt.txt. This is a deploy trigger for latest code, not permission to alter protected files.
 2026-10-29 JST｜Cloud Shellを使わず GitHub Actions の deploy-google-cloud.yml から v125 を再配置し、Cloud Run公開版のヘルスチェックと動作確認を実施（ユーザー依頼）。
 2026-10-29 JST｜v125埋め込みJavaScriptの構文エラーを修正（commit 99f4a19）。回帰テストをローカルで267件中265成功・2スキップ・失敗0件と確認。GitHub Actions経由でCloud Runへ再配置し、公開版検証を実施。
+
+2026-10-29 JST｜本人専用PDFの期限付き署名閲覧を追加、無署名・改変・期限切れURLは拒否。375px試験のPyMuPDF用Pythonを3.12に固定。CI成功後にCloud Run再配置・公開版検証。
