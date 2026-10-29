@@ -329,12 +329,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '閉じる' }).click();
     const beforeSkip = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
     const beforeSkipNext = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
+    const beforeSkipSnapshot = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length);
     // 採点結果の返答だけが失われ、サーバーはすでに次問へ進んだ状態を再現。
     await page.evaluate(() => { window.dropSkipResponseOnce = true; });
     await ui.getByRole('button', { name: 'スキップ', exact: true }).click();
     await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length), beforeSkip + 1);
-    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), beforeSkipNext + 1, '応答喪失時は保存済みの次問を確認して復旧');
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length), beforeSkipSnapshot + 1, '応答喪失時は読取専用の保存済みスナップショットで復旧');
+    assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), beforeSkipNext, '復旧時に二重で次問へ進めない');
     assert.equal(await ui.getByRole('button', { name: '次の問題へ' }).count(), 0, 'スキップ後に余分なボタンを挟まない');
     // 別画面に移り古い枠が無効化されても、サーバーの同じ採点結果へ戻して終了できる。
     const answersBeforeRestore = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
