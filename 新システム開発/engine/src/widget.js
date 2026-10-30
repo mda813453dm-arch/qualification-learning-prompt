@@ -1298,12 +1298,67 @@ a{color:inherit}
         }
       };
       if (canAttach) document.getElementById('sourceAttach').onclick = function(){
+        // チャット添付をAIに転送させる経路は、AIが確認質問を返すと添付参照を失う。
+        // 公式PDFは学習画面のファイル選択から直接、既存の登録APIへ送信する。
         this.disabled = true;
-        var names = missing.map(function(x){ return x.year + '年度・' + x.section; }).join('、');
-        app.insertAdjacentHTML('beforeend', '<div class="notice" role="status">' +
-          '<b>公式問題・正答PDFの登録</b>' +
-          '<div>利用する年度と試験区分の公式問題PDFと公式正答PDFを、ChatGPTの入力欄「＋」から添付してください。年度と試験区分も指定してください。確認できない問題は出題しません。添付するまで登録は始まりません。</div></div>');
-        // ファイルのない状態でui/messageを送らない。会話の内部処理ログが出る旧不具合の原因。
+        app.insertAdjacentHTML('beforeend', '<section class="notice" id="sourceUploadPanel" role="region" aria-label="公式PDF登録">' +
+          '<b>公式PDFを選んで登録</b>' +
+          '<p>問題PDFと公式正答PDFをまとめて選んでください。1回に最大10ファイルです。PDFを選ぶと登録を開始します。会話での「はい」は不要です。</p>' +
+          '<label class="file-picker"><span>iPhone内のPDFを探す</span><input id="sourceLocalUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを探す"></label>' +
+          '<div id="sourceUploadStatus" class="import-action-status" role="status">PDFの選択待ちです。</div>' +
+          '<p>登録・公式正答との照合が完了した問題だけ出題できます。資料の受領だけでは出題可能になりません。</p>' +
+          '</section>');
+        var input = document.getElementById('sourceLocalUpload');
+        var status = document.getElementById('sourceUploadStatus');
+        var running = false;
+        input.onchange = async function(){
+          if (running) return;
+          var selected = Array.from(input.files || []);
+          if (!selected.length) return;
+          if (selected.length > 10 || selected.some(function(f){return !/\\.pdf$/i.test(String(f.name || '')) || (f.type && f.type !== 'application/pdf');})){
+            status.textContent = 'PDFのみ、最大10ファイルを選んでください。';
+            status.setAttribute('role','alert'); return;
+          }
+          var host = window.openai || {};
+          if (typeof host.uploadFile !== 'function' || typeof host.getFileDownloadUrl !== 'function') {
+            status.textContent = 'この環境では学習画面からPDFを送信できません。対応するChatGPTアプリで開いてください。';
+            status.setAttribute('role','alert'); return;
+          }
+          running = true; input.disabled = true;
+          status.textContent = 'PDFを送信しています。登録が完了するまで出題可能とは表示しません。';
+          try {
+            var refs = [];
+            for (var f of selected) {
+              var uploaded = await host.uploadFile(f);
+              var fileId = uploaded && (uploaded.fileId || uploaded.file_id);
+              if (typeof fileId !== 'string' || !fileId) throw new Error('FILE_UPLOAD_FAILED');
+              var link = await host.getFileDownloadUrl({fileId:fileId});
+              var downloadUrl = link && link.downloadUrl;
+              if (typeof downloadUrl !== 'string' || new URL(downloadUrl).protocol !== 'https:') throw new Error('FILE_URL_UNAVAILABLE');
+              refs.push({file_id:fileId,file_name:String(f.name),mime_type:'application/pdf',download_url:downloadUrl});
+            }
+            var answerMatch = function(f){return /正答|正解|解答|seikai|answer|配点/i.test(f.file_name);};
+            var answerPdfs = refs.filter(answerMatch);
+            var questionPdfs = refs.filter(function(f){return !answerMatch(f);});
+            if (!questionPdfs.length) throw new Error('QUESTION_PDF_REQUIRED');
+            status.textContent = '登録・正答照合を開始しています。完了した年度から利用できます。';
+            var result = await callTool('attachPdfBatchFromPicker',{sessionId:state.sessionId,questionPdfs:questionPdfs,answerPdfs:answerPdfs});
+            if (!result || result.error || result.status !== 'attachedBatch') throw new Error(result?.error || 'REGISTER_FAILED');
+            var errors = Array.isArray(result.results) ? result.results.filter(function(x){return x.status === 'failed';}) : [];
+            var partial = Number(result.queued || 0) + Number(result.existing || 0);
+            status.textContent = '受付：'+result.requested+'件／解析開始：'+Number(result.queued||0)+'件／既存：'+Number(result.existing||0)+'件／要確認：'+Number(result.pendingOfficialAnswer||0)+'件／失敗：'+Number(result.failed||0)+'件。' +
+              (errors.length ? ' 未登録の理由：'+errors.map(function(x){return (x.fileName||x.year||'PDF')+'：'+(x.reason||x.code||'確認できません');}).join(' ／ ') : '') +
+              (partial ? ' 公式正答との検証が完了するまで出題しません。' : ' 再添付を要求せず、失敗理由を確認してください。');
+            var refresh = document.getElementById('sourceRefresh');
+            if (refresh && partial) {
+              // 状況だけを更新。次問へ勝手に進めたり、新しい学習枠を生成しない。
+              refresh.textContent = '登録状況を確認する';
+            }
+          } catch(e) {
+            status.textContent = 'エンジンへ登録できませんでした（'+String(e.message||'通信エラー')+'）。チャットでの受領と登録は別です。';
+            status.setAttribute('role','alert');
+          } finally {running=false;input.disabled=false;input.value='';}
+        };
       };
       document.getElementById('sourceAiCheck').onclick = async function(){
         this.disabled = true;
