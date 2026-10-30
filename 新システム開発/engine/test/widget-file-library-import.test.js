@@ -129,3 +129,24 @@ test('picker-only MCP endpoint has no output template and never appears in model
   assert.match(script,/window\.openai\.selectFiles\(\)/);
   assert.match(script,/host\.getFileDownloadUrl\(\{ fileId:fileId \}\)/);
 });
+
+test('repeated iPhone taps cannot open two file pickers or submit twice',async()=>{
+  const h=harness();
+  let finish;
+  h.selectedHost.selectFiles=()=>{h.picked.push('dialog');return new Promise(resolve=>{finish=resolve;});};
+  h.choose();h.choose();
+  assert.deepEqual(h.picked,['dialog']);
+  assert.equal(h.nodes.licensedChooseSaved.disabled,true);
+  finish([{fileId:'f5',fileName:'R5_Mondai.pdf',mimeType:'application/pdf'}]);
+  await h.flush();
+  assert.equal(h.calls.length,1);
+  assert.equal(h.nodes.licensedChooseSaved.disabled,false);
+});
+test('async host safety denial is visible and never falls through to engine upload',async()=>{
+  const h=harness();
+  h.selectedHost.selectFiles=()=>Promise.reject(new Error('DENIED'));
+  h.choose();await h.flush();
+  assert.equal(h.calls.length,0);
+  assert.match(h.nodes.licensedFileStatus.textContent,/許可されません/);
+  assert.equal(h.nodes.licensedChooseSaved.disabled,false);
+});
