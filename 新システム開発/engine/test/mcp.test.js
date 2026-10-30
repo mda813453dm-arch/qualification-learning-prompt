@@ -148,8 +148,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v137\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-30.137');
+  assert.match(WIDGET_URI, /question-v138\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-30.138');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1717,7 +1717,7 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   assert.match(rpcSource,/\.\.\.WIDGET_TOOL_META, \.\.\.\(meta \|\| \{\}\)/, '添付用fileParamsを維持する');
   const html=widgetHtml();
   assert.match(html,/過去問の登録状況/);
-  assert.match(html,/登録状況を再確認/);
+  assert.match(html,/今すぐ登録状況を確認/);
   assert.match(html,/PDFの再添付は不要です/);
   assert.match(html,/state.sessionId = sid; saveIds\(\)/);
   assert.match(html,/getOfficialLibrary/);

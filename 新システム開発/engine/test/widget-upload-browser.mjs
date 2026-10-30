@@ -55,7 +55,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
       document.body.appendChild(iframe);
     },{html});
     const ui=page.frameLocator('iframe');
-    await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
+    await ui.getByRole('heading',{name:'過去問PDFの取り込み'}).waitFor();
     assert.equal(await ui.locator('#licensedYear').count(),0);
     assert.equal(await ui.locator('#licensedFiles').count(),0);
     assert.equal(await ui.locator('#licensedRefresh').count(),0);
@@ -72,6 +72,8 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(calls.filter(c=>c.name==='confirmUploadRights').length,1,'許諾記録は1回');
     assert.equal(calls.filter(c=>c.name==='attachPdf').length,0,'ファイルを送信していないのに登録しない');
     await ui.getByRole('button',{name:'公式過去問を解く'}).waitFor({timeout:12000});
+    assert.match(await ui.locator('.import-state.ready').innerText(),/公式過去問を解けます/);
+    assert.equal(await ui.locator('#licensedInstructions').getAttribute('open'),null,'登録後の長い説明は折りたたむ');
     assert.equal(await ui.locator('#licensedAck').isChecked(),true,'自動更新してもチェックを保持');
     assert.equal(await ui.locator('#licensedAck').isDisabled(),true,'同じ許諾を二重登録しない');
     assert.equal(await ui.locator('#licensedLocalPick').count(),1,'登録済み年度が表示された後もiPhone内検索ボタンを維持する');
@@ -83,6 +85,9 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
       return ['fontSize','paddingTop','paddingBottom','paddingLeft','paddingRight','borderRadius'].map(key=>[getComputedStyle(button)[key],getComputedStyle(reference)[key]]);
     });
     assert.ok(sizes.every(([actual,expected])=>actual===expected),'他のボタンと同じ文字・余白・角丸');
+    const primary=await ui.locator('#licensedStart').evaluate(button=>({width:button.getBoundingClientRect().width,parent:button.parentElement.getBoundingClientRect().width,background:getComputedStyle(button).backgroundColor}));
+    assert.ok(primary.width>=primary.parent-2,'学習ボタンは状態カード内で横幅いっぱい');
+    assert.notEqual(primary.background,'rgb(245, 245, 245)','学習ボタンは主操作として強調する');
     const batchChooserPromise=page.waitForEvent('filechooser');
     await ui.locator('#licensedLocalUpload').click();
     const batchChooser=await batchChooserPromise;
@@ -98,7 +103,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     // PDF受付の実際のツール通知から、同じセッションで登録済み年度へ自動移行する。
     const beforeReceipt = await page.evaluate(()=>window.calls.filter(c=>c.name==='getOfficialLibrary').length);
     await page.evaluate(()=>window.deliver({_meta:{qlp:{status:'attachedBatch',sessionId:'test-session',queued:3}}}));
-    await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
+    await ui.getByRole('heading',{name:'公式過去問を解けます'}).waitFor();
     await page.waitForFunction((count)=>window.calls.filter(c=>c.name==='getOfficialLibrary').length>count,beforeReceipt);
     assert.equal(await ui.locator('#licensedStart').count(),1,'受領から登録済み年度へ進んだとき学習ボタンを表示');
     assert.equal(await ui.locator('#licensedLocalPick').count(),1,'受付→取込み済みへ更新してもiPhone内検索ボタンを維持する');

@@ -39,7 +39,7 @@ test('PDF receipt takes over old frame, checks official state and exposes ready 
   const h=receiptHarness();
   h.start({status:'attachedBatch',sessionId:'s-1',queued:3});
   assert.deepEqual(h.frames[0],{sid:'s-1',force:true});
-  assert.match(h.app.innerHTML,/登録状況を再確認/,'receipt never remains a dead-end');
+  assert.match(h.app.innerHTML,/今すぐ登録状況を確認/,'receipt never remains a dead-end');
   assert.equal(h.state.sessionId,'s-1');
   await h.tick();
   assert.deepEqual(h.calls.map(c=>c.name),['getOfficialLibrary']);
@@ -53,7 +53,7 @@ test('transient lookup failure keeps the PDF receipt and automatically retries t
   h.setTool(async()=>{throw new Error('network issue');});
   h.start({status:'attachedBatch',sessionId:'s-1',queued:3});
   await h.tick();
-  assert.match(h.nodes.attachedStatus.textContent,/自動で再試行/);
+  assert.match(h.app.innerHTML,/自動で再試行/);
   assert.deepEqual(h.calls.map(c=>c.args.sessionId),['s-1']);
   assert.ok(h.timers.some(t=>t.delay===8000),'retry must be scheduled even on error');
   h.setTool(async()=>({status:'officialLibrary',sessionId:'s-1',permissionedUpload:true,

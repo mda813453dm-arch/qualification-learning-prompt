@@ -28,7 +28,7 @@ function harness(opts={}){
     licensedConsentSessionId:opts.consent===false?null:'sess-one',
     document:{getElementById(id){return nodes[id]??=(
       {id,textContent:'',disabled:false,isConnected:true,files:[],value:'',clickCount:0,
-       click(){this.clickCount++;},setAttribute(name,v){this[name]=v;}});}},
+       classList:{toggle(){},remove(){}},click(){this.clickCount++;},setAttribute(name,v){this[name]=v;}});}},
     callTool:async(name,args)=>{calls.push({name,args});return {status:'attachedBatch',sessionId:'sess-one',requested:args.questionPdfs.length,queued:args.questionPdfs.length,existing:0,failed:0,results:[]};},
     render:r=>rendered.push(r)};
   vm.runInNewContext(source,context);
@@ -82,7 +82,7 @@ test('private registration API retains permissions and no extra chat frame',()=>
   assert.deepEqual(tool.meta.ui.visibility,['app']);assert.equal(tool.meta['openai/widgetAccessible'],true);
   assert.equal(tool.meta['openai/visibility'],'private');assert.equal(tool.inputSchema,model.inputSchema);assert.equal(tool.api,model.api);
   assert.doesNotMatch(html,/licensedChooseSaved|ChatGPT内のPDFを選んで登録|window\.openai\.selectFiles/);
-  assert.match(html,/<label class="file-picker" id="licensedLocalPick">[^<]*<input id="licensedLocalUpload"/);
+  assert.match(html,/<label class="file-picker" id="licensedLocalPick"><span id="licensedLocalPickText">iPhone内のPDFを探す<\/span><input id="licensedLocalUpload"/);
   assert.doesNotMatch(html, /localPdfInput\.click\(\)/);
   assert.match(script,/host\.getFileDownloadUrl\(\{ fileId:fileId \}\)/);
 });
@@ -91,6 +91,8 @@ test('repeated changes or taps during upload cannot register twice',async()=>{
   h.host.uploadFile=file=>{h.uploads.push(file.name);return new Promise(resolve=>{finish=resolve;});};
   h.local([pdfs()[0]]);h.local([pdfs()[0]]);h.choose();
   assert.equal(h.nodes.licensedLocalPick['aria-busy'],'true');assert.equal(h.nodes.licensedLocalUpload.clickCount,0);
+  assert.equal(h.nodes.licensedLocalPickText.textContent,'PDFを送信中…');
+  assert.match(h.nodes.licensedFileStatus.textContent,/完了した年度を自動で表示/);
   assert.deepEqual(h.uploads,['R5_Mondai.pdf']);finish({fileId:'f5'});await h.flush();
   assert.equal(h.calls.length,1);assert.equal(h.nodes.licensedLocalPick['aria-busy'],'false');assert.equal(h.nodes.licensedLocalUpload.value,'');
 });

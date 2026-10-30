@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v137.html';
+export const WIDGET_URI = 'ui://qlp/question-v138.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.137';
+export const WIDGET_VERSION = '2026-10-30.138';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -312,6 +312,20 @@ button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:bala
 .file-picker input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
 .file-picker:focus-within{outline:2px solid var(--acc);outline-offset:2px}
 .file-picker[aria-busy=true]{opacity:.6}
+.import-state{border:2px solid var(--acc);border-radius:14px;background:var(--accbg);padding:16px;margin:12px 0;color:var(--fg)}
+.import-state.ready{border-color:var(--ok);background:#e7f6ec}.import-state.pending{border-color:var(--line);background:var(--btn)}
+.import-state strong{display:block;font-size:20px;line-height:1.45;margin-bottom:5px}
+.import-state p{font-size:15px;line-height:1.6;margin:6px 0}
+.import-state .import-auto{font-weight:700;color:var(--acc)}
+.import-spinner{display:inline-block;width:16px;height:16px;margin-right:8px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;vertical-align:-3px;animation:import-spin .8s linear infinite}
+@keyframes import-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.import-spinner{animation:none}}
+.row button#licensedStart{width:100%;min-height:56px;background:var(--acc);color:var(--bg);border-color:var(--acc);font-size:19px;box-shadow:0 3px 9px rgba(0,0,0,.12)}
+.import-action-status{font-size:15px;font-weight:700;padding:8px 10px;border-left:4px solid var(--acc);background:var(--accbg);margin:8px 0}
+.import-action-status.busy::before{content:'';display:inline-block;width:14px;height:14px;margin-right:8px;border:3px solid var(--acc);border-right-color:transparent;border-radius:50%;vertical-align:-3px;animation:import-spin .8s linear infinite}
+.import-action-status[role=alert]{border-color:var(--ng);background:#fdecec}
+@media(prefers-reduced-motion:reduce){.import-action-status.busy::before{animation:none}}
+@media(prefers-color-scheme:dark){.import-state.ready{background:#16301f}.import-action-status[role=alert]{background:#3a1d1d}}
 @media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px;max-width:100%;overflow-wrap:normal;word-break:keep-all}}
 @media(max-width:420px){.row .file-picker{font-size:clamp(13px,3.7vw,16px);padding:10px 11px}}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
@@ -696,8 +710,11 @@ a{color:inherit}
       function drawReceipt(message, error){
         if (locked || generation !== attachmentPollGeneration) return;
         app.innerHTML = '<h2>過去問の登録状況</h2>' +
-          '<div class="notice" role="' + (error ? 'alert' : 'status') + '" id="attachedStatus">' + esc(message) + '</div>' +
-          '<div class="row"><button type="button" id="retryAttached">登録状況を再確認</button></div>';
+          '<div class="import-state ' + (error ? 'pending' : '') + '" role="' + (error ? 'alert' : 'status') + '" aria-live="polite">' +
+          '<strong>' + (error ? '登録状況を確認できません' : '<span class="import-spinner" aria-hidden="true"></span>PDFを登録・照合しています') + '</strong>' +
+          '<p id="attachedStatus">' + esc(message) + '</p>' +
+          '<p class="import-auto">' + (error ? '通信が戻れば自動で再確認します。' : '完了した年度は自動で表示を更新します。このままお待ちください。') + '</p></div>' +
+          '<div class="row"><button type="button" id="retryAttached">今すぐ登録状況を確認</button></div>';
         var retry = document.getElementById('retryAttached');
         if (retry) retry.onclick = function(){ checkAttachedStatus(); };
         scrollUp();
@@ -721,13 +738,7 @@ a{color:inherit}
           return;
         } catch(error) {
           if (locked || generation !== attachmentPollGeneration) return;
-          var note = document.getElementById('attachedStatus');
-          if (note) {
-            note.setAttribute('role','alert');
-            note.textContent = '登録状況の取得に失敗しました。PDFの再添付は不要です。通信を確認し、自動で再試行します。';
-          }
-          var btn = document.getElementById('retryAttached');
-          if (btn) btn.disabled = false;
+          drawReceipt('登録状況の取得に失敗しました。PDFの再添付は不要です。通信を確認し、自動で再試行します。', true);
         } finally {
           requestInFlight = false;
         }
@@ -1021,9 +1032,19 @@ a{color:inherit}
       var isHtmlAnswer = data.answerFormat === 'html' || /行政書士/.test(data.qualificationName || '');
       var officialLink = safeUrl(data.officialUrl);
       var uploadHint = isHtmlAnswer ? '各年度の公式問題PDF（正答PDFは不要です）' : '各年度の公式問題PDFと正答PDF';
-      app.innerHTML = '<h2>過去問PDFのまとめ取り込み（本人専用）</h2>' +
-        '<div class="notice"><b>著作権・利用許諾の確認</b><div>過去問を自動取得・他の利用者へ共有配布しません。添付するすべてのファイルについて、権利者から必要な許諾を得ている場合だけ本人用に保存・解析できます。</div></div>' +
-        (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
+      var readyYears = readyDetails.length ? readyDetails.map(function(v){ return esc(v.year) + '年度 ' + esc(v.questions) + '問'; }).join('・') : personal.map(function(y){ return esc(y) + '年度'; }).join('・');
+      var statusCard = personal.length ?
+        '<div class="import-state ready" role="status" aria-live="polite"><strong>公式過去問を解けます</strong><p>' + readyYears +
+        (readyQuestions ? '／計' + esc(readyQuestions) + '問' : '') + '</p>' +
+        (importing.length ? '<p>追加したPDFも解析中です。完了した年度から自動で表示を更新します。</p>' :
+          pending.length ? '<p>一部の年度は公式正答の確認待ちです。利用できる年度から学習できます。</p>' :
+          '<p>登録・正答照合が完了した年度から学習できます。</p>') +
+        '<div class="row"><button id="licensedStart" type="button">公式過去問を解く</button></div></div>' :
+        importing.length ? '<div class="import-state" role="status" aria-live="polite"><strong><span class="import-spinner" aria-hidden="true"></span>PDFを解析中です</strong><p>' + importing.map(function(y){return esc(y) + '年度';}).join('・') + 'の登録・正答照合を進めています。</p><p class="import-auto">出題できるようになったら、この画面を自動で更新します。</p></div>' :
+        pending.length ? '<div class="import-state pending" role="status"><strong>公式正答の確認待ちです</strong><p>正答を照合できた年度から出題できます。登録状況は自動で確認します。</p></div>' :
+        '<div class="import-state pending" role="status"><strong>出題できる過去問はまだありません</strong><p>PDFを選んで登録すると、状況を自動で更新します。</p></div>';
+      app.innerHTML = '<h2>' + (personal.length ? '公式過去問を解けます' : importing.length ? '過去問を取り込んでいます' : '過去問PDFの取り込み') + '</h2>' +
+        statusCard +
         (personal.length ? '<div class="notice"><b>あなたの登録済み過去問（本人専用・出題可能）：</b>' + (readyDetails.length ?
           readyDetails.map(function(v){ return esc(v.year) + '年度 ' + esc(v.questions) + '問'; }).join('・') :
           personal.map(function(y){ return esc(y) + '年度'; }).join('・')) +
@@ -1045,18 +1066,18 @@ a{color:inherit}
               }).join('') + '</ul>' : '<div>以前の取込みは最終状態のみ保存されています。</div>') +
               '</div>';
           }).join('')+'</details>' : '') +
-        '<div class="row">' +
-          (personal.length ? '<button id="licensedStart" type="button">公式過去問を解く</button>' : '') + '</div>' +
-        (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
-        '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
+        '<h3>PDFを追加で取り込む</h3>' +
+        '<div class="notice"><b>利用許諾の確認</b><div>過去問を自動取得・他の利用者へ共有配布しません。添付するファイルについて、権利者から必要な許諾を得ている場合だけ本人用に保存・解析できます。</div></div>' +
+        (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
+        '<details class="notice" id="licensedInstructions" ' + (!personal.length && !importing.length ? 'open' : '') + '><summary>取り込み方法（年度選択は不要）</summary>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
         '<div>② 「iPhone内のPDFを探す」から、' + esc(uploadHint) + 'を選ぶ。選択後、自動で取込み・登録を開始します。</div>' +
         '<div>③ 登録・正答照合が完了した年度から「公式過去問を解く」で進む。登録状況は自動で更新します。</div>' +
         '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
-        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
+        '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></details>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><label class="file-picker" id="licensedLocalPick">iPhone内のPDFを探す<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" aria-label="iPhone内のPDFを探す" multiple /></label></div>' +
-        '<div class="notice" role="status" id="licensedFileStatus">PDFを選ぶと、自動で取込み・登録を開始します。</div>' +
+        '<div class="row"><label class="file-picker" id="licensedLocalPick"><span id="licensedLocalPickText">iPhone内のPDFを探す</span><input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" aria-label="iPhone内のPDFを探す" multiple /></label></div>' +
+        '<div class="import-action-status" role="status" id="licensedFileStatus">PDFを選ぶと自動で取り込みます。進行状況と完了はこの画面に表示します。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
         '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
@@ -1107,6 +1128,7 @@ a{color:inherit}
         if (!node) return;
         node.textContent = message;
         node.setAttribute('role', error ? 'alert' : 'status');
+        node.classList.toggle('busy', selectingPdf && !error);
       }
       async function registerSelectedPdfs(selected){
         if (selectingPdf || locked || !state.sessionId) return;
@@ -1132,7 +1154,9 @@ a{color:inherit}
         selectingPdf = true;
         if (localPdfInput) localPdfInput.disabled = true;
         if (localPickButton) localPickButton.setAttribute('aria-busy','true');
-        selectedPdfStatus('選択したPDFのアクセス許可と一時URLを確認しています。', false);
+        var pickerText = document.getElementById('licensedLocalPickText');
+        if (pickerText) pickerText.textContent = 'PDFを送信中…';
+        selectedPdfStatus('PDFを送信中です。続けて登録・正答照合を行い、完了した年度を自動で表示します。', false);
         try {
           var refs = new Map();
           for (var i=0; i<plan.length; i++) {
@@ -1154,7 +1178,8 @@ a{color:inherit}
             }
           }
           if (locked || state.sessionId !== sid) throw new Error('SESSION_CHANGED');
-          selectedPdfStatus('PDFを学習エンジンへ登録しています。受け付け後、年度別に自動更新します。', false);
+          if (pickerText) pickerText.textContent = 'PDFを登録中…';
+          selectedPdfStatus('PDFを登録・正答照合しています。完了した年度を自動で表示します。', false);
           // UI専用ツールはoutputTemplateを持たず、新しいチャット枠を作らない。
           var sent = await callTool('attachPdfBatchFromPicker', { sessionId:sid,
             questionPdfs:plan.map(function(p){return refs.get(p.question);}),
@@ -1181,6 +1206,9 @@ a{color:inherit}
             localPdfInput.value = '';
           }
           if (localPickButton && localPickButton.isConnected) localPickButton.setAttribute('aria-busy','false');
+          if (pickerText && pickerText.isConnected) pickerText.textContent = 'iPhone内のPDFを探す';
+          var fileStatus = document.getElementById('licensedFileStatus');
+          if (fileStatus) fileStatus.classList.remove('busy');
         }
       }
       if (localPickButton) localPickButton.onclick = function(event){
