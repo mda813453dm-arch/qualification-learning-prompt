@@ -92,7 +92,7 @@ export function pickNext(state, items, { today, now=null, job }) {
     ? { initialServed: 0, newAnswered: 0, sinceReview: 0, lastDate: today } : oldPace;
   const initialReview = pace.newAnswered === 0 && pace.initialServed < 5;
   const due = selectDueReviews({ today, now, items: Object.values(state.review),
-    sessionStart: initialReview, practiceSinceReview: pace.sinceReview });
+    sessionStart: initialReview, practiceSinceReview: pace.sinceReview, candidateLimit: 5 });
   // 採点の応答に付けて先に控えた問（まだ利用者に見せていない）は、期限の来た復習があれば出し直す
   const unseenPrefetch = state.current?.prefetched && (due.items ?? []).some((r) => byUnit.has(r.unitId));
   if (state.current && !state.current.grade && !unseenPrefetch) {
