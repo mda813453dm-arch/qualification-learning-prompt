@@ -1077,6 +1077,7 @@ a{color:inherit}
       var licensedGeneration = licensedPollGeneration;
       var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports]);
       var licensedPollInFlight = false;
+      var licensedNextDelay = 10000;
       async function updateLicensedStatus(){
         if (locked || licensedGeneration !== licensedPollGeneration || licensedPollInFlight) return;
         licensedPollInFlight = true;
@@ -1096,6 +1097,7 @@ a{color:inherit}
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
           var running = Array.isArray(latest.importingYears) ? latest.importingYears : [];
           var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
+          licensedNextDelay = running.length ? 8000 : staged.length ? 20000 : uploaded.length || errors.length ? 30000 : 15000;
           var statusKey = JSON.stringify([uploaded, latest.readyYearDetails, staged, running, errors]);
           if (statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
           var notice = document.getElementById('licensedAutoStatus');
@@ -1109,7 +1111,7 @@ a{color:inherit}
         }
         licensedPollInFlight = false;
         if (!locked && licensedGeneration === licensedPollGeneration)
-          setTimeout(updateLicensedStatus, 10000);
+          setTimeout(updateLicensedStatus, licensedNextDelay);
       }
       setTimeout(updateLicensedStatus, 2500);
       bindEnd(); return;
