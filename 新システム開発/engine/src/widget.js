@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v138.html';
+export const WIDGET_URI = 'ui://qlp/question-v139.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.138';
+export const WIDGET_VERSION = '2026-10-30.139';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -2715,6 +2715,27 @@ a{color:inherit}
     // 依頼だけで「解説完了」とせず、モデルがshowMenuへ保存するまで待機する。
     return await rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]});
   }
+  async function waitForPublishedExplanation(sessionId, questionId){
+    // ui/message の ACK は ChatGPT が依頼を受け取った印であり、解説の保存完了ではない。
+    // 通知を落とす iPhone でも保存済みの同一問だけを読取専用で取り戻す。
+    var deadline = Date.now() + (window.__qlpTestExplanationWaitMs || 75000);
+    while (Date.now() < deadline) {
+      if (locked || state.sessionId !== sessionId || state.question?.questionId !== questionId) return;
+      try {
+        var saved = await callTool('getStudySnapshot', { sessionId:sessionId });
+        if (saved && saved.status === 'menu' && saved.menu?.kind === 'next' &&
+            saved.menu.body && saved.explanationQuestionId === questionId &&
+            saved.sessionId === sessionId) {
+          if (!locked && state.sessionId === sessionId && state.question?.questionId === questionId)
+            render(saved);
+          return;
+        }
+      } catch(e) { /* 一時的な読取失敗は上限時間内に再試行する */ }
+      await new Promise(function(done){ setTimeout(done, 3000); });
+    }
+    if (!locked && state.sessionId === sessionId && state.question?.questionId === questionId)
+      throw new Error('EXPLANATION_PUBLISH_TIMEOUT');
+  }
   async function loadExplanation(questionId, requestAi){
     if (!state.sessionId) throw new Error('EXPLANATION_SESSION_MISSING');
     var args = { sessionId: state.sessionId };
@@ -2740,7 +2761,15 @@ a{color:inherit}
         ctx.question.questionId !== ctx.grade.questionId ||
         (questionId && ctx.grade.questionId !== questionId))
       throw new Error('EXPLANATION_CONTEXT_UNAVAILABLE');
-    if (requestAi) await requestAdaptiveExplanation(ctx);
+    if (requestAi) {
+      try {
+        await requestAdaptiveExplanation(ctx);
+        await waitForPublishedExplanation(ctx.sessionId, ctx.question.questionId);
+      } finally {
+        var notice = document.getElementById('aiPermissionNotice');
+        if (notice) notice.remove();
+      }
+    }
     else renderVerifiedExplanation(ctx);
   }
   function renderVerifiedExplanation(ctx){
@@ -2812,7 +2841,7 @@ a{color:inherit}
         if (label) label.textContent = 'AI解説の追加を再試行';
         else b.textContent = 'AI解説の追加を再試行';
       }
-      if (state.question && state.question.questionId === questionId && !document.getElementById('explanationError')) {
+      if (b && b.isConnected && state.question && state.question.questionId === questionId && !document.getElementById('explanationError')) {
         app.insertAdjacentHTML('beforeend', '<div class="notice" id="explanationError" role="alert">誤答の理由を自動取得できませんでした。公式正答は保持しています。AI解説のボタンで再試行できます。</div>');
       }
     });

@@ -1237,7 +1237,8 @@ async function restoreStudyView(env, id, state, now) {
   const published = state.publishedExplanation;
   if (published?.questionId && state.lastExplanation?.grade?.questionId === published.questionId &&
       published.menu?.body && published.menu.sessionId === id)
-    return { ...identity, status:'menu', menu:published.menu, restored:true };
+    return { ...identity, status:'menu', menu:published.menu,
+      explanationQuestionId:published.questionId, restored:true };
   if (state.resumePending && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId))) {
     // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
     return { ...resumeReadyView(id, state), restored: true };
@@ -1406,7 +1407,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-30-v138-import-progress', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-30-v139-explanation-recovery', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {

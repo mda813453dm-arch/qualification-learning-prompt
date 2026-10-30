@@ -148,8 +148,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v138\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-30.138');
+  assert.match(WIDGET_URI, /question-v139\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-30.139');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -202,7 +202,7 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   assert.ok(html.includes('id="checkExp"'));
   assert.ok(html.includes('id="dkExp"'));
   assert.ok(html.includes('id="exp"'));
-  assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\);/);
+  assert.match(html, /await requestAdaptiveExplanation\(ctx\);/);
   assert.match(html, /else renderVerifiedExplanation\(ctx\);/);
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
 });
@@ -1465,7 +1465,8 @@ test('資格別の共有年度・試験区分の表示とAI個別解説の起動
   assert.match(html, /利用可能（/, '本当に利用できる年度だけを表示する');
   assert.match(html, /async function loadExplanation\(questionId, requestAi\)/);
   assert.match(html, /await callTool\('explainSpec', args\)/, '採点済み問題をエンジンから確認する');
-  assert.match(html, /if \(requestAi\) await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
+  assert.match(html, /await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
+  assert.match(html, /await waitForPublishedExplanation\(ctx.sessionId, ctx.question.questionId\)/, '解説の保存完了まで追跡する');
   assert.match(html, /loadExplanation\(q.questionId, true\)/, '解説ボタンは本人の問題IDを渡す');
 });
 

@@ -95,13 +95,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         }
         else if (m.method === 'ui/message') {
           window.messages.push(m.params.content[0].text); reply({});
+          if (window.silentModel) return; // ChatGPT accepted the request but never published an explanation.
           // 初回はホストがAIを起動しなかった状態を再現。再表示時に既知のsessionIdだけで復旧する。
           const replyView = await window.modelStep(window.messages.at(-1), {content:[m.params.content[0]]});
           window.modelReplies.push(replyView);
           deliver({ _meta:{ qlp:replyView.view } });
         }
       });
-      iframe.srcdoc = html.replace('<script>', '<script>window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
+      iframe.srcdoc = html.replace('<script>', '<script>window.__qlpTestExplanationWaitMs=6500;window.openai={setWidgetState:()=>window.parent.droppedWidgetState++};<\/script><script>');
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first, study, session });
     const ui = page.frameLocator('iframe');
@@ -175,7 +176,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#itemModes button[data-mode="practice"]').click();
     await ui.getByText('問4の本文', { exact: true }).waitFor();
     assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '12');
+    await page.evaluate(() => { window.silentModel = true; });
+    await ui.locator('input[name=ans][value="1"]').check();
+    await ui.getByRole('button', { name: '解答する', exact: true }).click();
+    await ui.getByText('誤答の理由を確認しています…').waitFor();
+    await ui.getByRole('button', { name: '2 AI解説の追加を再試行' }).waitFor({timeout:14000});
+    assert.equal(await ui.locator('#exp').isDisabled(), false, 'AIが登録しなければ待機を解除する');
+    assert.match(await ui.locator('#explanationError').innerText(), /自動取得できませんでした/);
+    assert.equal(await ui.getByRole('button', { name: '1 次の問題へ' }).isDisabled(), false,
+      '解説を公開できなくても採点結果と次問の操作を維持する');
+    assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 1, '無応答のモデルを保存成功と扱わない');
     assert.deepEqual(errors, []);
-    console.log(`${name}: PASS real engine/MCP/DOM, dropped hidden context, retry, exact explanation, next question (375px; fixed model fixture)`);
+    console.log(`${name}: PASS real engine/MCP/DOM, explanation publication and silent-model recovery (375px; fixed model fixture)`);
   } finally { await browser.close(); }
 }
