@@ -98,12 +98,12 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     assert.doesNotMatch(await ui.locator('#app').innerText(),/次の分野の実践問題へ/,'next field never silently chooses practice');
     const beforeRefresh=toolCalls.filter(t=>t.name==='getOfficialLibrary').length;
     await ui.getByRole('button',{name:/同じ分野の公式過去問を解く/}).click();
-    await ui.getByRole('heading',{name:/過去問PDFのまとめ取り込み|公式過去問の利用・登録/}).waitFor();
+    await ui.getByRole('heading',{name:/過去問PDFの取り込み|公式過去問の利用・登録/}).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(),/実践問題へ進めませんでした/);
     assert.equal(await ui.getByRole('button',{name:'公式過去問を解く'}).count(),0,'unregistered past papers do not show practice button');
     assert.equal(await ui.locator('#licensedYear').count(),0,'no year picker');
     assert.match(await ui.locator('#app').innerText(),/最大10ファイル/);
-    assert.match(await ui.locator('#app').innerText(),/公式過去問は未登録です/,'no official question is invented');
+    assert.match(await ui.locator('#app').innerText(),/出題できる過去問はまだありません/,'no official question is invented');
     assert.equal(await ui.locator('#licensedRefresh').count(),0,'登録状況は自動更新し、手動ボタンは出さない');
     for(let i=0;i<40 && toolCalls.filter(t=>t.name==='getOfficialLibrary').length===beforeRefresh;i++)
       await new Promise(resolve=>setTimeout(resolve,100));
@@ -121,7 +121,7 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
     await direct.waitFor();
     const beforeDirect = toolCalls.length;
     await direct.click();
-    await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
+    await ui.getByRole('heading',{name:'過去問PDFの取り込み'}).waitFor();
     assert.equal(toolCalls[beforeDirect].name,'chooseItem');
     assert.equal(toolCalls[beforeDirect].args.mode,'practice');
     assert.equal(toolCalls[beforeDirect].args.fieldName,fieldName);

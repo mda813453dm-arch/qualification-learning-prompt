@@ -409,7 +409,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       availableUploadYears: [2015, 2016, 2017, 2023, 2025],
       validatedUploadYears: [2015, 2016, 2023, 2025], personalUploadedYears: [],
     }));
-    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    await ui.getByRole('heading', { name: '過去問PDFの取り込み' }).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(), /原本検証待ち|取込準備済み/);
     assert.equal(await ui.locator('#licensedYear').count(),0,'取り込む年度を選択させない');
     assert.match(await ui.locator('#app').innerText(), /最大10ファイル/);
@@ -435,7 +435,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     });
     await page.evaluate(r => window.deliver(r), result({status:'attached',sessionId,year:2023}));
     await ui.getByRole('button', { name: '公式過去問を解く' }).waitFor({timeout:12000});
-    await ui.getByRole('heading', { name: '過去問PDFのまとめ取り込み（本人専用）' }).waitFor();
+    await ui.getByRole('heading', { name: '公式過去問を解けます' }).waitFor();
     assert.match(await ui.locator('#app').innerText(), /あなたの登録済み過去問（本人専用・出題可能）：2023年度/);
     assert.equal(await ui.locator('#licensedAck').isChecked(),true,'登録結果の更新後も許諾チェックを保持する');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), beforePdf,
