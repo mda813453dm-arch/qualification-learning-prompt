@@ -93,3 +93,12 @@ test('通常の期限付き復習も、期限到来済みの検証済み対比�
   state.reviewPacing.sinceReview=1;
   assert.equal(pickNext(state,items,{today:'2026-10-30',now}).status,'finished','復習頻度は従来どおり維持');
 });
+
+test('誤答確定後だけ自動で理由を依頼し、失敗時は手動再試行できる',()=>{
+  const html=widgetHtml();
+  assert.match(html,/r\.grade\.result === 'wrong' && r\.grade\.questionId === qid\) autoWrongExplanation\(qid\)/);
+  assert.match(html,/var autoWrongRequests = Object\.create\(null\)/);
+  assert.match(html,/loadExplanation\(questionId, true\)\.catch/);
+  assert.match(html,/AI解説の追加を再試行/);
+  assert.match(html,/公式正答は保持しています/);
+});
