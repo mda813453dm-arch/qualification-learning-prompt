@@ -1079,6 +1079,117 @@ a{color:inherit}
           progressBox.setAttribute('role','alert');
         }
       };
+      // ChatGPTのfileParamsをAIに選ばせる経路が拒否・失敗した場合も、利用者が
+      // 自分で許可したファイルを同じ学習枠から選択できる。プラットフォームの安全判定は回避しない。
+      var chosenPdfButton = document.getElementById('licensedChooseSaved');
+      var localPdfInput = document.getElementById('licensedLocalUpload');
+      var selectingPdf = false;
+      function selectedPdfStatus(message, error){
+        var node = document.getElementById('licensedFileStatus');
+        if (!node) return;
+        node.textContent = message;
+        node.setAttribute('role', error ? 'alert' : 'status');
+      }
+      async function registerSelectedPdfs(selected, fromLocal){
+        if (selectingPdf || locked || !state.sessionId) return;
+        var sid = state.sessionId;
+        // UIのチェックに加え、実際の送信APIでもサーバー側の権利確認を必須にする。
+        if (licensedConsentSessionId !== sid) {
+          selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
+          return;
+        }
+        var plan;
+        try {
+          plan = planLicensedUpload(selected, isHtmlAnswer, maxBatch);
+        } catch(e) {
+          selectedPdfStatus(String(e.message || '選択したPDFを確認できませんでした。'), true);
+          return;
+        }
+        var host = window.openai || {};
+        if (typeof host.getFileDownloadUrl !== 'function' ||
+            (fromLocal && typeof host.uploadFile !== 'function')) {
+          selectedPdfStatus('このChatGPT環境ではPDFを学習枠から送信できません。チャット欄（＋）で添付するか、対応するChatGPTアプリで再度お試しください。', true);
+          return;
+        }
+        selectingPdf = true;
+        if (chosenPdfButton) chosenPdfButton.disabled = true;
+        if (localPdfInput) localPdfInput.disabled = true;
+        selectedPdfStatus('選択したPDFのアクセス許可と一時URLを確認しています。', false);
+        try {
+          var refs = new Map();
+          for (var i=0; i<plan.length; i++) {
+            var group = plan[i];
+            var groupFiles = [group.question, ...(group.answer ? [group.answer] : [])];
+            for (var j=0; j<groupFiles.length; j++) {
+              var file = groupFiles[j];
+              if (refs.has(file)) continue;
+              var fileId = file.fileId || file.file_id;
+              if (fromLocal) {
+                var up = await host.uploadFile(file);
+                fileId = up && (up.fileId || up.file_id);
+              }
+              if (typeof fileId !== 'string' || !fileId) throw new Error('FILE_NOT_AUTHORIZED');
+              var link = await host.getFileDownloadUrl({ fileId:fileId });
+              var downloadUrl = link && link.downloadUrl;
+              if (typeof downloadUrl !== 'string') throw new Error('FILE_URL_UNAVAILABLE');
+              var parsed = new URL(downloadUrl);
+              if (parsed.protocol !== 'https:') throw new Error('FILE_URL_UNAVAILABLE');
+              refs.set(file, { file_id:fileId, file_name:String(file.name || file.fileName || file.file_name || ''),
+                mime_type:'application/pdf', download_url:downloadUrl });
+            }
+          }
+          if (locked || state.sessionId !== sid) throw new Error('SESSION_CHANGED');
+          selectedPdfStatus('PDFを学習エンジンへ登録しています。受け付け後、年度別に自動更新します。', false);
+          // UI専用ツールはoutputTemplateを持たず、新しいチャット枠を作らない。
+          var sent = await callTool('attachPdfBatchFromPicker', { sessionId:sid,
+            questionPdfs:plan.map(function(p){return refs.get(p.question);}),
+            ...(isHtmlAnswer ? {} : {answerPdfs:plan.map(function(p){return refs.get(p.answer);})}) });
+          if (!sent || sent.error || sent.status !== 'attachedBatch' || sent.requested !== plan.length)
+            throw new Error('IMPORT_NOT_ACCEPTED');
+          if (Number(sent.failed) === plan.length) {
+            var failed = Array.isArray(sent.results) ? sent.results.map(function(r){
+              return (r.year || r.fileName || '選択ファイル') + '：' + (r.reason || r.code || '登録に失敗');
+            }).join(' ／ ') : '登録できませんでした。';
+            selectedPdfStatus('登録に失敗しました。' + failed + '。PDFの再添付は不要です。原因を確認してから再試行してください。', true);
+            return;
+          }
+          render({...sent,sessionId:sid});
+        } catch(e) {
+          var code = String(e && (e.code || e.message) || '');
+          selectedPdfStatus(code === 'SESSION_CHANGED'
+            ? '学習セッションが変わりました。現在の学習画面で操作してください。'
+            : 'ファイル送信が完了していません。ChatGPTによるファイルアクセス・送信許可が拒否された場合は、この画面からは送信できません。登録済み学習データは維持しています。', true);
+        } finally {
+          selectingPdf = false;
+          if (chosenPdfButton && chosenPdfButton.isConnected) chosenPdfButton.disabled = false;
+          if (localPdfInput && localPdfInput.isConnected) {
+            localPdfInput.disabled = false;
+            localPdfInput.value = '';
+          }
+        }
+      }
+      if (chosenPdfButton) chosenPdfButton.onclick = function(){
+        if (licensedConsentSessionId !== state.sessionId) {
+          selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
+          return;
+        }
+        // ユーザーのタップから直ちにピッカーを開く。ポップアップ禁止の回避処理はしない。
+        if (!window.openai || typeof window.openai.selectFiles !== 'function') {
+          selectedPdfStatus('ChatGPTのファイルライブラリ選択はこの端末では利用できません。下のiPhone「ファイル」から選ぶ方法もお試しください。', true);
+          return;
+        }
+        Promise.resolve(window.openai.selectFiles()).then(function(files){
+          if (!Array.isArray(files) || !files.length) return;
+          return registerSelectedPdfs(files, false);
+        }).catch(function(){
+          selectedPdfStatus('ファイル選択がキャンセルまたは許可されませんでした。登録データは変更していません。', true);
+        });
+      };
+      if (localPdfInput) localPdfInput.onchange = function(){
+        var files = Array.from(this.files || []);
+        if (!files.length) return;
+        registerSelectedPdfs(files, true);
+      };
       var licensedGeneration = licensedPollGeneration;
       var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports]);
       var licensedPollInFlight = false;
