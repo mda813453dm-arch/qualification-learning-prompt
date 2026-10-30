@@ -68,3 +68,11 @@ test('先にstartStudyで作った資格のIDは後のstartSessionでも同じ',
   const fromSession=await selectQualificationLearner(store,{suppliedId:fromStudy.learnerId,qualificationId:'q090',createId:next,now:2});
   assert.equal(fromStudy.learnerId,fromSession.learnerId);
 });
+
+test('日本語資格IDを使う既存の自由入力資格は破損させず、危険なプロパティ名は拒否する',async()=>{
+  const store=new MemoryStore(),next=generate();
+  const out=await selectQualificationLearner(store,{qualificationId:'第二級建築士',createId:next,now:100});
+  assert.equal(out.qualificationId,'第二級建築士');
+  await assert.rejects(selectQualificationLearner(store,{suppliedId:out.learnerId,qualificationId:'__proto__',createId:next}),/OWNER_INPUT_INVALID/);
+  await assert.rejects(selectQualificationLearner(store,{suppliedId:out.learnerId,qualificationId:'../private',createId:next}),/OWNER_INPUT_INVALID/);
+});
