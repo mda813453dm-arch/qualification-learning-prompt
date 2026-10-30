@@ -481,6 +481,9 @@ const modelBatchTool = TOOLS.find((t) => t.name === 'attachPdfBatch');
 TOOLS.push({
   name: 'attachPdfBatchFromPicker',
   appOnly: true, uiOnly: true,
+  // 読取専用と偽らない。本人のPDFを保存する書込操作としてホストの許可を尊重する。
+  // outputTemplateやfileParamsは付けず、操作中に新しい学習枠を生成しない。
+  meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' },
   description: 'ChatGPTのファイルライブラリで利用者が明示的に選択・許可したPDFだけを、既存の本人用取込みへ送る。取込み結果は学習枠内に返す。モデルには非公開。',
   inputSchema: modelBatchTool.inputSchema,
   api: modelBatchTool.api,
