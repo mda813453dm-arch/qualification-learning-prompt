@@ -19,7 +19,7 @@ import { SET_SIZE, availablePackets, findWanted, grade, jstToday, newState, pick
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
-import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice } from './ingest.js';
+import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice, importHistoryView } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, renderDescriptive, uploadedParse } from './parser-client.js';
 import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation } from './descriptive.js';
 import { handleRpc } from './mcp.js';
@@ -1965,6 +1965,8 @@ async function route(request, env, url, now) {
         importingYears: (job?.sources ?? []).filter((x) => x.status === 'pending' || x.status === 'running').map((x) => x.year),
         failedYears: (job?.sources ?? []).filter((x) => x.status === 'failed').map((x) => ({ year:x.year, reason:String(x.reason || '検証失敗').slice(0,110) })),
         pendingOfficialAnswerYears: (await licensedPendingYears(env, state)).filter((year) => !(job?.sources ?? []).some((x) => x.year === year && x.status !== 'failed')),
+        importHistory: importHistoryView(job),
+        linkedQualifications: (await qualificationOwnerOverview(env.STORE,state.learnerId))?.qualifications ?? [],
         maxBatchFiles: MAX_LICENSED_BATCH_FILES,
         sharedLibrary: null,
         notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
