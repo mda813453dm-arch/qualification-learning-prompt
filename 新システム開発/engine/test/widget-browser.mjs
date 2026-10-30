@@ -393,7 +393,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const previousMessageCount = await page.evaluate(() => window.followups.length);
     const priorAttachCount = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length);
     await ui.getByRole('button', { name: /公式問題・正答PDFを登録する/ }).click();
-    assert.match(await ui.locator('#app').innerText(), /添付するまで登録は始まりません/);
+    assert.match(await ui.locator('#app').innerText(), /公式PDFを選んで登録/);
+    assert.equal(await ui.locator('#sourceLocalUpload').count(),1,'iPhoneのPDFファイル選択を同じ枠に配置する');
     assert.equal(await page.evaluate(() => window.followups.length), previousMessageCount,
       '添付がないボタンで新しい会話を送らない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'attachPdf').length), priorAttachCount,
