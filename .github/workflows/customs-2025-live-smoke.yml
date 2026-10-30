@@ -1,0 +1,70 @@
+name: 通関士2025 公式過去問の公開版・出題検証
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '.github/workflows/customs-2025-live-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 公開版のURL・テスト用の認証情報を安全に設定する
+        run: |
+          BASE="$(gcloud run services describe qlp-engine --region asia-northeast1 --project qualification-learning --format='value(status.url)')"
+          TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          echo "::add-mask::$TOKEN"
+          echo "QLP_BASE_URL=$BASE" >> "$GITHUB_ENV"
+          echo "QLP_TEST_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+      - name: 通関士の公式3科目を実PDFから照合し出題可能性を確認する
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          const base=process.env.QLP_BASE_URL;
+          const token=process.env.QLP_TEST_TOKEN;
+          async function api(path, method='GET', body) {
+            const res=await fetch(base+path,{
+              method,headers:{authorization:'Bearer '+token,'content-type':'application/json'},
+              ...(body===undefined?{}:{body:JSON.stringify(body)}),signal:AbortSignal.timeout(560000),
+            });
+            const raw=await res.text();let data;
+            try{data=JSON.parse(raw)}catch{throw Error('Non-JSON response status='+res.status)}
+            if(!res.ok)throw Error(path+' status='+res.status+' error='+JSON.stringify(data).slice(0,300));
+            return data;
+          }
+          const release=await api('/v1/release');
+          assert.equal(release.build,'2026-10-31-v141-customs-pdf-intake','verified deployed build is required');
+          const session=await api('/v1/sessions','POST',{qualificationId:'q098'});
+          assert.equal(typeof session.sessionId,'string');
+          assert.equal(typeof session.learnerId,'string');
+          const jobId='q098~'+session.learnerId;
+          let job=null;
+          for(let i=0;i<12;i++){
+            const state=await api('/v1/jobs/'+encodeURIComponent(jobId)+'?run=all');
+            job=state.job;
+            const short=job.sources.map(s=>({year:s.year,section:s.section,status:s.status,count:s.packetCount,reason:s.reason}));
+            console.log('scan',i+1,JSON.stringify(short));
+            if(job.sources.some(s=>s.status==='failed'))throw Error('Official customs source failed: '+JSON.stringify(short));
+            if(job.sources.every(s=>s.status==='done'))break;
+            await new Promise(r=>setTimeout(r,5000));
+          }
+          assert.ok(job);
+          const expected=new Map([['通関業法',9],['関税法等',15],['通関実務',5]]);
+          for(const [section,count] of expected){
+            const source=job.sources.find(s=>s.section===section && s.year===2025);
+            assert.ok(source,'missing '+section);
+            assert.equal(source.status,'done',section+' not ready');
+            assert.equal(source.packetCount,count,section+' packet count mismatch');
+          }
+          const view=await api('/v1/sessions/'+encodeURIComponent(session.sessionId)+'/next','POST',{});
+          assert.equal(view.status,'question','validated official question must be available, got '+view.status);
+          assert.match(view.question.questionId,/^q098:2025:/);
+          console.log('VERIFIED: 2025 customs 29 exact-answer single-choice packets and one official question available');
+          JS
