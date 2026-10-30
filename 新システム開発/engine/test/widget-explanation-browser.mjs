@@ -179,14 +179,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.evaluate(() => { window.silentModel = true; });
     await ui.locator('input[name=ans][value="1"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
-    await ui.getByText('誤答の理由を確認しています…').waitFor();
+    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
+    assert.equal(await ui.locator('#exp').isDisabled(), false, '誤答だけではAI解説を起動しない');
+    assert.equal(await page.evaluate(() => window.messages.length), 1, '誤答でチャットへの依頼を増やさない');
+    await ui.locator('#exp').click();
     await ui.getByRole('button', { name: '2 AI解説の追加を再試行' }).waitFor({timeout:14000});
-    assert.equal(await ui.locator('#exp').isDisabled(), false, 'AIが登録しなければ待機を解除する');
-    assert.match(await ui.locator('#explanationError').innerText(), /自動取得できませんでした/);
+    assert.equal(await ui.locator('#exp').isDisabled(), false, '明示的に依頼したAIが登録しなければ待機を解除する');
+    assert.match(await ui.locator('#explanationError').innerText(), /AI解説の依頼に失敗しました/);
     assert.equal(await ui.getByRole('button', { name: '1 次の問題へ' }).isDisabled(), false,
       '解説を公開できなくても採点結果と次問の操作を維持する');
     assert.equal(toolCalls.filter(c => c.name === 'showMenu').length, 1, '無応答のモデルを保存成功と扱わない');
     assert.deepEqual(errors, []);
-    console.log(`${name}: PASS real engine/MCP/DOM, explanation publication and silent-model recovery (375px; fixed model fixture)`);
+    console.log(`${name}: PASS real engine/MCP/DOM, manual AI request and silent-model recovery (375px; fixed model fixture)`);
   } finally { await browser.close(); }
 }

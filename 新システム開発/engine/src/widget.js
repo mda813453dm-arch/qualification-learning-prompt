@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v139.html';
+export const WIDGET_URI = 'ui://qlp/question-v140.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.139';
+export const WIDGET_VERSION = '2026-10-30.140';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -2657,9 +2657,7 @@ a{color:inherit}
       if (r.grade.questionId && r.grade.questionId !== qid) throw new Error('ANSWER_QUESTION_MISMATCH');
       state.next = r.next || null;
       showGrade(r.grade);
-      // 誤答時は既に確定した公式正答を即表示し、判断理由だけを同じ学習枠へ自動で追加する。
-      // ツール不通でも採点結果を保持し、手動の解説ボタンを再利用できる。
-      if (r.grade.result === 'wrong' && r.grade.questionId === qid) autoWrongExplanation(qid);
+      // 採点と簡易表示だけを行う。AIの詳細解説は利用者がボタンを選んだときに限る。
       return;
     } catch (e) {
       // APIの応答が途切れても、採点がサーバーへ保存された可能性がある。
@@ -2821,30 +2819,6 @@ a{color:inherit}
       (g.dontKnow ? '正答を確認して復習しましょう。' : g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
       (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
       '<p>ここまでは保存済みの公式正答との照合です。選択肢ごとの判断根拠や必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
-  }
-  var autoWrongRequests = Object.create(null);
-  function autoWrongExplanation(questionId){
-    var key = String(state.sessionId || '') + '/' + String(questionId || '');
-    if (!questionId || autoWrongRequests[key]) return;
-    autoWrongRequests[key] = true;
-    var b = document.getElementById('exp') || document.getElementById('checkExp');
-    if (b) {
-      b.disabled = true;
-      var label = b.querySelector('span');
-      if (label) label.textContent = '誤答の理由を確認しています…';
-      else b.textContent = '誤答の理由を確認しています…';
-    }
-    loadExplanation(questionId, true).catch(function(){
-      if (b && b.isConnected) {
-        b.disabled = false;
-        var label = b.querySelector('span');
-        if (label) label.textContent = 'AI解説の追加を再試行';
-        else b.textContent = 'AI解説の追加を再試行';
-      }
-      if (b && b.isConnected && state.question && state.question.questionId === questionId && !document.getElementById('explanationError')) {
-        app.insertAdjacentHTML('beforeend', '<div class="notice" id="explanationError" role="alert">誤答の理由を自動取得できませんでした。公式正答は保持しています。AI解説のボタンで再試行できます。</div>');
-      }
-    });
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;

@@ -96,13 +96,13 @@ test('通常の期限付き復習も、期限到来済みの検証済み対比�
   assert.equal(pickNext(state,items,{today:'2026-10-30',now}).status,'finished','復習頻度は従来どおり維持');
 });
 
-test('誤答確定後だけ自動で理由を依頼し、失敗時は手動再試行できる',()=>{
+test('誤答後は採点結果だけを表示し、本人が選ぶまでAI解説を依頼しない',()=>{
   const html=widgetHtml();
-  assert.match(html,/r\.grade\.result === 'wrong' && r\.grade\.questionId === qid\) autoWrongExplanation\(qid\)/);
-  assert.match(html,/var autoWrongRequests = Object\.create\(null\)/);
-  assert.match(html,/loadExplanation\(questionId, true\)\.catch/);
+  assert.doesNotMatch(html,/autoWrongExplanation|autoWrongRequests|誤答の理由を確認しています/);
+  assert.match(html,/showGrade\(r\.grade\);\s*\/\/ 採点と簡易表示だけを行う/);
+  assert.match(html,/document\.getElementById\('exp'\)\.onclick = function\(\)/);
+  assert.match(html,/loadExplanation\(q\.questionId, true\)\.catch/);
   assert.match(html,/AI解説の追加を再試行/);
-  assert.match(html,/公式正答は保持しています/);
 });
 
 test('制度名が明確な宅建35条／37条のみ混同ペアに自動分類する',()=>{
