@@ -8,7 +8,7 @@
  * 取込みジョブ job/<qualificationId>~<learnerId> を移動・変更しない。
  */
 const LID=/^[a-z2-9]{10}$/;
-const QID=/^[a-zA-Z0-9_-]{2,100}$/;
+const QID=/^(?!__proto__$|constructor$|prototype$)[^/\\\s<>{}]{1,100}$/u;
 const ownerPointer=(id)=>'owner/root/'+id;
 const ownerIndex=(root)=>'owner/qualifications/'+root;
 
