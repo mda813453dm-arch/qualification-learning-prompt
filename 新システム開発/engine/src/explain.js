@@ -50,7 +50,7 @@ const ALWAYS = [
  * stage：学習段階（分からなければ、会話で利用者が答えた段階に合わせるよう書く）
  * grade：採点結果（あれば、正誤に合わせた入り方を足す）
  */
-export function explainHow({ stage = null, weak = [], grade = null, fieldName = null, savedFigures = false } = {}) {
+export function explainHow({ stage = null, weak = [], grade = null, fieldName = null, savedFigures = false, learning = null } = {}) {
   const n = stageNumber(stage);
   const lines = [ALWAYS];
   if (savedFigures) lines.push('この問題には保存済みの公式図がある。question.figures のURLで確認できる図だけを参照して説明する。新しい図を生成しない。図の取得のためにnextQuestionを呼ばない。');
@@ -59,6 +59,10 @@ export function explainHow({ stage = null, weak = [], grade = null, fieldName = 
   } else {
     lines.push(`利用者が答えた学習段階に合わせる。${Object.values(STAGE_GUIDES).join(' ')}`);
   }
+  if (learning?.method === 'guided') lines.push('概念・判断・計算の設問。理解が未確認なら、解説付きの類題・小さな例題を最初に示し、根拠または手順を理解してから、答えを隠して再確認する。すでに正解できた場合は例題を冗長に繰り返さない。公式設問とは別の例題であることを明示し、公式の問題文・正答は書き換えない。');
+  if (learning?.method === 'recall') lines.push('事実・用語・条文番号の設問。まず自力想起を促し、採点前に答えを漏らさず、回答後は短く根拠を説明する。');
+  if (learning?.method === 'contrast') lines.push('検証された対比論点。混同しやすい相違を比較表で説明し、次の復習では解説を隠して想起する。');
+  if (learning?.phase === 'closed_book_recall' && grade?.result !== 'wrong') lines.push('理解済みまたは期限復習の論点は例題から毎回やり直さず、想起と必要な補足を優先する。');
   if (weak.length) lines.push(`苦手な分野（エンジンの採点記録）：${weak.join('、')}。この分野の解説では、基礎の振り返りを1つ足す。`);
   if (grade && !grade.skipped) {
     if (grade.result === 'wrong') lines.push(`今回は不正解（選んだのは${grade.selected}、正答は${grade.correctAnswer}）。最初に、選んだ選択肢がなぜ誤りかを示してから、正答の根拠を説明する。`);
