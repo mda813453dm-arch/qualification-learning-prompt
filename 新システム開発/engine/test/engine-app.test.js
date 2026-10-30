@@ -748,7 +748,7 @@ test('再開のとき、前回答えていない問を startStudy で知らせ�
   const q1 = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
   await call(env, 'POST', `/v1/study/${st.studyId}/end`, { sessionId: s.sessionId });
   env.now = T0 + 3 * DAY;
-  const st2 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士', learnerId: st.learnerId })).body;
+  const st2 = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補', learnerId: st.learnerId })).body;
   assert.match(st2.pendingQuestion, new RegExp(`^${q1.year}年度 問${q1.questionNumber}`));
   const again = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
   const fresh = (await call(env, 'POST', `/v1/sessions/${again.sessionId}/next`, { question: '新しい問題' })).body;
