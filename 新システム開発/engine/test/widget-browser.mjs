@@ -246,7 +246,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('.latest').waitFor();
     assert.equal(await ui.locator('.latest').count(), 1, '採点画面の最新マーカーを重複させない');
     assert.equal(await ui.locator('.latest').evaluate(el => el.ownerDocument.activeElement === el), true,
-      '採点後に「ここが最新の表示です」へフォーカスする');
+      '採点後に学習枠の先頭へフォーカスする');
     const gradedLayout=await ui.locator('#app').evaluate(el=>({
       height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,scrollTop:el.scrollTop
     }));
