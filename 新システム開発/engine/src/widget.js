@@ -1186,6 +1186,12 @@ a{color:inherit}
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
+    if (q.learning && q.learning.phase === 'worked_example_first') {
+      var procedure = /(?:計算|算出|求め|座標値|方位角|方向角|面積)/.test(String(q.stem || ''))
+        ? '①与えられた値と求める値を整理 → ②使う式・図・手順を選ぶ → ③単位・符号・条件を検算'
+        : '①判断の対象を確認 → ②定義・要件・例外を整理 → ③各選択肢を根拠と照合';
+      h += '<div class="notice"><b>解く前の手順確認</b><div>' + procedure + '</div><div>手順を自分で説明できるか確かめてから、下の公式問題を解いてください。正答は回答後に表示します。</div></div>';
+    }
     if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
     if (/^land_surveyor:/.test(String(q.questionId || ''))) {
