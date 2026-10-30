@@ -1442,14 +1442,16 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
   assert.equal(clean.stored.length,1,'個人の問題進捗で共有の数を変更しない');
 });
 
-test('PDF未添付のボタンはAIへの会話メッセージを起動せず、未保存の部だけ案内する', () => {
+test('PDF未添付のボタンはAIへの会話メッセージを起動せず、学習画面内で直接PDFを送信する', () => {
   const html = widgetHtml();
   const a = html.indexOf("document.getElementById('sourceAttach').onclick");
   const b = html.indexOf("document.getElementById('sourceAiCheck').onclick",a);
   assert.ok(a > 0 && b > a);
   const block = html.slice(a,b);
   assert.ok(!block.includes("ask("), '空の取り込み依頼を会話へ送信してはいけない');
-  assert.ok(block.includes('ChatGPTの入力欄'), '実際のPDF添付方法だけを表示する');
+  assert.ok(block.includes('sourceLocalUpload'), '画面内のiPhoneファイル選択を表示する');
+  assert.ok(block.includes('attachPdfBatchFromPicker'), '選択されたPDFをモデルに依存せず登録ツールへ渡す');
+  assert.ok(block.includes('最大10ファイル'), '一括上限を利用者へ明示する');
   assert.ok(html.includes('利用可能（'), '検証済み年度と利用可能問題数のみを表示する');
   assert.ok(html.includes('公式問題・正答PDFを登録する'));
   assert.ok(!html.includes('共有保存状況を更新して'), '内部共有の選択肢は出さない');
