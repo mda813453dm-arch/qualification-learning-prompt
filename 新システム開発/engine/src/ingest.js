@@ -9,6 +9,7 @@
  */
 import { readFigure, readResult, readSource, writeResult, writeSource } from './cache.js';
 import { sha256Hex } from './store.js';
+import { learningPolicy } from './learning-policy.js';
 
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 const MAX_PDF_BYTES = 30 * 1024 * 1024;
@@ -81,7 +82,7 @@ export async function validateResult(src, shas, parserVersion, result, assets) {
   for (const p of result.packets ?? []) {
     const reason = packetProblem(src, shas, p, seen, assetSha);
     if (reason) excluded.push({ questionNumber: p?.questionNumber ?? null, reason });
-    else packets.push(p);
+    else packets.push({ ...p, learningStrategy: learningPolicy(p) });
   }
   return { ...result, packets, excluded, packetCount: packets.length, status: packets.length ? (excluded.length ? 'partial' : 'ready') : 'unavailable' };
 }
