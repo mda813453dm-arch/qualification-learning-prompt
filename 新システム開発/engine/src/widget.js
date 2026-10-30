@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v141.html';
+export const WIDGET_URI = 'ui://qlp/question-v142.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.141';
+export const WIDGET_VERSION = '2026-10-31.142';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -689,6 +689,7 @@ a{color:inherit}
   var renderFocusTurn = 0;
   var licensedPollGeneration = 0;
   var attachmentPollGeneration = 0;
+  var customsPollGeneration = 0;
   var licensedConsentSessionId = null;
   function render(data){
     // PDF添付のツール結果は新しいチャットメッセージ側に学習枠を生成する。
@@ -1295,8 +1296,37 @@ a{color:inherit}
           var errors = Array.isArray(result.results) ? result.results.filter(function(x){return x.status === 'failed';}) : [];
           status.textContent = '問題の解析開始：'+Number(result.queued||0)+'科目／別冊保存：'+Number(result.supplementStored||0)+'件／既存：'+Number(result.existing||0)+'件／失敗：'+Number(result.failed||0)+'件。' +
             (errors.length ? ' 未登録：'+errors.map(function(e){return (e.fileName||e.year||'PDF')+'：'+(e.reason||e.code||'確認できません');}).join(' ／ ') : '') +
-            ' 受付だけでは出題可能になりません。検証後に「過去問をもう一度確認する」で最新状態を表示できます。';
-          button.textContent = result.failed ? '失敗した公式PDFの取得を再試行する' : '同じ年度の登録状況を再確認する';
+            ' 受付だけでは出題可能になりません。出題可能になったらこの画面を自動更新します。';
+          button.textContent = result.failed ? '失敗した公式PDFの取得を再試行する' : '公式PDFの登録状況を再確認する';
+          // ChatGPTの追加メッセージを発生させず、同じ学習枠で公式過去問の準備完了を監視する。
+          // 新しい操作・別セッション・枠の切替があれば直ちに監視を停止する。
+          var receiptSession = state.sessionId;
+          var generation = ++customsPollGeneration;
+          async function checkCustomsReady(attempt){
+            if (locked || generation !== customsPollGeneration || !status.isConnected || state.sessionId !== receiptSession) return;
+            try {
+              var next = await callTool('nextQuestion', {sessionId:receiptSession});
+              if (locked || generation !== customsPollGeneration || !status.isConnected || state.sessionId !== receiptSession) return;
+              if (next && !next.error && next.status === 'question' &&
+                  /^q098:2025:/.test(String(next.question && next.question.questionId || ''))) {
+                render(next); return;
+              }
+              if (next && next.error) throw new Error('STATUS_UNAVAILABLE');
+              status.textContent = '登録・正答照合の状況を自動確認しています（'+(attempt+1)+'回目）。' +
+                (next?.status === 'waiting' ? '公式問題を解析中です。' :
+                 next?.status === 'sourceUnavailable' ? '検証済みの問題がまだありません。' :
+                 '出題可能になるまで確認します。') +
+                ' PDFの再添付は不要です。';
+            } catch(err) {
+              if (locked || generation !== customsPollGeneration || !status.isConnected) return;
+              status.textContent = '登録状況の通信確認に失敗しました。学習履歴を保持し、自動で再確認します。';
+            }
+            if (attempt < 39 && !locked && generation === customsPollGeneration && status.isConnected)
+              setTimeout(function(){checkCustomsReady(attempt+1);}, 6500);
+            else if (status.isConnected && generation === customsPollGeneration)
+              status.textContent = '登録状態の自動確認が続けられませんでした。「過去問をもう一度確認する」から現在の状態を再取得できます。';
+          }
+          checkCustomsReady(0);
         } catch(e) {
           status.textContent = '税関の公式PDFを登録できませんでした（'+String(e.message||'通信エラー')+'）。学習記録は変更していません。';
           status.setAttribute('role','alert');
