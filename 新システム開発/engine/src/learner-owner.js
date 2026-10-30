@@ -8,13 +8,15 @@
  * 取込みジョブ job/<qualificationId>~<learnerId> を移動・変更しない。
  */
 const LID=/^[a-z2-9]{10}$/;
-const QID=/^(?!__proto__$|constructor$|prototype$)[^/\\\s<>{}]{1,100}$/u;
+const QID=(v)=>typeof v==='string' && v.length>0 && v.length<=100 &&
+  !['__proto__','constructor','prototype'].includes(v) &&
+  !/\s/u.test(v) && !['/','<','>','{','}',String.fromCharCode(92)].some(ch=>v.includes(ch));
 const ownerPointer=(id)=>'owner/root/'+id;
 const ownerIndex=(root)=>'owner/qualifications/'+root;
 
 /** 同じ引継ぎIDから資格を変更したとき、資格ごとの既存IDを再利用する。 */
 export async function selectQualificationLearner(store, { suppliedId=null, qualificationId, createId, savedQualification=null, now=Date.now() }={}) {
-  if(!QID.test(String(qualificationId??'')) || typeof createId!=='function') throw Error('OWNER_INPUT_INVALID');
+  if(!QID(qualificationId) || typeof createId!=='function') throw Error('OWNER_INPUT_INVALID');
   if(suppliedId!==null && !LID.test(suppliedId)) throw Error('OWNER_ID_INVALID');
   const base=suppliedId??createId();
   if(!LID.test(base)) throw Error('OWNER_ID_INVALID');
@@ -23,7 +25,7 @@ export async function selectQualificationLearner(store, { suppliedId=null, quali
   const existing=await store.get(ownerIndex(root),'json');
   const byQualification={...(existing?.byQualification??{})};
   // 過去のIDはそのまま保存。すでに別IDに割り当て済みなら上書きしない。
-  if(savedQualification && QID.test(savedQualification) && !byQualification[savedQualification])
+  if(savedQualification && QID(savedQualification) && !byQualification[savedQualification])
     byQualification[savedQualification]=base;
   let id=byQualification[qualificationId];
   if(!id) {
