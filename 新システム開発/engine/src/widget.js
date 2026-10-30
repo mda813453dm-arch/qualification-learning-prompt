@@ -1084,6 +1084,7 @@ a{color:inherit}
       var chosenPdfButton = document.getElementById('licensedChooseSaved');
       var localPdfInput = document.getElementById('licensedLocalUpload');
       var selectingPdf = false;
+      var pickerOpening = false;
       function selectedPdfStatus(message, error){
         var node = document.getElementById('licensedFileStatus');
         if (!node) return;
@@ -1169,6 +1170,7 @@ a{color:inherit}
         }
       }
       if (chosenPdfButton) chosenPdfButton.onclick = function(){
+        if (pickerOpening || selectingPdf) return;
         if (licensedConsentSessionId !== state.sessionId) {
           selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
           return;
@@ -1181,9 +1183,13 @@ a{color:inherit}
         // host API は Promise ではなく同期例外で拒否する端末もある。
         // どちらも同じエラー画面へ戻す。拒否されたファイルは別経路へ転送しない。
         var selectedFiles;
+        pickerOpening = true;
+        chosenPdfButton.disabled = true;
         try {
           selectedFiles = window.openai.selectFiles();
         } catch(e) {
+          pickerOpening = false;
+          chosenPdfButton.disabled = false;
           selectedPdfStatus('ChatGPTでのファイル選択が許可されませんでした。PDFは送信されておらず、学習データも変更していません。', true);
           return;
         }
@@ -1192,9 +1198,14 @@ a{color:inherit}
             selectedPdfStatus('PDFは選択されませんでした。登録データは変更していません。', false);
             return;
           }
+          // ピッカーを閉じた後は登録中フラグが二重送信を防ぐ。
+          pickerOpening = false;
           return registerSelectedPdfs(files, false);
         }).catch(function(){
           selectedPdfStatus('ファイル選択がキャンセルまたは許可されませんでした。登録データは変更していません。', true);
+        }).finally(function(){
+          pickerOpening = false;
+          if (chosenPdfButton.isConnected && !selectingPdf) chosenPdfButton.disabled = false;
         });
       };
       if (localPdfInput) localPdfInput.onchange = function(){
