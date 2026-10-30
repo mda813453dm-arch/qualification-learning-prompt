@@ -1273,14 +1273,36 @@ a{color:inherit}
       var missing = library && Array.isArray(library.missing) ? library.missing : [];
       var ref = data.urlCatalog || null;
       var canAttach = !!data.sourceAttachmentSupported && (missing.length > 0 || !!ref);
+      var isCustoms = data.qualificationName === '通関士';
       app.innerHTML = '<h2>公式過去問の利用・登録</h2>' +
         libraryHtml(library) +
         '<div class="notice" role="status">' + esc(data.notice || '利用できる公式問題を確認してください。') + '</div>' +
         (official ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(official) + '">公式過去問掲載ページを開く ›</a></div>' : '') +
+        (isCustoms ? '<div class="row"><button id="sourceCustoms2025" type="button">2025年度・通関士の公式PDFを取得して登録する</button></div>' +
+          '<div class="notice" id="customsImportStatus" role="status">通関業法・関税法等・通関実務・別冊と公式正答を、税関の公開原本から取得します。過去のチャット添付をやり直す必要はありません。登録後、問題の解析・正答検証が必要です。</div>' : '') +
         '<div class="choices">' +
                     (canAttach ? '<button id="sourceAttach"><b>1</b><span>公式問題・正答PDFを登録する</span></button>' : '') +
           '<button id="sourceAiCheck"><b>' + (canAttach ? '2' : '1') + '</b><span>AI作成確認問題を解く（3問）</span></button></div>' +
           '<div class="row"><button id="sourceRefresh" class="quiet">過去問をもう一度確認する</button></div>' + endBar();
+      if (isCustoms) document.getElementById('sourceCustoms2025').onclick = async function(){
+        var button = this, status = document.getElementById('customsImportStatus');
+        button.disabled = true;
+        button.textContent = '公式PDFを取得しています…';
+        status.textContent = '税関の公式問題・別冊・正答を取得し、原本を照合しています。登録できた年度のみ出題可能になります。';
+        try {
+          var result = await callTool('importOfficialCustoms2025', {sessionId:state.sessionId});
+          if (!result || result.error || result.status !== 'attachedBatch') throw new Error(result?.error || 'IMPORT_FAILED');
+          var errors = Array.isArray(result.results) ? result.results.filter(function(x){return x.status === 'failed';}) : [];
+          status.textContent = '問題の解析開始：'+Number(result.queued||0)+'科目／別冊保存：'+Number(result.supplementStored||0)+'件／既存：'+Number(result.existing||0)+'件／失敗：'+Number(result.failed||0)+'件。' +
+            (errors.length ? ' 未登録：'+errors.map(function(e){return (e.fileName||e.year||'PDF')+'：'+(e.reason||e.code||'確認できません');}).join(' ／ ') : '') +
+            ' 受付だけでは出題可能になりません。検証後に「過去問をもう一度確認する」で最新状態を表示できます。';
+          button.textContent = result.failed ? '失敗した公式PDFの取得を再試行する' : '同じ年度の登録状況を再確認する';
+        } catch(e) {
+          status.textContent = '税関の公式PDFを登録できませんでした（'+String(e.message||'通信エラー')+'）。学習記録は変更していません。';
+          status.setAttribute('role','alert');
+          button.textContent = '公式PDFの取得を再試行する';
+        } finally {button.disabled=false;}
+      };
       document.getElementById('sourceRefresh').onclick = async function(){
         this.disabled = true;
         try {
