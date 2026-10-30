@@ -305,7 +305,10 @@ export function pin(state, item, kind, now) {
       questionId: p.questionId,
       reviewUnitId: reviewKeyOf(p),
       topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
-      learning: { ...learningPolicy(p), phase: learningPhase(learningPolicy(p), state.history?.[p.questionId], kind) },
+      learning: { ...learningPolicy(p), phase: learningPhase(learningPolicy(p),
+        (typeof p.topicId === 'string' && p.topicId.trim() && Object.values(state.history ?? {})
+          .some(h => h.topicId === p.topicId && h.result === 'confident_correct'))
+          ? { result: 'confident_correct' } : state.history?.[p.questionId], kind) },
       kind,
       correctAnswer: p.correctAnswer,
       acceptedAnswers: p.acceptedAnswers ?? null,
@@ -398,7 +401,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     const upd = updateReviewItem(state.review[reviewId] ?? null, { unitId: reviewId, topicId: cur.topicId ?? cur.fieldId ?? 'unclassified', sourceQuestionId: questionId, qualificationId: state.qualificationId, result: 'recall_failure', source: 'wrong' }, { today, now, examDate: state.plan.examDate, intervals, intervalsMinutes });
     const review = { ...state.review };
     if (upd.status === 'updated') review[reviewId] = upd.item;
-    const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
+    const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, topicId: cur.topicId ?? null, kind: cur.kind } };
     return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind, today), lastReviewTopicId: cur.kind === 'review' ? cur.topicId : state.lastReviewTopicId } };
   }
   const n = Number(String(value ?? '').trim());
@@ -437,7 +440,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       lastGrade: g,
       reviewPacing: completedPace(state, cur.kind, today),
       lastReviewTopicId: cur.kind === 'review' ? cur.topicId : state.lastReviewTopicId,
-      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
+      history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, topicId: cur.topicId ?? null, kind: cur.kind } },
       review,
     },
   };
