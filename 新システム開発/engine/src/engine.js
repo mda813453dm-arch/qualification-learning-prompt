@@ -226,7 +226,7 @@ export function present(item, kind, figureBase = '/v1/figure') {
     })),
     questionPdfUrl: p.questionPdfUrl,
     questionPdfPages: p.evidence?.questionPdfPages ?? [],
-    learning: { ...learningPolicy(p), phase: kind === 'review' ? 'closed_book_recall' : 'closed_book_recall' },
+    learning: { ...learningPolicy(p), phase: 'closed_book_recall' },
     notices,
   };
 }
@@ -436,6 +436,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
       current: { ...cur, grade: g },
       lastGrade: g,
       reviewPacing: completedPace(state, cur.kind, today),
+      lastReviewTopicId: cur.kind === 'review' ? cur.topicId : state.lastReviewTopicId,
       history: { ...state.history, [questionId]: { result, selected: n, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } },
       review,
     },
