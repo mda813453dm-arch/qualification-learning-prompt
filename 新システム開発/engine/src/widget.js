@@ -2460,6 +2460,9 @@ a{color:inherit}
       if (r.grade.questionId && r.grade.questionId !== qid) throw new Error('ANSWER_QUESTION_MISMATCH');
       state.next = r.next || null;
       showGrade(r.grade);
+      // 誤答時は既に確定した公式正答を即表示し、判断理由だけを同じ学習枠へ自動で追加する。
+      // ツール不通でも採点結果を保持し、手動の解説ボタンを再利用できる。
+      if (r.grade.result === 'wrong' && r.grade.questionId === qid) autoWrongExplanation(qid);
       return;
     } catch (e) {
       // APIの応答が途切れても、採点がサーバーへ保存された可能性がある。
@@ -2592,6 +2595,30 @@ a{color:inherit}
       (g.dontKnow ? '正答を確認して復習しましょう。' : g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
       (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
       '<p>ここまでは保存済みの公式正答との照合です。選択肢ごとの判断根拠や必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
+  }
+  var autoWrongRequests = Object.create(null);
+  function autoWrongExplanation(questionId){
+    var key = String(state.sessionId || '') + '/' + String(questionId || '');
+    if (!questionId || autoWrongRequests[key]) return;
+    autoWrongRequests[key] = true;
+    var b = document.getElementById('exp') || document.getElementById('checkExp');
+    if (b) {
+      b.disabled = true;
+      var label = b.querySelector('span');
+      if (label) label.textContent = '誤答の理由を確認しています…';
+      else b.textContent = '誤答の理由を確認しています…';
+    }
+    loadExplanation(questionId, true).catch(function(){
+      if (b && b.isConnected) {
+        b.disabled = false;
+        var label = b.querySelector('span');
+        if (label) label.textContent = 'AI解説の追加を再試行';
+        else b.textContent = 'AI解説の追加を再試行';
+      }
+      if (state.question && state.question.questionId === questionId && !document.getElementById('explanationError')) {
+        app.insertAdjacentHTML('beforeend', '<div class="notice" id="explanationError" role="alert">誤答の理由を自動取得できませんでした。公式正答は保持しています。AI解説のボタンで再試行できます。</div>');
+      }
+    });
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
