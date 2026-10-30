@@ -710,6 +710,9 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(html._meta.ui.domain, 'https://engine.example');
   assert.equal(html._meta['openai/widgetDomain'], 'https://engine.example');
   assert.ok(res.some((r) => r.uri === 'ui://qlp/question-v1.html'));
+  const previous = (await app('resources/read', { uri: 'ui://qlp/question-v134.html' })).contents[0];
+  assert.match(previous.text, /id="licensedLocalPick"/);
+  assert.doesNotMatch(previous.text, /id="licensedChooseSaved"/);
   const legacy = (await app('resources/read', { uri: 'ui://qlp/question-v1.html' })).contents[0];
   assert.equal(legacy.uri, 'ui://qlp/question-v1.html');
   assert.match(legacy.text, /submitAnswer/);
