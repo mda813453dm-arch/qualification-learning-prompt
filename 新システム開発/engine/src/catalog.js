@@ -733,6 +733,7 @@ const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualification
     fieldSourceUrl: qualificationFields.entries[x.sourceId].sourceUrl,
     // 過去問の登録状況とPDF検証手順は、過去問取込画面でのみ案内。
     overview: [],
+    sources: [],
     // 第59回（2025年度）通関士は原本4冊・公式正答1冊を照合済み。
     // 「通関実務・別冊」は第1〜2問の資料であり、それ単体から問題を採点しない。
     // 単一番号で採点できる択一式（通関業法11〜20、関税法等16〜30、通関実務13〜17）のみ提供。
@@ -754,7 +755,6 @@ const urlCatalogEntries = Object.fromEntries(qualificationUrlIndex.qualification
       linkedUrlCount: x.linkedUrlCount,
       listedYears: x.listedYears,
     },
-    sources: [],
   }]));
 
 export const CATALOG = { ...BASE_CATALOG, ...urlCatalogEntries };
