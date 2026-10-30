@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v131.html';
+export const WIDGET_URI = 'ui://qlp/question-v132.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.131';
+export const WIDGET_VERSION = '2026-10-30.132';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1029,7 +1029,7 @@ a{color:inherit}
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
-        '<div>② 下のチャット欄（＋）に、' + esc(uploadHint) + 'を添付して送信する。</div>' +
+        '<div>② ChatGPT内のPDFを選んで登録するか、下のチャット欄（＋）に、' + esc(uploadHint) + 'を添付して送信する。</div>' +
         '<div>③ 登録・正答照合が完了した年度から「公式過去問を解く」で進む。登録状況は自動で更新します。</div>' +
         '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
@@ -1040,7 +1040,7 @@ a{color:inherit}
         '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple style="display:block;width:100%;margin-bottom:10px" />' +
         '<div class="notice" role="status" id="licensedFileStatus">許諾確認後、登録するPDFを選択してください。ChatGPTのファイル選択機能がない環境では、下のチャット欄から添付できます。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
-        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。チャット欄（＋）からPDFを送信できます。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
+        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。ChatGPT内のPDF選択またはチャット添付で登録できます。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="notice" id="licensedAutoStatus" role="status">登録状況は自動で更新します。</div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -1071,7 +1071,7 @@ a{color:inherit}
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
           licensedConsentSessionId = state.sessionId;
-          progressBox.textContent = '確認済みです。下のチャット欄（＋）にPDFを添付して送信してください。';
+          progressBox.textContent = '確認済みです。ChatGPT内のPDFを選ぶか、下のチャット欄（＋）から添付してください。';
         } catch(e) {
           ack.disabled = false;
           ack.checked = false;
@@ -1207,7 +1207,7 @@ a{color:inherit}
           if (check && licensedConsentSessionId === state.sessionId) {
             check.checked = true; check.disabled = true;
             var progress = document.getElementById('licensedProgress');
-            if (progress) progress.textContent = '確認済みです。PDFはチャット欄（＋）から送信してください。';
+            if (progress) progress.textContent = '確認済みです。ChatGPT内のPDF選択またはチャット添付で登録できます。';
           }
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
