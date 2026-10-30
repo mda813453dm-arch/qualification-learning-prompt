@@ -1551,8 +1551,11 @@ async function route(request, env, url, now) {
     // 一度だけ割り当てて使い回す（既存のジョブやパケットは移動しない）。
     const existingLearner = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
     const selectedLearner = await selectQualificationLearner(env.STORE, {
-      suppliedId: given, qualificationId:b.qualificationId, createId:newLearnerId,
-      savedQualification:existingLearner?.qualificationId, now,
+      suppliedId: given, qualificationId:catalogFor(b.qualificationId)?.qualificationId ?? b.qualificationId,
+      createId:newLearnerId,
+      savedQualification:existingLearner?.qualificationId
+        ? (catalogFor(existingLearner.qualificationId)?.qualificationId ?? existingLearner.qualificationId) : null,
+      now,
     });
     const learnerId = selectedLearner.learnerId;
     await gateEnter(env, learnerId, b.accessCode, now);
@@ -2269,7 +2272,8 @@ async function route(request, env, url, now) {
     const learnerId = qualificationId
       ? (await selectQualificationLearner(env.STORE, {
         suppliedId: given, qualificationId, createId:newLearnerId,
-        savedQualification:originalSaved?.qualificationId, now,
+        savedQualification:originalSaved?.qualificationId
+          ? (catalogFor(originalSaved.qualificationId)?.qualificationId ?? originalSaved.qualificationId) : null, now,
       })).learnerId
       : (given ?? newLearnerId());
     const study = newStudy({ qualificationName: b.qualificationName, learnerId, now });
