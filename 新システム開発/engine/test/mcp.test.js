@@ -62,7 +62,7 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
   assert.deepEqual(names.sort(), [...ops, 'attachPdf', 'attachPdfBatch'].sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 14);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 15);
   assert.ok(names.includes('attachPdf'), '通常のチャットでもPDF登録ツールを公開する');
   assert.ok(names.includes('attachPdfBatch'), '複数年度のPDFを1回で送信するツールを公開する');
 });
@@ -1033,8 +1033,12 @@ test('アプリ：利用者が添付した過去問PDFを受け取り、保管�
   assert.equal(batch.inputSchema.properties.questionPdfs.maxItems, 10);
   assert.deepEqual(batch.inputSchema.properties.questionPdfs.items.required, ['download_url', 'file_id']);
   assert.equal(listed._meta['openai/outputTemplate'], WIDGET_URI, 'PDF登録後は学習操作画面を表示する');
-  const libMeta = (await app('tools/list', {})).tools.find((t) => t.name === 'getOfficialLibrary')._meta;
-  assert.equal(libMeta['openai/outputTemplate'], undefined, '登録状況照会はデータ専用');
+  const statusTool = (await app('tools/list', {})).tools.find((t) => t.name === 'getOfficialLibrary');
+  assert.ok(statusTool, 'PDF受付後の照会はAIからも利用できる');
+  assert.deepEqual(statusTool._meta.ui.visibility, ['model', 'app']);
+  assert.equal(statusTool._meta['openai/outputTemplate'], undefined, '登録状況照会はデータ専用');
+  const chatTools = (await rpc(makeEnv(), 'tools/list', {}, {path:'/mcp'})).body.result.tools;
+  assert.ok(chatTools.some(t => t.name === 'getOfficialLibrary'), 'モデルから利用可能なツール一覧にも公開');
   assert.match(listed.description, /行政書士など区分が一つだけの資格ではsectionを省略してよい/);
   assert.match(listed.description, /許諾未確認エラーを試験区分エラーと言い換えず/);
   assert.match(batch.description, /添付ターンで直ちに呼び出す/);
