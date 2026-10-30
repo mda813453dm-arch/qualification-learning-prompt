@@ -609,9 +609,25 @@ async function resumeLicensedPending(env, state, now) {
   if (promoted) await kickIngest(env, id, now);
 }
 
+/** 通関士の第59回公式原本。01/02/03は科目別問題、04は実務の別冊（単独問題ではない）。 */
+const CUSTOMS_2025_BASE = 'https://www.customs.go.jp/tsukanshi/59_shiken/';
+const CUSTOMS_2025_PDFS = [1,2,3,4].map(n => ({
+  file_name: '20251005tukanshi0'+n+'.pdf',
+  download_url: CUSTOMS_2025_BASE+'20251005tukanshi0'+n+'.pdf',
+}));
+const CUSTOMS_2025_ANSWER = { file_name:'59shiken_seikai.pdf',
+  download_url:CUSTOMS_2025_BASE+'59shiken_seikai.pdf' };
+function customsPart(name) {
+  const m = /(?:^|\/)20251005tukanshi0([1-4])\.pdf$/i.exec(String(name ?? '').split('?')[0]);
+  return m ? Number(m[1]) : null;
+}
+const CUSTOMS_SECTIONS = {1:'通関業法',2:'関税法等',3:'通関実務'};
 /** ChatGPT の複数ファイル用 MCP 入力。年度はファイル名の R/H/西暦を読み、原本との一致は解析器が確認する。 */
 function attachedYearFromName(name) {
   const s = String(name ?? '').normalize('NFKC').replace(/\s+/g, '');
+  // 20251005tukanshi01.pdf のような日付入り公式ファイル名を2025年度として識別する。
+  const dated = s.match(/(?:^|[^0-9])((?:19|20)\d{2})(?:0[1-9]|1[0-2])(?:[0-2]\d|3[01])(?=[^0-9]|$)/);
+  if (dated) return Number(dated[1]);
   const western = s.match(/(?:^|[^0-9])((?:19|20)\d{2})(?!\d)/);
   if (western) return Number(western[1]);
   const reiwa = s.match(/(?:^|[^a-zA-Z0-9])(?:令和|R)0?(\d{1,2})(?!\d)/i);
@@ -647,14 +663,33 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const file = files[index];
     const fileName = typeof file === 'string' ? (() => { try { return decodeURIComponent(new URL(file).pathname.split('/').pop() || ''); } catch { return file; } })() : (file?.file_name ?? file?.name ?? file?.filename ?? file?.download_url ?? '');
     const year = attachedYearFromName(fileName) ?? (Array.isArray(b.years) ? Number(b.years[index]) : null);
-    const section = attachedSectionFromName(fileName, cat?.uploadSections);
+    const part = state.qualificationId === 'q098' ? customsPart(fileName) : null;
+    const section = state.qualificationId === 'q098'
+      ? (CUSTOMS_SECTIONS[part] ?? null)
+      : (attachedSectionFromName(fileName, cat?.uploadSections) ?? 'main');
+    // 別冊は通関実務の参照資料。問題本冊として独立に解析・採点してはいけない。
+    if (part === 4 && year === 2025) {
+      try {
+        const savedUrl = await keepPrivateAttached(env, await fetchAttached(env, file), url.origin, state.learnerId);
+        await env.STORE.put('customs/supplement/'+state.learnerId+'/2025',
+          JSON.stringify({ year:2025, section:'通関実務（別冊）', pdfUrl:savedUrl, receivedAt:now }));
+        results.push({year, status:'supplementStored', notice:'通関実務の別冊を保管しました。単独では採点しません。'});
+      } catch(error) {
+        results.push({year,status:'failed',fileName:String(fileName).slice(0,90),
+          reason:String(error?.message || '別冊の保存に失敗').slice(0,180),code:error?.code || 'ATTACH_FAILED'});
+      }
+      continue;
+    }
     if (!year || section === null || !Number.isInteger(year)) {
       results.push({ fileName: String(fileName).slice(0,90), status:'failed',
         reason: !year ? 'ファイル名から実施年度を判別できません。' : 'ファイル名から午前・午後の部を区別できません。' });
       continue;
     }
     try {
-      const answer = answers.get(year + ':' + (section ?? ''));
+      const officialCustomsAnswer = state.qualificationId === 'q098' && year === 2025 && part >= 1 && part <= 3
+        ? CUSTOMS_2025_ANSWER : null;
+      const answer = answers.get(year + ':' + (section ?? '')) ||
+        answers.get(year + ':') || officialCustomsAnswer;
       const result = await attachPdf(env, id, state,
         { year, ...(section ? {section} : {}), question: file, ...(answer ? {answer} : {}), deferProgress:true }, url, now);
       results.push({ year, status:result.status, notice:result.notice });
@@ -668,9 +703,10 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   if (queued) await progress(env, sessionJobId(state), now).catch(() => {});
   const existing = results.filter(x => x.status === 'attachedAlready').length;
   const waiting = results.filter(x => x.status === 'pendingOfficialAnswer').length;
+  const supplements = results.filter(x => x.status === 'supplementStored').length;
   const failed = results.filter(x => x.status === 'failed').length;
   return { status:'attachedBatch', sessionId:id, requested:files.length,
-    queued, existing, pendingOfficialAnswer:waiting, failed, results,
+    queued, existing, pendingOfficialAnswer:waiting, supplementStored:supplements, failed, results,
     notice:'PDFの登録依頼を受け付けました。登録開始と検証完了は別です。学習枠の年度別状態が「登録済み」となった問題だけ出題できます。' };
 }
 
@@ -689,7 +725,7 @@ async function attachPdf(env, id, state, b, url, now) {
     throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', 'PDFの表紙で実施年度（西暦）を確認してください。');
   if (!cat?.privateLicensedUpload && adapter !== 'generic_mc' && Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
-  const section = adapter === 'generic_mc' ? String(b.section ?? '').trim()
+  const section = adapter === 'generic_mc' ? String(b.section ?? 'main').trim()
     : cat?.uploadSections
       // 単一区分の資格は区分をエンジンが決定する。AIの「本試験」「main」等の言い換えで登録を妨げない。
       ? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : String(b.section ?? '').trim())
@@ -2014,6 +2050,17 @@ async function route(request, env, url, now) {
     const { id, state } = await resolveSession(env, parts[2], now);
     await gateUse(env, state.learnerId, now);
     return json(200, await attachPdfBatch(env, id, state, b, url, now));
+  }
+
+  // 通関士2025の4公式PDFは公開元から直接取得できるため、過去ターンの添付参照を要求しない。
+  // 科目別の問題・公式正答・通関実務別冊を区別し、検証済み問題だけが出題可能になる。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' &&
+      parts[3] === 'import-customs-2025' && parts.length === 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    if (state.qualificationId !== 'q098') throw new HttpError(422,'CUSTOMS_IMPORT_QUALIFICATION_MISMATCH');
+    return json(200, await attachPdfBatch(env, id, state,
+      { questionPdfs:CUSTOMS_2025_PDFS, answerPdfs:[CUSTOMS_2025_ANSWER] }, url, now));
   }
 
   // 利用者が添付した過去問PDF（U06「公式の問題・正答資料をこのチャットに添付する」）。
