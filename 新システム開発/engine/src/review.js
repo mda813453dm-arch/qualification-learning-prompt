@@ -52,13 +52,13 @@ export function updateReviewItem(previous,event,{today,examDate=null,intervals=I
     lastResult:result,comprehensive,exemptStopped:p?.exemptStopped??false
   })};
 }
-export function selectDueReviews({today,now=null,items=[],explicitTopic=false,defer=false,practiceSinceReview=0,sessionStart=true}={}){
+export function selectDueReviews({today,now=null,items=[],explicitTopic=false,defer=false,practiceSinceReview=0,sessionStart=true,candidateLimit=1}={}){
  if(!date(today))return {status:'date_unverified',items:[]};
  const due=items.filter(x=>!x.exemptStopped&&!x.mastered&&x.dueDate&&x.dueDate<=today&&(!x.dueAt||(Number.isFinite(now)&&Date.parse(x.dueAt)<=now)));
  due.sort((a,b)=>(a.dueAt??a.dueDate).localeCompare(b.dueAt??b.dueDate) || Number(b.source==='wrong'||b.source==='self_report')-Number(a.source==='wrong'||a.source==='self_report'));
  if(defer)return {status:'deferred',items:[]};
  if(!explicitTopic&&sessionStart)return {status:'due',items:due.slice(0,5)};
- return {status:'due',items:practiceSinceReview>=2?due.slice(0,1):[]};
+ return {status:'due',items:practiceSinceReview>=2?due.slice(0,Number.isInteger(candidateLimit)&&candidateLimit>=1&&candidateLimit<=5?candidateLimit:1):[]};
 }
 export function consumeReview(queue,{unitId,attemptId,valid,explanationComplete,isReinforcement=false}){
  if(!queue?.queueId||!unitId||!attemptId)throw Error('REVIEW_CONSUME_KEY_REQUIRED');
