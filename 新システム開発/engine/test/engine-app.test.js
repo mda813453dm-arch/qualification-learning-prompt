@@ -575,7 +575,7 @@ test('startSession の前に引継ぎIDで出題を求められても、学習�
 
 test('引継ぎデータにエンジンの記録を載せず、引継ぎIDだけで続きから出題する（セッションが切れていても）', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
-  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
   const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
   const q = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
   await call(env, 'POST', `/v1/sessions/${s.sessionId}/answer`, { questionId: q.questionId, value: 3 });
@@ -742,7 +742,7 @@ test('答えていない問を残して終えたら、別のチャットで再�
 
 test('再開のとき、前回答えていない問を startStudy で知らせ、利用者が「新しい問題から」を選べば別の問を出す', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
-  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '土地家屋調査士' })).body;
+  const st = (await call(env, 'POST', '/v1/study/start', { qualificationName: '測量士補' })).body;
   assert.equal(st.pendingQuestion, null);
   const s = (await call(env, 'POST', '/v1/sessions', { qualificationId: SRC.qualificationId, sources: [SOURCE], learnerId: st.learnerId })).body;
   const q1 = (await call(env, 'POST', `/v1/sessions/${s.sessionId}/next`)).body.question;
