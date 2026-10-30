@@ -71,6 +71,14 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.match(await ui.locator('#app').innerText(),/2020年度/);
     assert.match(await ui.locator('#app').innerText(),/2025年度/);
     assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
+    // PDF受付の実際のツール通知から、同じセッションで登録済み年度へ自動移行する。
+    const beforeReceipt = await page.evaluate(()=>window.calls.filter(c=>c.name==='getOfficialLibrary').length);
+    await page.evaluate(()=>window.deliver({_meta:{qlp:{status:'attachedBatch',sessionId:'test-session',queued:3}}}));
+    await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
+    await page.waitForFunction((count)=>window.calls.filter(c=>c.name==='getOfficialLibrary').length>count,beforeReceipt);
+    assert.equal(await ui.locator('#licensedStart').count(),1,'受領から登録済み年度へ進んだとき学習ボタンを表示');
+    assert.equal(await ui.locator('#app').getByText('▼ この学習枠の先頭です').count(),1,'古い最新表示の誤表示を残さない');
+    assert.equal(await page.evaluate(()=>window.followups.length),0,'受領後も追加のAIメッセージは送信しない');
     assert.deepEqual(errors,[],name+' console errors: '+errors.join(','));
     console.log(name+': PASS chat attachment guidance and auto status with retained consent');
   }finally{await browser.close();}
