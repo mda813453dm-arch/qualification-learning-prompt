@@ -1326,7 +1326,7 @@ a{color:inherit}
         app.insertAdjacentHTML('beforeend', '<section class="notice" id="sourceUploadPanel" role="region" aria-label="公式PDF登録">' +
           '<b>公式PDFを選んで登録</b>' +
           '<p>問題PDFと公式正答PDFをまとめて選んでください。1回に最大10ファイルです。PDFを選ぶと登録を開始します。会話での「はい」は不要です。</p>' +
-          '<label class="file-picker"><span>iPhone内のPDFを探す</span><input id="sourceLocalUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを探す"></label>' +
+          '<div class="row"><label class="file-picker"><span>iPhone内のPDFを探す</span><input id="sourceLocalUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを探す"></label></div>' +
           '<div id="sourceUploadStatus" class="import-action-status" role="status">PDFの選択待ちです。</div>' +
           '<p>登録・公式正答との照合が完了した問題だけ出題できます。資料の受領だけでは出題可能になりません。</p>' +
           '</section>');
