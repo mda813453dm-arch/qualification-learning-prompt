@@ -210,6 +210,38 @@ function pick(src) {
 // ---- 取り込みジョブ（資格ごと） ----
 
 const jobKey = (qualificationId) => `job/${encodeURIComponent(qualificationId)}`;
+const IMPORT_EVENT_MAX = 24;
+
+/** 元PDFの保存URL・権利情報は履歴に複製せず、取込み状態の変化だけを記録する。 */
+function auditSource(source, status, now, { reason=null, questions=null, excluded=null }={}) {
+  const entry = {
+    at:now, status,
+    ...(typeof reason==='string' && reason ? { reason:reason.slice(0,80) } : {}),
+    ...(Number.isInteger(questions) ? { questions } : {}),
+    ...(Number.isInteger(excluded) ? { excluded } : {}),
+  };
+  source.importEvents=[...(Array.isArray(source.importEvents)?source.importEvents:[]),entry].slice(-IMPORT_EVENT_MAX);
+}
+
+/** 同じ学習者・資格のジョブだけを渡し、保存URLやSHAを含めず履歴の要約を返す。 */
+export function importHistoryView(job) {
+  if(!job || !Array.isArray(job.sources)) return [];
+  return job.sources.map((s)=>{
+    const events=Array.isArray(s.importEvents)?s.importEvents.filter((e)=>e&&
+      Number.isFinite(e.at)&&typeof e.status==='string').slice(-IMPORT_EVENT_MAX):[];
+    return {
+      year:Number.isInteger(s.year)?s.year:null,
+      section:typeof s.section==='string'?s.section:'',
+      status:s.status==='done'?'done':s.status==='failed'?'failed':s.status==='running'?'running':'pending',
+      questions:Number.isInteger(s.packetCount)?s.packetCount:0,
+      excluded:Number.isInteger(s.excludedCount)?s.excludedCount:0,
+      reason:s.status==='failed'&&typeof s.reason==='string'?s.reason.slice(0,80):null,
+      events,
+      // v133以前の履歴は推測で復元しない。最終状態だけを表示する。
+      historicalDetailAvailable:events.length>0,
+    };
+  }).sort((a,b)=> (b.year??0)-(a.year??0)||a.section.localeCompare(b.section,'ja'));
+}
 
 export async function readJob(store, qualificationId) {
   return store.get(jobKey(qualificationId), 'json');
@@ -230,6 +262,7 @@ export async function startJob(store, qualificationId, sources, now, { persisten
       const samePdf = old.sources.find((s) => s.questionUrl === source.questionUrl);
       if (samePdf) {
         if (samePdf.status === 'failed') {
+          auditSource(samePdf,'retry',now,{reason:samePdf.reason});
           Object.assign(samePdf, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
           changed = true;
         }
@@ -237,13 +270,16 @@ export async function startJob(store, qualificationId, sources, now, { persisten
       }
       const sameYear = old.sources.find((s) => s.year === source.year && s.section === source.section);
       if (sameYear && sameYear.status === 'failed') {
+        auditSource(sameYear,'retry',now,{reason:sameYear.reason});
         Object.assign(sameYear, source, { status: 'pending', reason: null, startedAt: null, leaseUntil: null });
         changed = true;
         continue;
       }
       // 共通原本がある場合も、利用者の異なる添付原本は別ソースとして保持する。
       // 本人専用で既に出題可能な年度は attachPdf 側で重複登録を防ぐ。
-      old.sources.push({ ...source, status: 'pending' });
+      const added={...source,status:'pending'};
+      auditSource(added,'registered',now);
+      old.sources.push(added);
       changed = true;
     }
     if (!changed) return old;
@@ -256,7 +292,11 @@ export async function startJob(store, qualificationId, sources, now, { persisten
     state: 'running',
     startedAt: now,
     updatedAt: now,
-    sources: sources.map((s) => ({ ...s, status: 'pending' })),
+    sources: sources.map((source) => {
+      const s={...source,status:'pending'};
+      auditSource(s,'registered',now);
+      return s;
+    }),
   };
   await store.put(jobKey(qualificationId), JSON.stringify(job), persistent ? {} : { expirationTtl: 26 * 60 * 60 });
   return job;
@@ -281,6 +321,7 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
     if (clock() - begin >= budgetMs) break;
     // 進み具合（残り時間の目安）を出すため、始めた時刻を先に残す
     s.startedAt = clock();
+    auditSource(s,'running',s.startedAt);
     await saveJob(store, job, s.startedAt);
     const code = await settle(s, deps, deps.now ?? clock());
     // 1件ごとに保存する（呼び出しが時間切れで打ち切られても、終わった分は失わない）
@@ -315,12 +356,14 @@ async function settle(s, deps, now) {
   try {
     const r = await ingestSource(s, { ...deps, now });
     Object.assign(s, { status: 'done', from: r.from, packetCount: r.result.packetCount, excludedCount: r.result.excluded.length, keyParts: r.keyParts, reason: null });
+    auditSource(s,'done',now,{questions:r.result.packetCount,excluded:r.result.excluded.length});
     return null;
   } catch (e) {
     const code = e instanceof IngestError ? e.code : 'INGEST_FAILED';
     // 取り込み中に公式PDFが差し替わったときと、経路Aで分解結果がまだ届いていないときは、やり直せるので待ちに戻す
     const retry = code === 'PDF_CHANGED_DURING_INGEST' || code === 'AWAITING_UPLOAD';
     Object.assign(s, { status: retry ? 'pending' : 'failed', reason: code });
+    auditSource(s,retry?'pending':'failed',now,{reason:code});
     return code;
   }
 }
