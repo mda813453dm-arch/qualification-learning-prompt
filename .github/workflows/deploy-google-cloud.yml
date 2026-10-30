@@ -57,7 +57,7 @@ jobs:
       - name: 新しい取り込み画面の公開版を検証
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
-          node -e 'fetch(process.env.QLP_BASE_URL + "/v1/release").then(r => {if(!r.ok)throw Error("Release status " + r.status);return r.json()}).then(d => {if(d.build !== "2026-10-30-v129-attachment-consent-same-turn" || d.uploadBatchFiles !== 10 || d.yearSelectionRequired !== false)throw Error("Unexpected release: " + JSON.stringify(d));console.log("v129 public release verified", d)}).catch(e => {console.error(e);process.exit(1)})'
+          node -e 'fetch(process.env.QLP_BASE_URL + "/v1/release").then(r => {if(!r.ok)throw Error("Release status " + r.status);return r.json()}).then(d => {if(d.build !== "2026-10-30-v130-adaptive-learning" || d.uploadBatchFiles !== 10 || d.yearSelectionRequired !== false)throw Error("Unexpected release: " + JSON.stringify(d));console.log("v130 public release verified", d)}).catch(e => {console.error(e);process.exit(1)})'
       - name: 学習者が貼るプロンプトを表示する（トークンは入っていない）
         run: |
           echo "===== 学習者が貼るプロンプト ここから ====="
