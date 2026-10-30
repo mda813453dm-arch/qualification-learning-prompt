@@ -81,8 +81,10 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.match(await ui.locator('#app').innerText(),/2025年度/);
     assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
     const sizes=await ui.locator('#licensedLocalPick').evaluate(button=>{
-      const reference=document.getElementById('licensedStart');
-      return ['fontSize','paddingTop','paddingBottom','paddingLeft','paddingRight','borderRadius'].map(key=>[getComputedStyle(button)[key],getComputedStyle(reference)[key]]);
+      const reference=document.createElement('button');
+      reference.type='button';button.parentElement.appendChild(reference);
+      const values=['fontSize','paddingTop','paddingBottom','paddingLeft','paddingRight','borderRadius'].map(key=>[getComputedStyle(button)[key],getComputedStyle(reference)[key]]);
+      reference.remove();return values;
     });
     assert.ok(sizes.every(([actual,expected])=>actual===expected),'他のボタンと同じ文字・余白・角丸');
     const primary=await ui.locator('#licensedStart').evaluate(button=>({width:button.getBoundingClientRect().width,parent:button.parentElement.getBoundingClientRect().width,background:getComputedStyle(button).backgroundColor}));
