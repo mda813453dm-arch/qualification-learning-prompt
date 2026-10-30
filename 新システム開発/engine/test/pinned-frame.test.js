@@ -118,7 +118,7 @@ test('first frame stays active, duplicate frame relays the update', () => {
   second.stamp({ sessionId: 'study-A', at: 2 });
   assert.equal(first.locked, false);
   assert.equal(second.locked, true);
-  assert.match(second.app.innerHTML, /最初の枠で更新/);
+  assert.match(second.app.innerHTML, /この枠は以前の表示/);
   b.flush();
   assert.deepEqual(first.restores, [false]);
   assert.deepEqual(second.restores, []);
