@@ -9,6 +9,7 @@
  */
 import { readResult } from './cache.js';
 import { selectDueReviews, updateReviewItem } from './review.js';
+import { learningPolicy, learningPhase, orderDueByContrast } from './learning-policy.js';
 
 export const STATE_VERSION = 1;
 const OCR_NOTICE = '問題文はOCRで読み取った文字のため、読み違いがある場合があります。原本は公式PDFで確認できます。';
@@ -99,7 +100,7 @@ export function pickNext(state, items, { today, now=null, job }) {
     if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
   }
   // 1) 期限の来た復習
-  for (const r of due.items ?? []) {
+  for (const r of orderDueByContrast(due.items ?? [], byUnit, state.lastReviewTopicId)) {
     const variants = byUnit.get(r.unitId) ?? [];
     const alt = variants.find((x) => x.packet.questionId !== r.sourceQuestionId);
     const hit = alt ?? variants[0] ?? byId.get(r.unitId);
@@ -225,6 +226,7 @@ export function present(item, kind, figureBase = '/v1/figure') {
     })),
     questionPdfUrl: p.questionPdfUrl,
     questionPdfPages: p.evidence?.questionPdfPages ?? [],
+    learning: { ...learningPolicy(p), phase: kind === 'review' ? 'closed_book_recall' : 'closed_book_recall' },
     notices,
   };
 }
@@ -303,6 +305,7 @@ export function pin(state, item, kind, now) {
       questionId: p.questionId,
       reviewUnitId: reviewKeyOf(p),
       topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
+      learning: { ...learningPolicy(p), phase: learningPhase(learningPolicy(p), state.history?.[p.questionId], kind) },
       kind,
       correctAnswer: p.correctAnswer,
       acceptedAnswers: p.acceptedAnswers ?? null,
@@ -383,6 +386,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
         current: { ...cur, grade: g },
         lastGrade: g,
         reviewPacing: cur.kind === 'review' ? completedPace(state, cur.kind, today) : state.reviewPacing,
+        lastReviewTopicId: cur.kind === 'review' ? cur.topicId : state.lastReviewTopicId,
         skipped: [...(state.skipped ?? []).filter((x) => x.questionId !== questionId), { questionId, at: now ?? null, year: cur.source?.year ?? null, section: cur.source?.section ?? null, questionNumber: cur.source?.number ?? null }],
       },
     };
@@ -395,7 +399,7 @@ export function grade(state, { questionId, value, confidence = 'sure' }, { today
     const review = { ...state.review };
     if (upd.status === 'updated') review[reviewId] = upd.item;
     const history = { ...state.history, [questionId]: { result: 'recall_failure', selected: null, answeredAt: today, gradedAt: now ?? null, source: cur.source, fieldId: cur.fieldId ?? null, kind: cur.kind } };
-    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind, today) } };
+    return { ok: true, grade: g, state: { ...state, review, history, current: { ...cur, grade: g }, lastGrade: g, reviewPacing: completedPace(state, cur.kind, today), lastReviewTopicId: cur.kind === 'review' ? cur.topicId : state.lastReviewTopicId } };
   }
   const n = Number(String(value ?? '').trim());
   if (!Number.isInteger(n) || n < 1 || n > cur.choiceCount) return { ok: false, reason: 'ANSWER_INPUT_INVALID' };
