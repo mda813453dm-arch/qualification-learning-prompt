@@ -299,8 +299,8 @@ export function pin(state, item, kind, now) {
       : { fieldId: p.fieldId, count: 1, years: [p.year] };
   }
   const policy = learningPolicy(p);
-  const priorCorrect = typeof p.topicId === 'string' && p.topicId.trim() &&
-    Object.values(state.history ?? {}).some(h => h.topicId === p.topicId && h.result === 'confident_correct');
+  const topicId = policy.verifiedTopicId ?? (typeof p.topicId === 'string' && p.topicId.trim() ? p.topicId : (p.fieldId ?? 'unclassified'));
+  const priorCorrect = Object.values(state.history ?? {}).some(h => h.topicId === topicId && h.result === 'confident_correct');
   const learning = { ...policy, phase: learningPhase(policy,
     priorCorrect ? { result: 'confident_correct' } : state.history?.[p.questionId], kind) };
   return {
@@ -309,7 +309,7 @@ export function pin(state, item, kind, now) {
     current: {
       questionId: p.questionId,
       reviewUnitId: reviewKeyOf(p),
-      topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
+      topicId,
       learning,
       kind,
       correctAnswer: p.correctAnswer,
