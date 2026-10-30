@@ -37,8 +37,8 @@ function harness(opts={}){
     isHtmlAnswer: opts.htmlAnswers ?? true,maxBatch:10,locked:false,
     licensedConsentSessionId:opts.consent===false?null:'sess-one',
     document:{getElementById(id){
-      if(!nodes[id])nodes[id]={id,textContent:'',disabled:false,isConnected:true,files:[],value:'',
-        setAttribute(name,v){this[name]=v;}};
+      if(!nodes[id])nodes[id]={id,textContent:'',disabled:false,isConnected:true,files:[],value:'',clickCount:0,
+        click(){this.clickCount++;},setAttribute(name,v){this[name]=v;}};
       return nodes[id];
     }},
     callTool:async (name,args)=> {calls.push({name,args});return opts.toolReturn ?? {status:'attachedBatch',sessionId:'sess-one',requested:args.questionPdfs.length,queued:args.questionPdfs.length,existing:0,failed:0,results:[]};},
@@ -153,4 +153,20 @@ test('async host safety denial is visible and never falls through to engine uplo
   assert.equal(h.calls.length,0);
   assert.match(h.nodes.licensedFileStatus.textContent,/許可されません/);
   assert.equal(h.nodes.licensedChooseSaved.disabled,false);
+});
+
+test('iPhone内PDF検索ボタンは本人の登録年度数と無関係に選択操作を起動できる',()=>{
+  const userA=harness();
+  userA.nodes.licensedLocalPick.onclick();
+  assert.equal(userA.nodes.licensedLocalUpload.clickCount,1);
+  assert.equal(userA.calls.length,0,'ファイル選択前には送信しない');
+  const userB=harness({consent:false});
+  userB.nodes.licensedLocalPick.onclick();
+  assert.equal(userB.nodes.licensedLocalUpload.clickCount,0,'許諾未確認では送信許可確認を促す');
+  assert.match(userB.nodes.licensedFileStatus.textContent,/許諾/);
+  assert.match(html,/id="licensedLocalPick"/);
+  assert.match(html,/id="licensedLocalUpload"/);
+  const showIndex=html.indexOf('id="licensedLocalPick"');
+  const renderedPart=html.slice(Math.max(0,showIndex-2600),showIndex);
+  assert.doesNotMatch(renderedPart,/personal\.length \?\s*'[^']+licensedLocalPick/);
 });
