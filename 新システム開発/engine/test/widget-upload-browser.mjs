@@ -32,6 +32,8 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
           window.calls.push({name:m.params.name,args:m.params.arguments});
           if(m.params.name==='confirmUploadRights'){
             reply({structuredContent:{status:'uploadPermissionConfirmed',allYears:true,maxBatchFiles:10}});
+          }else if(m.params.name==='attachPdfBatchFromPicker'){
+            reply({structuredContent:{status:'attachedBatch',sessionId:'test-session',requested:3,queued:3,existing:0,failed:0,results:[]}});
           }else if(m.params.name==='attachPdf'){
             reply({structuredContent:{status:'attached',year:m.params.arguments.year,sessionId:'test-session'}});
           }else if(m.params.name==='getOfficialLibrary'){
@@ -45,6 +47,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
       const injections='<script>window.openai={' +
         'toolOutput:{status:"sourceUnavailable"},displayMode:"inline",' +
         'uploadFile:async function(file){var id="file_"+file.name;parent.fakeUploads.push(file.name);return {fileId:id};},' +
+        'selectFiles:async function(){return [{fileId:"lib5",fileName:"R5_Mondai.pdf",mimeType:"application/pdf"},{fileId:"lib6",fileName:"R6_Mondai.pdf",mimeType:"application/pdf"},{fileId:"lib7",fileName:"R7_Mondai.pdf",mimeType:"application/pdf"}];},' +
         'getFileDownloadUrl:async function(args){parent.fakeDownloads.push(args.fileId);return {downloadUrl:"https://files.example/"+encodeURIComponent(args.fileId)+".pdf"};},' +
         'notifyIntrinsicHeight:function(){}' +
         '};<\/script><script>';
@@ -71,6 +74,14 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.match(await ui.locator('#app').innerText(),/2020年度/);
     assert.match(await ui.locator('#app').innerText(),/2025年度/);
     assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
+    await ui.getByRole('button',{name:'ChatGPT内のPDFを選んで登録'}).click();
+    await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'));
+    const picked=await page.evaluate(()=>window.calls.find(c=>c.name==='attachPdfBatchFromPicker'));
+    assert.deepEqual(picked.args.questionPdfs.map(p=>p.file_name),['R5_Mondai.pdf','R6_Mondai.pdf','R7_Mondai.pdf']);
+    assert.equal(picked.args.answerPdfs,undefined,'行政書士は問題PDFだけで登録');
+    await ui.getByRole('button',{name:'公式過去問を解く'}).waitFor({timeout:12000});
+    assert.equal(await ui.locator('#licensedStart').count(),1,'許諾済みPDF登録後は同じ学習枠で実践問題へ進める');
+    assert.equal(await page.evaluate(()=>window.followups.length),0,'ファイルライブラリ経路では新しいチャットを生成しない');
     // PDF受付の実際のツール通知から、同じセッションで登録済み年度へ自動移行する。
     const beforeReceipt = await page.evaluate(()=>window.calls.filter(c=>c.name==='getOfficialLibrary').length);
     await page.evaluate(()=>window.deliver({_meta:{qlp:{status:'attachedBatch',sessionId:'test-session',queued:3}}}));
