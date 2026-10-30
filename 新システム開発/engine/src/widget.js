@@ -1034,7 +1034,12 @@ a{color:inherit}
         '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="notice"><b>PDFは下のチャット欄（＋）から添付して送信してください。</b></div>' +
+        '<div class="row"><button type="button" id="licensedChooseSaved">ChatGPT内のPDFを選んで登録</button></div>' +
+        '<div class="notice">ChatGPTのファイルライブラリにあるPDFを、この学習枠から選択して登録できます（対応端末のみ）。登録先は本人用です。選択するだけでは送信されません。</div>' +
+        '<label for="licensedLocalUpload" style="display:block;margin:10px 0;font-weight:700">iPhoneの「ファイル」からPDFを選び直す</label>' +
+        '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple style="display:block;width:100%;margin-bottom:10px" />' +
+        '<div class="notice" role="status" id="licensedFileStatus">許諾確認後、登録するPDFを選択してください。ChatGPTのファイル選択機能がない環境では、下のチャット欄から添付できます。</div>' +
+        '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
         '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。チャット欄（＋）からPDFを送信できます。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="notice" id="licensedAutoStatus" role="status">登録状況は自動で更新します。</div>' + endBar();
