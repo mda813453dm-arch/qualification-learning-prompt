@@ -40,7 +40,7 @@ jobs:
             return data;
           }
           const release=await api('/v1/release');
-          assert.equal(release.build,'2026-10-31-v141-customs-pdf-intake','verified deployed build is required');
+          assert.equal(release.build,'2026-10-31-v142-customs-auto-refresh','verified deployed build is required');
           const session=await api('/v1/sessions','POST',{qualificationId:'q098'});
           assert.equal(typeof session.sessionId,'string');
           assert.equal(typeof session.learnerId,'string');
