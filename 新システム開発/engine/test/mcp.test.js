@@ -67,6 +67,18 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   assert.ok(names.includes('attachPdfBatch'), '複数年度のPDFを1回で送信するツールを公開する');
 });
 
+test('本人専用PDFライブラリ選択ツールは学習枠限定・追加枠なし', async () => {
+  const env = makeEnv();
+  const app = (await rpc(env,'tools/list',{}, {path:'/app'})).body.result.tools;
+  const model = (await rpc(env,'tools/list',{}, {path:'/mcp'})).body.result.tools;
+  const picked = app.find(t => t.name === 'attachPdfBatchFromPicker');
+  assert.ok(picked, '学習枠に選択済みPDFの登録ツールがある');
+  assert.deepEqual(picked._meta.ui.visibility,['app'], 'モデルに表示しない');
+  assert.equal(picked._meta['openai/outputTemplate'],undefined,'新しい学習枠を生成しない');
+  assert.equal(picked._meta['openai/fileParams'],undefined,'file-libraryが許可した一時URLのみ使用');
+  assert.equal(model.some(t => t.name === 'attachPdfBatchFromPicker'),false,'通常のAIツールからは利用不可');
+});
+
 test('通常の会話からもPDF登録ツールを呼べる（添付がなければ安全に拒否）', async () => {
   const env = makeEnv();
   const r = await rpc(env, 'tools/call', { name: 'attachPdf', arguments: {} });
