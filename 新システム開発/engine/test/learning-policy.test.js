@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { learningPolicy, learningPhase, orderDueByContrast } from '../src/learning-policy.js';
 import { newState, pin, present, grade } from '../src/engine.js';
+import { widgetHtml } from '../src/widget.js';
 
 const packet = (stem, id='q-1') => ({
   questionId:id, stem, stemMode:'text', choices:['選択肢A','選択肢B'], correctAnswer:2,
@@ -57,4 +58,12 @@ test('公式正答を固定した採点・再採点を保持',()=>{
   assert.equal(again.ok,true);
   assert.equal(again.grade.alreadyGraded,true);
   assert.equal(first.state.current.question.stem,p.stem);
+});
+
+test('同じ学習枠内に理解用手順を表示し、正答は出題時に表示しない',()=>{
+  const html=widgetHtml();
+  assert.match(html, /q\.learning\.phase === 'worked_example_first'/);
+  assert.match(html, /解く前の手順確認/);
+  assert.match(html, /正答は回答後に表示します/);
+  assert.match(html, /stemHtml\(q\.stem\)/);
 });
