@@ -27,9 +27,17 @@ test('追加資格には検証済みでない原本を自動出題元として�
   for (const [key, c] of Object.entries(CATALOG)) {
     if (!c.urlCatalog) continue;
     assert.match(key, /^q\d{3}$/);
-    assert.equal(c.overviewOnly, true);
-    assert.equal(c.uploadAdapter, 'generic_mc');
-    assert.deepEqual(c.sources, []);
+    if (key === 'q098') {
+      // 第59回通関士は原本SHA・公式正答を照合した専用の限定解析器を使う例外。
+      assert.equal(c.overviewOnly, false);
+      assert.equal(c.uploadAdapter, 'tsukanshi');
+      assert.equal(c.sources.length, 3);
+      assert.ok(c.sources.every(x => x.adapter === 'tsukanshi' && x.year === 2025 && x.answerUrl.includes('59shiken_seikai.pdf')));
+    } else {
+      assert.equal(c.overviewOnly, true);
+      assert.equal(c.uploadAdapter, 'generic_mc');
+      assert.deepEqual(c.sources, []);
+    }
     assert.ok(c.pastExamPage?.startsWith('https://'), key);
   }
 });
