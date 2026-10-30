@@ -871,6 +871,15 @@ test('新しい測量士補は復元要求が届いても試験概要から開�
   const fromNow = (await callUi('startSession', { qualificationId: '測量士補', learnerId: surveyor.learnerId, sources: [] })).structuredContent;
   assert.equal(fromNow.status, 'resumeReady', '同じ資格・同じIDの場合だけ学習を再開する');
   assert.equal(fromNow.qualificationId, 'q063');
+  const backToTak = (await callUi('startSession', { qualificationId:'宅建', learnerId:surveyor.learnerId, sources:[] })).structuredContent;
+  assert.equal(backToTak.qualificationId,'q041');
+  assert.equal(backToTak.learnerId,takken.learnerId,'別資格から戻る時は以前の学習者IDと既存の取込みを再利用');
+  assert.equal(backToTak.status,'resumeReady');
+  const backToSur = (await callUi('startSession', {qualificationId:'測量士補',learnerId:takken.learnerId,sources:[]})).structuredContent;
+  assert.equal(backToSur.learnerId,surveyor.learnerId,'同じ所有者の二つの資格間を再往復しても新規IDを発行しない');
+  assert.equal(backToSur.status,'resumeReady');
+  const resumedStudy = (await callUi('startStudy',{learnerId:surveyor.learnerId,qualificationName:'宅建'})).structuredContent;
+  assert.equal(resumedStudy.learnerId,takken.learnerId,'学習開始ボタンからも正しい資格IDに戻る');
 });
 
 test('アプリ：前回の学習の記録があっても、新しいセッションは学習の開始（startStudy）をするまで出題しない', async () => {
