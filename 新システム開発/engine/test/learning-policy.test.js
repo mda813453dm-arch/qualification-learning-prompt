@@ -102,3 +102,27 @@ test('誤答確定後だけ自動で理由を依頼し、失敗時は手動再�
   assert.match(html,/AI解説の追加を再試行/);
   assert.match(html,/公式正答は保持しています/);
 });
+
+test('制度名が明確な宅建35条／37条のみ混同ペアに自動分類する',()=>{
+  const a={...packet('宅建業法第35条に関する説明として適切なものは','q041:2025:年度共通:1'),topicId:null};
+  const b={...packet('宅地建物取引業法第37条に関する説明として適切なものは','q041:2024:年度共通:1'),topicId:null};
+  const ambiguous={...packet('宅建業法第35条と宅建業法第37条の違い','q041:2023:年度共通:1'),topicId:null};
+  const otherQualification={...packet('宅建業法第35条に関する説明','q042:2025:main:1'),topicId:null};
+  assert.deepEqual(learningPolicy(a).contrastTopicIds,['q041:article37']);
+  assert.equal(learningPolicy(a).verifiedTopicId,'q041:article35');
+  assert.equal(learningPolicy(b).verifiedTopicId,'q041:article37');
+  assert.notEqual(learningPolicy(ambiguous).method,'contrast');
+  assert.notEqual(learningPolicy(otherQualification).method,'contrast');
+  const now=Date.UTC(2026,9,30);
+  assert.equal(pin(newState({qualificationId:'q041',now}),item(a),'new',now).current.topicId,'q041:article35');
+  const candidates=new Map([['a',[item(a)]],['b',[item(b)]]]);
+  assert.equal(orderDueByContrast([{unitId:'a'},{unitId:'b'}],candidates,'q041:article35')[0].unitId,'b');
+});
+test('表示登記／権利登記の区別は一意に書かれた設問だけで行う',()=>{
+  const a=packet('表示に関する登記について','land_surveyor:2025:午後の部:2');
+  const b=packet('権利に関する登記について','land_surveyor:2024:午後の部:2');
+  const ambiguous=packet('表示に関する登記と権利に関する登記を比較する','land_surveyor:2023:午後の部:2');
+  assert.equal(learningPolicy(a).verifiedTopicId,'land_surveyor:display_registration');
+  assert.deepEqual(learningPolicy(b).contrastTopicIds,['land_surveyor:display_registration']);
+  assert.notEqual(learningPolicy(ambiguous).method,'contrast');
+});
