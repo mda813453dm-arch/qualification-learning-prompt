@@ -1192,6 +1192,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const names = (Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId])?.fields ?? {};
   const fid = pick.item.packet.fieldId ?? null;
   const shown = present(pick.item, pick.kind, `${env.PUBLIC_BASE_URL ?? ''}/v1/figure`);
+  shown.learning = state.current.learning ?? shown.learning;
   shown.questionPdfUrl = privatePdfViewUrl(env, shown.questionPdfUrl, pick.item.keyParts.owner, now);
   const { keyParts } = pick.item;
   const svgs = await Promise.all(shown.figures.map(async (f) => {
@@ -2121,7 +2122,7 @@ async function route(request, env, url, now) {
     const names = Object.values(CATALOG).find((c) => c.qualificationId === r.state.qualificationId)?.fields ?? {};
     const prof = r.state.learnerId ? await env.STORE.get(learnerProfileKey(r.state.learnerId), 'json') : null;
     const fid = r.state.history?.[r.grade.questionId]?.fieldId ?? null;
-    const how = explainHow({ stage: prof?.stage, weak: weakFields(r.state.history, names), grade: r.grade, fieldName: fid ? names[fid] ?? null : null });
+    const how = explainHow({ stage: prof?.stage, weak: weakFields(r.state.history, names), grade: r.grade, fieldName: fid ? names[fid] ?? null : null, learning: state.current?.learning ?? null });
     // 次問の先取りで current が置き換わる前に、解説対象を採点結果と一緒に保存する。
     const gradedState = r.grade.alreadyGraded ? r.state : { ...r.state,
       lastExplanation: { questionId: r.grade.questionId, question: state.current?.question ?? null,
