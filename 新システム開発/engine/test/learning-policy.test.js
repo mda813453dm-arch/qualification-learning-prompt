@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { learningPolicy, learningPhase, orderDueByContrast } from '../src/learning-policy.js';
-import { newState, pin, present, grade } from '../src/engine.js';
+import { newState, pin, present, grade, pickNext } from '../src/engine.js';
 import { widgetHtml } from '../src/widget.js';
 
 const packet = (stem, id='q-1') => ({
@@ -66,4 +66,29 @@ test('同じ学習枠内に理解用手順を表示し、正答は出題時に�
   assert.match(html, /解く前の手順確認/);
   assert.match(html, /正答は回答後に表示します/);
   assert.match(html, /stemHtml\(q\.stem\)/);
+});
+
+test('通常の期限付き復習も、期限到来済みの検証済み対比論点から1問だけ選ぶ',()=>{
+  const a={...packet('35条について','a'),topicId:'t:35',learningTags:{verified:true,method:'contrast',contrastTopicIds:['t:37']}};
+  const b={...packet('37条について','b'),topicId:'t:37',learningTags:{verified:true,method:'contrast',contrastTopicIds:['t:35']}};
+  const c={...packet('他の論点','c'),topicId:'other'};
+  const items=[item(a),item(b),item(c)];
+  const now=Date.UTC(2026,9,30);
+  const state=newState({qualificationId:'test',now});
+  state.history={a:{result:'confident_correct'},b:{result:'wrong'},c:{result:'wrong'}};
+  state.reviewPacing={initialServed:5,newAnswered:2,sinceReview:2,lastDate:'2026-10-30'};
+  state.lastReviewTopicId='t:35';
+  state.review={
+    c:{unitId:'c',topicId:'other',dueDate:'2026-10-28',sourceQuestionId:'c'},
+    b:{unitId:'b',topicId:'t:37',dueDate:'2026-10-29',sourceQuestionId:'b'},
+  };
+  const chosen=pickNext(state,items,{today:'2026-10-30',now});
+  assert.equal(chosen.status,'question');
+  assert.equal(chosen.item.packet.questionId,'b');
+  assert.equal(chosen.kind,'review');
+  state.review.b.dueDate='2026-10-31';
+  const other=pickNext(state,items,{today:'2026-10-30',now});
+  assert.equal(other.item.packet.questionId,'c','未到来の関連論点は出題しない');
+  state.reviewPacing.sinceReview=1;
+  assert.equal(pickNext(state,items,{today:'2026-10-30',now}).status,'finished','復習頻度は従来どおり維持');
 });
