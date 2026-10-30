@@ -1017,7 +1017,7 @@ a{color:inherit}
       app.innerHTML = '<h2>過去問PDFのまとめ取り込み（本人専用）</h2>' +
         '<div class="notice"><b>著作権・利用許諾の確認</b><div>過去問を自動取得・他の利用者へ共有配布しません。添付するすべてのファイルについて、権利者から必要な許諾を得ている場合だけ本人用に保存・解析できます。</div></div>' +
         (officialLink ? '<div class="row"><a class="ov-a" target="_blank" rel="noopener" href="' + esc(officialLink) + '">公式過去問ページ・利用条件を確認する ›</a></div>' : '') +
-        (personal.length ? '<div class="notice"><b>出題可能：</b>' + (readyDetails.length ?
+        (personal.length ? '<div class="notice"><b>あなたの登録済み過去問（本人専用・出題可能）：</b>' + (readyDetails.length ?
           readyDetails.map(function(v){ return esc(v.year) + '年度 ' + esc(v.questions) + '問'; }).join('・') :
           personal.map(function(y){ return esc(y) + '年度'; }).join('・')) +
           (readyQuestions ? '<div>検証済みの計' + esc(readyQuestions) + '問から学習できます。</div>' : '') + '</div>' : '') +
@@ -1036,7 +1036,8 @@ a{color:inherit}
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
         '<div class="row"><button type="button" id="licensedChooseSaved">ChatGPT内のPDFを選んで登録</button></div>' +
         '<div class="notice">ChatGPTのファイルライブラリにあるPDFを、この学習枠から選択して登録できます（対応端末のみ）。登録先は本人用です。選択するだけでは送信されません。</div>' +
-        '<label for="licensedLocalUpload" style="display:block;margin:10px 0;font-weight:700">iPhoneの「ファイル」からPDFを選び直す</label>' +
+        '<div class="row"><button type="button" id="licensedLocalPick">iPhone内のPDFを探す</button></div>' +
+        '<label for="licensedLocalUpload" style="display:block;margin:10px 0;font-weight:700">iPhoneの「ファイル」から直接選択する（ボタンが反応しない場合も利用できます）</label>' +
         '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple style="display:block;width:100%;margin-bottom:10px" />' +
         '<div class="notice" role="status" id="licensedFileStatus">許諾確認後、登録するPDFを選択してください。ChatGPTのファイル選択機能がない環境では、下のチャット欄から添付できます。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
@@ -1083,6 +1084,7 @@ a{color:inherit}
       // 自分で許可したファイルを同じ学習枠から選択できる。プラットフォームの安全判定は回避しない。
       var chosenPdfButton = document.getElementById('licensedChooseSaved');
       var localPdfInput = document.getElementById('licensedLocalUpload');
+      var localPickButton = document.getElementById('licensedLocalPick');
       var selectingPdf = false;
       var pickerOpening = false;
       function selectedPdfStatus(message, error){
@@ -1115,6 +1117,7 @@ a{color:inherit}
         selectingPdf = true;
         if (chosenPdfButton) chosenPdfButton.disabled = true;
         if (localPdfInput) localPdfInput.disabled = true;
+        if (localPickButton) localPickButton.disabled = true;
         selectedPdfStatus('選択したPDFのアクセス許可と一時URLを確認しています。', false);
         try {
           var refs = new Map();
@@ -1167,6 +1170,7 @@ a{color:inherit}
             localPdfInput.disabled = false;
             localPdfInput.value = '';
           }
+          if (localPickButton && localPickButton.isConnected) localPickButton.disabled = false;
         }
       }
       if (chosenPdfButton) chosenPdfButton.onclick = function(){
@@ -1207,6 +1211,15 @@ a{color:inherit}
           pickerOpening = false;
           if (chosenPdfButton.isConnected && !selectingPdf) chosenPdfButton.disabled = false;
         });
+      };
+      if (localPickButton) localPickButton.onclick = function(){
+        if (!localPdfInput || locked || selectingPdf) return;
+        if (licensedConsentSessionId !== state.sessionId) {
+          selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
+          return;
+        }
+        // iPhoneのユーザータップから直ちにファイル選択を開く。選択済みの年度の有無で隠さない。
+        localPdfInput.click();
       };
       if (localPdfInput) localPdfInput.onchange = function(){
         var files = Array.from(this.files || []);
@@ -1373,12 +1386,6 @@ a{color:inherit}
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
-    if (q.learning && q.learning.phase === 'worked_example_first') {
-      var procedure = /(?:計算|算出|求め|座標値|方位角|方向角|面積)/.test(String(q.stem || ''))
-        ? '①与えられた値と求める値を整理 → ②使う式・図・手順を選ぶ → ③単位・符号・条件を検算'
-        : '①判断の対象を確認 → ②定義・要件・例外を整理 → ③各選択肢を根拠と照合';
-      h += '<div class="notice"><b>解く前の手順確認</b><div>' + procedure + '</div><div>手順を自分で説明できるか確かめてから、下の公式問題を解いてください。正答は回答後に表示します。</div></div>';
-    }
     if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
     (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
     if (/^land_surveyor:/.test(String(q.questionId || ''))) {
