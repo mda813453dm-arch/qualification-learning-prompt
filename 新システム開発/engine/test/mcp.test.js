@@ -1654,6 +1654,23 @@ test('資格名付きアプリ起動はエンジン必須で汎用学習メニ�
   assert.match(appInstructions(),/startSession/);
 });
 
+test('v132 利用者選択のPDF登録は学習枠からだけ呼べ、AIからは呼べない', async()=>{
+  const env = makeEnv();
+  const appTools = (await rpc(env,'tools/list',{}, {path:'/app'})).body.result.tools;
+  const picker = appTools.find(t=>t.name==='attachPdfBatchFromPicker');
+  assert.ok(picker,'学習枠に本人選択PDF登録ツールを公開');
+  assert.deepEqual(picker._meta.ui.visibility,['app']);
+  assert.equal(picker._meta['openai/widgetAccessible'],true);
+  assert.equal(picker._meta['openai/outputTemplate'],undefined,'学習枠を追加生成しない');
+  assert.equal(picker.annotations?.readOnlyHint,undefined,'保存操作を読取専用と偽装しない');
+  const modelTools=(await rpc(env,'tools/list',{}, {path:'/mcp'})).body.result.tools;
+  assert.ok(!modelTools.some(t=>t.name==='attachPdfBatchFromPicker'),'モデル側ツール一覧に出さない');
+  const forbidden=await rpc(env,'tools/call',{name:'attachPdfBatchFromPicker',arguments:{
+    sessionId:'00000000-0000-0000-0000-000000000000', questionPdfs:[{download_url:'https://file.example/p.pdf',file_id:'test'}]
+  }},{path:'/mcp'});
+  assert.equal(forbidden.body.error?.code,-32602,'通常会話からの直接呼出しを拒否');
+});
+
 test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   const batch=TOOLS.find(x=>x.name==='attachPdfBatch');
   const single=TOOLS.find(x=>x.name==='attachPdf');
