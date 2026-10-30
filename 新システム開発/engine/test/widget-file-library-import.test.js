@@ -121,7 +121,11 @@ test('picker-only MCP endpoint has no output template and never appears in model
   const model=TOOLS.find(x=>x.name==='attachPdfBatch');
   assert.equal(tool.appOnly,true);
   assert.equal(tool.uiOnly,true);
-  assert.equal(tool.meta,undefined,'no outputTemplate and no fileParams needed for host-authorized references');
+  assert.equal(tool.meta['openai/outputTemplate'],undefined,'no extra widget frame');
+  assert.equal(tool.meta['openai/fileParams'],undefined,'file references come from user-authorized host picker');
+  assert.deepEqual(tool.meta.ui.visibility,['app']);
+  assert.equal(tool.meta['openai/widgetAccessible'],true);
+  assert.equal(tool.meta['openai/visibility'],'private');
   assert.equal(tool.inputSchema,model.inputSchema);
   assert.equal(tool.api,model.api,'reuse exact validated private upload endpoint');
   assert.match(html,/id="licensedChooseSaved"/);
