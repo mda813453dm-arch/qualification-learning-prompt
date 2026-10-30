@@ -47,6 +47,7 @@ test('公式正答を固定した採点・再採点を保持',()=>{
   const now=Date.UTC(2026,9,30);
   let state=pin(newState({qualificationId:'test',now}),item(p),'new',now);
   assert.equal(state.current.learning.phase,'worked_example_first');
+  assert.equal(state.current.question.learning.phase,'worked_example_first','復元用に同じ学習段階を保持');
   const shown=present(item(p),'new');
   assert.equal(Object.hasOwn(shown,'correctAnswer'),false);
   const opts={today:'2026-10-30',now,intervals:[1,3,7]};
