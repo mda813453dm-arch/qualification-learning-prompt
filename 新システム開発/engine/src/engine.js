@@ -298,6 +298,11 @@ export function pin(state, item, kind, now) {
       ? { fieldId: p.fieldId, count: set.count + 1, years: [...(set.years ?? []), p.year] }
       : { fieldId: p.fieldId, count: 1, years: [p.year] };
   }
+  const policy = learningPolicy(p);
+  const priorCorrect = typeof p.topicId === 'string' && p.topicId.trim() &&
+    Object.values(state.history ?? {}).some(h => h.topicId === p.topicId && h.result === 'confident_correct');
+  const learning = { ...policy, phase: learningPhase(policy,
+    priorCorrect ? { result: 'confident_correct' } : state.history?.[p.questionId], kind) };
   return {
     ...state,
     set,
@@ -305,10 +310,7 @@ export function pin(state, item, kind, now) {
       questionId: p.questionId,
       reviewUnitId: reviewKeyOf(p),
       topicId: typeof p.topicId === 'string' ? p.topicId : (p.fieldId ?? 'unclassified'),
-      learning: { ...learningPolicy(p), phase: learningPhase(learningPolicy(p),
-        (typeof p.topicId === 'string' && p.topicId.trim() && Object.values(state.history ?? {})
-          .some(h => h.topicId === p.topicId && h.result === 'confident_correct'))
-          ? { result: 'confident_correct' } : state.history?.[p.questionId], kind) },
+      learning,
       kind,
       correctAnswer: p.correctAnswer,
       acceptedAnswers: p.acceptedAnswers ?? null,
@@ -318,7 +320,7 @@ export function pin(state, item, kind, now) {
       fieldId: p.fieldId ?? null,
       source: sourceOf(p),
       // UI内で出題・採点しても、後からモデルが同じ本文を取得できるよう固定する。
-      question: present(item, kind),
+      question: { ...present(item, kind), learning },
       presentedAt: now,
       grade: null,
     },
