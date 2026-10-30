@@ -669,24 +669,69 @@ a{color:inherit}
   }
   var renderFocusTurn = 0;
   var licensedPollGeneration = 0;
+  var attachmentPollGeneration = 0;
   var licensedConsentSessionId = null;
   function render(data){
-    // 添付受信・登録状況照会はデータ通知。別の学習枠を作らず、既存画面の自動照会が扱う。
+    // PDF添付のツール結果は新しいチャットメッセージ側に学習枠を生成する。
+    // 前の学習枠はiPhoneで休止されることがあるため、この受領枠を最新の表示担当に切り替える。
     if (data && ['attached','attachedBatch','attachedAlready','pendingOfficialAnswer'].includes(data.status)) {
-      var sid = data.sessionId || state.sessionId;
+      var sid = data.sessionId || state.sessionId || (input() && input().sessionId);
+      var previousSession = state.sessionId;
+      if (sid && !hasView) claimFirstFrame(sid, true);
+      // 先に開いた枠へ後から通知が届いても、回答中の問題を受領メッセージで消さない。
+      if (hasView && state.question && !state.answered) return;
+      if (sid && !claimFirstFrame(sid, false)) { lockOld(); return; }
+      if (sid && previousSession && previousSession !== sid) { state.privateLicensedUpload = false; licensedConsentSessionId = null; }
       if (sid) { state.sessionId = sid; saveIds(); }
-      app.innerHTML = '<h2>過去問の登録状況</h2><div class="notice" role="status">PDFを受け付けました。検証済みの問題を確認しています。確認後、学習の選択肢を表示します。</div>';
-      function showRetry(){
-        app.innerHTML = '<h2>登録状況を確認できませんでした</h2><div class="notice" role="alert">PDFの再添付は不要です。登録状況を再確認して学習を続けてください。</div><button id="retryAttached" type="button">登録状況を再確認</button>';
+      hasView = true;
+      licensedPollGeneration++;
+      var generation = ++attachmentPollGeneration;
+      var receiptSession = sid;
+      var requestInFlight = false;
+      function drawReceipt(message, error){
+        if (locked || generation !== attachmentPollGeneration) return;
+        app.innerHTML = '<h2>過去問の登録状況</h2>' +
+          '<div class="notice" role="' + (error ? 'alert' : 'status') + '" id="attachedStatus">' + esc(message) + '</div>' +
+          '<div class="row"><button type="button" id="retryAttached">登録状況を再確認</button></div>';
         var retry = document.getElementById('retryAttached');
-        if (retry) retry.onclick = function(){ render(data); };
+        if (retry) retry.onclick = function(){ checkAttachedStatus(); };
+        scrollUp();
+        fit();
       }
-      if (!sid) { showRetry(); return; }
-      callTool('getOfficialLibrary',{sessionId:sid}).then(function(v){
-        if (v && v.status === 'officialLibrary' && v.permissionedUpload) {
-          render({...v,status:'sourceUnavailable'});
-        } else showRetry();
-      }).catch(showRetry);
+      async function checkAttachedStatus(){
+        if (locked || generation !== attachmentPollGeneration || requestInFlight) return;
+        if (!receiptSession) {
+          drawReceipt('学習セッションを確認できません。新しい学習画面から状態を復元してください。', true);
+          return;
+        }
+        requestInFlight = true;
+        try {
+          var latest = await callTool('getOfficialLibrary', { sessionId:receiptSession });
+          if (locked || generation !== attachmentPollGeneration || state.sessionId !== receiptSession) return;
+          if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload) {
+            throw new Error('LIBRARY_REFRESH_FAILED');
+          }
+          // 同じ枠内で年度別の登録進行と選択ボタンを描画し、その画面の継続監視へ引き継ぐ。
+          render({ ...latest, status:'sourceUnavailable' });
+          return;
+        } catch(error) {
+          if (locked || generation !== attachmentPollGeneration) return;
+          var note = document.getElementById('attachedStatus');
+          if (note) {
+            note.setAttribute('role','alert');
+            note.textContent = '登録状況の取得に失敗しました。PDFの再添付は不要です。通信を確認し、自動で再試行します。';
+          }
+          var btn = document.getElementById('retryAttached');
+          if (btn) btn.disabled = false;
+        } finally {
+          requestInFlight = false;
+        }
+        // ネットワーク一時失敗時も受領だけで止まらない。表示中は再確認し続ける。
+        if (!locked && generation === attachmentPollGeneration) setTimeout(checkAttachedStatus, 8000);
+      }
+      drawReceipt(sid ? 'PDFを受け付けました。登録・公式正答照合の状況を確認しています。' :
+        '学習セッションを確認できません。学習画面を復元してください。', !sid);
+      checkAttachedStatus();
       return;
     }
     if (data && ['officialLibrary','uploadPermissionConfirmed'].includes(data.status)) return;
