@@ -356,6 +356,13 @@ export const TOOLS = [
       { questionPdfs:a.questionPdfs, answerPdfs:a.answerPdfs, years:a.years }],
   },
   {
+    name: 'importOfficialCustoms2025',
+    appOnly: true, uiOnly: true,
+    description: '学習画面で利用者が明示操作した場合だけ、税関が公開した2025年度通関士の問題3科目・通関実務別冊・公式正答を固定公式URLから直接取り込む。過去のチャット添付の再送は不要。解析成功と出題可能を混同しない。',
+    inputSchema: {type:'object',required:['sessionId'],additionalProperties:false,properties:{sessionId}},
+    api: a => ['POST', '/v1/sessions/'+encodeURIComponent(a.sessionId)+'/import-customs-2025'],
+  },
+  {
     name: 'getHandoff',
     description: '次のチャットへ引き継ぐデータ（問題本文は含まない）を受け取る。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
