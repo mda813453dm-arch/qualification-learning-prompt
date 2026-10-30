@@ -287,9 +287,10 @@ export const TOOLS = [
   },
   {
     name: 'getOfficialLibrary',
-    appOnly: true,
-    uiOnly: true,
-    description: '学習画面で確認済み公式過去問の共有保存状況を読む。利用者ごとの学習記録は含めない。取り込み・ファイル検索・チャットへの依頼文送信を行わない。',
+    // PDF添付直後のモデルからも照会できる。本文や利用者専用データの詳細はforModelで除外する。
+    // 画面を増やさないため、ここにはoutputTemplateを付けない。
+    description: '【PDF登録状況の照会：読取専用】attachPdfBatch／attachPdfで受領した直後に同じsessionIdで呼ぶ。利用者本人の年度別登録結果（出題可能・解析中・正答確認待ち・失敗）のみを返す。PDF本文・公式正答・内部保存情報を返さず、出題や採点を行わない。受付済みPDFの再添付は要求しない。解析が進行中の場合は学習枠の自動監視に任せ、完了扱いにはしない。',
+    meta: { ui: { visibility: ['model', 'app'] }, 'openai/widgetAccessible': true },
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/official-library`],
   },
@@ -881,10 +882,11 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       }
       // 状況照会は新しい学習画面を生成しないデータ専用処理。
       // ウィジェットには完全な年度別情報を渡し、AIの通常応答には公開しない。
-      if (widget && tool.name === 'getOfficialLibrary' && res.status < 400) {
+      if (tool.name === 'getOfficialLibrary' && res.status < 400) {
         const view = forModel(res.body);
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }],
-          structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
+          structuredContent: view,
+          ...(widget ? { _meta: { qlp: { ...res.body, at: Date.now() } } } : {}) });
       }
       return ok(id, {
         isError: res.status >= 400,
