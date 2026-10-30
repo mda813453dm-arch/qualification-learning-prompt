@@ -1184,7 +1184,7 @@ a{color:inherit}
         try {
           selectedFiles = window.openai.selectFiles();
         } catch(e) {
-          selectedPdfStatus('ChatGPTがファイル選択を許可しませんでした。PDFは送信されておらず、学習データも変更していません。', true);
+          selectedPdfStatus('ChatGPTでのファイル選択が許可されませんでした。PDFは送信されておらず、学習データも変更していません。', true);
           return;
         }
         Promise.resolve(selectedFiles).then(function(files){
