@@ -1622,6 +1622,29 @@ test('行政書士：学習枠がAIを呼ばずに3問をエンジンに登録�
   assert.equal(restored._meta.qlp.complete,true);
 });
 
+test('異なる未連結の学習者IDには、本人専用PDF取込み履歴と年度を絶対表示しない',async()=>{
+  const env=makeEnv();
+  const app=async(name,args)=>(await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
+  const a=(await app('startSession',{qualificationId:'行政書士',sources:[]})).structuredContent;
+  const b=(await app('startSession',{qualificationId:'行政書士',sources:[]})).structuredContent;
+  assert.notEqual(a.learnerId,b.learnerId);
+  const ownJobId='q090~'+a.learnerId;
+  const job={
+    qualificationId:ownJobId,persistent:true,state:'done',startedAt:100,updatedAt:200,
+    sources:[{year:2025,section:'年度共通',status:'done',packetCount:45,
+      questionUrl:'https://private.example/a.pdf',answerUrl:'https://official.example/ans.html',
+      importEvents:[{at:100,status:'registered'},{at:200,status:'done',questions:45}]}],
+  };
+  await env.STORE.put('job/'+encodeURIComponent(ownJobId),JSON.stringify(job));
+  const va=(await app('getOfficialLibrary',{sessionId:a.sessionId}))._meta.qlp;
+  const vb=(await app('getOfficialLibrary',{sessionId:b.sessionId}))._meta.qlp;
+  assert.deepEqual(va.personalUploadedYears,[2025]);
+  assert.equal(va.importHistory[0].events.length,2);
+  assert.deepEqual(vb.personalUploadedYears,[]);
+  assert.deepEqual(vb.importHistory,[],'別利用者の登録・失敗・再試行履歴も非表示');
+  assert.doesNotMatch(JSON.stringify(va.importHistory),/https:\/\/private|learnerId|questionUrl|answerUrl/);
+});
+
 test('本人専用の過去問取り込み画面は確認問題へ誘導せず、登録済み問題の操作だけを出す',()=>{
   const html=widgetHtml();
   assert.match(html,/readyYearDetails/);
