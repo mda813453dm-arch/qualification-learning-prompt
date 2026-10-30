@@ -69,7 +69,7 @@ test('licensed import status never silently stops after 48 or 120 polls',()=>{
   assert.match(script,/setTimeout\(updateLicensedStatus, licensedNextDelay\)/);
   assert.doesNotMatch(script,/pollLimit = importing\.length/);
   assert.doesNotMatch(script,/pollCount > pollLimit/);
-  assert.match(script,/var statusKey = JSON\.stringify\(\[uploaded, latest\.readyYearDetails, staged, running, errors\]\)/);
+  assert.match(script,/var statusKey = JSON\.stringify\(\[uploaded, latest\.readyYearDetails, staged, running, errors, latest\.importHistory\]\)/);
 });
 test('an older frame cannot falsely label itself the newest chat display',()=>{
   assert.doesNotMatch(html,/ここが最新の表示です/);
