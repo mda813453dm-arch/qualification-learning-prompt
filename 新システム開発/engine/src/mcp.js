@@ -475,6 +475,17 @@ const APP_MENUS = {
   next: { kind: 'next', prompt: '次はどうしますか？', choices: ['次の問題へ', '解説を見る', '今日はここまで（学習を終了）'], actions: ['next', 'explain', 'end'] },
 };
 
+// ファイルライブラリの明示選択後、学習枠が同じ添付APIを利用する専用入口。
+ // モデル向けの fileParams 経路とは分離し、学習枠以外では呼べず、新しい枠も生成しない。
+const modelBatchTool = TOOLS.find((t) => t.name === 'attachPdfBatch');
+TOOLS.push({
+  name: 'attachPdfBatchFromPicker',
+  appOnly: true, uiOnly: true,
+  description: 'ChatGPTのファイルライブラリで利用者が明示的に選択・許可したPDFだけを、既存の本人用取込みへ送る。取込み結果は学習枠内に返す。モデルには非公開。',
+  inputSchema: modelBatchTool.inputSchema,
+  api: modelBatchTool.api,
+});
+
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]));
 
 /** ChatGPT アプリ（/app/<トークン>）で、問題をエンジンの画面に出すツール */
