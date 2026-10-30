@@ -1178,8 +1178,20 @@ a{color:inherit}
           selectedPdfStatus('ChatGPTのファイルライブラリ選択はこの端末では利用できません。下のiPhone「ファイル」から選ぶ方法もお試しください。', true);
           return;
         }
-        Promise.resolve(window.openai.selectFiles()).then(function(files){
-          if (!Array.isArray(files) || !files.length) return;
+        // host API は Promise ではなく同期例外で拒否する端末もある。
+        // どちらも同じエラー画面へ戻す。拒否されたファイルは別経路へ転送しない。
+        var selectedFiles;
+        try {
+          selectedFiles = window.openai.selectFiles();
+        } catch(e) {
+          selectedPdfStatus('ChatGPTがファイル選択を許可しませんでした。PDFは送信されておらず、学習データも変更していません。', true);
+          return;
+        }
+        Promise.resolve(selectedFiles).then(function(files){
+          if (!Array.isArray(files) || !files.length) {
+            selectedPdfStatus('PDFは選択されませんでした。登録データは変更していません。', false);
+            return;
+          }
           return registerSelectedPdfs(files, false);
         }).catch(function(){
           selectedPdfStatus('ファイル選択がキャンセルまたは許可されませんでした。登録データは変更していません。', true);
