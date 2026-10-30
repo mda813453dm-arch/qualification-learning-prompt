@@ -30,7 +30,7 @@ function setup() {
 test('通関士2025：公式4PDFは3科目+別冊として扱い、正答も公式URLから取得する', async () => {
   const {env,received,req} = setup();
   const opened=await req('POST','/v1/sessions',{qualificationId:'通関士'});
-  assert.equal(opened.status,201);
+  assert.equal(opened.status,201,JSON.stringify(opened.body));
   const id=opened.body.sessionId;
   const result=await req('POST','/v1/sessions/'+id+'/import-customs-2025',{});
   assert.equal(result.status,200,JSON.stringify(result.body));
@@ -52,7 +52,7 @@ test('通関士2025：公式4PDFは3科目+別冊として扱い、正答も公�
 test('通関士2025：実際に送られた4ファイルの年度・役割をファイル名で判別する',async()=>{
   const {req}=setup();
   const opened=await req('POST','/v1/sessions',{qualificationId:'q098'});
-  assert.equal(opened.status,201);
+  assert.equal(opened.status,201,JSON.stringify(opened.body));
   const questionPdfs=[1,2,3,4].map(n=>({
     file_name:'20251005tukanshi0'+n+'.pdf',
     download_url:'https://files.example/20251005tukanshi0'+n+'.pdf',
@@ -69,7 +69,7 @@ test('通関士2025：実際に送られた4ファイルの年度・役割をフ
 test('他資格から通関士の公式一括取得を実行できない',async()=>{
   const {req}=setup();
   const opened=await req('POST','/v1/sessions',{qualificationId:'宅建'});
-  assert.equal(opened.status,201);
+  assert.equal(opened.status,201,JSON.stringify(opened.body));
   const result=await req('POST','/v1/sessions/'+opened.body.sessionId+'/import-customs-2025',{});
   assert.equal(result.status,422);
   assert.equal(result.body.error,'CUSTOMS_IMPORT_QUALIFICATION_MISMATCH');
