@@ -26,6 +26,7 @@ import { handleRpc } from './mcp.js';
 import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
 import { officialLibrary, publicLibraryView, combineWithSharedJob } from './official-library.js';
 import { findSources, newLearnerId, pages } from './pages.js';
+import { selectQualificationLearner, qualificationOwnerOverview } from './learner-owner.js';
 import { sha256Hex } from './store.js';
 import { LIMIT_MSG, NEED_CODE, admin as accessAdmin, checkCode, countUse, getConfig as accessConfig, grantLearner, learnerAccess } from './access.js';
 import { INSTRUCTIONS } from './instructions.js';
@@ -1546,14 +1547,18 @@ async function route(request, env, url, now) {
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);
-    // 他資格の引継ぎIDを誤って指定しても、そのIDの保存済み学習履歴を上書きしない。
+    // 元の資格の学習記録を上書きせず、同じ引継ぎIDに属する資格ごとのIDを
+    // 一度だけ割り当てて使い回す（既存のジョブやパケットは移動しない）。
     const existingLearner = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
-    const switchedQualification = !!(existingLearner && existingLearner.qualificationId !== b.qualificationId);
-    const learnerId = switchedQualification ? newLearnerId() : (given ?? newLearnerId());
+    const selectedLearner = await selectQualificationLearner(env.STORE, {
+      suppliedId: given, qualificationId:b.qualificationId, createId:newLearnerId,
+      savedQualification:existingLearner?.qualificationId, now,
+    });
+    const learnerId = selectedLearner.learnerId;
     await gateEnter(env, learnerId, b.accessCode, now);
     await env.STORE.put(studyOpenKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
-    const restored = given ? await sessionFromLearner(env, given, now) : null;
+    const restored = given ? await sessionFromLearner(env, learnerId, now) : null;
     if (restored && restored.state.qualificationId === b.qualificationId) {
       restored.state = { ...restored.state, resumePending: true };
       await saveSession(env, restored.id, restored.state, now);
@@ -2257,7 +2262,14 @@ async function route(request, env, url, now) {
   if (method === 'POST' && url.pathname === '/v1/study/start') {
     const b = await body(request);
     const given = validLearnerId(b.learnerId);
-    const learnerId = given ?? newLearnerId();
+    const qualificationId = catalogIdByName(b.qualificationName);
+    const originalSaved = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
+    const learnerId = qualificationId
+      ? (await selectQualificationLearner(env.STORE, {
+        suppliedId: given, qualificationId, createId:newLearnerId,
+        savedQualification:originalSaved?.qualificationId, now,
+      })).learnerId
+      : (given ?? newLearnerId());
     const study = newStudy({ qualificationName: b.qualificationName, learnerId, now });
     const studyId = crypto.randomUUID();
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
@@ -2286,7 +2298,7 @@ async function route(request, env, url, now) {
     return json(201, {
       studyId,
       learnerId,
-      resumed: !!given,
+      resumed: !!savedState,
       startDate: t.date,
       startTime: t.time,
       totalMinutes: total,
