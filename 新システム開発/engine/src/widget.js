@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v134.html';
+export const WIDGET_URI = 'ui://qlp/question-v136.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.134';
+export const WIDGET_VERSION = '2026-10-30.136';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1045,19 +1045,16 @@ a{color:inherit}
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
         '<div class="notice"><b>取り込み方法（年度選択は不要）</b>' +
         '<div>① 添付するすべてのPDFの利用条件を確認し、下のチェックを入れる。許諾確認は自動で記録されます。</div>' +
-        '<div>② ChatGPT内のPDFを選んで登録するか、下のチャット欄（＋）に、' + esc(uploadHint) + 'を添付して送信する。</div>' +
+        '<div>② 「iPhone内のPDFを探す」から、' + esc(uploadHint) + 'を選ぶ。選択後、自動で取込み・登録を開始します。</div>' +
         '<div>③ 登録・正答照合が完了した年度から「公式過去問を解く」で進む。登録状況は自動で更新します。</div>' +
         '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><button type="button" id="licensedChooseSaved">ChatGPT内のPDFを選んで登録</button></div>' +
-        '<div class="notice">ChatGPTのファイルライブラリにあるPDFを、この学習枠から選択して登録できます（対応端末のみ）。登録先は本人用です。選択するだけでは送信されません。</div>' +
         '<div class="row"><button type="button" id="licensedLocalPick">iPhone内のPDFを探す</button></div>' +
-        '<label for="licensedLocalUpload" style="display:block;margin:10px 0;font-weight:700">iPhoneの「ファイル」から直接選択する（ボタンが反応しない場合も利用できます）</label>' +
-        '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple style="display:block;width:100%;margin-bottom:10px" />' +
-        '<div class="notice" role="status" id="licensedFileStatus">許諾確認後、登録するPDFを選択してください。ChatGPTのファイル選択機能がない環境では、下のチャット欄から添付できます。</div>' +
+        '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple hidden />' +
+        '<div class="notice" role="status" id="licensedFileStatus">PDFを選ぶと、自動で取込み・登録を開始します。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
-        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。ChatGPT内のPDF選択またはチャット添付で登録できます。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
+        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="notice" id="licensedAutoStatus" role="status">登録状況は自動で更新します。</div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -1088,7 +1085,7 @@ a{color:inherit}
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
           licensedConsentSessionId = state.sessionId;
-          progressBox.textContent = '確認済みです。ChatGPT内のPDFを選ぶか、下のチャット欄（＋）から添付してください。';
+          progressBox.textContent = '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。';
         } catch(e) {
           ack.disabled = false;
           ack.checked = false;
@@ -1098,18 +1095,16 @@ a{color:inherit}
       };
       // ChatGPTのfileParamsをAIに選ばせる経路が拒否・失敗した場合も、利用者が
       // 自分で許可したファイルを同じ学習枠から選択できる。プラットフォームの安全判定は回避しない。
-      var chosenPdfButton = document.getElementById('licensedChooseSaved');
       var localPdfInput = document.getElementById('licensedLocalUpload');
       var localPickButton = document.getElementById('licensedLocalPick');
       var selectingPdf = false;
-      var pickerOpening = false;
       function selectedPdfStatus(message, error){
         var node = document.getElementById('licensedFileStatus');
         if (!node) return;
         node.textContent = message;
         node.setAttribute('role', error ? 'alert' : 'status');
       }
-      async function registerSelectedPdfs(selected, fromLocal){
+      async function registerSelectedPdfs(selected){
         if (selectingPdf || locked || !state.sessionId) return;
         var sid = state.sessionId;
         // UIのチェックに加え、実際の送信APIでもサーバー側の権利確認を必須にする。
@@ -1126,12 +1121,11 @@ a{color:inherit}
         }
         var host = window.openai || {};
         if (typeof host.getFileDownloadUrl !== 'function' ||
-            (fromLocal && typeof host.uploadFile !== 'function')) {
+            typeof host.uploadFile !== 'function') {
           selectedPdfStatus('このChatGPT環境ではPDFを学習枠から送信できません。チャット欄（＋）で添付するか、対応するChatGPTアプリで再度お試しください。', true);
           return;
         }
         selectingPdf = true;
-        if (chosenPdfButton) chosenPdfButton.disabled = true;
         if (localPdfInput) localPdfInput.disabled = true;
         if (localPickButton) localPickButton.disabled = true;
         selectedPdfStatus('選択したPDFのアクセス許可と一時URLを確認しています。', false);
@@ -1143,11 +1137,8 @@ a{color:inherit}
             for (var j=0; j<groupFiles.length; j++) {
               var file = groupFiles[j];
               if (refs.has(file)) continue;
-              var fileId = file.fileId || file.file_id;
-              if (fromLocal) {
-                var up = await host.uploadFile(file);
-                fileId = up && (up.fileId || up.file_id);
-              }
+              var up = await host.uploadFile(file);
+              var fileId = up && (up.fileId || up.file_id);
               if (typeof fileId !== 'string' || !fileId) throw new Error('FILE_NOT_AUTHORIZED');
               var link = await host.getFileDownloadUrl({ fileId:fileId });
               var downloadUrl = link && link.downloadUrl;
@@ -1181,7 +1172,6 @@ a{color:inherit}
             : 'ファイル送信が完了していません。ChatGPTによるファイルアクセス・送信許可が拒否された場合は、この画面からは送信できません。登録済み学習データは維持しています。', true);
         } finally {
           selectingPdf = false;
-          if (chosenPdfButton && chosenPdfButton.isConnected) chosenPdfButton.disabled = false;
           if (localPdfInput && localPdfInput.isConnected) {
             localPdfInput.disabled = false;
             localPdfInput.value = '';
@@ -1189,45 +1179,6 @@ a{color:inherit}
           if (localPickButton && localPickButton.isConnected) localPickButton.disabled = false;
         }
       }
-      if (chosenPdfButton) chosenPdfButton.onclick = function(){
-        if (pickerOpening || selectingPdf) return;
-        if (licensedConsentSessionId !== state.sessionId) {
-          selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
-          return;
-        }
-        // ユーザーのタップから直ちにピッカーを開く。ポップアップ禁止の回避処理はしない。
-        if (!window.openai || typeof window.openai.selectFiles !== 'function') {
-          selectedPdfStatus('ChatGPTのファイルライブラリ選択はこの端末では利用できません。下のiPhone「ファイル」から選ぶ方法もお試しください。', true);
-          return;
-        }
-        // host API は Promise ではなく同期例外で拒否する端末もある。
-        // どちらも同じエラー画面へ戻す。拒否されたファイルは別経路へ転送しない。
-        var selectedFiles;
-        pickerOpening = true;
-        chosenPdfButton.disabled = true;
-        try {
-          selectedFiles = window.openai.selectFiles();
-        } catch(e) {
-          pickerOpening = false;
-          chosenPdfButton.disabled = false;
-          selectedPdfStatus('ChatGPTでのファイル選択が許可されませんでした。PDFは送信されておらず、学習データも変更していません。', true);
-          return;
-        }
-        Promise.resolve(selectedFiles).then(function(files){
-          if (!Array.isArray(files) || !files.length) {
-            selectedPdfStatus('PDFは選択されませんでした。登録データは変更していません。', false);
-            return;
-          }
-          // ピッカーを閉じた後は登録中フラグが二重送信を防ぐ。
-          pickerOpening = false;
-          return registerSelectedPdfs(files, false);
-        }).catch(function(){
-          selectedPdfStatus('ファイル選択がキャンセルまたは許可されませんでした。登録データは変更していません。', true);
-        }).finally(function(){
-          pickerOpening = false;
-          if (chosenPdfButton.isConnected && !selectingPdf) chosenPdfButton.disabled = false;
-        });
-      };
       if (localPickButton) localPickButton.onclick = function(){
         if (!localPdfInput || locked || selectingPdf) return;
         if (licensedConsentSessionId !== state.sessionId) {
@@ -1240,7 +1191,7 @@ a{color:inherit}
       if (localPdfInput) localPdfInput.onchange = function(){
         var files = Array.from(this.files || []);
         if (!files.length) return;
-        registerSelectedPdfs(files, true);
+        registerSelectedPdfs(files);
       };
       var licensedGeneration = licensedPollGeneration;
       var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports, importRecords]);
@@ -1248,6 +1199,7 @@ a{color:inherit}
       var licensedNextDelay = 10000;
       async function updateLicensedStatus(){
         if (locked || licensedGeneration !== licensedPollGeneration || licensedPollInFlight) return;
+        if (selectingPdf) { setTimeout(updateLicensedStatus, 1000); return; }
         licensedPollInFlight = true;
         try {
           var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
@@ -1259,7 +1211,7 @@ a{color:inherit}
           if (check && licensedConsentSessionId === state.sessionId) {
             check.checked = true; check.disabled = true;
             var progress = document.getElementById('licensedProgress');
-            if (progress) progress.textContent = '確認済みです。ChatGPT内のPDF選択またはチャット添付で登録できます。';
+            if (progress) progress.textContent = '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。';
           }
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
@@ -1267,7 +1219,7 @@ a{color:inherit}
           var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
           licensedNextDelay = running.length ? 8000 : staged.length ? 20000 : uploaded.length || errors.length ? 30000 : 15000;
           var statusKey = JSON.stringify([uploaded, latest.readyYearDetails, staged, running, errors, latest.importHistory]);
-          if (statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
+          if (!selectingPdf && statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
           var notice = document.getElementById('licensedAutoStatus');
           if (notice) notice.textContent = running.length ? 'PDFを解析しています。登録状況を自動更新しています。'
             : staged.length ? '公式正答の確認待ちです。確認できた年度から出題できます。'

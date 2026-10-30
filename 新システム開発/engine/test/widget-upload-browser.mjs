@@ -63,7 +63,8 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedStart').count(),0);
     assert.equal(await ui.locator('#licensedCheck').count(),0,'本人専用PDF登録画面に確認問題のボタンを表示しない');
     assert.equal(await ui.locator('#licensedLocalPick').count(),1,'未登録の学習者にもiPhone内検索ボタンを常時表示する');
-    assert.equal(await ui.locator('#licensedLocalUpload').count(),1,'端末でボタンが反応しないときもiPhone純正ファイル入力を残す');
+    assert.equal(await ui.locator('#licensedLocalUpload').isVisible(),false,'小さい純正ファイル入力は隠す');
+    assert.equal(await ui.locator('#licensedChooseSaved').count(),0,'ChatGPT内PDFボタンを削除');
     const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
     await ui.getByText('確認済みです。',{exact:false}).waitFor();
@@ -77,11 +78,20 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.match(await ui.locator('#app').innerText(),/2020年度/);
     assert.match(await ui.locator('#app').innerText(),/2025年度/);
     assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
-    await ui.getByRole('button',{name:'ChatGPT内のPDFを選んで登録'}).click();
+    const sizes=await ui.locator('#licensedLocalPick').evaluate(button=>{
+      const reference=document.getElementById('licensedStart');
+      return ['fontSize','paddingTop','paddingBottom','paddingLeft','paddingRight','borderRadius'].map(key=>[getComputedStyle(button)[key],getComputedStyle(reference)[key]]);
+    });
+    assert.ok(sizes.every(([actual,expected])=>actual===expected),'他のボタンと同じ文字・余白・角丸');
+    const batchChooserPromise=page.waitForEvent('filechooser');
+    await ui.locator('#licensedLocalPick').click();
+    const batchChooser=await batchChooserPromise;
+    await batchChooser.setFiles([5,6,7].map(year=>({name:`R${year}_Mondai.pdf`,mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nmock PDF for file chooser regression')})));
     await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'));
     const picked=await page.evaluate(()=>window.calls.find(c=>c.name==='attachPdfBatchFromPicker'));
     assert.deepEqual(picked.args.questionPdfs.map(p=>p.file_name),['R5_Mondai.pdf','R6_Mondai.pdf','R7_Mondai.pdf']);
     assert.equal(picked.args.answerPdfs,undefined,'行政書士は問題PDFだけで登録');
+    assert.deepEqual(await page.evaluate(()=>window.fakeUploads),['R5_Mondai.pdf','R6_Mondai.pdf','R7_Mondai.pdf'],'選択後に自動アップロード');
     await ui.getByRole('button',{name:'公式過去問を解く'}).waitFor({timeout:12000});
     assert.equal(await ui.locator('#licensedStart').count(),1,'許諾済みPDF登録後は同じ学習枠で実践問題へ進める');
     assert.equal(await page.evaluate(()=>window.followups.length),0,'ファイルライブラリ経路では新しいチャットを生成しない');
