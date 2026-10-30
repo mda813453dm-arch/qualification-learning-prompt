@@ -1867,12 +1867,15 @@ a{color:inherit}
     }
     var refreshing = false;
     async function readPublishedLesson(){
+      var expectedGeneration = lessonPollGeneration;
       if (refreshing || !state.sessionId || locked) return false;
       refreshing = true;
       var b = document.getElementById('refreshLesson');
       if (b) { b.disabled = true; b.textContent = '確認しています…'; }
       try {
         var result = await callTool('getStudySnapshot', { sessionId: state.sessionId });
+        // 自動照会中に利用者が確認・実践問題へ進んだ場合、古い解説で新画面を上書きしない。
+        if (expectedGeneration !== lessonPollGeneration || locked || state.sessionId !== sid) return false;
         if (result && result.status === 'menu' && result.menu && result.menu.kind === 'lesson' &&
             result.menu.fieldName === field && result.menu.body) {
           render(result);
@@ -1896,10 +1899,12 @@ a{color:inherit}
     if (refreshLessonButton) refreshLessonButton.onclick = readPublishedLesson;
     var lessonPractice = document.getElementById('quickGuidePractice') || document.getElementById('lessonPracticeDirect');
     if (lessonPractice) lessonPractice.onclick = function(){
+      ++lessonPollGeneration;
       openPracticeAfterLesson(field, sid, this, lessonNotice);
     };
     var quickCheck = document.getElementById('quickGuideCheck');
     if (quickCheck) quickCheck.onclick = async function(){
+      ++lessonPollGeneration;
       var button = this;
       button.disabled = true;
       try {
