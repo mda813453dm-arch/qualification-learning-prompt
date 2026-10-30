@@ -63,7 +63,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedStart').count(),0);
     assert.equal(await ui.locator('#licensedCheck').count(),0,'本人専用PDF登録画面に確認問題のボタンを表示しない');
     assert.equal(await ui.locator('#licensedLocalPick').count(),1,'未登録の学習者にもiPhone内検索ボタンを常時表示する');
-    assert.equal(await ui.locator('#licensedLocalUpload').isVisible(),false,'小さい純正ファイル入力は隠す');
+    assert.equal(await ui.locator('#licensedLocalUpload').isVisible(),true,'タップ領域全体にネイティブファイル入力を重ねる');
     assert.equal(await ui.locator('#licensedChooseSaved').count(),0,'ChatGPT内PDFボタンを削除');
     const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
@@ -84,7 +84,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     });
     assert.ok(sizes.every(([actual,expected])=>actual===expected),'他のボタンと同じ文字・余白・角丸');
     const batchChooserPromise=page.waitForEvent('filechooser');
-    await ui.locator('#licensedLocalPick').click();
+    await ui.locator('#licensedLocalUpload').click();
     const batchChooser=await batchChooserPromise;
     await batchChooser.setFiles([5,6,7].map(year=>({name:`R${year}_Mondai.pdf`,mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nmock PDF for file chooser regression')})));
     await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'));
@@ -104,7 +104,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedLocalPick').count(),1,'受付→取込み済みへ更新してもiPhone内検索ボタンを維持する');
     const beforeLocal=await page.evaluate(()=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').length);
     const chooserPromise=page.waitForEvent('filechooser');
-    await ui.locator('#licensedLocalPick').click();
+    await ui.locator('#licensedLocalUpload').click();
     const chooser=await chooserPromise;
     await chooser.setFiles({name:'R4_Mondai.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nmock PDF for file chooser regression')});
     await page.waitForFunction(count=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').length>count,beforeLocal);

@@ -34,11 +34,12 @@ function harness(opts={}){
   vm.runInNewContext(source,context);
   return {nodes,calls,rendered,state,host,uploads,
     flush:async()=>{for(let i=0;i<50;i++)await Promise.resolve();},
-    choose:()=>nodes.licensedLocalPick.onclick(),
+    choose:()=>{const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};nodes.licensedLocalPick.onclick(event);return event;},
     local:files=>{nodes.licensedLocalUpload.files=files;nodes.licensedLocalUpload.onchange();}};
 }
 test('local R5/R6/R7 selection automatically uploads and registers one private batch',async()=>{
-  const h=harness();h.choose();assert.equal(h.nodes.licensedLocalUpload.clickCount,1);
+  const h=harness();assert.equal(h.choose().defaultPrevented,false);
+  assert.equal(h.nodes.licensedLocalUpload.clickCount,0,'native input receives the tap directly');
   assert.equal(h.calls.length,0,'no upload before selection');h.local(pdfs());await h.flush();
   assert.equal(h.calls.length,1);assert.equal(h.calls[0].name,'attachPdfBatchFromPicker');
   assert.equal(h.calls[0].args.sessionId,'sess-one');
@@ -48,7 +49,7 @@ test('local R5/R6/R7 selection automatically uploads and registers one private b
   assert.equal(h.rendered.length,1);assert.equal(h.rendered[0].status,'attachedBatch');
 });
 test('missing consent blocks picker and automatic upload',async()=>{
-  const h=harness({consent:false});h.choose();h.local(pdfs());await h.flush();
+  const h=harness({consent:false});assert.equal(h.choose().defaultPrevented,true);h.local(pdfs());await h.flush();
   assert.equal(h.nodes.licensedLocalUpload.clickCount,0);assert.equal(h.uploads.length,0);
   assert.equal(h.calls.length,0);assert.match(h.nodes.licensedFileStatus.textContent,/許諾/);
 });
@@ -81,16 +82,17 @@ test('private registration API retains permissions and no extra chat frame',()=>
   assert.deepEqual(tool.meta.ui.visibility,['app']);assert.equal(tool.meta['openai/widgetAccessible'],true);
   assert.equal(tool.meta['openai/visibility'],'private');assert.equal(tool.inputSchema,model.inputSchema);assert.equal(tool.api,model.api);
   assert.doesNotMatch(html,/licensedChooseSaved|ChatGPT内のPDFを選んで登録|window\.openai\.selectFiles/);
-  assert.match(html,/<input id="licensedLocalUpload"[^>]* hidden/);
+  assert.match(html,/<label class="file-picker" id="licensedLocalPick">[^<]*<input id="licensedLocalUpload"/);
+  assert.doesNotMatch(html, /localPdfInput\.click\(\)/);
   assert.match(script,/host\.getFileDownloadUrl\(\{ fileId:fileId \}\)/);
 });
 test('repeated changes or taps during upload cannot register twice',async()=>{
   const h=harness();let finish;
   h.host.uploadFile=file=>{h.uploads.push(file.name);return new Promise(resolve=>{finish=resolve;});};
   h.local([pdfs()[0]]);h.local([pdfs()[0]]);h.choose();
-  assert.equal(h.nodes.licensedLocalPick.disabled,true);assert.equal(h.nodes.licensedLocalUpload.clickCount,0);
+  assert.equal(h.nodes.licensedLocalPick['aria-busy'],'true');assert.equal(h.nodes.licensedLocalUpload.clickCount,0);
   assert.deepEqual(h.uploads,['R5_Mondai.pdf']);finish({fileId:'f5'});await h.flush();
-  assert.equal(h.calls.length,1);assert.equal(h.nodes.licensedLocalPick.disabled,false);assert.equal(h.nodes.licensedLocalUpload.value,'');
+  assert.equal(h.calls.length,1);assert.equal(h.nodes.licensedLocalPick['aria-busy'],'false');assert.equal(h.nodes.licensedLocalUpload.value,'');
 });
 test('search button remains available for all personal registration states',()=>{
   assert.match(html,/id="licensedLocalPick"/);const i=html.indexOf('id="licensedLocalPick"');

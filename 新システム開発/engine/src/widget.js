@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v136.html';
+export const WIDGET_URI = 'ui://qlp/question-v137.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-30.136';
+export const WIDGET_VERSION = '2026-10-30.137';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -308,7 +308,12 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:balance;max-width:100%;box-sizing:border-box}
 .btn-line{display:block;white-space:nowrap}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
+.row .file-picker{position:relative;display:inline-flex;align-items:center;min-height:44px;font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer;box-sizing:border-box;max-width:100%}
+.file-picker input[type=file]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+.file-picker:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+.file-picker[aria-busy=true]{opacity:.6}
 @media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px;max-width:100%;overflow-wrap:normal;word-break:keep-all}}
+@media(max-width:420px){.row .file-picker{font-size:clamp(13px,3.7vw,16px);padding:10px 11px}}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
 .notice{font-size:14px;color:var(--sub);white-space:pre-wrap;line-height:1.6;margin:6px 0}
 .notice b{color:var(--fg);font-size:15px}
@@ -1050,8 +1055,7 @@ a{color:inherit}
         '<div>受信だけでは登録完了ではありません。完了・解析中・正答確認待ち・失敗を画面で区別します。</div>' +
         '<div><b>1回に最大' + esc(maxBatch) + 'ファイル</b>。異なる年度のPDFをまとめて添付できます。年度はファイル名とPDF原本で照合し、正答未確認の問題は採点を保留します。</div></div>' +
         '<label style="display:flex;align-items:flex-start;gap:8px;margin:12px 0"><input type="checkbox" id="licensedAck" ' + (licensedConsentSessionId === state.sessionId ? 'checked disabled ' : '') + 'style="margin-top:7px"><span>今回添付するすべての' + esc(isHtmlAnswer ? '問題PDF' : '問題・正答PDF') + 'について、このシステムへ送信し、本人用に保存・解析するために必要な権利者の許諾を取得・確認しました。</span></label>' +
-        '<div class="row"><button type="button" id="licensedLocalPick">iPhone内のPDFを探す</button></div>' +
-        '<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" multiple hidden />' +
+        '<div class="row"><label class="file-picker" id="licensedLocalPick">iPhone内のPDFを探す<input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" aria-label="iPhone内のPDFを探す" multiple /></label></div>' +
         '<div class="notice" role="status" id="licensedFileStatus">PDFを選ぶと、自動で取込み・登録を開始します。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
         '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
@@ -1127,7 +1131,7 @@ a{color:inherit}
         }
         selectingPdf = true;
         if (localPdfInput) localPdfInput.disabled = true;
-        if (localPickButton) localPickButton.disabled = true;
+        if (localPickButton) localPickButton.setAttribute('aria-busy','true');
         selectedPdfStatus('選択したPDFのアクセス許可と一時URLを確認しています。', false);
         try {
           var refs = new Map();
@@ -1176,17 +1180,15 @@ a{color:inherit}
             localPdfInput.disabled = false;
             localPdfInput.value = '';
           }
-          if (localPickButton && localPickButton.isConnected) localPickButton.disabled = false;
+          if (localPickButton && localPickButton.isConnected) localPickButton.setAttribute('aria-busy','false');
         }
       }
-      if (localPickButton) localPickButton.onclick = function(){
-        if (!localPdfInput || locked || selectingPdf) return;
+      if (localPickButton) localPickButton.onclick = function(event){
+        if (locked || selectingPdf) { event.preventDefault(); return; }
         if (licensedConsentSessionId !== state.sessionId) {
+          event.preventDefault();
           selectedPdfStatus('先に利用許諾の確認にチェックを入れてください。', true);
-          return;
         }
-        // iPhoneのユーザータップから直ちにファイル選択を開く。選択済みの年度の有無で隠さない。
-        localPdfInput.click();
       };
       if (localPdfInput) localPdfInput.onchange = function(){
         var files = Array.from(this.files || []);
