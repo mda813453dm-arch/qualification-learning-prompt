@@ -588,7 +588,7 @@ a{color:inherit}
     app.style.opacity = '';
     app.classList.add('is-old');
     app.innerHTML = '<div class="old-screen" role="status">' +
-      '<span>学習内容は最初の枠で更新されます</span>' +
+      '<span>この枠は以前の表示です。新しい学習画面で続けてください。</span>' +
       '<button type="button" id="reopenStudy">この枠で再開</button></div>';
     document.getElementById('reopenStudy').onclick = function(){ restoreFromServer(true); };
     fit();
@@ -1075,11 +1075,11 @@ a{color:inherit}
         }
       };
       var licensedGeneration = licensedPollGeneration;
-      var lastStatusKey = JSON.stringify([personal, pending, importing, failedImports]);
-      var pollCount = 0;
-      var pollLimit = importing.length ? 120 : 48;
+      var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports]);
+      var licensedPollInFlight = false;
       async function updateLicensedStatus(){
-        if (locked || licensedGeneration !== licensedPollGeneration || ++pollCount > pollLimit) return;
+        if (locked || licensedGeneration !== licensedPollGeneration || licensedPollInFlight) return;
+        licensedPollInFlight = true;
         try {
           var latest = await callTool('getOfficialLibrary', {sessionId: state.sessionId});
           if (locked || licensedGeneration !== licensedPollGeneration) return;
@@ -1096,7 +1096,7 @@ a{color:inherit}
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
           var running = Array.isArray(latest.importingYears) ? latest.importingYears : [];
           var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
-          var statusKey = JSON.stringify([uploaded, staged, running, errors]);
+          var statusKey = JSON.stringify([uploaded, latest.readyYearDetails, staged, running, errors]);
           if (statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
           var notice = document.getElementById('licensedAutoStatus');
           if (notice) notice.textContent = running.length ? 'PDFを解析しています。登録状況を自動更新しています。'
@@ -1107,7 +1107,8 @@ a{color:inherit}
           var notice = document.getElementById('licensedAutoStatus');
           if (notice) notice.textContent = '登録状況を取得できません。接続が戻れば自動で再確認します。';
         }
-        if (!locked && licensedGeneration === licensedPollGeneration && pollCount < pollLimit)
+        licensedPollInFlight = false;
+        if (!locked && licensedGeneration === licensedPollGeneration)
           setTimeout(updateLicensedStatus, 10000);
       }
       setTimeout(updateLicensedStatus, 2500);
@@ -2929,7 +2930,7 @@ a{color:inherit}
     // 同じ画面内で再表示した場合は既存の目印を使い、二重に挿入しない。
     var latest = app.querySelector('.latest');
     if (!latest) {
-      app.insertAdjacentHTML('afterbegin', '<div class="latest" tabindex="-1">▼ ここが最新の表示です</div>');
+      app.insertAdjacentHTML('afterbegin', '<div class="latest" tabindex="-1">▼ この学習枠の先頭です</div>');
       latest = app.querySelector('.latest');
     } else if (app.firstElementChild !== latest) {
       app.insertBefore(latest, app.firstChild);
