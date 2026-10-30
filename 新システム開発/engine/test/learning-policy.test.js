@@ -61,12 +61,14 @@ test('公式正答を固定した採点・再採点を保持',()=>{
   assert.equal(first.state.current.question.stem,p.stem);
 });
 
-test('同じ学習枠内に理解用手順を表示し、正答は出題時に表示しない',()=>{
+test('出題画面は手順確認を表示せず公式問題文・選択肢だけを表示し、採点前に正答を渡さない',()=>{
   const html=widgetHtml();
-  assert.match(html, /q\.learning\.phase === 'worked_example_first'/);
-  assert.match(html, /解く前の手順確認/);
-  assert.match(html, /正答は回答後に表示します/);
+  assert.doesNotMatch(html, /解く前の手順確認/);
+  assert.doesNotMatch(html, /q\.learning\.phase === 'worked_example_first'/);
+  assert.doesNotMatch(html, /手順を自分で説明できるか確かめてから/);
   assert.match(html, /stemHtml\(q\.stem\)/);
+  assert.match(html, /q\.choices \|\| \[\]/);
+  assert.match(html, /解答する/);
 });
 
 test('通常の期限付き復習も、期限到来済みの検証済み対比論点から1問だけ選ぶ',()=>{
