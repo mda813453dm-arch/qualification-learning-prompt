@@ -33,7 +33,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
           if(m.params.name==='confirmUploadRights'){
             reply({structuredContent:{status:'uploadPermissionConfirmed',allYears:true,maxBatchFiles:10}});
           }else if(m.params.name==='attachPdfBatchFromPicker'){
-            reply({structuredContent:{status:'attachedBatch',sessionId:'test-session',requested:3,queued:3,existing:0,failed:0,results:[]}});
+            reply({structuredContent:{status:'attachedBatch',sessionId:'test-session',requested:m.params.arguments.questionPdfs.length,queued:m.params.arguments.questionPdfs.length,existing:0,failed:0,results:[]}});
           }else if(m.params.name==='attachPdf'){
             reply({structuredContent:{status:'attached',year:m.params.arguments.year,sessionId:'test-session'}});
           }else if(m.params.name==='getOfficialLibrary'){
@@ -62,6 +62,8 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedPick').count(),0);
     assert.equal(await ui.locator('#licensedStart').count(),0);
     assert.equal(await ui.locator('#licensedCheck').count(),0,'本人専用PDF登録画面に確認問題のボタンを表示しない');
+    assert.equal(await ui.locator('#licensedLocalPick').count(),1,'未登録の学習者にもiPhone内検索ボタンを常時表示する');
+    assert.equal(await ui.locator('#licensedLocalUpload').count(),1,'端末でボタンが反応しないときもiPhone純正ファイル入力を残す');
     const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
     await ui.getByText('確認済みです。',{exact:false}).waitFor();
@@ -71,6 +73,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     await ui.getByRole('button',{name:'公式過去問を解く'}).waitFor({timeout:12000});
     assert.equal(await ui.locator('#licensedAck').isChecked(),true,'自動更新してもチェックを保持');
     assert.equal(await ui.locator('#licensedAck').isDisabled(),true,'同じ許諾を二重登録しない');
+    assert.equal(await ui.locator('#licensedLocalPick').count(),1,'登録済み年度が表示された後もiPhone内検索ボタンを維持する');
     assert.match(await ui.locator('#app').innerText(),/2020年度/);
     assert.match(await ui.locator('#app').innerText(),/2025年度/);
     assert.equal(await page.evaluate(()=>window.followups.length),0,'状態更新でAIチャットを追加しない');
@@ -88,6 +91,15 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     await ui.getByRole('heading',{name:'過去問PDFのまとめ取り込み（本人専用）'}).waitFor();
     await page.waitForFunction((count)=>window.calls.filter(c=>c.name==='getOfficialLibrary').length>count,beforeReceipt);
     assert.equal(await ui.locator('#licensedStart').count(),1,'受領から登録済み年度へ進んだとき学習ボタンを表示');
+    assert.equal(await ui.locator('#licensedLocalPick').count(),1,'受付→取込み済みへ更新してもiPhone内検索ボタンを維持する');
+    const beforeLocal=await page.evaluate(()=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').length);
+    const chooserPromise=page.waitForEvent('filechooser');
+    await ui.locator('#licensedLocalPick').click();
+    const chooser=await chooserPromise;
+    await chooser.setFiles({name:'R4_Mondai.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.4\nmock PDF for file chooser regression')});
+    await page.waitForFunction(count=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').length>count,beforeLocal);
+    const local=await page.evaluate(()=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').at(-1));
+    assert.equal(local.args.questionPdfs[0].file_name,'R4_Mondai.pdf','iPhone内のPDF検索ボタンから登録へ進める');
     assert.equal(await ui.locator('#app').getByText('▼ この学習枠の先頭です').count(),1,'古い最新表示の誤表示を残さない');
     assert.equal(await page.evaluate(()=>window.followups.length),0,'受領後も追加のAIメッセージは送信しない');
     assert.deepEqual(errors,[],name+' console errors: '+errors.join(','));
