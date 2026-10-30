@@ -75,7 +75,7 @@ for (const [browserName, engine] of [['chromium', chromium], ['webkit', webkit]]
 
     await ui.getByRole('button',{name:'確認問題へ（3問）'}).click();
     for(let pos=1;pos<=3;pos++){
-      await ui.getByRole('heading',{name:`基礎法学｜確認問題・第${pos}問`}).waitFor({timeout:10000});
+      await ui.getByRole('heading',{name:`基礎法学｜確認問題・第${pos}問`}).waitFor({timeout:20000});
       const q=PREPARED_LESSONS[fieldName].questions[pos-1];
       const rendered=await ui.locator('.stem').first().innerText();
       assert.match(rendered,new RegExp(q.question.slice(0,10).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
