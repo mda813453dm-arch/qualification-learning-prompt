@@ -1011,6 +1011,8 @@ a{color:inherit}
       var maxBatch = Number.isInteger(data.maxBatchFiles) && data.maxBatchFiles > 0 ? data.maxBatchFiles : 10;
       var importing = Array.isArray(data.importingYears) ? data.importingYears : [];
       var failedImports = Array.isArray(data.failedYears) ? data.failedYears : [];
+      var importRecords = Array.isArray(data.importHistory) ? data.importHistory : [];
+      var importStates = {registered:'受付',running:'解析中',retry:'再試行',done:'検証完了',failed:'失敗',pending:'確認待ち'};
       var isHtmlAnswer = data.answerFormat === 'html' || /行政書士/.test(data.qualificationName || '');
       var officialLink = safeUrl(data.officialUrl);
       var uploadHint = isHtmlAnswer ? '各年度の公式問題PDF（正答PDFは不要です）' : '各年度の公式問題PDFと正答PDF';
@@ -1024,6 +1026,20 @@ a{color:inherit}
         (pending.length ? '<div class="notice"><b>公式正答の確認待ち：</b>' + pending.map(function(y){return esc(y) + '年度';}).join('・') + '<div>問題PDFは受け取り済みです。公式正答の年度照合が終わるまで出題・採点はしません。</div></div>' : '') +
         (importing.length ? '<div class="notice"><b>登録処理中：</b>' + importing.map(function(y){return esc(y) + '年度';}).join('・') + '</div>' : '') +
         (failedImports.length ? '<div class="notice" role="alert"><b>登録に失敗：</b>' + failedImports.map(function(v){return esc(v.year) + '年度（' + esc(v.reason) + '）';}).join('・') + '</div>' : '') +
+        (importRecords.length ? '<details class="notice" id="licensedHistory"><summary>この資格の取込み履歴（本人専用）</summary>' +
+          importRecords.map(function(r){
+            var label = r.status === 'done' ? '出題可能 ' + esc(r.questions) + '問' :
+              r.status === 'failed' ? '登録失敗' : r.status === 'running' ? '解析中' : '登録待ち';
+            var events = Array.isArray(r.events) ? r.events.slice(-6) : [];
+            return '<div style="padding:7px 0;border-top:1px solid #ddd"><b>' + esc(r.year || '年度不明') +
+              '年度 ' + esc(r.section || '') + '：' + label + '</b>' +
+              (events.length ? '<ul>' + events.map(function(e){
+                var time = Number.isFinite(e.at) ? new Date(e.at).toLocaleString('ja-JP',{timeZone:'Asia/Tokyo'}) : '日時不明';
+                return '<li>' + esc(time) + '　' + esc(importStates[e.status] || e.status) +
+                  (e.reason ? '（' + esc(e.reason) + '）' : '') + '</li>';
+              }).join('') + '</ul>' : '<div>以前の取込みは最終状態のみ保存されています。</div>') +
+              '</div>';
+          }).join('')+'</details>' : '') +
         '<div class="row">' +
           (personal.length ? '<button id="licensedStart" type="button">公式過去問を解く</button>' : '') + '</div>' +
         (!personal.length ? '<div class="notice">現在、出題できる公式過去問は未登録です。登録・正答照合の完了後に「公式過去問を解く」が表示されます。</div>' : '') +
@@ -1227,7 +1243,7 @@ a{color:inherit}
         registerSelectedPdfs(files, true);
       };
       var licensedGeneration = licensedPollGeneration;
-      var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports]);
+      var lastStatusKey = JSON.stringify([personal, readyDetails, pending, importing, failedImports, importRecords]);
       var licensedPollInFlight = false;
       var licensedNextDelay = 10000;
       async function updateLicensedStatus(){
@@ -1250,7 +1266,7 @@ a{color:inherit}
           var running = Array.isArray(latest.importingYears) ? latest.importingYears : [];
           var errors = Array.isArray(latest.failedYears) ? latest.failedYears : [];
           licensedNextDelay = running.length ? 8000 : staged.length ? 20000 : uploaded.length || errors.length ? 30000 : 15000;
-          var statusKey = JSON.stringify([uploaded, latest.readyYearDetails, staged, running, errors]);
+          var statusKey = JSON.stringify([uploaded, latest.readyYearDetails, staged, running, errors, latest.importHistory]);
           if (statusKey !== lastStatusKey) { render({...data, ...latest, status:'sourceUnavailable'}); return; }
           var notice = document.getElementById('licensedAutoStatus');
           if (notice) notice.textContent = running.length ? 'PDFを解析しています。登録状況を自動更新しています。'
