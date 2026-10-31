@@ -24,6 +24,9 @@ test('平成19・20年度は11問構成を午前、22問構成を午後として
     assert.equal(record.answerSource.sectionMapping['午前の部'], 'web-table-午後の部-10-multiple-choice');
     assert.equal(record.answerSource.sectionMapping['午後の部'], 'web-table-午前の部-20-multiple-choice');
     assert.notEqual(record.answerSource.verificationStatus, 'verified');
+    assert.equal(record.answerSource.verifiedForGrading, false);
+    assert.equal(record.answerSource.webAnswerCandidates['午前の部'].length, 10);
+    assert.equal(record.answerSource.webAnswerCandidates['午後の部'].length, 20);
   }
 });
 
@@ -59,4 +62,13 @@ test('平成19・20年の登録時も、ファイル名のam/pmより11問・22�
     assert.equal(legacyLandSectionFromArchivedFileName(year, 'c_'+(era==='h19'?'h20':'h19')+'am_q.pdf'), null, '別年度ファイルは拒否');
   }
   assert.equal(legacyLandSectionFromArchivedFileName(2009, 'c_h21am_q.pdf'), null);
+});
+
+test('平成20年の没問（第19問）を推測で正答補完しない', () => {
+  const record = manifest.years.find((x) => x.year === 2008);
+  assert.equal(record.answerSource.webAnswerCandidates['午後の部'][18], null);
+  assert.deepEqual(record.answerSource.specialCases, [{
+    section: '午後の部', questionNumber: 19, websiteValue: '没問',
+    policy: 'exclude-from-automatic-grading-until-official-decision-verified',
+  }]);
 });
