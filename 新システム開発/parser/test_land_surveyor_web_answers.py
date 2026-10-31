@@ -3,6 +3,7 @@ live-site audit is separately executed in Actions.
 """
 import unittest
 from qlp_parser.core import ANSWER_SPECIAL, ParseError
+from qlp_parser.adapters import land_surveyor as ls
 from qlp_parser.adapters.land_surveyor_web_answers import (
     EXPECTED, ARCHIVE_WEB_YEARS, extract_year, parse_answers_html,
 )
@@ -70,3 +71,24 @@ class ArchivedWebAnswers(unittest.TestCase):
     def test_no_source_page_fails(self):
         with self.assertRaises(ParseError):
             extract_year('<html>land data</html>',2008)
+
+    def test_original_legacy_scanned_pdfs_cannot_use_swapped_keys_or_fake_html(self):
+        for year in ARCHIVE_WEB_YEARS:
+            for section in ("午前の部", "午後の部"):
+                qhash, pages = ls.ARCHIVED_WEB_QUESTION_PINS[year][section]
+                ls.check_source_hashes_html(year, section, qhash, "0"*64,
+                    "https://izuki.net/chousashi-past-tests/")
+                ls.check_question_html(type("Scan",(),{"page_count":pages})(),year,section)
+                opposite = "午後の部" if section=="午前の部" else "午前の部"
+                with self.assertRaises(ParseError):
+                    ls.check_source_hashes_html(year, section,
+                        ls.ARCHIVED_WEB_QUESTION_PINS[year][opposite][0], "0"*64,
+                        "https://izuki.net/chousashi-past-tests/")
+                with self.assertRaises(ParseError):
+                    ls.check_source_hashes_html(year, section, qhash, "0"*64,
+                        "https://fake.example/chousashi-past-tests/")
+                with self.assertRaises(ParseError):
+                    ls.check_question_html(type("Scan",(),{"page_count":pages+1})(),year,section)
+        with self.assertRaises(ParseError):
+            ls.check_source_hashes_html(2010, "午前の部", "a"*64, "b"*64,
+                "https://izuki.net/chousashi-past-tests/")
