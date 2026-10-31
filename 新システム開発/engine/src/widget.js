@@ -799,7 +799,7 @@ a{color:inherit}
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         (lib.qualificationId === 'land_surveyor' ?
-          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015・2017・2018年度の午前・午後、および2021年度の午後を自動で取り込みます。未検証年度は出題しません。</p>' +
+          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015・2017・2018年度の午前・午後、2019・2021年度の午後を自動で取り込みます。未検証年度は出題しません。</p>' +
           '<div class="row"><button type="button" id="sourceManageLandArchive">旧年度の検証済み過去問を取り込む</button></div>' +
           '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
