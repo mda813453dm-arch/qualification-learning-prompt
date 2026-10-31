@@ -195,7 +195,8 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
 
 test('回答と同時に公式正答・簡易解説を表示し、AIボタンは追加の詳しい解説だけを依頼する', () => {
   const html = widgetHtml();
-  assert.match(html, /公式正答・簡易解説（採点と同時に表示）/);
+  assert.match(html, /・簡易解説（採点と同時に表示）/);
+  assert.match(html, /answerStatusName\(g\)/, '通常の公式正答と民間サイト掲載の解答はラベルを区別する');
   assert.match(html, /confirmation-summary/);
   assert.match(html, /d\.explanation/);
   assert.match(html, /officialAnswerSummary\(q, g\)/);
