@@ -14,6 +14,9 @@ import { learningPolicy } from './learning-policy.js';
 const PDF_MAGIC = [0x25, 0x50, 0x44, 0x46, 0x2d]; // %PDF-
 const MAX_PDF_BYTES = 30 * 1024 * 1024;
 export const SLOW_AFTER_MS = 20 * 1000;
+// 通関士の文章PDFのテキスト化はこの資格のキャッシュだけ更新する。
+// 共通 parserVersion の変更で他の資格を一斉再解析しない。
+const sourceParserVersion = (src, version) => src?.adapter === 'tsukanshi' ? version + '-customs-text-v1' : version;
 
 export class IngestError extends Error {
   constructor(code, detail = {}) {
@@ -124,7 +127,7 @@ export async function ingestSource(src, deps) {
   const { store, fetchPdf, parse, parserVersion, now } = deps;
   const q = await currentSha(store, fetchPdf, src.questionUrl, now);
   const a = src.answerUrl && src.answerUrl !== src.questionUrl ? await currentSha(store, fetchPdf, src.answerUrl, now) : q;
-  const keyParts = { ...pick(src), questionSha256: q.sha256, answerSha256: a.sha256, parserVersion };
+  const keyParts = { ...pick(src), questionSha256: q.sha256, answerSha256: a.sha256, parserVersion: sourceParserVersion(src, parserVersion) };
   if (src.expectedQuestionSha256 && src.expectedQuestionSha256 !== q.sha256) throw new IngestError('PDF_HASH_MISMATCH', { url: src.questionUrl });
   const cached = await readResult(store, keyParts, now);
   // 明示した共有登録ジョブでは、旧解析版が同じ parserVersion で残した
@@ -334,7 +337,7 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
     if (clock() - begin >= budgetMs) break;
     const fresh = { ...s };
     const code = await settle(fresh, deps, deps.now ?? clock());
-    if (code) s.upgradeTried = deps.parserVersion;
+    if (code) s.upgradeTried = sourceParserVersion(s, deps.parserVersion);
     else Object.assign(s, fresh, { upgradeTried: null });
     await saveJob(store, job, clock());
   }
@@ -348,7 +351,10 @@ export async function stepJob(store, qualificationId, deps, { budgetMs = 20000, 
 /** 前の版の分解プログラムで取り込んだ年度（新しい版での分解し直しを、まだ試していないもの）。 */
 export function staleSources(job, parserVersion) {
   if (!parserVersion) return [];
-  return (job?.sources ?? []).filter((s) => s.status === 'done' && s.keyParts && s.keyParts.parserVersion !== parserVersion && s.upgradeTried !== parserVersion);
+  return (job?.sources ?? []).filter((s) => {
+    const target = sourceParserVersion(s, parserVersion);
+    return s.status === 'done' && s.keyParts && s.keyParts.parserVersion !== target && s.upgradeTried !== target;
+  });
 }
 
 /** 1つの取り込み元を処理して、結果を job.sources の要素に書き込む。失敗の理由コードを返す。 */
