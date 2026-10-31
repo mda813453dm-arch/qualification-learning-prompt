@@ -85,8 +85,8 @@ def probe_answer_rows(doc, year):
     title = unicodedata.normalize("NFKC", doc[0].get_text("text", sort=True))
     if "土地家屋調査士" not in title or "午前の部" not in title or "午後の部" not in title:
         raise ValueError("ANSWER_TITLE_OR_SECTION_MISMATCH")
-    era = "令和" + str(year - 2018) if year >= 2019 else "平成" + str(year - 1988)
-    if era not in re.sub(r"\s+", "", title):
+    era = ("令和(?:元|1)" if year == 2019 else "令和" + str(year - 2018)) if year >= 2019 else "平成" + str(year - 1988)
+    if not re.search(era, re.sub(r"\s+", "", title)):
         raise ValueError("ANSWER_YEAR_MISMATCH")
     answers = {}
     for page in doc:
