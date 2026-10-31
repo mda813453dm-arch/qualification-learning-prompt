@@ -890,6 +890,7 @@ a{color:inherit}
   var customsPollGeneration = 0;
   var licensedConsentSessionId = null;
   function render(data){
+    if (sourceManagerOpen && data?.restored) return;
     if (data && (data.question || data.grade || ['sourceUnavailable','waiting','finished','restoredGrade','reviewEmpty'].includes(data.status)))
       lastLearningView = data;
     // PDF添付のツール結果は新しいチャットメッセージ側に学習枠を生成する。
@@ -3288,7 +3289,7 @@ a{color:inherit}
   function studyViewPoll(){
     // 操作中や直後はUIに触らず、操作が止まった時だけ同期する。
     // フレーム間の更新通知はscheduleFirstFrameRefreshで別途即座に反映する。
-    if (ownedSession && !locked && !document.hidden && bridgeReady && !restoring &&
+    if (ownedSession && !locked && !sourceManagerOpen && !document.hidden && bridgeReady && !restoring &&
         Date.now() - lastLocalInteractionAt > 30000)
       restoreFromServer(false);
     setTimeout(studyViewPoll, 12000);
