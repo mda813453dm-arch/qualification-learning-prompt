@@ -45,6 +45,7 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-confirmation-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-instant-gyosei-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-upload-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-anytime-upload-browser.mjs
   parser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
