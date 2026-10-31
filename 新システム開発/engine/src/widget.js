@@ -3188,6 +3188,19 @@ a{color:inherit}
     }
     else renderVerifiedExplanation(ctx);
   }
+  function answerReferenceName(g){
+    if (g && g.answerSourceType === 'secondary_web_answer') return '掲載サイトの解答表（非公式）';
+    if (g && g.answerSourceType === 'archived_official_pdf_copy') return '法務省公表の正答PDF（掲載サイト転載）';
+    return '公式の正答PDF';
+  }
+  function answerReferenceLink(g){
+    var source = g && safeUrl(g.answerPdfUrl);
+    if (!source) return '確認できませんでした';
+    return '<a href="' + esc(source) + '" target="_blank" rel="noopener">' +
+      esc(answerReferenceName(g)) + '</a>';
+  }
+  function answerStatusName(g){ return g && g.answerSourceType === 'secondary_web_answer'
+    ? '掲載サイトの解答（非公式）' : '公式正答'; }
   function renderVerifiedExplanation(ctx){
     var q = ctx.question, g = ctx.grade;
     var label = (q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber;
@@ -3197,16 +3210,16 @@ a{color:inherit}
       var n = i + 1, selected = String(g.selected) === String(n);
       var correct = (g.acceptedAnswers || [g.correctAnswer]).some(function(x){return String(x) === String(n);});
       return '<li><b>' + esc(n) + '</b>　' + esc(c) +
-        (correct ? '　<b>【公式正答】</b>' : '') + (selected ? '　【あなたの回答】' : '') + '</li>';
+        (correct ? '　<b>【正答】</b>' : '') + (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     var pdf = safeUrl(g.answerPdfUrl);
     var j = ctx.journey || {};
-    app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + '<h2>' + esc(label) + 'の公式正答照合</h2>' +
+    app.innerHTML = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + '<h2>' + esc(label) + 'の' + esc(answerStatusName(g)) + 'との照合</h2>' +
       '<div class="result ' + (g.correct ? 'ok' : 'ng') + '">' + (g.correct ? '✓ 正解' : '✕ 不正解') + '</div>' +
-      '<div class="stem"><b>公式正答：' + esc(ans) + '</b>　／　あなたの回答：' + esc(g.selected == null ? '分からない' : g.selected) + '</div>' +
+      '<div class="stem"><b>' + esc(answerStatusName(g)) + '：' + esc(ans) + '</b>　／　あなたの回答：' + esc(g.selected == null ? '分からない' : g.selected) + '</div>' +
       (table ? '<div class="stem"><b>各選択肢の原文と正答</b><ol class="ov-l">' + table + '</ol></div>' : '') +
-      (pdf ? '<div class="notice"><a href="' + esc(pdf) + '" target="_blank" rel="noopener">公式正答PDFを確認する ›</a></div>' : '') +
-      '<div class="notice">ここまでは公式正答との照合です。AIの詳しい解説は、この下の新しい学習画面に操作ボタンと一緒に表示します。</div>' +
+      (pdf ? '<div class="notice">解答の根拠：' + answerReferenceLink(g) + '</div>' : '') +
+      '<div class="notice">ここまでは' + esc(answerStatusName(g)) + 'との照合です。AIの詳しい解説は、この下の新しい学習画面に操作ボタンと一緒に表示します。</div>' +
       '<div class="row"><button id="explanationNext">次の問題へ</button></div>' + endBar();
     scrollUp(true); bindEnd();
     document.getElementById('explanationNext').onclick = async function(){
@@ -3228,15 +3241,15 @@ a{color:inherit}
       var correct = accepted.some(function(a){ return String(a) === String(n); });
       var selected = String(g.selected) === String(n);
       return '<li><b>' + esc(n) + '</b>　' + esc(c) +
-        (correct ? '　<b>【公式正答】</b>' : '') +
+        (correct ? '　<b>【正答】</b>' : '') +
         (selected ? '　【あなたの回答】' : '') + '</li>';
     }).join('');
     return '<section class="stem official-answer-summary" aria-label="採点後の簡易解説">' +
-      '<b>■公式正答・簡易解説（採点と同時に表示）</b>' +
+      '<b>■' + esc(answerStatusName(g)) + '・簡易解説（採点と同時に表示）</b>' +
       '<p>正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + ' です。' +
       (g.dontKnow ? '正答を確認して復習しましょう。' : g.correct ? '正しく選べています。' : 'あなたの回答と公式正答を比較しましょう。') + '</p>' +
       (items ? '<b>各選択肢と正答の位置</b><ol class="ov-l">' + items + '</ol>' : '') +
-      '<p>ここまでは保存済みの公式正答との照合です。選択肢ごとの判断根拠や必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
+      '<p>ここまでは' + (g.answerSourceType === 'secondary_web_answer' ? '掲載サイトの解答表（非公式）' : '保存済みの公式正答') + 'との照合です。選択肢ごとの判断根拠や必要な計算過程は「AIの詳しい解説を追加」で確認できます。</p></section>';
   }
   function gradeBanner(g, label){
     var correct = !!g.correct;
@@ -3252,7 +3265,7 @@ a{color:inherit}
     else {
       (g.acceptedAnswers || [g.correctAnswer]).forEach(function(n){ var c = app.querySelector('.choices .opt[data-n="' + n + '"]'); if (c) c.classList.add('correct'); });
       h = gradeBanner(g, '');
-      if (safeUrl(g.answerPdfUrl)) h += '<div class="notice"><a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a></div>';
+      if (safeUrl(g.answerPdfUrl)) h += '<div class="notice">解答の根拠：' + answerReferenceLink(g) + '</div>';
     }
     // 同じ分野で3問続けて間違えたら、確認問題で基本を確かめるかを聞く（マスタープロンプトどおり。AIはこの採点を見ないので画面から頼む）
     if (g.checkSuggested) h += '<div class="notice"><b>同じ分野で3問続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめますか？</div><div class="row"><button id="check">確認問題で基本を確かめる</button></div>';
@@ -3292,9 +3305,9 @@ a{color:inherit}
     // 「分からない」：採点に数えず、正答を見せて復習に回す（解説も頼める）
     if (g.dontKnow) {
       (g.acceptedAnswers || [g.correctAnswer]).forEach(function(n){ var ck = app.querySelector('.choices .opt[data-n="' + n + '"]'); if (ck) ck.classList.add('correct'); });
-      var dpdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
+      var dpdf = answerReferenceLink(g);
       app.innerHTML = '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div>' +
-        officialAnswerSummary(q, g) + '<div class="stem">解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div>' +
+        officialAnswerSummary(q, g) + '<div class="stem">解答の根拠：' + dpdf + '<br>この問題は復習に登録しました。</div>' +
         '<div class="row"><button id="dkExp">AIの詳しい解説を追加</button><button id="next">次の問題へ</button></div>' +
         sourceManagerBar();
       nextBtn(); bindSourceManager();
@@ -3306,13 +3319,13 @@ a{color:inherit}
       return;
     }
     // 採点後は正誤・公式正答・全選択肢の簡易解説を即時表示。AIは詳しい判断根拠だけを下部の新しい枠に追加。
-    var pdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
+    var pdf = answerReferenceLink(g);
     var fieldChange = state.next?.status === 'question' && state.next.question?.kind === 'new' &&
       q.fieldName && state.next.question.fieldName && q.fieldName !== state.next.question.fieldName;
     var progress = q.progress || {};
     app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice' + Math.min(3, progress.fieldQuestion || 1), q.fieldName) +
       gradeBanner(g, label) +
-      '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答PDF：' + pdf + '</div>' +
+      '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答の根拠：' + pdf + '</div>' +
       officialAnswerSummary(q, g) +
       (g.checkSuggested ? '<div class="notice"><b>補強の問題も続けて間違えました。</b>確認問題（AIが作った短い問題）で基本を確かめることもできます。</div>' : '') +
       (g.reinforceNext ? '<div class="notice"><b>この分野を続けて間違えたので、次は同じ分野の過去問で補強します。</b></div>' : '') +
