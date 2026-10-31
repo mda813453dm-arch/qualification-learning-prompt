@@ -74,7 +74,7 @@ const MAX_PDF_FETCH = 30 * 1024 * 1024;
 function defaultFetchPdf(url, redirects = 5) {
   return new Promise((resolve, reject) => {
     if (!/^https:\/\//.test(url)) return reject(new Error('REDIRECT_NOT_HTTPS'));
-    const req = https.get(url, { agent: legacyAgent, headers: { accept: /\.html?$/i.test(url) ? 'text/html' : 'application/pdf', 'user-agent': 'qualification-learning-system' }, timeout: 60000 }, (res) => {
+    const req = https.get(url, { agent: legacyAgent, headers: { accept: (/\.html?$/i.test(url) || url === 'https://izuki.net/chousashi-past-tests/') ? 'text/html' : 'application/pdf', 'user-agent': 'qualification-learning-system' }, timeout: 60000 }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         res.resume();
         if (redirects <= 0) return reject(new Error('TOO_MANY_REDIRECTS'));
