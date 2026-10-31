@@ -84,7 +84,10 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       const files=[{name:'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
         ...(spec.answerFormat==='html'?[]:[{name:'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
       await ui.locator('#sourceManageUpload').setInputFiles(files);
-      try {await ui.locator('#sourceManageUploadStatus').filter({hasText:'受付'}).waitFor({timeout:12000});}
+      try {
+        await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'),{},{timeout:12000});
+        await ui.locator('#sourceManageUploadStatus').filter({hasText:'出題可能：'}).waitFor({timeout:12000});
+      }
       catch(e){
         console.error('ANYTIME_UPLOAD',browserName,spec.qualificationName,
           'STATUS=',(await ui.locator('#sourceManageUploadStatus').innerText().catch(()=>'<missing>')),
