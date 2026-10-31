@@ -1647,6 +1647,7 @@ a{color:inherit}
       var waiting = data.status === 'waiting';
       var wh = '<div class="stem">' + esc(data.notice || (data.status === 'finished' ? '取り込んだ過去問をすべて解きました。' : '問題を準備しています。')) + '</div>';
       if (data.attachNotice) wh += '<div class="notice">' + esc(data.attachNotice) + '</div>';
+      if (!waiting) wh += '<div class="notice">登録済みの実践問題が終了しました。別の対応年度を追加する場合は「過去問の追加・登録状況」で確認してください。後日の復習だけなら、今すぐの追加は必須ではありません。</div>';
       wh += '<div class="row">' + (waiting ? '<button id="wProg">取り込みの進み具合を確認する</button><button id="wExp">今の分野の解説を読む</button><button id="wChk">今の分野の確認問題を解く</button>' : '<button id="wRev">総復習（間違えた問題）</button>') + '</div>' + endBar();
       app.innerHTML = wh;
       var wb = function(idn, fn){ var el = document.getElementById(idn); if (el) el.onclick = fn; };
@@ -1687,6 +1688,10 @@ a{color:inherit}
       h += journeyBar(p.fieldIndex, p.fieldTotal, 'practice' + Math.min(3, p.fieldQuestion || 1), q.fieldName);
       if (p.fieldQuestion) h += localBar('この分野の実践問題', Math.min(3, p.fieldQuestion), 3);
       h += '<div class="notice">全分野の実践問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
+      // 取込は回答を遮らない。登録済み問題が残り少ないときだけ控えめに案内する。
+      if (!p.review && Number.isInteger(p.done) && p.total - p.done <= 3 && p.total > 3) {
+        h += '<div class="notice">登録済みの実践問題が残り少なくなりました。今の問題を解き終えた後、「過去問の追加・登録状況」で利用できる年度を確認できます。追加は任意です。</div>';
+      }
     }
     h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + (q.section === '午前の部' || q.section === '午後の部' ? q.section + ' ' : '') + '問' + q.questionNumber) + '</h2>';
     if (!data.restored) h += sourceManagerBar();
@@ -2314,9 +2319,15 @@ a{color:inherit}
     var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') +
       (m.kind === 'lesson' ? '<button id="lessonMenuPractice" type="button"><b>' + (entries.length + 1) + '</b><span>公式過去問へ進む</span></button>' : '') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
+    // 同じ分野の3問終了は追加登録に適した区切り。強制的な登録画面遷移は行わない。
+    if (m.kind === 'next') {
+      h += '<div class="notice">この区切りで新しい年度の過去問を追加することもできます。登録済みの問題が十分あれば、追加せず次へ進んで構いません。</div>' +
+        sourceManagerBar();
+    }
     if (['next', 'review', 'check'].indexOf(m.kind) >= 0 && !(m.kind === 'next' && m.actions)) h += '<div class="row" style="margin-top:14px"><button id="endMenu">学習を終了する</button></div>';
     app.innerHTML = h;
     scrollUp();
+    bindSourceManager();
     var endAction = async function(em){
       em.disabled = true;
       var ids = loadIds(), lid = currentStudyId || ids.studyId || studyLid || ids.lid || state.sessionId || ids.sid;
