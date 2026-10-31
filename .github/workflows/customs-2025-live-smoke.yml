@@ -4,6 +4,8 @@ on:
     branches: [ai-learning-system]
     paths:
       - '.github/workflows/customs-2025-live-smoke.yml'
+      - '新システム開発/parser/qlp_parser/adapters/tsukanshi.py'
+      - '新システム開発/parser/tests/test_tsukanshi_text_real.py'
   workflow_dispatch:
 permissions:
   contents: read
