@@ -131,3 +131,35 @@ test('年度・区分不明の正答は複数年度へ一括割り当てしな�
   assert.deepEqual(r.body.unmatchedAnswerFiles,['correct.pdf']);
   assert.equal(r.body.queued,0,'no question may be treated as verified without a matched answer');
 });
+
+test('学習中の登録状況照会で保留中PDF解析を再開し、回答・採点は進めない',async()=>{
+  const {req,env}=setup();
+  const sid=await open(req,'看護師');
+  const before=await req('GET','/v1/sessions/'+sid+'/restore');
+  assert.equal(before.status,200);
+  const start=await req('GET','/v1/sessions/'+sid+'/official-library');
+  assert.equal(start.status,200);
+  const opened=await req('POST','/v1/sessions',{qualificationId:'看護師'});
+  const learnerId=opened.body.learnerId;
+  const {startJob,readJob}=await import('../src/ingest.js');
+  const jobId='q070~'+learnerId;
+  await startJob(env.STORE,jobId,[{
+    qualificationId:'q070',adapter:'generic_mc',year:2024,section:'main',
+    questionUrl:'https://files.example/exam2024.pdf',
+    answerUrl:'https://files.example/answer2024.pdf',
+  }],T0,{persistent:true});
+  let called=0;
+  env.selfFetch=async(url)=>{
+    if(String(url).includes('/v1/jobs/'+encodeURIComponent(jobId)+'?run=all')) called++;
+    return new Response('{}',{status:200});
+  };
+  const status=await req('GET','/v1/sessions/'+opened.body.sessionId+'/official-library');
+  assert.equal(status.status,200,JSON.stringify(status.body));
+  assert.equal(status.body.status,'officialLibrary');
+  assert.ok(status.body.importingYearDetails?.some(x=>x.year===2024));
+  assert.ok(called>=1,'照会が受付状態を見るだけで解析ワーカーを止めない');
+  assert.equal((await readJob(env.STORE,jobId)).state,'running');
+  const afterwards=await req('GET','/v1/sessions/'+opened.body.sessionId+'/restore');
+  assert.equal(afterwards.status,200);
+  assert.equal(afterwards.body.grade,undefined,'状況照会で採点しない');
+});
