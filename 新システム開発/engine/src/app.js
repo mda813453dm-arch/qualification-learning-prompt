@@ -636,6 +636,24 @@ function attachedYearFromName(name) {
   if (heisei && Number(heisei[1]) >= 1) return 1988 + Number(heisei[1]);
   return null;
 }
+// 103資格のうち、年度により午前/午後や10月/12月等の区分が切り替わる。
+function uploadSectionsForYear(cat, year) {
+  const byYear=cat?.officialShared?.sectionsByYear?.[year];
+  if (Array.isArray(byYear) && byYear.length) return byYear;
+  if (Array.isArray(cat?.uploadSections) && cat.uploadSections.length) return cat.uploadSections;
+  if (Array.isArray(cat?.officialShared?.uploadSections) && cat.officialShared.uploadSections.length)
+    return cat.officialShared.uploadSections;
+  return [...new Set((cat?.sources ?? []).filter(x=>x.year===year).map(x=>x.section).filter(Boolean))];
+}
+function allUploadSections(cat) {
+  return [...new Set([...(cat?.uploadSections ?? []),...(cat?.officialShared?.uploadSections ?? []),
+    ...Object.values(cat?.officialShared?.sectionsByYear ?? {}).flat(),
+    ...(cat?.sources ?? []).map(x=>x.section).filter(Boolean)])];
+}
+function supportsSourceUpload(cat) {
+  return !!(cat?.uploadAdapter || cat?.officialShared?.uploadAdapter ||
+    (cat?.sources ?? []).some(x=>x.adapter));
+}
 function attachedSectionFromName(name, sections) {
   if (!Array.isArray(sections) || sections.length === 0) return undefined;
   if (sections.length === 1) return sections[0];
@@ -659,15 +677,15 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   // 推定された年度と指定年度が食い違うときは拒否し、別年度の正答を誤結合しない。
   const yearHint = (list, index) => Array.isArray(list) && Number.isInteger(Number(list[index])) &&
     Number(list[index]) >= 1900 && Number(list[index]) <= 2200 ? Number(list[index]) : null;
-  const sectionHint = (list, index) => Array.isArray(list) && typeof list[index] === 'string' &&
-    Array.isArray(cat?.uploadSections) && cat.uploadSections.includes(list[index])
+  const sectionHint = (list, index, year) => Array.isArray(list) && typeof list[index] === 'string' &&
+    uploadSectionsForYear(cat, year).includes(list[index])
       ? list[index] : null;
   const questionKeys = files.map((file, index) => {
     const name = String(file?.file_name ?? '');
     const year = attachedYearFromName(name) ?? yearHint(b.years,index);
-    const section = attachedSectionFromName(name,cat?.uploadSections) ??
-      sectionHint(b.sections,index) ??
-      (Array.isArray(cat?.uploadSections) && cat.uploadSections.length > 1 ? null : cat?.uploadSections?.[0] ?? 'main');
+    const sections=uploadSectionsForYear(cat,year);
+    const section=attachedSectionFromName(name,sections) ?? sectionHint(b.sections,index,year) ??
+      (sections.length > 1 ? null : sections[0] ?? 'main');
     return year && section ? year+':'+section : null;
   });
   const uniqueQuestionKeys = [...new Set(questionKeys.filter(Boolean))];
@@ -679,9 +697,10 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const detectedYear=attachedYearFromName(name);
     const hintYear=yearHint(b.answerYears,index);
     const year=detectedYear ?? hintYear;
-    const detectedSection=attachedSectionFromName(name,cat?.uploadSections);
-    const section=detectedSection ?? sectionHint(b.answerSections,index) ??
-      (Array.isArray(cat?.uploadSections) && cat.uploadSections.length > 1 ? null : cat?.uploadSections?.[0] ?? 'main');
+    const sections=uploadSectionsForYear(cat,year);
+    const detectedSection=attachedSectionFromName(name,sections);
+    const section=detectedSection ?? sectionHint(b.answerSections,index,year) ??
+      (sections.length > 1 ? null : sections[0] ?? 'main');
     let key=(year && section ? year+':'+section : null);
     // 問題PDFが1年度・1区分だけのときのみ、年度不明の正答PDFを推測せず1対1で紐付けられる。
     if (!key && uniqueQuestionKeys.length===1 && answerFiles.length===1 && !detectedYear && !hintYear)
@@ -699,11 +718,12 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const hintYear=yearHint(b.years,index);
     const year=detectedYear ?? hintYear;
     const part = state.qualificationId === 'q098' ? customsPart(fileName) : null;
-    const detectedSection=attachedSectionFromName(fileName,cat?.uploadSections);
+    const sections=uploadSectionsForYear(cat,year);
+    const detectedSection=attachedSectionFromName(fileName,sections);
     const section = state.qualificationId === 'q098'
       ? (CUSTOMS_SECTIONS[part] ?? null)
-      : (detectedSection ?? sectionHint(b.sections,index) ??
-        (Array.isArray(cat?.uploadSections) && cat.uploadSections.length>1 ? null : cat?.uploadSections?.[0] ?? 'main'));
+      : (detectedSection ?? sectionHint(b.sections,index,year) ??
+        (sections.length>1 ? null : sections[0] ?? 'main'));
     // 別冊は通関実務の参照資料。問題本冊として独立に解析・採点してはいけない。
     if (part === 4 && year === 2025) {
       try {
@@ -766,18 +786,21 @@ async function attachPdf(env, id, state, b, url, now) {
     throw new HttpError(400, 'ATTACH_YEAR_REQUIRED', 'PDFの表紙で実施年度（西暦）を確認してください。');
   if (!cat?.privateLicensedUpload && adapter !== 'generic_mc' && Array.isArray(cat?.validatedUploadYears) && !cat.validatedUploadYears.includes(year))
     throw new HttpError(422, 'ATTACH_YEAR_NOT_VALIDATED', 'この年度の原本と正答の検証は未完了です。');
+  const validSections=uploadSectionsForYear(cat,year);
   const section = adapter === 'generic_mc' ? String(b.section ?? 'main').trim()
-    : cat?.uploadSections
-      // 単一区分の資格は区分をエンジンが決定する。AIの「本試験」「main」等の言い換えで登録を妨げない。
-      ? (cat.uploadSections.length === 1 ? cat.uploadSections[0] : String(b.section ?? '').trim())
-      : (cat?.sources?.find((x) => x.year === year)?.section ?? base?.section ?? String(b.section ?? '').trim());
+    : validSections.length === 1 ? validSections[0]
+    : String(b.section ?? '').trim();
   if (!section || section.length > 50) throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', '試験区分を指定してください。');
   if (adapter === 'generic_mc' && !b.answer) throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '共通解析では同年度・同区分の公式正答PDFが必須です。');
-  if (adapter !== 'generic_mc' && cat?.uploadSections && !cat.uploadSections.includes(section))
-    throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', `試験区分は${cat.uploadSections.join('・')}から選んでください。`);
+  if (adapter !== 'generic_mc' && validSections.length && !validSections.includes(section))
+    throw new HttpError(400, 'ATTACH_SECTION_REQUIRED', `試験区分は${validSections.join('・')}から選んでください。`);
   const officialAnswerHtml = adapter === 'generic_mc' ? null : await officialAnswerHtmlFor(env, cat, year);
-  if (cat?.uploadSections && !b.answer && !officialAnswerHtml && !cat?.privateLicensedUpload)
-    throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度の公式正答PDFも添付してください。');
+  // 既に資格台帳に同年度・同区分の公式正答原本がある場合、PDFを再添付させない。
+  // ファイル名から区分を推測したり別年度の正答を流用したりしない。
+  const fixedAnswerUrl = adapter === 'generic_mc' ? null
+    : cat?.sources?.find(x => x.year === year && x.section === section && x.answerUrl)?.answerUrl ?? null;
+  if (!b.answer && !officialAnswerHtml && !fixedAnswerUrl && !cat?.privateLicensedUpload)
+    throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度・同区分の公式正答PDFも添付してください。');
   let batchRights = null;
   if (cat?.privateLicensedUpload) {
     // 利用者が明示許諾した同一セッション内の複数年度だけ。過去のセッションには使えない。
@@ -823,7 +846,7 @@ async function attachPdf(env, id, state, b, url, now) {
   }
   // 行政書士だけ正答が公式HTML。利用者は問題PDFだけ添付し、正答は登録済み公式URLに固定する。
   // 任意の外部URLを利用者入力から取得しない（SSRF/偽正答対策）。
-  const answerUrl = officialAnswerHtml || (b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null);
+  const answerUrl = officialAnswerHtml || (b.answer ? await savePdf(await fetchAttached(env, b.answer)) : null) || fixedAnswerUrl;
   const sources = checkSources([{ adapter, year, section, questionUrl, answerUrl,
     ...((cat?.privateLicensedUpload || adapter === 'generic_mc') ? { privateLicensedUpload: true } : {}) }], state.qualificationId, state.learnerId);
   await startJob(env.STORE, jobId, sources, now, { persistent: true });
@@ -1124,7 +1147,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
       return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
         fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
-        officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+        officialUrl: cat.pastExamPage, sourceAttachmentSupported: supportsSourceUpload(cat),
         ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
         validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
         ...(cat.privateLicensedUpload ? {
@@ -1166,7 +1189,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
     return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
       fieldName: cat.fields[fid] ?? '最初の分野', qualificationName: cat.name,
-      officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      officialUrl: cat.pastExamPage, sourceAttachmentSupported: supportsSourceUpload(cat),
       ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       validatedUploadYears: cat.validatedUploadYears ?? [], sharedLibrary: publicLibraryView(shared),
       ...(cat.privateLicensedUpload ? {
@@ -1195,7 +1218,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     const fid = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
     return { status: 'sourceUnavailable', sessionId: id, learnerId: state.learnerId,
       qualificationName: cat?.name ?? state.qualificationId, fieldName: cat?.fields?.[fid] ?? '最初の分野',
-      officialUrl: cat?.pastExamPage ?? null, sourceAttachmentSupported: !!cat?.uploadAdapter,
+      officialUrl: cat?.pastExamPage ?? null, sourceAttachmentSupported: supportsSourceUpload(cat),
       ...(cat?.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       sharedLibrary: publicLibraryView(shared), validatedUploadYears: cat?.validatedUploadYears ?? [],
       job: jobView(job),
@@ -1389,7 +1412,7 @@ async function restoreStudyView(env, id, state, now) {
     const fieldId = state.set?.fieldId && fields.includes(state.set.fieldId) ? state.set.fieldId : fields[0];
     return { ...identity, status: 'sourceUnavailable',
       qualificationName: cat.name, fieldName: cat.fields[fieldId] ?? '最初の分野',
-      officialUrl: cat.pastExamPage, sourceAttachmentSupported: !!cat.uploadAdapter,
+      officialUrl: cat.pastExamPage, sourceAttachmentSupported: supportsSourceUpload(cat),
       ...(cat.urlCatalog ? { urlCatalog: cat.urlCatalog } : {}),
       validatedUploadYears: cat.validatedUploadYears ?? [],
       sharedLibrary: publicLibraryView(await libraryFor(env, state.qualificationId, now)),
@@ -2034,8 +2057,8 @@ async function route(request, env, url, now) {
       const remainingUploadFiles = uploadPermissionConfirmed ? Math.max(0, Number(batchRights.remaining) || 0) : 0;
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         // 学習中の追加画面でも正確な権限・登録元を判断する。既存の本人専用履歴は共有しない。
-        qualificationId: state.qualificationId, sourceAttachmentSupported: !!cat.uploadAdapter,
-        uploadSections: cat.uploadSections ?? [],
+        qualificationId: state.qualificationId, sourceAttachmentSupported: supportsSourceUpload(cat),
+        uploadSections: allUploadSections(cat),
         fieldName: cat.fields[state.set?.fieldId] ?? Object.values(cat.fields)[0] ?? '',
         uploadPermissionConfirmed, remainingUploadFiles,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
@@ -2070,8 +2093,8 @@ async function route(request, env, url, now) {
       qualificationName: cat?.name ?? state.qualificationId,
       qualificationId: state.qualificationId,
       officialUrl: cat?.pastExamPage ?? null,
-      sourceAttachmentSupported: !!cat?.uploadAdapter,
-      uploadSections: cat?.uploadSections ?? [],
+      sourceAttachmentSupported: supportsSourceUpload(cat),
+      uploadSections: allUploadSections(cat),
       answerFormat: cat?.officialAnswerHtml ? 'html' : 'pdf',
       validatedUploadYears: cat?.validatedUploadYears ?? [],
       readyYearDetails: sources.filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
