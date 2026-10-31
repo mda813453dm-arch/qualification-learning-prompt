@@ -102,7 +102,7 @@ class LandSurveyorTest(unittest.TestCase):
             with self.assertRaises(ParseError):
                 adapter.parse_answers(answer_pdf(year), "午後の部", 2021)
         with self.assertRaises(ParseError) as ctx:
-            adapter.check_source_hashes(2021, "午後の部", "any", "any")
+            adapter.check_source_hashes(2014, "午後の部", "any", "any")
         self.assertEqual(ctx.exception.code, "YEAR_NOT_VALIDATED")
 
 
