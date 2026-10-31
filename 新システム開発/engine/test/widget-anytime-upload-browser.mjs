@@ -11,7 +11,10 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
   try{
     for(const spec of [
       {qualificationId:'q063',qualificationName:'測量士補',permissionedUpload:false,answerFormat:'pdf',uploadSections:['main']},
-      {qualificationId:'q090',qualificationName:'行政書士',permissionedUpload:true,answerFormat:'html',uploadSections:['年度共通']}
+      {qualificationId:'q090',qualificationName:'行政書士',permissionedUpload:true,answerFormat:'html',uploadSections:['年度共通']},
+      {qualificationId:'q098',qualificationName:'通関士',permissionedUpload:false,answerFormat:'pdf',
+        uploadSections:['通関業法','関税法等','通関実務'],year:2025,
+        questionFile:'20251005tukanshi01.pdf',answerFile:'59shiken_seikai.pdf'}
     ]){
       const page=await browser.newPage({viewport:{width:375,height:667},isMobile:true,hasTouch:true});
       const errors=[];
@@ -80,9 +83,9 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       assert.match(await ui.locator('#app').innerText(),/2025年度/);
       if(spec.permissionedUpload)await ui.locator('#sourceManageRights').check();
       await ui.getByText('ファイル名から年度・試験区分が分からないとき').click();
-      await ui.locator('#sourceManageYearHint').fill('2024');
-      const files=[{name:'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
-        ...(spec.answerFormat==='html'?[]:[{name:'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
+      await ui.locator('#sourceManageYearHint').fill(String(spec.year||2024));
+      const files=[{name:spec.questionFile||'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
+        ...(spec.answerFormat==='html'?[]:[{name:spec.answerFile||'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
       await ui.locator('#sourceManageUpload').setInputFiles(files);
       try {
         await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'),{},{timeout:12000});
@@ -99,9 +102,9 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       const calls=await page.evaluate(()=>window.calls);
       const batch=calls.find(c=>c.name==='attachPdfBatchFromPicker');
       assert.ok(batch,browserName+': '+spec.qualificationName+' missing upload call');
-      assert.deepEqual(batch.args.years,[2024]);
+      assert.deepEqual(batch.args.years,[spec.year||2024]);
       assert.equal(batch.args.answerPdfs.length,spec.answerFormat==='html'?0:1);
-      if(spec.answerFormat==='pdf')assert.deepEqual(batch.args.answerYears,[2024]);
+      if(spec.answerFormat==='pdf')assert.deepEqual(batch.args.answerYears,[spec.year||2024]);
       if(spec.permissionedUpload)assert.ok(calls.some(c=>c.name==='confirmUploadRights'));
       assert.equal(calls.filter(c=>c.name==='submitAnswer'||c.name==='nextQuestion').length,0,
         'import must not grade or advance current question');
@@ -114,4 +117,4 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
     }
   }finally{await browser.close();}
 }
-console.log('PASS 375px: in-study PDF import for surveyor and licensed administrative scrivener, no loss of current answer');
+console.log('PASS 375px: in-study PDF import for surveyor, licensed administrative scrivener and customs, no loss of current answer');
