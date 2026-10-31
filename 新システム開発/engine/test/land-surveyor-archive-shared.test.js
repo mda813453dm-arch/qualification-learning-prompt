@@ -40,8 +40,8 @@ test('平成19・20年度は全11問を現行午前・全22問を現行午後と
   for(const year of [2007,2008]){
     const row=manifest.years.find(x=>x.year===year);
     assert(row);
-    assert.equal(row.sectionQuestionCounts['午前の部'],11);
-    assert.equal(row.sectionQuestionCounts['午後の部'],22);
+    assert.equal(row.sectionTotalQuestionCounts['午前の部'],11);
+    assert.equal(row.sectionTotalQuestionCounts['午後の部'],22);
     assert.match(row.questionSources['午前の部'].url,/pm_q\.pdf$/);
     assert.match(row.questionSources['午後の部'].url,/am_q\.pdf$/);
     assert(!CATALOG.land_surveyor.archivedImportSources.some(x=>x.year===year));
