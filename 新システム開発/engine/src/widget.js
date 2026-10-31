@@ -1629,7 +1629,7 @@ a{color:inherit}
               if (typeof downloadUrl !== 'string' || new URL(downloadUrl).protocol !== 'https:') throw new Error('FILE_URL_UNAVAILABLE');
               refs.push({file_id:fileId,file_name:String(f.name),mime_type:'application/pdf',download_url:downloadUrl});
             }
-            var answerMatch = function(f){return /正答|正解|解答|seikai|answer|配点/i.test(f.file_name);};
+            var answerMatch = function(f){return /正答|正解|解答|seikai|answer|correct|配点/i.test(f.file_name);};
             var answerPdfs = refs.filter(answerMatch);
             var questionPdfs = refs.filter(function(f){return !answerMatch(f);});
             if (!questionPdfs.length) throw new Error('QUESTION_PDF_REQUIRED');
