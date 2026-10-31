@@ -18,7 +18,10 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: '3.11' }
       - name: PDF parser dependencies
-        run: pip install -r 新システム開発/parser/requirements.txt
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq tesseract-ocr-jpn
+          pip install -r 新システム開発/parser/requirements.txt
       - name: Unit tests - Japanese headings and section separation
         env:
           PYTHONPATH: 新システム開発/parser

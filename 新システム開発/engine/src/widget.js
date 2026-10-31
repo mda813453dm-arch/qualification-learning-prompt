@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v157.html';
+export const WIDGET_URI = 'ui://qlp/question-v158.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.157';
+export const WIDGET_VERSION = '2026-10-31.158';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -285,6 +285,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .question-table th,.question-table td{border:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
 .question-table th{background:var(--accbg);font-weight:700}
 .descriptive-source{margin:12px 0}.descriptive-source summary{cursor:pointer;font-weight:700;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}
+.descriptive-source-image{margin:8px 0 16px}.descriptive-source-image summary{cursor:pointer;color:var(--acc);font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}.descriptive-source-image[open] summary{margin-bottom:8px}
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .descriptive-explanation{font-size:16px;line-height:1.8;overflow-wrap:anywhere;margin:8px 0 18px}
 .descriptive-explanation p{margin:10px 0 16px;white-space:normal;line-height:1.85}
@@ -448,7 +449,8 @@ a{color:inherit}
   }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   function figureHtml(u, i){ return '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(safeUrl(u)) + '" aria-label="公式の問題の図' + (i + 1) + 'を拡大"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></button><div class="fig-hint">図をタップして拡大できます</div></div>'; }
-  // 問題文と表はネイティブ要素で表示する。公式図の画像だけ拡大できる。
+  // 問題文と表はネイティブ要素で表示する。原本の照合用画像は閉じておき、
+  // OCR本文の後ろに大量のスキャンページが展開される事故を防ぐ。
   function descriptiveBlockHtml(block, idx){
     if (!block) return '';
     if (block.kind === 'text') return '<p class="descriptive-text">' + esc(block.text || '') + '</p>';
@@ -463,7 +465,11 @@ a{color:inherit}
         '<thead>' + cells(rows[0], 'th') + '</thead><tbody>' + rows.slice(1).map(function(row){return cells(row, 'td');}).join('') +
         '</tbody></table></div>';
     }
-    if (block.kind === 'figure') return figureHtml(block.url, idx);
+    if (block.kind === 'figure') {
+      if (block.sourceOnly) return '<details class="descriptive-source-image"><summary>' +
+        esc(block.caption || 'このページの原本画像を確認する') + '</summary>' + figureHtml(block.url, idx) + '</details>';
+      return figureHtml(block.url, idx);
+    }
     return '';
   }
   function bindFigures(){ app.querySelectorAll('.fig-open').forEach(function(b){ b.onclick = function(){
@@ -801,7 +807,7 @@ a{color:inherit}
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         (lib.qualificationId === 'land_surveyor' ?
-          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015〜2021年度の原本・正答を照合済みの択一問題を取り込めます。2007〜2014年度の択一は採点しませんが、記述式は原本画像で出題できます。</p>' +
+          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015〜2021年度の原本・正答を照合済みの択一問題を取り込めます。2007〜2014年度の択一は採点しませんが、記述式はOCR本文と原本照合画像で出題できます。</p>' +
           '<div class="row"><button type="button" id="sourceManageLandArchive">旧年度の検証済み過去問を取り込む</button></div>' +
           '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p>' +
           '<div class="row"><button type="button" id="sourceManageLandDescriptive">記述式を出題（2007〜2025年度・採点なし）</button></div></div>' : '') +
@@ -1850,7 +1856,7 @@ a{color:inherit}
   function showDescriptiveMenu(year){
     year = Number(year) || 2025;
     app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
-      '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本ページ画像で表示します。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
+      '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本の日本語OCR本文と照合用画像を区別します（OCRは誤認識の可能性があります）。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
       Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
       '<div class="choices"><button data-desc="11">午前の部・問11（記述式）</button>' +
@@ -2603,7 +2609,7 @@ a{color:inherit}
         '<div>択一式（採点あり）：' + (range ? '<b>' + esc(range) + '</b>' : '利用可能年度を確認できません') + '</div>' +
         '<div><b>記述式（採点なし）：' + esc(writtenRange) + '・計' + esc(written.totalQuestions) + '問</b></div>' +
         '<ul class="ov-l library-years">' + writtenRows + '</ul>' +
-        (written.scannedYears?.length ? '<div>2007〜2014年度の記述式は保存版PDFの原本画像で出題します。択一式の採点対象ではありません。</div>' : '') +
+        (written.scannedYears?.length ? '<div>2007〜2014年度の記述式はOCR仮読取本文と原本照合画像で出題します（採点対象外）。</div>' : '') +
         '<div>学習開始後、問題画面の「記述式を開く」から年度と問11・21・22を選べます。</div>' +
         '</div>';
     }

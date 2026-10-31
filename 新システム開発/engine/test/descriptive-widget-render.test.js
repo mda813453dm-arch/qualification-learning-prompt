@@ -17,6 +17,21 @@ const { esc, explanationHtml } = new Function('descriptiveBlockHtml',
       : ''
   );
 
+test('旧年度スキャンの本文は文字で表示し、原本画像は必要時だけ開く',()=>{
+  const begin=script.indexOf('  function safeUrl(u)');
+  const end=script.indexOf('  function bindFigures()',begin);
+  assert.ok(begin>=0 && end>begin);
+  const render=new Function('esc',script.slice(begin,end)+'\nreturn descriptiveBlockHtml;')(esc);
+  const prose=render({kind:'text',ocr:true,text:'第11問　座標値を求めなさい。'},0);
+  const image=render({kind:'figure',sourceOnly:true,page:11,caption:'原本11ページ',url:'https://qlp.test/source.png'},1);
+  assert.match(prose,/<p class="descriptive-text">第11問/);
+  assert.match(image,/<details class="descriptive-source-image">/);
+  assert.match(image,/<summary>原本11ページ<\/summary>/);
+  assert.doesNotMatch(image,/<details[^>]*open/);
+  assert.ok(html.includes('2007〜2014年度は原本の日本語OCR本文と照合用画像を区別'),
+    '旧年度のOCRを検証済み転記として誤認させない');
+});
+
 test('学習計画の「記述式から始める」は土地家屋調査士だけで開始時に反映する',()=>{
   const start=script.indexOf('  function isDescriptiveStartWish(note){');
   const end=script.indexOf('  function planRevised(reason){', start);

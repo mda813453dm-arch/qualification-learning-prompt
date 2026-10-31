@@ -108,7 +108,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
                 shownAt: ++window.descriptiveCounter,
                 gradingMode: 'none', text: '第21問\n観測結果\n器械点  視準点\nT1  T2  0°\n見取図\nA\nB\nC',
                 pages: [{ page: 24, url: 'https://qlp.test/original.png' }],
-                layout: [
+                layout: args.year <= 2014 ? [
+                  { kind: 'text', ocr: true, page: 11, text: '【原本 11ページ・OCR】\n第11問　座標値と見取図の条件を確認する。' },
+                  { kind: 'figure', sourceOnly:true, caption:'原本 11ページ（図・表・数値の照合用）',
+                    file:'f1.png', page:11, url:'https://qlp.test/original.png' },
+                ] : [
                   { kind: 'text', text: '第21問 観測結果を使って計算する。' },
                   { kind: 'table', caption: '〔測量成果〕', rows: [['点名','X座標(m)','Y座標(m)'], ['A','200.00','199.50']] },
                   { kind: 'figure', file: 'f1.png', page: 24, url: 'https://qlp.test/figure.png' },
@@ -648,6 +652,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '次の記述式へ' }).click();
     await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
     assert.equal(await ui.locator('input[name=ans]').count(), 0);
+
+    // 実機報告の2007年・午前11は文字OCRを主表示にし、原本画像は閉じた照合欄に置く。
+    await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
+    await ui.locator('#descriptiveYear').selectOption('2007');
+    await ui.getByRole('button', { name: '午前の部・問11（記述式）' }).click();
+    await ui.getByRole('heading', { name: '2007年度 午前の部 問11' }).waitFor();
+    assert.match(await ui.locator('#descriptiveSource .descriptive-text').allInnerTexts().then(v=>v.join(' ')), /座標値と見取図/);
+    assert.equal(await ui.locator('#descriptiveSource .descriptive-source-image:not([open])').count(),1,
+      '照合画像を問題本文の代わりに展開しない');
+    await ui.locator('.descriptive-source-image summary').click();
+    assert.equal(await ui.locator('.descriptive-source-image[open] .fig-open').count(),1,
+      '原本は利用者が開いて図・数値を拡大確認できる');
+    assert.equal(await ui.locator('input[name=ans]').count(),0,'旧年度でも自動採点しない');
 
     // 明示された問6が別分野でも、解説/確認/実践を選ぶ画面に差し替えず直接表示する。
     const namedQ6 = { status:'question', sessionId,

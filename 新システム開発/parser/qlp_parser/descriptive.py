@@ -268,13 +268,15 @@ def structured_descriptive(doc, nums):
     return blocks, images
 
 def _extract_scanned_descriptive(doc, *, year, section, number, known, source):
-    """Render only the audited original pages; never OCR or reconstruct measurements.
+    """Read scan prose locally and retain source pages for numerical verification.
 
-    This path deliberately does not generate selectable prose, answer numbers,
-    official solutions, or any grading packet. The static intervals can only be
-    used with the matching immutable 2007-2014 source PDF.
+    Archived scans have no PDF text layer. The immutable page inventory excludes
+    function tables, answer-card instructions, and material from other questions.
+    OCR is not certified transcription: never derive official answer values or
+    a grading packet from it. Every selected page is still inspectable as source.
     """
     import fitz
+    from . import ocr
 
     _, total_pages, question_ranges = source
     if len(doc) != total_pages:
@@ -285,29 +287,48 @@ def _extract_scanned_descriptive(doc, *, year, section, number, known, source):
     if not 1 <= first <= last <= total_pages or last-first+1 > MAX_DESCRIPTIVE_PAGES:
         raise DescriptiveError("DESCRIPTIVE_SCANNED_PAGE_RANGE_INVALID")
     nums = list(range(first, last+1))
+    if not ocr.available():
+        raise DescriptiveError("DESCRIPTIVE_SCANNED_OCR_UNAVAILABLE")
     pages, diagrams = {}, {}
-    layout = [
-        {"kind":"text", "text":f"第{number}問　過去問原本の画像表示"},
-        {"kind":"text", "text":"画像中心の保存版PDFです。本文・数値表・図面は画像を拡大して確認してください。文字のOCR復元や自動採点は行いません。"},
-    ]
+    layout = [{"kind":"text", "text":
+        "以下の本文は原本スキャンからのOCR仮読取です。誤認識の可能性があるため、数値・設問条件・図表は各ページの原本画像で照合してください。"}]
+    text_parts = []
     for index, page_number in enumerate(nums, 1):
         page = doc[page_number-1]
         if page.rect.is_empty or page.rect.width < 200 or page.rect.height < 200:
             raise DescriptiveError("DESCRIPTIVE_SCANNED_PAGE_INVALID")
+        lines = ocr.page_ocr_local(page, psm="3")
+        readable = []
+        for y0, _, line, _, _ in lines:
+            line = _norm(line)
+            if (not line or y0 > page.rect.height - 42 or FOOTER.fullmatch(line) or
+                len(line) > 400 or not re.search(r"[\u3040-\u30ff\u3400-\u9fff]{2}|第\s*\d+\s*問",line)):
+                continue
+            readable.append(line)
+        if readable:
+            paragraph = "\n".join(readable)
+            text_parts.append(paragraph)
+            layout.append({"kind":"text", "text":f"【原本 {page_number}ページ・OCR】\n"+paragraph,
+                           "ocr":True,"page":page_number})
+        # Images are reference material, not the main question body. The source
+        # opens only when tapped; long scanned pages no longer flood the widget.
         png = page.get_pixmap(matrix=fitz.Matrix(1.8, 1.8), alpha=False).tobytes("png")
         encoded = base64.b64encode(png).decode("ascii")
         pages[f"p{page_number}.png"] = encoded
         filename = f"f{index}.png"
         diagrams[filename] = encoded
         layout.append({"kind":"figure", "page":page_number, "file":filename,
-                       "caption":f"保存版原本 {page_number}ページ"})
+                       "caption":f"原本 {page_number}ページ（図・表・数値の照合用）",
+                       "sourceOnly":True})
+    if sum(len(re.findall(r"[\u3040-\u30ff\u3400-\u9fff]", v)) for v in text_parts) < 40:
+        raise DescriptiveError("DESCRIPTIVE_SCANNED_TEXT_UNVERIFIED")
     return {
         "status":"ready", "kind":"descriptive", "year":year, "section":section,
         "number":number, "questionSha256":known, "pages":pages,
         "pageNumbers":nums, "layout":layout, "diagrams":diagrams,
-        "text":f"第{number}問　保存版原本の{first}〜{last}ページを画像で表示しています。",
+        "text":f"第{number}問\n"+"\n\n".join(text_parts)[:39000],
         "textComplete":False, "gradingMode":"none", "solutionAvailable":False,
-        "notice":"画像原本を閲覧する記述式です。模範解答は生成せず、自動採点もしません。",
+        "notice":"OCR本文は仮読取です。数値・図は原本画像で確認してください。採点は行いません。",
     }
 
 

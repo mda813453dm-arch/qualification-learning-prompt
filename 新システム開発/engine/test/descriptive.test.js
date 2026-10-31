@@ -79,13 +79,13 @@ test('記述式の画面・解答表示には正答番号・正誤・自動採�
   }
 });
 
-test('画像中心の旧記述式は採点せず、原本ページを拡大して読む案内を出す', () => {
+test('OCR仮読取の旧記述式は採点せず、原本画像との照合を促す', () => {
   const spec=descriptiveSpec(2014,'午後の部',22,pins);
   const view=descriptiveView({ ...spec,text:'第22問 原本画像',
     pages:[{page:31,url:'https://example.test/original.png'}],layout:[] },'session');
   assert.equal(view.question.gradingMode,'none');
   assert.equal(view.question.correctAnswer,undefined);
-  assert.match(view.notice,/保存版PDFの原本ページ画像/);
+  assert.match(view.notice,/OCRによる本文の仮読取と原本画像/);
 });
 
 test('記述式のAI解説では原本を再掲せず三角関数・複素数を指示する', () => {

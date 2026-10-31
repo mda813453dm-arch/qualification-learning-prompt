@@ -124,7 +124,7 @@ const restored22=await api('GET',prefix+'/descriptive/actions?questionId='+encod
 assert.equal(restored22.explanationMarkdown,buildingFixture);
 assert.equal((await api('GET',prefix+'/restore')).status,'descriptiveActions');
 console.log('PASS current-question Q21→Q22 AI explanation registration and same-frame restoration, no grading');
-// 2007-2014 scan-only mode: original pages, no OCR-generated values and no grading.
+// 2007-2014 scan mode: offline OCR text, inspectable original, no grading.
 // One real historical section is checked end-to-end; the 24-question PDF matrix
 // is independently validated by the parser audit workflow.
 const historical=await api('POST',prefix+'/descriptive',
@@ -134,10 +134,13 @@ assert.equal(historical.question.questionId,'land_surveyor:2014:午後の部:22'
 assert.equal(historical.question.gradingMode,'none');
 assert.equal(historical.question.correctAnswer,undefined);
 assert.equal(historical.question.choices,undefined);
-assert.equal(historical.question.pages.length,8);
-assert.match(historical.notice,/保存版PDFの原本ページ画像/);
+assert.equal(historical.question.pages.length,7);
+assert.match(historical.notice,/OCRによる本文の仮読取と原本画像/);
 const historicalFigures=historical.question.layout.filter(x=>x.kind==='figure');
-assert.deepEqual(historicalFigures.map(x=>x.page),[31,32,33,34,35,36,37,38]);
+assert.deepEqual(historicalFigures.map(x=>x.page),[31,32,33,34,35,36,37]);
+assert.ok(historicalFigures.every(x=>x.sourceOnly===true),'scanned source pages start collapsed');
+assert.ok(historical.question.layout.some(x=>x.kind==='text'&&x.ocr===true&&x.text.length>40),
+  'the question body is selectable OCR text, not an all-image question');
 assert.ok(historical.question.layout.filter(x=>x.kind==='table').length===0,
   'scanned source must not reconstruct table cell values');
 for(const figure of [historicalFigures[0],historicalFigures.at(-1)]) {

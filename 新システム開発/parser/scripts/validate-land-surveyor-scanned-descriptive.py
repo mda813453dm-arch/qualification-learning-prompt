@@ -55,10 +55,12 @@ def main(args):
                                            number=number,expected_sha=sha)
                 expected=list(range(start,end+1))
                 figures=[x for x in result["layout"] if x["kind"]=="figure"]
+                ocr_text=[x for x in result["layout"] if x["kind"]=="text" and x.get("ocr")]
                 if not (result["status"]=="ready" and result["kind"]=="descriptive" and
                         result["pageNumbers"]==expected and result["gradingMode"]=="none" and
                         result["solutionAvailable"] is False and result["textComplete"] is False and
                         result["questionSha256"]==sha and len(figures)==len(expected) and
+                        len(ocr_text)>=1 and all(f.get("sourceOnly") for f in figures) and
                         len(result["pages"])==len(expected) and len(result["diagrams"])==len(expected) and
                         "correctAnswer" not in result and "answerPdfSha256" not in result and
                         all((lambda png: png.startswith(b"\x89PNG\r\n\x1a\n") and

@@ -55,7 +55,7 @@ class DescriptiveTest(unittest.TestCase):
                          ["text", "text", "figure"])
         self.assertEqual(len(result["diagrams"]), 1)
 
-    def test_scanned_original_is_image_only_and_never_graded(self):
+    def test_scanned_original_has_local_ocr_and_collapsed_source_images_never_graded(self):
         doc = fitz.open()
         for _ in range(4):
             doc.new_page(width=595,height=842)
@@ -63,7 +63,11 @@ class DescriptiveTest(unittest.TestCase):
         doc.close()
         sha = hashlib.sha256(raw_pdf).hexdigest()
         fake = {2007:{"午前の部":(sha,4,{11:(2,3)})}}
-        with patch.object(descriptive,"SCANNED_DESCRIPTIVE",fake):
+        from qlp_parser import ocr
+        lines = [(100,115,"第11問　原本からOCRした問題文を記録します。観測記録と図面を照合します。",80,[])]
+        with patch.object(descriptive,"SCANNED_DESCRIPTIVE",fake), \
+             patch.object(ocr,"available",return_value=True), \
+             patch.object(ocr,"page_ocr_local",return_value=lines):
             result = extract_descriptive(pdf_bytes=raw_pdf,year=2007,
                 section="午前の部",number=11,expected_sha=sha)
             with self.assertRaisesRegex(DescriptiveError,"DESCRIPTIVE_SHA_MISMATCH"):
@@ -71,7 +75,9 @@ class DescriptiveTest(unittest.TestCase):
                     section="午前の部",number=11,expected_sha="0"*64)
         self.assertEqual(result["pageNumbers"],[2,3])
         self.assertEqual([x["kind"] for x in result["layout"]],
-                         ["text","text","figure","figure"])
+                         ["text","text","figure","text","figure"])
+        self.assertTrue(all(x.get("sourceOnly") for x in result["layout"] if x["kind"]=="figure"))
+        self.assertIn("第11問", result["text"])
         self.assertEqual(result["gradingMode"],"none")
         self.assertFalse(result["textComplete"])
         self.assertFalse(result["solutionAvailable"])
@@ -92,6 +98,25 @@ class DescriptiveTest(unittest.TestCase):
                     self.assertLessEqual(end-start+1,12)
                 if section=="午後の部":
                     self.assertEqual(questions[21][1]+1,questions[22][0])
+                    self.assertEqual(questions[22][1],page_count-1,
+                                     "answer-sheet sample must not appear")
+                else:
+                    self.assertEqual(questions[11][1],page_count-2,
+                                     "function table and answer-sheet sample must not appear")
+
+    def test_missing_japanese_ocr_stops_without_returning_image_only_question(self):
+        from qlp_parser import ocr
+        doc=fitz.open()
+        doc.new_page(width=595,height=842)
+        doc.new_page(width=595,height=842)
+        pdf=doc.tobytes()
+        doc.close()
+        sha=hashlib.sha256(pdf).hexdigest()
+        fake={2007:{"午前の部":(sha,2,{11:(1,1)})}}
+        with patch.object(descriptive,"SCANNED_DESCRIPTIVE",fake), \
+             patch.object(ocr,"available",return_value=False):
+            with self.assertRaisesRegex(DescriptiveError,"DESCRIPTIVE_SCANNED_OCR_UNAVAILABLE"):
+                extract_descriptive(pdf_bytes=pdf,year=2007,section="午前の部",number=11,expected_sha=sha)
 
 
 if __name__ == "__main__":

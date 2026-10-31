@@ -223,6 +223,18 @@ def page_ocr(page, psm="6"):
     return _PAGE_CACHE[key]
 
 
+def page_ocr_local(page, psm="3"):
+    """Use the installed Japanese Tesseract model only, never paid/cloud Vision.
+
+    Historical descriptive questions are scans. Their text is explicitly marked
+    as OCR and the original page remains available for checking numbers/figures.
+    """
+    if not available():
+        return []
+    key, png, zoom, ox, oy = _render(page, psm)
+    return _recognize(png, zoom, ox, oy, psm, use_vision=False)
+
+
 def prefetch(pages, workers=4, force=False):
     """OCRが要るページを並行して読み、控えに入れておく（1ページずつ順に読むと時間がかかるため）。"""
     if not available():
