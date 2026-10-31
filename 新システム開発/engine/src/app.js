@@ -2157,6 +2157,26 @@ async function route(request, env, url, now) {
     return json(200, await attachPdfBatch(env, id, state, b, url, now));
   }
 
+  // 旧年度の法務省公開資料の保存版。事前にハッシュ・正答列・全問解析を照合した
+  // 年度／試験区分に限って取り込む。未検証年度や記述式は追加・自動採点しない。
+  if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' &&
+      parts[3] === 'import-land-surveyor-archive' && parts.length === 4) {
+    const { id, state } = await resolveSession(env, parts[2], now);
+    await gateUse(env, state.learnerId, now);
+    if (state.qualificationId !== 'land_surveyor')
+      throw new HttpError(422, 'LAND_SURVEYOR_ARCHIVE_QUALIFICATION_MISMATCH');
+    const sources = catalogFor(state.qualificationId)?.archivedImportSources ?? [];
+    if (!sources.length) throw new HttpError(422, 'LAND_SURVEYOR_ARCHIVE_NOT_VERIFIED');
+    const checked = checkSources(sources, state.qualificationId, state.learnerId);
+    await startJob(env.STORE, sessionJobId(state), checked, now, { persistent: true });
+    await markEngineSources(env, checked);
+    await kickIngest(env, sessionJobId(state), now);
+    return json(200, { status:'archivedImportQueued', sessionId:id,
+      requestedSections:checked.length,
+      years:[...new Set(checked.map(x=>x.year))].sort((a,b)=>a-b),
+      notice:'検証済みの旧年度資料の取り込みを開始しました。学習履歴を保持し、原本と正答の再検証が完了した区分だけ利用できます。' });
+  }
+
   // 通関士2025の4公式PDFは公開元から直接取得できるため、過去ターンの添付参照を要求しない。
   // 科目別の問題・公式正答・通関実務別冊を区別し、検証済み問題だけが出題可能になる。
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' &&
