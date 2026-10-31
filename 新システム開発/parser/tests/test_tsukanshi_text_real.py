@@ -50,7 +50,8 @@ class CustomsOfficialTextTests(unittest.TestCase):
                     self.assertIn("環太平洋パートナーシップ", q16["choices"][0])
                     self.assertEqual(q16["figures"], [])
                 if section == "通関実務":
-                    assert images := {p["questionNumber"] for p in packets if p["figures"]}
+                    images = {p["questionNumber"] for p in packets if p["figures"]}
+                    self.assertTrue(images)
                     self.assertEqual(images, {15, 16}, "only actual source tables should be images")
                     q15 = next(p for p in packets if p["questionNumber"] == 15)
                     self.assertNotIn("関税率表の部及び類の表題第１部", q15["choices"][4])
