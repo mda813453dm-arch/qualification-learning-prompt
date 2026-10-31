@@ -1287,7 +1287,7 @@ test('土地家屋調査士：試験概要→免除と学習状況→午後中�
   assert.equal(view.fieldName, afternoon[0]);
   assert.match(view.notice, /添付すると原本を照合/);
   assert.deepEqual(view.sharedLibrary.stored, [], '未保存の年度を保存済みと表示しない');
-  assert.equal(view.sharedLibrary.missing.length, 8);
+  assert.equal(view.sharedLibrary.missing.length, 15);
   assert.equal((await app('nextQuestion', { sessionId: sid })).structuredContent.sharedLibrary, undefined,
     '保存状況の詳細や内部照会情報をAIの会話へ流さない');
   assert.doesNotMatch(view.notice, /準備していま/);
@@ -1334,7 +1334,7 @@ test('土地家屋調査士2022〜2025：添付の部・年度・正答を確認
   assert.equal(before._meta.qlp.status, 'sourceUnavailable');
   const source = { download_url: 'https://attachment.example/afternoon.pdf' };
   const key = { download_url: 'https://attachment.example/answer.pdf' };
-  const bad = await callUi('attachPdf', { sessionId, year: 2021, section: '午後の部', questionPdf: source, answerPdf: key });
+  const bad = await callUi('attachPdf', { sessionId, year: 2014, section: '午後の部', questionPdf: source, answerPdf: key });
   assert.equal(bad.isError, true, '未照合年度を誤って取り込まない');
   const noSection = await callUi('attachPdf', { sessionId, year, questionPdf: source, answerPdf: key });
   assert.equal(noSection.isError, true, '午前午後の区分がない場合は取り込まない');
@@ -1387,7 +1387,7 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
     packetCount: 20, excluded: [], packets };
   const empty = await officialLibrary(env.STORE, cat, '0.8.2', T0);
   assert.deepEqual(empty.stored, []);
-  assert.equal(empty.missing.length, 8, '対応年度と共通保存済みは異なる');
+  assert.equal(empty.missing.length, 15, '対応年度と共通保存済みは異なる');
 
   // SHAが異なる保存内容は共有の年度一覧に出さない。
   await writeResult(env.STORE, { ...p, questionSha256: 'a'.repeat(64) },
@@ -1397,7 +1397,7 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
   const shared = await officialLibrary(env.STORE, cat, '0.8.2', T0);
   assert.deepEqual(shared.stored, [{ year: 2025, section: '午後の部', questions: 20, writtenQuestions: 2 }]);
   assert.equal(shared.completeYears.length, 0, '午前が未保存なら年度全体は保存済みと呼ばない');
-  assert.equal(shared.missing.length, 7);
+  assert.equal(shared.missing.length, 14);
 
   let fetched = 0;
   env.fetchAttached = async () => { fetched += 1; throw new Error('SHOULD_NOT_FETCH_ATTACHMENT'); };
