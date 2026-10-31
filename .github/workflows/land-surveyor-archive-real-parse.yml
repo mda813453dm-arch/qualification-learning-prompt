@@ -1,0 +1,29 @@
+name: 土地家屋調査士 旧年度公式過去問の実原本・正答PDF一体検証
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/parser/scripts/validate-land-surveyor-archive.py'
+      - '新システム開発/parser/qlp_parser/adapters/land_surveyor.py'
+      - '新システム開発/engine/data/land-surveyor-archive-source-manifest.json'
+      - '.github/workflows/land-surveyor-archive-real-parse.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        year: [2015, 2017, 2018, 2019, 2021]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install only local open-source PDF parser
+        run: pip install --quiet pymupdf
+      - name: Validate real archived exam and matching annual answers
+        run: python 新システム開発/parser/scripts/validate-land-surveyor-archive.py ${{ matrix.year }}
