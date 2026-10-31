@@ -1571,6 +1571,7 @@ a{color:inherit}
       h += '<div class="notice">全分野の実践問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
     }
     h += '<h2>' + esc((q.year ? q.year + '年度 ' : '') + (q.section === '午前の部' || q.section === '午後の部' ? q.section + ' ' : '') + '問' + q.questionNumber) + '</h2>';
+    if (!data.restored) h += sourceManagerBar();
     if (data.fieldNotice) h += '<div class="notice"><b>' + esc(data.fieldNotice) + '</b></div>';
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
@@ -1583,7 +1584,6 @@ a{color:inherit}
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
     if (safeUrl(q.questionPdfUrl) && !String(q.questionPdfUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
-    if (!data.restored) h += sourceManagerBar();
     app.innerHTML = h;
     // 再開直後の未回答問では、その場から学習を終了できるようにする。
     if (data.restored) app.insertAdjacentHTML('beforeend', endBar());
