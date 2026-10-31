@@ -1647,6 +1647,26 @@ async function route(request, env, url, now) {
   const auth = (request.headers.get('authorization') ?? '').trim();
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED', authHint(auth, env.API_TOKEN));
 
+  // 公開前の共通過去問登録。対象はコードで固定した検証済み7区分だけ。
+  // 実際のPDFハッシュ・正答・問数は解析器で再照合する。学習者の履歴は変更しない。
+  if (method === 'POST' && url.pathname === '/v1/admin/seed-land-surveyor-archive') {
+    const cat = catalogFor('land_surveyor');
+    const vetted = Array.isArray(cat?.archivedImportSources) ? cat.archivedImportSources : [];
+    if (!vetted.length || vetted.length > 10) throw new HttpError(422, 'LAND_SURVEYOR_ARCHIVE_NOT_VERIFIED');
+    // 同一元資料からのみ共通登録し、他年度や未検証午前を推測して追加しない。
+    const sources = checkSources(vetted, 'land_surveyor', '_shared');
+    const sharedJobId = 'land_surveyor~_archive_shared';
+    await startJob(env.STORE, sharedJobId, sources, now, { persistent: true });
+    await markEngineSources(env, sources);
+    await kickIngest(env, sharedJobId, now);
+    const job = await readJob(env.STORE, sharedJobId);
+    return json(200, { status: 'archivedSharedImportQueued', jobId: sharedJobId,
+      requestedSections: sources.length, years: [...new Set(sources.map(x=>x.year))].sort((a,b)=>a-b),
+      doneSections: (job?.sources || []).filter(x=>x.status==='done').length,
+      failedSections: (job?.sources || []).filter(x=>x.status==='failed').length,
+      notice: '検証済みの旧年度問題だけを共通登録中。各PDFを再検証後に出題可能になります。' });
+  }
+
   // 運営者の操作：利用コードの追加・無効化・回数の変更（合言葉で守る）
   if (method === 'POST' && url.pathname === '/v1/admin/access') {
     return json(200, await accessAdmin(env.STORE, await body(request), jstToday(now)));
