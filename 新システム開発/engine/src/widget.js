@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v150.html';
+export const WIDGET_URI = 'ui://qlp/question-v151.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.150';
+export const WIDGET_VERSION = '2026-10-31.151';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1949,6 +1949,10 @@ a{color:inherit}
     var q = d.question || {};
     state.question = null; state.answered = false;
     var withExplanation = typeof d.explanationMarkdown === 'string' && !!d.explanationMarkdown.trim();
+    if (!withExplanation) {
+      // ボタンだけの画面を完成扱いにしない。同一枠への解説登録を待つ。
+      showDescriptivePending(q); return;
+    }
     app.innerHTML = '<h2>' + (withExplanation ? 'AI参考解答・解説' : '解説後の操作') + '｜' + esc(q.year) + '年度 ' + esc(q.section) +
       ' 問' + esc(q.number) + '</h2>' +
       (withExplanation ? '<div class="notice">AIによる参考解説です。公式模範解答としての採点は行いません。</div>' +
@@ -1959,35 +1963,51 @@ a{color:inherit}
     if (!publishDescriptive(q, 'actions')) return;
     scrollUp(); bindEnd(); bindDescriptiveNavigation(q);
   }
+  var descriptivePublishWait = 0;
+  function showDescriptivePending(q){
+    app.innerHTML = '<h2>' + esc(q.year) + '年度 ' + esc(q.section) + ' 問' + esc(q.number) + '｜解説の準備中</h2>' +
+      '<div class="notice" role="status">AI参考解答・解説をこの学習枠内に登録しています。確認できた解説の直下に操作ボタンを表示します。採点はしません。</div>' +
+      '<div class="row"><button id="retryDescriptivePublish">解説の登録状況を再確認する</button></div>';
+    if (!publishDescriptive(q, 'reveal')) return;
+    scrollUp();
+    document.getElementById('retryDescriptivePublish').onclick = function(){ waitForPublishedDescriptive(q); };
+  }
+  async function waitForPublishedDescriptive(q){
+    var ticket = ++descriptivePublishWait;
+    var deadline = Date.now() + (window.__qlpTestExplanationWaitMs || 75000);
+    while (Date.now() < deadline) {
+      if (ticket !== descriptivePublishWait || locked || !descriptiveScreen ||
+          descriptiveScreen.sessionId !== state.sessionId ||
+          descriptiveScreen.questionId !== q.questionId ||
+          Number(descriptiveScreen.shownAt) !== Number(q.shownAt) ||
+          descriptiveScreen.role !== 'reveal') return;
+      try {
+        var response = await callTool('getDescriptiveActions', {
+          sessionId:state.sessionId, questionId:q.questionId
+        });
+        if (response && response.status === 'descriptiveActions' &&
+            response.explanationMarkdown && response.question?.questionId === q.questionId &&
+            Number(response.question.shownAt) === Number(q.shownAt)) {
+          render(response); return;
+        }
+      } catch(e) { /* モデルが解説を登録する前は409。後で同じ問だけ再照会する。 */ }
+      await new Promise(function(done){ setTimeout(done, 3000); });
+    }
+    if (ticket === descriptivePublishWait && descriptiveScreen?.role === 'reveal' &&
+        descriptiveScreen.questionId === q.questionId) {
+      var status = app.querySelector('[role="status"]');
+      if (status) status.textContent = 'AI参考解説の登録完了をまだ確認できていません。未確認の解説や操作ボタンは表示しません。「再確認する」でこの問題の登録状態を読み直せます。';
+    }
+  }
   function showDescriptiveQuestion(d){
     var q = d.question || {};
     state.question = null; state.answered = false;
     var label = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
     var already = d.status === 'descriptiveReveal';
     if (already){
-      // 解説の前に問題や図をもう一度表示しない。AIは保存済み原本を別経路から取得できる。
-      app.innerHTML = '<h2>' + esc(label) + '｜解説へ</h2>' +
-        '<div class="notice" role="status">元の問題を繰り返さず、AI参考解説をこの下の会話に表示します。操作パネルはAIが取得できた場合にのみ表示されます。表示されない場合は解説末尾の番号選択肢を利用してください。</div>' +
-        '<div class="notice">【操作パネルが下に出ない場合】解説の末尾で番号を返信して進むか、ここまで上に戻って下のボタンを押してください。</div>' +
-        '<div class="row"><button id="fallbackDescriptiveActions">解説後の操作パネルを開く（上に戻った場合）</button></div>';
-      if (!publishDescriptive(q, 'reveal')) return;
-      scrollUp();
-      document.getElementById('fallbackDescriptiveActions').onclick = async function(){
-        this.disabled = true;
-        try {
-          if (!await requireCurrentDescriptive(q)) return;
-          var response;
-          try { response = await callTool('getDescriptiveActions', { sessionId: state.sessionId, questionId: q.questionId }); } catch (_) { /* older app connector: use nextQuestion */ }
-          if (!response || response.status !== 'descriptiveActions') {
-            response = await callTool('nextQuestion', { sessionId: state.sessionId, question: '記述式解説後の操作メニュー:' + q.questionId });
-          }
-          if (!response || response.status !== 'descriptiveActions') throw new Error('ACTIONS_UNAVAILABLE');
-          render(response);
-        } catch(e){
-          var old = document.getElementById('fallbackDescriptiveActions'); if(old) old.disabled = false;
-          app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">操作パネルを取得できませんでした。会話で「今の問題の操作メニューを表示」と入力してください。</div>');
-        }
-      };
+      // チャットへの本文出力で代用しない。保存済みの解説全文を同じ枠へ読取復元する。
+      showDescriptivePending(q);
+      waitForPublishedDescriptive(q);
       return;
     }
     var blocks = (q.layout || []).map(descriptiveBlockHtml).join('');
@@ -1999,7 +2019,7 @@ a{color:inherit}
     if (safeUrl(q.sourceUrl) && !String(q.sourceUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">' + (String(q.sourceUrl).includes('izuki.net/') ? '過去問保存版PDFを開く' : '公式の問題PDFを開く') + '</a></div>';
     h += '<div class="notice">公式模範解答は確認できていません。AIの参考解答は自動採点しません。</div>';
     if (blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
-    h += '<div class="notice">解説を表示した後は、解説の下にある最新の操作パネルを使用してください。見当たらない場合は上に戻る必要があります。</div>';
+    h += '<div class="notice">解説を依頼すると、この学習枠内にAI参考解説と操作ボタンを順に表示します。登録を確認できるまで未完了として扱います。</div>';
     h += descriptiveMenuButtons() + endBar();
     app.innerHTML = h;
     if (!publishDescriptive(q, 'question')) return;
@@ -3575,7 +3595,13 @@ a{color:inherit}
     syncDisplayMode();
     // iOSではMCPブリッジ初期化後に初回toolOutputが到着する場合がある。
     // bridgeReadyで遮断すると初回問題が描画されず、利用者の再要求で初めて表示される。
-    if (window.openai && !hasView) render(openaiOutput());
+    var latest = openaiOutput();
+    if (window.openai && !hasView) render(latest);
+    else if (latest?.status === 'descriptiveActions' && latest.explanationMarkdown &&
+        descriptiveScreen && latest.sessionId === descriptiveScreen.sessionId &&
+        latest.question?.questionId === descriptiveScreen.questionId &&
+        Number(latest.question.shownAt) === Number(descriptiveScreen.shownAt))
+      render(latest);
   });
   function openaiOutput(){ var o = window.openai; return o ? ((o.toolResponseMetadata && o.toolResponseMetadata.qlp) || o.toolOutput) : null; }
   // MCP本体のバージョンとMCP Apps UIのバージョンは別。部分的なopenai.toolOutputがあっても初期化する。

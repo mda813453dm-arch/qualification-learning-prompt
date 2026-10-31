@@ -17,6 +17,12 @@ assert.ok(session.sessionId && session.learnerId);
 const prefix='/v1/sessions/'+encodeURIComponent(session.sessionId);
 const study=await api('POST','/v1/study/start',{qualificationName:'土地家屋調査士',learnerId:session.learnerId});
 assert.ok(study.studyId);
+// 合成の非公開スモークテスト文。実際の過去問の参考解答として学習者へ提供しない。
+const landFixture='## 問1：テスト用照合\n'+'原本の条件、根拠、通常解法、三角関数・座標法、検算を小問ごとに確認する（テスト用）。'.repeat(12)+
+  '\n## 問2：テスト用計算照合\n'+'必要な面積計算は通常解法と複素数を照合し、原本で未確認の値は推測しない（テスト用）。'.repeat(12)+
+  '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
+const buildingFixture='## 問1：テスト用建物要件\n'+ '原本の建物に関する法的根拠と確認範囲を検証し、数値や図面は推測しない（テスト用）。'.repeat(6)+
+  '\n## 問2：テスト用登記手続\n'+ '申請書類と確認できない条件を区別し、公式模範解答と称しない（テスト用）。'.repeat(6);
 for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['午後の部',22,9]]) {
   const d=await api('POST',prefix+'/descriptive',{year:2025,section,number:n});
   assert.equal(d.status,'descriptiveQuestion');
@@ -67,6 +73,7 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   }
   const ctx=await api('GET',prefix+'/descriptive/context');
   assert.equal(ctx.questionId,d.question.questionId);
+  assert.equal(ctx.shownAt,d.question.shownAt);
   assert.equal(ctx.officialModelAnswerVerified,false);
   const shown=await api('POST',prefix+'/descriptive/reveal',{});
   assert.equal(shown.status,'descriptiveReveal');
@@ -77,11 +84,36 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   assert.equal(restored.question.layout,undefined,'revealed/restored question does not re-send full original');
   assert.equal(shown.question.layout,undefined,'reveal response is compact');
   assert.equal(shown.question.text,undefined,'original text stays on server for AI reference only');
+  if (n===21){
+    const registered=await api('POST',prefix+'/descriptive/actions',
+      {questionId:ctx.questionId,shownAt:ctx.shownAt,explanationMarkdown:landFixture});
+    assert.equal(registered.status,'descriptiveActions');
+    assert.equal(registered.explanationMarkdown,landFixture);
+    assert.equal(registered.grade,undefined);
+    const saved=await api('GET',prefix+'/descriptive/actions?questionId='+encodeURIComponent(ctx.questionId));
+    assert.equal(saved.explanationMarkdown,landFixture,'現在の問21の解説を学習枠用に復元');
+    assert.equal((await api('GET',prefix+'/restore')).status,'descriptiveActions');
+  }
   const image=await fetch(d.question.pages[0].url,{signal:AbortSignal.timeout(30000)});
   assert.ok(image.ok,'official page image '+n);
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,4)],[137,80,78,71]);
   console.log('PASS structured descriptive',section,n,'pages',count,'tables',nativeTables.length,'diagrams',figBlocks.length);
 }
+// 問22を再取得した直後に reveal 通知が欠ける場合も、同じ現行問だけ登録可能。
+const reopened22=await api('POST',prefix+'/descriptive',
+  {year:2025,section:'午後の部',number:22});
+const context22=await api('GET',prefix+'/descriptive/context');
+assert.equal(context22.questionId,reopened22.question.questionId);
+assert.equal(context22.revealed,false);
+const saved22=await api('POST',prefix+'/descriptive/actions',
+  {questionId:context22.questionId,shownAt:context22.shownAt,explanationMarkdown:buildingFixture});
+assert.equal(saved22.status,'descriptiveActions');
+assert.equal(saved22.explanationMarkdown,buildingFixture);
+assert.equal(saved22.grade,undefined);
+const restored22=await api('GET',prefix+'/descriptive/actions?questionId='+encodeURIComponent(context22.questionId));
+assert.equal(restored22.explanationMarkdown,buildingFixture);
+assert.equal((await api('GET',prefix+'/restore')).status,'descriptiveActions');
+console.log('PASS current-question Q21→Q22 AI explanation registration and same-frame restoration, no grading');
 // 2007-2014 scan-only mode: original pages, no OCR-generated values and no grading.
 // One real historical section is checked end-to-end; the 24-question PDF matrix
 // is independently validated by the parser audit workflow.

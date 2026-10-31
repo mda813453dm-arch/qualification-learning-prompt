@@ -403,7 +403,8 @@ async function openDescriptive(env, id, state, now, requested) {
     text: parsed.text, layout,
     pageNumbers,
     pages: pageNumbers.map(n => ({ page: n, url: `${base}/v1/pageimg/${spec.sha}/p${n}.png` })),
-    shownAt: now, revealedAt: null,
+    // 同一ミリ秒に問を開き直しても表示世代を区別する。旧画面の登録を防ぐ。
+    shownAt: Math.max(now, Number(state.descriptiveCurrent?.shownAt || 0) + 1), revealedAt: null,
   };
   await saveSession(env, id, { ...state, descriptiveCurrent: current,
     descriptiveHistory: { ...(state.descriptiveHistory ?? {}),
@@ -1522,7 +1523,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v150-scanned-descriptive', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v151-descriptive-actions-recovery', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
@@ -1824,7 +1825,10 @@ async function route(request, env, url, now) {
       const cur = state.descriptiveCurrent;
       const args = method === 'POST' ? (await body(request).catch(() => ({}))) : {};
       const expected = method === 'POST' ? args.questionId : url.searchParams.get('questionId');
-      if (!cur?.revealedAt || !expected || expected !== cur.questionId)
+      if (!cur || !expected || expected !== cur.questionId ||
+          (method === 'POST' && args.shownAt != null &&
+            (!Number.isFinite(Number(args.shownAt)) || Number(args.shownAt) !== Number(cur.shownAt))) ||
+          (method === 'GET' && !cur.explanationMarkdown))
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : cur.explanationMarkdown;
       if (method === 'POST') {
@@ -1833,9 +1837,11 @@ async function route(request, env, url, now) {
           throw new HttpError(400, 'DESCRIPTIVE_EXPLANATION_REQUIRED');
         const check = validateDescriptiveExplanation(explanationMarkdown, cur);
         if (!check.ok) throw new HttpError(422, check.code);
-        // 最後まで完成した解説だけを問題IDに結びつけて保存。画面の復元時にも同じ全文を表示する。
+        // 画面の「解答表示」通知が失われても、同一の現行問題に完成した解説を
+        // 登録できる。別問・古い表示時刻は上で拒否する。採点しない。
         await saveSession(env, id, { ...state, descriptiveCurrent: {
-          ...cur, explanationMarkdown, explanationUpdatedAt: now,
+          ...cur, revealedAt: cur.revealedAt ?? now,
+          explanationMarkdown, explanationUpdatedAt: now,
         } }, now);
       }
       return json(200, { status: 'descriptiveActions', sessionId: id,
@@ -1848,7 +1854,8 @@ async function route(request, env, url, now) {
       const cur = state.descriptiveCurrent;
       if (!cur?.text || !cur?.pageNumbers?.length) throw new HttpError(404, 'DESCRIPTIVE_NOT_OPEN');
       return json(200, { status: 'descriptiveContext', sessionId: id,
-        questionId: cur.questionId, year: cur.year, section: cur.section, number: cur.number,
+        questionId: cur.questionId, shownAt: cur.shownAt,
+        revealed: !!cur.revealedAt, year: cur.year, section: cur.section, number: cur.number,
         officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
         coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
@@ -1898,7 +1905,7 @@ async function route(request, env, url, now) {
     if (want?.startsWith(actionsPrefix)) {
       const cur = state.descriptiveCurrent;
       const askedId = want.slice(actionsPrefix.length);
-      if (state.qualificationId !== 'land_surveyor' || !cur?.revealedAt ||
+      if (state.qualificationId !== 'land_surveyor' || !cur?.explanationMarkdown ||
           !askedId || askedId !== cur.questionId)
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       return json(200, { status: 'descriptiveActions', sessionId: id,

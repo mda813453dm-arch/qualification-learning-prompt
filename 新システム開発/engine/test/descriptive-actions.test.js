@@ -7,6 +7,12 @@ const T0 = Date.parse('2026-10-24T07:20:00Z');
 const SID = '11111111-2222-4333-8444-555555555555';
 const Q1 = 'land_surveyor:2025:午前の部:11';
 const Q2 = 'land_surveyor:2025:午後の部:21';
+const Q3 = 'land_surveyor:2025:午後の部:22';
+const landExplanation='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
+  '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
+  '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
+const buildingExplanation='## 問1：建物の認定\n'+ '原本で確認できる要件と法的根拠を順番に整理する。未確認の図面数値は推測しない。'.repeat(6) +
+  '\n## 問2：登記手続\n'+ '登記の要件と申請書類を検討し、原本で未確認の項目は未確認と明示する。'.repeat(6);
 const base = 'https://engine.example';
 const env = () => ({ STORE:new MemoryStore(), API_TOKEN:'test-token', clock:()=>T0 });
 async function send(e, method, route, payload){
@@ -45,6 +51,10 @@ test('解説前には操作メニューを返さず、現在問だけ解説後�
   const shown=await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q1});
   assert.equal(shown.status,200);
   assert.equal(shown.body.status,'descriptiveReveal');
+  assert.equal((await send(e,'GET',uri+encodeURIComponent(Q1))).status,409,'解説の未登録段階ではボタンを単独表示しない');
+  assert.equal((await send(e,'POST',route,{question:special+Q1})).status,409,'旧経路でも解説なしボタンは禁止');
+  assert.equal((await send(e,'POST','/v1/sessions/'+SID+'/descriptive/actions',
+    {questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation})).status,200);
   const controls=await send(e,'GET',uri+encodeURIComponent(Q1));
   assert.equal(controls.status,200);
   assert.equal(controls.body.status,'descriptiveActions');
@@ -63,6 +73,9 @@ test('解説前には操作メニューを返さず、現在問だけ解説後�
   await store(e,Q2,T0+1000,T0+1500);
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q1))).status,409,'次問移動後の旧パネルは無効');
   assert.equal((await send(e,'POST',route,{question:special+Q1})).status,409,'既存ツールも旧問題IDを拒否');
+  assert.equal((await send(e,'POST',route,{question:special+Q2})).status,409,'次問でも解説の登録前は拒否');
+  assert.equal((await send(e,'POST','/v1/sessions/'+SID+'/descriptive/actions',
+    {questionId:Q2,shownAt:T0+1000,explanationMarkdown:landExplanation})).status,200);
   assert.equal((await send(e,'POST',route,{question:special+Q2})).status,200);
 
   assert.equal((await send(e,'GET',uri+encodeURIComponent(Q2))).status,200);
@@ -73,10 +86,7 @@ test('モデルの操作パネル取得ツールは本文を再掲せずMCPのUI
   const list=await post('tools/list',{});
   const tool=list.body.result.tools.find(t=>t.name==='showDescriptiveActions');
   assert.equal(tool?._meta?.['openai/outputTemplate'], undefined, '記述式の操作メニュー登録では新しい枠を増やさない');
-  const complete='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
-    '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
-    '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
-  const response=await post('tools/call',{name:'showDescriptiveActions',arguments:{sessionId:SID,questionId:Q1,explanationMarkdown:complete}});
+  const response=await post('tools/call',{name:'showDescriptiveActions',arguments:{sessionId:SID,questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation}});
   assert.equal(response.status,200);
   assert.equal(response.body.result.structuredContent.status,'descriptiveActions');
   assert.equal(response.body.result._meta.qlp.question.text,undefined,'モデルと画面のどちらにも原本は再送しない');
@@ -117,6 +127,34 @@ test('AI解説全文を同じ画面でボタンの前に返し、別問への遅
     'チャットへ同じ解説を二重出力しない');
 });
 
+test('問21から問22へ再取得後、reveal通知が欠けても現行問22だけ登録・復元できる',async()=>{
+  const e=env();
+  const route='/v1/sessions/'+SID+'/descriptive/actions';
+  await store(e,Q2,T0,T0+1);
+  assert.equal((await send(e,'POST',route,{questionId:Q2,shownAt:T0,explanationMarkdown:landExplanation})).status,200);
+  await store(e,Q3,T0+2000,null);
+  assert.equal((await send(e,'POST',route,{questionId:Q2,shownAt:T0,explanationMarkdown:landExplanation})).status,409,
+    '遅延した問21の登録を問22へ混入させない');
+  assert.equal((await send(e,'POST',route,{questionId:Q3,shownAt:T0,explanationMarkdown:buildingExplanation})).status,409,
+    '問22を再取得した後の古い表示時刻は拒否');
+  const current=await send(e,'GET','/v1/sessions/'+SID+'/descriptive/context');
+  assert.equal(current.body.questionId,Q3);
+  assert.equal(current.body.shownAt,T0+2000);
+  assert.equal(current.body.revealed,false);
+  const saved=await send(e,'POST',route,{questionId:Q3,shownAt:current.body.shownAt,
+    explanationMarkdown:buildingExplanation});
+  assert.equal(saved.status,200);
+  assert.equal(saved.body.status,'descriptiveActions');
+  assert.equal(saved.body.explanationMarkdown,buildingExplanation);
+  assert.equal(saved.body.question.number,22);
+  assert.equal(saved.body.grade,undefined,'採点は一切行わない');
+  const restored=await send(e,'GET',route+'?questionId='+encodeURIComponent(Q3));
+  assert.equal(restored.status,200);
+  assert.equal(restored.body.explanationMarkdown,buildingExplanation,'同じ問22の解説全文を読み取れる');
+  const again=await send(e,'POST','/v1/sessions/'+SID+'/descriptive/reveal',{questionId:Q3});
+  assert.equal(again.body.status,'descriptiveActions','再表示操作でも保存済み解説が消えない');
+});
+
 test('土地の座標計算だけ機種非依存の関数電卓ガイドを返す',async()=>{
   const e=env();
   const target='/v1/sessions/'+SID+'/descriptive/context';
@@ -124,6 +162,7 @@ test('土地の座標計算だけ機種非依存の関数電卓ガイドを返�
     await store(e,questionId,T0,T0+1);
     const answer=await send(e,'GET',target);
     assert.equal(answer.status,200);
+    assert.equal(answer.body.shownAt,T0,'現在の出題世代をAIへ返す');
     assert.deepEqual(answer.body.coordinateExplanationMethods,
       ['trigonometry','complex_numbers','scientific_calculator']);
     const calc=answer.body.calculatorExplanation;

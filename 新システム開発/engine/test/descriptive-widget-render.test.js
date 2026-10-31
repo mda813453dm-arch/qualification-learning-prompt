@@ -59,6 +59,18 @@ test('AI解説と操作パネルは同じ画面で隣接し、古い問題デー
   assert.equal(state.answered,false);
 });
 
+test('解説待機は採点せず本文・番号選択肢をチャットへ逃がさず、保存済みの同一問を照合する',()=>{
+  assert.ok(script.includes('async function waitForPublishedDescriptive(q)'), '登録完了まで同一画面が読取照会を続ける');
+  assert.ok(script.includes("response.explanationMarkdown && response.question?.questionId === q.questionId"),
+    '空本文や別問の取得結果では操作パネルを開かない');
+  const start=script.indexOf('  function showDescriptiveQuestion(d)');
+  const end=script.indexOf('  // 正答はツールの結果にも',start);
+  const source=script.slice(start,end);
+  assert.ok(source.includes('showDescriptivePending(q)'), '記述式の解説を学習枠へ収容する');
+  assert.doesNotMatch(source,/チャットに表示します|番号選択肢を利用してください/);
+  assert.doesNotMatch(source,/fallbackDescriptiveActions/,'旧ボタン単独経路を廃止');
+});
+
 test('iPhone用の記述式年度選択に2007〜2025年が揃い、旧年度も採点なしで開ける',()=>{
   const start=script.indexOf('  function showDescriptiveMenu(year){');
   const end=script.indexOf('  var descriptiveScreen = null;',start);

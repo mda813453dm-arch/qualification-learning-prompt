@@ -92,6 +92,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'openDescriptiveQuestion') {
             const args = m.params.arguments;
             window.restorePayload = null; // 新しい記述式を開いた後は旧択一の復元状態で上書きしない
+            window.publishedDescriptive = null;
             window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
               question: { questionId: 'land_surveyor:' + args.year + ':' + args.section + ':' + args.number,
                 year: args.year, section: args.section, number: args.number, kind: 'descriptive',
@@ -123,10 +124,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           }
           else if (op === 'getDescriptiveActions') {
             const q=window.lastDescriptive?.question;
-            if (window.lastDescriptive?.status !== 'descriptiveReveal' ||
-                m.params.arguments.questionId !== q?.questionId)
+            if (!window.publishedDescriptive || m.params.arguments.questionId !== q?.questionId)
               reply({ structuredContent:{ error:'DESCRIPTIVE_ACTIONS_STALE' } });
             else reply({ structuredContent:{ status:'descriptiveActions', sessionId:'test-session',
+              explanationMarkdown:window.publishedDescriptive,
               question:{ questionId:q.questionId,year:q.year,section:q.section,
                 number:q.number,shownAt:q.shownAt } } });
           }
@@ -567,12 +568,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
     const beforeDescriptiveGrade = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
-    await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
+    await ui.getByText('AI参考解答・解説をこの学習枠内に登録しています', { exact: false }).waitFor();
     assert.equal(await ui.locator('#descriptiveSource').count(), 0, '解説前の問題・表・図をDOMへ再出力しない');
-    assert.match(await ui.locator('#app').innerText(), /表示されない場合は解説末尾の番号選択肢/,'実際にUIが未表示でも誤案内しない');
+    assert.doesNotMatch(await ui.locator('#app').innerText(), /チャットに表示|番号選択肢/,'チャット本文への代替案内をしない');
     assert.equal(await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).count(), 0);
     assert.equal(await ui.getByRole('button', { name: '次の記述式へ' }).count(), 0, '解説前の画面に旧ナビゲーションを残さない');
-    assert.match(await ui.locator('#app').innerText(), /上に戻って.*ボタンを押して/,'戻る場合の注釈');
+    assert.equal(await ui.getByRole('button', { name: '解説の登録状況を再確認する' }).count(), 1,'失敗した際の読取専用再確認');
     const descCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'revealDescriptiveAnswer').length);
     assert.ok(descCalls >= 1);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), beforeDescriptiveGrade,
@@ -581,13 +582,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
 
     // AI参考解説と操作ボタンを同じ学習画面内で連続表示。
     await page.evaluate(() => {
-      const q = window.lastDescriptive.question;
-      window.deliver({ structuredContent: { status:'descriptiveActions', sessionId:'test-session',
-        explanationMarkdown: '## 問21の解説\n\n**点A**から求めます。\n\nS=Abs(Imag(A*Conjg(B)))/2\n\n<script>alert(1)</script>',
-        question: { questionId:q.questionId, year:q.year,section:q.section,
-          number:q.number,shownAt:q.shownAt } } });
+      window.publishedDescriptive = '## 問21の解説\n\n**点A**から求めます。\n\nS=Abs(Imag(A*Conjg(B)))/2\n\n<script>alert(1)</script>';
     });
-    await ui.getByRole('heading', { name:/AI参考解答・解説/ }).waitFor();
+    await ui.getByRole('heading', { name:/AI参考解答・解説/ }).waitFor({timeout:12000});
     assert.equal(await ui.locator('.descriptive-explanation strong').innerText(),'点A','解説のMarkdownを表示');
     assert.equal(await ui.locator('.descriptive-explanation script').count(),0,'解説に含まれたHTMLを実行しない');
     assert.match(await ui.locator('.descriptive-explanation').innerText(),/<script>alert\(1\)<\/script>/,'HTMLはテキストとして残す');
@@ -599,15 +596,24 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '2025年度 午後の部 問22' }).waitFor();
     assert.equal(await ui.locator('.descriptive-explanation').count(),0,'次問へ移ると前の解説とボタンが消える');
     assert.equal(await ui.locator('.descriptive-actions').count(),0,'前の問の操作ボタンを残さない');
+    await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
+    await ui.getByText('AI参考解答・解説をこの学習枠内に登録しています', { exact: false }).waitFor();
+    assert.equal(await ui.locator('.descriptive-actions').count(),0,'問22の解説未登録段階で操作ボタンを出さない');
+    await page.evaluate(() => { window.publishedDescriptive = '## 問1 建物の認定\n\n原本で確認できる構造と判断根拠を解説する。未確認の図面や数値は推測しない。\n\n## 問2 登記の要件\n\n確認済みと未確認の申請事項を区別する。'; });
+    await ui.getByRole('heading', { name:/AI参考解答・解説.*問22/ }).waitFor({timeout:12000});
+    assert.match(await ui.locator('.descriptive-explanation').innerText(),/未確認の図面や数値は推測しない/,'問22の参考解説を同一枠へ自動再取得');
+    assert.equal(await ui.getByRole('button',{name:'次の記述式へ'}).count(),1,'問22の解説直下にボタンを一つ表示');
     // 別の問を選び直す経路も保つ。
     await ui.getByRole('button', { name: '年度・問題を選び直す' }).click();
     await ui.getByRole('heading', { name: '土地家屋調査士｜記述式問題' }).waitFor();
     await ui.getByRole('button', { name: '午後の部・問21（土地）' }).click();
     await ui.getByRole('heading', { name: '2025年度 午後の部 問21' }).waitFor();
     await ui.getByRole('button', { name: '解答・解説を表示（AI参考解答）' }).click();
-    await ui.getByText('元の問題を繰り返さず、AI参考解説', { exact: false }).waitFor();
-    await ui.getByRole('button', { name: '解説後の操作パネルを開く（上に戻った場合）' }).click();
-    await ui.getByRole('heading', { name:/解説後の操作/ }).waitFor({ timeout: 4000 }).catch(async e => {
+    await ui.getByText('AI参考解答・解説をこの学習枠内に登録しています', { exact: false }).waitFor();
+    await ui.getByRole('button', { name: '解説の登録状況を再確認する' }).click();
+    assert.equal(await ui.getByRole('button',{name:'次の記述式へ'}).count(),0,'未登録中は操作ボタンだけを開かない');
+    await page.evaluate(() => { window.publishedDescriptive = '## 問21の解説\n\n根拠と座標計算を検証した内容をこの学習枠に表示する。'; });
+    await ui.getByRole('heading', { name:/AI参考解答・解説.*問21/ }).waitFor({ timeout: 12000 }).catch(async e => {
       const debug = { view: await ui.locator('#app').innerText(), calls: await page.evaluate(() => window.calls.filter(m => m.params?.name).slice(-8).map(m => ({name:m.params.name,args:m.params.arguments}))), errors: await page.evaluate(() => window.protocolErrors) };
       throw new Error('DESCRIPTIVE_FALLBACK_VIEW: '+JSON.stringify(debug)+' | '+e.message);
     });
