@@ -57,8 +57,222 @@ EXPECTED_2025 = {
     "午前の部": [5, 4, 4, 3, 2, 4, 2, 1, 2, 3],
     "午後の部": [1, 5, 2, 1, 4, 5, 3, 1, 5, 4, 3, 5, 5, 2, 2, 3, 3, 4, 3, 4],
 }
-PIN_BY_YEAR = {2022: PIN_2022, 2023: PIN_2023, 2024: PIN_2024, 2025: PIN_2025}
-EXPECTED_BY_YEAR = {2022: EXPECTED_2022, 2023: EXPECTED_2023, 2024: EXPECTED_2024, 2025: EXPECTED_2025}
+# Archived copies linked by izuki.net (site identifies them as past Ministry releases).
+# Downloaded and hashed independently on 2026-10-31; fixed correct-answer vectors
+# extracted from matching annual answer-PDF columns, not guessed by a model.
+# These candidates remain separate from the 2022-2025 directly pinned originals.
+ARCHIVED_PINS = {
+    2015: {
+        "午前の部": "34facdf521d4eea585006105422b20acda620bc7ec5c31c1cd6b7e14572bf61b",
+        "午後の部": "688dd80d275c3ddb43e43f098f4e857a71a061147051825ef2592ee93fa630e6",
+        "正答": "a46314e7d9275c3258528dcc726ef3fd2bafd75774631554897c2e574500397f"
+    },
+    2017: {
+        "午前の部": "78f7da8ddfb6ded0b1f0887612a7880b855fcda327e435fa36fab3dca3b9744f",
+        "午後の部": "c260355634fc25f641bd2f9dc5ae28c691a55f616170c7b23e818f2d7c380121",
+        "正答": "2bba288c40e1f50773ae61bee4e6e4964673171972b3b311e19c8ddb48cb2037"
+    },
+    2018: {
+        "午前の部": "4d6c754fe2fc53ba42f48ab173e4ee66177033071d911182d44f71821282f63d",
+        "午後の部": "28fa300ba96fad255cc88c5d27c2c159c69fcc26c982e6407755156f94fc0328",
+        "正答": "4123527d4863c689df4c7393e5454f3e202a20f2e1abd9df615d7cff3cd21d5e"
+    },
+    2019: {
+        "午前の部": "fc83edc0b7c26a09ec8caefa04f7e4e5d53d0e4225cd1e2c5edd4dc0a8d317b8",
+        "午後の部": "7ab89c83c35bd07ae5670d09d3418ae3f9b625a7ee5fcac3fa84cefd163873b9",
+        "正答": "056b672d9390e07b39e14fd1179def7d31e3f209ded6021358295401fa210a73"
+    },
+    2021: {
+        "午前の部": "0a254b7da1dfc210da8ccdd008630184206dd0bf94ec3d41f667873a230b8f91",
+        "午後の部": "14ffe479c12880482036a094d0d493e573a966bb91fb86c01a375f0d787c46a4",
+        "正答": "a9b2040148309b64690cf5e74b942da286a887f8106fecdeed99a37879f67de7"
+    }
+}
+ARCHIVED_EXPECTED = {
+    2015: {
+        "午前の部": [
+            4,
+            4,
+            4,
+            4,
+            3,
+            2,
+            1,
+            3,
+            1,
+            3
+        ],
+        "午後の部": [
+            1,
+            2,
+            3,
+            3,
+            4,
+            4,
+            2,
+            2,
+            5,
+            3,
+            4,
+            3,
+            2,
+            5,
+            4,
+            1,
+            3,
+            3,
+            3,
+            2
+        ]
+    },
+    2017: {
+        "午前の部": [
+            2,
+            4,
+            4,
+            4,
+            2,
+            3,
+            5,
+            4,
+            5,
+            4
+        ],
+        "午後の部": [
+            2,
+            2,
+            4,
+            5,
+            3,
+            3,
+            3,
+            4,
+            1,
+            2,
+            2,
+            4,
+            3,
+            3,
+            2,
+            3,
+            4,
+            5,
+            3,
+            5
+        ]
+    },
+    2018: {
+        "午前の部": [
+            3,
+            4,
+            2,
+            2,
+            4,
+            4,
+            4,
+            5,
+            3,
+            2
+        ],
+        "午後の部": [
+            5,
+            3,
+            5,
+            4,
+            2,
+            5,
+            1,
+            5,
+            4,
+            2,
+            4,
+            4,
+            5,
+            1,
+            3,
+            3,
+            4,
+            1,
+            2,
+            5
+        ]
+    },
+    2019: {
+        "午前の部": [
+            2,
+            3,
+            4,
+            5,
+            5,
+            5,
+            1,
+            2,
+            1,
+            4
+        ],
+        "午後の部": [
+            2,
+            4,
+            2,
+            3,
+            3,
+            5,
+            5,
+            3,
+            2,
+            3,
+            5,
+            1,
+            2,
+            4,
+            2,
+            4,
+            3,
+            5,
+            4,
+            4
+        ]
+    },
+    2021: {
+        "午前の部": [
+            3,
+            5,
+            3,
+            4,
+            3,
+            1,
+            4,
+            4,
+            3,
+            1
+        ],
+        "午後の部": [
+            4,
+            2,
+            4,
+            3,
+            5,
+            2,
+            2,
+            3,
+            3,
+            4,
+            3,
+            5,
+            2,
+            3,
+            3,
+            2,
+            5,
+            5,
+            4,
+            5
+        ]
+    }
+}
+
+PIN_BY_YEAR = {**ARCHIVED_PINS, 2022: PIN_2022, 2023: PIN_2023, 2024: PIN_2024, 2025: PIN_2025}
+EXPECTED_BY_YEAR = {**ARCHIVED_EXPECTED, 2022: EXPECTED_2022, 2023: EXPECTED_2023, 2024: EXPECTED_2024, 2025: EXPECTED_2025}
 SECTIONS = {"午前の部": (10, "l1"), "午後の部": (20, "l3")}
 HEADING = re.compile(r"^第\s*([0-9]+)\s*問(?:\s|$)")
 OPTION = re.compile(r"(?<!\w)([1-5])\s+\S")
@@ -90,14 +304,15 @@ def check_question(doc, answer_doc, year, section):
         raise ParseError("EXAM_SECTION_MISMATCH", section=section)
     era = re.search(r"令和\s*(\d+)\s*年度", cover)
     short = re.search(r"[（(]\s*(\d{1,2})\s*[）)]", cover)
-    if (not era and not short) or int((era or short).group(1)) + 2018 != year:
+    base = 1988 if year <= 2018 else 2018
+    if (not era and not short) or int((era or short).group(1)) + base != year:
         raise ParseError("QUESTION_YEAR_MISMATCH")
     answer_cover = _norm(answer_doc[0].get_text("text", sort=True)).replace(" ", "")
     if ("土地家屋調査士" not in answer_cover or
             "午前の部" not in answer_cover or "午後の部" not in answer_cover):
         raise ParseError("ANSWER_QUALIFICATION_SECTION_MISMATCH")
-    a_year = re.search(r"令和\s*(\d+)\s*年度", answer_cover)
-    if not a_year or int(a_year.group(1)) + 2018 != year:
+    a_year = re.search(r"(令和|平成)\s*(元|\d+)\s*年度", answer_cover)
+    if not a_year or (2018 if a_year.group(1) == "令和" else 1988) + (1 if a_year.group(2) == "元" else int(a_year.group(2))) != year:
         raise ParseError("ANSWER_YEAR_MISMATCH")
 
 
