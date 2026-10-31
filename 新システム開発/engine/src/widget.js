@@ -790,7 +790,7 @@ a{color:inherit}
         if (!status || !sourceManagerOpen || state.sessionId !== sameSession) return;
         var selected = Array.from(input.files || []);
         if (!selected.length) return;
-        if (selected.length > 10 || selected.some(function(f){ return !/\.pdf$/i.test(String(f.name || '')) ||
+        if (selected.length > 10 || selected.some(function(f){ return !String(f.name || '').toLowerCase().endsWith('.pdf') ||
             (f.type && f.type !== 'application/pdf'); })) {
           status.textContent = 'PDFだけを最大10ファイル選んでください。';
           status.setAttribute('role','alert'); input.value=''; return;
@@ -821,7 +821,7 @@ a{color:inherit}
             if(typeof id!=='string'||!id) throw new Error('PDF_UPLOAD_FAILED');
             var link=await host.getFileDownloadUrl({fileId:id});
             var url=link && link.downloadUrl;
-            if(typeof url!=='string'||!/^https:\/\//i.test(url))
+            if(typeof url!=='string'||!url.startsWith('https://'))
               throw new Error('PDF_DOWNLOAD_URL_MISSING');
             refs.push({file_id:id,file_name:String(f.name),mime_type:'application/pdf',download_url:url});
           }
