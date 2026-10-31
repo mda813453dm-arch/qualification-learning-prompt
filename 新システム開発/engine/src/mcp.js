@@ -363,6 +363,13 @@ export const TOOLS = [
         sections:a.sections, answerYears:a.answerYears, answerSections:a.answerSections }],
   },
   {
+    name: 'importLandSurveyorArchive',
+    appOnly: true, uiOnly: true,
+    description: '土地家屋調査士の学習画面で利用者が過去問追加を選んだ場合だけ、SHAと公式正答列と全問解析を事前検証した旧年度の問題資料を段階的に取り込む。現在問・回答履歴を保持し、検証待ち年度は採点しない。',
+    inputSchema: { type:'object',required:['sessionId'],additionalProperties:false,properties:{sessionId} },
+    api: a => ['POST','/v1/sessions/'+encodeURIComponent(a.sessionId)+'/import-land-surveyor-archive'],
+  },
+  {
     name: 'importOfficialCustoms2025',
     appOnly: true, uiOnly: true,
     description: '学習画面で利用者が明示操作した場合だけ、税関が公開した2025年度通関士の問題3科目・通関実務別冊・公式正答を固定公式URLから直接取り込む。過去のチャット添付の再送は不要。解析成功と出題可能を混同しない。',
