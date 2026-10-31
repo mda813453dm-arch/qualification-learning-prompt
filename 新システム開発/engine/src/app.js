@@ -11,6 +11,7 @@
  *   PARSER_VERSION 受け付ける分解結果の版（既定 0.8.2。パーサーの PARSER_VERSION と合わせる）
  */
 import { CATALOG } from './catalog.js';
+import { legacyLandSectionFromArchivedFileName } from './land-surveyor-archive.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
@@ -638,7 +639,7 @@ function attachedYearFromName(name) {
 }
 // 103資格のうち、年度により午前/午後や10月/12月等の区分が切り替わる。
 function uploadSectionsForYear(cat, year) {
-  const byYear=cat?.officialShared?.sectionsByYear?.[year];
+  const byYear=cat?.sectionsByYear?.[year] ?? cat?.officialShared?.sectionsByYear?.[year];
   if (Array.isArray(byYear) && byYear.length) return byYear;
   if (Array.isArray(cat?.uploadSections) && cat.uploadSections.length) return cat.uploadSections;
   if (Array.isArray(cat?.officialShared?.uploadSections) && cat.officialShared.uploadSections.length)
@@ -647,6 +648,7 @@ function uploadSectionsForYear(cat, year) {
 }
 function allUploadSections(cat) {
   return [...new Set([...(cat?.uploadSections ?? []),...(cat?.officialShared?.uploadSections ?? []),
+    ...Object.values(cat?.sectionsByYear ?? {}).flat(),
     ...Object.values(cat?.officialShared?.sectionsByYear ?? {}).flat(),
     ...(cat?.sources ?? []).map(x=>x.section).filter(Boolean)])];
 }
@@ -654,7 +656,11 @@ function supportsSourceUpload(cat) {
   return !!(cat?.uploadAdapter || cat?.officialShared?.uploadAdapter ||
     (cat?.sources ?? []).some(x=>x.adapter));
 }
-function attachedSectionFromName(name, sections) {
+function attachedSectionFromName(name, sections, year=null, qualificationId=null) {
+  if (qualificationId === 'land_surveyor') {
+    const historical = legacyLandSectionFromArchivedFileName(year,name);
+    if (historical && sections?.includes(historical)) return historical;
+  }
   if (!Array.isArray(sections) || sections.length === 0) return undefined;
   if (sections.length === 1) return sections[0];
   const n = String(name ?? '').normalize('NFKC');
@@ -691,7 +697,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const name = String(file?.file_name ?? '');
     const year = attachedYearFromName(name) ?? yearHint(b.years,index);
     const sections=uploadSectionsForYear(cat,year);
-    const section=attachedSectionFromName(name,sections) ?? sectionHint(b.sections,index,year) ??
+    const section=attachedSectionFromName(name,sections,year,state.qualificationId) ?? sectionHint(b.sections,index,year) ??
       (sections.length > 1 ? null : sections[0] ?? 'main');
     return year && section ? year+':'+section : null;
   });
@@ -705,7 +711,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const hintYear=yearHint(b.answerYears,index);
     const year=detectedYear ?? hintYear;
     const sections=uploadSectionsForYear(cat,year);
-    const detectedSection=attachedSectionFromName(name,sections);
+    const detectedSection=attachedSectionFromName(name,sections,year,state.qualificationId);
     const section=detectedSection ?? sectionHint(b.answerSections,index,year) ??
       (sections.length > 1 ? null : sections[0] ?? 'main');
     let key=(year && section ? year+':'+section : null);
@@ -726,7 +732,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
     const year=detectedYear ?? hintYear;
     const part = state.qualificationId === 'q098' ? customsPart(fileName) : null;
     const sections=uploadSectionsForYear(cat,year);
-    const detectedSection=attachedSectionFromName(fileName,sections);
+    const detectedSection=attachedSectionFromName(fileName,sections,year,state.qualificationId);
     const section = state.qualificationId === 'q098'
       ? (CUSTOMS_SECTIONS[part] ?? null)
       : (detectedSection ?? sectionHint(b.sections,index,year) ??
