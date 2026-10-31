@@ -92,5 +92,17 @@ jobs:
           const view=await api('/v1/sessions/'+encodeURIComponent(session.sessionId)+'/next','POST',{});
           assert.equal(view.status,'question','validated official question must be available, got '+view.status);
           assert.match(view.question.questionId,/^q098:2025:/);
-          console.log('VERIFIED: 2025 customs 29 exact-answer single-choice packets and one official question available');
+          assert.ok(typeof view.question.stem === 'string' && view.question.stem.length > 25,
+            'the official question must be displayed as readable text, not as image only');
+          assert.equal(view.question.choices?.length,5,
+            'five actual full-text options must be available');
+          assert.ok(view.question.choices.every(c => typeof c === 'string' && c.length >= 10),
+            'option labels alone are not accepted');
+          if(view.question.questionId==='q098:2025:関税法等:16'){
+            assert.match(view.question.stem,/関税の修正申告/);
+            assert.match(view.question.choices[0],/環太平洋パートナーシップ/);
+            assert.equal((view.question.figureUrls||[]).length,0,
+              'non-diagram customs question must not be a page image');
+          }
+          console.log('VERIFIED: official Customs 2025 29 packets and readable full-text question, not a full-page image');
           JS
