@@ -144,7 +144,7 @@ def extract_year(page, year):
     if chosen != expected:
         raise ParseError("WEB_ANSWER_DIFFERS_FROM_AUDITED_SOURCE", year=year)
     # For the unique 2008 cancelled question, no numeric grading is allowed.
-    if chosen[2008]["午後の部"][18] != ANSWER_SPECIAL if year == 2008 else False:
+    if year == 2008 and chosen["午後の部"][18] != ANSWER_SPECIAL:
         raise ParseError("CANCELLED_QUESTION_LOST", year=year)
     return chosen
 
