@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v160.html';
+export const WIDGET_URI = 'ui://qlp/question-v161.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.160';
+export const WIDGET_VERSION = '2026-10-31.161';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -449,6 +449,33 @@ a{color:inherit}
   }
   function safeUrl(u){ return /^https:\\/\\//.test(String(u || '')) ? String(u) : ''; }
   function figureHtml(u, i){ return '<div class="fig"><button class="fig-open" type="button" data-figure="' + esc(safeUrl(u)) + '" aria-label="公式の問題の図' + (i + 1) + 'を拡大"><img alt="公式の問題の図' + (i + 1) + '" src="' + esc(safeUrl(u)) + '"></button><div class="fig-hint">図をタップして拡大できます</div></div>'; }
+  function isItpassQuestion(q){ return /^q006:/.test(String(q && q.questionId || '')); }
+  function questionPdfLink(q){
+    var url = safeUrl(q && q.questionPdfUrl);
+    if (!url || url.includes('/v1/private-source/')) return '';
+    var itpass = isItpassQuestion(q);
+    var page = Number((q.questionPdfPages || [])[0]);
+    var href = itpass && Number.isInteger(page) && page > 0 ? url.split('#')[0] + '#page=' + page : url;
+    var official = /^https:\\/\\/(?:www3\\.jitec\\.ipa\\.go\\.jp|www\\.ipa\\.go\\.jp)\\//.test(url);
+    var label = itpass ? (official ? '公式の問題PDFを開く' : '問題の原本PDFを開く') : '公式の問題PDF';
+    return '<div class="notice">原本：<a href="' + esc(href) + '" target="_blank" rel="noopener">' + label + '</a></div>';
+  }
+  function needsInlineOriginalImage(q){
+    if (q.stemMode === 'official_image' || q.choiceMode === 'official_image') return true;
+    var choices = Array.isArray(q.choices) ? q.choices : [];
+    if (!String(q.stem || '').trim() || choices.length !== 4 || choices.some(function(c){
+      return !String(c || '').trim() || /^[アイウエ]$/.test(String(c).trim());
+    })) return true;
+    // 図表の文字がOCRに含まれない場合は、問題を解く前に原本の図を見せる。
+    return /(?:次の|以下の|下記の|右の|左の|下の|上の)\\s*(?:図|表|グラフ|フローチャート|画面|プログラム)|(?:図|表)\\s*[0-9１-９①-⑨]|図に示|表に示|フローチャート|構成図|状態遷移図|ER図|ネットワーク図|グラフ|疑似言語|擬似言語|プログラム例/.test(String(q.stem));
+  }
+  function questionFigureHtml(q){
+    var images = (q.figureUrls || []).map(function(u, i){ return safeUrl(u) ? figureHtml(u, i) : ''; }).join('');
+    if (!images || !isItpassQuestion(q) || needsInlineOriginalImage(q)) return images;
+    // OCRで本文と四肢が読める通常のiパス問題は、公式PDFの重複画像を初期表示しない。
+    // 既存の取り込み済み問題にも適用し、誤読確認の原本画像は任意で開ける。
+    return '<details class="descriptive-source-image"><summary>原本の問題画像も確認する</summary>' + images + '</details>';
+  }
   // 問題文と表はネイティブ要素で表示する。原本の照合用画像は閉じておき、
   // OCR本文の後ろに大量のスキャンページが展開される事故を防ぐ。
   function descriptiveBlockHtml(block, idx){
@@ -1819,13 +1846,14 @@ a{color:inherit}
     if (q.fieldName) h += '<div class="field">' + esc(q.fieldName) + '</div>';
     if (q.kind === 'reinforce') h += '<div class="notice"><b>補強確認：</b>この分野を続けて間違えたので、次の問題へ進む前に、同じ分野の過去問でもう一度確かめます。</div>';
     if (q.stem) h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
-    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
+    h += questionFigureHtml(q);
+    if (isItpassQuestion(q)) h += questionPdfLink(q);
     if (/^land_surveyor:/.test(String(q.questionId || ''))) {
       h += '<div class="row"><button id="descriptiveMenuStart">記述式（午前11・午後21/22）を開く</button></div>';
     }
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
-    if (safeUrl(q.questionPdfUrl) && !String(q.questionPdfUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
+    if (!isItpassQuestion(q)) h += questionPdfLink(q);
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
     // 再開直後の未回答問では、その場から学習を終了できるようにする。
@@ -2974,7 +3002,8 @@ a{color:inherit}
     var h = (head || '') + '<h2>' + esc(q.label) + '</h2><div class="field">' + esc(q.fieldName) + '　' + esc((q.year ? q.year + '年度 ' : '') + '問' + q.questionNumber) + '</div>';
     (q.notices || []).forEach(function(n){ h += '<div class="notice">' + esc(n) + '</div>'; });
     h += '<div class="stem">' + stemHtml(q.stem) + '</div>';
-    (q.figureUrls || []).forEach(function(u, i){ if (safeUrl(u)) h += figureHtml(u, i); });
+    h += questionFigureHtml(q);
+    if (isItpassQuestion(q)) h += questionPdfLink(q);
     h += '<div class="choices">' + (q.choices || []).map(function(c, i){ var n = i + 1; return '<label class="opt" data-n="' + n + '"><input type="radio" name="ans" value="' + n + '"><b>' + n + '</b><span>' + esc(c) + '</span></label>'; }).join('') + '</div>';
     h += '<div class="stem"><b>回答の確信度（任意）</b><label><input type="radio" name="confidence" value="sure"> 確信あり</label> <label><input type="radio" name="confidence" value="unsure"> 迷った</label> <label><input type="radio" name="confidence" value="guess"> 勘</label></div><div class="row"><button id="dSkip">未回答で次へ</button></div>';
     h += '<div class="row" id="decrow" style="display:none"><button id="decide">解答する</button></div>';

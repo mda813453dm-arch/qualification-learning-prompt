@@ -1057,7 +1057,9 @@ async function diagStep(env, id, state0, now, b) {
     const label = `初期診断 ${i + 1}/${d.queue.length}`;
     return {
       diag: true, questionId: item.packet.questionId, label, fieldName: name(item.packet.fieldId), year: shown.year, questionNumber: shown.questionNumber,
-      stem: shown.stem, choices: shown.choices, notices: shown.notices, figureUrls: shown.figures.map((f) => f.url),
+      stem: shown.stem, stemMode: shown.stemMode, choices: shown.choices, choiceMode: shown.choiceMode,
+      questionPdfUrl: shown.questionPdfUrl, questionPdfPages: shown.questionPdfPages,
+      notices: shown.notices, figureUrls: shown.figures.map((f) => f.url),
     };
   };
   const d0 = state.aiDiag;
@@ -1575,7 +1577,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v160-active-study-chat-lock', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v161-itpass-source-link', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {

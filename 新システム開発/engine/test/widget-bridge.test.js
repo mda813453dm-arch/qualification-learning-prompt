@@ -26,6 +26,44 @@ function host(openai) {
 }
 const menuResult = { structuredContent: { status: 'menu' }, _meta: { qlp: { menu: { prompt: '学習を開始しますか？', choices: ['始めます'] } } } };
 
+test('ITパスポートの文字問題は原本PDFリンクを優先し、取り込み済み重複画像は閉じる', async () => {
+  const makeQuestion = (patch = {}) => ({
+    questionId:'q006:2026:公開問題:1',kind:'new',year:2026,questionNumber:1,
+    stem:'生成AIの著作権について、許諾が必要となるものはどれか。',
+    stemMode:'ocr',choiceMode:'ocr',choices:['a','a, b','a, b, c','b, c'],
+    figureUrls:['https://engine.example/v1/figure/source/q1.png'],
+    questionPdfUrl:'https://www3.jitec.ipa.go.jp/JitesCbt/html/openinfo/pdf/questions/2026r08_ip_qs.pdf',
+    questionPdfPages:[3],...patch,
+  });
+  const renderQuestion = async (q) => {
+    const h = host();
+    await h.accept();
+    const focus = {isConnected:true,focus:()=>{},scrollIntoView:()=>{}};
+    h.app.querySelector = (selector) => selector === '.latest' ? focus : null;
+    h.app.firstElementChild = focus;
+    h.emit({jsonrpc:'2.0',method:'ui/notifications/tool-result',params:{
+      structuredContent:{status:'question'},
+      _meta:{qlp:{status:'question',sessionId:'test-session',question:q}},
+    }});
+    return h.app.innerHTML;
+  };
+  const textQuestion = await renderQuestion(makeQuestion());
+  assert.match(textQuestion,/公式の問題PDFを開く/);
+  assert.match(textQuestion,/#page=3/,'公式PDFの該当ページにリンクする');
+  assert.match(textQuestion,/<details class="descriptive-source-image">/,'重複画像は初期表示しない');
+  assert.match(textQuestion,/原本の問題画像も確認する/,'OCR照合画像は任意で展開可能');
+  assert.ok(textQuestion.indexOf('公式の問題PDFを開く') < textQuestion.indexOf('class="choices"'),
+    '公式の原本PDFリンクは回答選択肢より上に置く');
+
+  const figureQuestion = await renderQuestion(makeQuestion({stem:'次の図に示す構成で正しいものはどれか。'}));
+  assert.doesNotMatch(figureQuestion,/<details class="descriptive-source-image">/,'図が必要なら原本画像は自動表示');
+  assert.match(figureQuestion,/<div class="fig">/);
+  const unreadable = await renderQuestion(makeQuestion({choiceMode:'official_image',choices:['ア','イ','ウ','エ']}));
+  assert.doesNotMatch(unreadable,/<details class="descriptive-source-image">/,'読取不能な選択肢の原本画像を隠さない');
+  const otherQualification = await renderQuestion(makeQuestion({questionId:'surveyor_assistant:2026:公開問題:1'}));
+  assert.doesNotMatch(otherQualification,/<details class="descriptive-source-image">/,'他資格の画像表示は変更しない');
+});
+
 test('UIは正しいバージョンで初期化し、initializedより前に診断・高さ通知を送らない', async () => {
   const h = host();
   assert.deepEqual(h.sent.map((m) => m.method), ['ui/initialize']);
