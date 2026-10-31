@@ -27,7 +27,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
-    await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html', body: '<html><body></body></html>' }));
+    // isMobile の外枠にも viewport 指定を置く。これが無いとWebKitのCSSレイアウト
+    // 幅が980pxになり、375pxのボタン改行試験を偽の広幅で実行してしまう。
+    await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html',
+      body: '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body></body></html>' }));
     await page.route('https://qlp.test/figure.png', route => route.fulfill({
       contentType: 'image/png', headers: { 'access-control-allow-origin': '*' },
       body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAWHRFWHRTb3VyY2UAT2ZmaWNpYWwgdGVzdCBpbWFnZSByZWZlcmVuY2U6IHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4d9amawAAABRJREFUeJxj/P//PwMMMDEgAdwcAJZuAwXyJb75AAAAAElFTkSuQmCC', 'base64'),
@@ -175,15 +178,16 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       const label=b.querySelector('span');
       label.textContent='適用確定（対象と受験申込等の条件を満たし、午前の部の免除が適用される場合）';
       const css=getComputedStyle(label);
-      return {fontSize:parseFloat(css.fontSize),textWidth:label.scrollWidth,
+      return {frameWidth:window.innerWidth,fontSize:parseFloat(css.fontSize),textWidth:label.scrollWidth,
         availableTextWidth:label.clientWidth,buttonWidth:b.scrollWidth,availableButtonWidth:b.clientWidth,
         height:label.getBoundingClientRect().height};
     });
+    assert.ok(longExemption.frameWidth<=420,'iPhone用の実レイアウト幅で試験：'+JSON.stringify(longExemption));
     assert.ok(longExemption.fontSize<=14,'iPhoneの長い選択肢は14px以下：'+JSON.stringify(longExemption));
     assert.ok(longExemption.textWidth<=longExemption.availableTextWidth+1 &&
       longExemption.buttonWidth<=longExemption.availableButtonWidth+1,
       '長い免除選択肢をボタン幅に収める：'+JSON.stringify(longExemption));
-    assert.ok(longExemption.height>24,'長い選択肢は省略せず複数行に折り返す');
+    assert.ok(longExemption.height>24,'長い選択肢は省略せず複数行に折り返す：'+JSON.stringify(longExemption));
     // ラベルなしの注意行は狭い2列グリッドに入れず、横幅をすべて使う。
     await ui.locator('#app').evaluate(el=>{
       const note=document.createElement('div'); note.className='ov-r full';
