@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { CATALOG } from '../src/catalog.js';
+import { landSectionFromTotalQuestions, legacyLandSectionFromArchivedFileName } from '../src/land-surveyor-archive.js';
 
 const path = new URL('../data/land-surveyor-archive-source-manifest.json', import.meta.url);
 const manifest = JSON.parse(readFileSync(path, 'utf8'));
@@ -45,4 +46,17 @@ test('検証前の平成19・20年度を公式過去問の自動出題対象に�
     assert.ok(!cat.validatedUploadYears.includes(year));
     assert.ok(!cat.archivedImportSources?.some((s) => s.year === year));
   }
+});
+
+test('平成19・20年の登録時も、ファイル名のam/pmより11問・22問の分類を優先する', () => {
+  for (const [year, era] of [[2007,'h19'],[2008,'h20']]) {
+    assert.equal(landSectionFromTotalQuestions(year, 11), '午前の部');
+    assert.equal(landSectionFromTotalQuestions(year, 22), '午後の部');
+    assert.equal(landSectionFromTotalQuestions(year, 10), null);
+    assert.equal(landSectionFromTotalQuestions(year, 20), null);
+    assert.equal(legacyLandSectionFromArchivedFileName(year, 'c_'+era+'pm_q.pdf'), '午前の部');
+    assert.equal(legacyLandSectionFromArchivedFileName(year, 'https://izuki.net/wp-content/uploads/c_'+era+'am_q.pdf'), '午後の部');
+    assert.equal(legacyLandSectionFromArchivedFileName(year, 'c_'+(era==='h19'?'h20':'h19')+'am_q.pdf'), null, '別年度ファイルは拒否');
+  }
+  assert.equal(legacyLandSectionFromArchivedFileName(2009, 'c_h21am_q.pdf'), null);
 });
