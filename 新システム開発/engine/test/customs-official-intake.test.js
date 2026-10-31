@@ -107,9 +107,9 @@ test('通関士の学習中に追加登録状況を確認しても現在問を�
   const resume = html.slice(html.indexOf('async function goBack()'), html.indexOf("document.getElementById('sourceManageBack').onclick = goBack"));
   assert.match(resume,/getStudySnapshot/,'採点後は実際の保存状態を読む');
   assert.doesNotMatch(resume,/nextQuestion/,'登録状況から戻る際に次問へ進めない');
-  assert.match(resume,/lastRenderedSignature = null;\\s*render\\(snapshot\\)/,
+  assert.match(resume,/lastRenderedSignature = null;\s*render\(snapshot\)/,
     '復元表示が同じ内容でも管理画面から必ず学習画面へ描画し直す');
-  assert.match(html,/sourceManagerBar\\(\\);\\s*scrollUp\\(\\);\\s*nextBtn\\(\\); bindEnd\\(\\)/,
+  assert.match(html,/sourceManagerBar\(\);\s*scrollUp\(\);\s*nextBtn\(\); bindEnd\(\)/,
     '採点直後も過去問登録ボタンを残し、次問操作を強制しない');
 });
 
