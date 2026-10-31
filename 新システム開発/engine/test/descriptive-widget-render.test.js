@@ -32,6 +32,17 @@ test('学習計画の「記述式から始める」は土地家屋調査士だ�
     '学習開始の明示承認後にだけ記述式へ遷移する');
 });
 
+test('自由入力の確定後は元の学習計画ではなく開始確認専用画面へ進む',()=>{
+  const start=script.indexOf('  function planEditOther(){');
+  const end=script.indexOf('  // 診断問題は明示承認後にだけ出す。',start);
+  const source=script.slice(start,end);
+  assert.match(source,/if \(text\) planWishConfirmation\(\);/,'希望があれば確認画面を開く');
+  assert.match(source,/希望を反映しました｜学習開始の確認/,'確認結果が目で見て分かる');
+  assert.match(source,/id="wishStart"/,'最終の学習開始ボタンを備える');
+  assert.match(source,/startStudyNow\(ov.name, studyLearner\)/,'学習開始の実処理へつながる');
+  assert.match(source,/id="wishEdit"/,'元の希望を保持したまま修正できる');
+});
+
 test('解説Markdownを安全にHTML化し、関数電卓の式を失わない',()=>{
   const markdown = [
     '## 面積の求め方',

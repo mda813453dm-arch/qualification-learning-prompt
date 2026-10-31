@@ -745,12 +745,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#otherText').fill('記述式から始める');
     const startCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
     const descCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='openDescriptiveQuestion').length);
-    await ui.getByRole('button',{name:/希望を計画案に反映/}).click();
-    await ui.getByText(/「記述式から始める」を計画案に反映しました/).waitFor();
-    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).waitFor();
+    await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+    await ui.getByRole('heading',{name:'希望を反映しました｜学習開始の確認'}).waitFor();
+    assert.match(await ui.locator('#app').innerText(), /記述式から始める/);
+    assert.equal(await ui.getByRole('button',{name:/この学習計画で始める/}).count(),0,
+      '希望の確定後に元の計画画面へ勝手に戻らない');
+    await ui.getByRole('button',{name:/希望を入力し直す/}).click();
+    assert.equal(await ui.locator('#otherText').inputValue(),'記述式から始める',
+      '入力し直す場合も希望を保持');
+    await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '希望の保存だけでは学習を開始しない');
-    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).click();
+    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');
     assert.equal(await ui.locator('#descriptiveYear option').count(),19);

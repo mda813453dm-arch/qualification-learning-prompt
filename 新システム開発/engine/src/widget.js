@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v154.html';
+export const WIDGET_URI = 'ui://qlp/question-v155.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.154';
+export const WIDGET_VERSION = '2026-10-31.155';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -2661,7 +2661,7 @@ a{color:inherit}
   // 画面内で新たに pointer/touch/mouse down したボタンの click のみ操作として受け付ける。
   // detail=0 はキーボード・支援技術による正当なクリックとして受け付ける。
   function guardNewPlanActions(){
-    ['startStudy', 'revise', 'diag', 'notNow'].forEach(function(id){
+    ['startStudy', 'revise', 'diag', 'notNow', 'wishStart', 'wishEdit', 'wishPlan'].forEach(function(id){
       var b = document.getElementById(id);
       if (!b) return;
       var pressed = false;
@@ -2855,9 +2855,9 @@ a{color:inherit}
     document.getElementById('rBack').onclick=planEditReview;
   }
   function planEditOther(){
-    app.innerHTML = '<h2>その他の希望</h2><div class="notice">その他の学習希望を記録できます。「記述式から始める」は土地家屋調査士の開始方法として反映します。ここでの確認後、次の画面で学習開始の承認が必要です。その他、未対応の機能は自動で実行されません。</div>' +
+    app.innerHTML = '<h2>その他の希望</h2><div class="notice">その他の学習希望を記録できます。「記述式から始める」は土地家屋調査士の開始方法として反映します。入力後は学習開始の確認画面に進みます。その他、未対応の機能は自動で実行されません。</div>' +
       '<textarea id="otherText" maxlength="300" rows="3" style="width:100%;box-sizing:border-box"></textarea>' +
-      '<div class="choices"><button id="otherOk"><b>1</b><span>希望を計画案に反映（次に開始確認）</span></button><button id="otherBack"><b>2</b><span>戻る</span></button></div>';
+      '<div class="choices"><button id="otherOk"><b>1</b><span>希望を確定して開始確認へ</span></button><button id="otherBack"><b>2</b><span>戻る</span></button></div>';
     document.getElementById('otherText').value=draftPlan().otherNote || '';
     document.getElementById('otherBack').onclick=planEditMenu;
     document.getElementById('otherOk').onclick=function(){
@@ -2867,8 +2867,29 @@ a{color:inherit}
         return;
       }
       draftPlan().otherNote=text;
-      planRevised(text ? 'その他の学習上の希望を計画案に追加しました。' : 'その他の希望は設定しません。');
+      if (text) planWishConfirmation();
+      else planRevised('その他の希望は設定しません。');
     };
+  }
+  // 希望の登録後は元の計画画面に戻さない。別画面で登録結果と次の操作を
+  // 明示し、ここでの「学習開始」のタップだけが保存・開始を実行する。
+  function planWishConfirmation(){
+    var d = draftPlan(), ov = onboardOv || {};
+    var descriptiveFirst = wantsDescriptiveFirst(ov, d.otherNote);
+    app.innerHTML = '<h2>希望を反映しました｜学習開始の確認</h2>' +
+      '<div class="stage-arrived" role="status">✓ 入力された希望を計画案に反映しました。学習はまだ始まっていません。</div>' +
+      '<div class="stem"><b>今回の希望：</b>' + esc(d.otherNote || '') + '</div>' +
+      (descriptiveFirst ? '<div class="stem"><b>開始後の画面：</b>土地家屋調査士の記述式・年度と問11／問21／問22の選択。自動採点はしません。</div>' :
+        '<div class="notice">希望は学習計画に記録します。未対応の操作を自動で実行するものではありません。</div>') +
+      '<div class="notice">下の「学習を開始する」を押すと、希望を保存して学習を開始します。入力を直すこともできます。</div>' +
+      '<div class="choices"><button id="wishStart"><b>1</b><span>' + (descriptiveFirst ? 'この希望で記述式の学習を開始する' : 'この希望で学習を開始する') + '</span></button>' +
+      '<button id="wishEdit"><b>2</b><span>希望を入力し直す</span></button>' +
+      '<button id="wishPlan"><b>3</b><span>学習計画に戻る</span></button></div>';
+    scrollUp();
+    guardNewPlanActions();
+    document.getElementById('wishStart').onclick = function(){ startStudyNow(ov.name, studyLearner); };
+    document.getElementById('wishEdit').onclick = planEditOther;
+    document.getElementById('wishPlan').onclick = function(){ planPanel(['その他の希望を計画案に反映しました。']); };
   }
   // 診断問題は明示承認後にだけ出す。戻るを押した場合は出題も履歴変更もしない。
   function diagPreview(d){
