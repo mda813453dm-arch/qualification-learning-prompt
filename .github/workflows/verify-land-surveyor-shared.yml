@@ -1,0 +1,28 @@
+name: 土地家屋調査士 旧年度共通問題庫の検証（Cloud Run再配置なし）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/seed-land-surveyor-archive.mjs'
+      - '.github/workflows/verify-land-surveyor-shared.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 検証済み8区分のみ共通問題庫の状態を照合（既存の他年度を保持）
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          node 新システム開発/deploy/seed-land-surveyor-archive.mjs
