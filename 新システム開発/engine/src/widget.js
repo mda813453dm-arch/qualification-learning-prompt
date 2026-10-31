@@ -720,6 +720,9 @@ a{color:inherit}
         if (!snapshot || snapshot.error || (!snapshot.status && !snapshot.question && !snapshot.menu && !snapshot.onboarding))
           throw new Error('STUDY_SNAPSHOT_UNAVAILABLE');
         sourceManagerOpen = false;
+        // 元の問題とサーバー状態が同一でも、現在DOMは管理画面。
+        // 復元時の重複描画抑止が管理画面を残してしまわないよう解除する。
+        lastRenderedSignature = null;
         render(snapshot);
         if (chosen && snapshot.question && savedView?.question?.questionId === snapshot.question.questionId &&
             snapshot.status === 'question') {
@@ -738,6 +741,7 @@ a{color:inherit}
         // 採点済みの可能性があれば再採点ボタンを作らず、読取専用の復元を再試行させる。
         if (!state.answered && savedView && savedView.question) {
           sourceManagerOpen = false;
+          lastRenderedSignature = null;
           render(savedView);
         } else {
           var warning = document.getElementById('sourceManageStatus');
