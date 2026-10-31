@@ -850,7 +850,7 @@ a{color:inherit}
               throw new Error('PDF_DOWNLOAD_URL_MISSING');
             refs.push({file_id:id,file_name:String(f.name),mime_type:'application/pdf',download_url:url});
           }
-          var isAnswer=function(f){return /正答|正解|解答|seikai|answer|配点/i.test(f.file_name);};
+          var isAnswer=function(f){return /正答|正解|解答|seikai|answer|correct|配点/i.test(f.file_name);};
           // 宅建は問題と正答が同じ公式PDFにある年度がある。1ファイルを両資料として検証する。
           // 他資格の「問題+解答」表記は自動で兼用と決めつけず、パーサーの仕様を優先する。
           var isTakkenCombined=function(f){return lib.qualificationId === 'q041' &&
