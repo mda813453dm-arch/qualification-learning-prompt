@@ -2021,7 +2021,9 @@ async function route(request, env, url, now) {
     }
     // 学習中でも履歴を動かさず、登録状況を読める。未対応の年度を登録済みと誤表示しない。
     const job = await readJob(env.STORE, sessionJobId(state));
-    const sources = job?.sources ?? [];
+    // ユーザー別ジョブだけでは宅建等の共有済み過去問が「未登録」に見える。
+    // 共有キャッシュの検証済み年度と本人の追加年度を read-only で結合する。
+    const sources = combineWithSharedJob(job, shared, state.qualificationId, now)?.sources ?? [];
     return json(200, { status: 'officialLibrary', sessionId: id,
       qualificationName: cat?.name ?? state.qualificationId,
       qualificationId: state.qualificationId,
