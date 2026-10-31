@@ -42,12 +42,21 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None, qu
     try:
         qdoc, qsha = open_pdf(question)
         if answer is not question and _is_html_answer(adapter, answer):
-            # 正答がウェブページで公開されている資格（行政書士）。ページそのものを公式の正答として読む
+            # 正答がWeb上のHTMLとして掲載されている資格。サイト掲載の民間解答を
+            # 公的機関の公式正答と混同しない。年度・部・実原本SHAを必ず照合。
             asha = _verified_sha(answer)
             page = bytes(answer.data).decode("utf-8", errors="replace")
-            adapter.check_year_html(page, year)
-            raw = adapter.parse_questions(qdoc)
-            answers = adapter.parse_answers_html(page)
+            if getattr(adapter, "BY_SECTION", False):
+                fixed_section = section or adapter.SECTION
+                adapter.check_source_hashes_html(year, fixed_section, qsha, asha, answer.url)
+                adapter.check_question_html(qdoc, year, fixed_section)
+                adapter.check_year_html(page, year)
+                raw = adapter.parse_questions(qdoc, fixed_section)
+                answers = adapter.parse_answers_html(page, year, fixed_section)
+            else:
+                adapter.check_year_html(page, year)
+                raw = adapter.parse_questions(qdoc)
+                answers = adapter.parse_answers_html(page)
         else:
             adoc, asha = (qdoc, qsha) if answer is question else open_pdf(answer)
             if getattr(adapter, "BY_SECTION", False):
@@ -77,7 +86,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None, qu
     figures, pngs = render_crops(qdoc, raw, f"{adapter.QUALIFICATION_ID}-{year}-{qsha[:12]}")
     if assets is not None:
         assets.update(pngs)
-    return build_result(
+    result = build_result(
         qualification_id=qualification_id if adapter_name == 'generic_mc' else adapter.QUALIFICATION_ID,
         year=year,
         section=sec,
@@ -91,6 +100,13 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None, qu
         classify=(lambda q: adapter.classify(q, sec)) if getattr(adapter, 'BY_SECTION', False) else adapter.classify,
         figures=figures,
     )
+    # Web解答は非公式であることをパケットに刻む。エンジンのリンク表示も
+    # 回答の出典URLを根拠に独立判定し、「公式正答」と誤表示しない。
+    if adapter_name == 'land_surveyor' and _is_html_answer(adapter, answer):
+        for packet in result["packets"]:
+            packet["verification"]["answer"] = "same_year_archived_website_answer_table_checked"
+            packet["answerSourceType"] = "secondary_web_answer"
+    return result
 
 
 def main(argv=None):
