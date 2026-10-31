@@ -84,7 +84,15 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       const files=[{name:'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
         ...(spec.answerFormat==='html'?[]:[{name:'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
       await ui.locator('#sourceManageUpload').setInputFiles(files);
-      await ui.locator('#sourceManageUploadStatus').getByText('受付',{exact:false}).waitFor({timeout:20000});
+      try {await ui.locator('#sourceManageUploadStatus').filter({hasText:'受付'}).waitFor({timeout:12000});}
+      catch(e){
+        console.error('ANYTIME_UPLOAD',browserName,spec.qualificationName,
+          'STATUS=',(await ui.locator('#sourceManageUploadStatus').innerText().catch(()=>'<missing>')),
+          'ERRORS=',errors,
+          'CALLS=',JSON.stringify(await page.evaluate(()=>window.calls)).slice(0,1300),
+          'FILES=',JSON.stringify(await page.evaluate(()=>window.uploads)));
+        throw e;
+      }
       const calls=await page.evaluate(()=>window.calls);
       const batch=calls.find(c=>c.name==='attachPdfBatchFromPicker');
       assert.ok(batch,browserName+': '+spec.qualificationName+' missing upload call');
