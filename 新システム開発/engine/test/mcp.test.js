@@ -39,6 +39,34 @@ async function rpc(env, method, params, { path = '/mcp', token = TOKEN } = {}) {
 }
 const call = async (env, name, args) => (await rpc(env, 'tools/call', { name, arguments: args })).body.result;
 
+test('同じChatGPT会話では学習開始後の別資格@再呼出しを拒否し、終了後だけ許可する', async () => {
+  const env = makeEnv();
+  const sessionMeta = { 'openai/session': 'anonymous-conversation-a-123456' };
+  const sessionB = { 'openai/session': 'anonymous-conversation-b-123456' };
+  const app = async (name, args, meta = sessionMeta) => (await rpc(env, 'tools/call',
+    { name, arguments: args, _meta: meta }, { path: '/app' })).body.result;
+  const first = (await app('startSession', { qualificationId:'測量士補', sources:[SRC] })).structuredContent;
+  assert.equal(first.status, 'needPlan');
+  const started = (await app('startStudy', { qualificationName:'測量士補', learnerId:first.learnerId })).structuredContent;
+  assert.ok(started.studyId);
+  const blocked = await app('startSession', { qualificationId:'宅建', sources:[] });
+  assert.equal(blocked.isError, true);
+  assert.equal(blocked.structuredContent.error, 'STUDY_ACTIVE_OTHER_QUALIFICATION');
+  assert.match(blocked.structuredContent.hint, /学習を終了する/);
+  assert.equal((await app('startStudy', { qualificationName:'宅建' })).structuredContent.error,
+    'STUDY_ACTIVE_OTHER_QUALIFICATION', 'startStudy without a prior session is also blocked');
+  const duplicate = await app('startSession', { qualificationId:'測量士補', sources:[SRC] });
+  assert.equal(duplicate.structuredContent.error, 'STUDY_ALREADY_ACTIVE', 'same qualification must not open another frame');
+  assert.equal((await app('startStudy', { qualificationName:'測量士補', learnerId:first.learnerId })).structuredContent.error,
+    'STUDY_ALREADY_ACTIVE', 'same qualification must not restart the study timer');
+  const separate = (await app('startSession', { qualificationId:'測量士補', sources:[SRC] }, sessionB)).structuredContent;
+  assert.equal(separate.status, 'needPlan', 'another ChatGPT conversation has its own session');
+  const ended = await app('endStudy', { studyId:started.studyId, sessionId:first.sessionId });
+  assert.notEqual(ended.isError, true);
+  const after = await app('startSession', { qualificationId:'宅建', sources:[] });
+  assert.notEqual(after.isError, true, 'switching is possible after explicit endStudy');
+});
+
 test('initialize で接続版プロンプトを instructions として渡す（deploy/gpt-instructions.txt と同じ内容）', async () => {
   const env = makeEnv();
   const r = await rpc(env, 'initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
@@ -148,8 +176,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v159\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-31.159');
+  assert.match(WIDGET_URI, /question-v160\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-31.160');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 

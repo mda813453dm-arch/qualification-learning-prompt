@@ -610,6 +610,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v155.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v156.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v157.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v158.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v159.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
@@ -707,9 +708,10 @@ export function forModel(body) {
 /** ChatGPT アプリには、GPTのような指示文を置く場所がない。AIが必ず読むツールの説明に、学習の始め方の順番を入れる（2026-10-18 アプリで試験概要・学習状況の聴取が飛ばされた） */
 /** アプリ用の指示文：GPTの指示文と同じ仕様。問題の表示だけ「問題の画面」に差し替える */
 export function appInstructions() {
+  const activeStudyRule = '【最優先：学習中の資格アプリ再呼出し禁止】このチャットで学習開始後は、学習画面の「学習を終了する」を押すまで、@資格学習で別の資格を指定されても、同じ資格を指定されても、新規学習画面を出さない。現在の学習枠で続けるか終了ボタンを案内する。ChatGPTの@メンション入力そのものは制御できないが、startSessionとstartStudyの再実行はエンジンが拒否する。学習終了後に限り別資格や同じ資格で開始できる。\n';
   const a = INSTRUCTIONS.indexOf('2. 表示：');
   const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
-  if (a < 0 || b < 0) return INSTRUCTIONS;
+  if (a < 0 || b < 0) return activeStudyRule + INSTRUCTIONS;
   const display = '2. 表示：**問題文・図・選択肢は、エンジンが「問題の画面」に表示する。チャットには書かない（書き直さない・省かない・別の図を探したり描いたりしない）。** 画面の選択肢を押して答えてもらう（番号をチャットに書かれたら `submitAnswer` を呼ぶ）。前置きは短くし、出題の区切りの文（「📍分野」など）は画面に入っている。`status: waiting` のときだけ `screen` をそのまま出す。\n';
   const noInvent = '\n**強制補強：同一分野の公式実践3問連続誤答後は、短い補強説明のあとAI作成確認問題を1問作る。必ず登録前に本文・全選択肢・正答番号を固定し、registerRemediationQuestion を呼ぶ。返った画面が出題するので、AIは問題をチャットへ書き直さない。採点・誤答時の再出題・正解時の公式問題再開は画面とエンジンが制御する。未登録の確認問題で実践問題へ進まない。**\n**仕様に書かれていない選択肢（資格の一覧、独自の「1〜4」の選択肢など）を作らない。** 初回の試験概要→免除・学習状況→学習計画→学習開始→項目の進め方は、startSessionが返すエンジン学習枠内でだけ番号ボタンを表示して直接制御する。ChatGPT側で学習状況のラジオ式フォームや独自の学習計画の承認ボタンを作成してはいけない。showMenu(kind=status/plan/item/exempt)も呼ばない。解説・詳しい説明などAI本文と操作を同枠に入れる必要がある場面だけshowMenu(kind=lesson/next/review)を使う。**前の会話で聞いた免除・学習状況を覚えていても、「前回と同じ条件で進めますか」などと聞いたり、答えを決めたりしない。免除・学習状況は、startSession のあとに nextQuestion を呼べば、エンジンが試験概要の直下にボタンで聞く（AIは聞かない）。ChatGPT標準の質問・選択肢の画面は使わない。**\n**質問の範囲：利用者の質問は、選んだ資格の試験範囲の学習に関することだけ受け付ける。** 試験に関係のない話（このアプリ・システムの開発や運用、他の資格、雑談など）には「学習に関係のないご質問にはお答えできません。試験の学習に関することをご質問ください。」とだけ答え、続きは出題・学習に戻す。言葉の意味があいまいなとき（例：「開発許可」）は、必ず選んだ資格の試験科目での意味（宅建なら都市計画法の開発許可）として答え、聞き返さない。\n**利用者が過去問のPDFを2個以上まとめて添付した場合は、受領報告や確認質問より先に `attachPdfBatch` を1回実行する。1個のみの場合は `attachPdf` を使用する。複数PDFは各年度のファイルごとに処理する。行政書士は本人専用保存であり、正答は公式HTMLを使用するため、正答PDFや共有確認は不要。登録ツールが未実行なら『登録済み』と表示しない。** PDFの中身をAIが書き写して出題・採点しない。';
   // U01：資格名の質問はマスタープロンプトの文言（GPTの指示文は運営者が貼り直すまで変えない）
@@ -720,7 +722,7 @@ export function appInstructions() {
   const sharingFlow = '\n【公式過去問の共有保存】共有キャッシュで確認できた実際の年度と資格ごとの試験区分（宅建は本試験、2020・2021年度は10月／12月等）だけを学習画面で表示する。資格と関係のない午前／午後などの区分を追加しない。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFが添付されたときだけ、原本と正答の同一性を照合する。PDFが1個ならattachPdf、2〜10個ならattachPdfBatchを優先して使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。利用者向け画面では共有・キャッシュ・URL台帳件数・未登録保存キーなどの内部情報を表示しない。年度と利用可能問題数、公式PDF登録の案内だけ出す。\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\n';
   const redisplayFlow = '\n【問題の初回表示失敗】利用者が「出てません」「問題が表示されない」「1回で出ない」と報告した場合は、既存の学習枠がある場合は、その枠の再表示・復元ボタンによるgetStudySnapshotの読取専用更新を優先する。モデルはrestoreStudyViewを呼ばない。既存枠が完全に失われ、利用者が明示的に新しい枠で再開を求めた場合だけopenHandoffViewを使用する。問題IDを維持し、勝手に次問へ進めない。成功応答を確認するまでは表示成功と言わない。\n';
   const handoffFlow = '\n【引継ぎからの再開】引継ぎIDや引継ぎデータを受け取ったら、startSessionを呼ばずimportHandoffを呼ぶ。成功後に返されたsessionIdをそのままopenHandoffView({sessionId})へ渡し、登録済みの表示画面に「学習を再開する」ボタンを出す。旧版の接続環境ではimportHandoffだけでは画面が出ないので、openHandoffViewの呼出しを絶対に省略しない。免除・試験概要・学習状況・計画を聞き直さず、本人が再開ボタンを押すまで待つ。\n';
-  return (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + lessonFlow + explanationFlow + descriptiveFlow + sharingFlow + redisplayFlow + handoffFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
+  return activeStudyRule + (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + lessonFlow + explanationFlow + descriptiveFlow + sharingFlow + redisplayFlow + handoffFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する

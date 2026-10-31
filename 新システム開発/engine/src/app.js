@@ -191,6 +191,48 @@ async function libraryOverview(env, qualificationId, now) {
 
 const qidOk = (v) => typeof v === 'string' && v.length > 0 && v.length <= 100 && !/[/\s]/.test(v);
 const sesKey = (id) => `ses/${id}`;
+// ChatGPT supplies an anonymized conversation identifier in MCP tool-call _meta.
+// Only its salted digest is kept; user input or localStorage never identifies a chat.
+const chatStudyKey = (id) => `chatstudy/${id}`;
+const learnerChatKey = (lid) => `lrnchat/${lid}`;
+const hostChatKey = (request) => {
+  const value = request.headers.get('x-qlp-host-chat');
+  return /^[a-f0-9]{64}$/.test(value ?? '') ? value : null;
+};
+const activeStudyHint = 'このチャットでは別の資格の学習中です。先に現在の学習画面の「学習を終了する」を押してください。終了前は別資格の学習を開始しません。';
+const sameStudyHint = 'このチャットではすでに学習中です。新しい学習画面を開かず、現在の学習画面で続けてください。別資格へ切り替える場合は、先に「学習を終了する」を押してください。';
+function ensureNoActiveStudy(current, requestedQualificationId) {
+  if (!current?.active) return;
+  if (current.qualificationId !== requestedQualificationId)
+    throw new HttpError(409, 'STUDY_ACTIVE_OTHER_QUALIFICATION', activeStudyHint);
+  throw new HttpError(409, 'STUDY_ALREADY_ACTIVE', sameStudyHint);
+}
+async function readChatStudy(env, id) {
+  return id ? env.STORE.get(chatStudyKey(id), 'json') : null;
+}
+async function bindChatStudy(env, id, qualificationId, learnerId, previous) {
+  if (!id) return;
+  const same = previous?.qualificationId === qualificationId && previous?.learnerId === learnerId;
+  const value = { qualificationId, learnerId,
+    active: !!(same && previous.active), ...(same && previous.studyId ? { studyId: previous.studyId } : {}) };
+  await env.STORE.put(chatStudyKey(id), JSON.stringify(value), { expirationTtl: STUDY_TTL_S });
+  await env.STORE.put(learnerChatKey(learnerId), id, { expirationTtl: STUDY_TTL_S });
+}
+async function activateChatStudy(env, learnerId, qualificationId, studyId) {
+  const id = await env.STORE.get(learnerChatKey(learnerId));
+  const current = await readChatStudy(env, id);
+  if (!id || current?.learnerId !== learnerId || current.qualificationId !== qualificationId) return;
+  await env.STORE.put(chatStudyKey(id), JSON.stringify({ ...current, active: true, studyId }),
+    { expirationTtl: STUDY_TTL_S });
+}
+async function releaseChatStudy(env, learnerId, studyId) {
+  const id = await env.STORE.get(learnerChatKey(learnerId));
+  const current = await readChatStudy(env, id);
+  if (id && current?.learnerId === learnerId && current.studyId === studyId) {
+    await env.STORE.delete(chatStudyKey(id));
+    await env.STORE.delete(learnerChatKey(learnerId));
+  }
+}
 
 async function loadSession(env, id, now) {
   if (!/^[0-9a-f-]{36}$/.test(id)) throw new HttpError(404, 'SESSION_NOT_FOUND');
@@ -1533,7 +1575,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v159-descriptive-pdf-footer', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v160-active-study-chat-lock', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
@@ -1691,6 +1733,9 @@ async function route(request, env, url, now) {
     const directWanted = directQuestionText(b.requestedQuestion);
     const known = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId);
     if (!known && !(Array.isArray(b.sources) && b.sources.length)) throw new HttpError(422, 'QUALIFICATION_NOT_SUPPORTED', NOT_SUPPORTED_HINT);
+    const chatId = hostChatKey(request);
+    const currentChat = await readChatStudy(env, chatId);
+    ensureNoActiveStudy(currentChat, b.qualificationId);
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);
@@ -1706,6 +1751,7 @@ async function route(request, env, url, now) {
     });
     const learnerId = selectedLearner.learnerId;
     await gateEnter(env, learnerId, b.accessCode, now);
+    await bindChatStudy(env, chatId, b.qualificationId, learnerId, currentChat);
     await env.STORE.put(studyOpenKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
     const restored = given ? await sessionFromLearner(env, learnerId, now) : null;
@@ -1722,6 +1768,7 @@ async function route(request, env, url, now) {
         const directState = { ...restored.state, resumePending: false, directRequested: directWanted };
         await saveSession(env, restored.id, directState, now);
         const studyId = await startDirectStudy(env, directState, now);
+        await activateChatStudy(env, learnerId, b.qualificationId, studyId);
         const view = await nextView(env, restored.id, directState, now, { want: directWanted });
         return json(201, { ...view, sessionId: restored.id, learnerId, studyId });
       }
@@ -1736,6 +1783,7 @@ async function route(request, env, url, now) {
       const directState = { ...state, directRequested: directWanted };
       await saveSession(env, id, directState, now);
       const studyId = await startDirectStudy(env, directState, now);
+      await activateChatStudy(env, learnerId, b.qualificationId, studyId);
       const view = await nextView(env, id, directState, now, { want: directWanted });
       return json(201, { ...view, sessionId: id, learnerId, studyId });
     }
@@ -1914,9 +1962,15 @@ async function route(request, env, url, now) {
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'next' && parts.length === 4) {
     const b = await body(request).catch(() => ({}));
     const { id, state } = await resolveSession(env, parts[2], now);
+    const currentChat = await readChatStudy(env, hostChatKey(request));
+    if (currentChat?.active && currentChat.qualificationId !== state.qualificationId)
+      throw new HttpError(409, 'STUDY_ACTIVE_OTHER_QUALIFICATION', activeStudyHint);
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
-    if (isExactQuestionRequest(want)) await startDirectStudy(env, state, now);
+    if (isExactQuestionRequest(want)) {
+      const directStudyId = await startDirectStudy(env, state, now);
+      await activateChatStudy(env, state.learnerId, state.qualificationId, directStudyId);
+    }
     // モデルに新しいMCPツールがまだ公開されていない環境用：既存のnextQuestionを
     // 読み取り専用の解説後ナビゲーションへ転用する。現在問以外は409で拒否する。
     const actionsPrefix = '記述式解説後の操作メニュー:';
@@ -2490,8 +2544,11 @@ async function route(request, env, url, now) {
   // 学習の開始：時刻はエンジンが取る（AIに推測させない）。引継ぎIDごとの累計学習時間も返す
   if (method === 'POST' && url.pathname === '/v1/study/start') {
     const b = await body(request);
-    const given = validLearnerId(b.learnerId);
     const qualificationId = catalogIdByName(b.qualificationName);
+    const chatId = hostChatKey(request);
+    const currentChat = await readChatStudy(env, chatId);
+    ensureNoActiveStudy(currentChat, qualificationId);
+    const given = validLearnerId(b.learnerId);
     const originalSaved = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
     const learnerId = qualificationId
       ? (await selectQualificationLearner(env.STORE, {
@@ -2505,6 +2562,7 @@ async function route(request, env, url, now) {
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(studyStartKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
+    await activateChatStudy(env, learnerId, qualificationId, studyId);
     // 復習の順番だけを新しい学習時間に合わせてリセット。復習予定と過去の採点は保持する。
     const activeSessionId = await env.STORE.get(lastSessionKey(learnerId));
     let startMode = 'standard';
@@ -2723,6 +2781,7 @@ async function route(request, env, url, now) {
       await env.STORE.put(studyKey(studyId), JSON.stringify(r.study), { expirationTtl: STUDY_TTL_S });
       await env.STORE.put(timeKey(study.learnerId), JSON.stringify({ minutes: r.total, updatedAt: now }));
     }
+    await releaseChatStudy(env, study.learnerId, studyId);
     return json(200, { minutes: r.minutes, totalMinutes: r.total, log: r.log, handoff: r.handoff, display: r.display });
   }
 
@@ -2802,6 +2861,8 @@ async function route(request, env, url, now) {
       }
       state = resumed(saved);
     }
+    const currentChat = await readChatStudy(env, hostChatKey(request));
+    ensureNoActiveStudy(currentChat, state.qualificationId);
     // 既存の学習者IDがあれば、JSON引継ぎでも保存済みの未回答問題や学習設定を優先して復元する。
     const importedLid = validLearnerId(state.learnerId);
     if (importedLid) {
@@ -2878,10 +2939,11 @@ async function mcp(request, env, url, now, widget = false) {
     return json(400, { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } });
   }
   // ツールの呼び出しは、認証済みの API 呼び出しとして同じ処理に回す
-  const callApi = async (method, path, body) => {
+  const callApi = async (method, path, body, chatId = null) => {
     const inner = new Request(new URL(path, url), {
       method,
-      headers: { authorization: `Bearer ${env.API_TOKEN}`, 'content-type': 'application/json' },
+      headers: { authorization: `Bearer ${env.API_TOKEN}`, 'content-type': 'application/json',
+        ...(chatId ? { 'x-qlp-host-chat': chatId } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
     const res = await handle(inner, widget ? { ...env, QLP_MCP: true, QLP_WIDGET: true } : { ...env, QLP_MCP: true });
@@ -2891,7 +2953,14 @@ async function mcp(request, env, url, now, widget = false) {
   // 診断用：どの呼び出しが来たか（方法とツール名だけ。引数・合言葉は記録しない）
   for (const m of batch ? msg : [msg]) console.log(JSON.stringify({ event: 'mcp_rpc', route: widget ? 'app' : 'mcp', method: m?.method, tool: m?.params?.name, ...(m?.params?.name === 'showMenu' && typeof m?.params?.arguments?.kind === 'string' ? { kind: m.params.arguments.kind.slice(0, 24) } : {}) }));
   const opts = { widget, baseUrl: env.PUBLIC_BASE_URL ?? url.origin };
-  const out = (await Promise.all((batch ? msg : [msg]).map((m) => handleRpc(m, callApi, opts)))).filter(Boolean);
+  const out = (await Promise.all((batch ? msg : [msg]).map(async (m) => {
+    // OpenAI supplies a pseudonymous conversation id on tool calls. It is not
+    // a user-supplied tool argument and must never appear in logs or records.
+    const conversation = m?.params?._meta?.['openai/session'];
+    const chatId = typeof conversation === 'string' && conversation.length >= 8 && conversation.length <= 300
+      ? await sha256Hex(`qlp-chat-v1:${env.API_TOKEN}:${conversation}`) : null;
+    return handleRpc(m, (method, path, data) => callApi(method, path, data, chatId), opts);
+  }))).filter(Boolean);
   // 診断用：ツールが失敗したときは、ツール名と理由のコードだけを残す（引数・学習内容は残さない）
   for (const [i, r] of out.entries()) {
     if (!r?.result?.isError && !r?.error) continue;
