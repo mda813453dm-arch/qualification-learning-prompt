@@ -15,6 +15,7 @@ const expected = new Map([
  ['2015:午前の部',10],['2015:午後の部',20],
  ['2017:午前の部',10],['2017:午後の部',20],
  ['2018:午前の部',10],['2018:午後の部',20],
+ ['2019:午後の部',20],
  ['2021:午後の部',20],
 ]);
 const seed = async () => {
@@ -46,7 +47,7 @@ while(Date.now()<deadline) {
     ' ['+failed.map(x=>x.year+':'+x.section+':'+(x.reason||'COUNT')).join(',')+']';
   if(summary!==last){console.log(summary);last=summary;}
   if(done.length===expected.size) {
-    console.log('ARCHIVE_SHARED_READY: 110 graded MC questions across 7 archival sections');
+    console.log('ARCHIVE_SHARED_READY: 130 graded MC questions across 8 archival sections');
     process.exit(0);
   }
   if(failed.length && !pending.length && retries<2){
