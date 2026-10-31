@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { widgetHtml } from '../src/widget.js';
+import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
 const learnerId = 'testlearner';
@@ -75,8 +76,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             } });
           }
           else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
-          else if (op === 'saveStudyPlan') reply({ structuredContent: { status: 'planSaved' } });
-          else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました' } });
+          else if (op === 'saveStudyPlan') {
+            window.savedPlanStartMode = /記述式から/.test(m.params.arguments.otherNote || '') ? 'descriptive' : 'standard';
+            if (window.rejectDescriptiveStartOnce) { window.rejectDescriptiveStartOnce = false; window.savedPlanStartMode = 'standard'; }
+            reply({ structuredContent: { status: 'planSaved', startMode: window.savedPlanStartMode } });
+          }
+          else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました', startMode: window.savedPlanStartMode || 'standard' } });
           else if (op === 'nextQuestion') {
             if (window.recoverSkipped) reply({ structuredContent: nextQuestion });
             else if (window.failNextCalls > 0) {
@@ -736,7 +741,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 「その他の希望」は開始承認後に記述式の年度・問題選択へ反映される。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan', planReady:true, learnerId, sessionId,
-      overview:{name:'土地家屋調査士',title:'土地家屋調査士'},
+      overview:overviewFor('land_surveyor'),
       plan:{fields:['午後の部（土地の記述）','午後の部（建物の記述）']},
     }));
     await ui.getByRole('button',{name:/この学習計画で始める/}).waitFor();
@@ -757,6 +762,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '希望の保存だけでは学習を開始しない');
+    // サーバーが記述式モードを確定できなかった場合、択一に切り替えずエラーを出す。
+    await page.evaluate(() => { window.rejectDescriptiveStartOnce = true; });
+    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).click();
+    await ui.getByText(/記述式から始める設定を確認できませんでした/).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
+      '記述式の確定に失敗した場合は通常の択一開始を実行しない');
+    assert.equal(await ui.getByRole('heading',{name:/午前の部.*問1/}).count(),0,
+      '記述式の失敗時に午前の択一式を出題しない');
     await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');

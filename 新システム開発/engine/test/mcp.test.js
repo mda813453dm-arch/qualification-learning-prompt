@@ -148,8 +148,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v155\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-31.155');
+  assert.match(WIDGET_URI, /question-v156\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-31.156');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1252,6 +1252,30 @@ test('解説の表示：旧SVGコードは除去し、正誤は大きな結果�
   assert.match(html, /✕ 不正解/);
   assert.match(html, /gradeBanner\(g, label\)/);
   assert.match(html, /result-grade/);
+});
+
+test('土地家屋調査士：記述式から開始する希望を実セッションへ保存し、開始応答で確認できる', async () => {
+  const env = makeEnv();
+  const callUi = async (name, args) => (await rpc(env, 'tools/call',
+    { name, arguments: args }, { path: '/app' })).body.result;
+  const first = await callUi('startSession', { qualificationId: '土地家屋調査士', sources: [] });
+  const { sessionId, learnerId, overview } = first._meta.qlp;
+  assert.equal(overview.qualificationId, 'land_surveyor', '画面へ資格の識別子を渡す');
+  const fields = Object.values(CATALOG.land_surveyor.fields);
+  const saved = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
+    methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '記述式から始める' });
+  assert.equal(saved.structuredContent.status, 'planSaved');
+  assert.equal(saved.structuredContent.qualificationId, 'land_surveyor');
+  assert.equal(saved.structuredContent.startMode, 'descriptive');
+  const start = await callUi('startStudy', { learnerId, qualificationName: '土地家屋調査士' });
+  assert.equal(start.structuredContent.startMode, 'descriptive', 'サーバーに保存済みの希望から開始モードを返す');
+
+  const shorter = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
+    methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '記述式から' });
+  assert.equal(shorter.structuredContent.startMode, 'descriptive', '短い希望の書き方も認識する');
+  const normal = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
+    methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '' });
+  assert.equal(normal.structuredContent.startMode, 'standard', '希望を削除したら元へ戻る');
 });
 
 // 土地家屋調査士の過去実装（PDF検証・図抽出）は現行エンジンに未接続。

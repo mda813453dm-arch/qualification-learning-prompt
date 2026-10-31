@@ -319,6 +319,16 @@ function catalogIdByName(name) {
   return part.length === 1 ? part[0] : null;
 }
 
+// 学習開始の希望はサーバー側でも判定する。画面の一時状態が失われても
+// 記述式希望を択一式へ黙って切り替えないため、保存結果と開始応答に同じ区分を載せる。
+function plannedStartMode(qualificationId, note) {
+  if (qualificationId !== 'land_surveyor') return 'standard';
+  const wish = String(note ?? '').normalize('NFKC').replace(/\s+/g, '');
+  const descriptive = /(?:記述式|記述)(?:問題|試験)?から(?:(?:始め|開始|スタート)|$)/.test(wish) ||
+    /(?:最初|初め)は?(?:記述式|記述)/.test(wish);
+  return descriptive ? 'descriptive' : 'standard';
+}
+
 /** qualificationId か資格名から、エンジンの資格の番号を返す（エンジンの資格でなければ受け取った値のまま）。 */
 function catalogQid(v) {
   const t = String(v ?? '').trim();
@@ -1523,7 +1533,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v155-wish-confirmation', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v156-descriptive-start-authority', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
@@ -1770,16 +1780,19 @@ async function route(request, env, url, now) {
     }
     const otherNote = typeof b.otherNote === 'string' ? b.otherNote.trim() : '';
     if (otherNote.length > 300 || /自動通知|自動出題|無断|省略して採点|正答を変更|免除を無視/.test(otherNote)) throw new HttpError(400, 'PLAN_OTHER_UNSUPPORTED');
+    const startMode = plannedStartMode(state.qualificationId, otherNote);
     const nextPlan = { ...state.plan,
       fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
       methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
       reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
       orderedFields: ordered,
       otherNote,
+      startMode,
     };
     await saveSession(env, id, { ...state, plan: nextPlan }, now);
     return json(200, { status: 'planSaved', sessionId: id, orderedFields: ordered.map((f) => cat.fields[f]),
-      methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes });
+      methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes,
+      qualificationId: state.qualificationId, startMode });
   }
 
   // 記述式の独立経路。自動採点・正答PDFの結合・択一履歴の変更を行わない。
@@ -2489,9 +2502,13 @@ async function route(request, env, url, now) {
     await env.STORE.put(studyStartKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
     // 復習の順番だけを新しい学習時間に合わせてリセット。復習予定と過去の採点は保持する。
     const activeSessionId = await env.STORE.get(lastSessionKey(learnerId));
+    let startMode = 'standard';
     if (activeSessionId) {
       try {
         const active = await loadSession(env, activeSessionId, now);
+        if (active.qualificationId === qualificationId) {
+          startMode = plannedStartMode(active.qualificationId, active.plan?.otherNote);
+        }
         await saveSession(env, activeSessionId, {
           ...active, resumePending: false, reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 },
         }, now);
@@ -2515,6 +2532,7 @@ async function route(request, env, url, now) {
       startTime: t.time,
       totalMinutes: total,
       pendingQuestion,
+      startMode,
       display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${learnerId}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
       itemMenu: ITEM_MENU,
       howToShow: ITEM_HOW,
@@ -2923,6 +2941,7 @@ export function overviewFor(qid) {
     review: REVIEW_PATTERNS.ai.label,
     title: '■試験概要',
     name: c.aliases[0],
+    qualificationId: c.qualificationId,
     fields: Object.values(c.fields),
     lines: [
       `資格名：${c.name}`,

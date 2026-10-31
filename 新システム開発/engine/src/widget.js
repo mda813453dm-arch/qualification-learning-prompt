@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v155.html';
+export const WIDGET_URI = 'ui://qlp/question-v156.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.155';
+export const WIDGET_VERSION = '2026-10-31.156';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -1211,6 +1211,14 @@ a{color:inherit}
             var started = await callTool('startStudy', { qualificationName: data.qualificationName, learnerId: data.learnerId });
             if (!started || started.error || !started.studyId) throw new Error('RESUME_STUDY_NOT_STARTED');
             resumedStudyId = started.studyId;
+            if (started.startMode === 'descriptive') {
+              studyLid = started.learnerId || data.learnerId;
+              currentStudyId = resumedStudyId;
+              studyField = '午後の部（土地・建物の記述）';
+              saveIds();
+              showDescriptiveMenu(2025);
+              return;
+            }
           }
           currentStudyId = resumedStudyId; saveIds();
           var next = await callTool('nextQuestion', { sessionId: state.sessionId });
@@ -1842,7 +1850,7 @@ a{color:inherit}
   function showDescriptiveMenu(year){
     year = Number(year) || 2025;
     app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
-      '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本ページ画像で表示します。午前・午後の択一式の成績にも加えません。</div>' +
+      '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本ページ画像で表示します。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
       Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
       '<div class="choices"><button data-desc="11">午前の部・問11（記述式）</button>' +
@@ -2647,11 +2655,14 @@ a{color:inherit}
   }
   // 「その他の希望」は原則メモとして記録する。実際に対応できる開始方法だけを
   // 明示的に解釈し、別資格や採点・未実装機能を勝手に切り替えない。
-  function wantsDescriptiveFirst(overview, note){
-    if (!overview || overview.name !== '土地家屋調査士') return false;
+  function isDescriptiveStartWish(note){
     var wish = String(note || '').normalize('NFKC').replace(/\\s+/g, '');
-    return /(?:記述式|記述)(?:問題|試験)?から(?:始め|開始|スタート)/.test(wish) ||
+    return /(?:記述式|記述)(?:問題|試験)?から(?:(?:始め|開始|スタート)|$)/.test(wish) ||
       /(?:最初|初め)は?(?:記述式|記述)/.test(wish);
+  }
+  function wantsDescriptiveFirst(overview, note){
+    return !!(overview && (overview.qualificationId === 'land_surveyor' ||
+      /土地家屋調査士/.test(String(overview.name || '')))) && isDescriptiveStartWish(note);
   }
   function planRevised(reason){
     planPanel([reason || '変更後の学習計画を再表示しました。開始する前にもう一度確認してください。']);
@@ -2684,7 +2695,7 @@ a{color:inherit}
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
     var ov = onboardOv || {}, d = draftPlan();
-    var descriptiveFirst = wantsDescriptiveFirst(ov, d.otherNote);
+    var descriptiveFirst = d.startMode === 'descriptive' || wantsDescriptiveFirst(ov, d.otherNote);
     var order = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
     var dr = (ov.diagResult || []).length ?
       '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' +
@@ -2866,7 +2877,12 @@ a{color:inherit}
         app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">その希望は現在の機能では受け付けられません。未対応の機能を実装済みとして扱うことはできません。</div>');
         return;
       }
+      if (isDescriptiveStartWish(text) && !wantsDescriptiveFirst(onboardOv, text)) {
+        app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">この資格では記述式の開始方法を設定できません。資格名を確認してください。</div>');
+        return;
+      }
       draftPlan().otherNote=text;
+      draftPlan().startMode=wantsDescriptiveFirst(onboardOv,text)?'descriptive':'standard';
       if (text) planWishConfirmation();
       else planRevised('その他の希望は設定しません。');
     };
@@ -2875,7 +2891,7 @@ a{color:inherit}
   // 明示し、ここでの「学習開始」のタップだけが保存・開始を実行する。
   function planWishConfirmation(){
     var d = draftPlan(), ov = onboardOv || {};
-    var descriptiveFirst = wantsDescriptiveFirst(ov, d.otherNote);
+    var descriptiveFirst = d.startMode === 'descriptive' || wantsDescriptiveFirst(ov, d.otherNote);
     app.innerHTML = '<h2>希望を反映しました｜学習開始の確認</h2>' +
       '<div class="stage-arrived" role="status">✓ 入力された希望を計画案に反映しました。学習はまだ始まっていません。</div>' +
       '<div class="stem"><b>今回の希望：</b>' + esc(d.otherNote || '') + '</div>' +
@@ -2989,6 +3005,7 @@ a{color:inherit}
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
     try {
       var draft = draftPlan();
+      var requestedDescriptive = draft.startMode === 'descriptive' || isDescriptiveStartWish(draft.otherNote);
       var saved = await callTool('saveStudyPlan', {
         sessionId: learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
@@ -2996,9 +3013,11 @@ a{color:inherit}
         otherNote: draft.otherNote || undefined,
       });
       if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
+      if (requestedDescriptive && saved.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
       if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
-      if (wantsDescriptiveFirst(onboardOv, draft.otherNote)) {
+      if (saved.startMode === 'descriptive' || r.startMode === 'descriptive') {
+        if (saved.startMode !== 'descriptive' || r.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
         studyLid = r.learnerId || learner;
         currentStudyId = r.studyId || currentStudyId;
         studyField = '午後の部（土地・建物の記述）';
@@ -3008,7 +3027,10 @@ a{color:inherit}
       }
       itemStart(r, learner);
     } catch (e) {
-      app.insertAdjacentHTML('beforeend', '<div class="notice">学習を始められませんでした。もう一度押してください。</div>');
+      var message = e && e.message === 'DESCRIPTIVE_START_NOT_CONFIRMED' ?
+        '記述式から始める設定を確認できませんでした。択一式には切り替えません。もう一度押して再試行してください。' :
+        '学習を始められませんでした。もう一度押してください。';
+      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">' + message + '</div>');
       app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
     }
   }

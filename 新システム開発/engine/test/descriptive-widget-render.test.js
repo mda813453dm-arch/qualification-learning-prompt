@@ -18,11 +18,12 @@ const { esc, explanationHtml } = new Function('descriptiveBlockHtml',
   );
 
 test('学習計画の「記述式から始める」は土地家屋調査士だけで開始時に反映する',()=>{
-  const start=script.indexOf('  function wantsDescriptiveFirst(overview, note){');
+  const start=script.indexOf('  function isDescriptiveStartWish(note){');
   const end=script.indexOf('  function planRevised(reason){', start);
   assert.ok(start>=0 && end>start);
   const detect=new Function(script.slice(start,end)+'\nreturn wantsDescriptiveFirst;')();
   assert.equal(detect({name:'土地家屋調査士'},'記述式から始める'),true);
+  assert.equal(detect({qualificationId:'land_surveyor'},'記述式から'),true);
   assert.equal(detect({name:'土地家屋調査士'},'　記述式　から　始めたい'),true);
   assert.equal(detect({name:'土地家屋調査士'},'最初は記述式を学習したい'),true);
   assert.equal(detect({name:'測量士補'},'記述式から始める'),false);
@@ -30,6 +31,10 @@ test('学習計画の「記述式から始める」は土地家屋調査士だ�
   const planStart=script.slice(script.indexOf('  async function startStudyNow('),script.indexOf('  // 学習開始（U09）'));
   assert.ok(planStart.indexOf("callTool('startStudy'") < planStart.indexOf('showDescriptiveMenu(2025)'),
     '学習開始の明示承認後にだけ記述式へ遷移する');
+  assert.match(planStart,/saved\.startMode === 'descriptive' \|\| r\.startMode === 'descriptive'/,
+    '画面の一時状態ではなく、サーバーの確定した開始区分で記述式へ進む');
+  assert.match(planStart,/択一式には切り替えません/,
+    '記述式の確認に失敗した際は択一式へ切り替えない');
 });
 
 test('自由入力の確定後は元の学習計画ではなく開始確認専用画面へ進む',()=>{
