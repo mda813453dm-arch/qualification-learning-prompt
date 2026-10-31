@@ -175,11 +175,12 @@ export const TOOLS = [
         reviewIntervalsMinutes: { type: 'array', items: { type: 'integer', minimum: 1 } },
         methodDistribution: { type: 'array', items: { type: 'integer', minimum: 0, maximum: 100 } },
         otherNote: { type: 'string', maxLength: 300 },
+        startMode: { type: 'string', enum: ['standard','descriptive'] },
       },
     },
     api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/plan`,
       { orderedFields: a.orderedFields, methodChoice: a.methodChoice,
-        reviewPreset: a.reviewPreset, reviewIntervalsMinutes: a.reviewIntervalsMinutes, methodDistribution: a.methodDistribution, otherNote: a.otherNote }],
+        reviewPreset: a.reviewPreset, reviewIntervalsMinutes: a.reviewIntervalsMinutes, methodDistribution: a.methodDistribution, otherNote: a.otherNote, startMode: a.startMode }],
   },
   {
     name: 'redisplayQuestion',
@@ -606,6 +607,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v152.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v153.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v154.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v155.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v156.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';

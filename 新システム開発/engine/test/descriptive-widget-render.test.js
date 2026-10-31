@@ -48,6 +48,18 @@ test('自由入力の確定後は元の学習計画ではなく開始確認専�
   assert.match(source,/id="wishEdit"/,'元の希望を保持したまま修正できる');
 });
 
+test('土地家屋調査士は開始区分が不明でも択一式3択に直行しない',()=>{
+  const start=script.indexOf('  function itemStart(r, learner){');
+  const end=script.indexOf('  // 項目開始A（U07）',start);
+  const source=script.slice(start,end);
+  assert.match(source,/r\.qualificationId === 'land_surveyor'/);
+  assert.match(source,/id="landDescStart"/);
+  assert.match(source,/id="landMcStart"/);
+  assert.ok(source.indexOf('if (landSurveyor)') < source.lastIndexOf('startMultipleChoice();'),
+    '明示的に択一を選ぶまで一般の解説・確認・実践3択を出さない');
+  assert.match(source,/showDescriptiveMenu\(2025\)/);
+});
+
 test('解説Markdownを安全にHTML化し、関数電卓の式を失わない',()=>{
   const markdown = [
     '## 面積の求め方',

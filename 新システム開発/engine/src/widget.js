@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v156.html';
+export const WIDGET_URI = 'ui://qlp/question-v157.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.156';
+export const WIDGET_VERSION = '2026-10-31.157';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -3005,12 +3005,13 @@ a{color:inherit}
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
     try {
       var draft = draftPlan();
-      var requestedDescriptive = draft.startMode === 'descriptive' || isDescriptiveStartWish(draft.otherNote);
+      var requestedDescriptive = draft.startMode ? draft.startMode === 'descriptive' : isDescriptiveStartWish(draft.otherNote);
       var saved = await callTool('saveStudyPlan', {
         sessionId: learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
         reviewPreset: draft.reviewPreset, reviewIntervalsMinutes: draft.reviewIntervalsMinutes || undefined,
         otherNote: draft.otherNote || undefined,
+        startMode: draft.startMode || (requestedDescriptive ? 'descriptive' : 'standard'),
       });
       if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
       if (requestedDescriptive && saved.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
@@ -3040,18 +3041,39 @@ a{color:inherit}
     var fields = ov.fields || [];
     var field = fields[0] || '';
     studyLid = r.learnerId || learner; currentStudyId = r.studyId || currentStudyId; studyField = field || null; saveIds();
-    var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
-    var h = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
-    if (field) {
-      h += '<div class="stem">📍今回の位置：' + esc(field) + '<br>🎯今回の目的：' + esc(field) + 'の要点をつかみ、過去問で得点できるか確かめる<br>🧭始める理由：' + esc(reason) + '</div>';
-      if (!r.resumed && fields.length) h += '<div class="stem"><b>【全体の進捗】</b></div><ul class="ov-l"><li>学習中：' + esc(field) + '</li>' + (fields.length > 1 ? '<li>未着手：' + esc(fields.slice(1).join('、')) + '</li>' : '') + '</ul>';
-    }
-    app.innerHTML = h;
-    itemMenu(field, learner, async function(){
+    var proceed = async function(){
       var next = await callTool('nextQuestion', { sessionId: learner });
       if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
       render(next);
-    });
+    };
+    var initial = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
+    function startMultipleChoice(){
+      var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
+      var h = initial;
+      if (field) {
+        h += '<div class="stem">📍今回の位置：' + esc(field) + '<br>🎯今回の目的：' + esc(field) + 'の要点をつかみ、過去問で得点できるか確かめる<br>🧭始める理由：' + esc(reason) + '</div>';
+        if (!r.resumed && fields.length) h += '<div class="stem"><b>【全体の進捗】</b></div><ul class="ov-l"><li>学習中：' + esc(field) + '</li>' + (fields.length > 1 ? '<li>未着手：' + esc(fields.slice(1).join('、')) + '</li>' : '') + '</ul>';
+      }
+      app.innerHTML = h;
+      itemMenu(field, learner, proceed);
+    }
+    // 保存済みの自由入力が失われても、土地家屋調査士でいきなり択一式の
+    // 「解説・確認・実践」3択へ進ませない。明示的に択一式を選んだ場合だけ表示。
+    var landSurveyor = r.qualificationId === 'land_surveyor' || ov.qualificationId === 'land_surveyor' ||
+      /土地家屋調査士/.test(String(ov.name || ''));
+    if (landSurveyor) {
+      app.innerHTML = initial + '<h2>土地家屋調査士｜開始する問題形式</h2>' +
+        '<div class="notice">記述式の過去問を希望する場合は1を選んでください。記述式は採点なしで、問題・AI参考解説を同じ枠に表示します。</div>' +
+        '<div class="choices"><button id="landDescStart"><b>1</b><span>記述式から始める（年度・問題を選ぶ）</span></button>' +
+        '<button id="landMcStart"><b>2</b><span>択一式から始める</span></button></div>';
+      scrollUp();
+      document.getElementById('landDescStart').onclick = function(){
+        studyField = '午後の部（土地・建物の記述）'; saveIds(); showDescriptiveMenu(2025);
+      };
+      document.getElementById('landMcStart').onclick = startMultipleChoice;
+      return;
+    }
+    startMultipleChoice();
   }
   // 項目開始A（U07）：この分野の進め方をボタンで選ぶ。「以後も同じ」にしたら、次の分野からは聞かずにその進め方で進む
   var itemAlways = null;

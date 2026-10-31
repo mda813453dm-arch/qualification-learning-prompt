@@ -77,7 +77,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           }
           else if (op === 'reportUiEvent' || op === 'saveProfile') reply({ structuredContent: { status: 'recorded' } });
           else if (op === 'saveStudyPlan') {
-            window.savedPlanStartMode = /記述式から/.test(m.params.arguments.otherNote || '') ? 'descriptive' : 'standard';
+            window.savedPlanStartMode = m.params.arguments.startMode ||
+              (/記述式から/.test(m.params.arguments.otherNote || '') ? 'descriptive' : 'standard');
             if (window.rejectDescriptiveStartOnce) { window.rejectDescriptiveStartOnce = false; window.savedPlanStartMode = 'standard'; }
             reply({ structuredContent: { status: 'planSaved', startMode: window.savedPlanStartMode } });
           }
@@ -786,6 +787,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:/2025年度.*問22/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='submitAnswer').length),gradingCallsBeforeDesc,
       '記述式を表示しても採点APIを呼ばない');
+
+    // 自由入力がなくても土地家屋調査士では択一式用の3択をいきなり出さない。
+    // 記述式・択一式を明示的に選ぶ専用入口で誤出題を防ぐ。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan',planReady:true,learnerId,sessionId,
+      overview:overviewFor('land_surveyor'),
+      plan:{fields:['午後の部（土地の記述）','午後の部（建物の記述）']},
+    }));
+    await ui.getByRole('button',{name:/この学習計画で始める/}).click();
+    await ui.getByRole('heading',{name:'土地家屋調査士｜開始する問題形式'}).waitFor();
+    assert.equal(await ui.locator('#itemModes').count(),0,'記述式を未選択でも一般の3択に進まない');
+    assert.equal(await ui.getByRole('button',{name:/記述式から始める/}).count(),1);
+    await ui.getByRole('button',{name:/記述式から始める/}).click();
+    await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='submitAnswer').length),gradingCallsBeforeDesc);
 
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
     // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。

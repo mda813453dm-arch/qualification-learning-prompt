@@ -1533,7 +1533,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v156-descriptive-start-authority', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v157-descriptive-entry-choice', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
@@ -1780,7 +1780,12 @@ async function route(request, env, url, now) {
     }
     const otherNote = typeof b.otherNote === 'string' ? b.otherNote.trim() : '';
     if (otherNote.length > 300 || /自動通知|自動出題|無断|省略して採点|正答を変更|免除を無視/.test(otherNote)) throw new HttpError(400, 'PLAN_OTHER_UNSUPPORTED');
-    const startMode = plannedStartMode(state.qualificationId, otherNote);
+    const explicitStartMode = b.startMode;
+    if (explicitStartMode !== undefined && !['standard','descriptive'].includes(explicitStartMode))
+      throw new HttpError(400, 'PLAN_START_MODE_INVALID');
+    if (explicitStartMode === 'descriptive' && state.qualificationId !== 'land_surveyor')
+      throw new HttpError(400, 'PLAN_START_MODE_UNSUPPORTED');
+    const startMode = explicitStartMode ?? plannedStartMode(state.qualificationId, otherNote);
     const nextPlan = { ...state.plan,
       fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
       methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
@@ -2507,7 +2512,8 @@ async function route(request, env, url, now) {
       try {
         const active = await loadSession(env, activeSessionId, now);
         if (active.qualificationId === qualificationId) {
-          startMode = plannedStartMode(active.qualificationId, active.plan?.otherNote);
+          startMode = ['standard','descriptive'].includes(active.plan?.startMode)
+            ? active.plan.startMode : plannedStartMode(active.qualificationId, active.plan?.otherNote);
         }
         await saveSession(env, activeSessionId, {
           ...active, resumePending: false, reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 },
@@ -2527,6 +2533,7 @@ async function route(request, env, url, now) {
     return json(201, {
       studyId,
       learnerId,
+      qualificationId,
       resumed: !!savedState,
       startDate: t.date,
       startTime: t.time,

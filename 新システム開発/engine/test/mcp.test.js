@@ -148,8 +148,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v156\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-31.156');
+  assert.match(WIDGET_URI, /question-v157\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-31.157');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1273,6 +1273,11 @@ test('土地家屋調査士：記述式から開始する希望を実セッシ�
   const shorter = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
     methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '記述式から' });
   assert.equal(shorter.structuredContent.startMode, 'descriptive', '短い希望の書き方も認識する');
+  const explicit = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
+    methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '', startMode: 'descriptive' });
+  assert.equal(explicit.structuredContent.startMode, 'descriptive', '明示的な記述式選択は自由入力を必要としない');
+  const explicitlyStarted = await callUi('startStudy', { learnerId, qualificationName: '土地家屋調査士' });
+  assert.equal(explicitlyStarted.structuredContent.startMode, 'descriptive', '明示選択を学習開始でも維持');
   const normal = await callUi('saveStudyPlan', { sessionId, orderedFields: fields,
     methodChoice: 'balanced', reviewPreset: 'ai', otherNote: '' });
   assert.equal(normal.structuredContent.startMode, 'standard', '希望を削除したら元へ戻る');
