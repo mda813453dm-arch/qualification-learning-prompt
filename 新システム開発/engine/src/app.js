@@ -640,6 +640,9 @@ function attachedSectionFromName(name, sections) {
   if (!Array.isArray(sections) || sections.length === 0) return undefined;
   if (sections.length === 1) return sections[0];
   const n = String(name ?? '').normalize('NFKC');
+  const exact = sections.filter(section => n.includes(section));
+  if (exact.length === 1) return exact[0];
+  if (exact.length > 1) return null;
   const morning = /午前|\bam\b|morning/i.test(n);
   const afternoon = /午後|\bpm\b|afternoon/i.test(n);
   if (morning === afternoon) return null;
@@ -652,21 +655,55 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   if (!files.length || files.length + answerFiles.length > MAX_LICENSED_BATCH_FILES)
     throw new HttpError(400, 'ATTACH_BATCH_LIMIT', 'PDFは1回に最大10ファイルまで送信してください。');
   const cat = catalogFor(state.qualificationId);
+  // 選択した年度・区分はファイル名に書かれていない場合だけ補足する。
+  // 推定された年度と指定年度が食い違うときは拒否し、別年度の正答を誤結合しない。
+  const yearHint = (list, index) => Array.isArray(list) && Number.isInteger(Number(list[index])) &&
+    Number(list[index]) >= 1900 && Number(list[index]) <= 2200 ? Number(list[index]) : null;
+  const sectionHint = (list, index) => Array.isArray(list) && typeof list[index] === 'string' &&
+    Array.isArray(cat?.uploadSections) && cat.uploadSections.includes(list[index])
+      ? list[index] : null;
+  const questionKeys = files.map((file, index) => {
+    const name = String(file?.file_name ?? '');
+    const year = attachedYearFromName(name) ?? yearHint(b.years,index);
+    const section = attachedSectionFromName(name,cat?.uploadSections) ??
+      sectionHint(b.sections,index) ??
+      (Array.isArray(cat?.uploadSections) && cat.uploadSections.length > 1 ? null : cat?.uploadSections?.[0] ?? 'main');
+    return year && section ? year+':'+section : null;
+  });
+  const uniqueQuestionKeys = [...new Set(questionKeys.filter(Boolean))];
   const answers = new Map();
-  for (const file of answerFiles) {
-    const year = attachedYearFromName(file?.file_name);
-    const section = attachedSectionFromName(file?.file_name, cat?.uploadSections);
-    if (year && section !== null) answers.set(year + ':' + (section ?? ''), file);
+  const unmatchedAnswers = [];
+  for (let index=0; index<answerFiles.length; index++) {
+    const file=answerFiles[index];
+    const name=String(file?.file_name ?? '');
+    const detectedYear=attachedYearFromName(name);
+    const hintYear=yearHint(b.answerYears,index);
+    const year=detectedYear ?? hintYear;
+    const detectedSection=attachedSectionFromName(name,cat?.uploadSections);
+    const section=detectedSection ?? sectionHint(b.answerSections,index) ??
+      (Array.isArray(cat?.uploadSections) && cat.uploadSections.length > 1 ? null : cat?.uploadSections?.[0] ?? 'main');
+    let key=(year && section ? year+':'+section : null);
+    // 問題PDFが1年度・1区分だけのときのみ、年度不明の正答PDFを推測せず1対1で紐付けられる。
+    if (!key && uniqueQuestionKeys.length===1 && answerFiles.length===1 && !detectedYear && !hintYear)
+      key=uniqueQuestionKeys[0];
+    if (detectedYear && hintYear && detectedYear!==hintYear) key=null;
+    if (!key) {unmatchedAnswers.push(name.slice(0,90));continue;}
+    if (answers.has(key)) {unmatchedAnswers.push(name.slice(0,90));continue;}
+    answers.set(key,file);
   }
   const results = [];
   for (let index = 0; index < files.length; index++) {
     const file = files[index];
     const fileName = typeof file === 'string' ? (() => { try { return decodeURIComponent(new URL(file).pathname.split('/').pop() || ''); } catch { return file; } })() : (file?.file_name ?? file?.name ?? file?.filename ?? file?.download_url ?? '');
-    const year = attachedYearFromName(fileName) ?? (Array.isArray(b.years) ? Number(b.years[index]) : null);
+    const detectedYear=attachedYearFromName(fileName);
+    const hintYear=yearHint(b.years,index);
+    const year=detectedYear ?? hintYear;
     const part = state.qualificationId === 'q098' ? customsPart(fileName) : null;
+    const detectedSection=attachedSectionFromName(fileName,cat?.uploadSections);
     const section = state.qualificationId === 'q098'
       ? (CUSTOMS_SECTIONS[part] ?? null)
-      : (attachedSectionFromName(fileName, cat?.uploadSections) ?? 'main');
+      : (detectedSection ?? sectionHint(b.sections,index) ??
+        (Array.isArray(cat?.uploadSections) && cat.uploadSections.length>1 ? null : cat?.uploadSections?.[0] ?? 'main'));
     // 別冊は通関実務の参照資料。問題本冊として独立に解析・採点してはいけない。
     if (part === 4 && year === 2025) {
       try {
@@ -680,9 +717,12 @@ async function attachPdfBatch(env, id, state, b, url, now) {
       }
       continue;
     }
-    if (!year || section === null || !Number.isInteger(year)) {
+    if (!year || section === null || !Number.isInteger(year) || (detectedYear && hintYear && detectedYear!==hintYear)) {
       results.push({ fileName: String(fileName).slice(0,90), status:'failed',
-        reason: !year ? 'ファイル名から実施年度を判別できません。' : 'ファイル名から午前・午後の部を区別できません。' });
+        reason: detectedYear && hintYear && detectedYear!==hintYear
+          ? '指定年度がファイル名の年度と異なります。異なる年度の正答は結合しません。'
+          : !year ? '年度を判定できません。ファイル名か年度の補足入力を確認してください。'
+          : '試験区分を判定できません。午前・午後などの区分を指定してください。' });
       continue;
     }
     try {
@@ -707,6 +747,7 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   const failed = results.filter(x => x.status === 'failed').length;
   return { status:'attachedBatch', sessionId:id, requested:files.length,
     queued, existing, pendingOfficialAnswer:waiting, supplementStored:supplements, failed, results,
+    unmatchedAnswerFiles: unmatchedAnswers,
     notice:'PDFの登録依頼を受け付けました。登録開始と検証完了は別です。学習枠の年度別状態が「登録済み」となった問題だけ出題できます。' };
 }
 
