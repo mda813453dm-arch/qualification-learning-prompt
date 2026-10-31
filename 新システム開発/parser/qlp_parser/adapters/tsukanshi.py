@@ -70,15 +70,96 @@ def _headings(doc):
     return sorted(found, key=lambda x: (x[1], x[2]))
 
 
-# 2025年原本の「択一式」は文字層を保持している。OCRや画像への全面置換は不要。
-# 「通関実務」第15問の表題一覧と第16問の分類表だけが、原本図として必要。
-# 表の矩形は検証済み2025年版の原本PDFに限定する（他年度には流用しない）。
+# 2025年の択一式は文字層を持つ。文章はPDFのテキストを表示し、
+# 真の図表だけを原本PDFから切り出す。
+# 以下の切出し座標はハッシュ検証済み2025年版だけに使用する。
 _TABLE_CLIPS = {
-    ('通関実務', 15): (94, 347, 532, 538),
-    ('通関実務', 16): (100, 144, 445, 471),
+    ('通関実務', 15): (94, 347, 532, 538),  # 付属の関税率表の部・類表題
+    ('通関実務', 16): (100, 144, 445, 471),  # 関税率表の各類と物品の対応表
 }
-_CHOICE_START = re.compile(r'^[\\s\\u3000]*([1-5１-５])[ \\t\\u3000]+(?=\\S)')
-_PAGE_DECOR = re.compile(r'^[―ー－\\-\\s]*[0-9０-９]{1,3}[―ー－\\-\\s]*
+_CHOICE_START = re.compile(r'^[\s\u3000]*([1-5１-５])[ \t\u3000]+(?=\S)')
+_PAGE_DECOR = re.compile(r'^[―ー－\-\s]*[0-9０-９]{1,3}[―ー－\-\s]*$')
+
+
+def _join_wrapped(left, right):
+    # 改行はPDFの物理的な折り返しなので結合。英数字同士だけ空白を残す。
+    sep = (' ' if left and right and left[-1].isascii() and left[-1].isalnum()
+           and right[0].isascii() and right[0].isalnum() else '')
+    return left + sep + right
+
+
+def _text_and_options(lines):
+    if not lines or not _HEADING.match(lines[0]):
+        return '', []
+    lines = [_HEADING.sub('', lines[0], count=1).strip()] + lines[1:]
+    stem, choices = '', []
+    for line in lines:
+        m = _CHOICE_START.match(line)
+        if m:
+            number = int(unicodedata.normalize('NFKC', m.group(1)))
+            if number == len(choices) + 1:
+                choices.append(line[m.end():].strip())
+                continue
+        if choices:
+            choices[-1] = _join_wrapped(choices[-1], line)
+        else:
+            stem = _join_wrapped(stem, line)
+    return stem, choices
+
+
+def parse_questions(doc, section):
+    import fitz
+
+    if section not in START:
+        raise ParseError('TSUKANSHI_SECTION_UNVERIFIED')
+    headings = _headings(doc)
+    seen = set()
+    raw = []
+    for i, (number, first_page, first_top) in enumerate(headings):
+        if not START[section] <= number <= END[section]:
+            continue
+        if number in seen:
+            raise ParseError('TSUKANSHI_QUESTION_NUMBER_DUPLICATED', question=number)
+        seen.add(number)
+        next_head = headings[i + 1] if i + 1 < len(headings) else None
+        last_page = next_head[1] if next_head else doc.page_count
+        crops, pages, segments = [], [], []
+        for pn in range(first_page, last_page + 1):
+            page = doc[pn - 1]
+            top = max(0, first_top - 2) if pn == first_page else 32
+            bottom = (next_head[2] - 2 if next_head and pn == last_page
+                      else page.rect.height - 23)
+            if bottom - top <= 5:
+                continue
+            pages.append(pn)
+            def read(a, b):
+                if b <= a:
+                    return ''
+                return page.get_text('text', sort=True,
+                    clip=fitz.Rect(40, a, page.rect.width - 35, b))
+            table = _TABLE_CLIPS.get((section, number))
+            if table and pn == first_page:
+                # 表は文字で読んだふりをせず、原本の表だけ別画像で表示する。
+                segments.extend((read(top, table[1] - 3), read(table[3] + 3, bottom)))
+                crops.append((pn, table))
+            else:
+                segments.append(read(top, bottom))
+        lines = [line.strip() for line in '\n'.join(segments).splitlines()
+                 if line.strip() and not _PAGE_DECOR.fullmatch(line.strip())]
+        stem, choices = _text_and_options(lines)
+        # 不完全なテキストは空のダミー選択肢で埋めない。build_resultで除外する。
+        if len(stem) < 25 or len(choices) != 5 or any(len(c) < 10 for c in choices):
+            raw.append(RawQuestion(number=number, stem=stem, choices=choices,
+                pages=pages, notes=['2025_verified_source', 'text_extraction_incomplete']))
+            continue
+        raw.append(RawQuestion(number=number, stem=stem, choices=choices,
+            pages=pages, has_graphics=bool(crops), stem_mode='text',
+            choice_mode='text', crops=crops, preserve_aspect=True,
+            notes=['official_single_choice_only', '2025_verified_source',
+                   'verified_pdf_text_direct']))
+    if not raw:
+        raise ParseError('TSUKANSHI_VERIFIED_SINGLE_CHOICE_NOT_FOUND')
+    return raw
 
 
 def parse_answers(adoc, section, year):
