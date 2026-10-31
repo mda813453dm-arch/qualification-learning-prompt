@@ -1992,6 +1992,8 @@ async function route(request, env, url, now) {
       const uploadPermissionConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId;
       const remainingUploadFiles = uploadPermissionConfirmed ? Math.max(0, Number(batchRights.remaining) || 0) : 0;
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
+        // 学習中の追加画面でも正確な権限・登録元を判断する。既存の本人専用履歴は共有しない。
+        qualificationId: state.qualificationId, sourceAttachmentSupported: !!cat.uploadAdapter,
         fieldName: cat.fields[state.set?.fieldId] ?? Object.values(cat.fields)[0] ?? '',
         uploadPermissionConfirmed, remainingUploadFiles,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
@@ -2003,7 +2005,13 @@ async function route(request, env, url, now) {
             year: x.year, section: x.section, questions: x.packetCount, excluded: x.excludedCount ?? 0,
           })),
         importingYears: (job?.sources ?? []).filter((x) => x.status === 'pending' || x.status === 'running').map((x) => x.year),
+        importingYearDetails: (job?.sources ?? []).filter((x) => x.status === 'pending' || x.status === 'running').map((x) => ({
+          year:x.year, section:x.section,
+        })),
         failedYears: (job?.sources ?? []).filter((x) => x.status === 'failed').map((x) => ({ year:x.year, reason:String(x.reason || '検証失敗').slice(0,110) })),
+        failedYearDetails: (job?.sources ?? []).filter((x) => x.status === 'failed').map((x) => ({
+          year:x.year, section:x.section, reason:String(x.reason || '検証失敗').slice(0,110),
+        })),
         pendingOfficialAnswerYears: (await licensedPendingYears(env, state)).filter((year) => !(job?.sources ?? []).some((x) => x.year === year && x.status !== 'failed')),
         importHistory: importHistoryView(job),
         linkedQualifications: (await qualificationOwnerOverview(env.STORE,state.learnerId))?.qualifications ?? [],
