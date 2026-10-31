@@ -1583,7 +1583,7 @@ a{color:inherit}
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
     if (safeUrl(q.questionPdfUrl) && !String(q.questionPdfUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
-    h += sourceManagerBar();
+    if (!data.restored) h += sourceManagerBar();
     app.innerHTML = h;
     // 再開直後の未回答問では、その場から学習を終了できるようにする。
     if (data.restored) app.insertAdjacentHTML('beforeend', endBar());
