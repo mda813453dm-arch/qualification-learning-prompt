@@ -27,7 +27,7 @@
       "answerSource": {
         "format": "web",
         "url": "https://izuki.net/chousashi-past-tests/",
-        "verificationStatus": "pending-individual-row-check-no-auto-grading",
+        "verificationStatus": "website-answer-snapshot-reviewed-2026-10-31-not-yet-scanned-question-verified",
         "sectionMapping": {
           "午前の部": "web-table-午後の部-10-multiple-choice",
           "午後の部": "web-table-午前の部-20-multiple-choice"
@@ -74,7 +74,10 @@
         },
         "correctnessStatus": "third-party-transcription-pending-primary-source-check",
         "specialCases": [],
-        "verifiedForGrading": false
+        "verifiedForGrading": false,
+        "answerAuthority": "third-party-site-not-ministry-original",
+        "checkedAt": "2026-10-31",
+        "gradingEvidenceUrl": "https://izuki.net/chousashi-past-tests/"
       },
       "sectionQuestionCounts": {
         "午前の部": 10,
@@ -120,7 +123,7 @@
       "answerSource": {
         "format": "web",
         "url": "https://izuki.net/chousashi-past-tests/",
-        "verificationStatus": "pending-individual-row-check-no-auto-grading",
+        "verificationStatus": "website-answer-snapshot-reviewed-2026-10-31-not-yet-scanned-question-verified",
         "sectionMapping": {
           "午前の部": "web-table-午後の部-10-multiple-choice",
           "午後の部": "web-table-午前の部-20-multiple-choice"
@@ -174,7 +177,10 @@
             "policy": "exclude-from-automatic-grading-until-official-decision-verified"
           }
         ],
-        "verifiedForGrading": false
+        "verifiedForGrading": false,
+        "answerAuthority": "third-party-site-not-ministry-original",
+        "checkedAt": "2026-10-31",
+        "gradingEvidenceUrl": "https://izuki.net/chousashi-past-tests/"
       },
       "sectionQuestionCounts": {
         "午前の部": 10,
@@ -220,7 +226,53 @@
       "answerSource": {
         "format": "web",
         "url": "https://izuki.net/chousashi-past-tests/",
-        "verificationStatus": "pending-individual-row-check"
+        "verificationStatus": "website-answer-snapshot-reviewed-2026-10-31-not-yet-scanned-question-verified",
+        "answerAuthority": "third-party-site-not-ministry-original",
+        "checkedAt": "2026-10-31",
+        "gradingEvidenceUrl": "https://izuki.net/chousashi-past-tests/",
+        "verifiedForGrading": false,
+        "webAnswerCandidates": {
+          "午前の部": [
+            5,
+            1,
+            1,
+            4,
+            3,
+            2,
+            2,
+            1,
+            5,
+            2
+          ],
+          "午後の部": [
+            5,
+            2,
+            2,
+            4,
+            2,
+            1,
+            2,
+            4,
+            5,
+            1,
+            5,
+            5,
+            5,
+            1,
+            4,
+            2,
+            2,
+            2,
+            1,
+            1
+          ]
+        },
+        "sectionMapping": {
+          "午前の部": "web-table-午前の部-10-multiple-choice",
+          "午後の部": "web-table-午後の部-20-multiple-choice"
+        },
+        "specialCases": [],
+        "correctnessStatus": "third-party-transcription-needs-scanned-question-audit"
       },
       "sectionQuestionCounts": {
         "午前の部": 10,
