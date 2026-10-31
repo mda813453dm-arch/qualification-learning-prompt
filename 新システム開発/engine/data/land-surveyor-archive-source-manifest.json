@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "sourceIndex": "https://izuki.net/chousashi-past-tests/",
+  "exam": "土地家屋調査士",
+  "qualificationId": "land_surveyor",
+  "status": "archived-source-candidates-not-yet-graded",
+  "years": [
+    {
+      "year": 2007,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h19am_q.pdf",
+          "sha256": "d9b03f5e3ab434e3e323baa87d1174262389e48eec08ad0a38ecd9c8c8ac29aa",
+          "pages": 30,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h19pm_q.pdf",
+          "sha256": "4ba49614f2362f5f88257dd9645868c49f8a05f318ba9fb5658163586ef2d15e",
+          "pages": 14,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "web",
+        "url": "https://izuki.net/chousashi-past-tests/",
+        "verificationStatus": "pending-individual-row-check"
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 20,
+        "午後の部": 10
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2008,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h20am_q.pdf",
+          "sha256": "f0fa3edd7462534b15317fe81a7e6b9bda80113398fe6ca26ad03b0b19a750d5",
+          "pages": 30,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h20pm_q.pdf",
+          "sha256": "7d3d4652f14c978cf7d5912426fe6dfcca9364897d2b78dc2022903fbcaf3d6d",
+          "pages": 14,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "web",
+        "url": "https://izuki.net/chousashi-past-tests/",
+        "verificationStatus": "pending-individual-row-check"
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 20,
+        "午後の部": 10
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2009,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h21am_q.pdf",
+          "sha256": "f6156476c7e694736687f030751bb75bb593a0a661d78419c552f1887aeecd97",
+          "pages": 16,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h21pm_q.pdf",
+          "sha256": "15d47f6f49d4acb93f58ac0307645f34bc9481e664b69ea8b6b82e5bd0b14535",
+          "pages": 32,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "web",
+        "url": "https://izuki.net/chousashi-past-tests/",
+        "verificationStatus": "pending-individual-row-check"
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2010,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h22am_q.pdf",
+          "sha256": "4b54360ef36c2d9c195677cda258c33892b903f08fde3ddc7c1a1189eaf581a1",
+          "pages": 16,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h22pm_q.pdf",
+          "sha256": "eefd4b1ebcc88ab5d4a18b876fe4d8e48cbc312c5eefc3ac76e7080ef16bc4a2",
+          "pages": 35,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h22_a.pdf",
+        "sha256": "02e5e39c017dc4e96e31d756974894842c5a83ccca6e2868888e1bea2f7c227c",
+        "pages": 3,
+        "hasTextLayer": false
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2011,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h23am_q.pdf",
+          "sha256": "4d6f9d997b1b54427f4d68c26c3f2d0b9a9ef37d3a47d1309cb38815918d0a37",
+          "pages": 16,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h23pm_q.pdf",
+          "sha256": "16b90155024afaff04ee1375ec1a2b57a8377bfb67036671fc086407efb54005",
+          "pages": 36,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h23_a.pdf",
+        "sha256": "da9a21ea8b8c25f1825538e58364ef5763cbfdf2f5762b4648878a2faf8122cb",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2012,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h24am_q.pdf",
+          "sha256": "adf39e538daab75b8a2ff42ca5577dc116c774e9385bc4bd39d0aadd4fe71bcf",
+          "pages": 16,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h24pm_q.pdf",
+          "sha256": "d4523d3ae584608cf8d59cbe36ee4afe1ac0ee248d89e0ea878aaa11cdee9e9f",
+          "pages": 38,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h24_a.pdf",
+        "sha256": "8fbda99973c97464c669319f8e1ad5d83fca0a458269b486bd7f7931c3586f8c",
+        "pages": 1,
+        "hasTextLayer": false
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2013,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h25am_q.pdf",
+          "sha256": "c683d1e966142d01c30755301d9c644dd5e193017da132d41499abee01d25e27",
+          "pages": 16,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h25pm_q.pdf",
+          "sha256": "6bdcebbb0aae372b7afcd0ebc3bbf35b0b95a624e2b466f17c6df652252da583",
+          "pages": 35,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h25_a.pdf",
+        "sha256": "e8c50cc2006340fc5d5690a43ed5fcf6e3f1b291a708d865516d9bd7cb3fc19a",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2014,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h26am_q.pdf",
+          "sha256": "f585fa579b533ef1058817f457e5b0684e4fe71b279d58f858a9d802c5b0f766",
+          "pages": 15,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h26pm_q.pdf",
+          "sha256": "8244f6cffbf1cc14560e4238a79ac77bf06e84902187cb0448b247e687197eb3",
+          "pages": 38,
+          "hasTextLayer": false
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h26_a.pdf",
+        "sha256": "ab1acc8c98afb91cac0f7402b160b76689bd9b37f85ae47c178ddf7e0b7f6767",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": true
+    },
+    {
+      "year": 2015,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h27am_q.pdf",
+          "sha256": "34facdf521d4eea585006105422b20acda620bc7ec5c31c1cd6b7e14572bf61b",
+          "pages": 20,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h27pm_q.pdf",
+          "sha256": "688dd80d275c3ddb43e43f098f4e857a71a061147051825ef2592ee93fa630e6",
+          "pages": 40,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h27_a.pdf",
+        "sha256": "a46314e7d9275c3258528dcc726ef3fd2bafd75774631554897c2e574500397f",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2016,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h28am_q.pdf",
+          "sha256": "738df06db28002a2526d721d572afa73662bfa4c6c5fee5c22f16319c35ba871",
+          "pages": 16,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h28pm_q.pdf",
+          "sha256": "544f9a237c249f79f8875b101572a08a1da6e8ab46faaca8b01ce1bd4b98372d",
+          "pages": 37,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h28_a.pdf",
+        "sha256": "afd28b174c7e356677b707f850ab4973fb6f7ebecb3eabcf6387b34c67a55a4e",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2017,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h29am_q.pdf",
+          "sha256": "78f7da8ddfb6ded0b1f0887612a7880b855fcda327e435fa36fab3dca3b9744f",
+          "pages": 16,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h29pm_q.pdf",
+          "sha256": "c260355634fc25f641bd2f9dc5ae28c691a55f616170c7b23e818f2d7c380121",
+          "pages": 35,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h29_a.pdf",
+        "sha256": "2bba288c40e1f50773ae61bee4e6e4964673171972b3b311e19c8ddb48cb2037",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2018,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h30am_q.pdf",
+          "sha256": "4d6c754fe2fc53ba42f48ab173e4ee66177033071d911182d44f71821282f63d",
+          "pages": 20,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h30pm_q.pdf",
+          "sha256": "28fa300ba96fad255cc88c5d27c2c159c69fcc26c982e6407755156f94fc0328",
+          "pages": 40,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_h30_a.pdf",
+        "sha256": "4123527d4863c689df4c7393e5454f3e202a20f2e1abd9df615d7cff3cd21d5e",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2019,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r1am_q.pdf",
+          "sha256": "fc83edc0b7c26a09ec8caefa04f7e4e5d53d0e4225cd1e2c5edd4dc0a8d317b8",
+          "pages": 15,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r1pm_q.pdf",
+          "sha256": "7ab89c83c35bd07ae5670d09d3418ae3f9b625a7ee5fcac3fa84cefd163873b9",
+          "pages": 37,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_r1_a.pdf",
+        "sha256": "056b672d9390e07b39e14fd1179def7d31e3f209ded6021358295401fa210a73",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2020,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r2am_q.pdf",
+          "sha256": "6c1e90e14d7c7a04d134aa45028758682089557d785a5786f1ca17144ef8bdfd",
+          "pages": 16,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r2pm_q.pdf",
+          "sha256": "412c7fd9efe3ba7fdc5f48fc51ba53b9d0a74985e9f951d947d986624adb688a",
+          "pages": 41,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_r2_a.pdf",
+        "sha256": "dcbea4603e84ddb1b4388964c101f1caf5637f5865a961f59e61186491624dfa",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    },
+    {
+      "year": 2021,
+      "origin": "archived-copy-of-former-ministry-release",
+      "indexUrl": "https://izuki.net/chousashi-past-tests/",
+      "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
+      "questionSources": {
+        "午前の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r3am_q.pdf",
+          "sha256": "0a254b7da1dfc210da8ccdd008630184206dd0bf94ec3d41f667873a230b8f91",
+          "pages": 16,
+          "hasTextLayer": true
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_r3pm_q.pdf",
+          "sha256": "14ffe479c12880482036a094d0d493e573a966bb91fb86c01a375f0d787c46a4",
+          "pages": 38,
+          "hasTextLayer": true
+        }
+      },
+      "answerSource": {
+        "format": "pdf",
+        "url": "https://izuki.net/wp-content/uploads/c_r3_a.pdf",
+        "sha256": "a9b2040148309b64690cf5e74b942da286a887f8106fecdeed99a37879f67de7",
+        "pages": 1,
+        "hasTextLayer": true
+      },
+      "sectionQuestionCounts": {
+        "午前の部": 10,
+        "午後の部": 20
+      },
+      "needsVisualReview": false
+    }
+  ]
+}
