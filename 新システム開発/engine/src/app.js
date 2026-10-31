@@ -2011,9 +2011,27 @@ async function route(request, env, url, now) {
         sharedLibrary: null,
         notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
     }
+    // 学習中でも履歴を動かさず、登録状況を読める。未対応の年度を登録済みと誤表示しない。
+    const job = await readJob(env.STORE, sessionJobId(state));
+    const sources = job?.sources ?? [];
     return json(200, { status: 'officialLibrary', sessionId: id,
+      qualificationName: cat?.name ?? state.qualificationId,
+      qualificationId: state.qualificationId,
+      officialUrl: cat?.pastExamPage ?? null,
+      sourceAttachmentSupported: !!cat?.uploadAdapter,
+      validatedUploadYears: cat?.validatedUploadYears ?? [],
+      readyYearDetails: sources.filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
+        year: x.year, section: x.section, questions: x.packetCount,
+        excluded: x.excludedCount ?? 0,
+      })),
+      importingYearDetails: sources.filter((x) => x.status === 'pending' || x.status === 'running').map((x) => ({
+        year: x.year, section: x.section,
+      })),
+      failedYearDetails: sources.filter((x) => x.status === 'failed').map((x) => ({
+        year: x.year, section: x.section, reason: String(x.reason ?? '検証未完了').slice(0,80),
+      })),
       sharedLibrary: publicLibraryView(shared),
-      notice: '利用できる公式過去問の年度・問題数を表示しています。' });
+      notice: '過去問は学習中でも確認できます。未検証の年度は出題せず、現在の学習履歴を維持します。' });
   }
 
   // 著作権の許諾を要する資格：年度別の本人確認後だけ、本人専用の保存・解析を認める。
