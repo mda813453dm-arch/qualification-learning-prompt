@@ -2033,7 +2033,7 @@ a{color:inherit}
   }
   // 学習の終了：終了ログと引継ぎデータの全文を、そのまま出す（コピーできる）
   function showEnd(d){
-    app.innerHTML = '<h2>学習を終了しました</h2><div class="stem">' + esc(d.log || '') + '</div><h2>引継ぎデータ</h2><div class="notice">次のチャットで貼り付けるか、引継ぎIDを伝えると再開できます。</div><textarea id="ho" readonly rows="10" style="width:100%;box-sizing:border-box;font:13px/1.5 monospace;background:var(--btn);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea><div class="row"><button id="cp">引継ぎデータをコピー</button></div>';
+    app.innerHTML = '<h2>学習を終了しました</h2><div class="stem">' + esc(d.log || '') + '</div><div class="notice">別の年度の公式過去問を追加するなら、次回の学習開始時に「過去問の追加・登録状況」から確認できます。登録は任意です。現在の解答・復習記録は引継ぎIDに保持されています。</div><h2>引継ぎデータ</h2><div class="notice">次のチャットで貼り付けるか、引継ぎIDを伝えると再開できます。</div><textarea id="ho" readonly rows="10" style="width:100%;box-sizing:border-box;font:13px/1.5 monospace;background:var(--btn);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:8px"></textarea><div class="row"><button id="cp">引継ぎデータをコピー</button></div>';
     var ta = document.getElementById('ho'); ta.value = d.handoff;
     document.getElementById('cp').onclick = function(){
       var b = document.getElementById('cp');
