@@ -67,7 +67,13 @@ def catalog(html):
         year = year_from_era((match or answer).group(1))
         if year < 2007 or year > 2021:
             continue
+        # 2007/2008: archived filename section abbreviations are reversed
+        # relative to the user's 11/22-total-question section rule.
+        # 11 = morning (10 MC + 1 written), 22 = afternoon (20 MC + 2 written).
+        # A page count alone never establishes a validated question set.
         part = SECTIONS[match.group(2).lower()] if match else "正答"
+        if match and year <= 2008:
+            part = "午後の部" if part == "午前の部" else "午前の部"
         record = out.setdefault(year, {})
         if part in record and record[part] != link:
             raise ValueError("DUPLICATE_SOURCE_"+str(year)+"_"+part)
