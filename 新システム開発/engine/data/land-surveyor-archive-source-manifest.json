@@ -31,7 +31,50 @@
         "sectionMapping": {
           "午前の部": "web-table-午後の部-10-multiple-choice",
           "午後の部": "web-table-午前の部-20-multiple-choice"
-        }
+        },
+        "webAnswerCandidates": {
+          "午前の部": [
+            2,
+            2,
+            4,
+            2,
+            5,
+            5,
+            2,
+            1,
+            1,
+            1
+          ],
+          "午後の部": [
+            3,
+            4,
+            3,
+            2,
+            3,
+            2,
+            5,
+            5,
+            2,
+            3,
+            2,
+            2,
+            5,
+            2,
+            1,
+            4,
+            1,
+            1,
+            3,
+            3
+          ]
+        },
+        "sourceDeclaredSections": {
+          "午前の部": "午後の部",
+          "午後の部": "午前の部"
+        },
+        "correctnessStatus": "third-party-transcription-pending-primary-source-check",
+        "specialCases": [],
+        "verifiedForGrading": false
       },
       "sectionQuestionCounts": {
         "午前の部": 10,
@@ -81,7 +124,57 @@
         "sectionMapping": {
           "午前の部": "web-table-午後の部-10-multiple-choice",
           "午後の部": "web-table-午前の部-20-multiple-choice"
-        }
+        },
+        "webAnswerCandidates": {
+          "午前の部": [
+            5,
+            4,
+            2,
+            1,
+            2,
+            3,
+            4,
+            1,
+            5,
+            4
+          ],
+          "午後の部": [
+            3,
+            2,
+            2,
+            3,
+            4,
+            4,
+            5,
+            2,
+            5,
+            4,
+            1,
+            4,
+            1,
+            3,
+            2,
+            3,
+            5,
+            2,
+            null,
+            3
+          ]
+        },
+        "sourceDeclaredSections": {
+          "午前の部": "午後の部",
+          "午後の部": "午前の部"
+        },
+        "correctnessStatus": "third-party-transcription-pending-primary-source-check",
+        "specialCases": [
+          {
+            "section": "午後の部",
+            "questionNumber": 19,
+            "websiteValue": "没問",
+            "policy": "exclude-from-automatic-grading-until-official-decision-verified"
+          }
+        ],
+        "verifiedForGrading": false
       },
       "sectionQuestionCounts": {
         "午前の部": 10,
