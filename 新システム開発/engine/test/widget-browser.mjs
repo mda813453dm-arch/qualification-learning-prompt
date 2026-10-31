@@ -179,10 +179,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         availableTextWidth:label.clientWidth,buttonWidth:b.scrollWidth,availableButtonWidth:b.clientWidth,
         height:label.getBoundingClientRect().height};
     });
-    assert.ok(longExemption.fontSize<=14,'iPhoneの長い選択肢は14px以下');
+    assert.ok(longExemption.fontSize<=14,'iPhoneの長い選択肢は14px以下：'+JSON.stringify(longExemption));
     assert.ok(longExemption.textWidth<=longExemption.availableTextWidth+1 &&
       longExemption.buttonWidth<=longExemption.availableButtonWidth+1,
-      '長い免除選択肢をボタン幅に収める');
+      '長い免除選択肢をボタン幅に収める：'+JSON.stringify(longExemption));
     assert.ok(longExemption.height>24,'長い選択肢は省略せず複数行に折り返す');
     // ラベルなしの注意行は狭い2列グリッドに入れず、横幅をすべて使う。
     await ui.locator('#app').evaluate(el=>{

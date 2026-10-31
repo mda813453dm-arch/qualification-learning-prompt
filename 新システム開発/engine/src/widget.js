@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v152.html';
+export const WIDGET_URI = 'ui://qlp/question-v153.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.152';
+export const WIDGET_VERSION = '2026-10-31.153';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -296,8 +296,8 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-actions{border-top:2px solid var(--line);padding-top:14px;margin-top:12px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
-.choices button{display:flex;gap:10px;text-align:left;font:inherit;font-size:15px;line-height:1.5;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;width:100%;white-space:normal}
-.choices button span{min-width:0;flex:1;white-space:normal;word-break:normal;overflow-wrap:anywhere;text-wrap:wrap}
+.choices button{display:flex;gap:10px;text-align:left;font:inherit;font-size:14px;line-height:1.5;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;width:100%;white-space:normal}
+.choices button span{min-width:0;flex:1;font-size:14px;white-space:normal;word-break:normal;overflow-wrap:anywhere;text-wrap:wrap}
 .choices .opt{display:flex;gap:8px;align-items:center;background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}.choices .opt input{margin:0}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
 .choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:15px;line-height:1.5;padding:8px 10px}.choices{gap:8px;margin:14px 0 8px}
 .choices button:disabled{opacity:.6;cursor:default}
