@@ -763,8 +763,8 @@ a{color:inherit}
         : '<p>出題可能として検証済みの年度は、まだありません。</p>';
       var customs = lib.qualificationId === 'q098' || lib.qualificationName === '通関士';
       var caution = customs
-        ? '<p>現在、通関士は2025年度の択一式29問を検証済みです。それ以外の年度は、公式問題と正答の対応を検証する実装が未完了のため、まだ出題・採点できません。</p>'
-        : '<p>追加年度のPDFは、対応する学習画面の取込操作で登録します。公式正答との検証が終わった問題だけ出題できます。</p>';
+        ? '<p><b>通関士の追加可能年度：</b>現在、出題・採点の検証が完了しているのは2025年度の択一式29問です。2024年度以前のPDFは、正答との対応検証が未完了のため、まだ登録可能とは案内しません。対応が追加された年度は、この画面で確認できます。</p>'
+        : '<p>追加年度は公式問題PDFと公式正答を照合できたものから利用可能になります。年度の違う正答を流用しません。</p>';
       var pending = importing.length ? '<div class="notice">解析中：' +
         importing.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'');}).join('、') + '</div>' : '';
       var errors = failed.length ? '<div class="notice" role="alert">取込失敗：' +
@@ -773,10 +773,98 @@ a{color:inherit}
         '<div id="sourceManageStatus" class="notice" role="status"><b>追加する時期は自由です。</b> おすすめは①初回の実践前、②同分野3問の区切り、③登録済み問題が残り少なくなったときです。回答途中でも登録状況を確認できますが、登録作業は回答後がスムーズです。今の問題と学習記録は保持します。</div>' +
         '<div class="import-state ready"><strong>現在利用できる過去問</strong>' + entries + '</div>' +
         pending + errors + '<div class="notice">' + caution + '</div>' +
+        (!customs && lib.sourceAttachmentSupported ?
+          '<div class="import-state pending"><strong>別の年度のPDFを追加</strong>' +
+          '<p>実践開始前・同分野3問が終わった後・残り問題が少ないときがおすすめです。追加は任意で、今の問題を解いてからでも構いません。</p>' +
+          (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFを保存・解析するために必要な権利者の許諾を得ています</label>' : '') +
+          '<div class="row"><label class="file-picker"><span>iPhone内のPDFを追加する</span><input id="sourceManageUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを追加する"></label></div>' +
+          '<p id="sourceManageUploadStatus" role="status">問題PDFと公式正答PDFを一緒に選択してください（最大10ファイル）。</p></div>' : '') +
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
       document.getElementById('sourceManageBack').onclick = goBack;
+      var extraInput = document.getElementById('sourceManageUpload');
+      if (extraInput) extraInput.onchange = async function(){
+        var input = this;
+        var status = document.getElementById('sourceManageUploadStatus');
+        if (!status || !sourceManagerOpen || state.sessionId !== sameSession) return;
+        var selected = Array.from(input.files || []);
+        if (!selected.length) return;
+        if (selected.length > 10 || selected.some(function(f){ return !/\.pdf$/i.test(String(f.name || '')) ||
+            (f.type && f.type !== 'application/pdf'); })) {
+          status.textContent = 'PDFだけを最大10ファイル選んでください。';
+          status.setAttribute('role','alert'); input.value=''; return;
+        }
+        var rights = document.getElementById('sourceManageRights');
+        if (lib.permissionedUpload && (!rights || !rights.checked)) {
+          status.textContent = '先に、PDFの保存・解析に必要な権利者の許諾確認へチェックしてください。';
+          status.setAttribute('role','alert'); input.value=''; return;
+        }
+        var host = window.openai || {};
+        if (typeof host.uploadFile !== 'function' || typeof host.getFileDownloadUrl !== 'function') {
+          status.textContent = 'このChatGPTアプリではPDF選択からの登録機能を利用できません。';
+          status.setAttribute('role','alert'); input.value=''; return;
+        }
+        input.disabled=true; status.setAttribute('role','status');
+        status.textContent='PDFをエンジンへ送信中です。登録と正答検証が終わるまでは出題しません。';
+        try {
+          if (lib.permissionedUpload) {
+            // 利用者の明示チェックに限り合法的に扱う。既存許諾を勝手に推定しない。
+            var granted=await callTool('confirmUploadRights',{sessionId:sameSession,year:0,confirmed:true});
+            if (!granted || granted.error || granted.status !== 'uploadPermissionConfirmed')
+              throw new Error('UPLOAD_PERMISSION_UNAVAILABLE');
+          }
+          var refs=[];
+          for (var f of selected) {
+            var uploaded=await host.uploadFile(f);
+            var id=uploaded && (uploaded.fileId || uploaded.file_id);
+            if(typeof id!=='string'||!id) throw new Error('PDF_UPLOAD_FAILED');
+            var link=await host.getFileDownloadUrl({fileId:id});
+            var url=link && link.downloadUrl;
+            if(typeof url!=='string'||!/^https:\/\//i.test(url))
+              throw new Error('PDF_DOWNLOAD_URL_MISSING');
+            refs.push({file_id:id,file_name:String(f.name),mime_type:'application/pdf',download_url:url});
+          }
+          var isAnswer=function(f){return /正答|正解|解答|seikai|answer|配点/i.test(f.file_name);};
+          var questionPdfs=refs.filter(function(f){return !isAnswer(f);});
+          var answerPdfs=refs.filter(isAnswer);
+          if (!questionPdfs.length) throw new Error('NO_QUESTION_PDF');
+          var result=await callTool('attachPdfBatchFromPicker',
+            {sessionId:sameSession,questionPdfs:questionPdfs,answerPdfs:answerPdfs});
+          if (!result || result.error || result.status !== 'attachedBatch')
+            throw new Error(result?.error || 'PDF_REGISTER_FAILED');
+          var errors=Array.isArray(result.results) ? result.results.filter(function(x){return x.status==='failed';}) : [];
+          status.textContent='受付 '+Number(result.requested||0)+'件／解析開始 '+Number(result.queued||0)+
+            '件／既存 '+Number(result.existing||0)+'件／正答確認待ち '+Number(result.pendingOfficialAnswer||0)+
+            '件／失敗 '+Number(result.failed||0)+'件。' +
+            (errors.length?' 登録できない理由：'+errors.map(function(x){return esc(x.reason||x.code||'確認が必要です');}).join('、'):'')+
+            ' 学習に戻っても履歴は保持されます。';
+          // 登録状態を同じ枠で監視し、過去問の実際の検証済み数だけ更新する。
+          var attempts=0;
+          async function refresh(){
+            if (!sourceManagerOpen || !status.isConnected || state.sessionId!==sameSession) return;
+            try{
+              var updated=await callTool('getOfficialLibrary',{sessionId:sameSession});
+              if(!updated || updated.error || updated.status!=='officialLibrary') throw new Error('LIBRARY_STATUS_FAILED');
+              var finished=Array.isArray(updated.readyYearDetails)?updated.readyYearDetails:[];
+              var running=Array.isArray(updated.importingYearDetails)?updated.importingYearDetails:[];
+              var failed=Array.isArray(updated.failedYearDetails)?updated.failedYearDetails:[];
+              status.textContent='出題可能：'+finished.map(function(x){return x.year+'年度 '+(x.section||'')+' '+x.questions+'問';}).join('、')+
+                '／解析中：'+running.length+'件／失敗：'+failed.length+'件。'+
+                (running.length?' 終了後に自動で登録状況を更新します。':' 完了した問題は次の出題から使用できます。');
+              if(!running.length) return;
+            }catch(err){
+              status.textContent='登録状況を再確認中です。学習履歴は保持しています。';
+            }
+            if(++attempts<36 && sourceManagerOpen && status.isConnected)
+              setTimeout(refresh,7000);
+          }
+          if (Number(result.queued||0)>0) refresh();
+        } catch(e) {
+          status.textContent='PDFを登録できませんでした（'+String(e.message||'通信エラー')+'）。学習記録は変更していません。';
+          status.setAttribute('role','alert');
+        } finally {input.disabled=false;input.value='';}
+      };
       var importBtn = document.getElementById('sourceManageCustoms');
       if(importBtn) importBtn.onclick = async function(){
         importBtn.disabled=true;importBtn.textContent='公式PDFを登録中…';
