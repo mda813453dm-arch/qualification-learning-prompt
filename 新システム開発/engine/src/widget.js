@@ -769,6 +769,16 @@ a{color:inherit}
       var caution = customs
         ? '<p><b>通関士の追加可能年度：</b>現在、出題・採点の検証が完了しているのは2025年度の択一式29問です。2024年度以前のPDFは、正答との対応検証が未完了のため、まだ登録可能とは案内しません。対応が追加された年度は、この画面で確認できます。</p>'
         : '<p>追加年度は公式問題PDFと公式正答を照合できたものから利用可能になります。年度の違う正答を流用しません。</p>';
+      var multipleSections = Array.isArray(lib.uploadSections) && lib.uploadSections.length > 1;
+      var answerHint = lib.answerFormat === 'html'
+        ? 'この資格は問題PDFのみ添付してください。正答は登録済みの公式Web資料から照合します。'
+        : '公式の問題PDFと同年度・同区分の正答PDFを選んでください。正答を別年度から流用しません。';
+      var optionalFields = '<details class="notice"><summary>ファイル名から年度・試験区分が分からないとき</summary>' +
+        '<label>実施年度（任意・西暦） <input id="sourceManageYearHint" type="number" min="1900" max="2200" placeholder="例：2024" inputmode="numeric"></label>' +
+        (multipleSections ? '<label>試験区分（任意） <select id="sourceManageSectionHint"><option value="">ファイル名から自動判定</option>' +
+          lib.uploadSections.map(function(x){ return '<option value="' + esc(x) + '">' + esc(x) + '</option>'; }).join('') + '</select></label>' : '') +
+        '<p>複数年度・複数区分を一度に追加するときは、各PDFのファイル名に年度・区分を入れてください。区別できない原本は推測で登録しません。</p>' +
+        '</details>';
       var pending = importing.length ? '<div class="notice">解析中：' +
         importing.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'');}).join('、') + '</div>' : '';
       var errors = failed.length ? '<div class="notice" role="alert">取込失敗：' +
@@ -779,10 +789,13 @@ a{color:inherit}
         pending + errors + '<div class="notice">' + caution + '</div>' +
         (!customs && lib.sourceAttachmentSupported ?
           '<div class="import-state pending"><strong>別の年度のPDFを追加</strong>' +
-          '<p>実践開始前・同分野3問が終わった後・残り問題が少ないときがおすすめです。追加は任意で、今の問題を解いてからでも構いません。</p>' +
-          (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFを保存・解析するために必要な権利者の許諾を得ています</label>' : '') +
+          '<p>実践開始前・同分野3問の区切り・登録済み問題が少なくなった時がおすすめです。追加は任意です。</p>' +
+          '<p>' + answerHint + '（1回の選択で最大10ファイル）</p>' +
+          optionalFields +
+          (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFの保存・解析に必要な権利者の許諾を得ています</label>' : '') +
           '<div class="row"><label class="file-picker"><span>iPhone内のPDFを追加する</span><input id="sourceManageUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを追加する"></label></div>' +
-          '<p id="sourceManageUploadStatus" role="status">問題PDFと公式正答PDFを一緒に選択してください（最大10ファイル）。</p></div>' : '') +
+          '<p id="sourceManageUploadStatus" role="status">PDF選択後、自動で受付と公式正答照合を開始します。</p></div>'
+          : (!customs ? '<div class="notice">この資格のPDF取込方式は未実装です。現在の履歴を保持し、取込可能な年度だけ表示します。</div>' : '')) +
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
@@ -809,6 +822,14 @@ a{color:inherit}
           status.textContent = 'このChatGPTアプリではPDF選択からの登録機能を利用できません。';
           status.setAttribute('role','alert'); input.value=''; return;
         }
+        var yearInput=document.getElementById('sourceManageYearHint');
+        var typedYear=yearInput && yearInput.value.trim() ? Number(yearInput.value) : null;
+        var sectionInput=document.getElementById('sourceManageSectionHint');
+        var typedSection=sectionInput && sectionInput.value ? String(sectionInput.value) : null;
+        if (typedYear !== null && (!Number.isInteger(typedYear) || typedYear < 1900 || typedYear > 2200)) {
+          status.textContent='実施年度は西暦4桁で指定してください。'; status.setAttribute('role','alert');
+          input.value='';return;
+        }
         input.disabled=true; status.setAttribute('role','status');
         status.textContent='PDFをエンジンへ送信中です。登録と正答検証が終わるまでは出題しません。';
         try {
@@ -830,18 +851,32 @@ a{color:inherit}
             refs.push({file_id:id,file_name:String(f.name),mime_type:'application/pdf',download_url:url});
           }
           var isAnswer=function(f){return /正答|正解|解答|seikai|answer|配点/i.test(f.file_name);};
-          var questionPdfs=refs.filter(function(f){return !isAnswer(f);});
-          var answerPdfs=refs.filter(isAnswer);
+          // 宅建は問題と正答が同じ公式PDFにある年度がある。1ファイルを両資料として検証する。
+          // 他資格の「問題+解答」表記は自動で兼用と決めつけず、パーサーの仕様を優先する。
+          var isTakkenCombined=function(f){return lib.qualificationId === 'q041' &&
+            /問題|question|shiken/i.test(f.file_name) && isAnswer(f);};
+          var questionPdfs=refs.filter(function(f){return !isAnswer(f) || isTakkenCombined(f);});
+          var answerPdfs=lib.answerFormat==='html' ? [] : refs.filter(isAnswer);
           if (!questionPdfs.length) throw new Error('NO_QUESTION_PDF');
-          var result=await callTool('attachPdfBatchFromPicker',
-            {sessionId:sameSession,questionPdfs:questionPdfs,answerPdfs:answerPdfs});
+          var options={sessionId:sameSession,questionPdfs:questionPdfs,answerPdfs:answerPdfs};
+          if (typedYear!==null){
+            options.years=questionPdfs.map(function(){return typedYear;});
+            if(answerPdfs.length) options.answerYears=answerPdfs.map(function(){return typedYear;});
+          }
+          if (typedSection) {
+            options.sections=questionPdfs.map(function(){return typedSection;});
+            if(answerPdfs.length) options.answerSections=answerPdfs.map(function(){return typedSection;});
+          }
+          var result=await callTool('attachPdfBatchFromPicker',options);
           if (!result || result.error || result.status !== 'attachedBatch')
             throw new Error(result?.error || 'PDF_REGISTER_FAILED');
           var errors=Array.isArray(result.results) ? result.results.filter(function(x){return x.status==='failed';}) : [];
           status.textContent='受付 '+Number(result.requested||0)+'件／解析開始 '+Number(result.queued||0)+
             '件／既存 '+Number(result.existing||0)+'件／正答確認待ち '+Number(result.pendingOfficialAnswer||0)+
             '件／失敗 '+Number(result.failed||0)+'件。' +
-            (errors.length?' 登録できない理由：'+errors.map(function(x){return esc(x.reason||x.code||'確認が必要です');}).join('、'):'')+
+            (errors.length?' 登録できない理由：'+errors.map(function(x){return x.reason||x.code||'確認が必要です';}).join('、'):'')+
+            (Array.isArray(result.unmatchedAnswerFiles)&&result.unmatchedAnswerFiles.length
+              ? ' 年度・区分が不明な正答PDF：'+result.unmatchedAnswerFiles.map(function(x){return String(x).slice(0,80);}).join('、')+'。':'')+
             ' 学習に戻っても履歴は保持されます。';
           // 登録状態を同じ枠で監視し、過去問の実際の検証済み数だけ更新する。
           var attempts=0;
