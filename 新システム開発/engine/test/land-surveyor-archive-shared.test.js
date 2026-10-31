@@ -9,7 +9,7 @@ const API = 'https://engine.example/v1/admin/seed-land-surveyor-archive';
 const request = () => new Request(API,{method:'POST',
   headers:{authorization:'Bearer archive-test','content-type':'application/json'},body:'{}'});
 
-test('実PDF全問検証済みの7区分だけを共通保存ジョブへ登録し、再実行でも増殖しない', async () => {
+test('実PDF全問検証済みの8区分だけを共通保存ジョブへ登録し、再実行でも増殖しない', async () => {
   const store = new MemoryStore();
   let kick = 0;
   const env = { STORE:store, API_TOKEN:'archive-test',
@@ -20,18 +20,18 @@ test('実PDF全問検証済みの7区分だけを共通保存ジョブへ登録�
   const result=await response.json();
   assert.equal(response.status,200,JSON.stringify(result));
   assert.equal(result.status,'archivedSharedImportQueued');
-  assert.equal(result.requestedSections,7);
-  assert.deepEqual(result.years,[2015,2017,2018,2021]);
+  assert.equal(result.requestedSections,8);
+  assert.deepEqual(result.years,[2015,2017,2018,2019,2021]);
   const job=await store.get('job/land_surveyor~_archive_shared','json');
   assert.equal(job.persistent,true);
-  assert.equal(job.sources.length,7);
+  assert.equal(job.sources.length,8);
   assert.ok(job.sources.every(x=>x.owner==='_shared' && x.adapter==='land_surveyor'));
   assert.ok(job.sources.every(x=>x.status==='pending'));
   assert.ok(job.sources.every(x=>x.questionUrl.startsWith('https://izuki.net/wp-content/uploads/')));
   const response2=await handle(request(),env);
   assert.equal(response2.status,200);
   const saved=await store.get('job/land_surveyor~_archive_shared','json');
-  assert.equal(saved.sources.length,7);
+  assert.equal(saved.sources.length,8);
   assert.ok(kick>=1);
   assert.equal(await store.get('lrnstate/test-user'),null,'個人履歴は作成しない');
 });
