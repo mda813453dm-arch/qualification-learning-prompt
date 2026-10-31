@@ -13,10 +13,12 @@ const api = async (url, options={}) => {
 };
 const expected = new Map([
  ['2015:午前の部',10],['2015:午後の部',20],
+ ['2016:午前の部',10],['2016:午後の部',20],
  ['2017:午前の部',10],['2017:午後の部',20],
  ['2018:午前の部',10],['2018:午後の部',20],
- ['2019:午後の部',20],
- ['2021:午後の部',20],
+ ['2019:午前の部',10],['2019:午後の部',20],
+ ['2020:午前の部',10],['2020:午後の部',20],
+ ['2021:午前の部',10],['2021:午後の部',20],
 ]);
 const seed = async () => {
   const result=await api('/v1/admin/seed-land-surveyor-archive',{
@@ -34,7 +36,7 @@ while(Date.now()<deadline) {
   const sources=res?.job?.sources||[];
   // GET /v1/jobs/... merges the current import job with *already shared*
   // 2022-2025 official sections. Those are legitimate existing records, not
-  // eight duplicate archival sources. Validate only the eight requested keys;
+  // duplicate archival sources. Validate only the requested keys;
   // never delete, replace, or reimport other shared years to satisfy a count.
   const selected=sources.filter(s=>expected.has(s.year+':'+s.section));
   const unique=new Set(selected.map(s=>s.year+':'+s.section));
@@ -50,7 +52,7 @@ while(Date.now()<deadline) {
     ' ['+failed.map(x=>x.year+':'+x.section+':'+(x.reason||'COUNT')).join(',')+']';
   if(summary!==last){console.log(summary);last=summary;}
   if(done.length===expected.size) {
-    console.log('ARCHIVE_SHARED_READY: 130 graded MC questions across 8 archival sections');
+    console.log('ARCHIVE_SHARED_READY: 210 graded MC questions across 14 archival sections');
     process.exit(0);
   }
   if(failed.length && !pending.length && retries<2){

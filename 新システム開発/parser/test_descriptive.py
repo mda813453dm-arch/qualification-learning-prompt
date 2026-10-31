@@ -1,5 +1,10 @@
 """記述式の問11/21/22は、択一と違い答案を自動採点しない。"""
 import unittest
+import hashlib
+from unittest.mock import patch
+
+import fitz
+from qlp_parser import descriptive
 
 from qlp_parser.descriptive import DescriptiveError, extract_descriptive, find_descriptive_pages
 
@@ -26,6 +31,28 @@ class DescriptiveTest(unittest.TestCase):
         with self.assertRaisesRegex(DescriptiveError, "DESCRIPTIVE_SHA_MISMATCH"):
             extract_descriptive(pdf_bytes=b'%PDF-test-not-a-pinned-original', year=2025, section="午後の部",
                                 number=21, expected_sha="0" * 64)
+
+    def test_pinned_historical_table_error_keeps_original_pages_without_grading(self):
+        doc = fitz.open()
+        cover = doc.new_page()
+        cover.insert_text((50, 70), "平成29年度 午前の部", fontname="japan")
+        question = doc.new_page()
+        question.insert_text((50, 70), "第11問 記述式", fontname="japan")
+        raw_pdf = doc.tobytes()
+        doc.close()
+        sha = hashlib.sha256(raw_pdf).hexdigest()
+        with patch.object(descriptive, "PIN_BY_YEAR", {2017:{"午前の部":sha}}), \
+             patch.object(descriptive, "structured_descriptive",
+                          side_effect=DescriptiveError("DESCRIPTIVE_TABLE_CELL_UNVERIFIED")):
+            result = extract_descriptive(pdf_bytes=raw_pdf, year=2017,
+                section="午前の部", number=11, expected_sha=sha)
+        self.assertEqual(result["status"], "ready")
+        self.assertEqual(result["gradingMode"], "none")
+        self.assertFalse(result["solutionAvailable"])
+        self.assertEqual(result["pageNumbers"], [2])
+        self.assertEqual([b["kind"] for b in result["layout"]],
+                         ["text", "text", "figure"])
+        self.assertEqual(len(result["diagrams"]), 1)
 
 
 if __name__ == "__main__":

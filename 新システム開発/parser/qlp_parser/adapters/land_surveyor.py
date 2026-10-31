@@ -63,6 +63,11 @@ EXPECTED_2025 = {
 # extracted from matching annual answer-PDF columns, not guessed by a model.
 # These candidates remain separate from the 2022-2025 directly pinned originals.
 ARCHIVED_PINS = {
+    2016: {
+        "午前の部": "738df06db28002a2526d721d572afa73662bfa4c6c5fee5c22f16319c35ba871",
+        "午後の部": "544f9a237c249f79f8875b101572a08a1da6e8ab46faaca8b01ce1bd4b98372d",
+        "正答": "afd28b174c7e356677b707f850ab4973fb6f7ebecb3eabcf6387b34c67a55a4e"
+    },
     2015: {
         "午前の部": "34facdf521d4eea585006105422b20acda620bc7ec5c31c1cd6b7e14572bf61b",
         "午後の部": "688dd80d275c3ddb43e43f098f4e857a71a061147051825ef2592ee93fa630e6",
@@ -83,6 +88,11 @@ ARCHIVED_PINS = {
         "午後の部": "7ab89c83c35bd07ae5670d09d3418ae3f9b625a7ee5fcac3fa84cefd163873b9",
         "正答": "056b672d9390e07b39e14fd1179def7d31e3f209ded6021358295401fa210a73"
     },
+    2020: {
+        "午前の部": "6c1e90e14d7c7a04d134aa45028758682089557d785a5786f1ca17144ef8bdfd",
+        "午後の部": "412c7fd9efe3ba7fdc5f48fc51ba53b9d0a74985e9f951d947d986624adb688a",
+        "正答": "dcbea4603e84ddb1b4388964c101f1caf5637f5865a961f59e61186491624dfa"
+    },
     2021: {
         "午前の部": "0a254b7da1dfc210da8ccdd008630184206dd0bf94ec3d41f667873a230b8f91",
         "午後の部": "14ffe479c12880482036a094d0d493e573a966bb91fb86c01a375f0d787c46a4",
@@ -90,6 +100,10 @@ ARCHIVED_PINS = {
     }
 }
 ARCHIVED_EXPECTED = {
+    2016: {
+        "午前の部": [4, 3, 3, 4, 2, 5, 2, 5, 1, 1],
+        "午後の部": [2, 3, 2, 4, 2, 1, 5, 2, 3, 2, 3, 4, 2, 1, 5, 4, 1, 2, 4, 1],
+    },
     2015: {
         "午前の部": [
             4,
@@ -234,6 +248,10 @@ ARCHIVED_EXPECTED = {
             4
         ]
     },
+    2020: {
+        "午前の部": [5, 4, 3, 1, 2, 3, 2, 4, 4, 3],
+        "午後の部": [2, 1, 2, 1, 5, 4, 3, 4, 4, 4, 4, 2, 5, 1, 2, 4, 4, 4, 5, 3],
+    },
     2021: {
         "午前の部": [
             3,
@@ -278,6 +296,12 @@ SECTIONS = {"午前の部": (10, "l1"), "午後の部": (20, "l3")}
 HEADING = re.compile(r"^第\s*([0-9]+)\s*問(?:\s|$)")
 OPTION = re.compile(r"(?<!\w)([1-5])\s+\S")
 ANSWER_HEADING = re.compile(r"^第\s*([0-9]+)\s*問$")
+LEGACY_NUMBERLESS_HEADING = re.compile(r"^第\s*問(?:\s|$)")
+ARCHIVED_PAGE_LAYOUT = {
+    (2016, "午前の部"), (2016, "午後の部"),
+    (2019, "午前の部"), (2020, "午前の部"), (2020, "午後の部"),
+    (2021, "午前の部"),
+}
 
 
 # Early archived exams: the web page has 2007-2009 answer tables but no
@@ -346,7 +370,11 @@ def check_question(doc, answer_doc, year, section):
     short = re.search(r"[（(]\s*(\d{1,2})\s*[）)]", cover)
     base = 1988 if year <= 2018 else 2018
     if (not era and not short) or int((era or short).group(1)) + base != year:
-        raise ParseError("QUESTION_YEAR_MISMATCH")
+        # H28 booklet cover uses "28 試験問題" without enclosing brackets.
+        # The exact source SHA has already been checked above.
+        legacy = re.search(r"^\s*28\s*試験問題", cover)
+        if year != 2016 or not legacy:
+            raise ParseError("QUESTION_YEAR_MISMATCH")
     answer_cover = _norm(answer_doc[0].get_text("text", sort=True)).replace(" ", "")
     if ("土地家屋調査士" not in answer_cover or
             "午前の部" not in answer_cover or "午後の部" not in answer_cover):
@@ -498,9 +526,75 @@ def _verified_figure_crops(crops, doc):
         return None
 
 
-def parse_questions(doc, section):
+def _parse_archived_questions(doc, section, year):
+    """Read already SHA-pinned booklets with diagram/table answer layouts.
+
+    In these booklets five option numbers can occupy separate table rows,
+    rather than a single text run. The complete original page(s) are retained
+    whenever a safe text/diagram split is not available. Question boundaries
+    are checked independently of option layout, and no OCR text is invented.
+    """
+    count, _ = SECTIONS[section]
+    headings = []
+    for index, page in enumerate(doc):
+        lines = [_norm(v).strip() for v in page.get_text("text", sort=True).splitlines() if v.strip()]
+        if not lines:
+            continue
+        match = HEADING.match(lines[0])
+        numberless = year == 2016 and LEGACY_NUMBERLESS_HEADING.match(lines[0])
+        if not match and not numberless:
+            continue
+        number = int(match.group(1)) if match else len(headings) + 1
+        if number != len(headings) + 1 or (numberless and number >= 10):
+            raise ParseError("ARCHIVED_QUESTION_ORDER_UNVERIFIED", page=index+1, number=number)
+        headings.append((number, index))
+    # The final written questions are a boundary check, not part of the MC set.
+    expected_total = count + (1 if section == "午前の部" else 2)
+    if len(headings) != expected_total or [n for n, _ in headings] != list(range(1, expected_total+1)):
+        raise ParseError("ARCHIVED_QUESTION_BOUNDARIES_UNVERIFIED", found=[n for n, _ in headings])
+    result = []
+    for index, (number, start) in enumerate(headings[:count]):
+        stop = headings[index+1][1]
+        if not 0 < stop-start <= 4:
+            raise ParseError("ARCHIVED_QUESTION_PAGE_SPAN_UNVERIFIED", number=number)
+        crops = [(p+1, _question_crop(doc[p])) for p in range(start, stop)]
+        lines = [_norm(line).strip() for p in range(start,stop)
+                 for line in doc[p].get_text("text",sort=True).splitlines() if line.strip()]
+        # Figure/table choices can be presented as five consecutive rows.
+        # A nonadjacent set of numerals elsewhere in the stem is insufficient.
+        inline = [int(m.group(1)) for m in OPTION.finditer("\n".join(lines))]
+        rows = [int(m.group(1)) for line in lines if (m := re.match(r"^([1-5])\s+\S",line))]
+        # Several diagram options use a 2-column grid: "1 2", "3 4", "5".
+        grid = [int(token) for line in lines if re.fullmatch(r"[1-5](?:\s+[1-5])*", line)
+                for token in line.split()]
+        if not any(nums[i:i+5] == [1,2,3,4,5]
+                   for nums in (inline,rows,grid) for i in range(max(0,len(nums)-4))):
+            raise ParseError("CHOICE_SEQUENCE_NOT_VERIFIED", number=number)
+        parsed = _verified_text(crops,doc,number)
+        diagrams = _verified_figure_crops(crops,doc) if parsed else None
+        first = crops[0][1]
+        if parsed and diagrams is not None:
+            stem, choices = parsed
+            result.append(RawQuestion(number=number, stem=stem, choices=choices,
+                pages=[p for p,_ in crops], rect=(first[1],first[3]),
+                has_graphics=bool(diagrams), notes=["verified_pdf_text","official_diagrams_only"],
+                stem_mode="text", choice_mode="text", crops=diagrams, preserve_aspect=True))
+        else:
+            result.append(RawQuestion(number=number,
+                stem="公式試験問題の本文・図表・選択肢を、下の原本画像で確認してください。拡大して読めます。",
+                choices=[str(j) for j in range(1,6)], pages=[p for p,_ in crops],
+                rect=(first[1],first[3]), has_graphics=True,
+                notes=["original_question_image","verified_archived_question_boundaries"],
+                stem_mode="official_image", choice_mode="official_image", crops=crops,
+                preserve_aspect=True))
+    return result
+
+
+def parse_questions(doc, section, year=None):
     if section not in SECTIONS:
         raise ParseError("SECTION_NOT_SUPPORTED")
+    if (year, section) in ARCHIVED_PAGE_LAYOUT:
+        return _parse_archived_questions(doc, section, year)
     count, _ = SECTIONS[section]
     found = {}
     for page_index, page in enumerate(doc):

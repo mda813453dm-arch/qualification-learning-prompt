@@ -21,7 +21,7 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v2
-      - name: 検証済み8区分のみ共通問題庫の状態を照合（既存の他年度を保持）
+      - name: 検証済み14区分のみ共通問題庫の状態を照合（既存の他年度を保持）
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"

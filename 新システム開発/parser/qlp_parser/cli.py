@@ -51,7 +51,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None, qu
                 adapter.check_source_hashes_html(year, fixed_section, qsha, asha, answer.url)
                 adapter.check_question_html(qdoc, year, fixed_section)
                 adapter.check_year_html(page, year)
-                raw = adapter.parse_questions(qdoc, fixed_section)
+                raw = adapter.parse_questions(qdoc, fixed_section, year) if adapter_name == 'land_surveyor' else adapter.parse_questions(qdoc, fixed_section)
                 answers = adapter.parse_answers_html(page, year, fixed_section)
             else:
                 adapter.check_year_html(page, year)
@@ -65,7 +65,7 @@ def run(adapter_name, year, question, answer=None, section=None, assets=None, qu
                 fixed_section = section or adapter.SECTION
                 adapter.check_source_hashes(year, fixed_section, qsha, asha)
                 adapter.check_question(qdoc, adoc, year, fixed_section)
-                raw = adapter.parse_questions(qdoc, fixed_section)
+                raw = adapter.parse_questions(qdoc, fixed_section, year) if adapter_name == 'land_surveyor' else adapter.parse_questions(qdoc, fixed_section)
                 answers = adapter.parse_answers(adoc, fixed_section, year)
             else:
                 if hasattr(adapter, "check_year"):

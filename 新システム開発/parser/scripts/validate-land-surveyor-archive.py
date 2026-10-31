@@ -13,8 +13,7 @@ from qlp_parser.core import PdfSource
 from qlp_parser.adapters import land_surveyor
 
 MANIFEST = Path(__file__).resolve().parents[2]/"engine/data/land-surveyor-archive-source-manifest.json"
-SUPPORTED = {2015: ("午前の部", "午後の部"), 2017: ("午前の部", "午後の部"),
-             2018: ("午前の部", "午後の部"), 2019: ("午後の部",), 2021: ("午後の部",)}
+SUPPORTED = {year: ("午前の部", "午後の部") for year in (2015,2016,2017,2018,2019,2020,2021)}
 def fetch(url):
     req=Request(url, headers={"User-Agent":"Mozilla/5.0 (compatible; qualification-learning-audit/1.0)"})
     with urlopen(req, timeout=90) as response:

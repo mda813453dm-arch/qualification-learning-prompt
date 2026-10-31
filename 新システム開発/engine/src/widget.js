@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v148.html';
+export const WIDGET_URI = 'ui://qlp/question-v149.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.148';
+export const WIDGET_VERSION = '2026-10-31.149';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -799,7 +799,7 @@ a{color:inherit}
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         (lib.qualificationId === 'land_surveyor' ?
-          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015・2017・2018年度の午前・午後、2019・2021年度の午後を自動で取り込みます。未検証年度は出題しません。</p>' +
+          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015〜2021年度のうち、原本・正答を照合した区分を自動で取り込みます。2007〜2014年度など未検証の問題は出題しません。</p>' +
           '<div class="row"><button type="button" id="sourceManageLandArchive">旧年度の検証済み過去問を取り込む</button></div>' +
           '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
@@ -1990,7 +1990,7 @@ a{color:inherit}
       '<details class="descriptive-source" id="descriptiveSource" open>' +
       '<summary>問題文・表・図</summary>' +
       (blocks || '<div class="notice" role="alert">問題・表・図の照合が必要です。出題を停止してください。</div>') + '</details>';
-    if (safeUrl(q.sourceUrl) && !String(q.sourceUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">公式の問題PDFを開く</a></div>';
+    if (safeUrl(q.sourceUrl) && !String(q.sourceUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.sourceUrl)) + '" target="_blank" rel="noopener">' + (String(q.sourceUrl).includes('izuki.net/') ? '過去問保存版PDFを開く' : '公式の問題PDFを開く') + '</a></div>';
     h += '<div class="notice">公式模範解答は確認できていません。AIの参考解答は自動採点しません。</div>';
     if (blocks) h += '<div class="row"><button id="showDescriptiveSolution">解答・解説を表示（AI参考解答）</button></div>';
     h += '<div class="notice">解説を表示した後は、解説の下にある最新の操作パネルを使用してください。見当たらない場合は上に戻る必要があります。</div>';

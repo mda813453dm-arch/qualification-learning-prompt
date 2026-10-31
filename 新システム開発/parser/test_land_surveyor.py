@@ -155,6 +155,33 @@ class LandSurveyorTest(unittest.TestCase):
                     with self.assertRaises(ParseError):
                         adapter.parse_answers(answer_pdf(2024), section, year)
 
+    def test_archived_diagram_grid_keeps_five_choices_and_correct_question_boundary(self):
+        doc = question_pdf("午前の部", 10, 2020)
+        doc[7]._text = "第7 問 計算問題の図表\n点名 X 座標 Y 座標\n1 2\n図表\n3 4\n図表\n5"
+        result = adapter.parse_questions(doc, "午前の部", 2020)
+        self.assertEqual(len(result), 10)
+        self.assertEqual(result[6].pages, [8])
+        self.assertEqual(result[6].choice_mode, "official_image")
+        # A missing grid label must not be filled from an unrelated problem.
+        doc[7]._text = doc[7]._text.removesuffix("\n5")
+        with self.assertRaises(ParseError) as ctx:
+            adapter.parse_questions(doc, "午前の部", 2020)
+        self.assertEqual(ctx.exception.code, "CHOICE_SEQUENCE_NOT_VERIFIED")
+
+    def test_2016_numberless_first_nine_headers_require_anchored_sequence(self):
+        doc = question_pdf("午後の部", 20, 2016)
+        for n in range(1, 10):
+            doc[n]._text = doc[n]._text.replace(f"第{n} 問", "第 問")
+        # The written-question boundary is required to stop MC page captures.
+        doc.append(Page("第22 問 建物の記述式"))
+        result = adapter.parse_questions(doc, "午後の部", 2016)
+        self.assertEqual([q.number for q in result], list(range(1, 21)))
+        self.assertTrue(all(q.choice_mode == "official_image" for q in result))
+        doc[10]._text = doc[10]._text.replace("第10 問", "第11 問")
+        with self.assertRaises(ParseError) as ctx:
+            adapter.parse_questions(doc, "午後の部", 2016)
+        self.assertEqual(ctx.exception.code, "ARCHIVED_QUESTION_ORDER_UNVERIFIED")
+
 
 
 if __name__ == "__main__":

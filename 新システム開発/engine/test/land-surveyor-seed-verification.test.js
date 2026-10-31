@@ -3,9 +3,12 @@ import assert from 'node:assert/strict';
 
 const TARGETS = new Map([
   ['2015:午前の部', 10], ['2015:午後の部', 20],
+  ['2016:午前の部', 10], ['2016:午後の部', 20],
   ['2017:午前の部', 10], ['2017:午後の部', 20],
   ['2018:午前の部', 10], ['2018:午後の部', 20],
-  ['2019:午後の部', 20], ['2021:午後の部', 20],
+  ['2019:午前の部', 10], ['2019:午後の部', 20],
+  ['2020:午前の部', 10], ['2020:午後の部', 20],
+  ['2021:午前の部', 10], ['2021:午後の部', 20],
 ]);
 
 let runNumber = 0;
@@ -21,7 +24,7 @@ async function runVerification(sources) {
     calls++;
     const path = new URL(resource).pathname;
     if (path === '/v1/admin/seed-land-surveyor-archive' && options.method === 'POST')
-      return new Response(JSON.stringify({status: 'archivedSharedImportQueued', requestedSections: 8}), {status: 200});
+      return new Response(JSON.stringify({status: 'archivedSharedImportQueued', requestedSections: 14}), {status: 200});
     if (path === '/v1/jobs/land_surveyor%7E_archive_shared' || path === '/v1/jobs/land_surveyor~_archive_shared')
       return new Response(JSON.stringify({job: {sources}}), {status: 200});
     throw Error('UNEXPECTED_ENDPOINT_' + path);
@@ -45,7 +48,7 @@ async function runVerification(sources) {
   return failure;
 }
 
-test('旧年度8区分の検証は既存2022〜2025年度8区分を数えず130問を正しく確認する', async () => {
+test('旧年度14区分の検証は既存2022〜2025年度8区分を数えず210問を正しく確認する', async () => {
   const archive = [...TARGETS].map(([key, count]) => {
     const [year, section] = key.split(':');
     return {year:Number(year),section,status:'done',packetCount:count,excludedCount:0};
@@ -55,7 +58,7 @@ test('旧年度8区分の検証は既存2022〜2025年度8区分を数えず130�
       year, section, status:'done', packetCount: section==='午前の部'?10:20, excludedCount:0,
     })));
   const failure = await runVerification([...prior,...archive]);
-  assert.equal(failure?.exitCode,0,'8 verified archives plus 8 preexisting library rows must succeed');
+  assert.equal(failure?.exitCode,0,'14 verified archives plus 8 preexisting library rows must succeed');
 });
 
 test('旧年度の不足または二重登録があると既存年度に惑わされず失敗させる',async()=>{

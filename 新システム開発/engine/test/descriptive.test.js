@@ -7,12 +7,13 @@ import { forModel } from '../src/mcp.js';
 
 const pins = CATALOG.land_surveyor.officialPdfPins;
 
-test('記述式は2022〜2025年度の午前11・午後21/22だけ受け、公式SHAを保持する', () => {
-  for (const year of [2022,2023,2024,2025]) {
+test('記述式はSHA確認済み2015〜2025年度の午前11・午後21/22だけ受け、原本SHAを保持する', () => {
+  for (const year of [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]) {
     for (const [section,number] of [['午前の部',11], ['午後の部',21], ['午後の部',22]]) {
       const spec = descriptiveSpec(year,section,number,pins);
       assert.equal(spec?.sha, pins[year][section]);
-      assert.match(spec?.url, /^https:\/\/www\.moj\.go\.jp\/content\/\d+\.pdf$/);
+      if (year >= 2022) assert.match(spec?.url, /^https:\/\/www\.moj\.go\.jp\/content\/\d+\.pdf$/);
+      else assert.match(spec?.url, /^https:\/\/izuki\.net\/wp-content\/uploads\/c_(?:h|r)\d+(?:am|pm)_q\.pdf$/);
       assert.equal(spec.questionId, `land_surveyor:${year}:${section}:${number}`);
     }
   }
@@ -20,12 +21,15 @@ test('記述式は2022〜2025年度の午前11・午後21/22だけ受け、公�
   assert.equal(descriptiveSpec(2025,'午後の部',11,pins), null);
   assert.equal(descriptiveSpec(2026,'午後の部',21,pins), null);
   assert.equal(descriptiveSpec(2025,'午前の部',10,pins), null);
+  assert.equal(descriptiveSpec(2014,'午前の部',11,pins), null);
 });
 
 test('第11問と問11、令和7年、午前午後の組合せを誤認しない', () => {
   assert.deepEqual(requestedDescriptive('2025年度 午前の部 第11問を出題'), { year:2025,section:'午前の部',number:11 });
   assert.deepEqual(requestedDescriptive('令和7年度 午後の部 問21を表示'), { year:2025,section:'午後の部',number:21 });
   assert.deepEqual(requestedDescriptive('2024年度 午後の部 第22問'), { year:2024,section:'午後の部',number:22 });
+  assert.deepEqual(requestedDescriptive('平成28年度 午前の部 第11問'), { year:2016,section:'午前の部',number:11 });
+  assert.deepEqual(requestedDescriptive('令和2年度 午後の部 第22問'), { year:2020,section:'午後の部',number:22 });
   assert.equal(requestedDescriptive('2025年度 午前の部 第21問'), null);
   assert.equal(requestedDescriptive('2025年度 午後の部 第11問'), null);
   assert.equal(requestedDescriptive('2025年度 問10'), null);

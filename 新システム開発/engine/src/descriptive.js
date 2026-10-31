@@ -1,5 +1,12 @@
 /** 土地家屋調査士の記述式。既存の択一問題や採点履歴は変更しない。 */
 export const DESCRIPTIVE_FILES = Object.freeze({
+  2015: { '午前の部': 'https://izuki.net/wp-content/uploads/c_h27am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_h27pm_q.pdf' },
+  2016: { '午前の部': 'https://izuki.net/wp-content/uploads/c_h28am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_h28pm_q.pdf' },
+  2017: { '午前の部': 'https://izuki.net/wp-content/uploads/c_h29am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_h29pm_q.pdf' },
+  2018: { '午前の部': 'https://izuki.net/wp-content/uploads/c_h30am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_h30pm_q.pdf' },
+  2019: { '午前の部': 'https://izuki.net/wp-content/uploads/c_r1am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_r1pm_q.pdf' },
+  2020: { '午前の部': 'https://izuki.net/wp-content/uploads/c_r2am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_r2pm_q.pdf' },
+  2021: { '午前の部': 'https://izuki.net/wp-content/uploads/c_r3am_q.pdf', '午後の部': 'https://izuki.net/wp-content/uploads/c_r3pm_q.pdf' },
   2022: { '午前の部': '001383834', '午後の部': '001383847' },
   2023: { '午前の部': '001408935', '午後の部': '001408936' },
   2024: { '午前の部': '001427201', '午後の部': '001427202' },
@@ -12,7 +19,8 @@ export function descriptiveSpec(year, section, number, pins) {
   const sha = pins?.[year]?.[section];
   const file = DESCRIPTIVE_FILES[year][section];
   if (typeof sha !== 'string' || !/^[a-f0-9]{64}$/.test(sha) || !file) return null;
-  return { year, section, number, sha, url: `https://www.moj.go.jp/content/${file}.pdf`,
+  return { year, section, number, sha,
+    url: file.startsWith('https://') ? file : `https://www.moj.go.jp/content/${file}.pdf`,
     questionId: `land_surveyor:${year}:${section}:${number}` };
 }
 export function requestedDescriptive(text) {
@@ -20,9 +28,10 @@ export function requestedDescriptive(text) {
   const q = /(?:第\s*(11|21|22)\s*問|問\s*(11|21|22))/.exec(t);
   if (!q) return null;
   const number = Number(q[1] || q[2]);
-  const y = /20(?:22|23|24|25)/.exec(t)?.[0] ?? null;
-  const r = /(?:令和|R)\s*([4-7])/.exec(t)?.[1] ?? null;
-  const year = y ? Number(y) : r ? Number(r) + 2018 : 2025;
+  const y = /\b20(?:0[7-9]|1\d|2[0-5])\b/.exec(t)?.[0] ?? null;
+  const r = /(?:令和|R)\s*(元|[1-7])/.exec(t)?.[1] ?? null;
+  const h = /(?:平成|H)\s*(1[9]|2\d|30)/.exec(t)?.[1] ?? null;
+  const year = y ? Number(y) : r ? (r === '元' ? 2019 : Number(r) + 2018) : h ? Number(h) + 1988 : 2025;
   const section = number === 11 ? '午前の部' : '午後の部';
   if (t.includes('午前') && section !== '午前の部') return null;
   if (t.includes('午後') && section !== '午後の部') return null;

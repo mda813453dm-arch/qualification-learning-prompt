@@ -206,9 +206,7 @@ const BASE_CATALOG = {
     overviewOnly: true,
     uploadAdapter: 'land_surveyor',
     uploadSections: ['午前の部', '午後の部'],
-    validatedUploadYears: [2015, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025],
-    // 2019・2021年度の午前は画像・選択肢完全性検査が未通過。午後のみ使用。
-    sectionsByYear: { 2019: ['午後の部'], 2021: ['午後の部'] },
+    validatedUploadYears: [2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025],
     archiveIndexUrl: 'https://izuki.net/chousashi-past-tests/',
     archiveDiscoveryYears: Array.from({length:15}, (_,i) => 2007+i),
     // 旧法務省公開資料の保存版をハッシュ照合。実際の解析が完了した部のみ出題する。
@@ -227,6 +225,12 @@ const BASE_CATALOG = {
             "questionUrl": "https://izuki.net/wp-content/uploads/c_h27pm_q.pdf",
             "answerUrl": "https://izuki.net/wp-content/uploads/c_h27_a.pdf"
       },
+      { adapter: 'land_surveyor', year: 2016, section: '午前の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_h28am_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_h28_a.pdf' },
+      { adapter: 'land_surveyor', year: 2016, section: '午後の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_h28pm_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_h28_a.pdf' },
       {
             "adapter": "land_surveyor",
             "year": 2017,
@@ -255,6 +259,18 @@ const BASE_CATALOG = {
             "questionUrl": "https://izuki.net/wp-content/uploads/c_h30pm_q.pdf",
             "answerUrl": "https://izuki.net/wp-content/uploads/c_h30_a.pdf"
       },
+      { adapter: 'land_surveyor', year: 2019, section: '午前の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_r1am_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_r1_a.pdf' },
+      { adapter: 'land_surveyor', year: 2020, section: '午前の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_r2am_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_r2_a.pdf' },
+      { adapter: 'land_surveyor', year: 2020, section: '午後の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_r2pm_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_r2_a.pdf' },
+      { adapter: 'land_surveyor', year: 2021, section: '午前の部',
+        questionUrl: 'https://izuki.net/wp-content/uploads/c_r3am_q.pdf',
+        answerUrl: 'https://izuki.net/wp-content/uploads/c_r3_a.pdf' },
       {
             "adapter": "land_surveyor",
             "year": 2021,
@@ -274,6 +290,11 @@ const BASE_CATALOG = {
     // カタログ上の対応年度が、Cloud Runの保存済み年度を意味するわけではない。
     uploadQuestionCounts: { '午前の部': 10, '午後の部': 20 },
     officialPdfPins: {
+      2016: {
+        '午前の部': '738df06db28002a2526d721d572afa73662bfa4c6c5fee5c22f16319c35ba871',
+        '午後の部': '544f9a237c249f79f8875b101572a08a1da6e8ab46faaca8b01ce1bd4b98372d',
+        answer: 'afd28b174c7e356677b707f850ab4973fb6f7ebecb3eabcf6387b34c67a55a4e',
+      },
       2015: {
         '午前の部': '34facdf521d4eea585006105422b20acda620bc7ec5c31c1cd6b7e14572bf61b',
         '午後の部': '688dd80d275c3ddb43e43f098f4e857a71a061147051825ef2592ee93fa630e6',
@@ -293,6 +314,11 @@ const BASE_CATALOG = {
         '午前の部': 'fc83edc0b7c26a09ec8caefa04f7e4e5d53d0e4225cd1e2c5edd4dc0a8d317b8',
         '午後の部': '7ab89c83c35bd07ae5670d09d3418ae3f9b625a7ee5fcac3fa84cefd163873b9',
         answer: '056b672d9390e07b39e14fd1179def7d31e3f209ded6021358295401fa210a73',
+      },
+      2020: {
+        '午前の部': '6c1e90e14d7c7a04d134aa45028758682089557d785a5786f1ca17144ef8bdfd',
+        '午後の部': '412c7fd9efe3ba7fdc5f48fc51ba53b9d0a74985e9f951d947d986624adb688a',
+        answer: 'dcbea4603e84ddb1b4388964c101f1caf5637f5865a961f59e61186491624dfa',
       },
       2021: {
         '午前の部': '0a254b7da1dfc210da8ccdd008630184206dd0bf94ec3d41f667873a230b8f91',

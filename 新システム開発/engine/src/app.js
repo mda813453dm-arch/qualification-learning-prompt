@@ -1522,7 +1522,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-10-31-v148-web-answer-evidence', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-10-31-v149-land-surveyor-archive', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
@@ -1647,12 +1647,12 @@ async function route(request, env, url, now) {
   const auth = (request.headers.get('authorization') ?? '').trim();
   if (!env.API_TOKEN || !timingSafeEqual(auth, `Bearer ${env.API_TOKEN}`)) throw new HttpError(401, 'UNAUTHORIZED', authHint(auth, env.API_TOKEN));
 
-  // 公開前の共通過去問登録。対象はコードで固定した検証済み7区分だけ。
+  // 公開前の共通過去問登録。対象はコードで固定した検証済み区分だけ。
   // 実際のPDFハッシュ・正答・問数は解析器で再照合する。学習者の履歴は変更しない。
   if (method === 'POST' && url.pathname === '/v1/admin/seed-land-surveyor-archive') {
     const cat = catalogFor('land_surveyor');
     const vetted = Array.isArray(cat?.archivedImportSources) ? cat.archivedImportSources : [];
-    if (!vetted.length || vetted.length > 10) throw new HttpError(422, 'LAND_SURVEYOR_ARCHIVE_NOT_VERIFIED');
+    if (!vetted.length || vetted.length > 30) throw new HttpError(422, 'LAND_SURVEYOR_ARCHIVE_NOT_VERIFIED');
     // 同一元資料からのみ共通登録し、他年度や未検証午前を推測して追加しない。
     const sources = checkSources(vetted, 'land_surveyor', '_shared');
     const sharedJobId = 'land_surveyor~_archive_shared';

@@ -21,7 +21,8 @@ class DescriptiveError(ValueError):
 
 
 def _norm(value):
-    return unicodedata.normalize("NFKC", str(value or "")).strip()
+    return unicodedata.normalize("NFKC", str(value or "")).translate(
+        {ord(ch):None for ch in "\u200b\u200c\u200d\ufeff"}).strip()
 
 
 def _page_lines(page):
@@ -285,8 +286,12 @@ def extract_descriptive(*, pdf_bytes, year, section, number, expected_sha):
         raise DescriptiveError("DESCRIPTIVE_PDF_UNREADABLE") from exc
     cover = _norm(doc[0].get_text()).replace(" ", "")
     # 実原本の表紙は資格名を省略するので年度・部を固定SHAと表記で照合する。
-    if section not in cover or not (f"令和{year-2018}年度" in cover or
-                                    f"({year-2018:02d})" in cover or f"（{year-2018:02d}）" in cover):
+    year_label = (year - 2018) if year >= 2019 else (year - 1988)
+    era_label = (f"令和{year_label}年度" if year >= 2019 else f"平成{year_label}年度")
+    covers_year = (era_label in cover or (year == 2019 and "令和元年度" in cover) or
+                   f"({year_label:02d})" in cover or f"（{year_label:02d}）" in cover or
+                   (year == 2016 and re.search(r"^28試験問題", re.sub(r"[\s\x00-\x1f]", "", cover))))
+    if section not in cover or not covers_year:
         raise DescriptiveError("DESCRIPTIVE_COVER_MISMATCH")
     nums = find_descriptive_pages(doc, section, number)
     pages = {}
@@ -297,7 +302,25 @@ def extract_descriptive(*, pdf_bytes, year, section, number, expected_sha):
         pages[f"p{p}.png"] = base64.b64encode(pix.tobytes("png")).decode("ascii")
         texts.append("\n".join(_page_lines(page)))
     raw = "\n\n".join(texts)
-    layout, diagrams = structured_descriptive(doc, nums)
+    try:
+        layout, diagrams = structured_descriptive(doc, nums)
+    except DescriptiveError as exc:
+        # Some archived answer-form tables cannot be reconstructed as editable
+        # rows without swapping cells. For SHA-pinned historical scans, retain
+        # every verified original page as a zoomable image instead of guessing.
+        # Never apply this fallback to other exceptions or unpinned sources.
+        if str(exc) not in ("DESCRIPTIVE_TABLE_STRUCTURE_INVALID", "DESCRIPTIVE_TABLE_CELL_UNVERIFIED") or not 2015 <= year <= 2021:
+            raise
+        layout = [
+            {"kind":"text", "text":f"第{number}問　原本図表・本文"},
+            {"kind":"text", "text":"表の位置関係を保持するため、以下は照合済みPDFのページ画像で表示します。"},
+        ]
+        diagrams = {}
+        for index, page_number in enumerate(nums, 1):
+            name = f"f{index}.png"
+            diagrams[name] = pages[f"p{page_number}.png"]
+            layout.append({"kind":"figure", "page":page_number, "file":name,
+                           "caption":f"原本PDF {page_number}ページ"})
     if not re.search(r"第\s*"+str(number)+r"\s*問", raw):
         raise DescriptiveError("DESCRIPTIVE_TEXT_UNVERIFIED")
     return {
