@@ -670,7 +670,14 @@ function attachedSectionFromName(name, sections) {
 async function attachPdfBatch(env, id, state, b, url, now) {
   const files = Array.isArray(b.questionPdfs) ? b.questionPdfs : [];
   const answerFiles = Array.isArray(b.answerPdfs) ? b.answerPdfs : [];
-  if (!files.length || files.length + answerFiles.length > MAX_LICENSED_BATCH_FILES)
+  // 問題と正答が同じPDFに収録される資格は1ファイルを両方の役割で渡せる。
+  // 物理ファイル数だけを数え、同一file_idによる二重カウントを避ける。
+  const physicalFiles = new Set([...files,...answerFiles].map(file => {
+    if (typeof file === 'string') return file;
+    return String(file?.file_id || file?.download_url || '');
+  }).filter(Boolean)).size;
+  if (!files.length || files.length > MAX_LICENSED_BATCH_FILES || answerFiles.length > MAX_LICENSED_BATCH_FILES ||
+      physicalFiles > MAX_LICENSED_BATCH_FILES)
     throw new HttpError(400, 'ATTACH_BATCH_LIMIT', 'PDFは1回に最大10ファイルまで送信してください。');
   const cat = catalogFor(state.qualificationId);
   // 選択した年度・区分はファイル名に書かれていない場合だけ補足する。
