@@ -686,12 +686,95 @@ a{color:inherit}
     delete copy.at; delete copy.restored;
     try { return JSON.stringify(copy); } catch(e) { return ''; }
   }
+  // 追加年度の登録時期を明示し、学習中の状態を変えずに閲覧する。
+  // 登録状況の確認はread-only。戻るときもnextQuestionを呼ばず、同じ問題を再表示する。
+  var lastLearningView = null;
+  var sourceManagerOpen = false;
+  function sourceManagerBar(){
+    return '<div class="row" style="margin-top:10px"><button type="button" id="sourceManagerBtn" class="quiet">過去問の追加・登録状況</button></div>';
+  }
+  function bindSourceManager(){
+    var button = document.getElementById('sourceManagerBtn');
+    if (button) button.onclick = openSourceManager;
+  }
+  async function openSourceManager(){
+    if (!state.sessionId || sourceManagerOpen) return;
+    var savedView = lastLearningView;
+    var checked = app.querySelector('input[name=ans]:checked');
+    var chosen = checked ? checked.value : null;
+    var guessed = document.getElementById('guess');
+    var guessChecked = !!(guessed && guessed.checked);
+    var sameSession = state.sessionId;
+    sourceManagerOpen = true;
+    app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
+      '<div class="notice" role="status">登録状況を確認しています。解答履歴と現在の問題は変更しません。</div>' +
+      '<div class="row"><button type="button" id="sourceManageBack">学習中の問題に戻る</button></div>';
+    function goBack(){
+      sourceManagerOpen = false;
+      if (savedView) render(savedView);
+      else render({status:'toolError',error:'CURRENT_STUDY_VIEW_UNAVAILABLE',sessionId:sameSession});
+      if (chosen) {
+        var radio = Array.from(app.querySelectorAll('input[name=ans]')).find(function(x){return x.value === chosen;});
+        if (radio) {radio.checked = true; var row = document.getElementById('decrow'); if(row) row.style.display='flex';}
+      }
+      var newGuess=document.getElementById('guess'); if (newGuess) newGuess.checked=guessChecked;
+    }
+    document.getElementById('sourceManageBack').onclick = goBack;
+    try{
+      var lib = await callTool('getOfficialLibrary', {sessionId:sameSession});
+      if (!sourceManagerOpen || state.sessionId !== sameSession) return;
+      if (!lib || lib.error || lib.status !== 'officialLibrary') throw new Error('LIBRARY_UNAVAILABLE');
+      var ready = Array.isArray(lib.readyYearDetails) ? lib.readyYearDetails : [];
+      var importing = Array.isArray(lib.importingYearDetails) ? lib.importingYearDetails : [];
+      var failed = Array.isArray(lib.failedYearDetails) ? lib.failedYearDetails : [];
+      var years = new Set(ready.map(function(x){return x.year;}));
+      var entries = ready.length
+        ? ready.map(function(x){return '<p>' + esc(x.year) + '年度・' + esc(x.section || '本試験') +
+            '：利用可能 ' + esc(x.questions) + '問</p>';}).join('')
+        : '<p>出題可能として検証済みの年度は、まだありません。</p>';
+      var customs = lib.qualificationId === 'q098' || lib.qualificationName === '通関士';
+      var caution = customs
+        ? '<p>現在、通関士は2025年度の択一式29問を検証済みです。それ以外の年度は、公式問題と正答の対応を検証する実装が未完了のため、まだ出題・採点できません。</p>'
+        : '<p>追加年度のPDFは、対応する学習画面の取込操作で登録します。公式正答との検証が終わった問題だけ出題できます。</p>';
+      var pending = importing.length ? '<div class="notice">解析中：' +
+        importing.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'');}).join('、') + '</div>' : '';
+      var errors = failed.length ? '<div class="notice" role="alert">取込失敗：' +
+        failed.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'')+'（'+esc(x.reason)+'）';}).join('、') + '</div>' : '';
+      app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
+        '<div class="notice"><b>追加する時期は自由です。</b> 今すぐでも、学習を進めてからでも登録画面を確認できます。学習中の問題・解答履歴は保持します。</div>' +
+        '<div class="import-state ready"><strong>現在利用できる過去問</strong>' + entries + '</div>' +
+        pending + errors + '<div class="notice">' + caution + '</div>' +
+        (customs && !years.has(2025) ?
+          '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
+        '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
+      document.getElementById('sourceManageBack').onclick = goBack;
+      var importBtn = document.getElementById('sourceManageCustoms');
+      if(importBtn) importBtn.onclick = async function(){
+        importBtn.disabled=true;importBtn.textContent='公式PDFを登録中…';
+        try {
+          var out = await callTool('importOfficialCustoms2025',{sessionId:sameSession});
+          if (!out || out.error || out.status !== 'attachedBatch') throw Error('IMPORT_FAILED');
+          app.insertAdjacentHTML('beforeend','<div class="notice" role="status">公式PDFの登録を開始しました。学習に戻っても登録は継続します。登録状況は再度この画面で確認できます。</div>');
+        } catch(err){app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">PDFを登録できませんでした。学習に戻っても解答履歴は残ります。</div>');}
+        finally {importBtn.disabled=false;importBtn.textContent='2025年度公式PDFを取り込む';}
+      };
+    } catch(err){
+      if (!sourceManagerOpen) return;
+      app.innerHTML = '<h2>過去問の追加・登録状況</h2><div class="notice" role="alert">登録状況を取得できませんでした。学習はそのまま続行できます。</div>' +
+        '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
+      document.getElementById('sourceManageBack').onclick = goBack;
+    }
+    scrollUp();
+    fit();
+  }
   var renderFocusTurn = 0;
   var licensedPollGeneration = 0;
   var attachmentPollGeneration = 0;
   var customsPollGeneration = 0;
   var licensedConsentSessionId = null;
   function render(data){
+    if (data && (data.question || data.grade || ['sourceUnavailable','waiting','finished','restoredGrade','reviewEmpty'].includes(data.status)))
+      lastLearningView = data;
     // PDF添付のツール結果は新しいチャットメッセージ側に学習枠を生成する。
     // 前の学習枠はiPhoneで休止されることがあるため、この受領枠を最新の表示担当に切り替える。
     if (data && ['attached','attachedBatch','attachedAlready','pendingOfficialAnswer'].includes(data.status)) {
@@ -1500,6 +1583,7 @@ a{color:inherit}
     h += '<div class="row"><label><input type="checkbox" id="guess"> 勘で選んだ</label><button type="button" id="dk">分からない</button><button type="button" id="skip">スキップ</button></div><div class="row" id="decrow" style="display:none"><button type="button" id="decide">解答する</button></div><div id="answerProgress" class="notice" role="status" aria-live="polite" style="display:none"></div>';
     if (safeUrl(q.questionPdfUrl) && !String(q.questionPdfUrl).includes('/v1/private-source/')) h += '<div class="notice">原本：<a href="' + esc(safeUrl(q.questionPdfUrl)) + '" target="_blank" rel="noopener">公式の問題PDF</a></div>';
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
+    h += sourceManagerBar();
     app.innerHTML = h;
     // 再開直後の未回答問では、その場から学習を終了できるようにする。
     if (data.restored) app.insertAdjacentHTML('beforeend', endBar());
@@ -3055,8 +3139,9 @@ a{color:inherit}
     };
   }
   // 画面の下の「今日はここまで」：終了時刻・学習時間・累計をエンジンが確定し、終了ログと引継ぎデータを出す（AIに任せない）
-  function endBar(){ return '<div class="row" style="margin-top:14px"><button id="endStudy">学習を終了する</button></div>'; }
+  function endBar(){ return sourceManagerBar() + '<div class="row" style="margin-top:14px"><button id="endStudy">学習を終了する</button></div>'; }
   function bindEnd(){
+    bindSourceManager();
     var b = document.getElementById('endStudy'); if (!b) return;
     b.onclick = async function(){
       b.disabled = true;
