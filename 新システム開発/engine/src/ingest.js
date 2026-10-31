@@ -30,9 +30,10 @@ function isPdf(bytes) {
   return bytes instanceof Uint8Array && bytes.length > 5 && PDF_MAGIC.every((b, i) => bytes[i] === b);
 }
 
-/** 正答がPDFでなくウェブページで公開されている資格（行政書士）。URLが .html で、中身がHTMLのときだけ受け付ける。 */
+/** HTMLの正答：行政書士の .html と、取得元を固定した土地家屋調査士の解答一覧だけ。 */
 function isHtmlPage(url, bytes) {
-  if (!/\.html?$/i.test(String(url)) || !(bytes instanceof Uint8Array)) return false;
+  const answerIndex = String(url) === 'https://izuki.net/chousashi-past-tests/';
+  if ((!/\.html?$/i.test(String(url)) && !answerIndex) || !(bytes instanceof Uint8Array)) return false;
   const head = new TextDecoder().decode(bytes.subarray(0, 512)).replace(/^\uFEFF/, '').trimStart().toLowerCase();
   return head.startsWith('<!doctype html') || head.startsWith('<html');
 }
