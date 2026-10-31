@@ -206,9 +206,9 @@ const BASE_CATALOG = {
     overviewOnly: true,
     uploadAdapter: 'land_surveyor',
     uploadSections: ['午前の部', '午後の部'],
-    validatedUploadYears: [2015, 2017, 2018, 2021, 2022, 2023, 2024, 2025],
-    // 2021年度の午前は現在の画像・選択肢完全性検査に合格していないため、午後のみ。
-    sectionsByYear: { 2021: ['午後の部'] },
+    validatedUploadYears: [2015, 2017, 2018, 2019, 2021, 2022, 2023, 2024, 2025],
+    // 2019・2021年度の午前は画像・選択肢完全性検査が未通過。午後のみ使用。
+    sectionsByYear: { 2019: ['午後の部'], 2021: ['午後の部'] },
     archiveIndexUrl: 'https://izuki.net/chousashi-past-tests/',
     archiveDiscoveryYears: Array.from({length:15}, (_,i) => 2007+i),
     // 旧法務省公開資料の保存版をハッシュ照合。実際の解析が完了した部のみ出題する。
@@ -261,7 +261,14 @@ const BASE_CATALOG = {
             "section": "午後の部",
             "questionUrl": "https://izuki.net/wp-content/uploads/c_r3pm_q.pdf",
             "answerUrl": "https://izuki.net/wp-content/uploads/c_r3_a.pdf"
-      }
+      },
+      {
+            "adapter": "land_surveyor",
+            "year": 2019,
+            "section": "午後の部",
+            "questionUrl": "https://izuki.net/wp-content/uploads/c_r1pm_q.pdf",
+            "answerUrl": "https://izuki.net/wp-content/uploads/c_r1_a.pdf"
+      },
 ],
     // 公式原本に一致する共有キャッシュだけを「保存済み」として表示する。
     // カタログ上の対応年度が、Cloud Runの保存済み年度を意味するわけではない。
@@ -281,6 +288,11 @@ const BASE_CATALOG = {
         '午前の部': '4d6c754fe2fc53ba42f48ab173e4ee66177033071d911182d44f71821282f63d',
         '午後の部': '28fa300ba96fad255cc88c5d27c2c159c69fcc26c982e6407755156f94fc0328',
         answer: '4123527d4863c689df4c7393e5454f3e202a20f2e1abd9df615d7cff3cd21d5e',
+      },
+      2019: {
+        '午前の部': 'fc83edc0b7c26a09ec8caefa04f7e4e5d53d0e4225cd1e2c5edd4dc0a8d317b8',
+        '午後の部': '7ab89c83c35bd07ae5670d09d3418ae3f9b625a7ee5fcac3fa84cefd163873b9',
+        answer: '056b672d9390e07b39e14fd1179def7d31e3f209ded6021358295401fa210a73',
       },
       2021: {
         '午前の部': '0a254b7da1dfc210da8ccdd008630184206dd0bf94ec3d41f667873a230b8f91',
