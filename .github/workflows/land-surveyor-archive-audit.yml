@@ -1,0 +1,43 @@
+name: 土地家屋調査士2007〜2021 過去問原本・正答照合（事前監査）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/parser/scripts/audit-land-surveyor-archive.py'
+      - '.github/workflows/land-surveyor-archive-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: early
+            years: "2007,2008,2009,2010,2011"
+          - group: middle
+            years: "2012,2013,2014,2015,2016"
+          - group: late
+            years: "2017,2018,2019,2020,2021"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install PDF parser
+        run: pip install --quiet pymupdf
+      - name: Inspect user-specified index and archived PDFs (no PDF checked into git)
+        run: |
+          python 新システム開発/parser/scripts/audit-land-surveyor-archive.py \
+            --years "${{ matrix.years }}" \
+            --out "archive-${{ matrix.group }}.json"
+      - name: Save source audit report (not question contents)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: land-surveyor-archive-audit-${{ matrix.group }}
+          path: archive-${{ matrix.group }}.json
+          if-no-files-found: warn
