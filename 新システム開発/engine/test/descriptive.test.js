@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation } from '../src/descriptive.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, SCANNED_DESCRIPTIVE_FILES } from '../src/descriptive.js';
 import { CATALOG } from '../src/catalog.js';
 import { renderDescriptive } from '../src/parser-client.js';
 import { forModel } from '../src/mcp.js';
+import archiveManifest from '../data/land-surveyor-archive-source-manifest.json' with { type: 'json' };
+import { PNG } from './helpers.js';
 
 const pins = CATALOG.land_surveyor.officialPdfPins;
 
@@ -21,7 +23,27 @@ test('記述式はSHA確認済み2015〜2025年度の午前11・午後21/22だ�
   assert.equal(descriptiveSpec(2025,'午後の部',11,pins), null);
   assert.equal(descriptiveSpec(2026,'午後の部',21,pins), null);
   assert.equal(descriptiveSpec(2025,'午前の部',10,pins), null);
-  assert.equal(descriptiveSpec(2014,'午前の部',11,pins), null);
+});
+
+test('2007〜2014年はSHA固定の原本画像専用記述式24問を出題でき、択一採点へは混入しない', () => {
+  for (let year=2007;year<=2014;year++) {
+    const archive=archiveManifest.years.find(x=>x.year===year);
+    assert.ok(archive);
+    for (const [section,number] of [['午前の部',11],['午後の部',21],['午後の部',22]]) {
+      const spec=descriptiveSpec(year,section,number,pins);
+      assert.ok(spec);
+      assert.equal(spec.sha,archive.questionSources[section].sha256);
+      assert.equal(spec.url,archive.questionSources[section].url);
+      assert.equal(spec.questionId,`land_surveyor:${year}:${section}:${number}`);
+    }
+    assert.equal(CATALOG.land_surveyor.archivedImportSources.some(x=>x.year===year),false);
+    assert.equal(CATALOG.land_surveyor.validatedUploadYears.includes(year),false);
+    assert.equal(descriptiveSpec(year,'午前の部',21,pins),null);
+  }
+  for (const year of [2007,2008]) {
+    assert.match(SCANNED_DESCRIPTIVE_FILES[year]['午前の部'][0],/pm_q\.pdf$/);
+    assert.match(SCANNED_DESCRIPTIVE_FILES[year]['午後の部'][0],/am_q\.pdf$/);
+  }
 });
 
 test('第11問と問11、令和7年、午前午後の組合せを誤認しない', () => {
@@ -30,6 +52,8 @@ test('第11問と問11、令和7年、午前午後の組合せを誤認しない
   assert.deepEqual(requestedDescriptive('2024年度 午後の部 第22問'), { year:2024,section:'午後の部',number:22 });
   assert.deepEqual(requestedDescriptive('平成28年度 午前の部 第11問'), { year:2016,section:'午前の部',number:11 });
   assert.deepEqual(requestedDescriptive('令和2年度 午後の部 第22問'), { year:2020,section:'午後の部',number:22 });
+  assert.deepEqual(requestedDescriptive('平成19年度 午前の部 第11問'), { year:2007,section:'午前の部',number:11 });
+  assert.deepEqual(requestedDescriptive('2008年度 午後の部 第22問'), { year:2008,section:'午後の部',number:22 });
   assert.equal(requestedDescriptive('2025年度 午前の部 第21問'), null);
   assert.equal(requestedDescriptive('2025年度 午後の部 第11問'), null);
   assert.equal(requestedDescriptive('2025年度 問10'), null);
@@ -55,6 +79,15 @@ test('記述式の画面・解答表示には正答番号・正誤・自動採�
   }
 });
 
+test('画像中心の旧記述式は採点せず、原本ページを拡大して読む案内を出す', () => {
+  const spec=descriptiveSpec(2014,'午後の部',22,pins);
+  const view=descriptiveView({ ...spec,text:'第22問 原本画像',
+    pages:[{page:31,url:'https://example.test/original.png'}],layout:[] },'session');
+  assert.equal(view.question.gradingMode,'none');
+  assert.equal(view.question.correctAnswer,undefined);
+  assert.match(view.notice,/保存版PDFの原本ページ画像/);
+});
+
 test('記述式のAI解説では原本を再掲せず三角関数・複素数を指示する', () => {
   const spec = descriptiveSpec(2025,'午前の部',11,pins);
   const full = descriptiveView({ ...spec, text:'原本本文・観測成果の表',
@@ -78,6 +111,27 @@ test('記述式パーサーが返す本文・出典SHA・画像枚数を検証�
       bytes:new Uint8Array([37,80,68,70,45]),sha256:'0'.repeat(64),
       year:2025,section:'午前の部',number:11 }),
     /ASSETS_INVALID|DESCRIPTIVE_PARSER_RESULT_UNVERIFIED/);
+});
+
+test('画像の旧記述式はページ・図の証拠を確認して取り込み、採点情報なしで渡す', async () => {
+  const spec=descriptiveSpec(2007,'午前の部',11,pins);
+  const png=Buffer.from(PNG).toString('base64');
+  const original={status:'ready',kind:'descriptive',year:2007,section:'午前の部',number:11,
+    questionSha256:spec.sha,pageNumbers:[11,12],
+    pages:{'p11.png':png,'p12.png':png},diagrams:{'f1.png':png,'f2.png':png},
+    layout:[{kind:'text',text:'第11問 原本画像'},
+      {kind:'text',text:'採点せず原本の図表を閲覧します。'},
+      {kind:'figure',page:11,file:'f1.png'},
+      {kind:'figure',page:12,file:'f2.png'}],
+    text:'第11問 原本PDFページ',textComplete:false,gradingMode:'none',solutionAvailable:false};
+  const parsed=await renderDescriptive({endpoint:'https://parser.example',
+    fetch:async()=>new Response(JSON.stringify(original),{status:200}),
+    bytes:new TextEncoder().encode('%PDF-1.7'),sha256:spec.sha,
+    year:2007,section:'午前の部',number:11});
+  assert.deepEqual(Object.keys(parsed.pages),['p11.png','p12.png']);
+  assert.deepEqual(Object.keys(parsed.diagrams),['f1.png','f2.png']);
+  assert.equal(parsed.gradingMode,'none');
+  assert.equal(parsed.correctAnswer,undefined);
 });
 
 

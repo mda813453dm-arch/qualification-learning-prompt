@@ -82,6 +82,33 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,4)],[137,80,78,71]);
   console.log('PASS structured descriptive',section,n,'pages',count,'tables',nativeTables.length,'diagrams',figBlocks.length);
 }
+// 2007-2014 scan-only mode: original pages, no OCR-generated values and no grading.
+// One real historical section is checked end-to-end; the 24-question PDF matrix
+// is independently validated by the parser audit workflow.
+const historical=await api('POST',prefix+'/descriptive',
+  {year:2014,section:'午後の部',number:22});
+assert.equal(historical.status,'descriptiveQuestion');
+assert.equal(historical.question.questionId,'land_surveyor:2014:午後の部:22');
+assert.equal(historical.question.gradingMode,'none');
+assert.equal(historical.question.correctAnswer,undefined);
+assert.equal(historical.question.choices,undefined);
+assert.equal(historical.question.pages.length,8);
+assert.match(historical.notice,/保存版PDFの原本ページ画像/);
+const historicalFigures=historical.question.layout.filter(x=>x.kind==='figure');
+assert.deepEqual(historicalFigures.map(x=>x.page),[31,32,33,34,35,36,37,38]);
+assert.ok(historical.question.layout.filter(x=>x.kind==='table').length===0,
+  'scanned source must not reconstruct table cell values');
+for(const figure of [historicalFigures[0],historicalFigures.at(-1)]) {
+  assert.ok(figure.url.startsWith('https://'));
+  const image=await fetch(figure.url,{signal:AbortSignal.timeout(30000)});
+  assert.ok(image.ok,'archived page image missing '+figure.page);
+  assert.deepEqual([...new Uint8Array(await image.arrayBuffer()).slice(0,4)],[137,80,78,71]);
+}
+const historicalReveal=await api('POST',prefix+'/descriptive/reveal',{});
+assert.equal(historicalReveal.status,'descriptiveReveal');
+assert.equal(historicalReveal.grade,undefined);
+assert.equal((await api('GET',prefix+'/restore')).status,'descriptiveReveal');
+console.log('PASS archived 2014 descriptive non-graded original-page display/reveal/restore');
 const end=await api('POST','/v1/study/'+encodeURIComponent(study.studyId)+'/end',{sessionId:session.sessionId});
 assert.match(end.log,/午後の部 問22/);
 assert.match(end.handoff,/午前の部 問11/);

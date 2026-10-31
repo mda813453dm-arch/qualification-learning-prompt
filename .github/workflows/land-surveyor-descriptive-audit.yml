@@ -76,6 +76,10 @@ jobs:
                         'tables',len(tables),'figures',len(diagrams),'blocks',len(layout),
                         'textlen',len(result['text']),flush=True)
           PY
+      - name: 2007〜2014年のスキャン原本24問を採点なしで表示できることを全PDFで確認
+        env:
+          PYTHONPATH: 新システム開発/parser
+        run: python 新システム開発/parser/scripts/validate-land-surveyor-scanned-descriptive.py
       - name: 2015〜2021年の保存版・記述式全21問もSHA照合し原本ページ表示を検証
         shell: bash
         env:

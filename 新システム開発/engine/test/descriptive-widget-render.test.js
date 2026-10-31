@@ -58,3 +58,19 @@ test('AI解説と操作パネルは同じ画面で隣接し、古い問題デー
   assert.ok(!app.innerHTML.includes('descriptive-source'));
   assert.equal(state.answered,false);
 });
+
+test('iPhone用の記述式年度選択に2007〜2025年が揃い、旧年度も採点なしで開ける',()=>{
+  const start=script.indexOf('  function showDescriptiveMenu(year){');
+  const end=script.indexOf('  var descriptiveScreen = null;',start);
+  assert.ok(start>=0 && end>start);
+  const app={innerHTML:'',querySelectorAll:()=>[]};
+  const open=new Function('app','endBar','bindEnd','scrollUp',
+    script.slice(start,end)+'\nreturn showDescriptiveMenu;')(
+      app,()=>'<button id="endStudy">終了</button>',()=>{},()=>{});
+  open(2007);
+  assert.equal((app.innerHTML.match(/<option value="20\d\d"/g)||[]).length,19);
+  assert.match(app.innerHTML,/<option value="2007" selected>2007年度<\/option>/);
+  assert.match(app.innerHTML,/<option value="2025">2025年度<\/option>/);
+  assert.match(app.innerHTML,/記述式は自動採点しません/);
+  assert.match(html,/id="sourceManageLandDescriptive"/);
+});

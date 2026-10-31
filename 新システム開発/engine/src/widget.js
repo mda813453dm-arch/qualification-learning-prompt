@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v149.html';
+export const WIDGET_URI = 'ui://qlp/question-v150.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.149';
+export const WIDGET_VERSION = '2026-10-31.150';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -799,11 +799,17 @@ a{color:inherit}
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         (lib.qualificationId === 'land_surveyor' ?
-          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015〜2021年度のうち、原本・正答を照合した区分を自動で取り込みます。2007〜2014年度など未検証の問題は出題しません。</p>' +
+          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015〜2021年度の原本・正答を照合済みの択一問題を取り込めます。2007〜2014年度の択一は採点しませんが、記述式は原本画像で出題できます。</p>' +
           '<div class="row"><button type="button" id="sourceManageLandArchive">旧年度の検証済み過去問を取り込む</button></div>' +
-          '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p></div>' : '') +
+          '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p>' +
+          '<div class="row"><button type="button" id="sourceManageLandDescriptive">記述式を出題（2007〜2025年度・採点なし）</button></div></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
       document.getElementById('sourceManageBack').onclick = goBack;
+      var archivedDescriptiveBtn=document.getElementById('sourceManageLandDescriptive');
+      if (archivedDescriptiveBtn) archivedDescriptiveBtn.onclick=function(){
+        sourceManagerOpen=false;
+        showDescriptiveMenu(2025);
+      };
       var extraInput = document.getElementById('sourceManageUpload');
       if (extraInput) extraInput.onchange = async function(){
         var input = this;
@@ -1834,9 +1840,9 @@ a{color:inherit}
   function showDescriptiveMenu(year){
     year = Number(year) || 2025;
     app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
-      '<div class="notice">記述式は自動採点しません。午前・午後の択一式の成績にも加えません。</div>' +
+      '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本ページ画像で表示します。午前・午後の択一式の成績にも加えません。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
-      [2025,2024,2023,2022].map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
+      Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
       '<div class="choices"><button data-desc="11">午前の部・問11（記述式）</button>' +
       '<button data-desc="21">午後の部・問21（土地）</button>' +
       '<button data-desc="22">午後の部・問22（建物）</button></div>' +

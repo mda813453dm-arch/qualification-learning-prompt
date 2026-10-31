@@ -9,6 +9,7 @@ import re
 import unicodedata
 
 from .adapters.land_surveyor import PIN_BY_YEAR
+from .scanned_descriptive import SCANNED_DESCRIPTIVE
 
 MAX_DESCRIPTIVE_PAGES = 12
 HEADER = re.compile(r"^第\s*(\d{1,2})\s*問(?:\s|$)")
@@ -266,24 +267,72 @@ def structured_descriptive(doc, nums):
             raise DescriptiveError("DESCRIPTIVE_HEADING_LOST")
     return blocks, images
 
+def _extract_scanned_descriptive(doc, *, year, section, number, known, source):
+    """Render only the audited original pages; never OCR or reconstruct measurements.
+
+    This path deliberately does not generate selectable prose, answer numbers,
+    official solutions, or any grading packet. The static intervals can only be
+    used with the matching immutable 2007-2014 source PDF.
+    """
+    import fitz
+
+    _, total_pages, question_ranges = source
+    if len(doc) != total_pages:
+        raise DescriptiveError("DESCRIPTIVE_SCANNED_PAGE_COUNT_MISMATCH")
+    if number not in question_ranges:
+        raise DescriptiveError("DESCRIPTIVE_QUESTION_UNSUPPORTED")
+    first, last = question_ranges[number]
+    if not 1 <= first <= last <= total_pages or last-first+1 > MAX_DESCRIPTIVE_PAGES:
+        raise DescriptiveError("DESCRIPTIVE_SCANNED_PAGE_RANGE_INVALID")
+    nums = list(range(first, last+1))
+    pages, diagrams = {}, {}
+    layout = [
+        {"kind":"text", "text":f"第{number}問　過去問原本の画像表示"},
+        {"kind":"text", "text":"画像中心の保存版PDFです。本文・数値表・図面は画像を拡大して確認してください。文字のOCR復元や自動採点は行いません。"},
+    ]
+    for index, page_number in enumerate(nums, 1):
+        page = doc[page_number-1]
+        if page.rect.is_empty or page.rect.width < 200 or page.rect.height < 200:
+            raise DescriptiveError("DESCRIPTIVE_SCANNED_PAGE_INVALID")
+        png = page.get_pixmap(matrix=fitz.Matrix(1.8, 1.8), alpha=False).tobytes("png")
+        encoded = base64.b64encode(png).decode("ascii")
+        pages[f"p{page_number}.png"] = encoded
+        filename = f"f{index}.png"
+        diagrams[filename] = encoded
+        layout.append({"kind":"figure", "page":page_number, "file":filename,
+                       "caption":f"保存版原本 {page_number}ページ"})
+    return {
+        "status":"ready", "kind":"descriptive", "year":year, "section":section,
+        "number":number, "questionSha256":known, "pages":pages,
+        "pageNumbers":nums, "layout":layout, "diagrams":diagrams,
+        "text":f"第{number}問　保存版原本の{first}〜{last}ページを画像で表示しています。",
+        "textComplete":False, "gradingMode":"none", "solutionAvailable":False,
+        "notice":"画像原本を閲覧する記述式です。模範解答は生成せず、自動採点もしません。",
+    }
+
+
 def extract_descriptive(*, pdf_bytes, year, section, number, expected_sha):
     import fitz
 
     if not isinstance(pdf_bytes, bytes) or not pdf_bytes.startswith(b"%PDF-"):
         raise DescriptiveError("DESCRIPTIVE_PDF_INVALID")
-    if not isinstance(year, int) or year not in PIN_BY_YEAR:
-        raise DescriptiveError("DESCRIPTIVE_YEAR_UNVERIFIED")
     if section not in ("午前の部", "午後の部"):
         raise DescriptiveError("DESCRIPTIVE_SECTION_INVALID")
+    if not isinstance(year, int) or (year not in PIN_BY_YEAR and year not in SCANNED_DESCRIPTIVE):
+        raise DescriptiveError("DESCRIPTIVE_YEAR_UNVERIFIED")
     if type(number) is not int:
         raise DescriptiveError("DESCRIPTIVE_NUMBER_INVALID")
-    known = PIN_BY_YEAR[year][section]
+    scanned_source = SCANNED_DESCRIPTIVE.get(year, {}).get(section)
+    known = scanned_source[0] if scanned_source else PIN_BY_YEAR[year][section]
     if expected_sha != known or hashlib.sha256(pdf_bytes).hexdigest() != known:
         raise DescriptiveError("DESCRIPTIVE_SHA_MISMATCH")
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     except Exception as exc:
         raise DescriptiveError("DESCRIPTIVE_PDF_UNREADABLE") from exc
+    if scanned_source:
+        return _extract_scanned_descriptive(doc, year=year, section=section,
+                                           number=number, known=known, source=scanned_source)
     cover = _norm(doc[0].get_text()).replace(" ", "")
     # 実原本の表紙は資格名を省略するので年度・部を固定SHAと表記で照合する。
     year_label = (year - 2018) if year >= 2019 else (year - 1988)
