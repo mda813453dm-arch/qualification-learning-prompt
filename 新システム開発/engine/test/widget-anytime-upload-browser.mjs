@@ -60,7 +60,7 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
           'uploadFile:async function(file){parent.uploads.push(file.name);return {fileId:"id_"+file.name};},'+
           'getFileDownloadUrl:async function(v){return {downloadUrl:"https://files.example/"+encodeURIComponent(v.fileId)+".pdf"};},'+
           'notifyIntrinsicHeight:function(){}' +
-          '};<\\/script><script>';
+          '};<\/script><script>';
         iframe.srcdoc=html.replace('<script>',inject);
         document.body.appendChild(iframe);
       },{html:widgetHtml(),first,spec});
