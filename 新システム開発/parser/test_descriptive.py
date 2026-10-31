@@ -27,6 +27,31 @@ class DescriptiveTest(unittest.TestCase):
         self.assertEqual(find_descriptive_pages(doc, "午後の部", 21), [2, 3])
         self.assertEqual(find_descriptive_pages(doc, "午後の部", 22), [4, 5])
 
+    def test_split_centered_pdf_page_numbers_are_not_displayed(self):
+        doc = fitz.open()
+        page = doc.new_page(width=595, height=842)
+        page.insert_text((60, 95), "第21問", fontname="japan")
+        page.insert_text((60, 130), "測量成果を使う", fontname="japan")
+        page.insert_text((275, 818), "(   ) 12")
+        # A real number inside the page body must not be swallowed.
+        page.insert_text((270, 530), "(   ) 12")
+        self.assertTrue(descriptive._is_printed_page_number("(   ) 12",
+                        fitz.Rect(273, 804, 324, 823), page))
+        self.assertTrue(descriptive._is_printed_page_number("12",
+                        fitz.Rect(294, 808, 312, 823), page))
+        self.assertTrue(descriptive._is_printed_page_number("(",
+                        fitz.Rect(276, 808, 284, 823), page))
+        self.assertFalse(descriptive._is_printed_page_number("(   ) 12",
+                         fitz.Rect(273, 515, 324, 533), page))
+        self.assertFalse(descriptive._is_printed_page_number("200.00",
+                         fitz.Rect(294, 808, 345, 823), page))
+        with patch("qlp_parser.server.page_layout", return_value=([], [])):
+            layout, _ = descriptive.structured_descriptive(doc, [1])
+        combined = "".join(x["text"] for x in layout if x["kind"] == "text")
+        self.assertEqual(combined.count("(   ) 12"), 1,
+                         "only the problem-body number remains, never the footer")
+        doc.close()
+
     def test_never_accepts_unpinned_pdf(self):
         doc = self.sample("午後の部", ["令和7年度 午後の部", "第21問", "第22問"])
         with self.assertRaisesRegex(DescriptiveError, "DESCRIPTIVE_SHA_MISMATCH"):

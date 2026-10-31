@@ -57,7 +57,7 @@ jobs:
       - name: 新しい取り込み画面の公開版を検証
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
-          node -e 'fetch(process.env.QLP_BASE_URL + "/v1/release").then(r => {if(!r.ok)throw Error("Release status " + r.status);return r.json()}).then(d => {if(d.build !== "2026-10-31-v158-scanned-descriptive-ocr" || d.uploadBatchFiles !== 10 || d.yearSelectionRequired !== false)throw Error("Unexpected release: " + JSON.stringify(d));console.log("v158 public release verified", d)}).catch(e => {console.error(e);process.exit(1)})'
+          node -e 'fetch(process.env.QLP_BASE_URL + "/v1/release").then(r => {if(!r.ok)throw Error("Release status " + r.status);return r.json()}).then(d => {if(d.build !== "2026-10-31-v159-descriptive-pdf-footer" || d.uploadBatchFiles !== 10 || d.yearSelectionRequired !== false)throw Error("Unexpected release: " + JSON.stringify(d));console.log("v159 public release verified", d)}).catch(e => {console.error(e);process.exit(1)})'
       - name: 土地家屋調査士の旧年度14区分（210問）を共通登録して原本・正答・問数を検証
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"

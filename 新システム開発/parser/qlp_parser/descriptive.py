@@ -15,6 +15,7 @@ MAX_DESCRIPTIVE_PAGES = 12
 HEADER = re.compile(r"^第\s*(\d{1,2})\s*問(?:\s|$)")
 APPENDIX = re.compile(r"^(?:付録|附録|関数表|三角関数表|答案用紙|解答用紙|三角関数値表|数表)")
 FOOTER = re.compile(r"^[\-─‐ー－]*\s*[（(]\s*\d+\s*[）)]\s*[\-─‐ー－]*$")
+FOOTER_FRAGMENT = re.compile(r"^[()\d\-─‐ー－]+$")
 
 
 class DescriptiveError(ValueError):
@@ -29,6 +30,28 @@ def _norm(value):
 def _page_lines(page):
     return [_norm(s) for s in page.get_text("text", sort=True).splitlines()
             if _norm(s) and not FOOTER.fullmatch(_norm(s))]
+
+
+def _is_printed_page_number(text, bbox, page):
+    """Ignore a centered PDF footer even when its glyph order becomes '( ) 12'.
+
+    A page number can be split into independent parentheses and digits by
+    PyMuPDF. Text shape alone is insufficient (calculations also have numbers),
+    so require the bottom margin *and* horizontal center of the actual page.
+    This is only a display filter: the source PDF remains unmodified.
+    """
+    from fitz import Rect
+
+    box = Rect(bbox)
+    if box.y0 < page.rect.y1 - max(38, page.rect.height * .065):
+        return False
+    center = (box.x0 + box.x1) / 2
+    if not page.rect.x0 + page.rect.width * .28 <= center <= page.rect.x1 - page.rect.width * .28:
+        return False
+    token = re.sub(r"\s+", "", _norm(text))
+    if len(token) > 12 or not FOOTER_FRAGMENT.fullmatch(token):
+        return False
+    return len(re.findall(r"\d", token)) <= 3
 
 
 def find_descriptive_pages(doc, section, number):
@@ -211,7 +234,7 @@ def structured_descriptive(doc, nums):
                        for excluded in omitted.get(pg, [])):
                     continue
                 text = "".join(sp.get("text", "") for sp in line.get("spans", [])).strip()
-                if not text or FOOTER.fullmatch(_norm(text)):
+                if not text or FOOTER.fullmatch(_norm(text)) or _is_printed_page_number(text, box, page):
                     continue
                 clean_lines.append((box, text))
             if clean_lines:
