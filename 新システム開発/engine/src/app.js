@@ -2035,6 +2035,7 @@ async function route(request, env, url, now) {
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         // 学習中の追加画面でも正確な権限・登録元を判断する。既存の本人専用履歴は共有しない。
         qualificationId: state.qualificationId, sourceAttachmentSupported: !!cat.uploadAdapter,
+        uploadSections: cat.uploadSections ?? [],
         fieldName: cat.fields[state.set?.fieldId] ?? Object.values(cat.fields)[0] ?? '',
         uploadPermissionConfirmed, remainingUploadFiles,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
@@ -2070,6 +2071,8 @@ async function route(request, env, url, now) {
       qualificationId: state.qualificationId,
       officialUrl: cat?.pastExamPage ?? null,
       sourceAttachmentSupported: !!cat?.uploadAdapter,
+      uploadSections: cat?.uploadSections ?? [],
+      answerFormat: cat?.officialAnswerHtml ? 'html' : 'pdf',
       validatedUploadYears: cat?.validatedUploadYears ?? [],
       readyYearDetails: sources.filter((x) => x.status === 'done' && Number(x.packetCount) > 0).map((x) => ({
         year: x.year, section: x.section, questions: x.packetCount,
