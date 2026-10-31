@@ -71,6 +71,51 @@ def catalog(html):
         record[part] = link
     return out
 
+
+def probe_answer_rows(doc, year):
+    """Independently inspect the answer PDF's two-column 10/20 table.
+
+    Extracted numbers are candidates until original source and each question
+    are verified. Never infer a missing digit or permit a section crossover.
+    """
+    import unicodedata
+    title = unicodedata.normalize("NFKC", doc[0].get_text("text", sort=True))
+    if "土地家屋調査士" not in title or "午前の部" not in title or "午後の部" not in title:
+        raise ValueError("ANSWER_TITLE_OR_SECTION_MISMATCH")
+    era = "令和" + str(year - 2018) if year >= 2019 else "平成" + str(year - 1988)
+    if era not in re.sub(r"\s+", "", title):
+        raise ValueError("ANSWER_YEAR_MISMATCH")
+    answers = {}
+    for page in doc:
+        words = page.get_text("words", sort=True)
+        mid = page.rect.width / 2
+        for sec, count, left in (("午前の部", 10, True), ("午後の部", 20, False)):
+            for w in words:
+                value = unicodedata.normalize("NFKC", str(w[4]))
+                m = re.fullmatch(r"第\s*(\d+)\s*問", value)
+                if not m or ((w[0] < mid) != left):
+                    continue
+                n = int(m.group(1))
+                if not (1 <= n <= count):
+                    raise ValueError("ANSWER_QUESTION_NUMBER_OUT_OF_RANGE")
+                candidates = [v for v in words if
+                    abs((v[1]+v[3])-(w[1]+w[3])) <= 2.2
+                    and v[0] > w[2]+8 and (v[0] < mid if left else True)
+                    and re.fullmatch(r"[1-5]", unicodedata.normalize("NFKC",str(v[4])))]
+                if len(candidates) != 1:
+                    raise ValueError("ANSWER_ROW_AMBIGUOUS_"+sec+"_"+str(n))
+                a = answers.setdefault(sec, {})
+                if n in a:
+                    raise ValueError("ANSWER_ROW_DUPLICATE_"+sec+"_"+str(n))
+                a[n] = int(unicodedata.normalize("NFKC",str(candidates[0][4])))
+    out = {}
+    for sec, count in (("午前の部", 10), ("午後の部", 20)):
+        rows = answers.get(sec,{})
+        if sorted(rows) != list(range(1,count+1)):
+            raise ValueError("ANSWER_ROWS_INCOMPLETE_"+sec+"_"+str(len(rows)))
+        out[sec] = [rows[i] for i in range(1,count+1)]
+    return out
+
 def inspect_pdf(url, year, section):
     import fitz
     data = fetch(url)
@@ -81,7 +126,21 @@ def inspect_pdf(url, year, section):
         raise ValueError("SOURCE_EMPTY_PDF")
     first = doc[0].get_text("text", sort=True)[:500]
     sample_chars = sum(len(doc[p].get_text("text")) for p in range(min(doc.page_count, 4)))
-    return {"url": url, "sha256": hashlib.sha256(data).hexdigest(),
+    probe = {"status":"not_probed"}
+    if 2015 <= year <= 2021:
+        try:
+            if section == "正答":
+                probe = {"status":"answer_rows_extracted", "candidateAnswers":probe_answer_rows(doc,year)}
+            else:
+                from qlp_parser.adapters import land_surveyor
+                questions = land_surveyor.parse_questions(doc,section)
+                probe = {"status":"questions_parsed", "count":len(questions),
+                    "textQuestions":sum(q.stem_mode=="text" for q in questions),
+                    "imageQuestions":sum(q.stem_mode=="official_image" for q in questions)}
+        except Exception as exc:
+            probe = {"status":"needs_parser_update","error":str(exc)[:120],
+                     "detail":getattr(exc,"detail",{})}
+    return {"probe":probe, "url": url, "sha256": hashlib.sha256(data).hexdigest(),
         "byteLength": len(data), "pageCount": doc.page_count,
         "textSampleCharacters": sample_chars,
         "coverExcerpt": re.sub(r"\s+", " ", first).strip()[:260],
@@ -123,6 +182,8 @@ def audit(years):
             "errors":year_record["errors"],
             "meta":{section:{"sha":v["sha256"],"pages":v["pageCount"],"textChars":v["textSampleCharacters"],"cover":v["coverExcerpt"][:95]}
                     for section,v in year_record["sections"].items()},
+            "probes":{section:v.get("probe") for section,v in year_record["sections"].items()},
+            "answerProbe":year_record["answerSource"].get("probe") if year_record["answerSource"] else None,
             "answer":({"sha":year_record["answerSource"]["sha256"],
                        "pages":year_record["answerSource"]["pageCount"],
                        "textChars":year_record["answerSource"]["textSampleCharacters"],
