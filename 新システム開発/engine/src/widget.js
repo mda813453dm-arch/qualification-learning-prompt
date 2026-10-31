@@ -3197,8 +3197,9 @@ a{color:inherit}
       var dpdf = safeUrl(g.answerPdfUrl) ? '<a href="' + esc(safeUrl(g.answerPdfUrl)) + '" target="_blank" rel="noopener">公式の正答PDF</a>' : '確認できませんでした';
       app.innerHTML = '<div class="result">' + esc(label) + '：分からない（採点には数えません）</div>' +
         officialAnswerSummary(q, g) + '<div class="stem">解答PDF：' + dpdf + '<br>この問題は復習に登録しました。</div>' +
-        '<div class="row"><button id="dkExp">AIの詳しい解説を追加</button><button id="next">次の問題へ</button></div>';
-      nextBtn();
+        '<div class="row"><button id="dkExp">AIの詳しい解説を追加</button><button id="next">次の問題へ</button></div>' +
+        sourceManagerBar();
+      nextBtn(); bindSourceManager();
       document.getElementById('dkExp').onclick = async function(){
         this.disabled = true;
         try { await loadExplanation(q.questionId, true); }
@@ -3220,7 +3221,7 @@ a{color:inherit}
       '<div class="stem"><b>■次の選択</b></div><div class="choices"><button id="next"><b>1</b><span>' + (fieldChange ? '次の分野の問題へ' : '次の問題へ') + '</span></button>' +
       '<button id="exp"><b>2</b><span>AIの詳しい解説を追加</span></button>' +
       (fieldChange ? '<button id="continueField"><b>3</b><span>この分野の実践問題を続ける</span></button><button id="review"><b>4</b><span>総復習（間違えた問題）</span></button>' : '') +
-      '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>学習を終了する</span></button></div>';
+      '<button id="endStudy"><b>' + (fieldChange ? '5' : '3') + '</b><span>学習を終了する</span></button></div>' + sourceManagerBar();
     scrollUp();
     nextBtn(); bindEnd();
     var sendDisplay = async function(){
