@@ -799,7 +799,9 @@ async function attachPdf(env, id, state, b, url, now) {
   // ファイル名から区分を推測したり別年度の正答を流用したりしない。
   const fixedAnswerUrl = adapter === 'generic_mc' ? null
     : cat?.sources?.find(x => x.year === year && x.section === section && x.answerUrl)?.answerUrl ?? null;
-  if (!b.answer && !officialAnswerHtml && !fixedAnswerUrl && !cat?.privateLicensedUpload)
+  // 既存の宅建等には問題・正答を同じPDFに収録した年度がある。
+  // その形式の合否は解析器で公式正答を確認する（事前のPDF必須判定で妨げない）。
+  if (cat?.uploadSections && !b.answer && !officialAnswerHtml && !fixedAnswerUrl && !cat?.privateLicensedUpload)
     throw new HttpError(400, 'ATTACH_ANSWER_REQUIRED', '同年度・同区分の公式正答PDFも添付してください。');
   let batchRights = null;
   if (cat?.privateLicensedUpload) {
