@@ -57,13 +57,13 @@ test('103資格に共通の取込入口を用意し、未検証の年度を登�
 });
 
 test('学習中の登録状況APIは宅建・測量士補・行政書士・看護師に存在し、区分を返す',async()=>{
-  for(const name of ['宅建','測量士補','土地家屋調査士','行政書士','看護師','通関士']){
+  for(const name of ['宅建','測量士補','土地家屋調査士','行政書士','看護師','通関士','基本情報','応用情報']){
     const {req}=setup();
     const sid=await open(req,name);
     const res=await req('GET','/v1/sessions/'+sid+'/official-library');
     assert.equal(res.status,200,name+': '+JSON.stringify(res.body));
     assert.equal(res.body.status,'officialLibrary');
-    assert.equal(res.body.sourceAttachmentSupported,true);
+    assert.equal(res.body.sourceAttachmentSupported,true,name+': sourceAttachmentSupported');
     assert.ok(Array.isArray(res.body.readyYearDetails));
     assert.ok(Array.isArray(res.body.uploadSections),name);
     if(name==='行政書士'){
@@ -73,6 +73,7 @@ test('学習中の登録状況APIは宅建・測量士補・行政書士・看�
     if(name==='土地家屋調査士')
       assert.deepEqual(res.body.uploadSections,['午前の部','午後の部']);
     if(name==='通関士')assert.deepEqual(res.body.validatedUploadYears,[2025]);
+    if(name==='基本情報'||name==='応用情報')assert.ok(res.body.uploadSections.length>0,name);
   }
 });
 
