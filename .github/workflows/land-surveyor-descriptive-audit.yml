@@ -76,3 +76,39 @@ jobs:
                         'tables',len(tables),'figures',len(diagrams),'blocks',len(layout),
                         'textlen',len(result['text']),flush=True)
           PY
+      - name: 2015〜2021年の保存版・記述式全21問もSHA照合し原本ページ表示を検証
+        shell: bash
+        env:
+          PYTHONPATH: 新システム開発/parser
+        run: |
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from qlp_parser.adapters.land_surveyor import PIN_BY_YEAR
+          from qlp_parser.descriptive import extract_descriptive
+
+          manifest = json.loads(Path('新システム開発/engine/data/land-surveyor-archive-source-manifest.json').read_text(encoding='utf-8'))
+          rows = {row['year']:row for row in manifest['years']}
+          for year in range(2015,2022):
+            for section,numbers in [('午前の部',[11]),('午後の部',[21,22])]:
+              row=rows[year]['questionSources'][section]
+              request=Request(row['url'],headers={'User-Agent':'Mozilla/5.0'})
+              with urlopen(request,timeout=90) as response:
+                assert response.geturl().startswith('https://izuki.net/wp-content/uploads/')
+                data=response.read(31*1024*1024)
+              assert data.startswith(b'%PDF-') and len(data)<30*1024*1024
+              sha=hashlib.sha256(data).hexdigest()
+              assert sha==row['sha256']==PIN_BY_YEAR[year][section]
+              for number in numbers:
+                result=extract_descriptive(pdf_bytes=data,year=year,section=section,
+                                           number=number,expected_sha=sha)
+                assert result['status']=='ready' and result['gradingMode']=='none'
+                assert result['solutionAvailable'] is False
+                assert result['pageNumbers'] and len(result['pages'])==len(result['pageNumbers'])
+                assert result['textComplete'] and result['text'] and result['layout']
+                assert all(b['kind'] in ('text','table','figure') for b in result['layout'])
+                assert all(b['file'] in result['diagrams'] for b in result['layout'] if b['kind']=='figure')
+                print('ARCHIVED_DESCRIPTIVE_VERIFIED',year,section,number,
+                      'pages',result['pageNumbers'],flush=True)
+          PY

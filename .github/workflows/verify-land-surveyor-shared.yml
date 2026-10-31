@@ -21,6 +21,20 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
       - uses: google-github-actions/setup-gcloud@v2
+      - name: 新版の公開を待ってから共有問題庫を照合する
+        run: |
+          QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          for attempt in {1..24}; do
+            current="$(curl --fail --silent --show-error --max-time 20 "$QLP_BASE_URL/v1/release" || true)"
+            if RELEASE_JSON="$current" node -e 'try { if (JSON.parse(process.env.RELEASE_JSON).build === "2026-10-31-v149-land-surveyor-archive") process.exit(0); } catch {} process.exit(1)' ; then
+              echo 'Verified v149 engine is now public'
+              exit 0
+            fi
+            echo "Waiting for v149 engine deployment ($attempt/24)"
+            sleep 30
+          done
+          echo 'v149 engine did not become public within 12 minutes' >&2
+          exit 1
       - name: 検証済み14区分のみ共通問題庫の状態を照合（既存の他年度を保持）
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
