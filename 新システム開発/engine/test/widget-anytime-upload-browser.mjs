@@ -65,7 +65,15 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
         document.body.appendChild(iframe);
       },{html:widgetHtml(),first,spec});
       const ui=page.frameLocator('iframe');
-      await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor({timeout:15000});
+      try { await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor({timeout:8000}); }
+      catch(e){
+        console.error('ANYTIME_INITIAL',browserName,spec.qualificationName,
+          'APP=',(await ui.locator('#app').innerText().catch(()=>'<no app>')).slice(0,1200),
+          'ERRORS=',errors,
+          'CALLS=',JSON.stringify(await page.evaluate(()=>window.calls)).slice(0,1100),
+          'FRAME=',(await ui.locator('body').innerHTML().catch(()=>'<no body>')).slice(0,700));
+        throw e;
+      }
       await ui.locator('input[name="ans"][value="2"]').check();
       await ui.getByRole('button',{name:'過去問の追加・登録状況'}).first().click();
       await ui.getByRole('heading',{name:'過去問の追加・登録状況'}).waitFor();
