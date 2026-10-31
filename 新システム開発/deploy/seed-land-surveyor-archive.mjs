@@ -32,13 +32,16 @@ let retries=0, last='';
 while(Date.now()<deadline) {
   const res=await api('/v1/jobs/'+encodeURIComponent(jobId));
   const sources=res?.job?.sources||[];
-  if(sources.length!==expected.size)
-    throw Error('ARCHIVE_SEED_SOURCE_COUNT_'+sources.length);
-  const state=sources.map(s=>{
-    const count=expected.get(s.year+':'+s.section);
-    if(!count)throw Error('ARCHIVE_SEED_UNEXPECTED_SECTION_'+s.year+':'+s.section);
-    return {...s,expected:count};
-  });
+  // GET /v1/jobs/... merges the current import job with *already shared*
+  // 2022-2025 official sections. Those are legitimate existing records, not
+  // eight duplicate archival sources. Validate only the eight requested keys;
+  // never delete, replace, or reimport other shared years to satisfy a count.
+  const selected=sources.filter(s=>expected.has(s.year+':'+s.section));
+  const unique=new Set(selected.map(s=>s.year+':'+s.section));
+  if(selected.length!==expected.size || unique.size!==expected.size)
+    throw Error('ARCHIVE_SEED_TARGETS_MISSING_OR_DUPLICATE_'+JSON.stringify({
+      found:selected.map(x=>x.year+':'+x.section), totalSources:sources.length}));
+  const state=selected.map(s=>({ ...s, expected:expected.get(s.year+':'+s.section) }));
   const done=state.filter(s=>s.status==='done'&&s.packetCount===s.expected&&s.excludedCount===0);
   const pending=state.filter(s=>s.status==='pending'||s.status==='running');
   const failed=state.filter(s=>s.status==='failed'||(s.status==='done'&&(s.packetCount!==s.expected||s.excludedCount!==0)));
