@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v153.html';
+export const WIDGET_URI = 'ui://qlp/question-v154.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.153';
+export const WIDGET_VERSION = '2026-10-31.154';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -2645,6 +2645,14 @@ a{color:inherit}
     };
     return planDraft;
   }
+  // 「その他の希望」は原則メモとして記録する。実際に対応できる開始方法だけを
+  // 明示的に解釈し、別資格や採点・未実装機能を勝手に切り替えない。
+  function wantsDescriptiveFirst(overview, note){
+    if (!overview || overview.name !== '土地家屋調査士') return false;
+    var wish = String(note || '').normalize('NFKC').replace(/\\s+/g, '');
+    return /(?:記述式|記述)(?:問題|試験)?から(?:始め|開始|スタート)/.test(wish) ||
+      /(?:最初|初め)は?(?:記述式|記述)/.test(wish);
+  }
   function planRevised(reason){
     planPanel([reason || '変更後の学習計画を再表示しました。開始する前にもう一度確認してください。']);
   }
@@ -2676,6 +2684,7 @@ a{color:inherit}
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
     var ov = onboardOv || {}, d = draftPlan();
+    var descriptiveFirst = wantsDescriptiveFirst(ov, d.otherNote);
     var order = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
     var dr = (ov.diagResult || []).length ?
       '<div class="stem"><b>初期診断の結果（暫定評価）</b></div><ul class="ov-l">' +
@@ -2693,8 +2702,9 @@ a{color:inherit}
       (d.methodDistribution ? '（解説・確認・実践 ' + d.methodDistribution.join('：') + '%）' : '') + '</div>' +
       '<div class="stem"><b>復習：</b>' + esc(d.reviewLabel || '標準（1→3→7→14→30日）') + '</div>' +
       (d.otherNote ? '<div class="stem"><b>その他の希望：</b>' + esc(d.otherNote) + '</div>' : '') +
+      (descriptiveFirst ? '<div class="stage-arrived" role="status">✓「記述式から始める」を計画案に反映しました。下の開始ボタンを押すと学習を開始し、記述式の年度・問題選択に進みます。自動採点はしません。</div>' : '') +
       '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
-      '<div class="choices"><button id="startStudy"><b>1</b><span>この学習計画で始める</span></button>' +
+      '<div class="choices"><button id="startStudy"><b>1</b><span>' + (descriptiveFirst ? '学習を開始して記述式を選ぶ' : 'この学習計画で始める') + '</span></button>' +
       '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
       '<button id="diag"' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? ' disabled' : '') + '><b>3</b><span>' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? '初期診断（利用可能な過去問なし）' : '初期診断で苦手分野を調べる') + '</span></button>' +
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
@@ -2845,9 +2855,9 @@ a{color:inherit}
     document.getElementById('rBack').onclick=planEditReview;
   }
   function planEditOther(){
-    app.innerHTML = '<h2>その他の希望</h2><div class="notice">その他の学習希望を記録できます。採点規則の変更や、チャットを閉じている間の自動通知など、未対応の機能は設定できません。</div>' +
+    app.innerHTML = '<h2>その他の希望</h2><div class="notice">その他の学習希望を記録できます。「記述式から始める」は土地家屋調査士の開始方法として反映します。ここでの確認後、次の画面で学習開始の承認が必要です。その他、未対応の機能は自動で実行されません。</div>' +
       '<textarea id="otherText" maxlength="300" rows="3" style="width:100%;box-sizing:border-box"></textarea>' +
-      '<div class="choices"><button id="otherOk"><b>1</b><span>希望を確認する</span></button><button id="otherBack"><b>2</b><span>戻る</span></button></div>';
+      '<div class="choices"><button id="otherOk"><b>1</b><span>希望を計画案に反映（次に開始確認）</span></button><button id="otherBack"><b>2</b><span>戻る</span></button></div>';
     document.getElementById('otherText').value=draftPlan().otherNote || '';
     document.getElementById('otherBack').onclick=planEditMenu;
     document.getElementById('otherOk').onclick=function(){
@@ -2967,6 +2977,14 @@ a{color:inherit}
       if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
       if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
+      if (wantsDescriptiveFirst(onboardOv, draft.otherNote)) {
+        studyLid = r.learnerId || learner;
+        currentStudyId = r.studyId || currentStudyId;
+        studyField = '午後の部（土地・建物の記述）';
+        saveIds();
+        showDescriptiveMenu(2025);
+        return;
+      }
       itemStart(r, learner);
     } catch (e) {
       app.insertAdjacentHTML('beforeend', '<div class="notice">学習を始められませんでした。もう一度押してください。</div>');

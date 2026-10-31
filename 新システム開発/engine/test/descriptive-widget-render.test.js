@@ -17,6 +17,21 @@ const { esc, explanationHtml } = new Function('descriptiveBlockHtml',
       : ''
   );
 
+test('学習計画の「記述式から始める」は土地家屋調査士だけで開始時に反映する',()=>{
+  const start=script.indexOf('  function wantsDescriptiveFirst(overview, note){');
+  const end=script.indexOf('  function planRevised(reason){', start);
+  assert.ok(start>=0 && end>start);
+  const detect=new Function(script.slice(start,end)+'\nreturn wantsDescriptiveFirst;')();
+  assert.equal(detect({name:'土地家屋調査士'},'記述式から始める'),true);
+  assert.equal(detect({name:'土地家屋調査士'},'　記述式　から　始めたい'),true);
+  assert.equal(detect({name:'土地家屋調査士'},'最初は記述式を学習したい'),true);
+  assert.equal(detect({name:'測量士補'},'記述式から始める'),false);
+  assert.equal(detect({name:'土地家屋調査士'},'記述式の採点をしてください'),false);
+  const planStart=script.slice(script.indexOf('  async function startStudyNow('),script.indexOf('  // 学習開始（U09）'));
+  assert.ok(planStart.indexOf("callTool('startStudy'") < planStart.indexOf('showDescriptiveMenu(2025)'),
+    '学習開始の明示承認後にだけ記述式へ遷移する');
+});
+
 test('解説Markdownを安全にHTML化し、関数電卓の式を失わない',()=>{
   const markdown = [
     '## 面積の求め方',

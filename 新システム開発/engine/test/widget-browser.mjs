@@ -733,6 +733,40 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(()=>window.followups.length),followupsBeforeNative,
       '内蔵確認問題の開始ではChatGPTへメッセージを送らない');
 
+    // 「その他の希望」は開始承認後に記述式の年度・問題選択へ反映される。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan', planReady:true, learnerId, sessionId,
+      overview:{name:'土地家屋調査士',title:'土地家屋調査士'},
+      plan:{fields:['午後の部（土地の記述）','午後の部（建物の記述）']},
+    }));
+    await ui.getByRole('button',{name:/この学習計画で始める/}).waitFor();
+    await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+    await ui.getByRole('button',{name:'4 その他'}).click();
+    await ui.locator('#otherText').fill('記述式から始める');
+    const startCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
+    const descCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='openDescriptiveQuestion').length);
+    await ui.getByRole('button',{name:/希望を計画案に反映/}).click();
+    await ui.getByText(/「記述式から始める」を計画案に反映しました/).waitFor();
+    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
+      '希望の保存だけでは学習を開始しない');
+    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).click();
+    await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');
+    assert.equal(await ui.locator('#descriptiveYear option').count(),19);
+    assert.equal(await ui.getByRole('button',{name:/午後の部・問21/}).count(),1);
+    assert.equal(await ui.getByRole('button',{name:/午後の部・問22/}).count(),1);
+    assert.equal(await ui.getByRole('button',{name:/午前の部・問11/}).count(),1);
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish+1,
+      '明示承認の際にだけ学習を開始する');
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='openDescriptiveQuestion').length),descCallsBeforeWish,
+      '記述式の年度・問題選択は勝手に問題を開かない');
+    const gradingCallsBeforeDesc = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='submitAnswer').length);
+    await ui.getByRole('button',{name:/午後の部・問22/}).click();
+    await ui.getByRole('heading',{name:/2025年度.*問22/}).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='submitAnswer').length),gradingCallsBeforeDesc,
+      '記述式を表示しても採点APIを呼ばない');
+
     // 回帰：iOSでMCPブリッジが先にreadyとなり、最初のtoolOutputが後着する順序。
     // 旧実装は !bridgeReady により set_globals 通知を無視し、初回問題が空白になった。
     await page.evaluate(({ html, question }) => {
