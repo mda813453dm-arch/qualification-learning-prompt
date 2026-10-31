@@ -785,9 +785,9 @@ a{color:inherit}
         failed.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'')+'（'+esc(x.reason)+'）';}).join('、') + '</div>' : '';
       app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
         '<div id="sourceManageStatus" class="notice" role="status"><b>追加する時期は自由です。</b> おすすめは①初回の実践前、②同分野3問の区切り、③登録済み問題が残り少なくなったときです。回答途中でも登録状況を確認できますが、登録作業は回答後がスムーズです。今の問題と学習記録は保持します。</div>' +
-        '<div class="import-state ready"><strong>現在利用できる過去問</strong>' + entries + '</div>' +
+        '<div class="import-state ready"><strong>現在利用できる過去問</strong><div id="sourceManageReadyList">' + entries + '</div></div>' +
         pending + errors + '<div class="notice">' + caution + '</div>' +
-        (!customs && lib.sourceAttachmentSupported ?
+        (lib.sourceAttachmentSupported ?
           '<div class="import-state pending"><strong>別の年度のPDFを追加</strong>' +
           '<p>実践開始前・同分野3問の区切り・登録済み問題が少なくなった時がおすすめです。追加は任意です。</p>' +
           '<p>' + answerHint + '（1回の選択で最大10ファイル）</p>' +
@@ -795,7 +795,7 @@ a{color:inherit}
           (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFの保存・解析に必要な権利者の許諾を得ています</label>' : '') +
           '<div class="row"><label class="file-picker"><span>iPhone内のPDFを追加する</span><input id="sourceManageUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを追加する"></label></div>' +
           '<p id="sourceManageUploadStatus" role="status">PDF選択後、自動で受付と公式正答照合を開始します。</p></div>'
-          : (!customs ? '<div class="notice">この資格のPDF取込方式は未実装です。現在の履歴を保持し、取込可能な年度だけ表示します。</div>' : '')) +
+          : '<div class="notice">この資格のPDF取込方式は未実装です。現在の履歴を保持し、取込可能な年度だけ表示します。</div>') +
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
@@ -888,6 +888,10 @@ a{color:inherit}
               var finished=Array.isArray(updated.readyYearDetails)?updated.readyYearDetails:[];
               var running=Array.isArray(updated.importingYearDetails)?updated.importingYearDetails:[];
               var failed=Array.isArray(updated.failedYearDetails)?updated.failedYearDetails:[];
+              var readyList=document.getElementById('sourceManageReadyList');
+              if(readyList) readyList.innerHTML=finished.length
+                ? finished.map(function(x){return '<p>'+esc(x.year)+'年度・'+esc(x.section||'本試験')+'：利用可能 '+esc(x.questions)+'問</p>';}).join('')
+                : '<p>出題可能として検証済みの年度は、まだありません。</p>';
               status.textContent='出題可能：'+finished.map(function(x){return x.year+'年度 '+(x.section||'')+' '+x.questions+'問';}).join('、')+
                 '／解析中：'+running.length+'件／失敗：'+failed.length+'件。'+
                 (running.length?' 終了後に自動で登録状況を更新します。':' 完了した問題は次の出題から使用できます。');
