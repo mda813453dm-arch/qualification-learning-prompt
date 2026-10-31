@@ -2093,11 +2093,12 @@ async function route(request, env, url, now) {
         sharedLibrary: null,
         notice: '利用者本人が許諾確認した年度のPDFだけを個人用に保存します。共有登録はありません。' });
     }
-    // 学習中でも履歴を動かさず、登録状況を読める。未対応の年度を登録済みと誤表示しない。
-    const job = await readJob(env.STORE, sessionJobId(state));
-    // ユーザー別ジョブだけでは宅建等の共有済み過去問が「未登録」に見える。
-    // 共有キャッシュの検証済み年度と本人の追加年度を read-only で結合する。
-    const sources = combineWithSharedJob(job, shared, state.qualificationId, now)?.sources ?? [];
+    // 学習中の照会は出題・採点・学習履歴を変更しない。
+    // ただし登録したPDFの解析は継続させる。readJobだけでは未処理の複数年度が
+    // pendingのまま停止するため、進捗照会でも取込ワーカーを起動する。
+    // progress() は検証済みの共有年度も結合して返す。
+    const job = await progress(env, sessionJobId(state), now);
+    const sources = job?.sources ?? [];
     return json(200, { status: 'officialLibrary', sessionId: id,
       qualificationName: cat?.name ?? state.qualificationId,
       qualificationId: state.qualificationId,
