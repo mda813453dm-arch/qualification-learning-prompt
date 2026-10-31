@@ -1,0 +1,26 @@
+name: 土地家屋調査士 2007〜2009 掲載サイトのHTML解答照合
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/parser/qlp_parser/adapters/land_surveyor_web_answers.py'
+      - '新システム開発/parser/test_land_surveyor_web_answers.py'
+      - '新システム開発/parser/scripts/validate-land-surveyor-web-answers.py'
+      - '.github/workflows/land-surveyor-archive-html-answers.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Local adversarial table verification
+        working-directory: 新システム開発/parser
+        run: python -m unittest test_land_surveyor_web_answers -v
+      - name: Check site answer tables against year/section audit
+        run: python 新システム開発/parser/scripts/validate-land-surveyor-web-answers.py
