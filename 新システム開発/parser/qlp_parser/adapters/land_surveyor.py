@@ -12,6 +12,7 @@ import re
 import unicodedata
 
 from ..core import ParseError, RawQuestion
+from . import land_surveyor_web_answers as archived_web
 
 QUALIFICATION_ID = "land_surveyor"
 SECTION = "午後の部"
@@ -277,6 +278,45 @@ SECTIONS = {"午前の部": (10, "l1"), "午後の部": (20, "l3")}
 HEADING = re.compile(r"^第\s*([0-9]+)\s*問(?:\s|$)")
 OPTION = re.compile(r"(?<!\w)([1-5])\s+\S")
 ANSWER_HEADING = re.compile(r"^第\s*([0-9]+)\s*問$")
+
+
+# Early archived exams: the web page has 2007-2009 answer tables but no
+# official answer PDFs. These question hashes are from the archived booklet
+# bytes; they DO NOT by themselves prove full scan-page segmentation.
+ARCHIVED_WEB_QUESTION_PINS = {
+    2007: {"午前の部": ("4ba49614f2362f5f88257dd9645868c49f8a05f318ba9fb5658163586ef2d15e", 14),
+           "午後の部": ("d9b03f5e3ab434e3e323baa87d1174262389e48eec08ad0a38ecd9c8c8ac29aa", 30)},
+    2008: {"午前の部": ("7d3d4652f14c978cf7d5912426fe6dfcca9364897d2b78dc2022903fbcaf3d6d", 14),
+           "午後の部": ("f0fa3edd7462534b15317fe81a7e6b9bda80113398fe6ca26ad03b0b19a750d5", 30)},
+    2009: {"午前の部": ("f6156476c7e694736687f030751bb75bb593a0a661d78419c552f1887aeecd97", 16),
+           "午後の部": ("15d47f6f49d4acb93f58ac0307645f34bc9481e664b69ea8b6b82e5bd0b14535", 32)},
+}
+
+
+def check_source_hashes_html(year, section, question_sha, answer_sha, answer_url):
+    source = ARCHIVED_WEB_QUESTION_PINS.get(year, {}).get(section)
+    if not source:
+        raise ParseError("YEAR_OR_SECTION_WEB_ANSWER_NOT_VALIDATED", year=year, section=section)
+    if question_sha != source[0]:
+        raise ParseError("SOURCE_PDF_PIN_MISMATCH", year=year, section=section)
+    if answer_url != archived_web.ANSWER_INDEX or not re.fullmatch(r"[a-f0-9]{64}", answer_sha):
+        raise ParseError("WEB_ANSWER_SOURCE_INVALID")
+
+
+def check_question_html(doc, year, section):
+    source = ARCHIVED_WEB_QUESTION_PINS.get(year, {}).get(section)
+    if not source or doc.page_count != source[1]:
+        raise ParseError("WEB_QUESTION_PAGES_UNVERIFIED", year=year, section=section)
+    # Scanned documents have no text layer: never infer an MC question merely
+    # from a page index. parse_questions rejects an unverified segmentation.
+
+
+def check_year_html(page, year):
+    return archived_web.check_year_html(page, year)
+
+
+def parse_answers_html(page, year, section):
+    return archived_web.parse_answers_html(page, year, section)
 
 
 def _norm(value):
