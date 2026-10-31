@@ -15,6 +15,16 @@ async function api(method,path,body) {
 const session=await api('POST','/v1/sessions',{qualificationId:'land_surveyor',sources:[]});
 assert.ok(session.sessionId && session.learnerId);
 const prefix='/v1/sessions/'+encodeURIComponent(session.sessionId);
+const library=await api('GET',prefix+'/official-library');
+assert.equal(library.sharedLibrary.descriptive.totalQuestions,57,'19年度分の記述式57問を一覧へ返す');
+assert.equal(library.sharedLibrary.descriptive.years.length,19);
+assert.equal(library.sharedLibrary.descriptive.byYear[2015]['午前の部'],1);
+assert.equal(library.sharedLibrary.descriptive.byYear[2018]['午後の部'],2);
+assert.equal(library.sharedLibrary.descriptive.byYear[2007]['午後の部'],2);
+assert.equal(library.sharedLibrary.descriptive.gradingMode,'none');
+assert.ok(!library.sharedLibrary.stored.some(x=>x.year===2007),
+  '旧年度の記述式を択一式の採点可能な共有保存済みとして偽装しない');
+console.log('PASS descriptive listing 2007-2025: 19 years / 57 non-graded questions');
 const study=await api('POST','/v1/study/start',{qualificationName:'土地家屋調査士',learnerId:session.learnerId});
 assert.ok(study.studyId);
 // 合成の非公開スモークテスト文。実際の過去問の参考解答として学習者へ提供しない。

@@ -3,9 +3,9 @@
  * 問題文・図・選択肢は、エンジンが返した内容（structuredContent）だけでこの画面が描く。AIは中身を書き換えたり、別の図を足したりできない。
  * 回答の採点・次の問題もこの画面からエンジンを呼ぶ。解説だけをAIに頼む（「解説して」とチャットに送る）。
  */
-export const WIDGET_URI = 'ui://qlp/question-v151.html';
+export const WIDGET_URI = 'ui://qlp/question-v152.html';
 export const WIDGET_MIME = 'text/html;profile=mcp-app';
-export const WIDGET_VERSION = '2026-10-31.151';
+export const WIDGET_VERSION = '2026-10-31.152';
 
 /** 追加料金ゼロで待機を避けるための監修対象・固定基礎教材。AI生成や公式過去問と混同しない。 */
 export const PREPARED_LESSONS = {
@@ -296,7 +296,8 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-actions{border-top:2px solid var(--line);padding-top:14px;margin-top:12px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
-.choices button{display:flex;gap:12px;font-size:17px;text-align:left;font:inherit;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer}
+.choices button{display:flex;gap:10px;text-align:left;font:inherit;font-size:15px;line-height:1.5;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;min-width:0;width:100%;white-space:normal}
+.choices button span{min-width:0;flex:1;white-space:normal;word-break:normal;overflow-wrap:anywhere;text-wrap:wrap}
 .choices .opt{display:flex;gap:8px;align-items:center;background:var(--btn);border:1px solid var(--line);border-radius:8px;padding:5px 10px;cursor:pointer}.choices .opt input{margin:0}.choices .opt.correct{border-color:var(--ok);border-width:2px}.choices .opt.picked{outline:2px solid var(--sub)}
 .choices button b,.choices .opt b{min-width:1.7em;height:1.7em;line-height:1.7em;text-align:center;border-radius:50%;background:var(--acc);color:var(--bg);font-size:14px;flex:none}.choices .opt{font-size:15px;line-height:1.5;padding:8px 10px}.choices{gap:8px;margin:14px 0 8px}
 .choices button:disabled{opacity:.6;cursor:default}
@@ -326,7 +327,7 @@ button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:bala
 .import-action-status[role=alert]{border-color:var(--ng);background:#fdecec}
 @media(prefers-reduced-motion:reduce){.import-action-status.busy::before{animation:none}}
 @media(prefers-color-scheme:dark){.import-state.ready{background:#16301f}.import-action-status[role=alert]{background:#3a1d1d}}
-@media(max-width:420px){.row button{font-size:clamp(13px,3.7vw,16px);padding:10px 11px;max-width:100%;overflow-wrap:normal;word-break:keep-all}}
+@media(max-width:420px){.row button{font-size:14px;padding:10px 11px;max-width:100%;overflow-wrap:anywhere;word-break:normal;white-space:normal}.choices button{font-size:14px;gap:8px;padding:10px 9px;line-height:1.45}}
 @media(max-width:420px){.row .file-picker{font-size:clamp(13px,3.7vw,16px);padding:10px 11px}}
 .row button#next,.row button#decide,.row button#startStudy{background:var(--acc);color:var(--bg);border-color:var(--acc)}
 .notice{font-size:14px;color:var(--sub);white-space:pre-wrap;line-height:1.6;margin:6px 0}
@@ -350,6 +351,7 @@ button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:bala
 .ov-v{display:block;font-size:16px;line-height:1.65;overflow-wrap:anywhere}.ov-r>*{min-width:0}
 .md p{margin:8px 0;line-height:1.75;overflow-wrap:anywhere}.md h3{font-size:17px;margin:14px 0 6px}.md ul,.md ol{margin:6px 0;padding-left:1.4em;line-height:1.75}.md-t{overflow-x:auto;margin:8px 0}.md table{border-collapse:collapse;width:100%;font-size:15px}.md th,.md td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}.md a{color:var(--acc);text-decoration:underline;overflow-wrap:anywhere}.md code{background:#f1f3f4;padding:0 4px;border-radius:4px}
 .ov-l{margin:4px 0 0;padding-left:1.6em;font-size:16px}.ov-l li{margin:3px 0}
+.library-years{font-size:14px;line-height:1.55}.library-years li{margin:10px 0}.library-year-sections{display:grid;gap:2px;margin:3px 0 0}.library-year-sections div{overflow-wrap:anywhere}.library-year-sections .written{color:var(--acc);font-weight:700}
 .ov-n{font-size:14px;color:var(--sub);padding-top:8px}
 .ov-a{display:inline-block;margin-top:8px;font-size:15px;color:var(--acc);font-weight:700}
 a{color:inherit}
@@ -2567,6 +2569,36 @@ a{color:inherit}
       ? (readyYears[0] === readyYears[readyYears.length-1] ? readyYears[0] + '年度' :
         readyYears[0] + '〜' + readyYears[readyYears.length-1] + '年度')
       : '';
+    // 記述式は採点しない独立の出題経路。択一の共有保存件数とは混同しない。
+    if (lib.descriptive && lib.descriptive.gradingMode === 'none') {
+      var written = lib.descriptive;
+      var writtenYears = Array.isArray(written.years) ? written.years : [];
+      var listedYears = Array.from(new Set(years.concat(writtenYears))).sort(function(a,b){return b-a;});
+      var writtenRange = writtenYears.length ? Math.min.apply(null,writtenYears) + '〜' + Math.max.apply(null,writtenYears) + '年度' : '未確認';
+      var writtenRows = listedYears.map(function(year){
+        var current = written.byYear?.[year] || {};
+        var sectionsForYear = Array.from(new Set((Array.isArray(sections[year]) ? sections[year] : []).concat(Object.keys(current))));
+        if (!sectionsForYear.length) sectionsForYear = Array.from(new Set(saved.concat(missing).filter(function(v){return v.year===year;}).map(function(v){return v.section;})));
+        return '<li><b>' + esc(year) + '年度</b><div class="library-year-sections">' +
+          sectionsForYear.map(function(section){
+            var hit = saved.find(function(v){return v.year===year && v.section===section;});
+            var label = section==='午前の部' ? '午前' : section==='午後の部' ? '午後' : section;
+            var count = Number(current[section] || 0);
+            return '<div><b>' + esc(label) + '</b>：' +
+              (hit ? '択一 ' + esc(hit.questions) + '問' : years.includes(year) ? '択一 未確認' : '') +
+              (hit && count ? ' ／ ' : '') +
+              (count ? '<span class="written">記述 ' + esc(count) + '問（採点なし）</span>' : '') +
+              '</div>';
+          }).join('') + '</div></li>';
+      }).join('');
+      return '<div class="notice"><b>公式過去問の利用状況</b>' +
+        '<div>択一式（採点あり）：' + (range ? '<b>' + esc(range) + '</b>' : '利用可能年度を確認できません') + '</div>' +
+        '<div><b>記述式（採点なし）：' + esc(writtenRange) + '・計' + esc(written.totalQuestions) + '問</b></div>' +
+        '<ul class="ov-l library-years">' + writtenRows + '</ul>' +
+        (written.scannedYears?.length ? '<div>2007〜2014年度の記述式は保存版PDFの原本画像で出題します。択一式の採点対象ではありません。</div>' : '') +
+        '<div>学習開始後、問題画面の「記述式を開く」から年度と問11・21・22を選べます。</div>' +
+        '</div>';
+    }
     var row = years.map(function(year){
       var yearSections = Array.isArray(sections[year]) ? sections[year] : [];
       // 旧APIとの互換：データに存在する区分のみを表示。午前・午後を勝手に補完しない。

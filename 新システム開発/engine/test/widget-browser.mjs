@@ -170,6 +170,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
+    // iPhone表示で長い免除条件の選択肢が右端からはみ出さない。
+    const longExemption=await ui.locator('.choices button').first().evaluate(b=>{
+      const label=b.querySelector('span');
+      label.textContent='適用確定（対象と受験申込等の条件を満たし、午前の部の免除が適用される場合）';
+      const css=getComputedStyle(label);
+      return {fontSize:parseFloat(css.fontSize),textWidth:label.scrollWidth,
+        availableTextWidth:label.clientWidth,buttonWidth:b.scrollWidth,availableButtonWidth:b.clientWidth,
+        height:label.getBoundingClientRect().height};
+    });
+    assert.ok(longExemption.fontSize<=14,'iPhoneの長い選択肢は14px以下');
+    assert.ok(longExemption.textWidth<=longExemption.availableTextWidth+1 &&
+      longExemption.buttonWidth<=longExemption.availableButtonWidth+1,
+      '長い免除選択肢をボタン幅に収める');
+    assert.ok(longExemption.height>24,'長い選択肢は省略せず複数行に折り返す');
     // ラベルなしの注意行は狭い2列グリッドに入れず、横幅をすべて使う。
     await ui.locator('#app').evaluate(el=>{
       const note=document.createElement('div'); note.className='ov-r full';

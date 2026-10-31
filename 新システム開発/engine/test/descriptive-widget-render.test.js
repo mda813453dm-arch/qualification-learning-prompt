@@ -71,6 +71,31 @@ test('解説待機は採点せず本文・番号選択肢をチャットへ逃�
   assert.doesNotMatch(source,/fallbackDescriptiveActions/,'旧ボタン単独経路を廃止');
 });
 
+test('過去問一覧では2015〜2021年度と旧年度の記述式を択一と分けて表示する',()=>{
+  const start=script.indexOf('  function libraryHtml(lib){');
+  const end=script.indexOf('  function ovHtml(){',start);
+  assert.ok(start>=0 && end>start);
+  const show=new Function('esc',script.slice(start,end)+'\nreturn libraryHtml;')(esc);
+  const lib={ supportedYears:[2025,2015], stored:[
+    {year:2015,section:'午前の部',questions:10},
+    {year:2015,section:'午後の部',questions:20},
+  ],missing:[], sectionsByYear:{2015:['午前の部','午後の部'],2025:['午前の部','午後の部']},
+  descriptive:{years:[2025,2015,2007],byYear:{
+    2025:{'午前の部':1,'午後の部':2},
+    2015:{'午前の部':1,'午後の部':2},
+    2007:{'午前の部':1,'午後の部':2},
+  },totalQuestions:9,gradingMode:'none',scannedYears:[2007]}};
+  const rendered=show(lib);
+  assert.match(rendered,/2015年度/);
+  assert.match(rendered,/択一 10問/);
+  assert.match(rendered,/記述 1問（採点なし）/);
+  assert.match(rendered,/記述 2問（採点なし）/);
+  assert.match(rendered,/2007年度/,'旧年度の記述式専用分も一覧に現れる');
+  assert.match(rendered,/2025年度/);
+  assert.match(rendered,/学習開始後/,'記述式の出題導線を説明');
+  assert.doesNotMatch(rendered,/2007年度[\s\S]*択一 10問/,'旧年度に択一の採点件数を作らない');
+});
+
 test('iPhone用の記述式年度選択に2007〜2025年が揃い、旧年度も採点なしで開ける',()=>{
   const start=script.indexOf('  function showDescriptiveMenu(year){');
   const end=script.indexOf('  var descriptiveScreen = null;',start);

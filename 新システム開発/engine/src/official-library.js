@@ -7,6 +7,7 @@
  * 全問一致した結果のみ。何も保存されていない年度は絶対に使用可能としない。
  */
 import { readResult } from './cache.js';
+import { descriptiveSpec, DESCRIPTIVE_FILES, SCANNED_DESCRIPTIVE_FILES } from './descriptive.js';
 
 const SHARED_OWNER = '_shared';
 
@@ -56,8 +57,32 @@ async function ipaReadyRows(store, cat) {
 
 export function publicLibraryView(library) {
   if (!library) return null;
-  const { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear } = library;
-  return { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear };
+  const { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear, descriptive } = library;
+  return { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear,
+    ...(descriptive ? { descriptive } : {}) };
+}
+
+// 記述式は原本のSHA固定と出題アダプタの対応状況だけを列挙する。
+// 択一式の共有保存済み件数や正答付き採点可能件数には足さない。
+function descriptiveAvailability(cat) {
+  if (cat?.qualificationId !== 'land_surveyor') return null;
+  const years = [...new Set([...Object.keys(DESCRIPTIVE_FILES),
+    ...Object.keys(SCANNED_DESCRIPTIVE_FILES)].map(Number))].sort((a,b) => b-a);
+  const byYear = {};
+  for (const year of years) {
+    const morning = descriptiveSpec(year, '午前の部', 11, cat.officialPdfPins);
+    const land = descriptiveSpec(year, '午後の部', 21, cat.officialPdfPins);
+    const building = descriptiveSpec(year, '午後の部', 22, cat.officialPdfPins);
+    const sections = { ...(morning ? { '午前の部': 1 } : {}),
+      ...(land || building ? { '午後の部': Number(!!land) + Number(!!building) } : {}) };
+    if (Object.keys(sections).length) byYear[year] = sections;
+  }
+  const availableYears = years.filter((year) => byYear[year]);
+  return { years: availableYears, byYear,
+    totalQuestions: availableYears.reduce((sum, year) =>
+      sum + Object.values(byYear[year]).reduce((a,b) => a+b, 0), 0),
+    gradingMode: 'none', scannedYears: availableYears.filter((year) => !!SCANNED_DESCRIPTIVE_FILES[year]),
+  };
 }
 
 /** 共有キャッシュの存在を実際に確認してから表示する。個人の学習記録は含めない。 */
@@ -117,10 +142,12 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
   // 資格ごとの試験区分をデータから返す。宅建に午前・午後という架空の区分を表示しない。
   const sectionsByYear = Object.fromEntries(supportedYears.map((year) => [year,
     cat?.ipaOfficialArchive ? cat.sources.filter((s) => s.year === year).map((s) => s.section) : sectionsForYear(spec, year)]));
+  const descriptive = descriptiveAvailability(cat);
   return {
     supportedYears, sectionsByYear,
     stored, missing, completeYears,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
+    ...(descriptive ? { descriptive } : {}),
     sources,
   };
 }

@@ -148,8 +148,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v151\.html/);
-  assert.equal(WIDGET_VERSION, '2026-10-31.151');
+  assert.match(WIDGET_URI, /question-v152\.html/);
+  assert.equal(WIDGET_VERSION, '2026-10-31.152');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1389,6 +1389,14 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
   const empty = await officialLibrary(env.STORE, cat, '0.8.2', T0);
   assert.deepEqual(empty.stored, []);
   assert.equal(empty.missing.length, 22, '対応年度と共通保存済みは異なる');
+  assert.equal(empty.descriptive.totalQuestions,57,'記述式19年度×午前1問・午後2問は択一の保存状況と独立に出題対応');
+  assert.equal(empty.descriptive.years.length,19);
+  assert.equal(empty.descriptive.byYear[2015]['午前の部'],1);
+  assert.equal(empty.descriptive.byYear[2020]['午後の部'],2);
+  assert.equal(empty.descriptive.byYear[2007]['午前の部'],1);
+  assert.equal(empty.descriptive.byYear[2008]['午後の部'],2);
+  assert.equal(empty.descriptive.gradingMode,'none','記述式の採点を有効にしない');
+  assert.equal(empty.totalQuestions,0,'記述式57問を択一式の採点可能件数に混ぜない');
 
   // SHAが異なる保存内容は共有の年度一覧に出さない。
   await writeResult(env.STORE, { ...p, questionSha256: 'a'.repeat(64) },
@@ -1408,6 +1416,7 @@ test('共有公式過去問：同じ検証済み原本を別の学習者が再�
     assert.ok(started?._meta?.qlp, 'startSession must return app UI metadata: ' + JSON.stringify(started));
     const { sessionId, learnerId, overview } = started._meta.qlp;
     assert.equal(overview.sharedLibrary.totalQuestions, 20);
+    assert.equal(overview.sharedLibrary.descriptive.totalQuestions,57,'導入画面へ記述式の対応状況を渡す');
     assert.deepEqual(overview.sharedLibrary.missing.filter(x=>x.year===2025),
       [{ year: 2025, section: '午前の部' }]);
     const published = await app('getOfficialLibrary', { sessionId });
