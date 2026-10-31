@@ -793,7 +793,7 @@ a{color:inherit}
           '<p>' + answerHint + '（1回の選択で最大10ファイル）</p>' +
           optionalFields +
           (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFの保存・解析に必要な権利者の許諾を得ています</label>' : '') +
-          '<div class="row"><label class="file-picker"><span>iPhone内のPDFを追加する</span><input id="sourceManageUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="iPhone内のPDFを追加する"></label></div>' +
+          '<div class="row"><label class="file-picker"><span>ローカルのPDFを追加する</span><input id="sourceManageUpload" type="file" accept=".pdf,application/pdf" multiple aria-label="ローカルのPDFを追加する"></label></div>' +
           '<p id="sourceManageUploadStatus" role="status">PDF選択後、自動で受付と公式正答照合を開始します。</p></div>'
           : '<div class="notice">この資格のPDF取込方式は未実装です。現在の履歴を保持し、取込可能な年度だけ表示します。</div>') +
         (customs && !years.has(2025) ?
