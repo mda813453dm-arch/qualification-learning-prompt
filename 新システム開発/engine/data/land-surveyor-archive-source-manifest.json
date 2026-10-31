@@ -12,28 +12,48 @@
       "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
       "questionSources": {
         "午前の部": {
-          "url": "https://izuki.net/wp-content/uploads/c_h19am_q.pdf",
-          "sha256": "d9b03f5e3ab434e3e323baa87d1174262389e48eec08ad0a38ecd9c8c8ac29aa",
-          "pages": 30,
-          "hasTextLayer": false
-        },
-        "午後の部": {
           "url": "https://izuki.net/wp-content/uploads/c_h19pm_q.pdf",
           "sha256": "4ba49614f2362f5f88257dd9645868c49f8a05f318ba9fb5658163586ef2d15e",
           "pages": 14,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h19am_q.pdf",
+          "sha256": "d9b03f5e3ab434e3e323baa87d1174262389e48eec08ad0a38ecd9c8c8ac29aa",
+          "pages": 30,
           "hasTextLayer": false
         }
       },
       "answerSource": {
         "format": "web",
         "url": "https://izuki.net/chousashi-past-tests/",
-        "verificationStatus": "pending-individual-row-check"
+        "verificationStatus": "pending-individual-row-check-no-auto-grading",
+        "sectionMapping": {
+          "午前の部": "web-table-午後の部-10-multiple-choice",
+          "午後の部": "web-table-午前の部-20-multiple-choice"
+        }
       },
       "sectionQuestionCounts": {
-        "午前の部": 20,
-        "午後の部": 10
+        "午前の部": 10,
+        "午後の部": 20
       },
-      "needsVisualReview": true
+      "needsVisualReview": true,
+      "sectionTotalQuestionCounts": {
+        "午前の部": 11,
+        "午後の部": 22
+      },
+      "sectionComposition": {
+        "午前の部": {
+          "multipleChoice": 10,
+          "written": 1
+        },
+        "午後の部": {
+          "multipleChoice": 20,
+          "written": 2
+        }
+      },
+      "classificationBasis": "total-question-count-11-morning-22-afternoon-overrides-archived-filename",
+      "legacySourceLabelsReversed": true
     },
     {
       "year": 2008,
@@ -42,28 +62,48 @@
       "verificationStatus": "source-pdf-hashes-observed-not-verified-for-scoring",
       "questionSources": {
         "午前の部": {
-          "url": "https://izuki.net/wp-content/uploads/c_h20am_q.pdf",
-          "sha256": "f0fa3edd7462534b15317fe81a7e6b9bda80113398fe6ca26ad03b0b19a750d5",
-          "pages": 30,
-          "hasTextLayer": false
-        },
-        "午後の部": {
           "url": "https://izuki.net/wp-content/uploads/c_h20pm_q.pdf",
           "sha256": "7d3d4652f14c978cf7d5912426fe6dfcca9364897d2b78dc2022903fbcaf3d6d",
           "pages": 14,
+          "hasTextLayer": false
+        },
+        "午後の部": {
+          "url": "https://izuki.net/wp-content/uploads/c_h20am_q.pdf",
+          "sha256": "f0fa3edd7462534b15317fe81a7e6b9bda80113398fe6ca26ad03b0b19a750d5",
+          "pages": 30,
           "hasTextLayer": false
         }
       },
       "answerSource": {
         "format": "web",
         "url": "https://izuki.net/chousashi-past-tests/",
-        "verificationStatus": "pending-individual-row-check"
+        "verificationStatus": "pending-individual-row-check-no-auto-grading",
+        "sectionMapping": {
+          "午前の部": "web-table-午後の部-10-multiple-choice",
+          "午後の部": "web-table-午前の部-20-multiple-choice"
+        }
       },
       "sectionQuestionCounts": {
-        "午前の部": 20,
-        "午後の部": 10
+        "午前の部": 10,
+        "午後の部": 20
       },
-      "needsVisualReview": true
+      "needsVisualReview": true,
+      "sectionTotalQuestionCounts": {
+        "午前の部": 11,
+        "午後の部": 22
+      },
+      "sectionComposition": {
+        "午前の部": {
+          "multipleChoice": 10,
+          "written": 1
+        },
+        "午後の部": {
+          "multipleChoice": 20,
+          "written": 2
+        }
+      },
+      "classificationBasis": "total-question-count-11-morning-22-afternoon-overrides-archived-filename",
+      "legacySourceLabelsReversed": true
     },
     {
       "year": 2009,
@@ -479,5 +519,24 @@
       },
       "needsVisualReview": false
     }
-  ]
+  ],
+  "legacySectionRule": {
+    "appliesTo": [
+      2007,
+      2008
+    ],
+    "classification": "total published question count (including written questions)",
+    "morning": {
+      "totalQuestions": 11,
+      "multipleChoice": 10,
+      "written": 1
+    },
+    "afternoon": {
+      "totalQuestions": 22,
+      "multipleChoice": 20,
+      "written": 2
+    },
+    "overrideFilename": true,
+    "confidence": "question-count-based; scan verification pending"
+  }
 }
