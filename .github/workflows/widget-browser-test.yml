@@ -14,6 +14,7 @@ on:
       - '.github/workflows/widget-browser-test.yml'
 permissions:
   contents: read
+  statuses: write
 jobs:
   widget:
     runs-on: ubuntu-latest
@@ -46,6 +47,21 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-instant-gyosei-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-upload-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-anytime-upload-browser.mjs
+      - name: 画面テストの合否をコミット状態に記録
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          QLP_JOB_STATUS: ${{ job.status }}
+          GH_REPO: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+          GH_RUN_ID: ${{ github.run_id }}
+        run: |
+          if [ "$QLP_JOB_STATUS" = "success" ]; then state=success; else state=failure; fi
+          payload=$(printf '{"state":"%s","context":"qlp-widget-mobile","description":"375px Chromium/WebKit widget regression","target_url":"https://github.com/%s/actions/runs/%s"}' "$state" "$GH_REPO" "$GH_RUN_ID")
+          curl --fail-with-body --retry 2 --silent --show-error -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/json" -d "$payload" \
+            "https://api.github.com/repos/$GH_REPO/statuses/$GH_SHA"
   parser:
     runs-on: ubuntu-latest
     timeout-minutes: 15
