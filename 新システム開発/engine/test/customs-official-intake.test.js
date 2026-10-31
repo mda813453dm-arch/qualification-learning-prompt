@@ -102,7 +102,11 @@ test('通関士の学習中に追加登録状況を確認しても現在問を�
   assert.match(html,/過去問の追加・登録状況/);
   assert.match(html,/function openSourceManager/);
   assert.match(html,/render\(savedView\)/,'利用中の問題へ戻るときに次問を取得しない');
-  assert.match(html,/他の年度は|それ以外の年度は/,'未検証年度を出題可能と誤案内しない');
+  assert.match(html,/2024年度以前のPDFは/,'対応していない年度を明示する');
+  assert.match(html,/まだ登録可能とは案内しません/,'未検証年度を出題可能と誤案内しない');
+  const resume = html.slice(html.indexOf('async function goBack()'), html.indexOf("document.getElementById('sourceManageBack').onclick = goBack"));
+  assert.match(resume,/getStudySnapshot/,'採点後は実際の保存状態を読む');
+  assert.doesNotMatch(resume,/nextQuestion/,'登録状況から戻る際に次問へ進めない');
 });
 
 test('通関士専用のテキスト表示更新は他資格のキャッシュを失効させない', async () => {
