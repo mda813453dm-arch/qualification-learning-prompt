@@ -86,3 +86,31 @@ test('学習画面からの直接PDF選択と通関士の公開URL取込ツー�
   assert.equal(tool.uiOnly,true);
   assert.equal(tool.api({sessionId:'s'})[1],'/v1/sessions/s/import-customs-2025');
 });
+
+test('通関士の学習中に追加登録状況を確認しても現在問を失わない画面導線', async () => {
+  const {req}=setup();
+  const opened=await req('POST','/v1/sessions',{qualificationId:'通関士'});
+  assert.equal(opened.status,201,JSON.stringify(opened.body));
+  const r=await req('GET','/v1/sessions/'+opened.body.sessionId+'/official-library');
+  assert.equal(r.status,200,JSON.stringify(r.body));
+  assert.equal(r.body.qualificationId,'q098');
+  assert.equal(r.body.qualificationName,'通関士');
+  assert.ok(Array.isArray(r.body.readyYearDetails));
+  assert.ok(Array.isArray(r.body.importingYearDetails));
+  assert.deepEqual(r.body.validatedUploadYears,[2025]);
+  const html=widgetHtml();
+  assert.match(html,/過去問の追加・登録状況/);
+  assert.match(html,/function openSourceManager/);
+  assert.match(html,/render\(savedView\)/,'利用中の問題へ戻るときに次問を取得しない');
+  assert.match(html,/他の年度は|それ以外の年度は/,'未検証年度を出題可能と誤案内しない');
+});
+
+test('通関士専用のテキスト表示更新は他資格のキャッシュを失効させない', async () => {
+  const {staleSources}=await import('../src/ingest.js');
+  const make=(adapter,version)=>({status:'done',adapter,keyParts:{parserVersion:version}});
+  const job={sources:[make('takken','0.8.2'),make('tsukanshi','0.8.2'),
+     make('surveyor','0.8.2'),make('tsukanshi','0.8.2-customs-text-v1')]};
+  const stale=staleSources(job,'0.8.2');
+  assert.equal(stale.length,1);
+  assert.equal(stale[0],job.sources[1]);
+});
