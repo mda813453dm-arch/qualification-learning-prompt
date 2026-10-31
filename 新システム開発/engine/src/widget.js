@@ -699,7 +699,7 @@ a{color:inherit}
   }
   async function openSourceManager(){
     if (!state.sessionId || sourceManagerOpen) return;
-    var savedView = lastLearningView;
+    var savedView = lastLearningView && lastLearningView.sessionId === state.sessionId ? lastLearningView : null;
     var checked = app.querySelector('input[name=ans]:checked');
     var chosen = checked ? checked.value : null;
     var guessed = document.getElementById('guess');
@@ -707,17 +707,46 @@ a{color:inherit}
     var sameSession = state.sessionId;
     sourceManagerOpen = true;
     app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
-      '<div class="notice" role="status">登録状況を確認しています。解答履歴と現在の問題は変更しません。</div>' +
+      '<div id="sourceManageStatus" class="notice" role="status">登録状況を確認しています。解答履歴と現在の問題は変更しません。</div>' +
       '<div class="row"><button type="button" id="sourceManageBack">学習中の問題に戻る</button></div>';
-    function goBack(){
-      sourceManagerOpen = false;
-      if (savedView) render(savedView);
-      else render({status:'toolError',error:'CURRENT_STUDY_VIEW_UNAVAILABLE',sessionId:sameSession});
-      if (chosen) {
-        var radio = Array.from(app.querySelectorAll('input[name=ans]')).find(function(x){return x.value === chosen;});
-        if (radio) {radio.checked = true; var row = document.getElementById('decrow'); if(row) row.style.display='flex';}
+    async function goBack(){
+      if (!sourceManagerOpen) return;
+      var statusNode = document.getElementById('sourceManageStatus');
+      if (statusNode) statusNode.textContent = '保存済みの学習画面を復元しています。';
+      // 誤答・採点後に古い未回答の問題を再表示しない。read-only で最新の状態を読む。
+      try {
+        var snapshot = await callTool('getStudySnapshot', {sessionId:sameSession});
+        if (!sourceManagerOpen || state.sessionId !== sameSession) return;
+        if (!snapshot || snapshot.error || (!snapshot.status && !snapshot.question && !snapshot.menu && !snapshot.onboarding))
+          throw new Error('STUDY_SNAPSHOT_UNAVAILABLE');
+        sourceManagerOpen = false;
+        render(snapshot);
+        if (chosen && snapshot.question && savedView?.question?.questionId === snapshot.question.questionId &&
+            snapshot.status === 'question') {
+          var radio = Array.from(app.querySelectorAll('input[name=ans]')).find(function(x){return x.value === chosen;});
+          if (radio) {
+            radio.checked = true;
+            var row = document.getElementById('decrow');
+            if (row) row.style.display = 'flex';
+          }
+          var newGuess = document.getElementById('guess');
+          if (newGuess) newGuess.checked = guessChecked;
+        }
+      } catch (e) {
+        if (!sourceManagerOpen) return;
+        // 読取エラー時は未回答だったことを確認できる場合のみ元の画面へ戻す。
+        // 採点済みの可能性があれば再採点ボタンを作らず、読取専用の復元を再試行させる。
+        if (!state.answered && savedView && savedView.question) {
+          sourceManagerOpen = false;
+          render(savedView);
+        } else {
+          var warning = document.getElementById('sourceManageStatus');
+          if (warning) {
+            warning.textContent = '最新の学習状態を確認できません。学習履歴は保持されています。同じボタンで復元を再試行してください。';
+            warning.setAttribute('role','alert');
+          }
+        }
       }
-      var newGuess=document.getElementById('guess'); if (newGuess) newGuess.checked=guessChecked;
     }
     document.getElementById('sourceManageBack').onclick = goBack;
     try{
@@ -741,7 +770,7 @@ a{color:inherit}
       var errors = failed.length ? '<div class="notice" role="alert">取込失敗：' +
         failed.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'')+'（'+esc(x.reason)+'）';}).join('、') + '</div>' : '';
       app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
-        '<div class="notice"><b>追加する時期は自由です。</b> 今すぐでも、学習を進めてからでも登録画面を確認できます。学習中の問題・解答履歴は保持します。</div>' +
+        '<div id="sourceManageStatus" class="notice" role="status"><b>追加する時期は自由です。</b> おすすめは①初回の実践前、②同分野3問の区切り、③登録済み問題が残り少なくなったときです。回答途中でも登録状況を確認できますが、登録作業は回答後がスムーズです。今の問題と学習記録は保持します。</div>' +
         '<div class="import-state ready"><strong>現在利用できる過去問</strong>' + entries + '</div>' +
         pending + errors + '<div class="notice">' + caution + '</div>' +
         (customs && !years.has(2025) ?
@@ -760,7 +789,7 @@ a{color:inherit}
       };
     } catch(err){
       if (!sourceManagerOpen) return;
-      app.innerHTML = '<h2>過去問の追加・登録状況</h2><div class="notice" role="alert">登録状況を取得できませんでした。学習はそのまま続行できます。</div>' +
+      app.innerHTML = '<h2>過去問の追加・登録状況</h2><div id="sourceManageStatus" class="notice" role="alert">登録状況を取得できませんでした。学習はそのまま続行できます。</div>' +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
       document.getElementById('sourceManageBack').onclick = goBack;
     }
