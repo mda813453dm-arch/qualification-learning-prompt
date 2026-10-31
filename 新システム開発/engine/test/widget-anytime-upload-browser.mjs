@@ -34,7 +34,8 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
           const m=event.data;if(!m||m.jsonrpc!=='2.0')return;
           const reply=v=>iframe.contentWindow.postMessage({jsonrpc:'2.0',id:m.id,result:v},'*');
           if(m.method==='ui/initialize')reply({protocolVersion:'2026-01-26',hostCapabilities:{}});
-          else if(m.method==='ui/notifications/initialized')window.deliver({_meta:{qlp:first}});
+          else if(m.method==='ui/notifications/initialized')
+            window.deliver({_meta:{qlp:first},structuredContent:{status:first.status}});
           else if(m.method==='ui/message'){window.followups.push(m.params);reply({});}
           else if(m.method==='tools/call'){
             window.calls.push({name:m.params.name,args:m.params.arguments});
@@ -54,8 +55,8 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
             else reply({structuredContent:{status:'recorded'}});
           }
         });
-        const inject='<script>window.openai={' +
-          'toolOutput:{},displayMode:"inline",' +
+        const inject='<script>window.__first='+JSON.stringify(first)+';window.openai={' +
+          'toolOutput:window.__first,displayMode:"inline",' +
           'uploadFile:async function(file){parent.uploads.push(file.name);return {fileId:"id_"+file.name};},'+
           'getFileDownloadUrl:async function(v){return {downloadUrl:"https://files.example/"+encodeURIComponent(v.fileId)+".pdf"};},'+
           'notifyIntrinsicHeight:function(){}' +
