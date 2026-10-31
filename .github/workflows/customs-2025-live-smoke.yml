@@ -12,6 +12,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 22
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 2025年度の公式PDF5件で文章・選択肢と図表を検証する
+        run: |
+          python -m pip install --disable-pip-version-check PyMuPDF==1.26.5
+          mkdir -p "$RUNNER_TEMP/customs_pdf"
+          python - <<'PY'
+          from pathlib import Path
+          from urllib.request import urlopen
+          import os
+          base="https://www.customs.go.jp/tsukanshi/59_shiken/"
+          for name in ["20251005tukanshi01.pdf","20251005tukanshi02.pdf",
+                       "20251005tukanshi03.pdf","20251005tukanshi04.pdf",
+                       "59shiken_seikai.pdf"]:
+              with urlopen(base+name,timeout=65) as response:
+                  data=response.read()
+              assert data.startswith(b"%PDF-"), name
+              (Path(os.environ["RUNNER_TEMP"])/"customs_pdf"/name).write_bytes(data)
+          PY
+          export CUSTOMS_SOURCE_DIR="$RUNNER_TEMP/customs_pdf"
+          export PYTHONPATH="$GITHUB_WORKSPACE/新システム開発/parser"
+          python -m unittest discover -s "新システム開発/parser/tests" -p "test_tsukanshi_text_real.py" -v
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
