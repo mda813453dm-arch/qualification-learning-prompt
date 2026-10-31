@@ -798,6 +798,10 @@ a{color:inherit}
           : '<div class="notice">この資格のPDF取込方式は未実装です。現在の履歴を保持し、取込可能な年度だけ表示します。</div>') +
         (customs && !years.has(2025) ?
           '<div class="row"><button type="button" id="sourceManageCustoms">2025年度公式PDFを取り込む</button></div>' : '') +
+        (lib.qualificationId === 'land_surveyor' ?
+          '<div class="import-state pending"><strong>取得・検証済みの旧年度過去問</strong><p>2015・2017・2018年度の午前・午後、および2021年度の午後を自動で取り込みます。未検証年度は出題しません。</p>' +
+          '<div class="row"><button type="button" id="sourceManageLandArchive">旧年度の検証済み過去問を取り込む</button></div>' +
+          '<p id="sourceManageLandArchiveStatus" role="status">問題・正答の照合が完了した区分だけ登録します。</p></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
       document.getElementById('sourceManageBack').onclick = goBack;
       var extraInput = document.getElementById('sourceManageUpload');
@@ -907,6 +911,57 @@ a{color:inherit}
           status.textContent='PDFを登録できませんでした（'+String(e.message||'通信エラー')+'）。学習記録は変更していません。';
           status.setAttribute('role','alert');
         } finally {input.disabled=false;input.value='';}
+      };
+      var landArchiveBtn = document.getElementById('sourceManageLandArchive');
+      if (landArchiveBtn) landArchiveBtn.onclick = async function(){
+        if (!sourceManagerOpen || state.sessionId !== sameSession) return;
+        var notice = document.getElementById('sourceManageLandArchiveStatus');
+        landArchiveBtn.disabled = true;
+        landArchiveBtn.textContent = '旧年度の過去問を登録中…';
+        if (notice) notice.textContent = '対象年度のPDFを取得し、問題・正答を検証しています。学習履歴はそのままです。';
+        try {
+          var result = await callTool('importLandSurveyorArchive',{sessionId:sameSession});
+          if (!result || result.error || result.status !== 'archivedImportQueued')
+            throw new Error('ARCHIVE_IMPORT_FAILED');
+          if (notice) notice.textContent = '取り込み受付：' + Number(result.requestedSections||0) +
+            '区分。検証できた問題から出題可能にします。';
+          var checks = 0;
+          async function refreshLandArchive(){
+            if (!sourceManagerOpen || state.sessionId !== sameSession || !notice || !notice.isConnected) return;
+            try {
+              var updated = await callTool('getOfficialLibrary',{sessionId:sameSession});
+              if (!updated || updated.error || updated.status !== 'officialLibrary') throw Error('LIBRARY_STATUS_FAILED');
+              var done = Array.isArray(updated.readyYearDetails) ? updated.readyYearDetails : [];
+              var processing = Array.isArray(updated.importingYearDetails) ? updated.importingYearDetails : [];
+              var failed = Array.isArray(updated.failedYearDetails) ? updated.failedYearDetails : [];
+              var list = document.getElementById('sourceManageReadyList');
+              if(list && list.isConnected){
+                list.innerHTML=done.length ? done.map(function(x){
+                  return '<p>'+esc(x.year)+'年度・'+esc(x.section||'本試験')+
+                    '：利用可能 '+esc(x.questions)+'問</p>';
+                }).join('') : '<p>出題可能として検証済みの年度は、まだありません。</p>';
+              }
+              notice.textContent = '登録済み：' + done.map(function(x){
+                return x.year+'年度 '+(x.section||'')+' '+x.questions+'問';
+              }).join('、') + '／解析中：' + processing.length + '区分／失敗：' + failed.length + '区分。' +
+                (processing.length ? ' 完了した区分から自動更新します。' :
+                ' 完了した問題は次の出題から利用できます。');
+              if (!processing.length) return;
+            } catch(e){
+              notice.textContent = '登録状況を再確認中です。既存の回答・復習記録は維持しています。';
+            }
+            if (++checks < 48 && sourceManagerOpen && notice && notice.isConnected)
+              setTimeout(refreshLandArchive,7000);
+          }
+          await refreshLandArchive();
+        } catch(e){
+          if (notice) {notice.setAttribute('role','alert');notice.textContent='旧年度の登録を開始できませんでした。現在の学習記録は変更していません。';}
+        } finally {
+          if (landArchiveBtn.isConnected) {
+            landArchiveBtn.disabled=false;
+            landArchiveBtn.textContent='旧年度の検証済み過去問を取り込む';
+          }
+        }
       };
       var importBtn = document.getElementById('sourceManageCustoms');
       if(importBtn) importBtn.onclick = async function(){
