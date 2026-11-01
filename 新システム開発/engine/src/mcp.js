@@ -6,6 +6,7 @@ import { explainHow } from './explain.js';
  */
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget.js';
+import { confirmationWidgetHtml } from './confirmation-widget-compat.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -750,7 +751,7 @@ function widgetResource(baseUrl, uri = WIDGET_URI) {
   return {
     uri,
     mimeType: WIDGET_MIME,
-    text: widgetHtml(),
+    text: confirmationWidgetHtml(widgetHtml()),
     _meta: {
       ui: { prefersBorder: true, ...(origin ? { domain: origin } : {}), csp },
       'openai/widgetPrefersBorder': true,
