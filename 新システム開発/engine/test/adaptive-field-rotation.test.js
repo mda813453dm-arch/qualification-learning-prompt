@@ -124,3 +124,21 @@ test('資格台帳の各資格で、分野登録数の違いを持つシミュ�
   assert.ok(count>=100,'登録されている全資格を走査');
   assert.ok(multi>=20,'複数分野資格を広く検証');
 });
+
+test('学習中に公式過去問を追加したら未回答の問題数を再計算し、分野50%の区切りを更新する',()=>{
+  const initial=[...pool('a',4),...pool('b',2)];
+  let state=newState({qualificationId:'synthetic',now:NOW,plan:{fieldWeights:{a:5,b:1}}});
+  for(let i=0;i<2;i++) state=step(state,initial).state;
+  assert.equal(state.set.target,2);
+  assert.equal(state.set.count,2);
+  assert.equal(pickNext(state,initial,{today:TODAY,now:NOW}).item.packet.fieldId,'b',
+    '追加前は2/4で次分野');
+  const expanded=[...pool('a',6),...pool('b',2)];
+  const p=pickNext(state,expanded,{today:TODAY,now:NOW});
+  assert.equal(p.item.packet.fieldId,'a','2/6では切り替えず同じ分野の3問目');
+  assert.equal(p.setTarget,3);
+  const revised=grade(pin(state,p.item,p.kind,NOW,{setTarget:p.setTarget}),
+    {questionId:p.item.packet.questionId,value:'1'},{today:TODAY,now:NOW}).state;
+  assert.equal(revised.set.target,3);
+  assert.equal(pickNext(revised,expanded,{today:TODAY,now:NOW}).item.packet.fieldId,'b');
+});
