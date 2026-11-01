@@ -476,7 +476,7 @@ function questionParts(ctx, item, kind, repeated = false) {
   const r = R(rec);
   if (!repeated) rec.qn += 1;
   rec.engine = pin(rec.engine, item, kind, now,
-    { setTarget: fieldPracticeTarget(ctx.items ?? [], item.packet.fieldId) });
+    { setTarget: fieldPracticeTarget(ctx.loaded?.items ?? [], item.packet.fieldId) });
   const f = item.packet.fieldId;
   if (kind === 'new' && !repeated && rec.engine.set?.count === 1) r.fieldSets[f] = (r.fieldSets[f] ?? 0) + 1;
   const q = present(item, kind, `${base}/v1/figure`);
