@@ -3472,6 +3472,7 @@ a{color:inherit}
         });
       };
       bindEnd();
+      scrollUp();
       return;
     }
     // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
@@ -3495,6 +3496,8 @@ a{color:inherit}
         '<div class="row"><button id="dkExp">AIの詳しい解説を追加</button><button id="next">次の問題へ</button></div>' +
         sourceManagerBar();
       nextBtn(); bindSourceManager();
+      // The result replaces the long question; always focus the newest marker.
+      scrollUp();
       document.getElementById('dkExp').onclick = async function(){
         this.disabled = true;
         try { await loadExplanation(q.questionId, true); }
@@ -3701,7 +3704,7 @@ a{color:inherit}
     // 同じ画面内で再表示した場合は既存の目印を使い、二重に挿入しない。
     var latest = app.querySelector('.latest');
     if (!latest) {
-      app.insertAdjacentHTML('afterbegin', '<div class="latest" tabindex="-1">▼ この学習枠の先頭です</div>');
+      app.insertAdjacentHTML('afterbegin', '<div class="latest" tabindex="-1">▼ ここが最新の表示です</div>');
       latest = app.querySelector('.latest');
     } else if (app.firstElementChild !== latest) {
       app.insertBefore(latest, app.firstChild);

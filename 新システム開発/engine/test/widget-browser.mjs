@@ -96,7 +96,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               window.recoverSkipped = true;
               reply({ structuredContent: { error: 'LOST_ANSWER_RESPONSE' } });
             } else reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
-              ? { skipped: true } : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+              ? { skipped: true } : m.params.arguments.value === '分からない'
+              ? { dontKnow: true, questionId:m.params.arguments.questionId, correctAnswer:3, acceptedAnswers:[3], answerPdfUrl:'https://qlp.test/answers.pdf' }
+              : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           }
           else if (op === 'openDescriptiveQuestion') {
             const args = m.params.arguments;
@@ -356,6 +358,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '拡大', exact: true }).click();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
     await ui.getByRole('button', { name: '閉じる' }).click();
+    // A long iPhone question must return to the result's top after "分からない".
+    const beforeDontKnow = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
+    await ui.getByRole('button', { name: '分からない', exact: true }).click();
+    await ui.locator('#dkExp').waitFor();
+    const latestDontKnow = ui.locator('#app > .latest');
+    await latestDontKnow.waitFor();
+    assert.equal(await latestDontKnow.innerText(), '▼ ここが最新の表示です');
+    assert.equal(await latestDontKnow.evaluate(el => el.ownerDocument.activeElement === el), true,
+      '「分からない」後も最新の採点結果の先頭をフォーカス');
+    assert.equal(await ui.locator('.latest').count(), 1);
+    assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答は3です/);
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length),beforeDontKnow+1);
+    await page.evaluate(r => window.deliver(r), result(question));
+    await ui.getByRole('button', { name: '分からない', exact: true }).waitFor();
     const beforeSkip = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'submitAnswer').length);
     const beforeSkipNext = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length);
     const beforeSkipSnapshot = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length);
