@@ -5,7 +5,7 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v169.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v170.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -627,6 +627,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v165.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v166.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v167.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v168.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v169.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
 const ANDROID_UI_FALLBACK = 'Android版ChatGPTアプリで学習画面が見えない場合は、画面のボタンを押すよう求め続けず、ブラウザで https://chatgpt.com/ にサインインして同じ会話を開くよう案内する。これは別セッションの新規作成ではなく、既存の会話の表示切替である。Androidアプリ内で画面を正常表示できたと断言しない。';
