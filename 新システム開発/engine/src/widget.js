@@ -359,12 +359,17 @@ button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:bala
 a{color:inherit}
 .latest{font-size:13px;font-weight:700;color:var(--acc);background:var(--accbg);border-radius:8px;padding:4px 10px;margin-bottom:8px}
 .latest:focus{outline:2px solid var(--acc);outline-offset:2px}
+.qlp-busy{position:sticky;top:0;z-index:60;display:flex;gap:10px;align-items:center;padding:11px 13px;margin:0 0 8px;border:1px solid var(--acc);border-radius:10px;background:var(--accbg);color:var(--acc);font-size:14px;font-weight:700;line-height:1.5}
+.qlp-busy[hidden]{display:none}
+.qlp-busy-spinner{flex:0 0 18px;width:18px;height:18px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:qlp-busy-spin .8s linear infinite}
+@keyframes qlp-busy-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.qlp-busy-spinner{animation:none}}
 .study-progress{padding:8px 10px 10px;margin:0 0 12px;border:1px solid var(--line);border-radius:10px;background:var(--accbg)}
 .study-progress .progress-head{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:700;color:var(--acc)}
 .study-progress .progress-track{height:9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:6px 0}
 .study-progress .progress-fill{height:100%;background:var(--acc)}
 .study-progress .progress-detail{font-size:13px;color:var(--sub);line-height:1.5}
-</style></head><body><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
+</style></head><body><div id="qlpBusy" class="qlp-busy" role="status" aria-live="polite" hidden><span class="qlp-busy-spinner" aria-hidden="true"></span><span id="qlpBusyMessage">処理しています…</span></div><div id="app" aria-live="polite"><h2>資格学習</h2><p>学習画面を読み込んでいます…</p><div class="notice">表示されない場合は「画面が表示されない」とチャットに入力してください。</div></div>
 <script>
 (function(){
   var app = document.getElementById('app');
@@ -512,9 +517,42 @@ a{color:inherit}
     overlay.querySelector('[data-plus]').onclick = function(){ scale = Math.min(6, scale + 1); resize(); };
     overlay.querySelector('[data-minus]').onclick = function(){ scale = Math.max(1, scale - 1); resize(); };
   }; }); }
+  // 利用者の操作に対して、通信が長引いても無反応に見えないようにする。
+  // 自動ポーリングや診断には表示しない。％は実測できないので表示しない。
+  var busySequence = 0, busyTimers = [];
+  function clearBusyTimers(){ busyTimers.forEach(clearTimeout); busyTimers = []; }
+  function beginBusy(message){
+    var bar = document.getElementById('qlpBusy');
+    if (!bar || bar === app) return 0;
+    clearBusyTimers();
+    var token = ++busySequence, messageNode = document.getElementById('qlpBusyMessage');
+    bar.hidden = false;
+    if (messageNode) messageNode.textContent = message || '画面を切り替えています…';
+    busyTimers.push(setTimeout(function(){
+      if (token === busySequence && messageNode) messageNode.textContent = '通信・処理を継続しています…';
+    }, 3000));
+    busyTimers.push(setTimeout(function(){
+      if (token === busySequence && messageNode) messageNode.textContent = '時間がかかっています。学習状態は保持されています…';
+    }, 10000));
+    fit();
+    return token;
+  }
+  function endBusy(token){
+    if (!token || token !== busySequence) return;
+    clearBusyTimers();
+    var bar = document.getElementById('qlpBusy');
+    if (bar && bar !== app) bar.hidden = true;
+    fit();
+  }
   async function callTool(name, args){
-    var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
-    return full(r);
+    var foreground = Date.now() - lastLocalInteractionAt < 1500 && name !== 'reportUiEvent';
+    var labels = { submitAnswer:'解答を確認しています…', nextQuestion:'次の問題を準備しています…',
+      getStudySnapshot:'最新の学習画面を確認しています…', getOfficialLibrary:'登録状況を確認しています…' };
+    var busyToken = foreground ? beginBusy(labels[name] || '画面を切り替えています…') : 0;
+    try {
+      var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
+      return full(r);
+    } finally { endBusy(busyToken); }
   }
   async function ask(text, actionLabel){
     try {
@@ -721,6 +759,41 @@ a{color:inherit}
     // エンジンの読取結果につく一時的な表示属性は学習状態の変更ではない。
     delete copy.at; delete copy.restored;
     try { return JSON.stringify(copy); } catch(e) { return ''; }
+  }
+  // サーバーが正式な状態の正本。短期キャッシュは画面表示だけに使い、回答・採点を自動実行しない。
+  // sessionStorageはタブ単位、sessionIdで分離し、30分経過または別の資格では使わない。
+  var recentViewPrefix = 'qlp_recent_study_v1:', recentPreview = false;
+  function recentViewKey(sid){ return recentViewPrefix + encodeURIComponent(String(sid)); }
+  function saveRecentView(data){
+    if (!data || !data.sessionId || data.error || recentPreview || locked ||
+        !['question','restoredGrade','confirmation_question','confirmation_result','menu','needPlan','finished'].includes(data.status)) return;
+    try {
+      var json = JSON.stringify({sessionId:String(data.sessionId),savedAt:Date.now(),view:data});
+      if (json.length < 300000) sessionStorage.setItem(recentViewKey(data.sessionId), json);
+    } catch(e) { /* iPhoneの保存領域制限時はサーバー復元に戻す */ }
+  }
+  function readRecentView(sid){
+    if (!sid) return null;
+    try {
+      var x = JSON.parse(sessionStorage.getItem(recentViewKey(sid)) || 'null');
+      if (x && x.sessionId === String(sid) && Date.now() - x.savedAt < 30*60*1000 &&
+          x.savedAt <= Date.now() && x.view && x.view.sessionId === String(sid)) return x.view;
+    } catch(e){}
+    return null;
+  }
+  function showRecentPreview(sid){
+    if (hasView || !sid || locked) return false;
+    var cached = readRecentView(sid);
+    if (!cached || !claimFirstFrame(sid, false)) return false;
+    recentPreview = true;
+    render({ ...cached, restored:true });
+    // 確定前のキャッシュから解答・次問・終了操作をさせない。
+    if (app.querySelectorAll) app.querySelectorAll('button,input,select,textarea').forEach(function(control){ control.disabled = true; });
+    app.insertAdjacentHTML('afterbegin', '<div class="notice" id="recentPreviewNotice" role="status">前回の画面を表示しています。最新の学習状態を照合中です…</div>');
+    scrollUp();
+    // 内容が同じでも、再取得後は入力・操作ボタンを必ず作り直す。
+    lastRenderedSignature = null;
+    return true;
   }
   // 追加年度の登録時期を明示し、学習中の状態を変えずに閲覧する。
   // 登録状況の確認はread-only。戻るときもnextQuestionを呼ばず、同じ問題を再表示する。
@@ -1119,6 +1192,9 @@ a{color:inherit}
     if (!state.sessionId && input().sessionId) state.sessionId = input().sessionId;
     saveIds();
     hasView = true;
+    if (!data.restored || !recentPreview) saveRecentView(data);
+    // 通信が完了した画面を描画する際は待機表示を解除する。
+    if (!data.restored || !recentPreview) endBusy(busySequence);
     if (!diagged && (bridgeReady || (window.openai && window.openai.callTool))) { diagged = true; diag(data.onboarding ? 'render_onboarding' : data.question ? 'render_question' : 'render_other'); }
     if (data.error || data.status === 'toolError') {
       // 未対応の資格や導入画面の取得失敗を「問題を準備中」と偽装しない。
@@ -3647,21 +3723,31 @@ a{color:inherit}
       app.style.opacity = '';
       if (manual) myAt = Math.max(Date.now(), myAt + 1);
       state.question = null; state.next = null; state.answered = false;
+      if (recentPreview) lastRenderedSignature = null;
+      recentPreview = false;
       render(restored);
+      saveRecentView(restored);
     } catch (e) {
       if (button) { button.disabled = false; button.textContent = '学習画面を復元'; }
       var err = document.getElementById('restoreError');
       if (!err) { app.insertAdjacentHTML('beforeend', '<div id="restoreError" class="notice" role="alert"></div>'); err = document.getElementById('restoreError'); }
-      err.textContent = '学習状態を復元できませんでした。同じボタンで再試行できます。';
+      err.textContent = '学習状態を復元できませんでした。表示中の前回画面は操作できません。再試行してください。';
+      if (!document.getElementById('recoverSnapshot')) {
+        app.insertAdjacentHTML('beforeend', '<div class="row"><button type="button" id="recoverSnapshot">最新状態の取得を再試行</button></div>');
+        var retrySnapshot = document.getElementById('recoverSnapshot');
+        if (retrySnapshot) retrySnapshot.onclick = function(){ restoreFromServer(true); };
+      }
     } finally { clearTimeout(buttonGuard); restoring = false; }
   }
   if (typeof document.addEventListener === 'function') document.addEventListener('visibilitychange', function(){
     if (document.hidden) { wasHidden = true; return; }
     if (!wasHidden) return;
     wasHidden = false;
+    if (!locked && hasView) scrollUp();
     if (!locked && state.sessionId) restoreFromServer(false);
   });
   if (typeof window.addEventListener === 'function') window.addEventListener('pageshow', function(e){
+    if (e.persisted && !locked && hasView) scrollUp();
     if (e.persisted && !locked && state.sessionId) restoreFromServer(false);
   });
   window.addEventListener('message', function(e){
@@ -3727,6 +3813,8 @@ a{color:inherit}
       // 内部縦スクロールは持たない。画面先頭にある最新表示へ移動を依頼する。
       // ChatGPT本体の位置はホスト管理のため確実な制御はできない。
       try { window.scrollTo(0, 0); } catch(e) {}
+      try { if (document.scrollingElement) document.scrollingElement.scrollTop = 0; } catch(e) {}
+      try { app.scrollTop = 0; } catch(e) {}
       try { latest.scrollIntoView({behavior:'instant',block:'start',inline:'nearest'}); } catch(e) {}
     }
     align();
@@ -3734,7 +3822,8 @@ a{color:inherit}
       if (turn !== latestFocusTurn) return;
       fit(); align();
     });
-    setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 160);
+    setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 120);
+    setTimeout(function(){ if (turn === latestFocusTurn) { fit(); align(); } }, 320);
   }
   // 自動で全画面に移動しない。ChatGPT本体の縦スクロールを維持し、二重スクロールを避ける。
   var fullAsked = false;
@@ -3757,7 +3846,9 @@ a{color:inherit}
   // iPhoneではクリックで全画面に切り替えると二重のスクロール画面が生まれるため自動呼出ししない。
   // 内容の自然高さでホストに枠サイズを伝える。旧枠に置き換わった場合も縮む。
   function fit(){
-    var h = Math.ceil(app.offsetHeight) + 2;
+    var busy = document.getElementById('qlpBusy');
+    var busyHeight = busy && busy !== app && !busy.hidden ? (busy.offsetHeight || 0) : 0;
+    var h = Math.ceil(app.offsetHeight + busyHeight) + 2;
     try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
     if (bridgeReady) notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
   }
@@ -3808,6 +3899,11 @@ a{color:inherit}
     showRecovery('学習画面との接続が切れています。復元ボタンで同じ学習状態を読み直してください。');
   }
   if (window.openai) render(openaiOutput());
+  // iPhoneでiframeが作り直されても、サーバー応答を待たずに前回画面を先に描く。
+  // 新資格の開始時は古いsessionIdのキャッシュを流用しない。
+  var warmInput = input() || {}, warmOutput = openaiOutput() || {};
+  var warmSession = warmInput.sessionId || warmOutput.sessionId;
+  if (!hasView && warmSession && showRecentPreview(warmSession)) restoreFromServer(false);
   setTimeout(function(){
     if (!hasView && !restoring) {
       // toolOutputがホストから届かなかった場合にも復元を試みる。
