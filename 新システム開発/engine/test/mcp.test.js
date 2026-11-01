@@ -176,8 +176,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v162\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-01.162');
+  assert.match(WIDGET_URI, /question-v163\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-01.163');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 

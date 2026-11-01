@@ -433,3 +433,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-10-31 v161: fix IT Passport 2026 public question displaying the complete scanned OCR source crop inline even when the stem and four choices are already rendered as readable text. Show a prominent official IPA PDF link to the question page before the answer choices; keep the redundant crop collapsed behind an optional original-image disclosure for text-complete questions. Preserve inline original figures for diagram/table/program questions and any question whose text or choices require official-image verification. Apply at display time to existing imported packets, including initial diagnosis; do not remove original evidence or alter grading. Test iPhone-width view and full engine suite, deploy only ai-learning-system; protect main/master_prompt.txt and keep paid APIs unused.
 
 2026-11-01T04:55:00Z deploy v162 verified question-format routing and legacy MC compatibility
+
+2026-11-01T05:45:00Z deploy v163 in-card descriptive per-question answers and latest grading scroll

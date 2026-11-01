@@ -1606,7 +1606,7 @@ async function route(request, env, url, now) {
 
   // 公開版の確認用。認証情報や学習データは含まない。
   if (method === 'GET' && url.pathname === '/v1/release')
-    return json(200, { build: '2026-11-01-v162-question-format-routing', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
+    return json(200, { build: '2026-11-01-v163-answer-summary-scroll', uploadBatchFiles: MAX_LICENSED_BATCH_FILES, yearSelectionRequired: false });
 
   // 本人が許諾して添付したPDFは、本人向けに発行した10分間の署名付きURLでのみ表示する。
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'private-source' && parts.length === 4) {
