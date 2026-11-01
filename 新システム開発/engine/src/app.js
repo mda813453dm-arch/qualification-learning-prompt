@@ -16,7 +16,7 @@ import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { PlanError, SET_SIZE, updatePlan, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { PlanError, SET_SIZE, fieldPracticeTarget, updatePlan, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
@@ -276,22 +276,28 @@ function studyFieldOrder(state, cat) {
     ordered.every((f) => fields.includes(f)) && new Set(ordered).size === fields.length ? ordered : fields;
 }
 
-/** 全分野の初回演習（各分野3問）の位置。合格率・習得率とは混同しない。 */
-function learningProgress(state) {
+/** 登録・正答検証済みの公式問題の全体進捗。セットの目標は分野の50%で別に表示する。 */
+function learningProgress(state, items = []) {
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
   const fields = studyFieldOrder(state, cat);
-  if (!fields.length || !fields.includes(state.current?.fieldId)) return null;
-  const counts = Object.fromEntries(fields.map((f) => [f, 0]));
-  for (const h of Object.values(state.history ?? {})) {
-    if (h.kind === 'new' && h.fieldId in counts && h.result && h.result !== 'skipped') counts[h.fieldId] += 1;
-  }
-  const total = fields.length * SET_SIZE;
-  const done = Object.values(counts).reduce((sum, n) => sum + Math.min(n, SET_SIZE), 0);
+  const fieldId = state.current?.fieldId;
+  if (!fields.length || !fields.includes(fieldId)) return null;
+  const pref = state.plan?.questionPreference ?? 'any';
+  const eligible = items.filter((x) => x?.packet?.fieldId && fields.includes(x.packet.fieldId) &&
+    x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive' &&
+    (pref === 'any' || x.packet.questionType === pref) &&
+    !(state.withheld ?? []).some((w) => w.questionId === x.packet.questionId) &&
+    !(state.skipped ?? []).some((w) => w.questionId === x.packet.questionId));
+  const allIds = new Set(eligible.map((x) => x.packet.questionId));
+  const total = allIds.size;
+  const done = [...allIds].filter((qid) => !!state.history?.[qid]).length;
   const practice = state.current.kind === 'new';
-  const position = Math.min(total, done + (practice && counts[state.current.fieldId] < SET_SIZE ? 1 : 0));
-  return { total, done, position, percent: Math.round(position * 100 / total),
-    fieldIndex: fields.indexOf(state.current.fieldId) + 1, fieldTotal: fields.length,
-    fieldQuestion: practice ? Math.min(state.set?.count ?? 1, SET_SIZE) : null,
+  const target = practice ? (state.current.setTarget || fieldPracticeTarget(eligible, fieldId) || SET_SIZE) : null;
+  const fieldQuestion = practice ? Math.min(state.current.setPosition ?? state.set?.count ?? 1, target) : null;
+  const position = total ? Math.min(total, done + (practice && !state.history?.[state.current.questionId] ? 1 : 0)) : 0;
+  return { total, done, position, percent: total ? Math.round(position * 100 / total) : 0,
+    fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length,
+    fieldQuestion, fieldQuestionTotal: target,
     review: !practice };
 }
 
@@ -1383,7 +1389,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   }
   // 最初の過去問（または取り込みを待ったあとの最初の問題）の前に、取り込めた年度を知らせる
   const readyNotice = !pick.repeated && (state.waitedForImport || !Object.keys(state.history ?? {}).length) && !state.readyAnnounced ? importReadyNotice(job) : null;
-  state = pin({ ...state, directRequested: null, publishedExplanation: null }, pick.item, pick.kind, now);
+  const fieldTarget = pick.setTarget || fieldPracticeTarget(items, pick.item.packet.fieldId,
+    (x) => (pref === 'any' || x.packet.questionType === pref) && x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive');
+  state = pin({ ...state, directRequested: null, publishedExplanation: null }, pick.item, pick.kind, now, { setTarget: fieldTarget });
   if (readyNotice || state.waitedForImport) state = { ...state, waitedForImport: false, readyAnnounced: true };
   if (prefetched && !pick.repeated) state = { ...state, current: { ...state.current, prefetched: true } };
   // nextQuestion で出した問は、利用者が見た問（採点の応答に先に付けた印を外す）
@@ -1416,7 +1424,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
   const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;
   const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName,
-    progress: learningProgress(state), ...(attach ? { figureCount: shown.figures.length } : {}) };
+    progress: learningProgress(state, items), ...(attach ? { figureCount: shown.figures.length } : {}) };
   return {
     status: 'question', sessionId: id, repeated: !!pick.repeated, question,
     // 明示指定の問は学習計画の分野移行メニューを挟まず出す。分野変更の事実のみ通知してよい。
@@ -1491,12 +1499,13 @@ async function restoreStudyView(env, id, state, now) {
     const previous = saved.question;
     const figureUrls = (previous.figures ?? []).map((f) => f.url?.startsWith('/')
       ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean);
-    const gradedInField = Object.values(state.history ?? {}).filter((h) =>
-      h.fieldId === saved.fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
+    const savedTarget = saved.fieldTarget || state.set?.target || SET_SIZE;
     const question = { ...previous, figureUrls,
       fieldName: cat?.fields?.[saved.fieldId] ?? null,
-      progress: { fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length,
-        fieldQuestion: Math.min(3, Math.max(1, gradedInField)) } };
+      progress: { ...(previous.progress ?? {}),
+        fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length,
+        fieldQuestion: Math.min(savedTarget, Math.max(1, saved.fieldPosition ?? 1)),
+        fieldQuestionTotal: savedTarget } };
     const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
       ? await redisplayView(env, id, state, now) : null;
     return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
@@ -1566,7 +1575,7 @@ async function redisplayView(env, id, state, now) {
   const display = questionDisplay(shown, svgs, { attached: false });
   return {
     status: 'question', sessionId: id, repeated: true, redisplayed: true,
-    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state) },
+    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state, items) },
   };
 }
 
@@ -2417,8 +2426,10 @@ async function route(request, env, url, now) {
     const mode = ['explain', 'check', 'practice'].includes(b.mode) ? b.mode : null;
     if (!fid || !mode) throw new HttpError(400, 'ITEM_INVALID');
     if (!studyFieldOrder(state, cat).includes(fid)) throw new HttpError(409, 'FIELD_EXEMPT', '免除対象の分野は今回の学習計画に含めません。');
-    // 選んだ分野から1まとまり（3問）を出す。そのあとは学習計画の順に戻る（同じ分野に固定しない）
-    const set = state.set?.fieldId === fid && state.set.count < SET_SIZE ? state.set : { fieldId: fid, count: 0, years: [] };
+    // 分野ごとの50%を一区切りにし、出題途中の記録を維持する。確認問題は別途3問固定。
+    const existingTarget = state.set?.fieldId === fid ? state.set.target : null;
+    const set = state.set?.fieldId === fid && state.set.count < (existingTarget || SET_SIZE)
+      ? state.set : { fieldId: fid, count: 0, target: existingTarget ?? null, years: [] };
     // check の再押下は同じ問題・3問カウンタを保持。explain は解説が終わるまで確認問題未開始。
     const existingCheck = mode === 'check' && state.confirmation?.fieldId === fid && state.confirmation.count < 3
       ? state.confirmation : null;
@@ -2463,7 +2474,9 @@ async function route(request, env, url, now) {
     // 次問の先取りで current が置き換わる前に、解説対象を採点結果と一緒に保存する。
     const gradedState = r.grade.alreadyGraded ? r.state : { ...r.state,
       lastExplanation: { questionId: r.grade.questionId, question: state.current?.question ?? null,
-        fieldId: state.current?.fieldId ?? null, grade: { ...r.grade, explainHow: how } } };
+        fieldId: state.current?.fieldId ?? null, fieldPosition: state.current?.setPosition ?? null,
+        fieldTarget: state.current?.setTarget ?? null,
+        grade: { ...r.grade, explainHow: how } } };
     if (!r.grade.alreadyGraded) {
       await saveSession(env, id, gradedState, now);
       if (acc) await countUse(env.STORE, acc.hash, jstToday(now));
@@ -2575,7 +2588,6 @@ async function route(request, env, url, now) {
       nextFieldName: next?.fieldId ? cat?.fields?.[next.fieldId] ?? null : null,
       reviewAvailable: Object.values(state.history ?? {}).some((h) => ['wrong', 'recall_failure'].includes(h.result)) };
     const fields = studyFieldOrder(state, cat);
-    const answeredInField = Object.values(state.history ?? {}).filter((h) => h.fieldId === fieldId && h.kind === 'new' && h.result && h.result !== 'skipped').length;
     // 参照番号はAIが読める短いユーザー向け識別子。実セッションIDと問題IDは会話に表示しない。
     // 学習履歴への書込みは行わない。参照用マッピングだけを期限付き保存する。
     // 同じ採点済み問題の再表示では同じ参照番号にする（応答本文の同一性も保持）。
@@ -2583,7 +2595,8 @@ async function route(request, env, url, now) {
       .update(id + ':' + grade.questionId).digest('base64url').slice(0, 16);
     await env.STORE.put(`eref/${explanationRef}`, JSON.stringify({ sessionId: id, questionId: grade.questionId }), { expirationTtl: 3600 });
     return json(200, { status: 'explanationContext', explanationRef, sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
-      journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length, stage: `practice${Math.min(3, Math.max(1, answeredInField))}`, fieldName },
+      journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length,
+        stage: 'practice', fieldName },
       qualificationName: cat?.name ?? null, question: { ...question,
         figures: (question.figures ?? []).map((f) => ({ ...f, url: f.url?.startsWith('/') ? `${env.PUBLIC_BASE_URL || url.origin}${f.url}` : f.url })),
         fieldName }, grade: { ...grade, explainHow: how },
