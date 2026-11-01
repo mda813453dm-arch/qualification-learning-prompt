@@ -549,10 +549,16 @@ a{color:inherit}
     var labels = { submitAnswer:'解答を確認しています…', nextQuestion:'次の問題を準備しています…',
       getStudySnapshot:'最新の学習画面を確認しています…', getOfficialLibrary:'登録状況を確認しています…' };
     var busyToken = foreground ? beginBusy(labels[name] || '画面を切り替えています…') : 0;
+    // 採点と次問取得中は背景復元を禁止し、操作開始前の古いスナップショットも廃棄。
+    var guarding = foreground && (name === 'submitAnswer' || name === 'nextQuestion');
+    if (guarding) foregroundTransitionStarted();
     try {
       var r = bridgeReady ? await rpc('tools/call', { name: name, arguments: args }) : (window.openai && window.openai.callTool) ? await window.openai.callTool(name, args) : await ready.then(function(){ return rpc('tools/call', { name: name, arguments: args }); });
       return full(r);
-    } finally { endBusy(busyToken); }
+    } finally {
+      if (guarding) foregroundTransitionEnded();
+      endBusy(busyToken);
+    }
   }
   async function ask(text, actionLabel){
     try {
