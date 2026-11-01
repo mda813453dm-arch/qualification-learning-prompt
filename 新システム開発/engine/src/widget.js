@@ -3884,7 +3884,9 @@ a{color:inherit}
     // iOSで初回画面を描画した直後に restoreIdle に切り替わる症状を防ぐ。
     var explicitSession = !!(state.sessionId || input().sessionId || initial.sessionId);
     if (explicitSession && !hasView) restoreFromServer(false);
-    else if (explicitSession && hasView && !locked && !app.querySelector('button:not([disabled])')) restoreFromServer(false);
+    else if (explicitSession && hasView && !locked && !restoring &&
+        (recentPreview || ['question','restoredGrade','confirmation_question','confirmation_result','menu','finished','descriptiveQuestion','descriptiveReveal'].includes(initial.status) ||
+          !app.querySelector('button:not([disabled])'))) restoreFromServer(false);
   });
   ready.catch(function(){
     if (window.openai) { render(openaiOutput()); diag('legacy_ready'); }
@@ -3898,12 +3900,17 @@ a{color:inherit}
   function unavailable(){
     showRecovery('学習画面との接続が切れています。復元ボタンで同じ学習状態を読み直してください。');
   }
-  if (window.openai) render(openaiOutput());
-  // iPhoneでiframeが作り直されても、サーバー応答を待たずに前回画面を先に描く。
-  // 新資格の開始時は古いsessionIdのキャッシュを流用しない。
+  // iPhoneでiframeが再生成された場合、以前のツール出力が最新の学習状態とは限らない。
+  // 最新の保存済み画面が確認できる場合は先に表示し、必ずサーバーで再照合する。
+  // 別資格への切替ではsessionIdが異なるため、前資格のキャッシュを表示しない。
   var warmInput = input() || {}, warmOutput = openaiOutput() || {};
   var warmSession = warmInput.sessionId || warmOutput.sessionId;
-  if (!hasView && warmSession && showRecentPreview(warmSession)) restoreFromServer(false);
+  var warmCached = readRecentView(warmSession);
+  var warmOutputAt = Number(warmOutput && warmOutput.at) || 0;
+  var warmCachedAt = Number(warmCached && warmCached.at) || 0;
+  var useCachedPreview = !!(warmCached && (!warmOutputAt || warmCachedAt > warmOutputAt));
+  if (useCachedPreview && showRecentPreview(warmSession)) restoreFromServer(false);
+  else if (window.openai) render(warmOutput);
   setTimeout(function(){
     if (!hasView && !restoring) {
       // toolOutputがホストから届かなかった場合にも復元を試みる。
