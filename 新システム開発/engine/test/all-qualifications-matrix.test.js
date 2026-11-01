@@ -11,7 +11,9 @@ import { T0 } from './helpers.js';
 
 const entries = Object.entries(CATALOG);
 const idOf = (c) => c.qualificationId;
-const makeEnv = () => ({ STORE: new MemoryStore(), API_TOKEN: 'test', clock: () => T0 });
+const makeEnv = () => ({ STORE: new MemoryStore(), API_TOKEN: 'test', clock: () => T0,
+  // Real PDFs/official websites must not be accessed by synthetic matrix tests.
+  fetchText: async () => '', fetchPdf: async () => { throw new Error('NO_EXTERNAL_PDF_IN_MATRIX'); } });
 async function call(env, method, path, payload) {
   const request = new Request('https://engine.example' + path, {
     method, headers: { 'content-type': 'application/json', authorization: 'Bearer test' },
