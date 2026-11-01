@@ -40,6 +40,10 @@ assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visi
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
+assert.ok(resource.contents[0].text.includes('preparedLessons["管理組合の運営の円滑化"] = '),
+  'マンション管理士の確認問題3問を公開画面が内蔵している');
+assert.ok(resource.contents[0].text.includes('確認問題は未登録です。'),
+  '確認問題がまだ未登録のときは再試行を案内する');
 assert.ok(!resource.contents[0].text.includes('setWidgetState'), '画面からモデル文脈の添付を要求しない');
 assert.ok(resource.contents[0].text.includes("rpc('ui/message',{role:'user',content:[{type:'text',text:visible}]})"), '解説依頼は照合番号付き短文のみ送信する');
 assert.ok(!resource.contents[0].text.includes('verifiedOfficialExplanation') &&
