@@ -2,7 +2,7 @@
 // The host is simulated; this does not claim Android ChatGPT device certification.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v169.js';
+import { widgetHtml } from '../src/widget-v170.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
