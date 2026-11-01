@@ -39,7 +39,7 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]){
           window.calls.push(m.params.name);
           if(m.params.name==='submitAnswer')reply(m.id,{structuredContent:{grade,next:two}});
           else if(m.params.name==='getStudySnapshot'){
-            const answer={structuredContent:{status:'restoredGrade',sessionId:sid,question:one.question,grade,next:two,at:120}};
+            const answer={structuredContent:window.holdSnapshot ? {status:'restoredGrade',sessionId:sid,question:one.question,grade,next:two,at:120} : one};
             if(window.holdSnapshot)window.pendingSnapshot.push(()=>reply(m.id,answer));
             else reply(m.id,answer);
           } else if(m.params.name==='nextQuestion')reply(m.id,{structuredContent:two});
