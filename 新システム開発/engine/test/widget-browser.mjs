@@ -783,7 +783,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       qualificationName:'マンション管理士',notice:'確認問題から開始してください。',
     }));
     await ui.getByRole('button',{name:/AI作成確認問題を解く/}).click();
-    await ui.getByRole('heading',{name:'管理組合の運営の円滑化｜確認問題・第1問'}).waitFor();
+    await ui.getByRole('heading',{name:'管理組合の運営の円滑化｜確認問題・第1問'}).waitFor({timeout:12000});
     assert.equal(await ui.locator('input[name="confirmationAnswer"]').count(),3);
     assert.match(await ui.locator('.stem').last().innerText(),/マンション標準管理規約/);
     assert.equal(await page.evaluate(() => window.preparedQuestionCalls),beforeMankan+1);
