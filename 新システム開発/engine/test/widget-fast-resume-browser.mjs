@@ -1,7 +1,7 @@
 // 実ブラウザで「処理中」「最新キャッシュ→読取復元」「先頭Focus」を検証する。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v167.js';
+import { widgetHtml } from '../src/widget-v168.js';
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
