@@ -1633,7 +1633,7 @@ test('AI解説の照会番号は当該分野・最新依頼だけに紐づき、
 
 test('行政書士の内蔵基礎教材は全6分野・各3問、正答と簡易解説を事前確定している', () => {
   const fields = Object.values(CATALOG.gyosei.fields);
-  assert.deepEqual(Object.keys(PREPARED_LESSONS).sort(), fields.slice().sort());
+  assert.deepEqual(Object.keys(PREPARED_LESSONS).sort(), [...fields, '管理組合の運営の円滑化'].sort());
   for(const field of fields){
     const entry = PREPARED_LESSONS[field];
     assert.ok(entry.intro.length >= 3, field + ': 導入の要点');
