@@ -3531,6 +3531,11 @@ a{color:inherit}
   function showGrade(g){
     if (!g) return;
     var q = state.question || {};
+    // 採点済み画面も最新画面として保存。新しいiframeで未回答の問題へ逆戻りしない。
+    // スキップは次問へ自動遷移するため、再表示時の二重nextQuestionを避けて保存しない。
+    if (!g.skipped && state.sessionId && q.questionId)
+      saveRecentView({ status:'restoredGrade', sessionId:state.sessionId, question:q, grade:g,
+        next:state.next || null, at:Date.now() });
     var h = '';
     if (g.skipped) h = '<div class="result">スキップしました。</div>';
     else {
