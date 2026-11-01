@@ -3699,8 +3699,8 @@ a{color:inherit}
   var restoring = false, wasHidden = false;
   // 通常操作中のバックグラウンド復元が採点後画面で最新問を上書きしないようにする。
   // 復元はread-only、ユーザーが押した次問は唯一の書込み経路。
-  var foregroundTransitionDepth = 0, lastLocalInteractionAt = 0, lastForegroundTransitionAt = 0;
-  function foregroundTransitionStarted(){ foregroundTransitionDepth++; lastLocalInteractionAt = Date.now(); }
+  var foregroundTransitionDepth = 0, foregroundTransitionSequence = 0, lastLocalInteractionAt = 0, lastForegroundTransitionAt = 0;
+  function foregroundTransitionStarted(){ foregroundTransitionDepth++; foregroundTransitionSequence++; lastLocalInteractionAt = Date.now(); }
   function foregroundTransitionEnded(){ foregroundTransitionDepth = Math.max(0, foregroundTransitionDepth-1); lastForegroundTransitionAt = Date.now(); }
   if (typeof document.addEventListener === 'function') {
     document.addEventListener('pointerdown', function(){ lastLocalInteractionAt = Date.now(); }, true);
@@ -3728,6 +3728,7 @@ a{color:inherit}
     }
     if (!state.sessionId) { showRecovery('学習セッションの情報を取得できませんでした。新しい学習画面から再開してください。'); return; }
     restoring = true;
+    var restoringAtTransition = foregroundTransitionSequence;
     var button = document.getElementById('reopenStudy') || document.getElementById('recoverStudy');
     if (button) { button.disabled = true; button.textContent = '復元しています…'; }
     var buttonGuard = setTimeout(function(){ if (restoring && button && button.isConnected) { button.disabled = false; button.textContent = '再度、学習画面を復元'; } }, 9000);
@@ -3741,7 +3742,8 @@ a{color:inherit}
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
       // 非同期読取が操作開始前に走った場合も、後着の古いスナップショットで
       // いま押した「次の問題」の結果を上書きしない。
-      if (!manual && foregroundTransitionDepth > 0) return;
+      if (!manual && (foregroundTransitionDepth > 0 || restoringAtTransition !== foregroundTransitionSequence ||
+          Date.now() - lastForegroundTransitionAt < 1800)) return;
       // 通常の背景更新では、意味のある現在画面を汎用的な待機表示で上書きしない。
       if (!manual && hasView && restored.status === 'restoreIdle') return;
       // 明示的な再開だけ所有枠を切り替える。自動復元は元の枠を奪わない。
