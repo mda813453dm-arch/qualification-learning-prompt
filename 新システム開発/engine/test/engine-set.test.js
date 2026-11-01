@@ -88,7 +88,8 @@ test('2問連続不正解でも新しい公式実践問題を通常どおり継�
 });
 
 test('同一分野の3連続誤答を超えて別分野へ自動移動しない', () => {
-  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'b'), item(5, 'b')];
+  // aの登録済み5問なら50%は3問。そこで3連続誤答し、別分野に移る前に補強を強制する。
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'a'), item(6, 'b')];
   let state = newState({ qualificationId: 'q1', now: NOW, plan: { fieldWeights: { a: 1 } } });
   for (let i = 0; i < 3; i++) {
     const r = pickNext(state, items, { today: TODAY });
