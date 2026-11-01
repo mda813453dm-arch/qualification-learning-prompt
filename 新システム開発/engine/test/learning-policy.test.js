@@ -93,7 +93,10 @@ test('通常の期限付き復習も、期限到来済みの検証済み対比�
   const other=pickNext(state,items,{today:'2026-10-30',now});
   assert.equal(other.item.packet.questionId,'c','未到来の関連論点は出題しない');
   state.reviewPacing.sinceReview=1;
-  assert.equal(pickNext(state,items,{today:'2026-10-30',now}).status,'finished','復習頻度は従来どおり維持');
+  const recycle=pickNext(state,items,{today:'2026-10-30',now});
+  assert.equal(recycle.status,'question','全問題解答済みならランダムな再出題へ進む');
+  assert.equal(recycle.recycled,true);
+  assert.equal(recycle.kind,'review','未出題の新規問題とは混同しない');
 });
 
 test('誤答後は採点結果だけを表示し、本人が選ぶまでAI解説を依頼しない',()=>{
