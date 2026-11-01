@@ -73,6 +73,44 @@ try {
         assert.ok(before.height>2000,'iOS retains full natural content height');
         assert.ok(before.scrollHeight<=before.height+2,'iOS has no nested vertical scrollbar');
       }
+      if (android) {
+        const nav=frame.locator('#qlpAndroidScrollTools');
+        await nav.waitFor({state:'visible'});
+        assert.equal(await nav.getByRole('button').count(),3,'navigation buttons persist outside #app');
+        assert.equal(await app.evaluate(el=>getComputedStyle(el).touchAction),'none');
+
+        // Buttons must work even when Android ChatGPT steals iframe touch gestures.
+        await nav.locator('button[data-jump="down"]').click();
+        assert.ok((await measure()).scrollTop>100, 'down button advances within fixed iframe');
+        await nav.locator('button[data-jump="end"]').click();
+        const end=await measure();
+        assert.ok(end.scrollTop>=end.scrollHeight-end.height-5, 'last button reaches the real answer controls');
+        await nav.locator('button[data-jump="up"]').click();
+        assert.ok((await measure()).scrollTop<end.scrollTop-50, 'up button moves back');
+        await app.evaluate(el=>{el.scrollTop=0;});
+
+        // Unlike the previous test, send a real mobile touch sequence (not JS scrollTop).
+        const box=await app.boundingBox();
+        assert.ok(box,'Android panel is visible for a physical drag gesture');
+        const x=box.x+box.width/2;
+        const y=Math.min(box.y+Math.min(box.height-30,360),box.y+box.height-30);
+        const cdp=await context.newCDPSession(page);
+        const outerBefore=await page.evaluate(()=>window.scrollY);
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+        for(let i=1;i<=6;i++){
+          await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-i*32}]});
+          await page.waitForTimeout(18);
+        }
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+        await page.waitForTimeout(100);
+        assert.ok((await measure()).scrollTop>90,'physical Android drag scrolls inner panel');
+        assert.ok(Math.abs((await page.evaluate(()=>window.scrollY))-outerBefore)<4,
+          'Android drag does not scroll the parent ChatGPT host');
+        await cdp.detach();
+      } else {
+        assert.equal(await frame.locator('#qlpAndroidScrollTools').count(),0,
+          'iPhone retains natural-height view with no inner-scroll navigation');
+      }
       await app.evaluate(el=>{ el.scrollTop=el.scrollHeight/2; });
       await page.evaluate(()=>window.scrollTo(0,750));
       await page.waitForTimeout(160);
