@@ -628,6 +628,8 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v166.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v167.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
+const ANDROID_UI_FALLBACK = 'Android版ChatGPTアプリで学習画面が見えない場合は、画面のボタンを押すよう求め続けず、ブラウザで https://chatgpt.com/ にサインインして同じ会話を開くよう案内する。これは別セッションの新規作成ではなく、既存の会話の表示切替である。Androidアプリ内で画面を正常表示できたと断言しない。';
+const BROWSER_FALLBACK = { reason: 'CHATGPT_ANDROID_WIDGET_NOT_RENDERED', url: 'https://chatgpt.com/', instruction: 'Android版ChatGPTアプリで学習画面が表示されない場合は、ブラウザのChatGPTで同じ会話を開いて操作してください。新規セッションを作り直す必要はありません。' };
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
 /** AIに渡す結果からは、画面に出した図・表示文を外す（AIが問題を書き直さないように）。全文は _meta.qlp で画面だけに渡す。 */
@@ -701,15 +703,15 @@ export function forModel(body) {
     return {
       status: 'resumeReady', sessionId: body.sessionId, learnerId: body.learnerId,
       qualificationId: body.qualificationId, qualificationName: body.qualificationName, answeredCount: body.answeredCount,
-      wrongCount: body.wrongCount, pendingQuestion: body.pendingQuestion,
-      howToProceed: '引継ぎ済みの記録と、再開用の操作ボタンを画面に表示しました。初回の試験概要や学習条件は聞かず、利用者の操作を待ってください。',
+      wrongCount: body.wrongCount, pendingQuestion: body.pendingQuestion, browserFallback: BROWSER_FALLBACK,
+      howToProceed: '引継ぎ済みの記録と、再開用の操作ボタンを画面へ送信しました。初回の試験概要や学習条件は聞かず、利用者の操作を待ってください。' + ANDROID_UI_FALLBACK,
     };
   }
   if (Array.isArray(body.onboarding)) {
     // iOSアプリが _meta をウィジェットへ転送しない場合でも、必須の初期質問を表示できる。
     // 公式概要と質問項目は秘匿情報ではない。AIはツールの案内に従い自分で質問を作らない。
     const { planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
-    return { ...rest, howToProceed: '免除（ある資格だけ）と学習状況は、この下の画面のボタンでエンジンが聞いている。AIは聞かず、画面のあとのチャットの文は「画面のボタンで選んでください」の1行だけにする（長く書くと画面が上に押し出されて見えなくなる）。利用者が画面の番号ボタンを押すまで待つ。ラジオ式のChatGPT標準フォームや文章の選択肢を作らない。そのあとの学習計画・初期診断・学習の開始・進め方の選択も同じエンジン学習枠だけで進む（AIは計画を書かず、showMenu も nextQuestion も呼ばない）。画面から解説などを頼まれたら、そのとき答える。' };
+    return { ...rest, browserFallback: BROWSER_FALLBACK, howToProceed: '免除（ある資格だけ）と学習状況は学習画面へ送信済み。正常に見えている場合は画面のボタンで選んでもらい、AIは同じ質問や別のフォームを作らない。Android版などで学習枠が表示されないと利用者から報告された場合、実在しないボタンの操作を求めず、ブラウザで同じChatGPT会話を開く手順をすぐ伝える。学習計画・初期診断・開始・進め方の選択はエンジン学習枠で進む。画面表示はサーバー応答だけでは確認できない。' + ANDROID_UI_FALLBACK };
   }
   const slim = (v) => {
     if (!v?.question) return v;
@@ -840,6 +842,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       return ok(id, { resourceTemplates: [] });
     case 'resources/read':
+      if (widget && (params.uri === WIDGET_URI || LEGACY_WIDGET_URIS.includes(params.uri))) console.info(JSON.stringify({ event: 'widget_resource_read', version: WIDGET_VERSION, legacy: params.uri !== WIDGET_URI }));
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       if (params.uri !== WIDGET_URI && !LEGACY_WIDGET_URIS.includes(params.uri)) return fail(id, -32602, `Unknown resource: ${params.uri}`);
       return ok(id, { contents: [widgetResource(baseUrl, params.uri)] });
@@ -847,6 +850,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       const tool = BY_NAME.get(params.name);
       if (!tool) return fail(id, -32602, `Unknown tool: ${params.name}`);
       const args = params.arguments ?? {};
+      if (widget && tool.name === 'startSession') console.info(JSON.stringify({ event: 'widget_session_start_called', version: WIDGET_VERSION }));
       for (const k of tool.inputSchema.required ?? []) {
         if (args[k] === undefined || args[k] === null || args[k] === '') {
           return ok(id, { isError: true, content: [{ type: 'text', text: JSON.stringify({ error: 'ARGUMENT_REQUIRED', argument: k }) }] });
@@ -950,6 +954,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
           merged = { ...nx.body, sessionId: res.body.sessionId, learnerId: res.body.learnerId ?? nx.body.learnerId, job: res.body.job };
         }
         const view = forModel(merged);
+        console.info(JSON.stringify({ event: 'widget_session_start_responded', version: WIDGET_VERSION, status: merged.status ?? 'unknown', onboarding: merged.onboarding.length }));
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
       }
       if ((widget && WIDGET_TOOLS.has(tool.name) || tool.name === 'showDescriptiveActions') && res.status < 400) {
