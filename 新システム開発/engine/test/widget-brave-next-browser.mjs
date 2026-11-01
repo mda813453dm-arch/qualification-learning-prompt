@@ -60,7 +60,8 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]){
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button',{name:'解答する',exact:true}).click();
     await ui.getByText('✓ 正解！').waitFor();
-    // Reproduce old stale snapshot reading in parallel with the foreground click.
+    // 操作中と直後1.8秒の復元抑制が解除されてから、古い復元の競合を意図的に起こす。
+    await page.waitForTimeout(1950);
     await page.evaluate(()=>{window.holdSnapshot=true;});
     await ui.locator('#app').evaluate(()=>{
       const ev=new Event('pageshow');
