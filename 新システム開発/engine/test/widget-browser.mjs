@@ -71,7 +71,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               status:'confirmation_question', sessionId:args.sessionId,
               challengeId:'prepared-mock-' + window.preparedQuestionCalls,
               question:args.question, choices:args.choices,
-              position:1, total:3, fieldName:'基礎法学',
+              position:1, total:3,
+              fieldName:args.question.includes('マンション標準管理規約') ? '管理組合の運営の円滑化' : '基礎法学',
               journey:{fieldIndex:1,fieldTotal:6}
             } });
           }
@@ -773,6 +774,21 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(()=>window.followups.length),followupsBeforeNative,
       '内蔵確認問題の開始ではChatGPTへメッセージを送らない');
 
+    // iPhone regression: Mankan Q1 must be registered within the existing frame.
+    const beforeMankan = await page.evaluate(() => window.preparedQuestionCalls || 0);
+    const beforeMankanChat = await page.evaluate(() => window.followups.length);
+    await page.evaluate(r => window.deliver(r), result({
+      status:'sourceUnavailable',sessionId,
+      fieldName:'管理組合の運営の円滑化',
+      qualificationName:'マンション管理士',notice:'確認問題から開始してください。',
+    }));
+    await ui.getByRole('button',{name:/AI作成確認問題を解く/}).click();
+    await ui.getByRole('heading',{name:'管理組合の運営の円滑化｜確認問題・第1問'}).waitFor();
+    assert.equal(await ui.locator('input[name="confirmationAnswer"]').count(),3);
+    assert.match(await ui.locator('.stem').last().innerText(),/マンション標準管理規約/);
+    assert.equal(await page.evaluate(() => window.preparedQuestionCalls),beforeMankan+1);
+    assert.equal(await page.evaluate(() => window.followups.length),beforeMankanChat,
+      '固定の確認問題はチャットへ二重の作問依頼を送らない');
     // 「その他の希望」は開始承認後に記述式の年度・問題選択へ反映される。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan', planReady:true, learnerId, sessionId,
