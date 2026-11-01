@@ -41,6 +41,7 @@ jobs:
           PLAYWRIGHT_BROWSERS_PATH=/ms-playwright node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
       - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
         run: |
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-brave-next-browser.mjs
           PLAYWRIGHT_BROWSERS_PATH=/ms-playwright PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-confirmation-browser.mjs
@@ -48,7 +49,6 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-upload-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-anytime-upload-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-fast-resume-browser.mjs
-          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-brave-next-browser.mjs
       - name: 画面テストの合否をコミット状態に記録
         if: always()
         env:
