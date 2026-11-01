@@ -71,7 +71,7 @@ html.qlp-android-embedded:not(.study-fullscreen) #qlpAndroidScrollTools:not([hid
     app.scrollTop = Math.max(0, Math.min(max, destination));
     updateAndroidNav();
   }
-  if (document.documentElement.classList.contains('qlp-android-embedded')) {
+  if (document.documentElement.classList && document.documentElement.classList.contains('qlp-android-embedded')) {
     qlpAndroidNav = document.createElement('nav');
     qlpAndroidNav.id = 'qlpAndroidScrollTools';
     qlpAndroidNav.setAttribute('aria-label', '学習画面のスクロール操作');
