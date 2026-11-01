@@ -1,5 +1,6 @@
 // 実エンジン＋実MCP＋実DOMを結合する。モデル役の生成本文だけは固定の試験文。
 // ChatGPTホスト・実モデル自体の試験ではない。
+// s1を5問に設定し、50%（端数切上げ）=3問後にs2へ移ることを実際の結合操作で確認する。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { handle } from '../src/app.js';
@@ -11,7 +12,7 @@ const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'play
 
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
-  const parser = fakeParser(web, { answers: [3, 1, 4, 2], fieldIds: ['s1', 's1', 's1', 's2'] });
+  const parser = fakeParser(web, { answers: [3, 1, 4, 2, 1, 2], fieldIds: ['s1', 's1', 's1', 's2', 's1', 's1'] });
   const env = { STORE: new MemoryStore(), API_TOKEN: 'browser-test', fetchPdf: web.fetchPdf, clock: () => T0, PARSER_URL: 'https://parser.example' };
   env.parserFetch = async (_, init) => {
     const b = JSON.parse(init.body);
@@ -167,7 +168,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }
     assert.deepEqual(await ui.locator('.choices button span').allInnerTexts(),
       ['次の分野の問題へ', 'AIの詳しい解説を追加', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '学習を終了する']);
-    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '7');
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '5');
     await ui.locator('#review').click();
     await ui.getByText('間違えた問題はまだありません。', { exact: false }).waitFor();
     assert.equal(await ui.locator('#next').count(), 1, '復習対象がなくても次の分野への選択を保持する');
@@ -175,7 +176,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 新分野では既存仕様の「この項目の進め方」を選ぶ。実践問題を選ぶと先取り済みの問4を表示する。
     await ui.locator('#itemModes button[data-mode="practice"]').click();
     await ui.getByText('問4の本文', { exact: true }).waitFor();
-    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '12');
+    assert.equal(await ui.getByRole('progressbar', { name: '全分野の学習ルートの位置' }).getAttribute('aria-valuenow'), '10');
     await page.evaluate(() => { window.silentModel = true; });
     await ui.locator('input[name=ans][value="1"]').check();
     await ui.getByRole('button', { name: '解答する', exact: true }).click();
