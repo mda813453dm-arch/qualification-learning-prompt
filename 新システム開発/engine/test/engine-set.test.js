@@ -1,7 +1,7 @@
-// 仕様：同じ分野（fieldId）の過去問を3問続けて出す
+// 仕様：分野内の検証済み公式問題の半数（端数切上げ）を一区切りにする。確認問題と3連続誤答は別仕様。
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { grade, newState, pickNext, pin, SET_SIZE } from '../src/engine.js';
+import { fieldPracticeTarget, grade, newState, pickNext, pin } from '../src/engine.js';
 
 const NOW = '2026-10-15T00:00:00Z';
 const TODAY = '2026-10-15';
@@ -16,12 +16,12 @@ function item(n, fieldId) {
 function solve(state, items, answer) {
   const r = pickNext(state, items, { today: TODAY });
   assert.equal(r.status, 'question');
-  state = pin(state, r.item, r.kind, NOW);
+  state = pin(state, r.item, r.kind, NOW, { setTarget: r.setTarget });
   const g = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW });
   return { state: g.state, item: r.item };
 }
 
-test('同じ分野から3問続けて出し、終わったら別の分野へ移る', () => {
+test('分野の登録数に応じて50%ずつ交互に解き、全問を先に一巡する', () => {
   // 問番号順では分野が交互に並ぶ
   const items = [item(1, 'a'), item(2, 'b'), item(3, 'a'), item(4, 'b'), item(5, 'a'), item(6, 'b'), item(7, 'a')];
   let state = newState({ qualificationId: 'q1', now: NOW });
@@ -31,11 +31,12 @@ test('同じ分野から3問続けて出し、終わったら別の分野へ移�
     state = r.state;
     seen.push(r.item.packet.fieldId);
   }
-  assert.equal(SET_SIZE, 3);
-  assert.deepEqual(seen, ['a', 'a', 'a', 'b', 'b', 'b']);
+  assert.equal(fieldPracticeTarget(items, 'a'), 2);
+  assert.equal(fieldPracticeTarget(items, 'b'), 2);
+  assert.deepEqual(seen, ['a', 'a', 'b', 'b', 'a', 'a']);
 });
 
-test('分野の残りが3問に満たないときは、別の分野に移って続ける', () => {
+test('1問しかない分野は1問で移り、端数は切り上げる', () => {
   const items = [item(1, 'a'), item(2, 'b'), item(3, 'b'), item(4, 'b'), item(5, 'b')];
   let state = newState({ qualificationId: 'q1', now: NOW });
   const seen = [];
@@ -44,8 +45,8 @@ test('分野の残りが3問に満たないときは、別の分野に移って�
     state = r.state;
     seen.push(r.item.packet.fieldId);
   }
-  // 頻出（出題数の多い）b から3問、次に a、残った b
-  assert.deepEqual(seen, ['b', 'b', 'b', 'a', 'b']);
+  // bは4問の50%＝2問、aは1問の50%＝1問
+  assert.deepEqual(seen, ['b', 'b', 'a', 'b', 'b']);
 });
 
 test('分類できていない問は新しい問として出さない', () => {
@@ -55,13 +56,13 @@ test('分類できていない問は新しい問として出さない', () => {
 });
 
 test('同じ分野で3問連続不正解なら、第4実践問題は出さず確認問題を必須にする', () => {
-  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a'), item(5, 'b')];
+  const items = [item(1, 'a'), item(2, 'a'), item(3, 'a'), item(4, 'a')];
   let state = newState({ qualificationId: 'q1', now: NOW });
   const kinds = [];
   for (const answer of [2, 2, 2]) {
     const r = pickNext(state, items, { today: TODAY });
     assert.equal(r.status, 'question');
-    state = pin(state, r.item, r.kind, NOW);
+    state = pin(state, r.item, r.kind, NOW, { setTarget: r.setTarget });
     const g = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW });
     kinds.push([r.kind, !!g.grade.checkSuggested]);
     state = g.state;
@@ -79,7 +80,7 @@ test('2問連続不正解でも新しい公式実践問題を通常どおり継�
   const kinds = [];
   for (const answer of [2, 2, 1, 1]) {
     const r = pickNext(state, items, { today: TODAY });
-    state = pin(state, r.item, r.kind, NOW);
+    state = pin(state, r.item, r.kind, NOW, { setTarget: r.setTarget });
     state = grade(state, { questionId: r.item.packet.questionId, value: answer }, { today: TODAY, now: NOW }).state;
     kinds.push(r.kind);
   }
@@ -92,7 +93,7 @@ test('同一分野の3連続誤答を超えて別分野へ自動移動しない'
   for (let i = 0; i < 3; i++) {
     const r = pickNext(state, items, { today: TODAY });
     assert.equal(r.item.packet.fieldId, 'a');
-    state = pin(state, r.item, r.kind, NOW);
+    state = pin(state, r.item, r.kind, NOW, { setTarget: r.setTarget });
     state = grade(state, { questionId: r.item.packet.questionId, value: 2 }, { today: TODAY, now: NOW }).state;
   }
   assert.equal(pickNext(state, items, { today: TODAY }).status, 'remediation');
@@ -103,7 +104,7 @@ test('「分からない」は採点に数えず、正答を見せて復習に�
   const items = [item(1, 'a'), item(2, 'a'), item(3, 'a')];
   let state = newState({ qualificationId: 'q1', now: NOW });
   const r = pickNext(state, items, { today: TODAY });
-  state = pin(state, r.item, r.kind, NOW);
+  state = pin(state, r.item, r.kind, NOW, { setTarget: r.setTarget });
   const g = grade(state, { questionId: r.item.packet.questionId, value: '分からない' }, { today: TODAY, now: NOW });
   assert.equal(g.ok, true);
   assert.equal(g.grade.dontKnow, true);
