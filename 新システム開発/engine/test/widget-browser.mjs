@@ -396,7 +396,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }, { question, nextQuestion, sessionId });
     // v103の受入基準: 次の表示が届いても元の枠は閉じない。保存した採点は同じ枠に復元する。
     assert.equal(await ui.locator('.old-screen').count(), 0, '同じセッションの初期枠は継続使用');
-    // iOSの画面復帰イベントを擬似送信して、エンジンの既存状態だけを取得する。
+    // 採点直後1.8秒は誤復元防止のため復元を抑制。解除後の実際の画面復帰を検証。
+    await page.waitForTimeout(1950);
     await ui.locator('#app').evaluate(() => {
       const returned = new Event('pageshow');
       Object.defineProperty(returned, 'persisted', { value: true });
