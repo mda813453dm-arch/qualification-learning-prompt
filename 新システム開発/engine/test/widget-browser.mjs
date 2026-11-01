@@ -1,9 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml as originalWidgetHtml } from '../src/widget.js';
-import { confirmationWidgetHtml } from '../src/confirmation-widget-compat.js';
-const widgetHtml = () => confirmationWidgetHtml(originalWidgetHtml());
+import { widgetHtml } from '../src/widget-v164.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
