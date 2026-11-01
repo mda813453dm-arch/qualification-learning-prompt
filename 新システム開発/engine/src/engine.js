@@ -31,6 +31,72 @@ export function newState({ qualificationId, learnerId = null, plan = {}, now }) 
   };
 }
 
+/** 出題形式の希望。any＝形式を問わない（既定）。形式不明の問題は推測で分類しない。 */
+export const QUESTION_PREFERENCES = Object.freeze(['any', 'multiple_choice', 'descriptive']);
+const PREFERENCE_SCOPES = ['new', 'all'];
+export const PLAN_HISTORY_MAX = 20;
+
+export class PlanError extends Error {
+  constructor(code) { super(code); this.code = code; }
+}
+
+/** 保存済みの分野順が有効なら返す（重複・空は無効）。分野の一覧が分かるときは過不足も確認する。 */
+export function planFieldOrder(plan, fieldIds = null) {
+  const o = plan?.orderedFields;
+  if (!Array.isArray(o) || !o.length || o.some((f) => typeof f !== 'string' || !f) || new Set(o).size !== o.length) return null;
+  if (fieldIds && (o.length !== fieldIds.length || o.some((f) => !fieldIds.includes(f)))) return null;
+  return o;
+}
+
+/**
+ * 学習計画の変更（2026-11-01 調査共有の修正設計）。
+ * - orderedFields：分野IDの重複・欠落・未知を拒否。明示された順は fieldWeights や診断の自動調整より優先し、重みは順から作り直す。
+ * - questionPreference：any | multiple_choice | descriptive。scope は new（新規出題だけ限定）| all（利用者が「〜のみ」と明示したときだけ復習も限定）。
+ * - 出題中で未回答の問・採点記録・復習予定は変えない。分野順が変わったら、途中の3問セットを閉じて次の新規出題から新しい順を使う。
+ * - 計画の版（revision）と履歴（最大20件）を残す。
+ */
+export function updatePlan(state, patch = {}, { fieldIds, now = null } = {}) {
+  if (patch.qualificationId != null && patch.qualificationId !== state.qualificationId) throw new PlanError('QUALIFICATION_MISMATCH');
+  const old = state.plan ?? {};
+  const next = { ...old, ...(patch.extra ?? {}) };
+  let orderChanged = false;
+  if (patch.orderedFields !== undefined) {
+    const o = patch.orderedFields;
+    if (!Array.isArray(o) || !Array.isArray(fieldIds) || !fieldIds.length) throw new PlanError('PLAN_FIELDS_INVALID');
+    if (o.some((f) => !fieldIds.includes(f))) throw new PlanError('PLAN_FIELDS_UNKNOWN');
+    if (new Set(o).size !== o.length) throw new PlanError('PLAN_FIELDS_DUPLICATE');
+    if (o.length !== fieldIds.length) throw new PlanError('PLAN_FIELDS_MISSING');
+    orderChanged = JSON.stringify(planFieldOrder(old) ?? []) !== JSON.stringify(o);
+    next.orderedFields = [...o];
+    next.fieldWeights = Object.fromEntries(o.map((f, i) => [f, (o.length - i) * 100]));
+  } else if (patch.fieldWeights !== undefined) {
+    const w = patch.fieldWeights;
+    if (!w || typeof w !== 'object' || Array.isArray(w) ||
+      Object.entries(w).some(([k, n]) => (fieldIds && !fieldIds.includes(k)) || !Number.isFinite(n) || n < 0))
+      throw new PlanError('PLAN_WEIGHTS_INVALID');
+    next.fieldWeights = { ...w };
+  }
+  if (patch.questionPreference !== undefined) {
+    if (!QUESTION_PREFERENCES.includes(patch.questionPreference)) throw new PlanError('PLAN_QUESTION_PREFERENCE_INVALID');
+    next.questionPreference = patch.questionPreference;
+  }
+  if (patch.questionPreferenceScope !== undefined) {
+    if (!PREFERENCE_SCOPES.includes(patch.questionPreferenceScope)) throw new PlanError('PLAN_QUESTION_PREFERENCE_INVALID');
+    next.questionPreferenceScope = patch.questionPreferenceScope;
+  }
+  const revision = (Number.isInteger(old.revision) ? old.revision : 0) + 1;
+  next.revision = revision;
+  const entry = { revision, at: now, orderedFields: next.orderedFields ?? null,
+    questionPreference: next.questionPreference ?? 'any', questionPreferenceScope: next.questionPreferenceScope ?? 'new' };
+  const planHistory = [...(Array.isArray(state.planHistory) ? state.planHistory : []), entry].slice(-PLAN_HISTORY_MAX);
+  return {
+    ...state,
+    plan: next,
+    planHistory,
+    ...(orderChanged ? { set: null, focusField: null } : {}),
+  };
+}
+
 /** 取り込みが済んだ分解結果から、出題できる問を集める（年度の新しい順・問番号順）。 */
 export async function availablePackets(store, job, now) {
   const out = [];
@@ -72,7 +138,7 @@ function recentYearsPending(job) {
 
 /**
  * 次の問を決める。出題中で未採点の問があれば、それをもう一度返す（別の問に差し替えない）。
- * 返り値 {status, question?, notice?}。status: question | waiting | finished
+ * 返り値 {status, question?, notice?}。status: question | waiting | finished | remediation | formatUnavailable
  */
 export function pickNext(state, items, { today, now=null, job }) {
   if (state.remediation?.required) return { status: 'remediation', fieldId: state.remediation.fieldId };
@@ -100,16 +166,27 @@ export function pickNext(state, items, { today, now=null, job }) {
     if (same) return { status: 'question', item: same, kind: state.current.kind, repeated: true };
   }
   // 1) 期限の来た復習
+  const pref = QUESTION_PREFERENCES.includes(state.plan?.questionPreference) ? state.plan.questionPreference : 'any';
+  const formatOk = (x) => pref === 'any' || x.packet.questionType === pref;
+  const reviewFormatOk = (x) => state.plan?.questionPreferenceScope !== 'all' || formatOk(x);
   for (const r of orderDueByContrast(due.items ?? [], byUnit, state.lastReviewTopicId)) {
-    const variants = byUnit.get(r.unitId) ?? [];
+    const variants = (byUnit.get(r.unitId) ?? []).filter(reviewFormatOk);
     const alt = variants.find((x) => x.packet.questionId !== r.sourceQuestionId);
-    const hit = alt ?? variants[0] ?? byId.get(r.unitId);
+    const direct = byId.get(r.unitId);
+    const hit = alt ?? variants[0] ?? (direct && reviewFormatOk(direct) ? direct : null);
     if (hit) return { status: 'question', item: hit, kind: 'review' };
   }
   // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
   //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
   //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順（同じまとまりでは、まだ出していない年度を先に）。
-  const fresh = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
+  const unsolved = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
+  // 形式の希望があるときは、新規出題をその形式だけにする。形式不明の問題は推測で分類せず「検証待ち」として出さない。
+  // 該当形式が無いときは、黙って別の形式へ切り替えず formatUnavailable を返す。
+  const fresh = unsolved.filter(formatOk);
+  if (pref !== 'any' && !fresh.length && unsolved.length && !(job && job.state === 'running')) {
+    return { status: 'formatUnavailable', preference: pref,
+      unverifiedCount: unsolved.filter((x) => !x.packet.questionType).length };
+  }
   // 本人専用のPDFは複数年度のOCRが続いていても、検証済みの未出題問から先に学習を開始できる。
   // 3問を年度横断することより出題できる状態を優先。未検証問題は fresh に入らない。
   if (fresh.length) {
@@ -131,7 +208,10 @@ export function pickNext(state, items, { today, now=null, job }) {
     // 重み（学習計画の指定）→ これまでに解いた数が少ない分野 → 取り込んだ過去問での出題数が多い（頻出の）分野
     const counts = fieldCountsOf(usable);
     // 3問のまとまりを終えた分野は後に回し、学習計画の順に次の分野へ進む（全分野を一巡したら、また計画の順に戻る）
-    const score = (x) => [-Math.floor((solved[x.packet.fieldId] ?? 0) / SET_SIZE), Number(state.plan.fieldWeights?.[x.packet.fieldId] ?? 0), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
+    // 利用者が明示した分野順（orderedFields）が有効なら、重み（診断の自動調整を含む）より優先する
+    const order = planFieldOrder(state.plan);
+    const rank = (f) => order ? (order.includes(f) ? order.length - order.indexOf(f) : -1) : Number(state.plan.fieldWeights?.[f] ?? 0);
+    const score = (x) => [-Math.floor((solved[x.packet.fieldId] ?? 0) / SET_SIZE), rank(x.packet.fieldId), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
     const higher = (x, y) => { // x が y より先に出すべきなら true
       const a = score(x);
       const b = score(y);

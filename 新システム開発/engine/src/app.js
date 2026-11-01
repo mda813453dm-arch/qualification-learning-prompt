@@ -16,7 +16,7 @@ import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { SET_SIZE, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { PlanError, SET_SIZE, updatePlan, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
@@ -1348,6 +1348,15 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       if (!state.waitedForImport) await saveSession(env, id, { ...state, waitedForImport: true }, now);
       return { status: 'waiting', notice, screen: [notice, WAIT_MENU].filter(Boolean).join('\n\n'), afterScreen: WAIT_AFTER, howToShow: WAIT_HOW, job: jobView(job) };
     }
+    if (pick.status === 'formatUnavailable') {
+      // 希望の形式が無いときに、別の形式へ黙って切り替えない（2026-11-01 修正設計）
+      const label = pick.preference === 'descriptive' ? '記述式' : '択一式';
+      return { status: 'formatUnavailable', sessionId: id, questionPreference: pick.preference,
+        unverifiedCount: pick.unverifiedCount,
+        notice: `希望の出題形式（${label}）の未出題問題は、現在出題できません。` +
+          (pick.unverifiedCount ? `形式を確認できていない問題${pick.unverifiedCount}問は、確認が済むまで出題しません。` : '') +
+          '別の形式へ自動では切り替えません。学習計画で出題形式を変更するか、復習・学習の終了を選んでください。' };
+    }
     return { status: pick.status, notice: pick.status === 'finished'
       ? '利用可能な公式過去問はすべて解答済みです。総復習するか学習を終了してください。'
       : notice, attachNotice: ATTACH_NOTICE, howToAttach: ATTACH_HOW, job: jobView(job) };
@@ -1836,18 +1845,28 @@ async function route(request, env, url, now) {
     if (explicitStartMode === 'descriptive' && state.qualificationId !== 'land_surveyor')
       throw new HttpError(400, 'PLAN_START_MODE_UNSUPPORTED');
     const startMode = explicitStartMode ?? plannedStartMode(state.qualificationId, otherNote);
-    const nextPlan = { ...state.plan,
-      fieldWeights: Object.fromEntries(ordered.map((f, i) => [f, (ordered.length - i) * 100])),
-      methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
-      reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
-      orderedFields: ordered,
-      otherNote,
-      startMode,
-    };
-    await saveSession(env, id, { ...state, plan: nextPlan }, now);
+    // 検証・版管理・3問セットの扱いは engine の updatePlan に集約する（明示した分野順を重みより優先）
+    let updated;
+    try {
+      updated = updatePlan(state, {
+        qualificationId: b.qualificationId != null ? catalogQid(b.qualificationId) : undefined,
+        orderedFields: ordered,
+        questionPreference: b.questionPreference,
+        questionPreferenceScope: b.questionPreferenceScope,
+        extra: { methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
+          reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
+          otherNote, startMode },
+      }, { fieldIds, now });
+    } catch (e) {
+      if (e instanceof PlanError) throw new HttpError(e.code === 'QUALIFICATION_MISMATCH' ? 409 : 400, e.code);
+      throw e;
+    }
+    const nextPlan = updated.plan;
+    await saveSession(env, id, updated, now);
     return json(200, { status: 'planSaved', sessionId: id, orderedFields: ordered.map((f) => cat.fields[f]),
       methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes,
-      qualificationId: state.qualificationId, startMode });
+      qualificationId: state.qualificationId, startMode, planRevision: nextPlan.revision,
+      questionPreference: nextPlan.questionPreference ?? 'any' });
   }
 
   // 記述式の独立経路。自動採点・正答PDFの結合・択一履歴の変更を行わない。
