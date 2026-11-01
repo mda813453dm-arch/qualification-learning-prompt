@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { widgetHtml } from '../src/widget.js';
+import { widgetHtml as oldWidgetHtml } from '../src/widget.js';
+import { widgetHtml, WIDGET_URI, WIDGET_VERSION } from '../src/widget-v164.js';
 import { confirmationWidgetHtml, MANKAN_CONFIRMATION } from '../src/confirmation-widget-compat.js';
 import { handleRpc } from '../src/mcp.js';
 
@@ -16,7 +17,7 @@ test('曼ション管理士の第1〜3問は原典と正答付きで事前検証
   }
 });
 test('公開MCP学習枠は確認問題3問の固定バンクを初期化し、AIへの重複依頼をしない', async () => {
-  const html = confirmationWidgetHtml(widgetHtml());
+  const html = widgetHtml();
   assert.match(html, /preparedLessons\["管理組合の運営の円滑化"\] = /);
   assert.match(html, /registerPreparedConfirmation\(data.fieldName, position, idForConfirmation\)/);
   assert.doesNotMatch(html, /retryCheckStart/);
@@ -25,8 +26,9 @@ test('公開MCP学習枠は確認問題3問の固定バンクを初期化し、A
   const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m => m[1]);
   assert.ok(scripts.length);
   scripts.forEach(src => assert.doesNotThrow(() => new Function(src), '配信JSの構文'));
-  const result = await handleRpc({jsonrpc:'2.0',method:'resources/read',id:6,params:{uri:'ui://qlp/question-v163.html'}},
+  const result = await handleRpc({jsonrpc:'2.0',method:'resources/read',id:6,params:{uri:WIDGET_URI}},
     async () => ({status: 500, body:{}}), {widget:true, baseUrl:'https://qlp.test'});
+  assert.equal(WIDGET_VERSION,'2026-11-01.164');
   assert.match(result.result.contents[0].text, /preparedLessons\["管理組合の運営の円滑化"\] = /);
 });
 test('モデルから登録は可能だが、正答採点ツールを外部に露出しない',async()=>{
