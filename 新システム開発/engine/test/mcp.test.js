@@ -10,7 +10,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v168.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v169.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -176,8 +176,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v168\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-01.168');
+  assert.match(WIDGET_URI, /question-v169\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-01.169');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1252,7 +1252,7 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
 
 test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
   const { forModel } = await import('../src/mcp.js');
-  const { WIDGET_URI } = await import('../src/widget-v168.js');
+  const { WIDGET_URI } = await import('../src/widget-v169.js');
   const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
   const answer = TOOLS.find((t) => t.name === 'completeRemediation');
   assert.ok(reg && reg.appOnly && !reg.uiOnly);
@@ -1809,4 +1809,18 @@ test('詳細解説E照合番号は無言で終了せず学習枠へ保存する�
   const html=widgetHtml();
   assert.match(html,/aiPermissionNotice/);
   assert.match(html,/アクセスを許可/);
+});
+
+test('Android WebView keeps a bounded independent scroll area without changing iOS layout', () => {
+  const html = widgetHtml();
+  assert.ok(html.includes('qlp-android-embedded'));
+  assert.ok(html.includes('--qlp-android-panel-height'));
+  assert.ok(html.includes('overscroll-behavior-y:contain'));
+  assert.ok(html.includes('window.screen.availHeight'));
+  assert.ok(html.includes('overflow-y:auto !important'));
+  assert.ok(html.includes('window.parent !== window'));
+  assert.ok(html.includes('html.qlp-android-embedded:not(.study-fullscreen)'));
+  assert.ok(!html.includes('max-height:74dvh'));
+  assert.ok(html.includes('#app.study-viewport{height:auto;max-height:none;overflow:visible'));
+  assert.ok(html.includes('app.scrollTop = 0'));
 });
