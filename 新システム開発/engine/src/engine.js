@@ -242,8 +242,9 @@ export function pickNext(state, items, { today, now=null, job }) {
       if (next) return newQuestion(next);
     }
     const solved = {};
+    const eligibleIds = new Set(eligible.map((x) => x.packet.questionId));
     for (const [qid, h] of Object.entries(state.history ?? {})) {
-      if (h.fieldId && eligible.some((x) => x.packet.questionId === qid)) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
+      if (h.fieldId && eligibleIds.has(qid)) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
     }
     // 学習計画の順序を優先しつつ、50%の区切りを終えた分野は未着手の分野より後ろへ。
     const order = planFieldOrder(state.plan);
@@ -394,7 +395,11 @@ export function findWanted(state, items, want, fields = {}) {
     if (!fid) return findByKeyword(state, items, plain);
     const inField = items.filter((x) => x.packet.fieldId === fid && !(state.skipped ?? []).some((k) => k.questionId === x.packet.questionId));
     if (!inField.length) return null;
-    const item = inField.find((x) => !state.history[x.packet.questionId]) ?? inField[0];
+    const unseen = inField.find((x) => !state.history[x.packet.questionId]);
+    const pool = inField.filter((x) => state.history[x.packet.questionId]);
+    const alternate = pool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? state.current?.questionId));
+    const choices = alternate.length ? alternate : pool;
+    const item = unseen ?? (choices.length ? choices[Math.floor(Math.random() * choices.length)] : inField[0]);
     return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new', fieldId: fid };
   }
   const reiwa = /令和\s*(\d{1,2})/.exec(t)?.[1];
