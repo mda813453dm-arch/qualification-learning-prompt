@@ -3571,11 +3571,24 @@ a{color:inherit}
     }
     // 次の問題は、AIが呼び出す新しい枠で「この下」に出す（上に固定した枠の中身を入れ替えない）。inPlace のときだけ、この枠の中で進む（下に出ないときの逃げ道）
     var nextInPlace = async function(){
-      var n = state.next || await callTool('nextQuestion', { sessionId: state.sessionId });
-      if (!n || n.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(n.status)) throw new Error('NEXT_UNAVAILABLE');
-      if (state.next === n) state.next = null;
-      render(n);
-      window.scrollTo(0, 0);
+      foregroundTransitionStarted();
+      try {
+        // prefetchの応答も公式エンジンの出題結果だけを利用する。
+        // 古い採点対象と同一問なら明示的に取得し直し、前問への逆戻りを防ぐ。
+        var n = state.next;
+        if (!n || n.status !== 'question' ||
+            n.question?.questionId === q.questionId) {
+          n = await callTool('nextQuestion', { sessionId: state.sessionId });
+        }
+        if (!n || n.error || !['question','waiting','finished','remediation','sourceUnavailable','restoreIdle'].includes(n.status))
+          throw new Error('NEXT_UNAVAILABLE');
+        if (n.status === 'question' && n.question?.questionId === q.questionId)
+          throw new Error('SAME_QUESTION_AFTER_GRADE');
+        // 遷移後のスナップショットを、旧採点画面より後の最新表示として保存する。
+        state.next = null;
+        render(n);
+        if (n.status === 'question') saveRecentView(n);
+      } finally { foregroundTransitionEnded(); }
     };
     var nextBtn = function(inPlace){
       document.getElementById('next').onclick = inPlace ? nextInPlace : function(){ nextBelow(nextInPlace); };
@@ -3684,8 +3697,11 @@ a{color:inherit}
   // 学習データを会話に添付せず、保存済みの進行状態だけを学習エンジンから読む。
   // 画面を行き来したときにも、採点・nextQuestion・startStudyは自動実行しない。
   var restoring = false, wasHidden = false;
-  // タップ中の読取再描画でボタンをDOMから外さない。ホスト通知による更新は通常どおり処理。
-  var lastLocalInteractionAt = 0;
+  // 通常操作中のバックグラウンド復元が採点後画面で最新問を上書きしないようにする。
+  // 復元はread-only、ユーザーが押した次問は唯一の書込み経路。
+  var foregroundTransitionDepth = 0, lastLocalInteractionAt = 0, lastForegroundTransitionAt = 0;
+  function foregroundTransitionStarted(){ foregroundTransitionDepth++; lastLocalInteractionAt = Date.now(); }
+  function foregroundTransitionEnded(){ foregroundTransitionDepth = Math.max(0, foregroundTransitionDepth-1); lastForegroundTransitionAt = Date.now(); }
   if (typeof document.addEventListener === 'function') {
     document.addEventListener('pointerdown', function(){ lastLocalInteractionAt = Date.now(); }, true);
     document.addEventListener('keydown', function(){ lastLocalInteractionAt = Date.now(); }, true);
@@ -3702,7 +3718,8 @@ a{color:inherit}
   }
   setTimeout(studyViewPoll, 4500);
   async function restoreFromServer(manual){
-    if (restoring) return;
+    if (restoring || (!manual && (foregroundTransitionDepth > 0 ||
+      Date.now() - lastForegroundTransitionAt < 1800))) return;
     if (!state.sessionId) {
       // 別資格の過去のsessionIdがlocalStorageに残っていても新しい資格へ流用しない。
       var currentInput = input() || {}, currentOutput = openaiOutput() || {};
@@ -3722,6 +3739,9 @@ a{color:inherit}
         restored = await callTool('getStudySnapshot', { sessionId: backup });
       }
       if (!restored || restored.error || !restored.status || restored.status === 'error') throw new Error('RESTORE_UNAVAILABLE');
+      // 非同期読取が操作開始前に走った場合も、後着の古いスナップショットで
+      // いま押した「次の問題」の結果を上書きしない。
+      if (!manual && foregroundTransitionDepth > 0) return;
       // 通常の背景更新では、意味のある現在画面を汎用的な待機表示で上書きしない。
       if (!manual && hasView && restored.status === 'restoreIdle') return;
       // 明示的な再開だけ所有枠を切り替える。自動復元は元の枠を奪わない。
@@ -3821,10 +3841,11 @@ a{color:inherit}
       try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
       // 内部縦スクロールは持たない。画面先頭にある最新表示へ移動を依頼する。
       // ChatGPT本体の位置はホスト管理のため確実な制御はできない。
-      try { window.scrollTo(0, 0); } catch(e) {}
-      try { if (document.scrollingElement) document.scrollingElement.scrollTop = 0; } catch(e) {}
+      // Brave/Androidではiframe内のscrollIntoViewが外側のChatGPT会話を
+      // 古い学習枠の位置まで動かす。ホスト文書のスクロールには介入しない。
+      // 枠内だけ先頭へ戻し、既存latestへfocusする。
       try { app.scrollTop = 0; } catch(e) {}
-      try { latest.scrollIntoView({behavior:'instant',block:'start',inline:'nearest'}); } catch(e) {}
+      try { if (document.scrollingElement) document.scrollingElement.scrollTop = 0; } catch(e) {}
     }
     align();
     if (typeof requestAnimationFrame === 'function') requestAnimationFrame(function(){
