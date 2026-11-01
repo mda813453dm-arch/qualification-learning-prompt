@@ -214,8 +214,9 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
   assert.ok(widget.includes("lessonField + 'の確認問題・第1問へ進む'"));
   assert.ok(widget.includes('この分野の確認問題へ'));
   assert.ok(widget.includes('function scrollUp(noMark)'));
-  assert.ok(widget.includes('window.scrollTo(0, 0)'));
-  assert.ok(widget.includes('latest.scrollIntoView({behavior:'));
+  assert.ok(widget.includes('latest.focus({ preventScroll: true })'));
+  assert.ok(widget.includes('app.scrollTop = 0'));
+  assert.ok(!widget.includes('latest.scrollIntoView({behavior:'), 'Android Braveで親チャットをスクロールさせない');
   assert.match(widget, /#app\.study-viewport\{height:auto;max-height:none;overflow:visible/);
   // This path does not use a chat text answer as the lesson display.
   assert.match(menuTool.description, /チャットには書かず/);
@@ -244,7 +245,7 @@ test('学習枠の二重縦スクロールを廃止して自然高さにし、�
   assert.match(html, /html,body\{height:auto;min-height:0;overflow:visible\}/);
   assert.match(html, /app\.classList\.add\('study-viewport'\)/);
   assert.doesNotMatch(html, /#app\.study-viewport\{height:clamp/);
-  assert.match(html, /latest\.scrollIntoView\(\{behavior:'instant',block:'start'/);
+  assert.doesNotMatch(html, /latest\.scrollIntoView\(/, 'iframeからホスト側のチャットスクロールを動かさない');
   assert.doesNotMatch(html, /document\.addEventListener\('click', function\(\)\{ goFull\(\); \}/,
     '利用者のタップを全画面への自動切替に使わない');
   assert.match(html, /if \(turn === latestFocusTurn\) \{ fit\(\); align\(\); \}/);
