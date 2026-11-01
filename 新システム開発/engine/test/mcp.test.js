@@ -90,7 +90,7 @@ test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じ
   const ops = [...yaml.matchAll(/operationId: (\w+)/g)].map((m) => m[1]);
   assert.deepEqual(names.sort(), [...ops, 'attachPdf', 'attachPdfBatch', 'getOfficialLibrary'].sort());
   for (const name of names) assert.ok(INSTRUCTIONS.includes(name), `プロンプトに ${name} が出てくる`);
-  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 15);
+  assert.equal(TOOLS.filter((t) => !t.appOnly).length, 16);
   assert.ok(names.includes('attachPdf'), '通常のチャットでもPDF登録ツールを公開する');
   assert.ok(names.includes('attachPdfBatch'), '複数年度のPDFを1回で送信するツールを公開する');
 });
