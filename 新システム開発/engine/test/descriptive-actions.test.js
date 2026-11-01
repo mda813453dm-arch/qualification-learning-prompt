@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handle } from '../src/app.js';
 import { MemoryStore } from '../src/store.js';
+import { descriptiveView } from '../src/descriptive.js';
 
 const T0 = Date.parse('2026-10-24T07:20:00Z');
 const SID = '11111111-2222-4333-8444-555555555555';
@@ -238,9 +239,12 @@ test('記述式の各小問の参考解答を解説と同時登録し、再表�
   assert.deepEqual(saved.body.answerSummary,summary);
   const restored=await send(e,'GET',path+'?questionId='+encodeURIComponent(Q1));
   assert.deepEqual(restored.body.answerSummary,summary);
-  const view=await send(e,'GET','/v1/sessions/'+SID+'/restore');
-  assert.deepEqual(view.body.answerSummary,summary);
-  assert.equal(view.body.grade,undefined,'記述式の採点は追加しない');
+  // restore API requires an actual started study. Validate its shared
+  // descriptiveView contract against persisted state without faking a started user.
+  const stored=await e.STORE.get('ses/'+SID,'json');
+  const view=descriptiveView(stored.state.descriptiveCurrent,SID,true);
+  assert.deepEqual(view.answerSummary,summary);
+  assert.equal(view.grade,undefined,'記述式の採点は追加しない');
   const stale=await send(e,'POST',path,{questionId:Q2,explanationMarkdown:landExplanation,answerSummary:summary});
   assert.equal(stale.status,409);
   const absent=await send(e,'POST',path,{questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation,

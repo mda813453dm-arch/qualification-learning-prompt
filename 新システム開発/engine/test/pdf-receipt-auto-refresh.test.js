@@ -71,8 +71,9 @@ test('licensed import status never silently stops after 48 or 120 polls',()=>{
   assert.doesNotMatch(script,/pollCount > pollLimit/);
   assert.match(script,/var statusKey = JSON\.stringify\(\[uploaded, latest\.readyYearDetails, staged, running, errors, latest\.importHistory\]\)/);
 });
-test('an older frame cannot falsely label itself the newest chat display',()=>{
-  assert.doesNotMatch(html,/ここが最新の表示です/);
-  assert.match(html,/この学習枠の先頭です/);
+test('latest marker appears only on the active frame and old frames are locked',()=>{
+  assert.match(html,/▼ ここが最新の表示です/);
+  assert.match(script,/if \(turn !== latestFocusTurn \|\| locked/);
+  assert.match(script,/function lockOld\(\)\{[\s\S]*?app\.innerHTML = '<div class="old-screen"/);
   assert.match(html,/この枠は以前の表示です/);
 });
