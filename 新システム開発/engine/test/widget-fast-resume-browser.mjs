@@ -83,6 +83,9 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     await page.evaluate(() => {window.holdAnswer=false;window.pendingAnswers.splice(0).forEach(fn=>fn());});
     await first.locator('#dkExp').waitFor();
     await first.locator('#qlpBusy').waitFor({state:'hidden'});
+    const gradedCache=await page.evaluate(() => JSON.parse(sessionStorage.getItem('qlp_recent_study_v1:fast-resume-test-session')||'null'));
+    assert.equal(gradedCache?.view?.status,'restoredGrade','採点後は未回答ではなく採点済み画面を保存');
+    assert.equal(gradedCache?.view?.question?.questionNumber,1);
     assert.equal(await first.locator('#app > .latest').count(),1);
     assert.equal(await first.locator('.latest').evaluate(el=>document.activeElement===el),true);
     // 新しい学習画面を保存したあと、古いツール出力の状態でiframeを作り直す。
