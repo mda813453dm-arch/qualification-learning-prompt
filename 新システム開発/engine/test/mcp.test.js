@@ -503,38 +503,40 @@ test('既存モデル公開ツールは解説参照番号を採点済みデー�
   assert.doesNotMatch(widgetHtml(), /var visible = [^;]*JSON\.stringify\(data\)/);
 });
 
-test('同じ分野の3問は3択、次の分野へ移るときだけ4択。空の総復習は進行しない', async () => {
+test('分野50%の区切りだけ分野移行の選択を出し、空の総復習で進めない', async () => {
   const env = makeEnv({ answers: [3, 1, 4, 2], fieldIds: ['s1', 's1', 's1', 's2'], figureOn: [] });
-  const s = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
-  const { sessionId } = s.structuredContent;
+  const started = await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] });
+  const { sessionId } = started.structuredContent;
   let q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
-  assert.deepEqual([q.progress.position, q.progress.done, q.progress.total, q.progress.fieldQuestion], [1, 0, 24, 1]);
-  for (let i = 0; i < 3; i += 1) {
-    const grade = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: String([3, 1, 4][i]) })).structuredContent;
-    assert.equal(grade.grade.correct, true);
-    const menu = (await rpc(env, 'tools/call', { name: 'showMenu', arguments: { kind: 'next', body: '解説本文', sessionId } }, { path: '/app' })).body.result._meta.qlp.menu;
-    assert.deepEqual(menu.actions, i < 2 ? ['next', 'end'] : ['next', 'continueField', 'review', 'end'],
-      '解説本文がある場合は再解説の無反応ボタンを省く');
-    assert.deepEqual(menu.choices, i < 2 ? ['次の問題へ', '今日はここまで（学習を終了）'] :
-      ['次の分野の問題へ', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
+  assert.deepEqual([q.progress.position, q.progress.done, q.progress.total, q.progress.fieldQuestion, q.progress.fieldQuestionTotal],
+    [1, 0, 4, 1, 2]);
+  for (let i = 0; i < 2; i += 1) {
+    const answer = String([3, 1][i]);
+    const graded = (await call(env, 'submitAnswer', { sessionId, questionId:q.questionId, value:answer })).structuredContent;
+    assert.equal(graded.grade.correct, true);
+    const menu = (await rpc(env, 'tools/call', { name:'showMenu', arguments: { kind:'next', body:'解説本文', sessionId } }, { path:'/app' })).body.result._meta.qlp.menu;
+    assert.deepEqual(menu.actions, i === 0 ? ['next', 'end'] : ['next', 'continueField', 'review', 'end']);
+    assert.deepEqual(menu.choices, i === 0
+      ? ['次の問題へ', '今日はここまで（学習を終了）']
+      : ['次の分野の問題へ', 'この分野の実践問題を続ける', '総復習（間違えた問題）', '今日はここまで（学習を終了）']);
     assert.equal(menu.journey.fieldIndex, 1);
-    if (i < 2) {
+    if (i === 0) {
       q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
-      assert.equal(q.progress.position, i + 2);
-      assert.equal(q.progress.fieldQuestion, i + 2);
+      assert.equal(q.progress.fieldQuestion, 2);
+      assert.equal(q.progress.fieldQuestionTotal, 2);
+    } else {
+      assert.equal(graded.next.question.fieldName !== q.fieldName, true, '半分を終えて次の分野を先取り');
     }
   }
   const before = await env.STORE.get(`ses/${sessionId}`);
-  const empty = (await call(env, 'nextQuestion', { sessionId, question: '総復習（間違えた問題）' })).structuredContent;
+  const empty = (await call(env, 'nextQuestion', { sessionId, question:'総復習（間違えた問題）' })).structuredContent;
   assert.equal(empty.status, 'reviewEmpty');
   assert.match(empty.notice, /間違えた問題はまだありません/);
   assert.equal(await env.STORE.get(`ses/${sessionId}`), before);
-  const exhausted = (await call(env, 'nextQuestion', { sessionId, question: 'この分野の未出題の実践問題を続ける' })).structuredContent;
-  assert.equal(exhausted.status, 'fieldExhausted');
-  assert.equal(await env.STORE.get(`ses/${sessionId}`), before, '未出題が無いときは次の分野を進めない');
   const next = (await call(env, 'nextQuestion', { sessionId })).structuredContent;
-  assert.equal(next.question.questionNumber, 4);
-  assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex], [4, 3, 2]);
+  assert.equal(next.question.questionNumber, 4, '未出題の分野を優先');
+  assert.deepEqual([next.question.progress.position, next.question.progress.done, next.question.progress.fieldIndex, next.question.progress.fieldQuestionTotal],
+    [3, 2, 2, 1]);
 });
 
 test('画面復帰：未回答・採点後・スキップ後・AI確認問題を保存済みの位置に読取専用で復元', async () => {
@@ -631,21 +633,22 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
   assert.equal(official.question.fieldName, fieldName);
 });
 
-test('3問後に同じ分野の未出題の実践問題を続けると、先取りした次分野を飛ばさず元の分野の4問目を出す', async () => {
-  const env = makeEnv({ answers: [3, 1, 4, 2, 3], fieldIds: ['s1', 's1', 's1', 's1', 's2'], figureOn: [] });
-  const { sessionId } = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
-  let q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
-  for (const answer of ['3', '1', '4']) {
-    const graded = (await call(env, 'submitAnswer', { sessionId, questionId: q.questionId, value: answer })).structuredContent;
-    if (answer !== '4') q = (await call(env, 'nextQuestion', { sessionId })).structuredContent.question;
-    else assert.equal(graded.next.question.fieldName !== q.fieldName, true);
+test('50%後に同じ分野の未出題問題を続けると先取りされた別分野を飛ばし元の分野の残りへ進む', async () => {
+  const env = makeEnv({ answers:[3,1,4,2,3], fieldIds:['s1','s1','s1','s1','s2'], figureOn:[] });
+  const {sessionId} = (await call(env,'startSession',{qualificationId:SRC.qualificationId,sources:[SRC]})).structuredContent;
+  let q = (await call(env,'nextQuestion',{sessionId})).structuredContent.question;
+  for (const [i,answer] of ['3','1'].entries()) {
+    const graded = (await call(env,'submitAnswer',{sessionId,questionId:q.questionId,value:answer})).structuredContent;
+    if (!i) q = (await call(env,'nextQuestion',{sessionId})).structuredContent.question;
+    else assert.equal(graded.next.question.fieldName !== q.fieldName,true);
   }
-  const continued = (await call(env, 'nextQuestion', { sessionId, question: 'この分野の未出題の実践問題を続ける' })).structuredContent;
-  assert.equal(continued.status, 'question');
-  assert.equal(continued.question.questionNumber, 4);
-  assert.equal(continued.question.fieldName, q.fieldName);
-  assert.equal(continued.fieldChanged, false);
-  assert.equal(continued.question.progress.fieldQuestion, 1, '同じ分野で新しい3問セットを始める');
+  const continued = (await call(env,'nextQuestion',{sessionId,question:'この分野の未出題の実践問題を続ける'})).structuredContent;
+  assert.equal(continued.status,'question');
+  assert.equal(continued.question.questionNumber,3);
+  assert.equal(continued.question.fieldName,q.fieldName);
+  assert.equal(continued.fieldChanged,false);
+  assert.equal(continued.question.progress.fieldQuestion,1,'同じ分野の残り50%は新しいセット');
+  assert.equal(continued.question.progress.fieldQuestionTotal,2);
 });
 
 test('ツールだけで、取り込み → 出題 → 採点 → 引継ぎ まで通る', async () => {
