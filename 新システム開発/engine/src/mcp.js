@@ -711,7 +711,7 @@ export function forModel(body) {
     // iOSアプリが _meta をウィジェットへ転送しない場合でも、必須の初期質問を表示できる。
     // 公式概要と質問項目は秘匿情報ではない。AIはツールの案内に従い自分で質問を作らない。
     const { planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
-    return { ...rest, browserFallback: BROWSER_FALLBACK, howToProceed: '免除（ある資格だけ）と学習状況は学習画面へ送信済み。正常に見えている場合は画面のボタンで選んでもらい、AIは同じ質問や別のフォームを作らない。Android版などで学習枠が表示されないと利用者から報告された場合、実在しないボタンの操作を求めず、ブラウザで同じChatGPT会話を開く手順をすぐ伝える。学習計画・初期診断・開始・進め方の選択はエンジン学習枠で進む。画面表示はサーバー応答だけでは確認できない。' + ANDROID_UI_FALLBACK };
+    return { ...rest, browserFallback: BROWSER_FALLBACK, howToProceed: '免除（ある資格だけ）と学習状況は学習画面へ送信済み。正常に見えている場合は画面のボタンで選んでもらい、AIは同じ質問や別のフォームを作らない。Android版などで学習枠が表示されないと利用者から報告された場合、実在しないボタンの操作を求めず、ブラウザで同じChatGPT会話を開く手順をすぐ伝える。学習計画・初期診断・開始・進め方の選択はエンジン学習枠で進む。AIは独自メニューを作らず、showMenu も nextQuestion も呼ばない。画面表示はサーバー応答だけでは確認できない。' + ANDROID_UI_FALLBACK };
   }
   const slim = (v) => {
     if (!v?.question) return v;
