@@ -818,6 +818,7 @@ a{color:inherit}
     app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
       '<div id="sourceManageStatus" class="notice" role="status">登録状況を確認しています。解答履歴と現在の問題は変更しません。</div>' +
       '<div class="row"><button type="button" id="sourceManageBack">学習中の問題に戻る</button></div>';
+    scrollUp();
     async function goBack(){
       if (!sourceManagerOpen) return;
       var statusNode = document.getElementById('sourceManageStatus');
@@ -914,6 +915,7 @@ a{color:inherit}
           '<div class="row"><button type="button" id="sourceManageLandDescriptive">記述式を出題（2007〜2025年度・採点なし）</button></div></div>' : '') +
         '<div class="row"><button type="button" id="sourceManageBack">同じ問題に戻る</button></div>';
       document.getElementById('sourceManageBack').onclick = goBack;
+      scrollUp();
       var archivedDescriptiveBtn=document.getElementById('sourceManageLandDescriptive');
       if (archivedDescriptiveBtn) archivedDescriptiveBtn.onclick=function(){
         sourceManagerOpen=false;
@@ -3900,6 +3902,7 @@ a{color:inherit}
   function showRecovery(message){
     app.innerHTML = '<h2>資格学習</h2><div class="notice" role="alert">' + esc(message) + '</div><div class="row"><button id="recoverStudy" type="button">学習画面を復元</button></div>';
     document.getElementById('recoverStudy').onclick = function(){ restoreFromServer(true); };
+    scrollUp();
     fit();
   }
   function unavailable(){
