@@ -77,11 +77,39 @@ export function validateDescriptiveExplanation(markdown, current) {
   return { ok: true };
 }
 
+
+/** 解答一覧はAIが明示した内容のみ保存し、原本から数値を推測しない。
+ * 未確認は「未確認」と書く。古い未指定の保存記録には空配列を使用。
+ */
+export function validateDescriptiveAnswerSummary(summary, markdown) {
+  if (summary === undefined) return { ok: true, rows: [] };
+  if (!Array.isArray(summary) || !summary.length || summary.length > 15)
+    return { ok: false, code: 'DESCRIPTIVE_SUMMARY_INVALID' };
+  const text = String(markdown ?? '').normalize('NFKC');
+  const headings = [...text.matchAll(/^\s*#{1,4}\s*(?:第\s*)?問\s*(\d{1,2})(?=\s|[：:（(]|$)/gm)]
+    .map((m) => Number(m[1]));
+  const unique = new Set(headings);
+  const seen = new Set();
+  const rows = [];
+  for (const entry of summary) {
+    if (!entry || typeof entry !== 'object' || !Number.isInteger(entry.number) ||
+        entry.number < 1 || entry.number > 30 || seen.has(entry.number) ||
+        typeof entry.answer !== 'string' || !entry.answer.trim() || entry.answer.length > 300 ||
+        !unique.has(entry.number))
+      return { ok: false, code: 'DESCRIPTIVE_SUMMARY_INVALID' };
+    seen.add(entry.number);
+    rows.push({ number: entry.number, answer: entry.answer.trim() });
+  }
+  if (seen.size !== unique.size) return { ok: false, code: 'DESCRIPTIVE_SUMMARY_INCOMPLETE' };
+  rows.sort((a, b) => a.number - b.number);
+  return { ok: true, rows };
+}
+
 export function descriptiveView(stored, sessionId, revealed = false) {
   const explanationMarkdown = revealed && typeof stored.explanationMarkdown === 'string'
     ? stored.explanationMarkdown : '';
   return { status: explanationMarkdown ? 'descriptiveActions' : revealed ? 'descriptiveReveal' : 'descriptiveQuestion', sessionId,
-    ...(explanationMarkdown ? { explanationMarkdown } : {}),
+    ...(explanationMarkdown ? { explanationMarkdown, answerSummary: stored.answerSummary ?? [] } : {}),
     question: { kind: 'descriptive', gradingMode: 'none', questionId: stored.questionId,
       year: stored.year, section: stored.section, number: stored.number,
       shownAt: stored.shownAt ?? null,

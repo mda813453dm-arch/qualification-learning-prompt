@@ -227,3 +227,26 @@ test('表示用に丸めたG座標では面積が変わるため最終丸めに�
   assert.notEqual(Math.floor(area*100)/100,95.92,
     'do not falsely assert that rounded point yields the reference solution');
 });
+
+test('記述式の各小問の参考解答を解説と同時登録し、再表示でも保持する',async()=>{
+  const e=env();await store(e,Q1,T0,T0+1);
+  const path='/v1/sessions/'+SID+'/descriptive/actions';
+  const summary=[{number:1,answer:'188°40′、6.93m'},{number:2,answer:'未確認（原本照合が必要）'}];
+  const saved=await send(e,'POST',path,{questionId:Q1,shownAt:T0,
+    explanationMarkdown:landExplanation,answerSummary:summary});
+  assert.equal(saved.status,200,JSON.stringify(saved.body));
+  assert.deepEqual(saved.body.answerSummary,summary);
+  const restored=await send(e,'GET',path+'?questionId='+encodeURIComponent(Q1));
+  assert.deepEqual(restored.body.answerSummary,summary);
+  const view=await send(e,'GET','/v1/sessions/'+SID+'/restore');
+  assert.deepEqual(view.body.answerSummary,summary);
+  assert.equal(view.body.grade,undefined,'記述式の採点は追加しない');
+  const stale=await send(e,'POST',path,{questionId:Q2,explanationMarkdown:landExplanation,answerSummary:summary});
+  assert.equal(stale.status,409);
+  const absent=await send(e,'POST',path,{questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation,
+    answerSummary:[{number:1,answer:'数値が不明'}]});
+  assert.equal(absent.status,422,'小問2の要約欠落は拒否');
+  const mismatched=await send(e,'POST',path,{questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation,
+    answerSummary:[{number:1,answer:'未確認'},{number:99,answer:'架空の問'}]});
+  assert.equal(mismatched.status,422,'存在しない小問番号は拒否');
+});
