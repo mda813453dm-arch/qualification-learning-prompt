@@ -232,11 +232,11 @@ export function pickNext(state, items, { today, now=null, job }) {
     const set = state.set;
     const inFocus = state.focusField && fresh.filter((x) => x.packet.fieldId === state.focusField);
     if (inFocus && inFocus.length &&
-        (!set || set.fieldId !== state.focusField || set.count < (set.target || fieldTarget(set.fieldId)))) {
+        (!set || set.fieldId !== state.focusField || set.count < fieldTarget(set.fieldId))) {
       const next = inFocus.find((x) => !(set?.years ?? []).includes(x.packet.year)) ?? inFocus[0];
       return newQuestion(next);
     }
-    if (set && set.count < (set.target || fieldTarget(set.fieldId))) {
+    if (set && set.count < fieldTarget(set.fieldId)) {
       const same = fresh.filter((x) => x.packet.fieldId === set.fieldId);
       const next = same.find((x) => !(set.years ?? []).includes(x.packet.year)) ?? same[0];
       if (next) return newQuestion(next);
