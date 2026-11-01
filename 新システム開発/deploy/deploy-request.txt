@@ -457,3 +457,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-01 Android表示不能対策・回帰試験の既存操作契約維持（59494cf2）を再デプロイ要求
 
 2026-11-01 Android WebView scroll clipping fix v169: bounded iframe height, internal Android scroll, preserve iPhone natural height, browser regression
+
+2026-11-01 Android v169 deploy verification replay after stale v168 check-explanation import repaired 7621d95a
