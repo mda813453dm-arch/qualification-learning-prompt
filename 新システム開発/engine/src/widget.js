@@ -1920,7 +1920,7 @@ a{color:inherit}
     var p = q.progress;
     if (p && Number.isInteger(p.position) && Number.isInteger(p.total) && p.total > 0) {
       h += journeyBar(p.fieldIndex, p.fieldTotal, 'practice', q.fieldName);
-      if (p.fieldQuestion && p.fieldQuestionTotal) h += localBar('この分野の実践問題（登録済みの50％）', p.fieldQuestion, p.fieldQuestionTotal);
+      if (p.fieldQuestion && p.fieldQuestionTotal) h += localBar('この分野の実践問題', p.fieldQuestion, p.fieldQuestionTotal);
       h += '<div class="notice">全分野の登録済み公式問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
       // 取込は回答を遮らない。登録済み問題が残り少ないときだけ控えめに案内する。
       if (!p.review && Number.isInteger(p.done) && p.total - p.done <= 3 && p.total > 3) {
@@ -3606,7 +3606,7 @@ a{color:inherit}
     var progress = q.progress || {};
     app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice', q.fieldName) +
       (progress.fieldQuestion && progress.fieldQuestionTotal
-        ? localBar('この分野の実践問題（登録済みの50％）', progress.fieldQuestion, progress.fieldQuestionTotal) : '') +
+        ? localBar('この分野の実践問題', progress.fieldQuestion, progress.fieldQuestionTotal) : '') +
       gradeBanner(g, label) +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答の根拠：' + pdf + '</div>' +
       officialAnswerSummary(q, g) +
