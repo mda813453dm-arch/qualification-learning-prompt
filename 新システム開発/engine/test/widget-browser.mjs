@@ -369,7 +369,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '「分からない」後も最新の採点結果の先頭をフォーカス');
     assert.equal(await ui.locator('.latest').count(), 1);
     assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答は3です/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答は\s*3\s*です/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length),beforeDontKnow+1);
     await page.evaluate(r => window.deliver(r), result(question));
     await ui.getByRole('button', { name: '分からない', exact: true }).waitFor();
