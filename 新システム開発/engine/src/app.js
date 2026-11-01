@@ -1329,11 +1329,22 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   let continuePick = null;
   if (want === CONTINUE_FIELD_WANT) {
     const fid = state.lastExplanation?.fieldId ?? state.lastGrade?.fieldId ?? state.current?.fieldId;
-    const remaining = items.find((x) => x.packet.fieldId === fid && !state.history?.[x.packet.questionId] &&
-      !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId));
-    if (!remaining) return { status: 'fieldExhausted', sessionId: id,
-      notice: `${fieldNames[fid] ?? 'この分野'}の未出題の実践問題はありません。次の分野へ進むか、復習を選んでください。` };
-    continuePick = { item: remaining, kind: 'new', fieldId: fid };
+    const allowed = items.filter((x) => x.packet.fieldId === fid && x.packet.questionType !== 'unknown' &&
+      x.packet.questionType !== 'descriptive' && !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId));
+    const remaining = allowed.find((x) => !state.history?.[x.packet.questionId]);
+    if (remaining) {
+      continuePick = { item: remaining, kind: 'new', fieldId: fid };
+    } else {
+      // この分野の全問題を解いた後だけ、保存済みの公式問からランダムに再出題する。
+      const answered = allowed.filter((x) => state.history?.[x.packet.questionId] &&
+        (state.plan?.questionPreferenceScope !== 'all' || state.plan?.questionPreference === 'any' ||
+          x.packet.questionType === state.plan.questionPreference));
+      const withoutLast = answered.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? state.current?.questionId));
+      const choices = withoutLast.length ? withoutLast : answered;
+      if (!choices.length) return { status: 'fieldExhausted', sessionId: id,
+        notice: `${fieldNames[fid] ?? 'この分野'}には出題可能な問題がありません。出題形式・登録状況を確認してください。` };
+      continuePick = { item: choices[Math.floor(Math.random() * choices.length)], kind: 'review', fieldId: fid, recycled: true };
+    }
   }
   // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
   const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
