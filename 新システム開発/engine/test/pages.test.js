@@ -16,7 +16,7 @@ function srcOf(slug) {
   return { qualificationId: c.qualificationId, adapter: s.adapter, year: s.year, section: s.section, questionUrl: s.questionUrl, answerUrl: s.answerUrl ?? s.questionUrl };
 }
 
-function makeEnv() {
+function makeEnv({ surveyorFields = null } = {}) {
   const files = {};
   for (const slug of Object.keys(CATALOG).filter((key) => !CATALOG[key].overviewOnly)) {
     const s = CATALOG[slug].sources[0];
@@ -39,7 +39,7 @@ function makeEnv() {
     const src = srcOf(slug);
     // 測量士補：問1〜6（分野 s1,s1,s2,s1,s2,s3）。宅建：問1〜50（分野 t1〜t7 を順に）
     const answers = slug === 'takken' ? Array.from({ length: 50 }, (_, i) => (i % 4) + 1) : [3, 1, 4, 2, 5, 1];
-    const fieldIds = slug === 'takken' ? Array.from({ length: 50 }, (_, i) => `t${(i % 7) + 1}`) : ['s1', 's1', 's2', 's1', 's2', 's3'];
+    const fieldIds = slug === 'takken' ? Array.from({ length: 50 }, (_, i) => `t${(i % 7) + 1}`) : (slug === 'surveyor' && surveyorFields ? surveyorFields : ['s1', 's1', 's2', 's1', 's2', 's3']);
     const q = bytes(b.question);
     const r = await fakeResult({ src, qBytes: q, aBytes: b.answer ? bytes(b.answer) : q, answers, fieldIds, figureOn: slug === 'takken' ? [] : [2] });
     return new Response(JSON.stringify({ result: r.result, assets: assetsB64(r.assets) }));
@@ -121,7 +121,7 @@ test('学習計画は取り込んだ過去問の分野別出題数で分野の�
   assert.match(plan, /根拠：公式の過去問6問（取り込み済みの2026年度）の分野別出題数の多い順/);
   assert.match(plan, /1\. 測量に関する法規（出題3問）\n　2\. 多角測量（出題2問）\n　3\. GNSS測量（出題1問）/);
   assert.match(plan, /最初に学ぶ分野：測量に関する法規（過去問で最も多く出題されている分野です）/);
-  assert.match(plan, /同じ分野から3問ずつ、複数の年度にまたがって出題/);
+  assert.match(plan, /各分野の登録・正答検証済みの問題数の50%（端数切上げ）を一区切り/);
 });
 
 test('初期診断：各分野2問を出し、公式の問題が足りない分野はAI作成問題で補い、結果から苦手分野の順に計画を作り直す', async () => {
@@ -195,14 +195,15 @@ test('採点後は固定4行のあと「解説の確認」を番号で聞き、�
   assert.match(withExp, /前の問題（2026年度 問1、正答3、利用者の答え3）の解説/);
   r = await get(env, answerPick(withExp, 1));
   q = await get(env, link(r, '2 以後も'));
-  assert.match(q, /■2026年度 問4/, '同じ分野（s1）の3問目');
-  r = await get(env, answerPick(q, 2));
+  assert.match(q, /📍多角測量\n■2026年度 問3/, '法規3問の50%（端数切上げ）は2問。次は多角測量');
+  r = await get(env, answerPick(q, 4));
   assert.doesNotMatch(r, /■解説の確認/, '「以後も」で毎回は聞かない');
-  assert.match(r, /■採点\n正解です。[\s\S]*📍多角測量\n■2026年度 問3/, '3問セットが終わると次の分野へ');
+  assert.match(r, /■採点\n正解です。/, '次分野でも公式正答で採点');
 });
 
 test('同じ分野で3問続けて間違えると、次の実践問題を出さずに確認問題へ移り、正解で同じ分野へ戻る', async () => {
-  const { env } = makeEnv();
+  // このテストだけ法規を5問とし、50%区切りが3問になるようにする。
+  const { env } = makeEnv({ surveyorFields:['s1','s1','s1','s1','s1','s2'] });
   const o = await toPractice(env, 'surveyor');
   let t = o.page;
   t = await get(env, answerPick(t, 1)); // 問1 不正解
@@ -346,8 +347,7 @@ test('宅建で免除を利用すると、問46〜50は出題しない', async (
   const o = await toPractice(env, 'takken', { exempt: true });
   let t = o.page;
   const seen = [];
-  for (let i = 0; i < 60; i += 1) {
-    if (/すべて解き終えました/.test(t)) break;
+  for (let i = 0; i < 45; i += 1) {
     const m = /■2025年度 問(\d+)/.exec(t);
     assert.ok(m, t);
     seen.push(Number(m[1]));
@@ -357,6 +357,10 @@ test('宅建で免除を利用すると、問46〜50は出題しない', async (
   assert.equal(seen.length, 45);
   assert.ok(seen.every((n) => n <= 45));
   assert.equal(new Set(seen).size, 45);
+  assert.ok(!/すべて解き終えました/.test(t), '45問を一巡後は公式問題からランダム出題へ');
+  const repeated = /■2025年度 問(\d+)/.exec(t);
+  assert.ok(repeated, '全問既出でも復習を出す');
+  assert.ok(Number(repeated[1]) <= 45, '免除46-50は再出題でも除外');
 });
 
 test('過去問は学習者ごとに期限なしで持つ。2人目は分解済みを自分の分として写し、分解し直さない', async () => {
