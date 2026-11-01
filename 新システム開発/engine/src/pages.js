@@ -20,7 +20,7 @@
  * - engine：エンジンの状態（回答の履歴・復習予定・出題中の問）。履歴と復習予定は、利用者の訂正で外せる。
  * 問題本文・会話・個人情報は保存しない。
  */
-import { availablePackets, grade, jstToday, newState, pin, present } from './engine.js';
+import { availablePackets, fieldPracticeTarget, grade, jstToday, newState, pin, present } from './engine.js';
 import { startJob } from './ingest.js';
 import { discover } from './discover.js';
 import { CATALOG, LEVELS } from './catalog.js';
@@ -312,7 +312,7 @@ function planLines(rec, items) {
     ...order.map((f, i) => `　${i + 1}. ${fieldName(rec, f)}${tag(f)}`),
     `・最初に学ぶ分野：${fieldName(rec, first)}（${reason}）`,
     `・進め方：${method}`,
-    `・公式の過去問：同じ分野から${SET_SIZE}問ずつ、複数の年度にまたがって出題し、エンジンが公式の正答で採点します。苦手な分野・頻出の分野ほど多く出題します。`,
+    '・公式の過去問：各分野の登録・正答検証済みの問題数の50%（端数切上げ）を一区切りとし、未回答を全問優先した後で既出問題をランダムに出題します。採点は公式の正答で行います。',
     diagLine,
     `・確認問題：同じ分野で${WRONG_STREAK}問続けて間違えたら、確認問題で基本を補強してから戻ります。`,
     `・復習：${(REVIEW_PATTERNS[r.reviewPattern] ?? REVIEW_PATTERNS.ai).label}。期限が来た問題を、学習の最初に最大${REVIEW_AT_START}問、その後は新しい問題${REVIEW_EVERY}問ごとに1問出します（アプリを閉じている間の自動通知はありません）。`,
@@ -475,7 +475,8 @@ function questionParts(ctx, item, kind, repeated = false) {
   const { rec, base, now } = ctx;
   const r = R(rec);
   if (!repeated) rec.qn += 1;
-  rec.engine = pin(rec.engine, item, kind, now);
+  rec.engine = pin(rec.engine, item, kind, now,
+    { setTarget: fieldPracticeTarget(ctx.items ?? [], item.packet.fieldId) });
   const f = item.packet.fieldId;
   if (kind === 'new' && !repeated && rec.engine.set?.count === 1) r.fieldSets[f] = (r.fieldSets[f] ?? 0) + 1;
   const q = present(item, kind, `${base}/v1/figure`);
@@ -627,7 +628,7 @@ function noQuestionParts(ctx, job) {
 
 /**
  * 次に出すものを決める（マスタープロンプト B15 の判定順に合わせる）。
- * 初期診断 → 回答待ちの画面 → 連続不正解の補強 → 出題中の問 → 期限の来た復習 → 同じ分野の3問セットの続き → 次の分野。
+ * 初期診断 → 回答待ち → 連続不正解の補強 → 出題中の問 → 期限復習 → 分野50%セットの続き → 次の分野。
  */
 async function nextContent(ctx, lead = []) {
   const { rec } = ctx;
@@ -674,11 +675,30 @@ async function nextContent(ctx, lead = []) {
     cands = avail;
   }
   const set = rec.engine.set;
-  const f = set && set.count < SET_SIZE && cands.includes(set.fieldId)
-    ? set.fieldId
-    : chooseField({ order, stats: fieldStats(rec.engine.history), sets: r.fieldSets, candidates: cands });
-  if (!f) return L(noQuestionParts(ctx, job));
-  const inSet = set && set.fieldId === f && set.count < SET_SIZE;
+  const target = set?.fieldId ? (set.target || fieldPracticeTarget(items, set.fieldId)) : 0;
+  const continuing = !!(set && set.count < target && cands.includes(set.fieldId));
+  // 50%を終えたら、ほかに未出題問題のある分野があれば必ず移動する。
+  const nextCandidates = !continuing && set && cands.length > 1
+    ? cands.filter((f) => f !== set.fieldId) : cands;
+  const f = continuing ? set.fieldId
+    : chooseField({ order, stats: fieldStats(rec.engine.history), sets: r.fieldSets,
+      candidates: nextCandidates.length ? nextCandidates : cands });
+  if (!f) {
+    if (job?.state === 'running') return L(noQuestionParts(ctx, job));
+    // 全ての分野の未出題問題が尽きた後だけ、登録済みの解答済み問をランダムに再出題。
+    const answered = items.filter((x) => rec.engine.history?.[x.packet.questionId] &&
+      !(rec.engine.skipped ?? []).some((v) => v.questionId === x.packet.questionId) &&
+      x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive');
+    if (answered.length) {
+      const last = rec.engine.lastGrade?.questionId;
+      const remaining = answered.filter((x) => x.packet.questionId !== last);
+      const choices = remaining.length ? remaining : answered;
+      const pick = choices[Math.floor(Math.random() * choices.length)];
+      return L(questionParts(ctx, pick, 'review'));
+    }
+    return L(noQuestionParts(ctx, job));
+  }
+  const inSet = continuing && set.fieldId === f;
   if (!inSet) {
     const mode = r.fieldModes[f] ?? r.defaultMode;
     if (!mode) return L(modeParts(ctx, setPending(ctx, { type: 'mode', fieldId: f })));
@@ -761,7 +781,7 @@ async function checkResult(ctx, token, ok) {
     fd.checked = true;
     fd.explained = true;
     if (p.purpose === 'reinforce') r.wrongStreaks[f] = 0;
-    // 同じ分野の実践問題へ戻る（新しい3問セット）
+    // 同じ分野の実践問題へ戻る（新しい50%セット）
     rec.engine = { ...rec.engine, set: { fieldId: f, count: 0 } };
     return nextContent(ctx, [`確認問題に正解しました。「${name}」の実践問題へ進みます。`]);
   }
