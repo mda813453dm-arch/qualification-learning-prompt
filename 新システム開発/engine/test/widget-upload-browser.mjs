@@ -117,7 +117,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     await page.waitForFunction(count=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').length>count,beforeLocal);
     const local=await page.evaluate(()=>window.calls.filter(c=>c.name==='attachPdfBatchFromPicker').at(-1));
     assert.equal(local.args.questionPdfs[0].file_name,'R4_Mondai.pdf','iPhone内のPDF検索ボタンから登録へ進める');
-    assert.equal(await ui.locator('#app').getByText('▼ この学習枠の先頭です').count(),1,'古い最新表示の誤表示を残さない');
+    assert.equal(await ui.locator('#app').getByText('▼ ここが最新の表示です').count(),1,'古い最新表示の誤表示を残さない');
     assert.equal(await page.evaluate(()=>window.followups.length),0,'受領後も追加のAIメッセージは送信しない');
     assert.deepEqual(errors,[],name+' console errors: '+errors.join(','));
     console.log(name+': PASS chat attachment guidance and auto status with retained consent');
