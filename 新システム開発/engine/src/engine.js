@@ -241,6 +241,13 @@ export function pickNext(state, items, { today, now=null, job }) {
       const next = same.find((x) => !(set.years ?? []).includes(x.packet.year)) ?? same[0];
       if (next) return newQuestion(next);
     }
+    // ほかに未出題分野が無ければこの分野を続行。年の偏りを避けて未出題年度を優先する。
+    // 50%到達で別分野に移る原則を崩さず、単一分野の資格でも年度横断を維持する。
+    const freshFields = new Set(fresh.map((x) => x.packet.fieldId));
+    if (set && freshFields.size === 1 && freshFields.has(set.fieldId)) {
+      const next = fresh.find((x) => !(set.years ?? []).includes(x.packet.year)) ?? fresh[0];
+      return newQuestion(next);
+    }
     const solved = {};
     const eligibleIds = new Set(eligible.map((x) => x.packet.questionId));
     for (const [qid, h] of Object.entries(state.history ?? {})) {
