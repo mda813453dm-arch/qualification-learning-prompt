@@ -51,7 +51,12 @@ for(const [name,engine] of [['chromium',chromium],['webkit',webkit]]){
       document.body.appendChild(iframe);
     },{html:widgetHtml(),sid,one,two,grade});
     const ui=page.frameLocator('#study');
-    await ui.getByText('問10の本文',{exact:true}).waitFor();
+    await ui.getByText('問10の本文',{exact:true}).waitFor({timeout:8000}).catch(async err=>{
+      const state=await ui.locator('body').innerText().catch(()=>'(no iframe body)');
+      const html=await ui.locator('body').innerHTML().catch(()=>'(no iframe html)');
+      const messages=await page.evaluate(()=>window.calls);
+      throw new Error('BRAVE_BOOT_FAILED '+JSON.stringify({state:state.slice(0,1700),html:html.slice(0,2200),errors,messages}).slice(0,5000)+' '+err.message);
+    });
     await ui.locator('input[name=ans][value="3"]').check();
     await ui.getByRole('button',{name:'解答する',exact:true}).click();
     await ui.getByText('✓ 正解！').waitFor();
