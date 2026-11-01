@@ -766,7 +766,7 @@ a{color:inherit}
   function recentViewKey(sid){ return recentViewPrefix + encodeURIComponent(String(sid)); }
   function saveRecentView(data){
     if (!data || !data.sessionId || data.error || recentPreview || locked ||
-        !['question','restoredGrade','confirmation_question','confirmation_result','menu','needPlan','finished'].includes(data.status)) return;
+        !['question','restoredGrade','confirmation_question','confirmation_result','descriptiveQuestion','descriptiveActions','menu','needPlan','finished'].includes(data.status)) return;
     try {
       var json = JSON.stringify({sessionId:String(data.sessionId),savedAt:Date.now(),view:data});
       if (json.length < 300000) sessionStorage.setItem(recentViewKey(data.sessionId), json);
