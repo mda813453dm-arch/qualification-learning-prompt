@@ -86,7 +86,7 @@ export async function validateResult(src, shas, parserVersion, result, assets) {
   for (const p of result.packets ?? []) {
     const reason = packetProblem(src, shas, p, seen, assetSha);
     if (reason) excluded.push({ questionNumber: p?.questionNumber ?? null, reason });
-    else packets.push({ ...p, learningStrategy: learningPolicy(p) });
+    else packets.push({ ...p, questionType: 'multiple_choice', learningStrategy: learningPolicy(p) });
   }
   return { ...result, packets, excluded, packetCount: packets.length, status: packets.length ? (excluded.length ? 'partial' : 'ready') : 'unavailable' };
 }
@@ -96,6 +96,10 @@ function packetProblem(src, shas, p, seen, assetSha) {
   if (seen.get(p.questionNumber) > 1) return 'QUESTION_NUMBER_DUPLICATED';
   if (p.questionId !== QUESTION_ID(src, p.questionNumber)) return 'QUESTION_ID_MISMATCH';
   if (p.questionPdfSha256 !== shas.question || p.answerPdfSha256 !== shas.answer) return 'PACKET_SHA_MISMATCH';
+  // The ordinary packet format has a verified numeric answer and choices. Descriptive
+  // questions have a separate, non-graded original-PDF route until official rubrics
+  // are independently verified; never relabel them as multiple choice.
+  if (p.questionType !== undefined && p.questionType !== 'multiple_choice') return 'QUESTION_TYPE_UNVERIFIED';
   if (!Array.isArray(p.choices) || p.choices.length < 2 || p.choices.some((c) => typeof c !== 'string' || !c.trim())) return 'CHOICES_INCOMPLETE';
   if (!Number.isInteger(p.correctAnswer) || p.correctAnswer < 1 || p.correctAnswer > p.choices.length) return 'OFFICIAL_ANSWER_OUT_OF_RANGE';
   if (p.acceptedAnswers !== undefined) {

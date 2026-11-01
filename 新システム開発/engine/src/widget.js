@@ -1219,6 +1219,14 @@ a{color:inherit}
       app.insertAdjacentHTML('afterbegin', '<div class="notice">前の問題：' + (g.skipped ? 'スキップ' : g.dontKnow ? '分からない（正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）' : (g.correct ? '正解' : '不正解') + '（正答は ' + esc(g.correctAnswerLabel || g.correctAnswer) + '）') + '</div>');
       return;
     }
+    if (data.status === 'formatUnavailable' || data.status === 'no_matching_review') {
+      var canOpenDescriptive = data.questionPreference === 'descriptive' && data.descriptiveAvailable === true;
+      app.innerHTML = '<h2>希望した形式の問題を確認できません</h2>' +
+        '<div class="notice" role="status">' + esc(data.notice || '別形式へ自動では切り替えません。') + '</div>' +
+        (canOpenDescriptive ? '<div class="row"><button id="openRequestedDescriptive">記述式の年度・問題を選ぶ</button></div>' : '') + endBar();
+      if (canOpenDescriptive) document.getElementById('openRequestedDescriptive').onclick = function(){ showDescriptiveMenu(2025); };
+      bindEnd(); return;
+    }
     if (data.status === 'diagPreview') { diagPreview(data.diag); return; }
     if (data.status === 'diagIntro') { diagIntro(data.diag, data.question); return; }
     if (data.status === 'diagResult') { diagResultScreen(data); return; }

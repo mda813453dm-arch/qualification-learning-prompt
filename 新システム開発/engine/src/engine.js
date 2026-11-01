@@ -21,7 +21,10 @@ export function newState({ qualificationId, learnerId = null, plan = {}, now }) 
     qualificationId,
     learnerId, // 引継ぎID：学習者ごとの取り込み・保存に使う（無い古い記録は共有の取り込みを使う）
     createdAt: now,
-    plan: { examDate: plan.examDate ?? null, fieldWeights: plan.fieldWeights ?? {} },
+    plan: { examDate: plan.examDate ?? null, fieldWeights: plan.fieldWeights ?? {},
+      ...(Array.isArray(plan.orderedFields) ? { orderedFields: [...plan.orderedFields] } : {}),
+      questionPreference: QUESTION_PREFERENCES.includes(plan.questionPreference) ? plan.questionPreference : 'any',
+      questionPreferenceScope: PREFERENCE_SCOPES.includes(plan.questionPreferenceScope) ? plan.questionPreferenceScope : 'new' },
     history: {}, // questionId -> {result, selected, answeredAt, source}
     review: {}, // 論点ID（未分類なら問題ID） -> 復習の予定
     reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 }, // 今回の学習の復習と実践の配分
@@ -98,13 +101,34 @@ export function updatePlan(state, patch = {}, { fieldIds, now = null } = {}) {
 }
 
 /** 取り込みが済んだ分解結果から、出題できる問を集める（年度の新しい順・問番号順）。 */
+/** Backward compatibility for packets verified before questionType was introduced.
+ * This checks the already stored, source-bound multiple-choice answer/choices.
+ * Explicit 'unknown' or 'descriptive' is never converted or graded here.
+ */
+export function verifiedLegacyChoicePacket(p, keyParts) {
+  return p && p.questionType === undefined &&
+    Array.isArray(p.choices) && p.choices.length >= 2 &&
+    p.choices.every((c) => typeof c === 'string' && c.trim()) &&
+    Number.isInteger(p.correctAnswer) && p.correctAnswer >= 1 &&
+    p.correctAnswer <= p.choices.length &&
+    (typeof p.stem === 'string' && p.stem.trim() || p.stemMode === 'official_image') &&
+    p.questionPdfSha256 === keyParts.questionSha256 &&
+    p.answerPdfSha256 === keyParts.answerSha256;
+}
 export async function availablePackets(store, job, now) {
   const out = [];
   for (const s of job?.sources ?? []) {
     if (s.status !== 'done' || !s.keyParts) continue;
     const r = await readResult(store, s.keyParts, now);
     if (!r.hit) continue; // 期限切れ：次の取り込みで取り直す
-    for (const p of r.result.packets) out.push({ packet: p, keyParts: s.keyParts });
+    for (const p of r.result.packets ?? []) {
+      // Validated legacy MC caches stay usable without rewriting caches or
+      // changing parserVersion. Unverified/unknown and descriptive packets are
+      // not accepted by the numeric-answer grading engine.
+      if (p.questionType === 'multiple_choice') out.push({ packet: p, keyParts: s.keyParts });
+      else if (verifiedLegacyChoicePacket(p, s.keyParts))
+        out.push({ packet: { ...p, questionType: 'multiple_choice' }, keyParts: s.keyParts });
+    }
   }
   out.sort((a, b) => b.packet.year - a.packet.year || a.packet.questionNumber - b.packet.questionNumber);
   return out;
@@ -143,7 +167,8 @@ function recentYearsPending(job) {
 export function pickNext(state, items, { today, now=null, job }) {
   if (state.remediation?.required) return { status: 'remediation', fieldId: state.remediation.fieldId };
   const withheld = new Set([...state.withheld.map((w) => w.questionId), ...(state.skipped ?? []).map((x) => x.questionId)]);
-  const usable = items.filter((x) => !withheld.has(x.packet.questionId));
+  const usable = items.filter((x) => !withheld.has(x.packet.questionId) &&
+    x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive');
   const byId = new Map(usable.map((x) => [x.packet.questionId, x]));
   const byUnit = new Map();
   for(const x of usable){
@@ -183,7 +208,7 @@ export function pickNext(state, items, { today, now=null, job }) {
   // 形式の希望があるときは、新規出題をその形式だけにする。形式不明の問題は推測で分類せず「検証待ち」として出さない。
   // 該当形式が無いときは、黙って別の形式へ切り替えず formatUnavailable を返す。
   const fresh = unsolved.filter(formatOk);
-  if (pref !== 'any' && !fresh.length && unsolved.length && !(job && job.state === 'running')) {
+  if (pref !== 'any' && !fresh.length && !(job && job.state === 'running')) {
     return { status: 'formatUnavailable', preference: pref,
       unverifiedCount: unsolved.filter((x) => !x.packet.questionType).length };
   }

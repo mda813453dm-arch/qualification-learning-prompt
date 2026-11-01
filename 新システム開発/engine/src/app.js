@@ -424,7 +424,10 @@ async function createSession(env, { qualificationId, learnerId, plan, sources },
 
 /** 記述式は択一120問と別系統で出題する。公式問題原本をSHAで検証する。 */
 async function openDescriptive(env, id, state, now, requested) {
-  if (state.qualificationId !== 'land_surveyor') throw new HttpError(422, 'DESCRIPTIVE_QUALIFICATION_MISMATCH');
+  if (state.qualificationId !== 'land_surveyor' || (requested?.qualificationId != null && catalogQid(requested.qualificationId) !== state.qualificationId))
+    throw new HttpError(409, 'QUALIFICATION_MISMATCH');
+  if (state.plan?.questionPreference === 'multiple_choice')
+    throw new HttpError(409, 'DESCRIPTIVE_MODE_MISMATCH');
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
     throw new HttpError(409, 'STUDY_NOT_STARTED');
   const spec = descriptiveSpec(requested.year, requested.section, requested.number, catalogFor(state.qualificationId)?.officialPdfPins);
@@ -1329,16 +1332,32 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // 総復習：間違えた問題（今の記録で不正解のまま）を、ランダムな順に一問ずつ出す。同じ問が続かないようにする
   const reviewWant = want && REVIEW_WANT.test(want.normalize('NFKC'));
   const wrongPool = reviewWant ? items.filter((x) => ['wrong', 'recall_failure'].includes(state.history[x.packet.questionId]?.result)) : [];
-  const reviewPool = wrongPool.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
-  const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : wrongPool[0] ?? null;
+  const strictReview = state.plan?.questionPreferenceScope === 'all' &&
+    ['multiple_choice','descriptive'].includes(state.plan?.questionPreference);
+  const eligibleReview = strictReview
+    ? wrongPool.filter((x) => x.packet.questionType === state.plan.questionPreference) : wrongPool;
+  const reviewPool = eligibleReview.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
+  const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : eligibleReview[0] ?? null;
   const wanted = continuePick ?? (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
-  if (reviewWant && !wanted) return { status: 'reviewEmpty', sessionId: id,
-    notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
+  if (reviewWant && !wanted) return strictReview && wrongPool.length
+    ? { status: 'no_matching_review', sessionId: id,
+      notice: '指定された形式の復習問題はありません。別の形式の問題には自動で切り替えません。' }
+    : { status: 'reviewEmpty', sessionId: id,
+      notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
   const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
   const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), now, job });
+  // Direct question, field continuation and explicit review bypass pickNext().
+  // Apply the SAME format contract before any packet can be pinned for grading.
+  const pref = state.plan?.questionPreference ?? 'any';
+  const strict = state.plan?.questionPreferenceScope === 'all';
+  if (pick.status === 'question' && pref !== 'any' &&
+      (pick.kind !== 'review' || strict) && pick.item.packet.questionType !== pref)
+    return { status: 'formatUnavailable', sessionId: id, questionPreference: pref,
+      descriptiveAvailable: state.qualificationId === 'land_surveyor',
+      notice: '指定された形式の問題は出題できません。別形式へ自動では切り替えません。' };
   if (pick.status !== 'question') {
     // 取り込み中は、進み具合（棒グラフと残り時間の目安）をそのまま見せる文にする
     const notice = pick.status === 'waiting' ? job?.progress ?? job?.notice ?? null : job?.notice ?? null;
@@ -1352,6 +1371,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       // 希望の形式が無いときに、別の形式へ黙って切り替えない（2026-11-01 修正設計）
       const label = pick.preference === 'descriptive' ? '記述式' : '択一式';
       return { status: 'formatUnavailable', sessionId: id, questionPreference: pick.preference,
+        descriptiveAvailable: state.qualificationId === 'land_surveyor',
         unverifiedCount: pick.unverifiedCount,
         notice: `希望の出題形式（${label}）の未出題問題は、現在出題できません。` +
           (pick.unverifiedCount ? `形式を確認できていない問題${pick.unverifiedCount}問は、確認が済むまで出題しません。` : '') +
@@ -1851,8 +1871,8 @@ async function route(request, env, url, now) {
       updated = updatePlan(state, {
         qualificationId: b.qualificationId != null ? catalogQid(b.qualificationId) : undefined,
         orderedFields: ordered,
-        questionPreference: b.questionPreference,
-        questionPreferenceScope: b.questionPreferenceScope,
+        questionPreference: b.questionPreference ?? (startMode === 'descriptive' ? 'descriptive' : 'any'),
+        questionPreferenceScope: b.questionPreferenceScope ?? 'new',
         extra: { methodChoice, methodDistribution: dist ?? null, reviewPreset: preset,
           reviewIntervalsMinutes: preset === 'custom' ? [...raw] : REVIEW_PATTERNS[preset].days.map((d) => d * 1440),
           otherNote, startMode },
@@ -1876,7 +1896,7 @@ async function route(request, env, url, now) {
     if (method === 'POST' && parts.length === 4) {
       const b = (await body(request)) ?? {};
       return json(200, await openDescriptive(env, id, state, now,
-        { year: b.year, section: b.section, number: b.number }));
+        { year: b.year, section: b.section, number: b.number, qualificationId: b.qualificationId }));
     }
     // ユーザーが旧問題画面を押した際、採点や進行の変更なしで最新問を検証する。
     // restoreStudyView は「学習開始済み」でないと記述式を返さないため、この専用照合を使う。
@@ -1986,6 +2006,8 @@ async function route(request, env, url, now) {
     const currentChat = await readChatStudy(env, hostChatKey(request));
     if (currentChat?.active && currentChat.qualificationId !== state.qualificationId)
       throw new HttpError(409, 'STUDY_ACTIVE_OTHER_QUALIFICATION', activeStudyHint);
+    if (b?.qualificationId != null && catalogQid(b.qualificationId) !== state.qualificationId)
+      throw new HttpError(409, 'QUALIFICATION_MISMATCH');
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
     if (isExactQuestionRequest(want)) {
@@ -2010,7 +2032,9 @@ async function route(request, env, url, now) {
     const desc = state.qualificationId === 'land_surveyor' ? requestedDescriptive(want) : null;
     if (desc) return json(200, await openDescriptive(env, id, state, now, desc));
     if (want?.includes('択一式に戻る') && state.descriptiveCurrent) {
-      const updated = { ...state, descriptiveCurrent: null };
+      // This is an explicit user choice, not a silent fallback from descriptive.
+      const updated = updatePlan({ ...state, descriptiveCurrent: null },
+        { questionPreference: 'any', questionPreferenceScope: 'new', extra: { startMode: 'standard' } }, { now });
       await saveSession(env, id, updated, now);
       return json(200, await nextView(env, id, updated, now, { want: null }));
     }
