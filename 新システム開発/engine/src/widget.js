@@ -626,12 +626,12 @@ a{color:inherit}
   function loadIds(){ try { return JSON.parse(localStorage.getItem('qlp_ids') || '{}') || {}; } catch (e) { return {}; } }
   function journeyBar(fieldIndex, fieldTotal, stage, fieldName){
     if (!Number.isInteger(fieldIndex) || !Number.isInteger(fieldTotal) || fieldIndex < 1 || fieldTotal < fieldIndex) return '';
-    var step = stage === 'explain' ? 1 : stage === 'check1' ? 2 : stage === 'check2' ? 3 : stage === 'check3' ? 4 : stage === 'practice2' ? 6 : stage === 'practice3' ? 7 : 5;
-    var total = fieldTotal * 7, position = (fieldIndex - 1) * 7 + step;
+    var step = stage === 'explain' ? 1 : stage === 'check1' ? 2 : stage === 'check2' ? 3 : stage === 'check3' ? 4 : 5;
+    var total = fieldTotal * 5, position = (fieldIndex - 1) * 5 + step;
     var label = stage === 'explain' ? '解説' : stage.indexOf('check') === 0 ? '確認問題' : '実践問題';
     return '<div class="study-progress"><div class="progress-head"><span>全分野の学習ルート</span><span>' + esc(fieldIndex) + ' / ' + esc(fieldTotal) + '分野</span></div>' +
       '<div class="progress-track" role="progressbar" aria-label="全分野の学習ルートの位置" aria-valuemin="0" aria-valuemax="' + esc(total) + '" aria-valuenow="' + esc(position) + '"><div class="progress-fill" style="width:' + esc(Math.round(100 * position / total)) + '%"></div></div>' +
-      '<div class="progress-detail">今：' + esc(fieldName || 'この分野') + '・' + label + ' ／ 全' + esc(total) + '段階中 ' + esc(position) + '段階目（解説1・確認3・実践3を各分野の目安とした位置。習得率ではありません）</div></div>';
+      '<div class="progress-detail">今：' + esc(fieldName || 'この分野') + '・' + label + ' ／ 全' + esc(total) + '段階中 ' + esc(position) + '段階目（解説1・確認3・実践は登録済みの50％を一区切りとした位置。習得率ではありません）</div></div>';
   }
   function localBar(label, position, total){
     return '<div class="study-progress"><div class="progress-head"><span>' + esc(label) + '</span><span>' + esc(position) + ' / ' + esc(total) + '問</span></div>' +
@@ -894,12 +894,12 @@ a{color:inherit}
       var errors = failed.length ? '<div class="notice" role="alert">取込失敗：' +
         failed.map(function(x){return esc(x.year)+'年度 '+esc(x.section||'')+'（'+esc(x.reason)+'）';}).join('、') + '</div>' : '';
       app.innerHTML = '<h2>過去問の追加・登録状況</h2>' +
-        '<div id="sourceManageStatus" class="notice" role="status"><b>追加する時期は自由です。</b> おすすめは①初回の実践前、②同分野3問の区切り、③登録済み問題が残り少なくなったときです。回答途中でも登録状況を確認できますが、登録作業は回答後がスムーズです。今の問題と学習記録は保持します。</div>' +
+        '<div id="sourceManageStatus" class="notice" role="status"><b>追加する時期は自由です。</b> おすすめは①初回の実践前、②分野別50％の区切り、③登録済み問題が残り少なくなったときです。回答途中でも登録状況を確認できますが、登録作業は回答後がスムーズです。今の問題と学習記録は保持します。</div>' +
         '<div class="import-state ready"><strong>現在利用できる過去問</strong><div id="sourceManageReadyList">' + entries + '</div></div>' +
         pending + errors + '<div class="notice">' + caution + '</div>' +
         (lib.sourceAttachmentSupported ?
           '<div class="import-state pending"><strong>別の年度のPDFを追加</strong>' +
-          '<p>実践開始前・同分野3問の区切り・登録済み問題が少なくなった時がおすすめです。追加は任意です。</p>' +
+          '<p>実践開始前・分野別50％の区切り・登録済み問題が少なくなった時がおすすめです。追加は任意です。</p>' +
           '<p>' + answerHint + '（1回の選択で最大10ファイル）</p>' +
           optionalFields +
           (lib.permissionedUpload ? '<label class="notice"><input type="checkbox" id="sourceManageRights"> 添付するPDFの保存・解析に必要な権利者の許諾を得ています</label>' : '') +
@@ -1919,9 +1919,9 @@ a{color:inherit}
     var h = '';
     var p = q.progress;
     if (p && Number.isInteger(p.position) && Number.isInteger(p.total) && p.total > 0) {
-      h += journeyBar(p.fieldIndex, p.fieldTotal, 'practice' + Math.min(3, p.fieldQuestion || 1), q.fieldName);
-      if (p.fieldQuestion) h += localBar('この分野の実践問題', Math.min(3, p.fieldQuestion), 3);
-      h += '<div class="notice">全分野の実践問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
+      h += journeyBar(p.fieldIndex, p.fieldTotal, 'practice', q.fieldName);
+      if (p.fieldQuestion && p.fieldQuestionTotal) h += localBar('この分野の実践問題（登録済みの50％）', p.fieldQuestion, p.fieldQuestionTotal);
+      h += '<div class="notice">全分野の登録済み公式問題：解答済み ' + esc(p.done) + ' / ' + esc(p.total) + '問' + (p.review ? '（復習中）' : '') + '</div>';
       // 取込は回答を遮らない。登録済み問題が残り少ないときだけ控えめに案内する。
       if (!p.review && Number.isInteger(p.done) && p.total - p.done <= 3 && p.total > 3) {
         h += '<div class="notice">登録済みの実践問題が残り少なくなりました。今の問題を解き終えた後、「過去問の追加・登録状況」で利用できる年度を確認できます。追加は任意です。</div>';
@@ -2584,7 +2584,7 @@ a{color:inherit}
     var h = journeyBar(j.fieldIndex, j.fieldTotal, j.stage, j.fieldName) + body + '<h2>' + esc(m.prompt) + '</h2><div class="choices">' + entries.map(function(e, i){ return '<button data-n="' + (i + 1) + '"><b>' + (i + 1) + '</b><span>' + esc(e.choice) + '</span></button>'; }).join('') +
       (m.kind === 'lesson' ? '<button id="lessonMenuPractice" type="button"><b>' + (entries.length + 1) + '</b><span>公式過去問へ進む</span></button>' : '') + '</div>';
     if (m.notice) h += '<div class="notice">' + esc(m.notice) + '</div>';
-    // 同じ分野の3問終了は追加登録に適した区切り。強制的な登録画面遷移は行わない。
+    // 分野別50%の区切りは追加登録に適している。強制遷移はしない。
     if (m.kind === 'next') {
       h += '<div class="notice">この区切りで新しい年度の過去問を追加することもできます。登録済みの問題が十分あれば、追加せず次へ進んで構いません。</div>' +
         sourceManagerBar();
@@ -3604,7 +3604,9 @@ a{color:inherit}
     var fieldChange = state.next?.status === 'question' && state.next.question?.kind === 'new' &&
       q.fieldName && state.next.question.fieldName && q.fieldName !== state.next.question.fieldName;
     var progress = q.progress || {};
-    app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice' + Math.min(3, progress.fieldQuestion || 1), q.fieldName) +
+    app.innerHTML = journeyBar(progress.fieldIndex, progress.fieldTotal, 'practice', q.fieldName) +
+      (progress.fieldQuestion && progress.fieldQuestionTotal
+        ? localBar('この分野の実践問題（登録済みの50％）', progress.fieldQuestion, progress.fieldQuestionTotal) : '') +
       gradeBanner(g, label) +
       '<div class="stem"><b>■採点</b><br>' + (g.correct ? '正解です。' : '不正解です。') + '<br>正答：' + esc(g.correctAnswerLabel || g.correctAnswer) + '<br>解答の根拠：' + pdf + '</div>' +
       officialAnswerSummary(q, g) +
