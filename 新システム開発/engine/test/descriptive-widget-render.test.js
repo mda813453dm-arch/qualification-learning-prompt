@@ -100,17 +100,23 @@ test('AI解説と操作パネルは同じ画面で隣接し、古い問題デー
   const end=script.indexOf('  function showDescriptiveQuestion(d)',start);
   assert.ok(start>=0 && end>start);
   const app={innerHTML:''}, state={question:'old',answered:true};
-  const show=new Function('app','state','esc','explanationHtml','descriptiveMenuButtons',
+  const show=new Function('app','state','esc','explanationHtml','descriptiveSummaryHtml','descriptiveMenuButtons',
     'endBar','publishDescriptive','scrollUp','bindEnd','bindDescriptiveNavigation',
     script.slice(start,end)+'\nreturn showDescriptiveActions;')(
-    app,state,esc,explanationHtml,()=>'<button id="nextDescriptive">次の記述式へ</button>',
+    app,state,esc,explanationHtml,
+    entries=>'<section class="descriptive-answer-summary">'+entries.map(x=>'問'+x.number+':'+esc(x.answer)).join('|')+'</section>',
+    ()=>'<button id="nextDescriptive">次の記述式へ</button>',
     ()=>'<button id="endStudy">学習終了</button>',()=>true,()=>{},()=>{},()=>{}
   );
   show({status:'descriptiveActions',
     question:{year:2025,section:'午前の部',number:11,questionId:'land_surveyor:2025:午前の部:11'},
-    explanationMarkdown:'## 第11問\n\nS=Abs(Imag(A*Conjg(B)))/2'});
+    explanationMarkdown:'## 第11問\n\nS=Abs(Imag(A*Conjg(B)))/2',
+    answerSummary:[{number:1,answer:'188°40′／6.93m'},{number:2,answer:'未確認'}]});
+  const summary=app.innerHTML.indexOf('class="descriptive-answer-summary"');
   const exp=app.innerHTML.indexOf('class="descriptive-explanation"');
   const nav=app.innerHTML.indexOf('class="descriptive-actions"');
+  assert.ok(summary>=0 && summary<exp && exp<nav,'各小問の解答一覧→詳細解説→操作ボタンの順');
+  assert.match(app.innerHTML,/188°40′/);
   assert.ok(exp>=0 && nav>exp,'解説の後にボタンがある');
   assert.equal((app.innerHTML.match(/id="nextDescriptive"/g)||[]).length,1);
   assert.ok(!app.innerHTML.includes('descriptive-source'));

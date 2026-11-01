@@ -294,6 +294,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-explanation ul,.descriptive-explanation ol{padding-left:1.5em;margin:8px 0}
 .descriptive-explanation code{background:var(--btn);border-radius:4px;padding:1px 3px;white-space:pre-wrap;overflow-wrap:anywhere}
 .descriptive-explanation .equation{background:var(--accbg);padding:10px 12px;border-radius:8px;overflow-x:auto;overflow-wrap:normal;white-space:pre-wrap;font-size:15px;line-height:1.75}.descriptive-explanation .math-inline{font-family:ui-monospace,Menlo,monospace;font-size:.94em;overflow-wrap:anywhere}.descriptive-explanation .question-table td,.descriptive-explanation .question-table th{text-align:left;white-space:normal;vertical-align:top;min-width:4em}.descriptive-explanation .table-scroll{margin:14px 0}.descriptive-explanation pre{white-space:pre-wrap;overflow-x:auto;background:var(--btn);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.6}
+.descriptive-answer-summary{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:10px 0 18px;background:var(--btn)}.descriptive-answer-summary h3{margin:0 0 8px;font-size:16px;font-weight:700;color:var(--fg)}.descriptive-answer-summary ol{margin:0;padding-left:1.8em}.descriptive-answer-summary li{padding:3px 0;overflow-wrap:anywhere}
 .descriptive-actions{border-top:2px solid var(--line);padding-top:14px;margin-top:12px}
 .fig-overlay{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column}.fig-controls{display:flex;gap:8px;align-items:center;padding:8px;background:var(--bg);border-bottom:1px solid var(--line)}.fig-controls button{font:inherit;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn);color:var(--fg)}.fig-scroll{flex:1;overflow:auto;overscroll-behavior:contain;touch-action:pan-x pan-y pinch-zoom}.fig-scroll img{display:block;height:auto;max-width:none;background:#fff}
 .choices{display:flex;flex-direction:column;gap:5px;margin:8px 0}
@@ -1996,6 +1997,15 @@ a{color:inherit}
       '<button id="backDescriptive">年度・問題を選び直す</button>' +
       '<button id="returnMcq">択一式に戻る</button></div>';
   }
+  // Only model-provided results; numerical answers must not be inferred.
+  function descriptiveSummaryHtml(entries){
+    if (!Array.isArray(entries) || !entries.length) return '';
+    var rows = entries.map(function(entry){
+      return '<li><b>問' + esc(entry.number) + '</b>：' + esc(entry.answer) + '</li>';
+    }).join('');
+    return '<section class="descriptive-answer-summary" aria-label="各問のAI参考解答">' +
+      '<h3>各問の参考解答一覧（AI作成）</h3><ol>' + rows + '</ol></section>';
+  }
   // 解説の「下」に表示する。原本本文・表・図のデータをここでは受け取らない。
   function showDescriptiveActions(d){
     var q = d.question || {};
@@ -2007,7 +2017,8 @@ a{color:inherit}
     }
     app.innerHTML = '<h2>' + (withExplanation ? 'AI参考解答・解説' : '解説後の操作') + '｜' + esc(q.year) + '年度 ' + esc(q.section) +
       ' 問' + esc(q.number) + '</h2>' +
-      (withExplanation ? '<div class="notice">AIによる参考解説です。公式模範解答としての採点は行いません。</div>' +
+      (withExplanation ? descriptiveSummaryHtml(d.answerSummary) +
+        '<div class="notice">AIによる参考解説です。公式模範解答としての採点は行いません。</div>' +
         '<section class="descriptive-explanation" aria-label="AI参考解説">' + explanationHtml(d.explanationMarkdown) + '</section>' : '') +
       '<div class="descriptive-actions"><div class="notice">' +
       (withExplanation ? '解説はここまでです。続ける操作を選んでください。' : '現在の問題の操作パネルです。') + '</div>' +
