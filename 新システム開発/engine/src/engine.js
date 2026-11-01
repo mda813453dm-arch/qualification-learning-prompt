@@ -55,7 +55,7 @@ export function planFieldOrder(plan, fieldIds = null) {
  * 学習計画の変更（2026-11-01 調査共有の修正設計）。
  * - orderedFields：分野IDの重複・欠落・未知を拒否。明示された順は fieldWeights や診断の自動調整より優先し、重みは順から作り直す。
  * - questionPreference：any | multiple_choice | descriptive。scope は new（新規出題だけ限定）| all（利用者が「〜のみ」と明示したときだけ復習も限定）。
- * - 出題中で未回答の問・採点記録・復習予定は変えない。分野順が変わったら、途中の3問セットを閉じて次の新規出題から新しい順を使う。
+ * - 出題中で未回答の問・採点記録・復習予定は変えない。分野順が変わったら、途中の分野別50%セットを閉じて次の新規出題から新しい順を使う。
  * - 計画の版（revision）と履歴（最大20件）を残す。
  */
 export function updatePlan(state, patch = {}, { fieldIds, now = null } = {}) {
@@ -134,8 +134,19 @@ export async function availablePackets(store, job, now) {
   return out;
 }
 
-/** 同じ分野から続けて出す問の数（仕様：同分野の過去問を連続で3問）。 */
+/** 旧セッションのセット目標が保存されていない場合だけ使う互換値。新規出題は登録済み問題の50%。 */
 export const SET_SIZE = 3;
+export const FIELD_PRACTICE_FRACTION = 0.5;
+/** 検証済みの出題対象 questionId を分野ごとに数え、端数を切り上げて50%を区切りにする。 */
+export function fieldPracticeTarget(items, fieldId, eligible = () => true) {
+  if (!fieldId) return 0;
+  const ids = new Set();
+  for (const item of items ?? []) {
+    const p = item?.packet;
+    if (p?.fieldId === fieldId && p.questionId && eligible(item)) ids.add(p.questionId);
+  }
+  return ids.size ? Math.max(1, Math.ceil(ids.size * FIELD_PRACTICE_FRACTION)) : 0;
+}
 
 /** 同じ分野で続けて間違えたら、確認問題へ移ることを勧める回数（仕様：3問連続不正解）。 */
 export const WRONG_STREAK = 3;
@@ -201,52 +212,64 @@ export function pickNext(state, items, { today, now=null, job }) {
     const hit = alt ?? variants[0] ?? (direct && reviewFormatOk(direct) ? direct : null);
     if (hit) return { status: 'question', item: hit, kind: 'review' };
   }
-  // 2) まだ解いていない問。仕様：同じ分野（fieldId）から3問続けて出す。
-  //    続きの分野に未出題の問があればそこから、なければ新しい分野を選ぶ（分野の重みが大きい順、
-  //    同じ重みならこれまでに解いた数が少ない分野、それも同じなら出題数の多い分野）。分野の中では年度の新しい順・問番号順（同じまとまりでは、まだ出していない年度を先に）。
+  // 2) 新規問題は各分野で登録・検証済みの問題数の50%（端数切上げ）を一区切りとする。
+  //    未出題を優先し、分野を一巡後に残りの50%へ戻る。年度は可能なら横断する。
   const unsolved = usable.filter((x) => !state.history[x.packet.questionId] && x.packet.fieldId);
   // 形式の希望があるときは、新規出題をその形式だけにする。形式不明の問題は推測で分類せず「検証待ち」として出さない。
   // 該当形式が無いときは、黙って別の形式へ切り替えず formatUnavailable を返す。
   const fresh = unsolved.filter(formatOk);
-  if (pref !== 'any' && !fresh.length && !(job && job.state === 'running')) {
+  const eligible = usable.filter(formatOk);
+  if (pref !== 'any' && !eligible.length && !(job && job.state === 'running')) {
     return { status: 'formatUnavailable', preference: pref,
       unverifiedCount: unsolved.filter((x) => !x.packet.questionType).length };
   }
+  const counts = fieldCountsOf(eligible);
+  const fieldTarget = (fid) => Math.max(1, Math.ceil((counts[fid] ?? 0) * FIELD_PRACTICE_FRACTION));
+  const newQuestion = (item) => ({ status: 'question', item, kind: 'new', setTarget: fieldTarget(item.packet.fieldId) });
   // 本人専用のPDFは複数年度のOCRが続いていても、検証済みの未出題問から先に学習を開始できる。
-  // 3問を年度横断することより出題できる状態を優先。未検証問題は fresh に入らない。
+  // OCR・正答検証中を分母に混ぜない。古いセットにtargetが無いときも現在の分野の登録数から再計算する。
   if (fresh.length) {
-    // 利用者が移りたいと言った分野は、その分野の問が残っている間はそこから出す（3問ずつのまとまりも続ける）
-    if (state.focusField && (!state.set || state.set.fieldId !== state.focusField || state.set.count >= SET_SIZE)) {
-      const inFocus = fresh.filter((x) => x.packet.fieldId === state.focusField);
-      const next = inFocus.find((x) => !(state.set?.years ?? []).includes(x.packet.year)) ?? inFocus[0];
-      if (next) return { status: 'question', item: next, kind: 'new' };
-    }
     const set = state.set;
-    if (set && set.count < SET_SIZE) {
-      // 同じ分野の3問は、まだこのまとまりで出していない年度を先にする（1つの年度に偏らせない）
+    const inFocus = state.focusField && fresh.filter((x) => x.packet.fieldId === state.focusField);
+    if (inFocus && inFocus.length &&
+        (!set || set.fieldId !== state.focusField || set.count < (set.target || fieldTarget(set.fieldId)))) {
+      const next = inFocus.find((x) => !(set?.years ?? []).includes(x.packet.year)) ?? inFocus[0];
+      return newQuestion(next);
+    }
+    if (set && set.count < (set.target || fieldTarget(set.fieldId))) {
       const same = fresh.filter((x) => x.packet.fieldId === set.fieldId);
       const next = same.find((x) => !(set.years ?? []).includes(x.packet.year)) ?? same[0];
-      if (next) return { status: 'question', item: next, kind: 'new' };
+      if (next) return newQuestion(next);
     }
     const solved = {};
-    for (const h of Object.values(state.history)) if (h.fieldId) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
-    // 重み（学習計画の指定）→ これまでに解いた数が少ない分野 → 取り込んだ過去問での出題数が多い（頻出の）分野
-    const counts = fieldCountsOf(usable);
-    // 3問のまとまりを終えた分野は後に回し、学習計画の順に次の分野へ進む（全分野を一巡したら、また計画の順に戻る）
-    // 利用者が明示した分野順（orderedFields）が有効なら、重み（診断の自動調整を含む）より優先する
+    for (const [qid, h] of Object.entries(state.history ?? {})) {
+      if (h.fieldId && eligible.some((x) => x.packet.questionId === qid)) solved[h.fieldId] = (solved[h.fieldId] ?? 0) + 1;
+    }
+    // 学習計画の順序を優先しつつ、50%の区切りを終えた分野は未着手の分野より後ろへ。
     const order = planFieldOrder(state.plan);
     const rank = (f) => order ? (order.includes(f) ? order.length - order.indexOf(f) : -1) : Number(state.plan.fieldWeights?.[f] ?? 0);
-    const score = (x) => [-Math.floor((solved[x.packet.fieldId] ?? 0) / SET_SIZE), rank(x.packet.fieldId), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
-    const higher = (x, y) => { // x が y より先に出すべきなら true
-      const a = score(x);
-      const b = score(y);
+    const score = (x) => [-Math.floor((solved[x.packet.fieldId] ?? 0) / fieldTarget(x.packet.fieldId)),
+      rank(x.packet.fieldId), -(solved[x.packet.fieldId] ?? 0), counts[x.packet.fieldId] ?? 0];
+    const higher = (x, y) => {
+      const a = score(x), b = score(y);
       for (let i = 0; i < a.length; i += 1) if (a[i] !== b[i]) return a[i] > b[i];
       return false;
     };
-    const best = fresh.reduce((a, b) => (higher(b, a) ? b : a));
-    return { status: 'question', item: best, kind: 'new' };
+    return newQuestion(fresh.reduce((a, b) => (higher(b, a) ? b : a)));
   }
   if (job && job.state === 'running') return { status: 'waiting' };
+  // 全分野で出題対象を回答済みにした後は、採点済みの公式問題をランダムに再出題する。
+  // 当日直前に解いた問は、ほかの候補があれば避ける。未検証・除外問は復活させない。
+  const answered = eligible.filter((x) => state.history?.[x.packet.questionId]);
+  if (answered.length) {
+    const focus = state.focusField ? answered.filter((x) => x.packet.fieldId === state.focusField) : [];
+    const pool = focus.length ? focus : answered;
+    const lastId = state.lastGrade?.questionId ?? state.current?.questionId;
+    const alternatives = pool.filter((x) => x.packet.questionId !== lastId);
+    const choices = alternatives.length ? alternatives : pool;
+    return { status: 'question', item: choices[Math.floor(Math.random() * choices.length)],
+      kind: 'review', recycled: true };
+  }
   return { status: 'finished' };
 }
 
@@ -393,15 +416,17 @@ function reviewKeyOf(p){
     ? p.reviewUnitId.trim() : p.questionId;
 }
 
-export function pin(state, item, kind, now) {
+export function pin(state, item, kind, now, { setTarget = null } = {}) {
   const p = item.packet;
   if (state.current && !state.current.grade && state.current.questionId === p.questionId) return state;
-  // 新しい問は「同じ分野の3問」の何問目かを数える（復習の問は数えない）
+  // 新しい問だけが分野50%セットを進める。復習・既出ランダム問は進めない。
   let set = state.set ?? null;
   if (kind === 'new') {
-    set = set && set.fieldId === p.fieldId && set.count < SET_SIZE
-      ? { fieldId: p.fieldId, count: set.count + 1, years: [...(set.years ?? []), p.year] }
-      : { fieldId: p.fieldId, count: 1, years: [p.year] };
+    const target = Number.isInteger(setTarget) && setTarget > 0 ? setTarget :
+      Number.isInteger(set?.target) && set.target > 0 ? set.target : SET_SIZE;
+    set = set && set.fieldId === p.fieldId && set.count < target
+      ? { fieldId: p.fieldId, count: set.count + 1, target, years: [...(set.years ?? []), p.year] }
+      : { fieldId: p.fieldId, count: 1, target, years: [p.year] };
   }
   const policy = learningPolicy(p);
   const topicId = policy.verifiedTopicId ?? (typeof p.topicId === 'string' && p.topicId.trim() ? p.topicId : (p.fieldId ?? 'unclassified'));
@@ -411,8 +436,11 @@ export function pin(state, item, kind, now) {
   return {
     ...state,
     set,
+    ...(kind === 'new' && state.focusField === p.fieldId && set.count >= set.target ? { focusField: null } : {}),
     current: {
       questionId: p.questionId,
+      setPosition: kind === 'new' ? set?.count ?? null : null,
+      setTarget: kind === 'new' ? set?.target ?? null : null,
       reviewUnitId: reviewKeyOf(p),
       topicId,
       learning,
