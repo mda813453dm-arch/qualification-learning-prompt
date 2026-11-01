@@ -77,9 +77,9 @@ html.qlp-android-embedded:not(.study-fullscreen) #qlpAndroidScrollTools:not([hid
     qlpAndroidNav.setAttribute('aria-label', '学習画面のスクロール操作');
     qlpAndroidNav.hidden = true;
     qlpAndroidNav.innerHTML =
-      '<button type="button" data-jump="up">↑ 前へ</button>' +
-      '<button type="button" data-jump="down">↓ 次へ</button>' +
-      '<button type="button" data-jump="end">⇣ 最後へ</button>';
+      '<button type="button" data-jump="up">↑ 上へ</button>' +
+      '<button type="button" data-jump="down">↓ 下へ</button>' +
+      '<button type="button" data-jump="end">⇣ 最下部へ</button>';
     app.parentNode.insertBefore(qlpAndroidNav, app);
     qlpAndroidNav.addEventListener('click', function(e){
       var btn = e.target && e.target.closest && e.target.closest('button[data-jump]');
