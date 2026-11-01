@@ -62,11 +62,11 @@ test('④orderedFields と重みが食い違うときは、利用者が明示し
   // 初期診断の「計画に反映」と同じく、重みだけが後から書き換わった状態
   state = { ...state, plan: { ...state.plan, fieldWeights: { a: 3, b: 2, c: 1 } } };
   assert.equal(next(state, items).item.packet.fieldId, 'c');
-  // 3問のまとまりを終えたら、明示した順の次（a）へ進む
-  for (let i = 0; i < 3; i += 1) {
+  // cは4問登録されているため、50%の2問で明示した順の次（a）へ進む
+  for (let i = 0; i < 2; i += 1) {
     const p = next(state, items);
     assert.equal(p.item.packet.fieldId, 'c');
-    state = pin(state, p.item, p.kind, 0);
+    state = pin(state, p.item, p.kind, 0, { setTarget: p.setTarget });
     state = grade(state, { questionId: state.current.questionId, value: '1' }, { today: TODAY, now: 0 }).state;
   }
   assert.equal(next(state, items).item.packet.fieldId, 'a');
