@@ -435,3 +435,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-01T04:55:00Z deploy v162 verified question-format routing and legacy MC compatibility
 
 2026-11-01T05:45:00Z deploy v163 in-card descriptive per-question answers and latest grading scroll
+
+2026-11-01 v164 confirmation-question bank fix: register the three MLIT-backed Mankan '管理組合の運営の円滑化' questions directly in the same study widget, remove duplicate model prompts, surface pending-retry errors for nonprepared subjects. Run the offline matrix for all 103 qualifications, full engine/375px Chromium+WebKit parser tests, and production smoke. Branch ai-learning-system only; do not modify main or master_prompt.txt.
