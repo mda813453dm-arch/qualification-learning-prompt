@@ -675,14 +675,25 @@ async function nextContent(ctx, lead = []) {
     cands = avail;
   }
   const set = rec.engine.set;
-  const target = set?.fieldId ? (set.target || fieldPracticeTarget(items, set.fieldId)) : 0;
+  // 登録年度が追加された場合は、既存のセットを壊さず次問から50%の分母を再計算する。
+  const target = set?.fieldId ? fieldPracticeTarget(items, set.fieldId) : 0;
   const continuing = !!(set && set.count < target && cands.includes(set.fieldId));
-  // 50%を終えたら、ほかに未出題問題のある分野があれば必ず移動する。
+  // 初回50%を終えた分野より、まだ50%に達していない分野を優先して全分野を一巡する。
   const nextCandidates = !continuing && set && cands.length > 1
     ? cands.filter((f) => f !== set.fieldId) : cands;
+  const availableCandidates = nextCandidates.length ? nextCandidates : cands;
+  const rounds = (f) => {
+    const threshold = fieldPracticeTarget(items, f);
+    if (!threshold) return Number.POSITIVE_INFINITY;
+    const done = items.filter((x) => x.packet.fieldId === f && rec.engine.history?.[x.packet.questionId]).length;
+    return Math.floor(done / threshold);
+  };
+  const fewestRounds = availableCandidates.length
+    ? Math.min(...availableCandidates.map(rounds)) : null;
+  const firstInRound = availableCandidates.filter((candidate) => rounds(candidate) === fewestRounds);
   const f = continuing ? set.fieldId
     : chooseField({ order, stats: fieldStats(rec.engine.history), sets: r.fieldSets,
-      candidates: nextCandidates.length ? nextCandidates : cands });
+      candidates: firstInRound });
   if (!f) {
     if (job?.state === 'running') return L(noQuestionParts(ctx, job));
     // 全ての分野の未出題問題が尽きた後だけ、登録済みの解答済み問をランダムに再出題。
