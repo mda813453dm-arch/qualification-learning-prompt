@@ -2,7 +2,7 @@
 // and do not let an old read-only snapshot override the new problem.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v171.js';
+import { widgetHtml } from '../src/widget-v172.js';
 
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
