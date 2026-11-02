@@ -1842,7 +1842,9 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   await env.STORE.put(path,JSON.stringify(serialized));
   const original = await env.STORE.get(path);
   const ui = async (name,args)=>(await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
-  const restored = (await ui('getStudySnapshot',{sessionId:sid}))._meta.qlp;
+  const restoredCall = await ui('getStudySnapshot',{sessionId:sid});
+  assert.equal(restoredCall.isError,undefined,JSON.stringify(restoredCall));
+  const restored = restoredCall._meta.qlp;
   assert.equal(restored.status,'question','復元は未回答の公式問題を優先する');
   assert.equal(restored.question.questionId, visible.question.questionId);
   assert.equal(await env.STORE.get(path),original,'復元だけでは学習履歴を書き換えない');
