@@ -1824,3 +1824,43 @@ test('Android WebView keeps a bounded independent scroll area without changing i
   assert.ok(html.includes('#app.study-viewport{height:auto;max-height:none;overflow:visible'));
   assert.ok(html.includes('app.scrollTop = 0'));
 });
+
+
+test('3連続誤答の復元でも既に表示した未回答の公式問題を破棄せず、回答後に確認問題へ移行', async () => {
+  const env = makeEnv({ answers: [3, 1, 4], fieldIds: ['s1', 's1', 's1'], figureOn: [] });
+  const start = (await call(env, 'startSession', { qualificationId: SRC.qualificationId, sources: [SRC] })).structuredContent;
+  const sid = start.sessionId;
+  const visible = (await call(env, 'nextQuestion', { sessionId:sid })).structuredContent;
+  assert.equal(visible.status, 'question');
+  const path = 'ses/' + sid;
+  const serialized = JSON.parse(await env.STORE.get(path));
+  const question = serialized.state.current;
+  assert.ok(question && !question.grade && !question.prefetched);
+  // 旧画面が次問を表示した直後、前の誤答補強フラグが残った競合状態を再現する。
+  serialized.state.remediation = { required:true, fieldId:question.fieldId, triggerQuestionId:'previous-graded-official' };
+  serialized.state.wrongStreak = { fieldId:question.fieldId, count:3 };
+  await env.STORE.put(path,JSON.stringify(serialized));
+  const original = await env.STORE.get(path);
+  const ui = async (name,args)=>(await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
+  const restored = (await ui('getStudySnapshot',{sessionId:sid}))._meta.qlp;
+  assert.equal(restored.status,'question','復元は未回答の公式問題を優先する');
+  assert.equal(restored.question.questionId, visible.question.questionId);
+  assert.equal(await env.STORE.get(path),original,'復元だけでは学習履歴を書き換えない');
+  const next = (await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
+  assert.equal(next.status,'question','新規の別問でなく、画面に既に出ていた問を返す');
+  assert.equal(next.question.questionId,visible.question.questionId);
+  const denied=await ui('registerRemediationQuestion',{
+    sessionId:sid,question:'まだ公式問が未回答なのに開始しようとする確認問題です',
+    choices:['A','B','C'],correctAnswer:1
+  });
+  assert.equal(denied.isError,true);
+  assert.equal(denied.structuredContent.error,'UNANSWERED_OFFICIAL_QUESTION_PENDING');
+  const graded=(await call(env,'submitAnswer',{sessionId:sid,
+    questionId:visible.question.questionId,value:String(visible.question.choices.length>=3?3:1)})).structuredContent;
+  assert.equal(graded.grade.questionId,visible.question.questionId);
+  assert.equal(graded.next.status,'remediation','回答後にのみ強制補強へ進む');
+  const after=(await ui('getStudySnapshot',{sessionId:sid}))._meta.qlp;
+  assert.equal(after.status,'remediation');
+  const newOne=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
+  assert.equal(newOne.status,'remediation','確認問題正解まで新しい公式問を出さない');
+});
