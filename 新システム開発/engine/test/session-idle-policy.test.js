@@ -67,3 +67,21 @@ test('starting in the same chat always creates a new session and revokes the pre
   assert.equal(current.status,200);
   assert.equal(current.body.sessionId,second.body.sessionId);
 });
+
+test('pressing startStudy is a user action that renews the inactivity deadline', async () => {
+  const {env,call} = setup();
+  const first=await start(call);
+  assert.equal(first.status,201);
+  const sid=first.body.sessionId;
+  env.now += 55 * MIN;
+  const started=await call('POST','/v1/study/start', {
+    qualificationName:'測量士補', learnerId:first.body.learnerId,
+  });
+  assert.equal(started.status,201);
+  env.now += 55 * MIN;
+  const stillActive=await call('GET','/v1/sessions/' + sid + '/restore');
+  assert.equal(stillActive.status,200, '学習開始操作から55分は有効');
+  env.now += 5 * MIN;
+  const expired=await call('GET','/v1/sessions/' + sid + '/restore');
+  assert.equal(expired.status,404, '学習開始操作から60分は期限切れ');
+});
