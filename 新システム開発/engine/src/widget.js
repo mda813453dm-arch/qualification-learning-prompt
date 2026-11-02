@@ -1986,8 +1986,11 @@ a{color:inherit}
     if (!isItpassQuestion(q)) h += questionPdfLink(q);
     (q.notices || []).forEach(function(t){ h += '<div class="notice">' + esc(t) + '</div>'; });
     app.innerHTML = h;
-    // 再開直後の未回答問では、その場から学習を終了できるようにする。
+    // 未回答問を復元で保護した場合も、公式問を無理に回答せず学習を終了できる。
+    // 通常画面は上部に過去問管理ボタンがあるので、ここでは終了ボタンだけを追加する。
     if (data.restored) app.insertAdjacentHTML('beforeend', endBar());
+    else app.insertAdjacentHTML('beforeend',
+      '<div class="row" style="margin-top:14px"><button id="endStudy" type="button">学習を終了する</button></div>');
     bindFigures();
     scrollUp();
     bindEnd();
