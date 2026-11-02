@@ -29,9 +29,9 @@ jobs:
           kinds=Counter()
           buckets={}
           for x in logs:
-              text=x.get('textPayload','')
+              d=x.get('jsonPayload',{})
+              if not isinstance(d,dict):continue
               try:
-                  d=json.loads(text)
                   kind=d.get('event')
                   if not kind:continue
                   v=str(d.get('version','unknown'))
