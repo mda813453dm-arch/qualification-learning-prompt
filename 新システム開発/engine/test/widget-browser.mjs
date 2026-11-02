@@ -64,6 +64,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'chooseItem') reply({ structuredContent: { status: 'item',
             mode: m.params.arguments.mode, fieldName: m.params.arguments.fieldName,
             journey: { fieldIndex: 1, fieldTotal: 8 } } });
+          else if (op === 'registerRemediationQuestion') {
+            const args=m.params.arguments;
+            window.registeredRemediationArgs=args;
+            reply({structuredContent:{status:'remediation_question',sessionId:args.sessionId,
+              challengeId:'mandatory-prepared-1',question:args.question,choices:args.choices,prepared:args.prepared===true}});
+          }
           else if (op === 'registerConfirmationQuestion') {
             const args = m.params.arguments;
             window.preparedQuestionCalls = (window.preparedQuestionCalls || 0) + 1;
@@ -352,28 +358,26 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
     const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
     assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
-    // 強制確認問題は明示タップまでAIに依頼しない。タップ後は同じ枠の保存済み問題を監視。
+    // 実機障害の再現：3連続誤答の画面から宅建業法の確認問題を押す。
+    // ChatGPTへ文章を送るのでなく、元セッションで登録→出題までを直接実行する。
     const priorCheckMessageCount = await page.evaluate(()=>window.followups.length);
-    await page.evaluate(r=>window.deliver(r), result({
-      status:'remediation',sessionId,fieldName:'測量に関する法規',
-      notice:'この分野は3問連続誤答です。'
-    }));
-    await ui.getByRole('button',{name:'AI作成確認問題を始める'}).waitFor();
-    assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
-      '強制補強画面の自動表示だけではAI確認問題を作らない');
-    await ui.getByRole('button',{name:'AI作成確認問題を始める'}).click();
-    await ui.getByRole('button',{name:'確認問題を登録しています…'}).waitFor();
-    await page.waitForFunction(n=>window.followups.length===n+1,priorCheckMessageCount);
     await page.evaluate(({sessionId})=>{
-      window.restorePayload={status:'remediation_question',sessionId,challengeId:'mandatory-test-3',
-        question:'選択肢のうち正しい説明を答える確認問題です。',
-        choices:['不適切','適切','無関係']};
+      window.restorePayload={status:'remediation',sessionId,fieldName:'宅地建物取引業法と関係法令',
+        attempts:0,notice:'この分野は3問連続誤答です。'};
+      window.deliver({_meta:{qlp:window.restorePayload},structuredContent:{status:'remediation'}});
     },{sessionId});
-    await ui.getByText('AI作成確認問題',{exact:true}).waitFor({timeout:10000});
-    assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3,
-      '登録済み確認問題が同じ枠に表示される');
-    // 仮想ホストの保存済み確認問題を完了扱いで消す。次の独立テストで
-    // 別件スキップ時のgetStudySnapshotに流れ込まないようにする。
+    await ui.getByRole('button',{name:'確認問題で基本を確かめる'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
+      '本人が確認問題を選ぶ前はAI作問依頼を送らない');
+    await ui.getByRole('button',{name:'確認問題で基本を確かめる'}).click();
+    await ui.getByRole('heading',{name:'AI作成・事前検証済み確認問題'}).waitFor({timeout:10000});
+    const registered=await page.evaluate(()=>window.registeredRemediationArgs);
+    assert.equal(registered.sessionId,sessionId,'新規セッションでなく既存IDへ登録');
+    assert.equal(registered.prepared,true);
+    assert.equal(registered.correctAnswer,1,'問題の正答を出題前に登録する');
+    assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
+      '確認問題の開始時はChatGPTにstartSessionを要求しない');
+    assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3);
     await page.evaluate(()=>{ window.restorePayload = null; });
     await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
     await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor();
