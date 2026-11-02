@@ -372,6 +372,9 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByText('AI作成確認問題',{exact:true}).waitFor({timeout:10000});
     assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3,
       '登録済み確認問題が同じ枠に表示される');
+    // 仮想ホストの保存済み確認問題を完了扱いで消す。次の独立テストで
+    // 別件スキップ時のgetStudySnapshotに流れ込まないようにする。
+    await page.evaluate(()=>{ window.restorePayload = null; });
     await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
     await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
     await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
