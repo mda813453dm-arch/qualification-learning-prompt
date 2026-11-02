@@ -637,7 +637,6 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v166.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v167.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v168.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v169.html');
-LEGACY_WIDGET_URIS.push('ui://qlp/question-v170.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない場合は、実在しないボタン操作を繰り返し案内しない。利用者が表示不能を明示したら直前のsessionIdでreopenMissingWidgetを最大1回だけ呼ぶ。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
