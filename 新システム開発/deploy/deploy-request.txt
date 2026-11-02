@@ -490,3 +490,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 18:02 JST: Include latest learner-identity continuity patch and its regression test (same chat + new sessionId + preserved learner history). Deploy after automated tests; do not overwrite public master_prompt.txt.
 
 2026-11-02 session TTL final regression: explicit /v1/study/start also updates user-idle clock; preserve persistent learner history, expire after 60 min idle, and never extend from background GET. Deploy only after full automated test suite and live smoke. Protect main and master_prompt.txt.
+
+2026-11-02 v173: Fix 2016–2020 licensed PDF registration UPLOAD_PERMISSION_REQUIRED after prior 10 files. Preserve 10 physical files per grant and explicit opt-in; expose exhausted quota and reset disabled checkbox; preflight server rights before upload, preserve selected files for recheck, prevent double submission; keep private learner records. New v173 URI avoids stale iPhone widget cache. Run full engine npm suite, deploy Cloud Run, perform public read-only smoke. Do not change main or master_prompt.txt.
