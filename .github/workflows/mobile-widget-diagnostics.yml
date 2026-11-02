@@ -42,6 +42,12 @@ jobs:
               except (ValueError,TypeError):pass
           print('EVENTS BY TYPE/VERSION')
           for k,n in sorted(kinds.items()):print(k[0],k[1],n)
+          print('WIDGET STAGES (NO IDENTIFIERS)')
+          for x in logs:
+              d=x.get('jsonPayload')
+              if not isinstance(d,dict):continue
+              if d.get('event') in ('widget_resource_read','widget_session_start_responded','widget_ui'):
+                  print(x.get('timestamp','')[:19],d.get('event'),d.get('stage',''),d.get('status',''),d.get('legacy',''))
           print('EVENTS BY UTC HOUR')
           for k,n in sorted(buckets.items()):print(k[0],k[1],n)
           print('TOTAL',sum(kinds.values()))
