@@ -1183,6 +1183,13 @@ function prematureExplanationConfirmation(state) {
 }
 
 /** 次の問題（または待ち・終了）を決め、出題中として控える。nextQuestion と、採点の応答に付ける next で共通。 */
+/** 3連続誤答の状態が存在しても、既に画面へ公開した未回答の公式問は消さない。
+ * プレフェッチの未公開問は保護対象外。登録された確認問題を迂回して新問は作らない。 */
+function pendingVisibleQuestionBeforeRemediation(state) {
+  const cur = state.current;
+  return !!(state.remediation?.required && cur?.questionId && !cur.grade && !cur.prefetched &&
+    cur.questionId !== state.remediation.triggerQuestionId);
+}
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
   const explicitQuestion = isExactQuestionRequest(want);
@@ -1193,6 +1200,10 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     if (state.resumePending) return resumeReadyView(id, state);
     return { status: 'needPlan', screen: NEED_PLAN, howToProceed: PLAN_STEPS, planMenu: PLAN_MENU, onboarding: onboardingSteps(state.qualificationId), overview: await libraryOverview(env, state.qualificationId, now), learnerId: state.learnerId };
   }
+  // 未回答の公式問が先に画面へ出ていた既存セッションだけは、その問を回答できるまで保護。
+  // この例外は新規の公式問題を発行せず、現在問を読取再表示するだけ。
+  if (pendingVisibleQuestionBeforeRemediation(state))
+    return { sessionId: id, ...await redisplayView(env, id, state, now) };
   // 3連続誤答では分野・年度の指定を含めて新問を出さない（確認問題正解による復帰待ち）。
   if (state.remediation?.required) {
     const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
@@ -1461,6 +1472,9 @@ async function restoreStudyView(env, id, state, now) {
     // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
     return { ...resumeReadyView(id, state), restored: true };
   }
+  // 自動復元が未回答の公式問を「確認問題が必要」の案内へ上書きしない。
+  if (pendingVisibleQuestionBeforeRemediation(state))
+    return { ...identity, ...await redisplayView(env, id, state, now), restored: true };
   // 「解説あり」では解説が確定する前に確認問題の状態を作らない。
   // 戻る操作でも保存した解説・ボタンを優先し、確認問題に飛ばさない。
   if (state.itemMode === 'explain' && state.set?.fieldId && (!state.confirmation || prematureExplanationConfirmation(state))) {
@@ -2070,7 +2084,8 @@ async function route(request, env, url, now) {
     let { id, state } = await resolveSession(env, parts[2], now);
     // 古い画面のIDで戻ってきても、同じ学習者の最新の進行位置を優先する。
     const latestId = state.learnerId ? await env.STORE.get(lastSessionKey(state.learnerId)) : null;
-    if (latestId && latestId !== id) {
+    // 別の同資格セッションが最新でも、現在回答中の公式問を上書きしない。
+    if (!pendingVisibleQuestionBeforeRemediation(state) && latestId && latestId !== id) {
       try {
         const latest = await loadSession(env, latestId, now);
         if (latest.learnerId === state.learnerId && latest.qualificationId === state.qualificationId) {
@@ -2150,6 +2165,8 @@ async function route(request, env, url, now) {
     const b = (await body(request).catch(() => ({}))) ?? {};
     const { id, state } = await resolveSession(env, parts[2], now);
     if (!state.remediation?.required) throw new HttpError(409, 'REMEDIATION_NOT_REQUIRED');
+    if (pendingVisibleQuestionBeforeRemediation(state))
+      throw new HttpError(409, 'UNANSWERED_OFFICIAL_QUESTION_PENDING');
     const existing = state.remediation.challenge;
     if (existing?.id) return json(200, {
       status: 'remediation_question', sessionId: id, challengeId: existing.id,
