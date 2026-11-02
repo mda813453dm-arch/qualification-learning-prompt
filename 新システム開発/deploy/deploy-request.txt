@@ -486,3 +486,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 18:00 JST: Final re-deployment includes model-facing startSession/appInstructions change: explicit @資格学習 always creates fresh session, no obsolete same-chat launch ban. Verify npm suite and Cloud Run release; do not alter main/master_prompt.txt.
 
 2026-11-02 final session policy rollout: fresh session per @資格学習 launch, same-chat learner history retained, old frame invalidated, 60-minute user-action idle expiry; validate via full npm regression and post-deploy smoke. Only ai-learning-system; keep main/master_prompt.txt unchanged.
+
+2026-11-02 18:02 JST: Include latest learner-identity continuity patch and its regression test (same chat + new sessionId + preserved learner history). Deploy after automated tests; do not overwrite public master_prompt.txt.
