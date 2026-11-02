@@ -15,6 +15,17 @@ async function rpc(method, params) {
   return message.result;
 }
 const list = await rpc('tools/list', {});
+const recovery = list.tools.find(t => t.name === 'reopenMissingWidget');
+assert.ok(recovery && recovery._meta?.ui?.resourceUri === WIDGET_URI,
+  '表示不能時に保存済み状態を再表示する専用UIが公開されている');
+assert.equal(recovery._meta?.['openai/outputTemplate'], WIDGET_URI,
+  '表示不能時だけ明示的に新しい学習枠を開く');
+const legacy169 = await rpc('resources/read', { uri:'ui://qlp/question-v169.html' });
+assert.ok(legacy169.contents[0].text.includes('2026-11-01.169'), 'Android v169 URIはその版を維持');
+const legacy168 = await rpc('resources/read', { uri:'ui://qlp/question-v168.html' });
+assert.ok(legacy168.contents[0].text.includes('2026-11-01.168'), '旧iPhone URIは安定版を保持');
+assert.ok(!legacy168.contents[0].text.includes('qlpAndroidScrollTools'),
+  '旧iPhoneリソースへ新しいAndroidタッチ処理を流し込まない');
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.sessionId, '保存済み問題の読取引数が公開されている');
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.explanationRef, '学習参照番号による復元ツールが公開されている');
 assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.explanationRef,
