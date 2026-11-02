@@ -1834,7 +1834,10 @@ async function route(request, env, url, now) {
       (currentChat?.learnerId ? await env.STORE.get(lastSessionKey(currentChat.learnerId)) : null);
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
-    const given = validLearnerId(b.learnerId);
+    // 新しい学習画面では新sessionIdを発行するが、同じ会話で確認済みの学習者IDを
+    // 再利用して過去の回答履歴・分野・復習情報を引き継ぐ。
+    // 引継ぎIDが明示された場合はそのIDを優先し、別会話の所有者は推測しない。
+    const given = validLearnerId(b.learnerId) ?? validLearnerId(currentChat?.learnerId);
     // 元の資格の学習記録を上書きせず、同じ引継ぎIDに属する資格ごとのIDを
     // 一度だけ割り当てて使い回す（既存のジョブやパケットは移動しない）。
     const existingLearner = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
