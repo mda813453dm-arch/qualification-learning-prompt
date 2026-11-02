@@ -1865,6 +1865,15 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   assert.equal(after.status,'remediation');
   const newOne=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
   assert.equal(newOne.status,'remediation','確認問題正解まで新しい公式問を出さない');
+  // 旧AIが同資格の別セッションを起動した場合でも、
+  // 3連続誤答が残る元セッションの確認問題登録先を乗っ取らせない。
+  const rogue=JSON.parse(await env.STORE.get(path));
+  rogue.state.remediation=null;
+  await env.STORE.put('ses/alternate-ai-session',JSON.stringify(rogue));
+  await env.STORE.put('lrnsess/'+rogue.state.learnerId,'alternate-ai-session');
+  const pinned=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
+  assert.equal(pinned.status,'remediation');
+  assert.equal(pinned.sessionId,sid,'誤起動した別セッションに復元されない');
   const { REMEDIATION_BANK } = await import('../src/widget.js');
   const bank = REMEDIATION_BANK['宅地建物取引業法と関係法令'];
   assert.equal(bank.length,3,'宅建業法35条・37条の理解確認を正答固定済みで保持');
