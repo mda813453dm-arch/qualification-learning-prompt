@@ -3220,7 +3220,8 @@ export async function handle(request, env) {
   const now = env.clock ? env.clock() : Date.now();
   try {
     const isUserAction = request.method === 'POST' &&
-      /^\/v1\/sessions\/[^/]+\//.test(url.pathname);
+      (/^\/v1\/sessions\/[^/]+\//.test(url.pathname) ||
+        url.pathname === '/v1/study/start');
     return await route(request, { ...env, QLP_USER_ACTION: isUserAction }, url, now);
   } catch (e) {
     if (e instanceof HttpError) return json(e.status, e.detail ? { error: e.code, hint: e.detail } : { error: e.code });
