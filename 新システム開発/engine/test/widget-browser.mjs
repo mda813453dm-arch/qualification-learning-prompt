@@ -98,7 +98,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             } else reply({ structuredContent: question });
           }
           else if (op === 'submitAnswer') {
-            if (m.params.arguments.value === 'スキップ' && window.dropSkipResponseOnce) {
+            if (window.forceWrongStreakOnce) {
+              window.forceWrongStreakOnce = false;
+              reply({structuredContent:{grade:{
+                questionId:m.params.arguments.questionId,selected:1,correctAnswer:3,
+                correct:false,checkSuggested:true
+              },next:{status:'remediation',sessionId:'test-session',fieldName:'宅地建物取引業法と関係法令'}}});
+            } else if (m.params.arguments.value === 'スキップ' && window.dropSkipResponseOnce) {
               window.dropSkipResponseOnce = false;
               window.recoverSkipped = true;
               reply({ structuredContent: { error: 'LOST_ANSWER_RESPONSE' } });
@@ -378,6 +384,24 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
       '確認問題の開始時はChatGPTにstartSessionを要求しない');
     assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3);
+    await page.evaluate(()=>{ window.restorePayload = null; });
+    // 利用者が報告した正誤画面の「確認問題で基本を確かめる」も直接登録。
+    await page.evaluate(({question,sessionId})=>{
+      window.registeredRemediationArgs=null;
+      window.forceWrongStreakOnce=true;
+      window.restorePayload={status:'remediation',sessionId,fieldName:'宅地建物取引業法と関係法令',attempts:0};
+      window.deliver({_meta:{qlp:question},structuredContent:{status:'question'}});
+    },{question,sessionId});
+    await ui.getByRole('button',{name:'分からない',exact:true}).waitFor();
+    await ui.locator('input[name="ans"][value="1"]').check();
+    await ui.getByRole('button',{name:'解答する'}).click();
+    await ui.locator('#check').waitFor();
+    const noChatBefore=await page.evaluate(()=>window.followups.length);
+    await ui.locator('#check').click();
+    await ui.getByRole('heading',{name:'AI作成・事前検証済み確認問題'}).waitFor({timeout:10000});
+    assert.equal((await page.evaluate(()=>window.registeredRemediationArgs)).sessionId,sessionId);
+    assert.equal(await page.evaluate(()=>window.followups.length),noChatBefore,
+      '採点結果のボタンはChatGPTにstartSessionを依頼しない');
     await page.evaluate(()=>{ window.restorePayload = null; });
     await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
     await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor();
