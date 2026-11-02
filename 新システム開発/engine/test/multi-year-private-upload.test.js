@@ -280,3 +280,42 @@ test('1年度だけ検証済みなら他年度がOCR中でも公式過去問を�
   const none=pickNext(state,[],{today:'2026-10-28',now:T0,job});
   assert.equal(none.status,'waiting','未検証のPDFだけなら問題を作らず待機する');
 });
+
+test('賃管の2016〜2020年度は10ファイル消費後に明示再確認すれば同じセッションで取り込める',async()=>{
+  const {env,received}=setup();
+  const a=await req(env,'POST','/v1/sessions',{qualificationId:'q097'});
+  assert.equal(a.status,201);
+  const root='/v1/sessions/'+a.body.sessionId;
+  const batch=years=>({
+    questionPdfs:years.map(year=>({file_id:'q'+year,file_name:year+'_mondai.pdf',
+      download_url:'https://uploads.example/q'+year+'.pdf'})),
+    answerPdfs:years.map(year=>({file_id:'a'+year,file_name:year+'_kaitou.pdf',
+      download_url:'https://uploads.example/a'+year+'.pdf'})),
+  });
+  const firstConfirm=await req(env,'POST',root+'/upload-permission',{year:0,confirmed:true});
+  assert.equal(firstConfirm.body.status,'uploadPermissionConfirmed');
+  const first=await req(env,'POST',root+'/attach-batch',batch([2021,2022,2023,2024,2025]));
+  assert.equal(first.status,200,JSON.stringify(first.body));
+  assert.equal(first.body.failed,0,JSON.stringify(first.body.results));
+  assert.equal(first.body.queued,5);
+  assert.equal(first.body.remainingUploadFiles,0);
+  assert.equal(first.body.uploadPermissionExhausted,true);
+  const exhausted=await req(env,'GET',root+'/official-library');
+  assert.equal(exhausted.body.uploadPermissionConfirmed,false,'used consent must not keep UI checked');
+  assert.equal(exhausted.body.uploadPermissionExhausted,true);
+  assert.equal(exhausted.body.remainingUploadFiles,0);
+  const beforeRetry=await req(env,'POST',root+'/attach-batch',batch([2016,2017,2018,2019,2020]));
+  assert.equal(beforeRetry.status,200);
+  assert.equal(beforeRetry.body.failed,5);
+  assert.ok(beforeRetry.body.results.every(x=>x.code==='UPLOAD_PERMISSION_REQUIRED'));
+  assert.equal(received.length,10,'do not fetch unlicensed files');
+  const renewed=await req(env,'POST',root+'/upload-permission',{year:0,confirmed:true});
+  assert.equal(renewed.body.allYears,true,'only explicit second check renews ten files');
+  const second=await req(env,'POST',root+'/attach-batch',batch([2016,2017,2018,2019,2020]));
+  assert.equal(second.status,200,JSON.stringify(second.body));
+  assert.equal(second.body.failed,0,JSON.stringify(second.body.results));
+  assert.equal(second.body.queued,5);
+  assert.equal(received.length,20);
+  const job=await readJob(env.STORE,'q097~'+a.body.learnerId);
+  assert.deepEqual(new Set(job.sources.map(x=>x.year)),new Set([2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]));
+});
