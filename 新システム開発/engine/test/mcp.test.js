@@ -47,6 +47,8 @@ test('同じChatGPT会話でも新しい起動画面は新規セッション、�
     { name, arguments: args, _meta: meta }, { path: '/app' })).body.result;
   const first = (await app('startSession', { qualificationId:'測量士補', sources:[SRC] })).structuredContent;
   assert.equal(first.status, 'needPlan');
+  assert.match(appInstructions(), /新しい学習起動は必ず新規セッション/);
+  assert.doesNotMatch(appInstructions(), /学習中の資格アプリ再呼出し禁止/);
   const started = (await app('startStudy', { qualificationName:'測量士補', learnerId:first.learnerId })).structuredContent;
   assert.ok(started.studyId);
   const fresh = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
