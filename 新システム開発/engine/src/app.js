@@ -38,10 +38,10 @@ import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, stu
 export const DEFAULT_PARSER_VERSION = '0.8.2';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
-const SESSION_TTL_S = 26 * 60 * 60;
+const SESSION_TTL_S = 60 * 60; // idle-session cleanup; learner history remains durable
 const LESSON_REF_PATTERN = /^L-[A-Za-z0-9_-]{16}$/;
 const lessonRefKey = (ref) => `lesson/request/${ref}`;
-const SESSION_MS = 24 * 60 * 60 * 1000;
+const SESSION_MS = 60 * 60 * 1000; // inactivity is measured by user actions, not background refreshes
 const STEP_BUDGET_MS = 15000;
 // Cloud Run の応答期限（配置スクリプトで 900 秒）より、1件の分解にかかる時間（最大数分）だけ短くする
 const RUN_ALL_MS = 540000;
@@ -210,13 +210,14 @@ function ensureNoActiveStudy(current, requestedQualificationId) {
 async function readChatStudy(env, id) {
   return id ? env.STORE.get(chatStudyKey(id), 'json') : null;
 }
-async function bindChatStudy(env, id, qualificationId, learnerId, previous) {
+async function bindChatStudy(env, id, qualificationId, learnerId, sessionId, previousSessionId) {
   if (!id) return;
-  const same = previous?.qualificationId === qualificationId && previous?.learnerId === learnerId;
-  const value = { qualificationId, learnerId,
-    active: !!(same && previous.active), ...(same && previous.studyId ? { studyId: previous.studyId } : {}) };
+  // A fresh startSession is a new learning frame, even in the same conversation.
+  // Keep the learner's durable history; invalidate only the previous frame.
+  const value = { qualificationId, learnerId, sessionId, active: false };
   await env.STORE.put(chatStudyKey(id), JSON.stringify(value), { expirationTtl: STUDY_TTL_S });
   await env.STORE.put(learnerChatKey(learnerId), id, { expirationTtl: STUDY_TTL_S });
+  if (previousSessionId && previousSessionId !== sessionId) await env.STORE.delete(sesKey(previousSessionId));
 }
 async function activateChatStudy(env, learnerId, qualificationId, studyId) {
   const id = await env.STORE.get(learnerChatKey(learnerId));
@@ -237,13 +238,26 @@ async function releaseChatStudy(env, learnerId, studyId) {
 async function loadSession(env, id, now) {
   if (!/^[0-9a-f-]{36}$/.test(id)) throw new HttpError(404, 'SESSION_NOT_FOUND');
   const v = await env.STORE.get(sesKey(id), 'json');
-  if (!v || now - v.savedAt >= SESSION_MS) throw new HttpError(404, 'SESSION_NOT_FOUND');
+  const lastInteractionAt = v?.lastInteractionAt ?? v?.savedAt;
+  if (!v || !Number.isFinite(lastInteractionAt) || now - lastInteractionAt >= SESSION_MS)
+    throw new HttpError(404, 'SESSION_NOT_FOUND', '学習画面の操作が60分間なかったためセッションが終了しました。新しい学習画面を開いてください。');
+  // Only explicit user actions reset the idle timer. GET snapshots/restore and
+  // automated library polling must never keep an abandoned session alive.
+  if (env.QLP_USER_ACTION && now > lastInteractionAt)
+    await env.STORE.put(sesKey(id),
+      JSON.stringify({ ...v, savedAt: now, lastInteractionAt: now }),
+      { expirationTtl: SESSION_TTL_S });
   return v.state;
 }
 
 async function saveSession(env, id, state, now) {
-  await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, state }), { expirationTtl: SESSION_TTL_S });
-  // 引継ぎIDごとにも残す（期限なし）。再開は引継ぎIDだけでできるので、引継ぎデータにエンジンの記録を載せなくてよい
+  const previous = await env.STORE.get(sesKey(id), 'json');
+  const lastInteractionAt = previous?.lastInteractionAt ?? previous?.savedAt ?? now;
+  if (previous && now - lastInteractionAt >= SESSION_MS)
+    throw new HttpError(404, 'SESSION_NOT_FOUND', '60分間無操作のセッションは再開できません。新規学習画面を開いてください。');
+  await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, lastInteractionAt, state }),
+    { expirationTtl: SESSION_TTL_S });
+  // Learning history is learner-scoped and does not expire with the UI session.
   if (state.learnerId) await env.STORE.put(learnerStateKey(state.learnerId), JSON.stringify(state));
 }
 
@@ -1815,7 +1829,8 @@ async function route(request, env, url, now) {
     if (!known && !(Array.isArray(b.sources) && b.sources.length)) throw new HttpError(422, 'QUALIFICATION_NOT_SUPPORTED', NOT_SUPPORTED_HINT);
     const chatId = hostChatKey(request);
     const currentChat = await readChatStudy(env, chatId);
-    ensureNoActiveStudy(currentChat, b.qualificationId);
+    const previousSessionId = currentChat?.sessionId ||
+      (currentChat?.learnerId ? await env.STORE.get(lastSessionKey(currentChat.learnerId)) : null);
     // 引継ぎIDを新しく作り、取り込みと分解結果をその学習者ごとに保存する（期限なし）
     // 学習の開始（startStudy）で受け取った引継ぎIDがあれば、同じ学習者として使う
     const given = validLearnerId(b.learnerId);
@@ -1831,13 +1846,13 @@ async function route(request, env, url, now) {
     });
     const learnerId = selectedLearner.learnerId;
     await gateEnter(env, learnerId, b.accessCode, now);
-    await bindChatStudy(env, chatId, b.qualificationId, learnerId, currentChat);
     await env.STORE.put(studyOpenKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
     // 再開のときに startSession が呼ばれても、これまでの記録を消さずに続ける
     const restored = given ? await sessionFromLearner(env, learnerId, now) : null;
     if (restored && restored.state.qualificationId === b.qualificationId) {
       restored.state = { ...restored.state, resumePending: true };
       await saveSession(env, restored.id, restored.state, now);
+      await bindChatStudy(env, chatId, b.qualificationId, learnerId, restored.id, previousSessionId);
       const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
       if (!overviewOnly) {
         const sources = checkSources((await catalogSources(env, b.qualificationId)) ?? b.sources, b.qualificationId, learnerId);
@@ -1858,6 +1873,7 @@ async function route(request, env, url, now) {
       });
     }
     const { id, state } = await createSession(env, { qualificationId: b.qualificationId, learnerId, plan: b.plan, sources: b.sources }, now);
+    await bindChatStudy(env, chatId, b.qualificationId, learnerId, id, previousSessionId);
     const overviewOnly = Object.values(CATALOG).some((c) => c.qualificationId === b.qualificationId && c.overviewOnly);
     if (directWanted) {
       const directState = { ...state, directRequested: directWanted };
@@ -2122,7 +2138,7 @@ async function route(request, env, url, now) {
     const chatId = hostChatKey(request);
     const current = await readChatStudy(env, chatId);
     if (!chatId || !current?.learnerId) throw new HttpError(404, 'CHAT_STUDY_NOT_FOUND');
-    const sid = await env.STORE.get(lastSessionKey(current.learnerId));
+    const sid = current.sessionId || await env.STORE.get(lastSessionKey(current.learnerId));
     if (!sid) throw new HttpError(404, 'CHAT_STUDY_NOT_FOUND');
     const state = await loadSession(env, sid, now);
     if (state.learnerId !== current.learnerId || state.qualificationId !== current.qualificationId)
@@ -3199,7 +3215,9 @@ export async function handle(request, env) {
   const url = new URL(request.url);
   const now = env.clock ? env.clock() : Date.now();
   try {
-    return await route(request, env, url, now);
+    const isUserAction = request.method === 'POST' &&
+      /^\/v1\/sessions\/[^/]+\//.test(url.pathname);
+    return await route(request, { ...env, QLP_USER_ACTION: isUserAction }, url, now);
   } catch (e) {
     if (e instanceof HttpError) return json(e.status, e.detail ? { error: e.code, hint: e.detail } : { error: e.code });
     if (e instanceof IngestError) return json(422, { error: e.code });
