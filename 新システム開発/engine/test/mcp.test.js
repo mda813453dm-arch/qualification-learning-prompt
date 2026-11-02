@@ -1863,6 +1863,21 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   assert.equal(graded.next.status,'remediation','回答後にのみ強制補強へ進む');
   const after=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
   assert.equal(after.status,'remediation');
+  // iOSの自動復元に、旧問の公開済みAI解説が残っていても、
+  // 強制確認問題の操作画面が優先される。旧メニューを復活させない。
+  const withOldExplanation=JSON.parse(await env.STORE.get(path));
+  withOldExplanation.state.publishedExplanation={
+    questionId:visible.question.questionId,
+    menu:{body:'古い解説が残っている',sessionId:sid,kind:'next'}
+  };
+  withOldExplanation.state.lastExplanation={
+    question:{questionId:visible.question.questionId},
+    grade:{questionId:visible.question.questionId,correct:false}
+  };
+  await env.STORE.put(path,JSON.stringify(withOldExplanation));
+  const stillMandatory=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
+  assert.equal(stillMandatory.status,'remediation',
+    '過去の解説が残っていても確認問題の必須状態を復元する');
   const newOne=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
   assert.equal(newOne.status,'remediation','確認問題正解まで新しい公式問を出さない');
   // 旧AIが同資格の別セッションを起動した場合でも、
