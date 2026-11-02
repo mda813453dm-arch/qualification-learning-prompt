@@ -45,6 +45,15 @@ test('UI reopening without sessionId uses only the server-bound conversation', a
   assert.equal(result.isError,undefined);
   assert.equal(result._meta.qlp.sessionId,'saved-session');
   assert.deepEqual(calls,[{method:'GET',path:'/v1/chat-study/restore',body:undefined}]);
+  // 旧ツール定義が sessionId を必須とする会話ではこの値を渡す。
+  const legacy=(await handleRpc(rpc(12,'tools/call',{name:'reopenMissingWidget',
+    arguments:{sessionId:'current-chat'}}),async(method,path,body)=>{
+      calls.push({method,path,body});
+      return {status:200,body:{status:'needPlan',sessionId:'saved-session'}};
+    },{widget:true,baseUrl})).result;
+  assert.equal(legacy.isError,undefined);
+  assert.equal(legacy.structuredContent.sessionId,'saved-session');
+  assert.deepEqual(calls[1],{method:'GET',path:'/v1/chat-study/restore',body:undefined});
 });
 
 test('UI reopening reads prior session and does not create new session, grade, or change question', async () => {
