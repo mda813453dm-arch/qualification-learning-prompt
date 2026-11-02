@@ -469,3 +469,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 v171: iPhone preserves unfinished official question during stale mandatory-remediation notifications or restoration, only explicitly clicked AI confirmation triggers request and read-only verification; support prefetched visible question; maintain Android scroll. Verify with npm suite and public smoke. No main/master_prompt edits.
 
 2026-11-02 v172: 修正／宅建の3問連続誤答後に「確認問題で基本を確かめる」を選ぶと別セッションが起動して登録できない不具合。元sessionIdで直接保存・出題するAI事前作成済み35条37条の確認問題を導入、誤答再出題・正答後の実践復帰。その他資格のAI作問にもsessionId固定・登録結果確認を追加。iPhone/Android画面・回帰試験、main/master_prompt.txtの変更なし。
+
+2026-11-02 v172 latest: 元セッション固定の確認問題登録、誤答後の再出題、問題のボタン無反応を明示した場合に一度だけ最新版へ復元可能にした。前回プレビューの同一問への読取確認を妨げない修正を含む。公開前npm testおよび実配信スモークを実行。
