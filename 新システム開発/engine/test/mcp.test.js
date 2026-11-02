@@ -1844,7 +1844,7 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   const ui = async (name,args)=>(await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
   const restoredCall = await ui('getStudySnapshot',{sessionId:sid});
   assert.equal(restoredCall.isError,undefined,JSON.stringify(restoredCall));
-  const restored = restoredCall._meta.qlp;
+  const restored = restoredCall.structuredContent;
   assert.equal(restored.status,'question','復元は未回答の公式問題を優先する');
   assert.equal(restored.question.questionId, visible.question.questionId);
   assert.equal(await env.STORE.get(path),original,'復元だけでは学習履歴を書き換えない');
@@ -1861,7 +1861,7 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
     questionId:visible.question.questionId,value:String(visible.question.choices.length>=3?3:1)})).structuredContent;
   assert.equal(graded.grade.questionId,visible.question.questionId);
   assert.equal(graded.next.status,'remediation','回答後にのみ強制補強へ進む');
-  const after=(await ui('getStudySnapshot',{sessionId:sid}))._meta.qlp;
+  const after=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
   assert.equal(after.status,'remediation');
   const newOne=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
   assert.equal(newOne.status,'remediation','確認問題正解まで新しい公式問を出さない');
