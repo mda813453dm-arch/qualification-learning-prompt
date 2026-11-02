@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v171.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v172.js';
+import { widgetHtml as stable171Html } from './widget-v171.js';
 import { widgetHtml as stableAndroid170Html } from './widget-v170.js';
 import { widgetHtml as stableLegacyHtml } from './widget-v168.js';
 import { widgetHtml as stableAndroid169Html } from './widget-v169.js';
@@ -27,7 +28,7 @@ const source = {
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
-const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -644,6 +645,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v167.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v168.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v169.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v170.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v171.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない場合は、実在しないボタン操作を繰り返し案内しない。利用者が表示不能を明示したら直前のsessionIdでreopenMissingWidgetを最大1回だけ呼ぶ。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
@@ -776,7 +778,8 @@ function legacyWidgetHtml(uri) {
   // ChatGPT mobile may cache a resource URI across deployments. Preserve
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
-  if (uri === WIDGET_URI || uri.endsWith('/question-v171.html')) return widgetHtml();
+  if (uri === WIDGET_URI || uri.endsWith('/question-v172.html')) return widgetHtml();
+  if (uri.endsWith('/question-v171.html')) return stable171Html();
   if (uri.endsWith('/question-v170.html')) return stableAndroid170Html();
   if (uri.endsWith('/question-v169.html')) return stableAndroid169Html();
   return stableLegacyHtml();
