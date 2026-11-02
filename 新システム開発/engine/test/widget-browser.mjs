@@ -174,9 +174,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
            } });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
-            reply({ structuredContent: answer === '2'
+            const expected = m.params.arguments.challengeId === 'mandatory-prepared-1'
+              ? String(window.registeredRemediationArgs.correctAnswer) : '2';
+            reply({ structuredContent: answer === expected
               ? { status: 'remediation_complete', sessionId: 'test-session', notice: '正解。実践問題へ戻れます。' }
-              : { status: 'remediation_retry', sessionId: 'test-session', correctAnswer: '2', notice: '不正解。再確認してください。' } });
+              : { status: 'remediation_retry', sessionId: 'test-session', correctAnswer: expected, notice: '不正解。再確認してください。' } });
           }
           else window.protocolErrors.push('unexpected tool ' + op);
         } else if (m.method === 'ui/update-model-context') {
@@ -384,6 +386,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
       '確認問題の開始時はChatGPTにstartSessionを要求しない');
     assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3);
+    // 同一枠で登録した問題を、保存済み正答に従って採点し復帰まで確認。
+    await ui.locator('input[name="remediationAnswer"][value="1"]').check();
+    await ui.getByRole('button',{name:'解答する'}).click();
+    await ui.getByRole('button',{name:'同じ分野の公式過去問に戻る'}).waitFor();
+    const directGraded=await page.evaluate(()=>window.calls.filter(x=>
+      x.params?.name==='completeRemediation').at(-1).params.arguments);
+    assert.equal(directGraded.challengeId,'mandatory-prepared-1');
+    assert.equal(directGraded.sessionId,sessionId);
+    assert.equal(directGraded.selected,'1');
     await page.evaluate(()=>{ window.restorePayload = null; });
     // 利用者が報告した正誤画面の「確認問題で基本を確かめる」も直接登録。
     await page.evaluate(({question,sessionId})=>{
