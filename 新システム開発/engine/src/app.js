@@ -855,7 +855,14 @@ async function attachPdfBatch(env, id, state, b, url, now) {
   const waiting = results.filter(x => x.status === 'pendingOfficialAnswer').length;
   const supplements = results.filter(x => x.status === 'supplementStored').length;
   const failed = results.filter(x => x.status === 'failed').length;
+  const rightsAfter = cat?.privateLicensedUpload
+    ? await env.STORE.get(uploadBatchRightsKey(id), 'json') : null;
+  const remainingUploadFiles = rightsAfter?.confirmed === true && rightsAfter.learnerId === state.learnerId
+    ? Math.max(0, Number(rightsAfter.remaining) || 0) : 0;
   return { status:'attachedBatch', sessionId:id, requested:files.length,
+    ...(cat?.privateLicensedUpload ? { remainingUploadFiles,
+      uploadPermissionConfirmed: remainingUploadFiles > 0,
+      uploadPermissionExhausted: rightsAfter?.confirmed === true && remainingUploadFiles === 0 } : {}),
     queued, existing, pendingOfficialAnswer:waiting, supplementStored:supplements, failed, results,
     unmatchedAnswerFiles: unmatchedAnswers,
     notice:'PDFの登録依頼を受け付けました。登録開始と検証完了は別です。学習枠の年度別状態が「登録済み」となった問題だけ出題できます。' };
@@ -2311,14 +2318,18 @@ async function route(request, env, url, now) {
       await progress(env, sessionJobId(state), now);
       const job = await readJob(env.STORE, sessionJobId(state));
       const batchRights = await env.STORE.get(uploadBatchRightsKey(id), 'json');
-      const uploadPermissionConfirmed = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId;
-      const remainingUploadFiles = uploadPermissionConfirmed ? Math.max(0, Number(batchRights.remaining) || 0) : 0;
+      const confirmedForLearner = batchRights?.confirmed === true && batchRights?.learnerId === state.learnerId;
+      const remainingUploadFiles = confirmedForLearner ? Math.max(0, Number(batchRights.remaining) || 0) : 0;
+      // A checked box is not an unlimited grant: once all ten files are used,
+      // the UI must re-enable explicit consent before the next upload.
+      const uploadPermissionConfirmed = confirmedForLearner && remainingUploadFiles > 0;
+      const uploadPermissionExhausted = confirmedForLearner && remainingUploadFiles === 0;
       return json(200, { status: 'officialLibrary', sessionId: id, permissionedUpload: true,
         // 学習中の追加画面でも正確な権限・登録元を判断する。既存の本人専用履歴は共有しない。
         qualificationId: state.qualificationId, sourceAttachmentSupported: supportsSourceUpload(cat),
         uploadSections: allUploadSections(cat),
         fieldName: cat.fields[state.set?.fieldId] ?? Object.values(cat.fields)[0] ?? '',
-        uploadPermissionConfirmed, remainingUploadFiles,
+        uploadPermissionConfirmed, uploadPermissionExhausted, remainingUploadFiles,
         qualificationName: cat.name, officialUrl: cat.pastExamPage,
         answerFormat: cat.officialAnswerHtml ? 'html' : 'pdf',
         availableUploadYears: cat.availableUploadYears ?? [],
