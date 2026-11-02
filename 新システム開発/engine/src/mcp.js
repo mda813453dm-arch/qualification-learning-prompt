@@ -221,7 +221,7 @@ export const TOOLS = [
   {
     name: 'reopenMissingWidget',
     appOnly: true,
-    description: '【画面が表示されないと利用者が明示した場合だけ】同じ資格学習セッションの画面を1回だけ再表示する。直前のstartSessionまたは引継ぎで返されたsessionIdを指定する。新しい学習・出題・採点を開始せず、保存済みの画面を読取専用で再取得する。すでに画面が見えている場合や通常の次問・解説では絶対に呼ばない。これで表示できなければ同じツールを繰り返さず、ChatGPT Web版で同じ会話を開くよう案内する。',
+    description: '【利用者が学習画面の非表示・ボタン無反応・旧画面による操作不能を明示した場合だけ】同じ資格学習セッションの学習枠を新版で1回だけ再表示する。必ず直前の実sessionIdを指定し、新規startSession/startStudy・採点・次問を呼ばない。既存の学習記録を読取専用で復元する。表示も操作も正常な場合には呼ばない。再表示でも問題が解消しなければ繰り返さず、同じ会話をWeb版で開く案内をする。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
   },
@@ -648,7 +648,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v170.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v171.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
-const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない場合は、実在しないボタン操作を繰り返し案内しない。利用者が表示不能を明示したら直前のsessionIdでreopenMissingWidgetを最大1回だけ呼ぶ。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
+const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない、または旧版のボタンが押しても機能しない場合は、実在しない操作を繰り返し案内しない。利用者が操作不能を明示した場合に限り直前の実sessionIdでreopenMissingWidgetを最大1回呼ぶ。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
 const BROWSER_FALLBACK = { reason: 'CHATGPT_ANDROID_WIDGET_NOT_RENDERED', url: 'https://chatgpt.com/', instruction: 'Android版ChatGPTアプリで学習画面が表示されない場合は、ブラウザのChatGPTで同じ会話を開いて操作してください。新規セッションを作り直す必要はありません。' };
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
