@@ -6,6 +6,8 @@ import { explainHow } from './explain.js';
  */
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v170.js';
+import { widgetHtml as stableLegacyHtml } from './widget-v168.js';
+import { widgetHtml as stableAndroid169Html } from './widget-v169.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
@@ -210,6 +212,13 @@ export const TOOLS = [
     appOnly: true,
     uiOnly: true,
     description: '引継ぎID・引継ぎデータのimportHandoff成功直後にだけ1回呼ぶ。新しい会話で操作可能な学習枠を明示的に開く。既存の学習枠がある通常進行・解説登録・確認問題中には呼ばない。保存済み状態を読むだけで出題・採点は変更しない。',
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
+    api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
+  },
+  {
+    name: 'reopenMissingWidget',
+    appOnly: true,
+    description: '【画面が表示されないと利用者が明示した場合だけ】同じ資格学習セッションの画面を1回だけ再表示する。直前のstartSessionまたは引継ぎで返されたsessionIdを指定する。新しい学習・出題・採点を開始せず、保存済みの画面を読取専用で再取得する。すでに画面が見えている場合や通常の次問・解説では絶対に呼ばない。これで表示できなければ同じツールを繰り返さず、ChatGPT Web版で同じ会話を開くよう案内する。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: (a) => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/restore`],
   },
@@ -628,9 +637,10 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v166.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v167.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v168.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v169.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v170.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
-const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView']);
-const ANDROID_UI_FALLBACK = 'Android版ChatGPTアプリで学習画面が見えない場合は、画面のボタンを押すよう求め続けず、ブラウザで https://chatgpt.com/ にサインインして同じ会話を開くよう案内する。これは別セッションの新規作成ではなく、既存の会話の表示切替である。Androidアプリ内で画面を正常表示できたと断言しない。';
+const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
+const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない場合は、実在しないボタン操作を繰り返し案内しない。利用者が表示不能を明示したら直前のsessionIdでreopenMissingWidgetを最大1回だけ呼ぶ。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
 const BROWSER_FALLBACK = { reason: 'CHATGPT_ANDROID_WIDGET_NOT_RENDERED', url: 'https://chatgpt.com/', instruction: 'Android版ChatGPTアプリで学習画面が表示されない場合は、ブラウザのChatGPTで同じ会話を開いて操作してください。新規セッションを作り直す必要はありません。' };
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
@@ -713,7 +723,7 @@ export function forModel(body) {
     // iOSアプリが _meta をウィジェットへ転送しない場合でも、必須の初期質問を表示できる。
     // 公式概要と質問項目は秘匿情報ではない。AIはツールの案内に従い自分で質問を作らない。
     const { planMenu, howToProceed, screen, ...rest } = body; // eslint-disable-line no-unused-vars
-    return { ...rest, browserFallback: BROWSER_FALLBACK, howToProceed: '免除（ある資格だけ）と学習状況は学習画面へ送信済み。正常に見えている場合は画面のボタンで選んでもらい、AIは同じ質問や別のフォームを作らない。Android版などで学習枠が表示されないと利用者から報告された場合、実在しないボタンの操作を求めず、ブラウザで同じChatGPT会話を開く手順をすぐ伝える。学習計画・初期診断・開始・進め方の選択はエンジン学習枠で進む。AIは独自メニューを作らず、showMenu も nextQuestion も呼ばない。画面表示はサーバー応答だけでは確認できない。' + ANDROID_UI_FALLBACK };
+    return { ...rest, browserFallback: BROWSER_FALLBACK, howToProceed: '免除（ある資格だけ）と学習状況は学習画面へ送信済み。正常に見えている場合は画面のボタンで選んでもらい、AIは同じ質問や別のフォームを作らない。iPhone・Androidで学習枠が表示されないと報告された場合、sessionIdでreopenMissingWidgetを一度だけ呼び、失敗したらブラウザで同じChatGPT会話を開く案内をする。学習計画・初期診断・開始・進め方の選択はエンジン学習枠で進む。AIは独自メニューを作らず、showMenu も nextQuestion も呼ばない。画面表示はサーバー応答だけでは確認できない。' + ANDROID_UI_FALLBACK };
   }
   const slim = (v) => {
     if (!v?.question) return v;
@@ -755,13 +765,21 @@ const APP_FLOW = {
   startStudy: '通常は学習計画の「この学習計画で始める」ボタンがエンジンから呼び出す。新規学習の承認や分野の進め方は枠内で完結するため、AIはshowMenu(kind=item)や別の質問フォームを追加しない。明示された再開時でも既存の学習状態を尊重する。',
 };
 
+function legacyWidgetHtml(uri) {
+  // ChatGPT mobile may cache a resource URI across deployments. Preserve
+  // stable HTML for that URI rather than delivering newer Android code under
+  // an old URI. The latest v170 remains the default for refreshed connections.
+  if (uri === WIDGET_URI || uri.endsWith('/question-v170.html')) return widgetHtml();
+  if (uri.endsWith('/question-v169.html')) return stableAndroid169Html();
+  return stableLegacyHtml();
+}
 function widgetResource(baseUrl, uri = WIDGET_URI) {
   const origin = (() => { try { return new URL(baseUrl).origin; } catch { return null; } })();
   const csp = { connectDomains: origin ? [origin] : [], resourceDomains: origin ? [origin] : [] };
   return {
     uri,
     mimeType: WIDGET_MIME,
-    text: widgetHtml(),
+    text: legacyWidgetHtml(uri),
     _meta: {
       ui: { prefersBorder: true, ...(origin ? { domain: origin } : {}), csp },
       'openai/widgetPrefersBorder': true,
@@ -835,7 +853,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       return ok(id, {});
     case 'tools/list':
       return ok(id, {
-        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: (['startSession','openHandoffView','attachPdf','attachPdfBatch'].includes(name)) ? { ...WIDGET_TOOL_META, ...(meta || {}) } : (meta ? { ...LESSON_PUBLISH_META, ...meta } : LESSON_PUBLISH_META) } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
+        tools: TOOLS.filter((t) => widget || !t.appOnly).map(({ name, description, inputSchema, uiOnly, meta }) => ({ name, description: widget && name === 'startSession' ? `【この学習アプリの仕様（必ず守る）】\n${appInstructions()}\n\n${APP_FLOW[name]}\n${APP_START_DESC}` : widget && APP_FLOW[name] ? `${APP_FLOW[name]}\n${description}` : description, inputSchema, ...((widget && WIDGET_TOOLS.has(name) || name === 'showDescriptiveActions') ? { _meta: (['startSession','openHandoffView','reopenMissingWidget','attachPdf','attachPdfBatch'].includes(name)) ? { ...WIDGET_TOOL_META, ...(meta || {}) } : (meta ? { ...LESSON_PUBLISH_META, ...meta } : LESSON_PUBLISH_META) } : meta ? { _meta: meta } : uiOnly ? { _meta: { ui: { visibility: ['app'] }, 'openai/widgetAccessible': true, 'openai/visibility': 'private' }, annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false } } : {}) })),
       });
     case 'resources/list':
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
@@ -844,7 +862,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       return ok(id, { resourceTemplates: [] });
     case 'resources/read':
-      if (widget && (params.uri === WIDGET_URI || LEGACY_WIDGET_URIS.includes(params.uri))) console.info(JSON.stringify({ event: 'widget_resource_read', version: WIDGET_VERSION, legacy: params.uri !== WIDGET_URI }));
+      if (widget && (params.uri === WIDGET_URI || LEGACY_WIDGET_URIS.includes(params.uri))) console.info(JSON.stringify({ event: 'widget_resource_read', version: WIDGET_VERSION, legacy: params.uri !== WIDGET_URI, requestedVersion: Number(params.uri.match(/question-v(\d+)\.html$/)?.[1] ?? 0) }));
       if (!widget) return fail(id, -32601, `Method not found: ${method}`);
       if (params.uri !== WIDGET_URI && !LEGACY_WIDGET_URIS.includes(params.uri)) return fail(id, -32602, `Unknown resource: ${params.uri}`);
       return ok(id, { contents: [widgetResource(baseUrl, params.uri)] });
