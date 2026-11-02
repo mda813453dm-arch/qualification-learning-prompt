@@ -1453,10 +1453,47 @@ a{color:inherit}
       return;
     }
     if (data.status === 'remediation') {
-      app.innerHTML = '<div class="notice" role="alert">' + esc(data.notice || 'この分野の確認問題に正解するまで次の公式過去問へ進めません。') + '</div><div class="row"><button id="mandatoryCheck">AI作成確認問題を始める</button></div>' + endBar();
+      app.innerHTML = '<div class="notice" role="status">' + esc(data.notice || '同じ分野で3問連続誤答しました。確認問題に正解すると公式問題へ戻れます。') + '</div>' +
+        '<div class="row"><button id="mandatoryCheck" type="button">AI作成確認問題を始める</button></div>' +
+        '<div class="notice" id="mandatoryCheckStatus" role="status">確認問題は、上のボタンを押したときだけ作成します。</div>' + endBar();
+      var remediationSession = data.sessionId || state.sessionId;
+      var remediationGeneration = 0;
       document.getElementById('mandatoryCheck').onclick = function(){
-        this.disabled = true;
-        ask((data.fieldName || '今の分野') + 'で同一分野3問連続不正解です。次の公式過去問へ進まず、AI作成の確認問題を出題し、回答後に正答を照合してください。正解時だけcompleteRemediationで確認結果を記録して同じ分野の実践問題へ戻してください。不正解時は別の確認問題で補強してください。', (data.fieldName || '今の分野') + 'の確認問題を始める');
+        var btn = this;
+        if (!remediationSession || btn.disabled) return;
+        btn.disabled = true; btn.textContent = '確認問題を登録しています…';
+        var info = document.getElementById('mandatoryCheckStatus');
+        if (info) info.textContent = 'AIへ作問を依頼しました。正答を固定した確認問題が登録されるまで、公式過去問へ勝手に進みません。';
+        var run = ++remediationGeneration;
+        // UIメッセージは明示的なクリック時だけ送る。未回答の公式問題や
+        // 背景復元からAI作問を自動起動しない。
+        ask('登録済み資格・分野で同一分野3問連続誤答です。公式過去問を進めないでください。作問前に問題文・全選択肢・正答を固定し、registerRemediationQuestionへ1問登録してください。チャット本文ではなく資格学習枠に出題してください。',
+          '同じ資格・分野のAI作成確認問題を1問作り、正答を固定してregisterRemediationQuestionで資格学習画面へ登録してください。通常の公式問題へ進まないでください。');
+        // iOSのツール通知が欠落しても、同じセッションの保存状態を読取専用で照会。
+        // モデルの作問・登録をこのポーリングが代行したり、成功したことにしない。
+        var attempts = 0;
+        var monitor = async function(){
+          if (run !== remediationGeneration || locked || state.sessionId !== remediationSession) return;
+          var saved = null;
+          try { saved = await callTool('getStudySnapshot', { sessionId: remediationSession }); } catch(e){}
+          if (run !== remediationGeneration || locked || state.sessionId !== remediationSession) return;
+          if (saved && saved.status === 'remediation_question' && saved.challengeId) {
+            render(saved);
+            return;
+          }
+          if (saved && saved.status === 'question' && saved.question) {
+            // 他画面で未回答の公式問が存在する場合はそれを優先する。
+            render(saved);
+            return;
+          }
+          attempts += 1;
+          if (attempts < 10) { setTimeout(monitor, 2500); return; }
+          btn.disabled = false;
+          btn.textContent = '確認問題の登録を再試行';
+          var status = document.getElementById('mandatoryCheckStatus');
+          if (status) status.textContent = '確認問題の登録完了を確認できません。学習状態は保持しています。再試行するか、同じ学習枠で再確認してください。';
+        };
+        setTimeout(monitor, 1800);
       };
       bindEnd();
       return;
@@ -3752,6 +3789,12 @@ a{color:inherit}
           Date.now() - lastForegroundTransitionAt < 1800)) return;
       // 通常の背景更新では、意味のある現在画面を汎用的な待機表示で上書きしない。
       if (!manual && hasView && restored.status === 'restoreIdle') return;
+      // iPhoneの定期ポーリングが、回答前の公式問題と入力中の選択肢を
+      // 異なる学習状態へ勝手に置換しない。同一問の採点保存が確認できた時だけ例外。
+      if (!manual && hasView && state.question && !state.answered) {
+        if (restored.status === 'question' && restored.question?.questionId === state.question.questionId) return;
+        if (!(restored.status === 'restoredGrade' && restored.grade?.questionId === state.question.questionId)) return;
+      }
       // 明示的な再開だけ所有枠を切り替える。自動復元は元の枠を奪わない。
       if (locked && !manual) return;
       if (manual && !claimFirstFrame(state.sessionId, true)) throw new Error('FRAME_CLAIM_FAILED');
