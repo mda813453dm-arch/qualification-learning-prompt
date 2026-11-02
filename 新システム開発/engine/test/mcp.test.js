@@ -1865,4 +1865,42 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   assert.equal(after.status,'remediation');
   const newOne=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
   assert.equal(newOne.status,'remediation','確認問題正解まで新しい公式問を出さない');
+  const { REMEDIATION_BANK } = await import('../src/widget.js');
+  const bank = REMEDIATION_BANK['宅地建物取引業法と関係法令'];
+  assert.equal(bank.length,3,'宅建業法35条・37条の理解確認を正答固定済みで保持');
+  const first=await ui('registerRemediationQuestion',{
+    sessionId:sid,question:bank[0].question,choices:bank[0].choices,
+    correctAnswer:bank[0].correctAnswer,explanation:bank[0].explanation,prepared:true
+  });
+  assert.notEqual(first.isError,true,JSON.stringify(first));
+  const challenge=first._meta?.qlp || first.structuredContent;
+  assert.equal(challenge.status,'remediation_question');
+  assert.equal(challenge.prepared,true);
+  assert.deepEqual(challenge.choices,bank[0].choices);
+  assert.equal(challenge.correctAnswer,undefined,'出題前に正答を学習画面へ渡さない');
+  const savedChallenge=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
+  assert.equal(savedChallenge.challengeId,challenge.challengeId,'既存問を再読込');
+  const incorrect=await ui('completeRemediation',{
+    sessionId:sid,challengeId:challenge.challengeId,selected:'2'
+  });
+  assert.equal(incorrect.structuredContent.status,'remediation_retry');
+  assert.equal(incorrect.structuredContent.correctAnswer,'1');
+  assert.match(incorrect.structuredContent.explanation,/35条/);
+  const pending2=(await ui('getStudySnapshot',{sessionId:sid})).structuredContent;
+  assert.equal(pending2.status,'remediation');
+  assert.equal(pending2.attempts,1,'不正解後は次の教材に切り替える');
+  const second=await ui('registerRemediationQuestion',{
+    sessionId:sid,question:bank[1].question,choices:bank[1].choices,
+    correctAnswer:bank[1].correctAnswer,explanation:bank[1].explanation,prepared:true
+  });
+  const secondChallenge=second._meta?.qlp || second.structuredContent;
+  assert.equal(secondChallenge.status,'remediation_question');
+  assert.notEqual(secondChallenge.challengeId,challenge.challengeId);
+  const completed=await ui('completeRemediation',{
+    sessionId:sid,challengeId:secondChallenge.challengeId,selected:'2'
+  });
+  assert.equal(completed.structuredContent.status,'remediation_complete');
+  assert.match(completed.structuredContent.explanation,/37条/);
+  const resumed=(await call(env,'nextQuestion',{sessionId:sid})).structuredContent;
+  assert.notEqual(resumed.status,'remediation','正解すると公式問題へ復帰できる');
 });
