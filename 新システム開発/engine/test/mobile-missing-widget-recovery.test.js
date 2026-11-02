@@ -28,7 +28,7 @@ test('Cached iPhone UI URIs receive stable legacy HTML, not Android v170 touch h
   assert.match(current.text,/qlpAndroidScrollTools/);
   assert.match(current.text,new RegExp(WIDGET_VERSION.replaceAll('.','\\.')));
   const old170=(await handleRpc(rpc(9,'resources/read',{uri:'ui://qlp/question-v170.html'}),api,{widget:true,baseUrl})).result.contents[0];
-  assert.match(old170.text,/2026-11-02\\.170/);
+  assert.ok(old170.text.includes('2026-11-02.170'));
   assert.match(old170.text,/qlpAndroidScrollTools/);
   const resources=(await handleRpc(rpc(5,'resources/list'),api,{widget:true,baseUrl})).result.resources;
   assert.equal(resources.filter(x=>x.uri===WIDGET_URI).length,1,'latest URI only once');
