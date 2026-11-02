@@ -394,16 +394,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         grade: { correct: true, selected: '3', correctAnswer: '3' }, at: Date.now() + 12000 };
       window.deliver({ ...nextQuestion, at: Date.now() - 5000 });
     }, { question, nextQuestion, sessionId });
-    // v103の受入基準: 次の表示が届いても元の枠は閉じない。保存した採点は同じ枠に復元する。
+    // 既に未回答の問2が表示されている。過去の問1の採点結果が遅れて復元されても
+    // 問2の入力・選択肢を自動で消さない（2026-11-02 iPhone 実機回帰）。
     assert.equal(await ui.locator('.old-screen').count(), 0, '同じセッションの初期枠は継続使用');
-    // 採点直後1.8秒は誤復元防止のため復元を抑制。解除後の実際の画面復帰を検証。
     await page.waitForTimeout(1950);
     await ui.locator('#app').evaluate(() => {
       const returned = new Event('pageshow');
       Object.defineProperty(returned, 'persisted', { value: true });
       window.dispatchEvent(returned);
     });
-    await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).waitFor();
+    await ui.getByRole('heading', { name: '2025年度 問2' }).waitFor();
+    assert.equal(await ui.getByRole('button', { name: '分からない', exact: true }).count(), 1,
+      '画面復帰時に未回答の公式問の回答操作を保護する');
+    assert.equal(await ui.getByRole('button', { name: '2 AIの詳しい解説を追加' }).count(), 0,
+      '過去の問1の採点結果へ勝手に切り替えない');
     assert.equal(await ui.locator('.old-screen').count(), 0, '復元後も同じ最初の学習枠を使う');
     assert.equal(await ui.getByRole('button', { name: '学習を終了する' }).count(), 1);
     assert.ok(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'getStudySnapshot').length) >= 1, '再開時に学習画面を取得した');
