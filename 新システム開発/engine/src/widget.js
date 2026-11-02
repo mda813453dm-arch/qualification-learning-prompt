@@ -1216,6 +1216,8 @@ a{color:inherit}
     if (data.sessionId && state.sessionId && data.sessionId !== state.sessionId) { state.privateLicensedUpload = false; licensedConsentSessionId = null; }
     if (data.sessionId) state.sessionId = data.sessionId;
     if (data.uploadPermissionConfirmed === true) licensedConsentSessionId = state.sessionId;
+    if (data.uploadPermissionConfirmed === false || data.uploadPermissionExhausted === true)
+      licensedConsentSessionId = null;
     if (data.permissionedUpload || (data.question && /^(q097|q090):/.test(String(data.question.questionId || ''))))
       state.privateLicensedUpload = true;
     if (data.studyId) currentStudyId = data.studyId;
@@ -1550,7 +1552,10 @@ a{color:inherit}
         '<div class="row"><label class="file-picker" id="licensedLocalPick"><span id="licensedLocalPickText">iPhone内のPDFを探す</span><input id="licensedLocalUpload" type="file" accept=".pdf,application/pdf" aria-label="iPhone内のPDFを探す" multiple /></label></div>' +
         '<div class="import-action-status" role="status" id="licensedFileStatus">PDFを選ぶと自動で取り込みます。進行状況と完了はこの画面に表示します。</div>' +
         '<div class="notice">従来どおり下のチャット欄（＋）からもPDFを送信できます。すでにエンジンに登録済みの年度は再送不要です。</div>' +
-        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId ? '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。' : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
+        '<div class="notice" role="status" id="licensedProgress">' + (licensedConsentSessionId === state.sessionId
+          ? '許諾確認済みです。残り' + esc(data.remainingUploadFiles ?? maxBatch) + 'ファイルを登録できます。'
+          : data.uploadPermissionExhausted ? '前回の10ファイル分の許諾枠を使い切りました。追加するPDFの利用許諾を再確認してチェックを入れてください。'
+          : '許諾確認にチェックを入れてからPDFを送信してください。') + '</div>' +
         '<div id="licensedHelp" role="status">' + (data.refreshMessage ? '<div class="notice">' + esc(data.refreshMessage) + '</div>' : '') + '</div>' +
         '<div class="notice" id="licensedAutoStatus" role="status">登録状況は自動で更新します。</div>' + endBar();
       var practice = document.getElementById('licensedStart');
@@ -1581,7 +1586,15 @@ a{color:inherit}
           var r = await callTool('confirmUploadRights', {sessionId: state.sessionId, year: 0, confirmed: true});
           if (!r || r.error || r.status !== 'uploadPermissionConfirmed' || !r.allYears) throw new Error('RIGHTS_CONFIRM_FAILED');
           licensedConsentSessionId = state.sessionId;
-          progressBox.textContent = '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。';
+          progressBox.textContent = '許諾確認を更新しました。最大' + (Number(r.maxBatchFiles) || maxBatch) + 'ファイルを登録できます。';
+          // PDFを選んだ後に以前の10ファイル枠が不足した場合は、
+          // その選択をメモリーで保持して確認直後に送信する。再選択を強いない。
+          if (pendingConsentFiles && pendingConsentSession === state.sessionId) {
+            var pending = pendingConsentFiles;
+            pendingConsentFiles = null;
+            pendingConsentSession = null;
+            registerSelectedPdfs(pending);
+          }
         } catch(e) {
           ack.disabled = false;
           ack.checked = false;
@@ -1594,6 +1607,8 @@ a{color:inherit}
       var localPdfInput = document.getElementById('licensedLocalUpload');
       var localPickButton = document.getElementById('licensedLocalPick');
       var selectingPdf = false;
+      var pendingConsentFiles = null;
+      var pendingConsentSession = null;
       function selectedPdfStatus(message, error){
         var node = document.getElementById('licensedFileStatus');
         if (!node) return;
@@ -1614,6 +1629,27 @@ a{color:inherit}
           plan = planLicensedUpload(selected, isHtmlAnswer, maxBatch);
         } catch(e) {
           selectedPdfStatus(String(e.message || '選択したPDFを確認できませんでした。'), true);
+          return;
+        }
+        // サーバーで実際の残数を先に照合する。UIが「確認済み」のままでも
+        // 直前の登録で10ファイル枠が終了していれば、ファイルを送信しない。
+        var fileCount = plan.reduce(function(n, item){ return n + (item.answer ? 2 : 1); }, 0);
+        var rightsStatus;
+        try {
+          rightsStatus = await callTool('getOfficialLibrary', {sessionId:sid});
+          if (!rightsStatus || rightsStatus.error || rightsStatus.status !== 'officialLibrary')
+            throw new Error('UPLOAD_PERMISSION_STATUS_UNAVAILABLE');
+        } catch(err) {
+          selectedPdfStatus('許諾状況を確認できませんでした。PDFは送信していません。接続を確認してもう一度選んでください。', true);
+          return;
+        }
+        if (!rightsStatus.uploadPermissionConfirmed || Number(rightsStatus.remainingUploadFiles) < fileCount) {
+          licensedConsentSessionId = null;
+          pendingConsentFiles = selected;
+          pendingConsentSession = sid;
+          if (ack) { ack.checked = false; ack.disabled = false; }
+          if (progressBox) progressBox.textContent = '前回の許諾枠が不足しています。今回選んだ' + fileCount + 'ファイルについて、利用許諾を確認しチェックを入れ直してください。';
+          selectedPdfStatus('今回選んだPDFはまだ送信していません。上の許諾チェックを入れると、この選択から登録を再開します。', true);
           return;
         }
         var host = window.openai || {};
@@ -1657,11 +1693,14 @@ a{color:inherit}
             ...(isHtmlAnswer ? {} : {answerPdfs:plan.map(function(p){return refs.get(p.answer);})}) });
           if (!sent || sent.error || sent.status !== 'attachedBatch' || sent.requested !== plan.length)
             throw new Error('IMPORT_NOT_ACCEPTED');
+          if (sent.uploadPermissionExhausted === true || sent.uploadPermissionConfirmed === false) {
+            licensedConsentSessionId = null;
+          }
           if (Number(sent.failed) === plan.length) {
             var failed = Array.isArray(sent.results) ? sent.results.map(function(r){
               return (r.year || r.fileName || '選択ファイル') + '：' + (r.reason || r.code || '登録に失敗');
             }).join(' ／ ') : '登録できませんでした。';
-            selectedPdfStatus('登録に失敗しました。' + failed + '。PDFの再添付は不要です。原因を確認してから再試行してください。', true);
+            selectedPdfStatus('登録に失敗しました。' + failed + '。未登録のPDFは、原因を解消してから再選択が必要になる場合があります。', true);
             return;
           }
           render({...sent,sessionId:sid});
@@ -1707,12 +1746,17 @@ a{color:inherit}
           if (locked || licensedGeneration !== licensedPollGeneration) return;
           if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload)
             throw new Error('LIBRARY_REFRESH_FAILED');
-          if (latest.uploadPermissionConfirmed) licensedConsentSessionId = state.sessionId;
+          licensedConsentSessionId = latest.uploadPermissionConfirmed === true ? state.sessionId : null;
           var check = document.getElementById('licensedAck');
-          if (check && licensedConsentSessionId === state.sessionId) {
-            check.checked = true; check.disabled = true;
+          if (check) {
+            check.checked = licensedConsentSessionId === state.sessionId;
+            check.disabled = check.checked;
             var progress = document.getElementById('licensedProgress');
-            if (progress) progress.textContent = '確認済みです。「iPhone内のPDFを探す」から選ぶと、自動で取込み・登録します。';
+            if (progress) progress.textContent = check.checked
+              ? '許諾確認済みです。残り' + Number(latest.remainingUploadFiles) + 'ファイルを登録できます。'
+              : latest.uploadPermissionExhausted
+                ? '10ファイル分の許諾枠を使い切りました。次のPDFを追加する前に許諾確認へ再度チェックしてください。'
+                : '許諾確認にチェックを入れてからPDFを送信してください。';
           }
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
