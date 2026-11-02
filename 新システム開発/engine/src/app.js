@@ -2085,8 +2085,11 @@ async function route(request, env, url, now) {
     let { id, state } = await resolveSession(env, parts[2], now);
     // 古い画面のIDで戻ってきても、同じ学習者の最新の進行位置を優先する。
     const latestId = state.learnerId ? await env.STORE.get(lastSessionKey(state.learnerId)) : null;
-    // 別の同資格セッションが最新でも、現在回答中の公式問を上書きしない。
-    if (!pendingVisibleQuestionBeforeRemediation(state) && latestId && latestId !== id) {
+    // 3連続誤答による強制確認が有効な元セッションは、新しい誤起動セッションが
+    // 最新に見えても絶対に置き換えない。登録対象の取り違えが今回の不具合の原因。
+    // 既に出題した未回答の公式問についても従来どおり同じセッションを保護する。
+    if (!state.remediation?.required && !pendingVisibleQuestionBeforeRemediation(state) &&
+        latestId && latestId !== id) {
       try {
         const latest = await loadSession(env, latestId, now);
         if (latest.learnerId === state.learnerId && latest.qualificationId === state.qualificationId) {
