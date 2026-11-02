@@ -239,15 +239,17 @@ test('採点済みの問に再回答しても採点保留に戻さず、同じ�
 
 });
 
-test('間違えた問は翌日の復習で最初に出る', async () => {
+test('60分無操作のセッションは失効するが復習のための学習履歴は残る', async () => {
   const { env } = makeEnv({ parserUrl: 'https://parser.example' });
-  const { sessionId } = await startSession(env);
+  const { sessionId, learnerId } = await startSession(env);
   const q1 = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
   await call(env, 'POST', `/v1/sessions/${sessionId}/answer`, { questionId: q1.questionId, value: 1 });
-  env.now = T0 + DAY - 60 * 1000; // 翌日（日本時間）・セッションの24時間以内
-  const n = (await call(env, 'POST', `/v1/sessions/${sessionId}/next`)).body.question;
-  assert.equal(n.kind, 'review');
-  assert.equal(n.questionId, q1.questionId);
+  env.now = T0 + 61 * 60 * 1000;
+  const expired = await call(env, 'POST', `/v1/sessions/${sessionId}/next`);
+  assert.equal(expired.status, 404);
+  assert.equal(expired.body.error, 'SESSION_NOT_FOUND');
+  const saved = await env.STORE.get(`lrnstate/${learnerId}`, 'json');
+  assert.ok(saved.history[q1.questionId], '誤答・復習記録は期限切れでも維持する');
 });
 
 test('経路A：分解サーバーが無いときはアプリの分解結果を待ち、届いた結果を照合してから出題する', async () => {
