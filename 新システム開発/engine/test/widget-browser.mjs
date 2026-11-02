@@ -376,6 +376,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 別件スキップ時のgetStudySnapshotに流れ込まないようにする。
     await page.evaluate(()=>{ window.restorePayload = null; });
     await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
+    await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor();
+    // 3連続誤答からの遅延通知が回答前の公式問を勝手に隠さない。
+    await page.evaluate(r => window.deliver(r), result({ status:'remediation',sessionId,
+      notice:'前の問題の3連続誤答で確認問題が必要です。'}));
+    assert.equal(await ui.getByRole('heading',{name:'2025年度 問1'}).count(),1);
+    assert.equal(await ui.getByRole('button',{name:'AI作成確認問題を始める'}).count(),0,
+      '回答前の問は古い強制補強通知で上書きされない');
     await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
     await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 375), '図を画面幅より大きくできる');
