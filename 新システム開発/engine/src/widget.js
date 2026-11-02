@@ -1449,20 +1449,23 @@ a{color:inherit}
       bindEnd(); return;
     }
     if (data.status === 'remediation_retry') {
-      app.innerHTML = '<h2>AI作成確認問題の結果</h2><div class="result ng">不正解</div>' +
+      if (data.sessionId) state.sessionId=data.sessionId;
+      app.innerHTML = '<h2>確認問題の結果</h2><div class="result ng">不正解</div>' +
         (data.correctAnswer ? '<div class="stem">正答：' + esc(data.correctAnswer) + '</div>' : '') +
+        (data.explanation ? '<div class="stem">理由：' + esc(data.explanation) + '</div>' : '') +
         '<div class="notice">' + esc(data.notice || '同じ分野をもう一度確認します。') + '</div>' +
-        '<div class="row"><button id="retryRemediation">別の確認問題を出す</button></div>' + endBar();
+        '<div class="row"><button id="retryRemediation">別の確認問題を出す</button></div>' +
+        '<div id="mandatoryCheckStatus" class="notice" role="status"></div>' + endBar();
       document.getElementById('retryRemediation').onclick = function(){
-        this.disabled = true;
-        ask('先ほどのAI作成確認問題は不正解でした。公式過去問はまだ再開しません。別のAI作成確認問題を1問作り、本文・全選択肢・確定した正答番号をregisterRemediationQuestionへ登録してから画面で出してください。', '同じ分野の確認問題をもう一度見る');
+        beginMandatoryRemediation(data.sessionId || state.sessionId,data.fieldName || 'この分野',this);
       };
-      bindEnd();
+      bindEnd(); scrollUp();
       return;
     }
     if (data.status === 'remediation_complete') {
-      app.innerHTML = '<h2>確認問題の結果</h2><div class="result ok">正解</div><div class="notice">' +
-        esc(data.notice || '確認問題に正解しました。') +
+      app.innerHTML = '<h2>確認問題の結果</h2><div class="result ok">正解</div>' +
+        (data.explanation ? '<div class="stem">根拠：' + esc(data.explanation) + '</div>' : '') +
+        '<div class="notice">' + esc(data.notice || '確認問題に正解しました。') +
         '</div><div class="row"><button id="resumeAfterRemediation">同じ分野の公式過去問に戻る</button></div>' + endBar();
       document.getElementById('resumeAfterRemediation').onclick = async function(){
         this.disabled = true;
@@ -2380,7 +2383,8 @@ a{color:inherit}
   }
   function showRemediationQuestion(d){
     if (d.sessionId) state.sessionId = d.sessionId;
-    var h = '<h2>AI作成確認問題</h2><div class="notice">理解度を確かめる練習問題です（公式過去問ではありません）。</div>' +
+    var h = '<h2>' + (d.prepared ? 'AI作成・事前検証済み確認問題' : 'AI作成確認問題') +
+      '</h2><div class="notice">理解度を確かめる練習問題です（公式過去問ではありません）。</div>' +
       '<div class="stem">' + esc(d.question || '') + '</div><div class="choices" id="remediationChoices">' +
       (d.choices || []).map(function(c,i){
         var n = String(i+1);
