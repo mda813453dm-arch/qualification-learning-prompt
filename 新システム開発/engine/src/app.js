@@ -38,7 +38,8 @@ import { finishStudy, formatTotal, jst, newStudy, STUDY_TTL_S, lastStudyKey, stu
 export const DEFAULT_PARSER_VERSION = '0.8.2';
 const MAX_SOURCES = 40;
 const MAX_BODY = 16 * 1024 * 1024;
-const SESSION_TTL_S = 60 * 60; // idle-session cleanup; learner history remains durable
+const SESSION_TTL_S = 26 * 60 * 60; // ancillary images, source metadata and handoff lookups
+const SESSION_RECORD_TTL_S = 60 * 60; // only the session record is deleted after one idle hour
 const LESSON_REF_PATTERN = /^L-[A-Za-z0-9_-]{16}$/;
 const lessonRefKey = (ref) => `lesson/request/${ref}`;
 const SESSION_MS = 60 * 60 * 1000; // inactivity is measured by user actions, not background refreshes
@@ -246,7 +247,7 @@ async function loadSession(env, id, now) {
   if (env.QLP_USER_ACTION && now > lastInteractionAt)
     await env.STORE.put(sesKey(id),
       JSON.stringify({ ...v, savedAt: now, lastInteractionAt: now }),
-      { expirationTtl: SESSION_TTL_S });
+      { expirationTtl: SESSION_RECORD_TTL_S });
   return v.state;
 }
 
@@ -256,7 +257,7 @@ async function saveSession(env, id, state, now) {
   if (previous && now - lastInteractionAt >= SESSION_MS)
     throw new HttpError(404, 'SESSION_NOT_FOUND', '60分間無操作のセッションは再開できません。新規学習画面を開いてください。');
   await env.STORE.put(sesKey(id), JSON.stringify({ savedAt: now, lastInteractionAt, state }),
-    { expirationTtl: SESSION_TTL_S });
+    { expirationTtl: SESSION_RECORD_TTL_S });
   // Learning history is learner-scoped and does not expire with the UI session.
   if (state.learnerId) await env.STORE.put(learnerStateKey(state.learnerId), JSON.stringify(state));
 }
