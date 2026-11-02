@@ -981,6 +981,17 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         console.info(JSON.stringify({ event: 'widget_session_start_responded', version: WIDGET_VERSION, status: merged.status ?? 'unknown', onboarding: merged.onboarding.length }));
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...merged, at: Date.now() } } });
       }
+      // UI内の読取専用復元では、問題文・選択肢はホストモデルの
+      // structuredContent には出さず、アプリ専用 _meta にだけ保持する。
+      // これを省略するとAI作成確認問題が復元後に空欄になる。
+      if (widget && tool.name === 'getStudySnapshot' && res.status < 400) {
+        const view = forModel(res.body);
+        return ok(id, {
+          content: [{type:'text',text:JSON.stringify(view)}],
+          structuredContent: view,
+          _meta: {qlp:{...res.body,at:Date.now()}},
+        });
+      }
       if ((widget && WIDGET_TOOLS.has(tool.name) || tool.name === 'showDescriptiveActions') && res.status < 400) {
         const view = forModel(res.body);
         return ok(id, { ...(tool.name === 'attachPdf' ? { isError: false } : {}), content: [{ type: 'text', text: JSON.stringify(view) }], structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
