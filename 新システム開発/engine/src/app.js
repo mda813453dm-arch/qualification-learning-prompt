@@ -1462,6 +1462,10 @@ async function restoreStudyView(env, id, state, now) {
   const fields = studyFieldOrder(state, cat);
   const studyId = state.learnerId ? await env.STORE.get(lastStudyKey(state.learnerId)) : null;
   const identity = { sessionId: id, learnerId: state.learnerId, studyId };
+  // バックグラウンド復元では、既に利用者へ公開した未回答の問が最優先。
+  // 過去の解説メニューや3連続誤答の状態は、回答前の問題を消してはならない。
+  if (!state.resumePending && pendingVisibleQuestionBeforeRemediation(state))
+    return { ...identity, ...await redisplayView(env, id, state, now), restored: true };
   // 解説済みの公式問は、画面離脱後も解説全文＋次問/終了ボタンを同じ形で復元。
   const published = state.publishedExplanation;
   if (published?.questionId && state.lastExplanation?.grade?.questionId === published.questionId &&
@@ -1472,9 +1476,6 @@ async function restoreStudyView(env, id, state, now) {
     // iOSのツール記述が旧版のままでも、既存のrestoreStudyViewから再開ボタンを確実に描画できる。
     return { ...resumeReadyView(id, state), restored: true };
   }
-  // 自動復元が未回答の公式問を「確認問題が必要」の案内へ上書きしない。
-  if (pendingVisibleQuestionBeforeRemediation(state))
-    return { ...identity, ...await redisplayView(env, id, state, now), restored: true };
   // 「解説あり」では解説が確定する前に確認問題の状態を作らない。
   // 戻る操作でも保存した解説・ボタンを優先し、確認問題に飛ばさない。
   if (state.itemMode === 'explain' && state.set?.fieldId && (!state.confirmation || prematureExplanationConfirmation(state))) {
