@@ -1112,6 +1112,12 @@ a{color:inherit}
   var licensedConsentSessionId = null;
   function render(data){
     if (sourceManagerOpen && data?.restored) return;
+    // まだ答えていない公式問へ、直前の誤答に紐づく古い必須補強通知を
+    // 非同期で受けても画面を上書きしない。背景スナップショットだけでなく
+    // UIツール通知の到着順逆転も同じ条件で防ぐ。
+    if (data?.status === 'remediation' && state.question && !state.answered) return;
+    if (data?.grade?.questionId && state.question && !state.answered &&
+        data.grade.questionId !== state.question.questionId) return;
     if (data && (data.question || data.grade || ['sourceUnavailable','waiting','finished','restoredGrade','reviewEmpty'].includes(data.status)))
       lastLearningView = data;
     // PDF添付のツール結果は新しいチャットメッセージ側に学習枠を生成する。
