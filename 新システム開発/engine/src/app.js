@@ -1466,6 +1466,20 @@ async function restoreStudyView(env, id, state, now) {
   // 過去の解説メニューや3連続誤答の状態は、回答前の問題を消してはならない。
   if (!state.resumePending && pendingVisibleQuestionBeforeRemediation(state))
     return { ...identity, ...await redisplayView(env, id, state, now), restored: true };
+  // 強制補強が有効なら、以前の問題の「AI解説メニュー」を優先してはならない。
+  // これまでは復元時に過去の解説を返すため、画面のボタンが登録可能な
+  // セッション状態と食い違うことがあった。未回答問の保護は上で処理済み。
+  if (state.remediation?.required) {
+    const challenge = state.remediation.challenge;
+    if (challenge?.id) return { ...identity, status:'remediation_question',
+      challengeId:challenge.id, question:challenge.question, choices:challenge.choices,
+      prepared:challenge.prepared===true, restored:true };
+    return { ...identity, status:'remediation',
+      attempts:state.remediation.attempts??0,
+      fieldName:cat?.fields?.[state.remediation.fieldId]??'今の分野',
+      notice:'同じ分野で3問連続誤答しました。確認問題を登録してから回答してください。',
+      restored:true };
+  }
   // 解説済みの公式問は、画面離脱後も解説全文＋次問/終了ボタンを同じ形で復元。
   const published = state.publishedExplanation;
   if (published?.questionId && state.lastExplanation?.grade?.questionId === published.questionId &&
