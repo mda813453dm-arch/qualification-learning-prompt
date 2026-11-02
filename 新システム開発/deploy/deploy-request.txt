@@ -496,3 +496,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 v173 final deploy gate: latest fixes include refreshed permission-ack checkbox immediately after ten-file batch, backend exhausted-flag, preflight quota check before iPhone file transfer, selected-file retention on explicit reconsent, no duplicate submission, lesson/widget v173 metadata regression. Execute full npm test and live release smoke before declaring success; do not change main/master_prompt.txt.
 
 2026-11-02 v173 latest permission renewal: prevent background library poll from re-locking consent checkbox when selected PDF count exceeds remaining 1-9 permissions. Explicit new check reauthorizes up to 10 PDFs; never bypass copyright permission. Verify full npm regression and live Cloud Run smoke. No main/master_prompt.txt changes.
+
+2026-11-02 v173 production smoke follow-up: update check-explanation.mjs to verify v173 widget resource URI, not cached v172. Deploy latest rights reconsent code and confirm end-to-end live smoke; existing learner records untouched; protect main/master_prompt.txt.
