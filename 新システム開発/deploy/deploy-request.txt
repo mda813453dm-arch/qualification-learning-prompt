@@ -465,3 +465,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 v170 Android final labels: scroll controls ↑上へ / ↓下へ / ⇣最下部へ, do not imply next question; final deploy after full tests
 
 2026-11-02 iOS missing widget: legacy URI stable HTML, one-time read-only reopenMissingWidget on explicit display failure, legacy UI diagnostics, full npm tests and public 168/169/v170 resource smoke. Never modify main/master_prompt.txt; no paid AI API.
+
+2026-11-02 v171: iPhone preserves unfinished official question during stale mandatory-remediation notifications or restoration, only explicitly clicked AI confirmation triggers request and read-only verification; support prefetched visible question; maintain Android scroll. Verify with npm suite and public smoke. No main/master_prompt edits.
