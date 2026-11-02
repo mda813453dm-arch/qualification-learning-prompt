@@ -1187,7 +1187,7 @@ function prematureExplanationConfirmation(state) {
  * プレフェッチの未公開問は保護対象外。登録された確認問題を迂回して新問は作らない。 */
 function pendingVisibleQuestionBeforeRemediation(state) {
   const cur = state.current;
-  return !!(state.remediation?.required && cur?.questionId && !cur.grade && !cur.prefetched &&
+  return !!(state.remediation?.required && cur?.questionId && !cur.grade &&
     cur.questionId !== state.remediation.triggerQuestionId);
 }
 async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
