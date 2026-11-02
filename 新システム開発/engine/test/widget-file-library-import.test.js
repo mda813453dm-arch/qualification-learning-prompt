@@ -13,7 +13,7 @@ assert.ok(planStart>0&&planEnd>planStart&&pickerStart>0&&pickerEnd>pickerStart,'
 const source=script.slice(planStart,planEnd)+'\n'+script.slice(pickerStart,pickerEnd);
 const pdfs=()=>[5,6,7].map(y=>({name:`R${y}_Mondai.pdf`,type:'application/pdf',size:1024}));
 function harness(opts={}){
-  const nodes={},calls=[],rendered=[],uploads=[],state={sessionId:'sess-one'};
+  const nodes={},calls=[],checks=[],rendered=[],uploads=[],state={sessionId:'sess-one'};
   const host={
     getFileDownloadUrl:async({fileId})=>{
       opts.afterDownload?.(state);
@@ -26,13 +26,24 @@ function harness(opts={}){
   const context={state,window:{openai:host},URL,Promise,Array,Map,Object,String,Number,Error,
     isHtmlAnswer:opts.htmlAnswers??true,maxBatch:10,locked:false,
     licensedConsentSessionId:opts.consent===false?null:'sess-one',
+    ack: {checked:true,disabled:true}, progressBox: {textContent:''},
     document:{getElementById(id){return nodes[id]??=(
       {id,textContent:'',disabled:false,isConnected:true,files:[],value:'',clickCount:0,
        classList:{toggle(){},remove(){}},click(){this.clickCount++;},setAttribute(name,v){this[name]=v;}});}},
-    callTool:async(name,args)=>{calls.push({name,args});return {status:'attachedBatch',sessionId:'sess-one',requested:args.questionPdfs.length,queued:args.questionPdfs.length,existing:0,failed:0,results:[]};},
+    callTool:async(name,args)=>{
+      if(name==='getOfficialLibrary'){
+        checks.push({name,args});
+        const remaining=opts.remaining??10;
+        return {status:'officialLibrary',sessionId:state.sessionId,permissionedUpload:true,
+          uploadPermissionConfirmed:remaining>0,remainingUploadFiles:remaining};
+      }
+      calls.push({name,args});
+      return {status:'attachedBatch',sessionId:'sess-one',requested:args.questionPdfs.length,
+        queued:args.questionPdfs.length,existing:0,failed:0,results:[]};
+    },
     render:r=>rendered.push(r)};
   vm.runInNewContext(source,context);
-  return {nodes,calls,rendered,state,host,uploads,
+  return {nodes,calls,checks,rendered,state,host,uploads,context,
     flush:async()=>{for(let i=0;i<50;i++)await Promise.resolve();},
     choose:()=>{const event={defaultPrevented:false,preventDefault(){this.defaultPrevented=true;}};nodes.licensedLocalPick.onclick(event);return event;},
     local:files=>{nodes.licensedLocalUpload.files=files;nodes.licensedLocalUpload.onchange();}};
@@ -99,4 +110,32 @@ test('repeated changes or taps during upload cannot register twice',async()=>{
 test('search button remains available for all personal registration states',()=>{
   assert.match(html,/id="licensedLocalPick"/);const i=html.indexOf('id="licensedLocalPick"');
   assert.doesNotMatch(html.slice(Math.max(0,i-2600),i),/personal\.length \?\s*'[^']+licensedLocalPick/);
+});
+
+test('remaining rights are verified before uploading and existing PDF selection survives explicit renewal',async()=>{
+  const opts={remaining:1};
+  const h=harness(opts);
+  h.local(pdfs());
+  await h.flush();
+  assert.equal(h.checks.length,1,'server quota checked before upload');
+  assert.equal(h.uploads.length,0,'do not send PDF while ten-file consent is exhausted');
+  assert.equal(h.calls.length,0,'no batch registration without permission');
+  assert.match(h.nodes.licensedFileStatus.textContent,/まだ送信していません/);
+  assert.equal(h.context.ack.checked,false,'re-enable explicit consent');
+  assert.equal(h.context.ack.disabled,false);
+  assert.equal(Array.from(h.context.pendingConsentFiles).length,3,'retain selected File objects');
+  opts.remaining=10;
+  h.context.licensedConsentSessionId='sess-one'; // triggered by the user's new checkbox confirmation
+  await h.context.registerSelectedPdfs(h.context.pendingConsentFiles);
+  await h.flush();
+  assert.equal(h.uploads.length,3);
+  assert.equal(h.calls.length,1);
+  assert.equal(h.rendered[0].status,'attachedBatch');
+});
+test('licensed widget provides explicit recheck after session quota exhaustion',()=>{
+  assert.match(html,/uploadPermissionExhausted/);
+  assert.match(html,/前回の10ファイル分の許諾枠を使い切りました/);
+  assert.match(script,/latest\.uploadPermissionConfirmed === true \? state\.sessionId : null/);
+  assert.match(script,/pendingConsentFiles = selected/);
+  assert.match(script,/registerSelectedPdfs\(pending\)/);
 });
