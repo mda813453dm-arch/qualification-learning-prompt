@@ -1843,7 +1843,7 @@ test('3連続誤答の復元でも既に表示した未回答の公式問題を�
   const original = await env.STORE.get(path);
   const ui = async (name,args)=>(await rpc(env,'tools/call',{name,arguments:args},{path:'/app'})).body.result;
   const restoredCall = await ui('getStudySnapshot',{sessionId:sid});
-  assert.equal(restoredCall.isError,undefined,JSON.stringify(restoredCall));
+  assert.notEqual(restoredCall.isError,true,JSON.stringify(restoredCall));
   const restored = restoredCall.structuredContent;
   assert.equal(restored.status,'question','復元は未回答の公式問題を優先する');
   assert.equal(restored.question.questionId, visible.question.questionId);
