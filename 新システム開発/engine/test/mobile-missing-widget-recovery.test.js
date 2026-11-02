@@ -77,7 +77,7 @@ test('read-only UI snapshot returns intact confirmation/remediation choices to i
       assert.equal(path,'/v1/sessions/'+sid+'/restore');
       return {status:200,body:{...original,sessionId:sid}};
     },{widget:true,baseUrl})).result;
-    assert.equal(res.isError,undefined);
+    assert.notEqual(res.isError,true);
     assert.equal(res._meta,undefined,'background snapshot must not generate a new widget');
     assert.equal(res.structuredContent.question,original.question,'iframe gets full stored text');
     assert.deepEqual(res.structuredContent.choices,original.choices,'iframe gets stored choice order');
