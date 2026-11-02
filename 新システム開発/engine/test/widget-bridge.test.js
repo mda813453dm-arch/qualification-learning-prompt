@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
-import { widgetHtml, WIDGET_VERSION } from '../src/widget-v170.js';
+import { widgetHtml, WIDGET_VERSION } from '../src/widget-v171.js';
 import { handleRpc } from '../src/mcp.js';
 
 // UI host simulator: deliberately rejects the MCP-server version at ui/initialize.
