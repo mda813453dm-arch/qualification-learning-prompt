@@ -78,3 +78,5 @@ jobs:
           python -m pip install -r 新システム開発/parser/requirements.txt
           PYTHONPATH=新システム開発/parser python -m unittest discover -s 新システム開発/parser -p 'test_*.py' -v
 # 2026-10-20T08:44:38Z rerun: the app showed no buttons after the 行政書士 deploy
+
+# 2026-11-02 mandatory remediation button: session-pinned registration, answer/complete regression, iOS+Android
