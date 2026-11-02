@@ -1787,7 +1787,7 @@ test('PDF一括添付はその会話に操作可能な学習枠を返す',()=>{
   const rpcSource=readFileSync(new URL('../src/mcp.js',import.meta.url),'utf8');
   assert.match(rpcSource,/WIDGET_TOOLS = new Set\(\['attachPdfBatch', 'attachPdf'/, 'PDF送信結果にも学習画面を添付する');
   assert.match(rpcSource,/tool\.name === 'attachPdf' \? \{ isError: false \}/, '登録受付を正常なツール結果として返す');
-  assert.match(rpcSource,/\['startSession','openHandoffView','attachPdf','attachPdfBatch'\]\.includes\(name\)/, 'PDF添付結果にもoutputTemplateを割り当てる');
+  assert.match(rpcSource,/\['startSession','openHandoffView','reopenMissingWidget','attachPdf','attachPdfBatch'\]\.includes\(name\)/, 'PDF添付と明示的な画面再表示にoutputTemplateを割り当てる');
   assert.match(rpcSource,/\.\.\.WIDGET_TOOL_META, \.\.\.\(meta \|\| \{\}\)/, '添付用fileParamsを維持する');
   const html=widgetHtml();
   assert.match(html,/過去問の登録状況/);
