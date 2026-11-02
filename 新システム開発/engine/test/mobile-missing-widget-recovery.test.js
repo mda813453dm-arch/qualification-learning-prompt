@@ -61,3 +61,31 @@ test('Legacy widgets can report real rendering stage using their own version', a
   const rejected=(await handleRpc(rpc(8,'tools/call',{name:'reportUiEvent',arguments:{stage:'render_onboarding',version:'bad-version'}}),api,{widget:true,baseUrl})).result;
   assert.equal(rejected.isError,true);
 });
+
+
+test('read-only UI snapshot returns intact confirmation/remediation choices to iframe only', async ()=>{
+  const sid='private-snapshot-test';
+  const testCases=[
+    {status:'confirmation_question',question:'保存済み確認問題の本文',choices:['基準A','基準B','基準C'],challengeId:'c1',correctAnswer:2,position:1,total:3},
+    {status:'remediation_question',question:'補強確認問題の本文',choices:['事実1','事実2','事実3'],challengeId:'c2',correctAnswer:1}
+  ];
+  for(const original of testCases){
+    const res=(await handleRpc(rpc(10,'tools/call',{
+      name:'getStudySnapshot',arguments:{sessionId:sid},
+    }),async(method,path)=>{
+      assert.equal(method,'GET');
+      assert.equal(path,'/v1/sessions/'+sid+'/restore');
+      return {status:200,body:{...original,sessionId:sid}};
+    },{widget:true,baseUrl})).result;
+    assert.equal(res.isError,undefined);
+    assert.equal(res._meta.qlp.question,original.question,'iframe gets full stored text');
+    assert.deepEqual(res._meta.qlp.choices,original.choices,'iframe gets stored choice order');
+    assert.equal(res.structuredContent.question,undefined,'model does not get raw text');
+    assert.equal(res.structuredContent.choices,undefined,'model does not get private choices');
+    assert.equal(res.structuredContent.correctAnswer,undefined,'model does not get answer');
+  }
+  const listed=(await handleRpc(rpc(11,'tools/list'),()=>{throw Error('no api')},{widget:true,baseUrl})).result.tools;
+  const snapshot=listed.find(t=>t.name==='getStudySnapshot');
+  assert.deepEqual(snapshot._meta.ui.visibility,['app'],'snapshot is app only');
+  assert.equal(snapshot._meta['openai/outputTemplate'],undefined,'snapshot never creates a new frame');
+});
