@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v170.js';
+import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v171.js';
 
 const rpc = (id, method, params={}) => ({ jsonrpc: '2.0', id, method, params });
 const baseUrl='https://qlp.example';
@@ -27,6 +27,9 @@ test('Cached iPhone UI URIs receive stable legacy HTML, not Android v170 touch h
   const current=(await handleRpc(rpc(4,'resources/read',{uri:WIDGET_URI}),api,{widget:true,baseUrl})).result.contents[0];
   assert.match(current.text,/qlpAndroidScrollTools/);
   assert.match(current.text,new RegExp(WIDGET_VERSION.replaceAll('.','\\.')));
+  const old170=(await handleRpc(rpc(9,'resources/read',{uri:'ui://qlp/question-v170.html'}),api,{widget:true,baseUrl})).result.contents[0];
+  assert.match(old170.text,/2026-11-02\\.170/);
+  assert.match(old170.text,/qlpAndroidScrollTools/);
   const resources=(await handleRpc(rpc(5,'resources/list'),api,{widget:true,baseUrl})).result.resources;
   assert.equal(resources.filter(x=>x.uri===WIDGET_URI).length,1,'latest URI only once');
 });
@@ -51,7 +54,7 @@ test('UI reopening reads prior session and does not create new session, grade, o
 
 test('Legacy widgets can report real rendering stage using their own version', async ()=>{
   const api=()=>{ throw Error('no API'); };
-  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170']){
+  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170','2026-11-02.171']){
     const value=(await handleRpc(rpc(7,'tools/call',{name:'reportUiEvent',arguments:{stage:'render_onboarding',version:ver}}),api,{widget:true,baseUrl})).result;
     assert.equal(value.structuredContent.status,'recorded');
   }
