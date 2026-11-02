@@ -1,3 +1,4 @@
 2026-11-02T09:34+09:00 iOS ChatGPT no widget despite startSession model text; read-only Cloud Run resource-read telemetry, aggregate only.
 Run read-only Cloud Run widget resource read logs with result commit status.
 Read structured jsonPayload event counts, not raw logs.
+Render stage vs initialization stage check.
