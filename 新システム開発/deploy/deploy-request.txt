@@ -473,3 +473,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 v172 latest: 元セッション固定の確認問題登録、誤答後の再出題、問題のボタン無反応を明示した場合に一度だけ最新版へ復元可能にした。前回プレビューの同一問への読取確認を妨げない修正を含む。公開前npm testおよび実配信スモークを実行。
 
 2026-11-02 v172 final: 古いAI呼出しで同資格の新しいセッションが作られても、未完了の3連続誤答の元sessionIdを保持して確認問題を登録。iPhoneのキャッシュ済み学習枠のボタン無反応時には同セッションを一度だけ最新v172枠へ再表示。事前検証済み宅建業法確認問題とAI作問を区別し、既存履歴は維持。最新回帰テスト・公開版スモーク後に配置。
+
+2026-11-02 v172 mandatory remediation: original-session button, prepared question registration, proper confirm-only tool, answer/grade/resume, iPhone/Android browser regression. Run pre-deploy npm test, public REST/MCP smoke; no main or master_prompt changes.
