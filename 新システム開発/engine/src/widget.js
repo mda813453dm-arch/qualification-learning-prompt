@@ -1756,7 +1756,11 @@ a{color:inherit}
           if (locked || licensedGeneration !== licensedPollGeneration) return;
           if (!latest || latest.error || latest.status !== 'officialLibrary' || !latest.permissionedUpload)
             throw new Error('LIBRARY_REFRESH_FAILED');
-          licensedConsentSessionId = latest.uploadPermissionConfirmed === true ? state.sessionId : null;
+          // Even when 1-9 permitted files remain, a larger selected batch
+          // requires the user to renew consent. Polling must not re-lock the box.
+          var pendingReconfirm = !!pendingConsentFiles && pendingConsentSession === state.sessionId;
+          licensedConsentSessionId = !pendingReconfirm && latest.uploadPermissionConfirmed === true
+            ? state.sessionId : null;
           var check = document.getElementById('licensedAck');
           if (check) {
             check.checked = licensedConsentSessionId === state.sessionId;
@@ -1764,9 +1768,11 @@ a{color:inherit}
             var progress = document.getElementById('licensedProgress');
             if (progress) progress.textContent = check.checked
               ? '許諾確認済みです。残り' + Number(latest.remainingUploadFiles) + 'ファイルを登録できます。'
-              : latest.uploadPermissionExhausted
-                ? '10ファイル分の許諾枠を使い切りました。次のPDFを追加する前に許諾確認へ再度チェックしてください。'
-                : '許諾確認にチェックを入れてからPDFを送信してください。';
+              : pendingReconfirm
+                ? '選択したPDFに対して許諾枠が不足しています。追加分について利用許諾を再確認し、チェックしてください。'
+                : latest.uploadPermissionExhausted
+                  ? '10ファイル分の許諾枠を使い切りました。次のPDFを追加する前に許諾確認へ再度チェックしてください。'
+                  : '許諾確認にチェックを入れてからPDFを送信してください。';
           }
           var uploaded = Array.isArray(latest.personalUploadedYears) ? latest.personalUploadedYears : [];
           var staged = Array.isArray(latest.pendingOfficialAnswerYears) ? latest.pendingOfficialAnswerYears : [];
