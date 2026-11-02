@@ -61,7 +61,7 @@ test('starting in the same chat always creates a new session and revokes the pre
   assert.equal(first.status,201);
   assert.equal(second.status,201);
   assert.notEqual(first.body.sessionId,second.body.sessionId);
-  assert.notEqual(first.body.learnerId,second.body.learnerId);
+  assert.equal(first.body.learnerId,second.body.learnerId, '同じ会話の学習履歴を新セッションへ継承');
   assert.equal((await call('GET','/v1/sessions/' + first.body.sessionId + '/restore')).status,404);
   const current=await call('GET','/v1/chat-study/restore');
   assert.equal(current.status,200);
