@@ -137,7 +137,7 @@ test('remaining rights are verified before uploading and existing PDF selection 
 test('licensed widget provides explicit recheck after session quota exhaustion',()=>{
   assert.match(html,/uploadPermissionExhausted/);
   assert.match(html,/前回の10ファイル分の許諾枠を使い切りました/);
-  assert.match(script,/latest\.uploadPermissionConfirmed === true \? state\.sessionId : null/);
+  assert.match(script,/!pendingReconfirm && latest\.uploadPermissionConfirmed === true\s*\? state\.sessionId : null/);
   assert.match(script,/pendingConsentFiles = selected/);
   assert.match(script,/registerSelectedPdfs\(pending\)/);
 });
