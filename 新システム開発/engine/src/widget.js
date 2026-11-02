@@ -3866,7 +3866,7 @@ a{color:inherit}
       if (!manual && hasView && restored.status === 'restoreIdle') return;
       // iPhoneの定期ポーリングが、回答前の公式問題と入力中の選択肢を
       // 異なる学習状態へ勝手に置換しない。同一問の採点保存が確認できた時だけ例外。
-      if (!manual && hasView && state.question && !state.answered) {
+      if (!manual && hasView && state.question && !state.answered && !recentPreview) {
         if (restored.status === 'question' && restored.question?.questionId === state.question.questionId) return;
         if (!(restored.status === 'restoredGrade' && restored.grade?.questionId === state.question.questionId)) return;
       }
