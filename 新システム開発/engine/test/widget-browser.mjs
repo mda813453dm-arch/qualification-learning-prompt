@@ -352,6 +352,26 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '同じ分野の公式過去問に戻る' }).waitFor();
     const rightCheck = await page.evaluate(() => window.calls.filter(x => x.params?.name === 'completeRemediation').at(-1).params.arguments);
     assert.deepEqual(rightCheck, { sessionId, challengeId: 'test-check-2', selected: '2' });
+    // 強制確認問題は明示タップまでAIに依頼しない。タップ後は同じ枠の保存済み問題を監視。
+    const priorCheckMessageCount = await page.evaluate(()=>window.followups.length);
+    await page.evaluate(r=>window.deliver(r), result({
+      status:'remediation',sessionId,fieldName:'測量に関する法規',
+      notice:'この分野は3問連続誤答です。'
+    }));
+    await ui.getByRole('button',{name:'AI作成確認問題を始める'}).waitFor();
+    assert.equal(await page.evaluate(()=>window.followups.length),priorCheckMessageCount,
+      '強制補強画面の自動表示だけではAI確認問題を作らない');
+    await ui.getByRole('button',{name:'AI作成確認問題を始める'}).click();
+    await ui.getByRole('button',{name:'確認問題を登録しています…'}).waitFor();
+    await page.waitForFunction(n=>window.followups.length===n+1,priorCheckMessageCount);
+    await page.evaluate(({sessionId})=>{
+      window.restorePayload={status:'remediation_question',sessionId,challengeId:'mandatory-test-3',
+        question:'選択肢のうち正しい説明を答える確認問題です。',
+        choices:['不適切','適切','無関係']};
+    },{sessionId});
+    await ui.getByText('AI作成確認問題',{exact:true}).waitFor({timeout:10000});
+    assert.equal(await ui.locator('input[name="remediationAnswer"]').count(),3,
+      '登録済み確認問題が同じ枠に表示される');
     await page.evaluate(r => window.deliver(r), result({ ...question, question: { ...question.question, figureUrls: ['https://qlp.test/figure.png'] } }));
     await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
     await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
