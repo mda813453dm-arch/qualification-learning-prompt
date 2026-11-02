@@ -463,3 +463,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 Android touch-scroll fix v170: direct touch gesture interception, stable 3-button in-frame navigation (up/down/end) independent of host swipe, preserve iOS natural height; mobile CI 41325441782 passed
 
 2026-11-02 v170 Android final labels: scroll controls ↑上へ / ↓下へ / ⇣最下部へ, do not imply next question; final deploy after full tests
+
+2026-11-02 iOS missing widget: legacy URI stable HTML, one-time read-only reopenMissingWidget on explicit display failure, legacy UI diagnostics, full npm tests and public 168/169/v170 resource smoke. Never modify main/master_prompt.txt; no paid AI API.
