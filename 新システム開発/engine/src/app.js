@@ -1207,7 +1207,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // 3連続誤答では分野・年度の指定を含めて新問を出さない（確認問題正解による復帰待ち）。
   if (state.remediation?.required) {
     const name = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId)?.fields?.[state.remediation.fieldId] ?? '同じ分野';
-    return { status: 'remediation', sessionId: id, fieldName: name, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
+    return { status: 'remediation', sessionId: id, fieldName: name, attempts: state.remediation.attempts ?? 0, notice: `${name}で3問連続不正解になりました。AI作成の確認問題に正解するまで、次の公式過去問へは進めません。` };
   }
   if (state.itemMode === 'explain' && state.set?.fieldId && (!state.confirmation || prematureExplanationConfirmation(state)) && !want) {
     const lesson = state.publishedLesson;
@@ -1507,9 +1507,9 @@ async function restoreStudyView(env, id, state, now) {
   }
   const fixChallenge = state.remediation?.required && state.remediation.challenge;
   if (fixChallenge?.id) return { ...identity, status: 'remediation_question',
-    challengeId: fixChallenge.id, question: fixChallenge.question, choices: fixChallenge.choices };
+    challengeId: fixChallenge.id, question: fixChallenge.question, choices: fixChallenge.choices, prepared: fixChallenge.prepared === true };
   if (state.remediation?.required) return { ...identity, status: 'remediation',
-    fieldName: cat?.fields?.[state.remediation.fieldId] ?? '今の分野',
+    attempts: state.remediation.attempts ?? 0, fieldName: cat?.fields?.[state.remediation.fieldId] ?? '今の分野',
     notice: '確認問題の正解が必要です。公式問題を勝手に進めず、ここから続けます。' };
   if (state.aiDiag?.status === 'running') {
     const d = await diagStep(env, id, state, now, { action: 'start' });
@@ -2171,7 +2171,7 @@ async function route(request, env, url, now) {
     const existing = state.remediation.challenge;
     if (existing?.id) return json(200, {
       status: 'remediation_question', sessionId: id, challengeId: existing.id,
-      question: existing.question, choices: existing.choices, notice: 'AI作成確認問題（出題時の正答で採点）',
+      question: existing.question, choices: existing.choices, prepared: existing.prepared === true, notice: '確認問題（出題時の正答で採点）',
       repeated: true,
     });
     const question = typeof b.question === 'string' ? b.question.trim() : '';
@@ -2183,11 +2183,13 @@ async function route(request, env, url, now) {
       !Number.isInteger(correct) || correct < 1 || correct > choices.length) {
       throw new HttpError(400, 'CONFIRMATION_QUESTION_INVALID');
     }
-    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, createdAt: now };
+    const explanation = typeof b.explanation === 'string' ? b.explanation.trim() : '';
+    if (explanation && (explanation.length < 12 || explanation.length > 2500)) throw new HttpError(400, 'CONFIRMATION_EXPLANATION_INVALID');
+    const challenge = { id: crypto.randomUUID(), question, choices, correctAnswer: correct, explanation, prepared: b.prepared === true, createdAt: now };
     await saveSession(env, id, { ...state, remediation: { ...state.remediation, challenge } }, now);
     return json(200, {
       status: 'remediation_question', sessionId: id, challengeId: challenge.id,
-      question, choices, notice: 'AI作成確認問題（出題時の正答で採点）',
+      question, choices, prepared: challenge.prepared, notice: '確認問題（出題時の正答で採点）',
     });
   }
 
@@ -2209,6 +2211,7 @@ async function route(request, env, url, now) {
       await saveSession(env, id, again, now);
       return json(200, {
         status: 'remediation_retry', sessionId: id, correctAnswer: String(challenge.correctAnswer),
+        explanation: challenge.explanation ?? '', prepared: challenge.prepared === true,
         notice: '不正解でした。同じ分野の別のAI作成確認問題で復習します。公式実践問題はまだ再開しません。',
       });
     }
@@ -2217,6 +2220,7 @@ async function route(request, env, url, now) {
       wrongStreak: { fieldId: fld, count: 0 }, set: { fieldId: fld, count: 0 } };
     await saveSession(env, id, cleared, now);
     return json(200, { status: 'remediation_complete', sessionId: id,
+      explanation: challenge.explanation ?? '', prepared: challenge.prepared === true,
       notice: '確認問題の正解を記録しました。同じ分野の公式過去問を再開できます。' });
   }
 
