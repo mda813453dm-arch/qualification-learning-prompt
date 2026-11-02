@@ -259,6 +259,22 @@ export const PREPARED_LESSONS = {
 };
 
 /** 画面の HTML。 */
+/** AIが事前作成し、e-Gov宅建業法35条・37条の原文と照合した基礎確認問題。
+ * 実行時にAI作問・新規セッション作成が不要なため、iPhoneの確認ボタンが確実に出題できる。 */
+export const REMEDIATION_BANK = {
+  '宅地建物取引業法と関係法令': [
+    { question:'宅地建物取引業法35条の重要事項説明について、説明を行う時期として正しいのはどれか。',
+      choices:['売買・賃貸借などの契約が成立するまでの間','契約が成立した後であればいつでもよい','建物の引渡しが終わった後'],
+      correctAnswer:1, explanation:'宅建業法35条は、契約成立までの間に宅地建物取引士による重要事項説明を行うことを定めています。' },
+    { question:'宅建業法35条と37条について、書面と説明の時期の組合せとして正しいのはどれか。',
+      choices:['35条の説明・37条書面ともに契約成立後に行う','35条の重要事項説明は契約成立前、37条書面は契約成立後に遅滞なく交付する','37条書面は引渡し後、35条の説明は登記後に行う'],
+      correctAnswer:2, explanation:'35条は契約が成立するまでに説明させる規定、37条は契約成立後に遅滞なく書面を交付する規定です。' },
+    { question:'宅建業者の媒介により売買契約が成立したとき、遅滞なく契約当事者に交付する書面の根拠条文はどれか。',
+      choices:['宅建業法34条','宅建業法35条','宅建業法37条'],
+      correctAnswer:3, explanation:'宅建業法37条は、契約が成立したときの書面交付を定めています。35条の重要事項説明と区別します。' }
+  ]
+};
+
 export function widgetHtml() {
   return `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -374,6 +390,7 @@ a{color:inherit}
 (function(){
   var app = document.getElementById('app');
   var preparedLessons = ${JSON.stringify(PREPARED_LESSONS)};
+  var remediationBank = ${JSON.stringify(REMEDIATION_BANK)};
   // 内容による自然高さ。#appにvhや高さ制限を設けないことで内側の縦スクロールを廃止。
   // ChatGPTホストが大きな高さを拒否する場合、完全な単一スクロールは保証できない。
   if (app.classList && app.classList.add) app.classList.add('study-viewport');
@@ -1459,49 +1476,15 @@ a{color:inherit}
       return;
     }
     if (data.status === 'remediation') {
-      app.innerHTML = '<div class="notice" role="status">' + esc(data.notice || '同じ分野で3問連続誤答しました。確認問題に正解すると公式問題へ戻れます。') + '</div>' +
-        '<div class="row"><button id="mandatoryCheck" type="button">AI作成確認問題を始める</button></div>' +
-        '<div class="notice" id="mandatoryCheckStatus" role="status">確認問題は、上のボタンを押したときだけ作成します。</div>' + endBar();
-      var remediationSession = data.sessionId || state.sessionId;
-      var remediationGeneration = 0;
+      if (data.sessionId) state.sessionId=data.sessionId;
+      app.innerHTML = '<div class="notice" role="status">' + esc(data.notice || '同じ分野で3問連続不正解です。確認問題で基本を確かめます。') + '</div>' +
+        '<div class="row"><button id="mandatoryCheck" type="button">確認問題で基本を確かめる</button></div>' +
+        '<div id="mandatoryCheckStatus" class="notice" role="status">押すと元の学習セッションで確認問題を登録します。</div>' + endBar();
       document.getElementById('mandatoryCheck').onclick = function(){
-        var btn = this;
-        if (!remediationSession || btn.disabled) return;
-        btn.disabled = true; btn.textContent = '確認問題を登録しています…';
-        var info = document.getElementById('mandatoryCheckStatus');
-        if (info) info.textContent = 'AIへ作問を依頼しました。正答を固定した確認問題が登録されるまで、公式過去問へ勝手に進みません。';
-        var run = ++remediationGeneration;
-        // UIメッセージは明示的なクリック時だけ送る。未回答の公式問題や
-        // 背景復元からAI作問を自動起動しない。
-        ask('登録済み資格・分野で同一分野3問連続誤答です。公式過去問を進めないでください。作問前に問題文・全選択肢・正答を固定し、registerRemediationQuestionへ1問登録してください。チャット本文ではなく資格学習枠に出題してください。',
-          '同じ資格・分野のAI作成確認問題を1問作り、正答を固定してregisterRemediationQuestionで資格学習画面へ登録してください。通常の公式問題へ進まないでください。');
-        // iOSのツール通知が欠落しても、同じセッションの保存状態を読取専用で照会。
-        // モデルの作問・登録をこのポーリングが代行したり、成功したことにしない。
-        var attempts = 0;
-        var monitor = async function(){
-          if (run !== remediationGeneration || locked || state.sessionId !== remediationSession) return;
-          var saved = null;
-          try { saved = await callTool('getStudySnapshot', { sessionId: remediationSession }); } catch(e){}
-          if (run !== remediationGeneration || locked || state.sessionId !== remediationSession) return;
-          if (saved && saved.status === 'remediation_question' && saved.challengeId) {
-            render(saved);
-            return;
-          }
-          if (saved && saved.status === 'question' && saved.question) {
-            // 他画面で未回答の公式問が存在する場合はそれを優先する。
-            render(saved);
-            return;
-          }
-          attempts += 1;
-          if (attempts < 10) { setTimeout(monitor, 2500); return; }
-          btn.disabled = false;
-          btn.textContent = '確認問題の登録を再試行';
-          var status = document.getElementById('mandatoryCheckStatus');
-          if (status) status.textContent = '確認問題の登録完了を確認できません。学習状態は保持しています。再試行するか、同じ学習枠で再確認してください。';
-        };
-        setTimeout(monitor, 1800);
+        beginMandatoryRemediation(data.sessionId || state.sessionId,data.fieldName || 'この分野',this);
       };
       bindEnd();
+      scrollUp();
       return;
     }
     if (data.status === 'sourceUnavailable' && data.permissionedUpload) {
@@ -2313,6 +2296,86 @@ a{color:inherit}
           if (!r || r.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(r.status)) throw new Error('REVIEW_UNAVAILABLE'); render(r);
         } catch (e) { this.disabled = false; app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">総復習を開始できませんでした。このボタンで再試行してください。</div>'); }
       };
+    }
+  }
+  // 確認問題を表示中の同一セッションへ登録してから出題する。
+  // 登録条件の照合は必ず元のsessionIdで行い、AIには新規startSessionをさせない。
+  var mandatoryCheckSerial = 0;
+  async function beginMandatoryRemediation(sessionId, field, button){
+    if (!sessionId || !button || button.disabled || locked) return;
+    var serial = ++mandatoryCheckSerial;
+    button.disabled = true;
+    var label = button.textContent;
+    button.textContent = '学習状態を確認しています…';
+    var notice = document.getElementById('mandatoryCheckStatus') || document.getElementById('mandatoryCheckInlineStatus');
+    if (!notice) {
+      notice = document.createElement('div');
+      notice.id = 'mandatoryCheckInlineStatus';
+      notice.className = 'notice';
+      notice.setAttribute('role','status');
+      button.parentNode.insertAdjacentElement('afterend',notice);
+    }
+    notice.textContent = '元の学習記録を確認中です。学習を新しく開始しません。';
+    try {
+      var snap = await callTool('getStudySnapshot', {sessionId:sessionId});
+      if (serial !== mandatoryCheckSerial || state.sessionId !== sessionId || locked) return;
+      if (!snap || snap.error) throw new Error(snap?.error || 'SNAPSHOT_UNAVAILABLE');
+      if (snap.status === 'remediation_question' && snap.challengeId) {
+        render(snap); return;
+      }
+      if (snap.status === 'question' && snap.question && !snap.grade) {
+        // 押した時点で未回答の公式問が残っているなら、先にその問を回答する。
+        render(snap); return;
+      }
+      if (snap.status !== 'remediation') {
+        throw new Error('REMEDIATION_NOT_ACTIVE');
+      }
+      var targetField = snap.fieldName || field;
+      var bank = remediationBank[targetField] || remediationBank[field];
+      // 根拠確認済み分野は同じ学習枠から直接登録。ChatGPTの誤セッション起動を回避。
+      if (bank && bank.length) {
+        button.textContent = '確認問題を登録しています…';
+        notice.textContent = '確認問題の正答を保存し、同じ学習画面に表示します。';
+        var index = Math.max(0, Number(snap.attempts) || 0) % bank.length;
+        var item = bank[index];
+        var registered = await callTool('registerRemediationQuestion', {
+          sessionId: sessionId, question:item.question,
+          choices:item.choices,correctAnswer:item.correctAnswer,
+          explanation:item.explanation,prepared:true
+        });
+        if (serial !== mandatoryCheckSerial || state.sessionId !== sessionId || locked) return;
+        if (!registered || registered.error || registered.status !== 'remediation_question' ||
+            !registered.challengeId || !Array.isArray(registered.choices)) throw new Error(registered?.error || 'CONFIRMATION_REGISTER_FAILED');
+        render(registered); return;
+      }
+      // 未登録分野に限りAIへ作問依頼。対象セッションを必ず指示し、同一枠の保存を確認する。
+      button.textContent = 'AI確認問題の登録待ち…';
+      notice.textContent = 'この学習セッションの確認問題をAIが作成・登録しています。新しい学習を開始しません。';
+      var instruction = '既存の資格学習セッションID ' + sessionId +
+        ' に限り、分野「' + targetField + '」のAI作成確認問題を1問作り、正答を先に固定してregisterRemediationQuestionへ登録してください。' +
+        'startSession、startStudy、nextQuestionは絶対に呼ばないでください。別セッションに登録せず、確認問題本文をチャットへ出さないでください。';
+      await ask(instruction,instruction);
+      var found = null;
+      for (var attempt=0; attempt<12; attempt++){
+        if (serial !== mandatoryCheckSerial || locked || state.sessionId !== sessionId) return;
+        await new Promise(function(done){setTimeout(done,2500);});
+        var check = null;
+        try {check=await callTool('getStudySnapshot',{sessionId:sessionId});}catch(e){}
+        if (check && check.status === 'remediation_question' && check.challengeId) {found=check;break;}
+        if (check && check.status === 'question' && check.question) { found=check;break; }
+      }
+      if (found) {render(found);return;}
+      throw new Error('CONFIRMATION_NOT_REGISTERED');
+    } catch(e) {
+      if (serial !== mandatoryCheckSerial || !button.isConnected) return;
+      button.disabled=false;
+      button.textContent='確認問題の登録を再試行';
+      if (notice) notice.textContent='確認問題を登録できませんでした。学習記録を保持しています。再試行すると元のセッションから登録します。';
+    } finally {
+      if (serial === mandatoryCheckSerial && button.isConnected && button.disabled) {
+        button.disabled=false;
+        button.textContent=label;
+      }
     }
   }
   function showRemediationQuestion(d){
@@ -3605,8 +3668,7 @@ a{color:inherit}
       app.innerHTML = h + officialAnswerSummary(q, g) + '<div class="row"><button id="checkExp">AIの詳しい解説を追加</button></div>' + endBar();
       var mandatory = document.getElementById('check');
       mandatory.onclick = function(){
-        this.disabled = true;
-        ask((q.fieldName || 'この分野') + 'で3問連続不正解でした。次の公式過去問は出さず、AI作成の確認問題を1問ずつ出してください。確認問題をregisterRemediationQuestionへ先に登録し、利用者の回答を画面側で採点してください。正解時だけ同じ分野の公式実践問題へ戻してください。', (q.fieldName || 'この分野') + 'の確認問題で基本を確かめる');
+        beginMandatoryRemediation(state.sessionId,q.fieldName || 'この分野',this);
       };
       document.getElementById('checkExp').onclick = function(){
         var b = document.getElementById('checkExp');
