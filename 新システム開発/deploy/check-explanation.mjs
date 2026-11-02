@@ -89,6 +89,13 @@ assert.ok(resource.contents[0].text.includes('資格の確認なしに'), '再�
 assert.ok(resource.contents[0].text.includes("q.section === '午前の部' || q.section === '午後の部'"), '公式の問題見出しに午前・午後の区分を表示する');
 
 assert.ok(resource.contents[0].text.includes("rpc('ui/message'"), '画面操作は短いテキストで渡す');
+const mandatory = list.tools.find(t => t.name === 'registerRemediationQuestion');
+assert.ok(mandatory, '3連続誤答の必須確認問題の登録ツールを公開');
+assert.ok(mandatory.inputSchema?.properties?.explanation, '確認問題の正答根拠を登録可能');
+assert.ok(mandatory.inputSchema?.properties?.prepared, '事前固定された確認問題を登録可能');
+assert.equal(mandatory._meta?.ui?.resourceUri, undefined, '確認問題登録で新しい学習枠を増やさない');
+assert.ok(resource.contents[0].text.includes('beginMandatoryRemediation('), 'iPhoneで確認問題を元セッションから直接開始できる');
+assert.ok(resource.contents[0].text.includes('remediationBank'), '基礎確認問題をモデルの再起動なしで登録できる');
 const spec = await rpc('tools/call', { name: 'explainSpec', arguments: { correct: true, selected: '3', correctAnswer: '3' } });
 assert.equal(spec.isError, true, '採点情報だけを渡してもAIへ解説データを渡さない');
 assert.equal(spec.structuredContent?.error, 'EXPLANATION_REFERENCE_REQUIRED', '照合番号なしの取得を拒否');
