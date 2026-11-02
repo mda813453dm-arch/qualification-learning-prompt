@@ -1607,6 +1607,7 @@ a{color:inherit}
       var localPdfInput = document.getElementById('licensedLocalUpload');
       var localPickButton = document.getElementById('licensedLocalPick');
       var selectingPdf = false;
+      var consentCheckInFlight = false;
       var pendingConsentFiles = null;
       var pendingConsentSession = null;
       function selectedPdfStatus(message, error){
@@ -1617,7 +1618,7 @@ a{color:inherit}
         node.classList.toggle('busy', selectingPdf && !error);
       }
       async function registerSelectedPdfs(selected){
-        if (selectingPdf || locked || !state.sessionId) return;
+        if (selectingPdf || consentCheckInFlight || locked || !state.sessionId) return;
         var sid = state.sessionId;
         // UIのチェックに加え、実際の送信APIでもサーバー側の権利確認を必須にする。
         if (licensedConsentSessionId !== sid) {
@@ -1635,12 +1636,19 @@ a{color:inherit}
         // 直前の登録で10ファイル枠が終了していれば、ファイルを送信しない。
         var fileCount = plan.reduce(function(n, item){ return n + (item.answer ? 2 : 1); }, 0);
         var rightsStatus;
+        consentCheckInFlight = true;
         try {
           rightsStatus = await callTool('getOfficialLibrary', {sessionId:sid});
           if (!rightsStatus || rightsStatus.error || rightsStatus.status !== 'officialLibrary')
             throw new Error('UPLOAD_PERMISSION_STATUS_UNAVAILABLE');
         } catch(err) {
+          consentCheckInFlight = false;
           selectedPdfStatus('許諾状況を確認できませんでした。PDFは送信していません。接続を確認してもう一度選んでください。', true);
+          return;
+        }
+        consentCheckInFlight = false;
+        if (locked || state.sessionId !== sid) {
+          selectedPdfStatus('学習画面が切り替わりました。送信前に停止しました。', true);
           return;
         }
         if (!rightsStatus.uploadPermissionConfirmed || Number(rightsStatus.remainingUploadFiles) < fileCount) {
