@@ -101,6 +101,7 @@ test('repeated changes or taps during upload cannot register twice',async()=>{
   const h=harness();let finish;
   h.host.uploadFile=file=>{h.uploads.push(file.name);return new Promise(resolve=>{finish=resolve;});};
   h.local([pdfs()[0]]);h.local([pdfs()[0]]);h.choose();
+  await h.flush(); // asynchronous permission preflight completes before host upload begins
   assert.equal(h.nodes.licensedLocalPick['aria-busy'],'true');assert.equal(h.nodes.licensedLocalUpload.clickCount,0);
   assert.equal(h.nodes.licensedLocalPickText.textContent,'PDFを送信中…');
   assert.match(h.nodes.licensedFileStatus.textContent,/完了した年度を自動で表示/);
