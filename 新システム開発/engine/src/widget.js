@@ -1703,6 +1703,8 @@ a{color:inherit}
             throw new Error('IMPORT_NOT_ACCEPTED');
           if (sent.uploadPermissionExhausted === true || sent.uploadPermissionConfirmed === false) {
             licensedConsentSessionId = null;
+            if (ack) { ack.checked = false; ack.disabled = false; }
+            if (progressBox) progressBox.textContent = '10ファイル分の許諾枠を使い切りました。次のPDFを登録する前に、利用許諾確認へ再度チェックしてください。';
           }
           if (Number(sent.failed) === plan.length) {
             var failed = Array.isArray(sent.results) ? sent.results.map(function(r){
