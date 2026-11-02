@@ -20,7 +20,7 @@ jobs:
       - name: UIリソースの読取発生状況（個人情報なし・集計のみ）
         run: |
           set -euo pipefail
-          QUERY='resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND timestamp>="2026-11-01T21:00:00Z" AND (textPayload:"widget_resource_read" OR textPayload:"widget_session_start_responded" OR textPayload:"widget_ui" OR textPayload:"widget_session_start_called")'
+          QUERY='resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND timestamp>="2026-11-02T00:15:00Z" AND (jsonPayload.event="widget_resource_read" OR jsonPayload.event="widget_session_start_responded" OR jsonPayload.event="widget_ui" OR jsonPayload.event="widget_session_start_called")'
           gcloud logging read "$QUERY" --project qualification-learning --limit 2500 --format=json > /tmp/mobile-events.json
           python3 - <<'PY'
           import json
