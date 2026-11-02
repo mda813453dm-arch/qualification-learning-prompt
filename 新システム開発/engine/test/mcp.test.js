@@ -39,7 +39,7 @@ async function rpc(env, method, params, { path = '/mcp', token = TOKEN } = {}) {
 }
 const call = async (env, name, args) => (await rpc(env, 'tools/call', { name, arguments: args })).body.result;
 
-test('同じChatGPT会話では学習開始後の別資格@再呼出しを拒否し、終了後だけ許可する', async () => {
+test('同じChatGPT会話でも新しい起動画面は新規セッション、古い画面は無効', async () => {
   const env = makeEnv();
   const sessionMeta = { 'openai/session': 'anonymous-conversation-a-123456' };
   const sessionB = { 'openai/session': 'anonymous-conversation-b-123456' };
@@ -49,43 +49,37 @@ test('同じChatGPT会話では学習開始後の別資格@再呼出しを拒否
   assert.equal(first.status, 'needPlan');
   const started = (await app('startStudy', { qualificationName:'測量士補', learnerId:first.learnerId })).structuredContent;
   assert.ok(started.studyId);
-  const blocked = await app('startSession', { qualificationId:'宅建', sources:[] });
-  assert.equal(blocked.isError, true);
-  assert.equal(blocked.structuredContent.error, 'STUDY_ACTIVE_OTHER_QUALIFICATION');
-  assert.match(blocked.structuredContent.hint, /学習を終了する/);
-  assert.equal((await app('startStudy', { qualificationName:'宅建' })).structuredContent.error,
-    'STUDY_ACTIVE_OTHER_QUALIFICATION', 'startStudy without a prior session is also blocked');
-  const duplicate = await app('startSession', { qualificationId:'測量士補', sources:[SRC] });
-  assert.equal(duplicate.structuredContent.error, 'STUDY_ALREADY_ACTIVE', 'same qualification must not open another frame');
-  assert.equal((await app('startStudy', { qualificationName:'測量士補', learnerId:first.learnerId })).structuredContent.error,
-    'STUDY_ALREADY_ACTIVE', 'same qualification must not restart the study timer');
+  const fresh = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
+  assert.ok(fresh.sessionId);
+  assert.notEqual(fresh.sessionId, first.sessionId);
+  const old = await app('nextQuestion', {sessionId:first.sessionId});
+  assert.equal(old.isError,true);
+  assert.equal(old.structuredContent.error,'SESSION_NOT_FOUND');
+  const sameQualification = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
+  assert.ok(sameQualification.sessionId);
+  assert.notEqual(sameQualification.sessionId,fresh.sessionId);
+  const restored = (await app('reopenMissingWidget', {})).structuredContent;
+  assert.equal(restored.sessionId,sameQualification.sessionId);
   const separate = (await app('startSession', { qualificationId:'測量士補', sources:[SRC] }, sessionB)).structuredContent;
-  assert.equal(separate.status, 'needPlan', 'another ChatGPT conversation has its own session');
-  const ended = await app('endStudy', { studyId:started.studyId, sessionId:first.sessionId });
-  assert.notEqual(ended.isError, true);
-  const after = await app('startSession', { qualificationId:'宅建', sources:[] });
-  assert.notEqual(after.isError, true, 'switching is possible after explicit endStudy');
+  assert.equal(separate.status, 'needPlan');
 });
 
-test('画面消失後はセッションID不明でも同じ会話の保存状態だけ復元する', async () => {
+test('画面消失後は新しい起動で保存したセッションIDから復元する', async () => {
   const env = makeEnv();
   const meta = { 'openai/session': 'anonymous-missing-frame-123456' };
   const app = async (name, args, chatMeta=meta) => (await rpc(env, 'tools/call',
     { name, arguments: args, _meta: chatMeta }, { path: '/app' })).body.result;
   const first = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
-  assert.ok(first.sessionId);
-  const duplicate = await app('startSession', { qualificationId:'宅建', sources:[] });
-  // 学習開始前は再実行され得る。復元は新規学習なしで元の記録を読む。
-  const prior = duplicate.structuredContent.sessionId || first.sessionId;
-  const started = await app('startStudy', { qualificationName:'宅建', learnerId:duplicate.structuredContent.learnerId });
+  const second = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
+  assert.notEqual(first.sessionId,second.sessionId);
+  const started = await app('startStudy', { qualificationName:'宅建', learnerId:second.learnerId });
   assert.ok(started.structuredContent.studyId);
-  assert.equal((await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent.error,
-    'STUDY_ALREADY_ACTIVE');
+  const third = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
+  assert.notEqual(third.sessionId,second.sessionId);
   const recovered = await app('reopenMissingWidget', {});
   assert.equal(recovered.isError,undefined);
-  assert.equal(recovered.structuredContent.sessionId,prior);
-  assert.equal(recovered.structuredContent.studyId,started.structuredContent.studyId);
-  assert.ok(recovered._meta.qlp.status,'保存済みの学習画面を返す');
+  assert.equal(recovered.structuredContent.sessionId,third.sessionId);
+  assert.ok(recovered._meta.qlp.status);
   const foreign = await app('reopenMissingWidget', {}, { 'openai/session':'anonymous-other-chat-123456' });
   assert.equal(foreign.isError,true);
   assert.equal(foreign.structuredContent.error,'CHAT_STUDY_NOT_FOUND');
