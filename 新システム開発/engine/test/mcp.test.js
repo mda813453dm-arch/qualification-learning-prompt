@@ -67,6 +67,32 @@ test('同じChatGPT会話では学習開始後の別資格@再呼出しを拒否
   assert.notEqual(after.isError, true, 'switching is possible after explicit endStudy');
 });
 
+test('画面消失後はセッションID不明でも同じ会話の保存状態だけ復元する', async () => {
+  const env = makeEnv();
+  const meta = { 'openai/session': 'anonymous-missing-frame-123456' };
+  const app = async (name, args, chatMeta=meta) => (await rpc(env, 'tools/call',
+    { name, arguments: args, _meta: chatMeta }, { path: '/app' })).body.result;
+  const first = (await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent;
+  assert.ok(first.sessionId);
+  const duplicate = await app('startSession', { qualificationId:'宅建', sources:[] });
+  // 学習開始前は再実行され得る。復元は新規学習なしで元の記録を読む。
+  const prior = duplicate.structuredContent.sessionId || first.sessionId;
+  const started = await app('startStudy', { qualificationName:'宅建', learnerId:duplicate.structuredContent.learnerId });
+  assert.ok(started.structuredContent.studyId);
+  assert.equal((await app('startSession', { qualificationId:'宅建', sources:[] })).structuredContent.error,
+    'STUDY_ALREADY_ACTIVE');
+  const recovered = await app('reopenMissingWidget', {});
+  assert.equal(recovered.isError,undefined);
+  assert.equal(recovered.structuredContent.sessionId,prior);
+  assert.equal(recovered.structuredContent.studyId,started.structuredContent.studyId);
+  assert.ok(recovered._meta.qlp.status,'保存済みの学習画面を返す');
+  const foreign = await app('reopenMissingWidget', {}, { 'openai/session':'anonymous-other-chat-123456' });
+  assert.equal(foreign.isError,true);
+  assert.equal(foreign.structuredContent.error,'CHAT_STUDY_NOT_FOUND');
+  const noMeta = await app('reopenMissingWidget', {}, {});
+  assert.equal(noMeta.structuredContent.error,'CHAT_STUDY_NOT_FOUND');
+});
+
 test('initialize で接続版プロンプトを instructions として渡す（deploy/gpt-instructions.txt と同じ内容）', async () => {
   const env = makeEnv();
   const r = await rpc(env, 'initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'test', version: '1' } });
@@ -1754,7 +1780,8 @@ test('本人専用PDFの検証結果を見てから学習の次の選択肢を�
 test('資格名付きアプリ起動はエンジン必須で汎用学習メニューへの代替を禁止',()=>{
   const text = readFileSync(new URL('../../deploy/gpt-instructions.txt',import.meta.url),'utf8');
   assert.equal(INSTRUCTIONS,text,'MCPに配布する指示は正本と一致');
-  assert.match(text,/回答本文・選択肢・フォーム・学習メニューを一切生成する前に必ず startSession/);
+  assert.match(text,/初回だけ startSession/);
+  assert.match(text,/reopenMissingWidget を1回だけ呼ぶ/);
   assert.match(text,/通常のChatGPTメニューにフォールバックせず/);
   assert.match(text,/汎用メニューは仕様違反として出力禁止/);
   const startup=TOOLS.find(x=>x.name==='startSession');

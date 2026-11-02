@@ -2116,6 +2116,22 @@ async function route(request, env, url, now) {
     return json(200, { ...await restoreStudyView(env, id, state, now), restored: true });
   }
 
+  // 画面が一度も描画されずモデルが sessionId を保持できなかった場合の読取専用復旧。
+  // 会話識別子は MCP の _meta からサーバーが作ったダイジェストだけを受け付ける。
+  if (method === 'GET' && url.pathname === '/v1/chat-study/restore') {
+    const chatId = hostChatKey(request);
+    const current = await readChatStudy(env, chatId);
+    if (!chatId || !current?.learnerId) throw new HttpError(404, 'CHAT_STUDY_NOT_FOUND');
+    const sid = await env.STORE.get(lastSessionKey(current.learnerId));
+    if (!sid) throw new HttpError(404, 'CHAT_STUDY_NOT_FOUND');
+    const state = await loadSession(env, sid, now);
+    if (state.learnerId !== current.learnerId || state.qualificationId !== current.qualificationId)
+      throw new HttpError(409, 'CHAT_STUDY_MISMATCH');
+    const inner = new Request(new URL(`/v1/sessions/${encodeURIComponent(sid)}/restore`, url),
+      { headers: request.headers });
+    return handle(inner, env);
+  }
+
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'redisplay' && parts.length === 4) {
     const { id, state } = await resolveSession(env, parts[2], now);
     return json(200, await redisplayView(env, id, state, now));

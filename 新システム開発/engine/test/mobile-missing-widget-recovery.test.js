@@ -15,7 +15,7 @@ test('Cached iPhone UI URIs receive stable legacy HTML, not Android v170 touch h
   const recover=tools.find(t=>t.name==='reopenMissingWidget');
   assert.equal(recover._meta.ui.resourceUri,WIDGET_URI);
   assert.equal(recover._meta['openai/outputTemplate'],WIDGET_URI);
-  assert.equal(recover.inputSchema.required[0],'sessionId');
+  assert.equal(recover.inputSchema.required,undefined,'sessionId が不明でも同一会話から復元できる');
   const cached168=(await handleRpc(rpc(2,'resources/read',{uri:'ui://qlp/question-v168.html'}),api,{widget:true,baseUrl})).result.contents[0];
   assert.equal(cached168.uri,'ui://qlp/question-v168.html');
   assert.match(cached168.text,/2026-11-01\.168/);
@@ -32,6 +32,19 @@ test('Cached iPhone UI URIs receive stable legacy HTML, not Android v170 touch h
   assert.match(old170.text,/qlpAndroidScrollTools/);
   const resources=(await handleRpc(rpc(5,'resources/list'),api,{widget:true,baseUrl})).result.resources;
   assert.equal(resources.filter(x=>x.uri===WIDGET_URI).length,1,'latest URI only once');
+});
+
+test('UI reopening without sessionId uses only the server-bound conversation', async () => {
+  const calls=[];
+  const result=(await handleRpc(rpc(11,'tools/call',{name:'reopenMissingWidget',arguments:{}}),
+    async(method,path,body)=>{
+      calls.push({method,path,body});
+      return {status:200,body:{status:'needPlan',sessionId:'saved-session',
+        onboarding:[{kind:'status',choices:['基礎学習中']}]}};
+    },{widget:true,baseUrl})).result;
+  assert.equal(result.isError,undefined);
+  assert.equal(result._meta.qlp.sessionId,'saved-session');
+  assert.deepEqual(calls,[{method:'GET',path:'/v1/chat-study/restore',body:undefined}]);
 });
 
 test('UI reopening reads prior session and does not create new session, grade, or change question', async () => {

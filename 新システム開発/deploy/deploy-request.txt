@@ -477,3 +477,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 v172 mandatory remediation: original-session button, prepared question registration, proper confirm-only tool, answer/grade/resume, iPhone/Android browser regression. Run pre-deploy npm test, public REST/MCP smoke; no main or master_prompt changes.
 
 2026-11-02 v172 public smoke gate expanded: require mandatory direct register function, prepared and explanation schema, old session, no new frames; verify before declaring deploy success.
+
+2026-11-02 missing widget recovery: restore the bound chat session without model-held sessionId; no new study or answer. Predeploy 595 tests (593 passed, 2 skipped).
