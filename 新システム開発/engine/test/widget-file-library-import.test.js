@@ -39,7 +39,8 @@ function harness(opts={}){
       }
       calls.push({name,args});
       return {status:'attachedBatch',sessionId:'sess-one',requested:args.questionPdfs.length,
-        queued:args.questionPdfs.length,existing:0,failed:0,results:[]};
+        queued:args.questionPdfs.length,existing:0,failed:0,results:[],
+        ...(opts.exhaustOnAttach ? {uploadPermissionExhausted:true,uploadPermissionConfirmed:false} : {})};
     },
     render:r=>rendered.push(r)};
   vm.runInNewContext(source,context);
@@ -139,4 +140,15 @@ test('licensed widget provides explicit recheck after session quota exhaustion',
   assert.match(script,/latest\.uploadPermissionConfirmed === true \? state\.sessionId : null/);
   assert.match(script,/pendingConsentFiles = selected/);
   assert.match(script,/registerSelectedPdfs\(pending\)/);
+});
+
+test('a batch that uses the last consent slot immediately re-enables the checkbox',async()=>{
+  const h=harness({exhaustOnAttach:true});
+  h.local([pdfs()[0]]);
+  await h.flush();
+  assert.equal(h.calls.length,1);
+  assert.equal(h.context.licensedConsentSessionId,null);
+  assert.equal(h.context.ack.checked,false);
+  assert.equal(h.context.ack.disabled,false);
+  assert.match(h.context.progressBox.textContent,/再度チェックしてください/);
 });
