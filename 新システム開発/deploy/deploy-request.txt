@@ -467,3 +467,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-02 iOS missing widget: legacy URI stable HTML, one-time read-only reopenMissingWidget on explicit display failure, legacy UI diagnostics, full npm tests and public 168/169/v170 resource smoke. Never modify main/master_prompt.txt; no paid AI API.
 
 2026-11-02 v171: iPhone preserves unfinished official question during stale mandatory-remediation notifications or restoration, only explicitly clicked AI confirmation triggers request and read-only verification; support prefetched visible question; maintain Android scroll. Verify with npm suite and public smoke. No main/master_prompt edits.
+
+2026-11-02 v172: 修正／宅建の3問連続誤答後に「確認問題で基本を確かめる」を選ぶと別セッションが起動して登録できない不具合。元sessionIdで直接保存・出題するAI事前作成済み35条37条の確認問題を導入、誤答再出題・正答後の実践復帰。その他資格のAI作問にもsessionId固定・登録結果確認を追加。iPhone/Android画面・回帰試験、main/master_prompt.txtの変更なし。
