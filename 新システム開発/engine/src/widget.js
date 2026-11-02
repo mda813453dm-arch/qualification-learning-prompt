@@ -259,7 +259,7 @@ export const PREPARED_LESSONS = {
 };
 
 /** 画面の HTML。 */
-/** AIが事前作成し、e-Gov宅建業法35条・37条の原文と照合した基礎確認問題。
+/** 出題時に正答をエンジンへ登録する、宅建業法35条・37条の基礎確認用組込み問題。
  * 実行時にAI作問・新規セッション作成が不要なため、iPhoneの確認ボタンが確実に出題できる。 */
 export const REMEDIATION_BANK = {
   '宅地建物取引業法と関係法令': [
@@ -2334,7 +2334,8 @@ a{color:inherit}
         throw new Error('REMEDIATION_NOT_ACTIVE');
       }
       var targetField = snap.fieldName || field;
-      var bank = remediationBank[targetField] || remediationBank[field];
+      var bank = remediationBank[targetField] || remediationBank[field] ||
+        preparedLessons[targetField]?.questions || preparedLessons[field]?.questions;
       // 根拠確認済み分野は同じ学習枠から直接登録。ChatGPTの誤セッション起動を回避。
       if (bank && bank.length) {
         button.textContent = '確認問題を登録しています…';
