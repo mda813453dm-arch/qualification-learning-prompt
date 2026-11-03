@@ -265,6 +265,9 @@ async function saveSession(env, id, state, now) {
 const learnerStateKey = (lid) => `lrnstate/${lid}`;
 // 学習の開始（startStudy）をした時刻。出題は、いまのセッションが作られた後に開始されていることを条件にする（前回の学習の記録で素通りさせない）
 const studyStartKey = (lid) => `lrnstart/${lid}`;
+// A successful start belongs to exactly one learning frame, even when a new
+// frame is created in the same millisecond or the chat identifier is missing.
+const studySessionKey = (lid) => `lrnstudysession/${lid}`;
 // 新しいチャット（startSession）を始めた時刻。再開のときも、そのたびに更新する
 const studyOpenKey = (lid) => `lrnopen/${lid}`;
 // 利用者が答えた学習段階（1〜4）。解説の深さを合わせるため、引継ぎIDごとに残す（期限なし）
@@ -2719,7 +2722,12 @@ async function route(request, env, url, now) {
     const sameBinding = !!given && (!currentChat ||
       (currentChat.learnerId === given && currentChat.qualificationId === qualificationId &&
         (!b.sessionId || currentChat.sessionId === b.sessionId)));
-    const priorStudyId = sameBinding && await studyStartedInThisChat(env, given)
+    const requestedSid = b.sessionId || currentChat?.sessionId ||
+      (given ? await env.STORE.get(lastSessionKey(given)) : null);
+    const recordedSid = given ? await env.STORE.get(studySessionKey(given)) : null;
+    const sameStartedSession = recordedSid ? recordedSid === requestedSid :
+      !!(currentChat?.active && currentChat.sessionId === requestedSid);
+    const priorStudyId = sameBinding && sameStartedSession && await studyStartedInThisChat(env, given)
       ? await env.STORE.get(lastStudyKey(given)) : null;
     const priorStudy = priorStudyId ? await env.STORE.get(studyKey(priorStudyId), 'json') : null;
     if (priorStudy?.learnerId === given && priorStudy.endedAt == null) {
@@ -2754,6 +2762,10 @@ async function route(request, env, url, now) {
     await env.STORE.put(studyKey(studyId), JSON.stringify(study), { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(lastStudyKey(learnerId), studyId, { expirationTtl: STUDY_TTL_S });
     await env.STORE.put(studyStartKey(learnerId), String(now), { expirationTtl: STUDY_TTL_S });
+    const startingSessionId = b.sessionId || currentChat?.sessionId ||
+      await env.STORE.get(lastSessionKey(learnerId));
+    if (startingSessionId) await env.STORE.put(studySessionKey(learnerId), startingSessionId,
+      { expirationTtl: STUDY_TTL_S });
     await activateChatStudy(env, learnerId, qualificationId, studyId);
     // 復習の順番だけを新しい学習時間に合わせてリセット。復習予定と過去の採点は保持する。
     const activeSessionId = await env.STORE.get(lastSessionKey(learnerId));
