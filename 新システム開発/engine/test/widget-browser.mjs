@@ -258,13 +258,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '分野を選択する前は学習時間を開始しない');
-    assert.equal(await ui.locator('#studyFieldInput').count(),1,'自由入力欄は一つだけ');
-    await ui.locator('#studyFieldInput').fill('');
+    assert.equal(await ui.locator('#studyScopeFreeField').count(),1,'自由入力欄は一つだけ');
+    await ui.locator('#studyScopeFreeField').fill('');
     await ui.getByRole('button',{name:'入力した分野で学習する'}).click();
-    assert.match(await ui.locator('#studyFieldInputError').innerText(), /分野名または論点を入力してください/);
+    assert.match(await ui.locator('#studyScopeFreeError').innerText(), /2～80文字/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '空欄では学習を始めない');
-    await ui.locator('#studyFieldInput').fill('測量に関する');
+    await ui.locator('#studyScopeFreeField').fill('測量に関する');
     await ui.getByRole('button',{name:'入力した分野で学習する'}).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     // 最初の2回はエンジン呼び出し失敗。再表示専用APIでなく同じnextQuestionで復旧する。
