@@ -28,7 +28,8 @@ test('8種制限 recognizes alternate notation and uses choice text', () => {
 test('8種制限 does not expand to general takken law or other qualifications', () => {
   const unrelated = item('37', 't7', '媒介契約の書面の交付と報酬について');
   const wrongField = item('3', 't3', '手付金等の保全について');
-  const results = [unrelated, wrongField];
+  const unrelatedSeller = item('self-seller', 't7', '宅地建物取引業者Ａが自ら売主として契約したときの37条書面の交付について');
+  const results = [unrelated, wrongField, unrelatedSeller];
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q041', fields), null);
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q063', fields), null);
 });
