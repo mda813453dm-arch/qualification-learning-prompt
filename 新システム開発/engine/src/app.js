@@ -1217,7 +1217,7 @@ function pendingVisibleQuestionBeforeRemediation(state) {
   return !!(state.remediation?.required && cur?.questionId && !cur.grade &&
     cur.questionId !== state.remediation.triggerQuestionId);
 }
-async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null, selectedFieldId = null } = {}) {
+async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null, selectedFieldId = null, requestedTopic = null } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
   const explicitQuestion = isExactQuestionRequest(want);
   let state = state0;
@@ -1406,7 +1406,22 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   if (selectedFieldId && !chosenPacket) return { status: 'fieldExhausted', sessionId: id,
     notice: '選択した分野には出題可能な公式過去問がありません。他の分野を選ぶか、PDFの登録状況を確認してください。' };
   const targeted = chosenPacket ? { item: chosenPacket, kind: chosenUnseen ? 'new' : 'review', fieldId: selectedFieldId } : null;
-  const wanted = targeted ?? continuePick ?? (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
+  // Free-text user request is explicit: choose only verified source packets,
+  // first by catalog field, then by exact phrase or verified question keyword.
+  // Never fall back to a different topic or the default next question.
+  const topicCandidatePool = requestedTopic ? items.filter((x) =>
+    x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive' &&
+    !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId)) : [];
+  const normalizedTopic = requestedTopic ? requestedTopic.normalize('NFKC').replace(/\s/g, '') : '';
+  const topicFieldId = requestedTopic ? Object.entries(fieldNames).find(([,name]) =>
+    name.normalize('NFKC').replace(/\s/g, '') === normalizedTopic)?.[0] : null;
+  const topicMatched = requestedTopic ? findWanted(state, topicCandidatePool, requestedTopic,
+    topicFieldId && studyFieldOrder(state, cat).includes(topicFieldId) ? fieldNames : {}) : null;
+  if (requestedTopic && !topicMatched) return { status: 'topicUnavailable',
+    sessionId: id, topic: requestedTopic,
+    notice: '入力した分野・論点に該当する検証済みの公式過去問は見つかりませんでした。ほかの分野へは自動的に切り替えません。' };
+  const wanted = topicMatched ?? targeted ?? continuePick ??
+    (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
   if (reviewWant && !wanted) return strictReview && wrongPool.length
     ? { status: 'no_matching_review', sessionId: id,
@@ -2109,12 +2124,17 @@ async function route(request, env, url, now) {
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
     const chosenFieldName = typeof b?.fieldName === 'string' ? b.fieldName : null;
+    const requestedTopic = typeof b?.topic === 'string' ? b.topic.normalize('NFKC').trim() : null;
+    if (requestedTopic != null &&
+        (requestedTopic.length < 2 || requestedTopic.length > 80 || /[<>\r\n]/.test(requestedTopic)))
+      throw new HttpError(400, 'TOPIC_INVALID');
     const chosenFieldCat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
     const selectedFieldId = chosenFieldName == null ? null : Object.entries(chosenFieldCat?.fields ?? {})
       .find(([, name]) => name === chosenFieldName)?.[0];
     if (chosenFieldName != null && (!selectedFieldId || !studyFieldOrder(state, chosenFieldCat).includes(selectedFieldId)))
       throw new HttpError(400, 'FIELD_INVALID');
-    if (selectedFieldId && want) throw new HttpError(400, 'FIELD_QUESTION_CONFLICT');
+    if ((selectedFieldId && want) || (requestedTopic && (selectedFieldId || want)))
+      throw new HttpError(400, 'FIELD_QUESTION_CONFLICT');
     if (isExactQuestionRequest(want)) {
       const directStudyId = await startDirectStudy(env, state, now);
       await activateChatStudy(env, state.learnerId, state.qualificationId, directStudyId);
@@ -2144,7 +2164,7 @@ async function route(request, env, url, now) {
       return json(200, await nextView(env, id, updated, now, { want: null }));
     }
     if (state.descriptiveCurrent && !want) return json(200, descriptiveView(state.descriptiveCurrent, id, !!state.descriptiveCurrent.revealedAt));
-    return json(200, await nextView(env, id, state, now, { want, selectedFieldId }));
+    return json(200, await nextView(env, id, state, now, { want, selectedFieldId, requestedTopic }));
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {
