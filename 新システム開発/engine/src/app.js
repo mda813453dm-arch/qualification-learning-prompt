@@ -2706,8 +2706,41 @@ async function route(request, env, url, now) {
     const qualificationId = catalogIdByName(b.qualificationName);
     const chatId = hostChatKey(request);
     const currentChat = await readChatStudy(env, chatId);
-    ensureNoActiveStudy(currentChat, qualificationId);
     const given = validLearnerId(b.learnerId);
+    // The UI must start the exact session whose plan the user approved.
+    // A delayed mobile response must not turn a successful first click into
+    // STUDY_ALREADY_ACTIVE on retry, or start a second study timer.
+    if (b.sessionId != null) {
+      const bound = await loadSession(env, b.sessionId, now);
+      if (bound.learnerId !== given || bound.qualificationId !== qualificationId ||
+          (currentChat?.sessionId && currentChat.sessionId !== b.sessionId))
+        throw new HttpError(409, 'STUDY_SESSION_MISMATCH');
+    }
+    const sameBinding = !!given && (!currentChat ||
+      (currentChat.learnerId === given && currentChat.qualificationId === qualificationId &&
+        (!b.sessionId || currentChat.sessionId === b.sessionId)));
+    const priorStudyId = sameBinding && await studyStartedInThisChat(env, given)
+      ? await env.STORE.get(lastStudyKey(given)) : null;
+    const priorStudy = priorStudyId ? await env.STORE.get(studyKey(priorStudyId), 'json') : null;
+    if (priorStudy?.learnerId === given && priorStudy.endedAt == null) {
+      const sid = b.sessionId || currentChat?.sessionId || await env.STORE.get(lastSessionKey(given));
+      const active = sid ? await loadSession(env, sid, now) : null;
+      if (active?.learnerId !== given || active?.qualificationId !== qualificationId)
+        throw new HttpError(409, 'STUDY_SESSION_MISMATCH');
+      const profile = await env.STORE.get(learnerProfileKey(given), 'json');
+      const savedState = await env.STORE.get(learnerStateKey(given), 'json');
+      const t = jst(priorStudy.startedAt);
+      const total = (await env.STORE.get(timeKey(given), 'json'))?.minutes ?? 0;
+      const names = Object.values(CATALOG).find((c) => c.qualificationId === qualificationId)?.fields ?? {};
+      return json(200, { studyId: priorStudyId, learnerId: given, qualificationId,
+        sessionId: sid, replayed: true, resumed: true, startDate: t.date, startTime: t.time,
+        totalMinutes: total, pendingQuestion: pendingLabel(savedState),
+        startMode: active.plan?.startMode === 'descriptive' ? 'descriptive' : 'standard',
+        display: `📚 学習開始｜${t.time}\n🔑 引継ぎID：${given}（別のチャットやAIで続けるときに使います）${total > 0 ? `\n📊 これまでの累計学習時間：${formatTotal(total)}` : ''}`,
+        itemMenu: ITEM_MENU, howToShow: ITEM_HOW, learnerStage: profile?.stage ?? null,
+        explainHow: explainHow({ stage: profile?.stage, weak: weakFields(savedState?.history, names) }) });
+    }
+    ensureNoActiveStudy(currentChat, qualificationId);
     const originalSaved = given ? await env.STORE.get(learnerStateKey(given), 'json') : null;
     const learnerId = qualificationId
       ? (await selectQualificationLearner(env.STORE, {
