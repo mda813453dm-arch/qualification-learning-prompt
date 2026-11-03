@@ -1359,6 +1359,10 @@ a{color:inherit}
       var resumedStudyId = null, isResuming = false;
       async function resumeWithScope(chosen){
         if (isResuming) return;
+        if (chosen.mode === 'review' && wrong === 0) {
+          openScope('間違えた問題はまだありません。別の分野またはおまかせを選んでください。');
+          return;
+        }
         isResuming = true;
         try {
           if (!resumedStudyId) {
