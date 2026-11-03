@@ -3073,109 +3073,100 @@ a{color:inherit}
         (Number.isInteger(wrongCount) ? '（記録上 ' + wrongCount + '問）' : '') },
     ].concat(validFields.map(function(name){ return { mode:'field', fieldName:name, label:name }; }));
     app.innerHTML = '<h2>学習する分野を選択</h2>' +
-      '<div class="notice">希望する分野、間違えた問題の復習、またはおまかせを選べます。学習の開始前・再開前に選んだ希望を優先します。</div>' +
+      '<div class="notice">希望がなければ「おまかせ」を選んでください。分野一覧から選ぶことも、分野名や論点を直接入力することもできます。</div>' +
       (pendingQuestion ? '<div class="notice">前回の未回答問題：' + esc(pendingQuestion) +
         '。おまかせでは前回の問題から再開します。</div>' : '') +
       (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
-      '<div class="stem"><label for="studyScopeFreeField"><b>分野名を直接入力</b></label>' +
-      '<input type="text" id="studyScopeFreeField" maxlength="80" autocomplete="off" ' +
-      'placeholder="' + esc(validFields[0] || '学習したい分野名') + '" ' +
-      'aria-describedby="studyScopeFreeHelp" style="width:100%;box-sizing:border-box;min-height:44px;margin:8px 0">' +
-      '<div id="studyScopeFreeHelp">分野名や論点名を自由に入力できます。公式問題の登録データに一致する問題だけを出題します。</div>' +
-      '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
-      '<div id="studyScopeFreeError" class="notice" role="status" aria-live="polite" hidden></div></div>' +
-      '<div class="choices" id="studyScopeChoices">' +
+      '<section class="stem" aria-label="任意の分野を入力">' +
+      '<label for="studyFieldInput"><b>分野名・論点を自由入力</b></label>' +
+      '<div class="notice">登録分野名の一部でも指定できます。登録分野に一致しない場合は、入力した論点に該当する検証済み過去問だけを検索し、他の分野へ自動変更しません。</div>' +
+      '<input id="studyFieldInput" type="text" maxlength="80" autocomplete="off" ' +
+      'placeholder="例：応用測量、宅建業法、筆界特定" style="width:100%;box-sizing:border-box;min-height:44px" />' +
+      '<div class="row"><button type="button" id="submitStudyField">入力した分野で学習する</button></div>' +
+      '<div id="studyFieldInputError" role="status" aria-live="polite"></div></section>' +
+      '<div class="stem"><b>一覧から選択</b></div><div class="choices" id="studyScopeChoices">' +
       choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
         '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
-      '</div>' +
-      '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
+      '</div><div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
+    var fieldInput = document.getElementById('studyFieldInput');
+    var fieldSubmit = document.getElementById('submitStudyField');
+    var fieldError = document.getElementById('studyFieldInputError');
+    if (initialTopic) fieldInput.value = String(initialTopic).slice(0,80);
     scrollUp();
-    // Free input resolves only to fields for this qualification and this plan.
-    // It never creates an unverified field or guesses a replacement.
-    function normalizeStudyField(value){
-      return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
-    }
-    var typed = document.getElementById('studyScopeFreeField');
-    if (initialTopic) typed.value = String(initialTopic).slice(0, 80);
-    var typedGo = document.getElementById('studyScopeFreeStart');
-    var typedError = document.getElementById('studyScopeFreeError');
-    function showTypedError(message){
-      typedError.hidden = false;
-      typedError.textContent = message;
-      typed.focus();
-    }
-    function resolveTypedField(raw){
-      var query = normalizeStudyField(raw);
-      if (query.length < 2 || query.length > 80 || /[<>\r\n]/.test(String(raw))) return { error:'分野・論点を2～80文字で入力してください。' };
-      var exact = validFields.filter(function(name){ return normalizeStudyField(name) === query; });
-      if (exact.length === 1) return { fieldName:exact[0] };
-      var matches = query.length >= 2 ? validFields.filter(function(name){
-        return normalizeStudyField(name).includes(query);
-      }) : [];
-      if (matches.length === 1) return { fieldName:matches[0] };
-      if (matches.length > 1) return {
-        error:'候補が複数あります：' + matches.slice(0, 8).join('、') + '。名称を詳しく入力するか、下の一覧から選択してください。'
-      };
-      return { topic:String(raw).normalize('NFKC').trim() };
-    }
-    typedGo.onclick = async function(){
-      if (submitting) return;
-      var result = resolveTypedField(typed.value);
-      if (result.error) { showTypedError(result.error); return; }
-      typedError.hidden = true;
-      submitting = true;
-      typedGo.disabled = true;
-      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
-      try { await choose(result.fieldName ? { mode:'field', fieldName:result.fieldName, label:result.fieldName } : { mode:'topic', topic:result.topic }); }
-      catch(e) {
-        showTypedError('分野を指定して学習を開始できませんでした。同じボタンから再試行できます。');
-      } finally {
-        if (document.getElementById('studyScopeFreeField')) {
-          submitting = false; typedGo.disabled = false;
-          app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
-        }
-      }
-    };
-    typed.oninput = function(){ typedError.hidden = true; };
-    typed.onkeydown = function(e){
-      if (e.key === 'Enter') { e.preventDefault(); typedGo.click(); }
-    };
     var submitting = false;
-    app.querySelectorAll('#studyScopeChoices button').forEach(function(btn){
-      // A delayed mobile compatibility click may hit newly rendered choices
-      // without a new physical touch. Only honor a fresh press or keyboard click.
-      var armed = false;
-      function armScope(){ armed = true; }
-      btn.addEventListener('pointerdown', armScope);
-      btn.addEventListener('touchstart', armScope, { passive: true });
-      btn.addEventListener('mousedown', armScope);
-      btn.addEventListener('pointercancel', function(){ armed = false; });
-      btn.addEventListener('click', function(e){
-        if (e.detail > 0 && !armed) { e.preventDefault(); e.stopImmediatePropagation(); }
-        armed = false;
-      }, true);
-      btn.onclick = async function(){
-        if (submitting) return;
-        submitting = true;
-        app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
-        try { await choose(choices[Number(btn.getAttribute('data-study-scope'))]); }
-        catch(e){
-          submitting = false;
-          app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
-          var box = document.getElementById('studyScopeError');
-          if (!box) {
-            app.insertAdjacentHTML('beforeend', '<div id="studyScopeError" class="notice" role="alert"></div>');
-            box = document.getElementById('studyScopeError');
-          }
-          box.textContent = '選択した学習を開始できませんでした。このボタンから再試行できます。';
-        } finally {
-          // An internally handled start failure returns without throwing.
-          // Unlock the same choice panel so a second tap can actually retry.
-          if (document.getElementById('studyScopeChoices')) {
-            submitting = false;
-            app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
-          }
+    function resetSubmission(){
+      if (!document.getElementById('studyScopeChoices')) return;
+      submitting = false;
+      fieldSubmit.disabled = false;
+      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
+    }
+    async function commitChoice(choice){
+      if (submitting) return;
+      submitting = true;
+      fieldSubmit.disabled = true;
+      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
+      try { await choose(choice); }
+      catch(e) { fieldError.textContent = '選択した学習を開始できませんでした。学習記録は保持しています。同じ操作で再試行できます。'; }
+      finally { resetSubmission(); }
+    }
+    // Unique catalog names are unambiguous; a separate topic search is used
+    // only when there is no matching catalog field for this qualification.
+    var normalizeField = function(t){
+      return String(t || '').normalize('NFKC').replace(/[\\s　・･／\/、，,（）()\-－]/g, '').toLowerCase();
+    };
+    function selectTypedField(){
+      if (submitting) return;
+      var raw = fieldInput.value.trim();
+      var typed = normalizeField(raw);
+      if (!typed) { fieldError.textContent = '分野名または論点を入力してください。'; return; }
+      var exact = validFields.filter(function(f){ return normalizeField(f) === typed; });
+      var matches = exact.length ? exact : typed.length >= 2 ? validFields.filter(function(f){
+        return normalizeField(f).includes(typed);
+      }) : [];
+      if (matches.length > 1) {
+        fieldError.textContent = '複数の分野に一致します：' + matches.slice(0,8).join('、') +
+          '。分野名を詳しく入力するか一覧から選んでください。';
+        return;
+      }
+      fieldError.textContent = '';
+      if (matches.length === 1) {
+        commitChoice({ mode:'field', fieldName:matches[0], label:matches[0] });
+      } else if (typed.length >= 2) {
+        commitChoice({ mode:'topic', topic:raw.slice(0,80), label:raw });
+      } else {
+        fieldError.textContent = '2文字以上の分野名または論点を入力してください。';
+      }
+    }
+    // Some mobile hosts send a stray click after the preceding screen changed.
+    // A new pointer press or a keyboard-generated click is required.
+    function guardScopeClick(button){
+      var pressed = false;
+      function arm(){ pressed = true; }
+      button.addEventListener('pointerdown', arm);
+      button.addEventListener('touchstart', arm, { passive:true });
+      button.addEventListener('mousedown', arm);
+      button.addEventListener('pointercancel', function(){ pressed = false; });
+      button.addEventListener('touchcancel', function(){ pressed = false; });
+      button.addEventListener('click', function(event){
+        if (event.detail > 0 && !pressed) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
         }
+        pressed = false;
+      }, true);
+    }
+    guardScopeClick(fieldSubmit);
+    fieldSubmit.onclick = selectTypedField;
+    fieldInput.addEventListener('input', function(){ fieldError.textContent = ''; });
+    fieldInput.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault(); selectTypedField();
+      }
+    });
+    app.querySelectorAll('#studyScopeChoices button').forEach(function(button){
+      guardScopeClick(button);
+      button.onclick = function(){
+        commitChoice(choices[Number(button.getAttribute('data-study-scope'))]);
       };
     });
     document.getElementById('studyScopeBack').onclick = back;
