@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
-import { handle } from '../src/app.js';
+import { handle, overviewFor } from '../src/app.js';
 import { T0 } from './helpers.js';
 
 function setup() {
@@ -23,10 +23,11 @@ test('賃管: initial plan approval starts once and a lost mobile response repla
   const { env, call } = setup();
   const session = await call('POST', '/v1/sessions', { qualificationId: '賃管', sources: [] });
   assert.equal(session.status, 201, JSON.stringify(session.body));
-  const { sessionId, learnerId, overview } = session.body;
-  assert.ok(sessionId && learnerId && overview?.fields?.length);
+  const { sessionId, learnerId } = session.body;
+  const fields = overviewFor('q097').fields;
+  assert.ok(sessionId && learnerId && fields?.length);
   const saved = await call('POST', '/v1/sessions/' + sessionId + '/plan', {
-    orderedFields: overview.fields, methodChoice: 'balanced', reviewPreset: 'ai', startMode: 'standard',
+    orderedFields: fields, methodChoice: 'balanced', reviewPreset: 'ai', startMode: 'standard',
   });
   assert.equal(saved.status, 200, JSON.stringify(saved.body));
   const payload = { qualificationName: '賃管', learnerId, sessionId };
