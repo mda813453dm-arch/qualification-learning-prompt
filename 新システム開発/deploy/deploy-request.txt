@@ -499,3 +499,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 
 2026-11-02 v173 production smoke follow-up: update check-explanation.mjs to verify v173 widget resource URI, not cached v172. Deploy latest rights reconsent code and confirm end-to-end live smoke; existing learner records untouched; protect main/master_prompt.txt.
 2026-11-03 retry initial Chintai plan start idempotently, deduplicate Android errors, restore failed mobile response, widget v174 (tests added)
+2026-11-03 v174 re-deploy after test compatibility and first-click Chintai regression fixes (commit 4e4b9d34)
