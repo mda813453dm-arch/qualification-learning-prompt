@@ -49,8 +49,8 @@ test('study target UI is available for new study and resume (exact fields only)'
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
   assert.match(html,/startScopeSelectionForPlan/);
-  assert.match(html,/id="studyFieldInput"/);
-  assert.match(html,/id="submitStudyField"/);
+  assert.match(html,/id="studyScopeFreeField"/);
+  assert.match(html,/id="studyScopeFreeStart"/);
   assert.match(html,/分野名を自由入力/);
   assert.match(html,/複数の分野に一致します/);
   assert.match(html,/該当する登録済み分野がありません/);
@@ -107,4 +107,19 @@ test('restart exposes the same qualification fields with stored wrong-answer cou
   assert.ok(resumed.body.fields.includes('測量に関する法規'));
   assert.ok(resumed.body.fields.includes('多角測量'));
   assert.equal(resumed.body.wrongCount,1);
+});
+
+test('free-typed topic uses only matching verified packets and does not fall back to another field',async()=>{
+  const {call}=setup(), first=await start(call), sid=first.sessionId;
+  const noMatch=await call('POST','/v1/sessions/'+sid+'/next',{topic:'この資格には存在しない抽象論点'});
+  assert.equal(noMatch.status,200);
+  assert.equal(noMatch.body.status,'topicUnavailable');
+  assert.match(noMatch.body.notice,/自動的に切り替えません/);
+  const invalid=await call('POST','/v1/sessions/'+sid+'/next',{topic:'A'});
+  assert.equal(invalid.status,400);
+  assert.equal(invalid.body.error,'TOPIC_INVALID');
+  const chosen=await call('POST','/v1/sessions/'+sid+'/next',{topic:'多角測量'});
+  assert.equal(chosen.status,200,JSON.stringify(chosen.body));
+  assert.equal(chosen.body.status,'question');
+  assert.equal(chosen.body.question.fieldName,'多角測量');
 });
