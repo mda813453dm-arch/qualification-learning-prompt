@@ -3056,6 +3056,18 @@ a{color:inherit}
     scrollUp();
     var submitting = false;
     app.querySelectorAll('#studyScopeChoices button').forEach(function(btn){
+      // A delayed mobile compatibility click may hit newly rendered choices
+      // without a new physical touch. Only honor a fresh press or keyboard click.
+      var armed = false;
+      function armScope(){ armed = true; }
+      btn.addEventListener('pointerdown', armScope);
+      btn.addEventListener('touchstart', armScope, { passive: true });
+      btn.addEventListener('mousedown', armScope);
+      btn.addEventListener('pointercancel', function(){ armed = false; });
+      btn.addEventListener('click', function(e){
+        if (e.detail > 0 && !armed) { e.preventDefault(); e.stopImmediatePropagation(); }
+        armed = false;
+      }, true);
       btn.onclick = async function(){
         if (submitting) return;
         submitting = true;
