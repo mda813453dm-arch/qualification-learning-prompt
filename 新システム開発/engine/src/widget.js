@@ -3097,6 +3097,13 @@ a{color:inherit}
             box = document.getElementById('studyScopeError');
           }
           box.textContent = '選択した学習を開始できませんでした。このボタンから再試行できます。';
+        } finally {
+          // An internally handled start failure returns without throwing.
+          // Unlock the same choice panel so a second tap can actually retry.
+          if (document.getElementById('studyScopeChoices')) {
+            submitting = false;
+            app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
+          }
         }
       };
     });
