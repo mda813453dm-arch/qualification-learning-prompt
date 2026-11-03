@@ -501,3 +501,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-03 retry initial Chintai plan start idempotently, deduplicate Android errors, restore failed mobile response, widget v174 (tests added)
 2026-11-03 v174 re-deploy after test compatibility and first-click Chintai regression fixes (commit 4e4b9d34)
 2026-11-03 final v174 initial-plan-start recovery, session idempotence, updated regressions (f227aba1)
+2026-11-03 v174 deployment verification updated to correct widget resource URI (c9e24162)
