@@ -3314,15 +3314,15 @@ a{color:inherit}
     app.innerHTML = '<h2>希望を反映しました｜学習開始の確認</h2>' +
       '<div class="stage-arrived" role="status">✓ 入力された希望を計画案に反映しました。学習はまだ始まっていません。</div>' +
       '<div class="stem"><b>今回の希望：</b>' + esc(d.otherNote || '') + '</div>' +
-      (descriptiveFirst ? '<div class="stem"><b>開始後の画面：</b>土地家屋調査士の記述式・年度と問11／問21／問22の選択。自動採点はしません。</div>' :
+      (descriptiveFirst ? '<div class="stem"><b>開始後の画面：</b>土地家屋調査士の記述式は、選んだ分野に対応する問11／問21／問22の年度を選択します。自動採点はしません。</div>' :
         '<div class="notice">希望は学習計画に記録します。未対応の操作を自動で実行するものではありません。</div>') +
-      '<div class="notice">下の「学習を開始する」を押すと、希望を保存して学習を開始します。入力を直すこともできます。</div>' +
-      '<div class="choices"><button id="wishStart"><b>1</b><span>' + (descriptiveFirst ? 'この希望で記述式の学習を開始する' : 'この希望で学習を開始する') + '</span></button>' +
+      '<div class="notice">下のボタンを押した後、開始する分野または復習を選びます。入力を直すこともできます。</div>' +
+      '<div class="choices"><button id="wishStart"><b>1</b><span>' + (descriptiveFirst ? 'この希望で記述式の学習分野を選ぶ' : 'この希望で学習分野を選ぶ') + '</span></button>' +
       '<button id="wishEdit"><b>2</b><span>希望を入力し直す</span></button>' +
       '<button id="wishPlan"><b>3</b><span>学習計画に戻る</span></button></div>';
     scrollUp();
     guardNewPlanActions();
-    document.getElementById('wishStart').onclick = function(){ startStudyNow(ov.name, studyLearner); };
+    document.getElementById('wishStart').onclick = function(){ startScopeSelectionForPlan(ov.name, studyLearner); };
     document.getElementById('wishEdit').onclick = planEditOther;
     document.getElementById('wishPlan').onclick = function(){ planPanel(['その他の希望を計画案に反映しました。']); };
   }
