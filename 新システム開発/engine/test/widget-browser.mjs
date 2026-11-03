@@ -255,6 +255,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.getByRole('button', { name: /この学習計画で始める/ }).count(), 1);
     assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
     await ui.getByRole('button', { name: /この学習計画で始める/ }).click();
+    await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
+      '分野を選択する前は学習時間を開始しない');
+    await ui.getByRole('button', { name: /おまかせ（従来の頻出・分野順）/ }).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     // 最初の2回はエンジン呼び出し失敗。再表示専用APIでなく同じnextQuestionで復旧する。
     await ui.locator('#nextHere:not([disabled])').waitFor();
@@ -607,6 +611,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /回答済み：4問.*要復習：2問/);
     const beforeResume = await page.evaluate(() => window.calls.length);
     await ui.getByRole('button', { name: '学習を再開する' }).click();
+    await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
+    assert.equal(await page.evaluate(() => window.calls.slice(beforeResume).filter(m => m.params?.name === 'startStudy').length), 0,
+      '再開時も希望を選ぶ前に時間計測を始めない');
+    await ui.getByRole('button', { name: /おまかせ（従来の頻出・分野順）/ }).click();
     await ui.getByText('試験用の問題文').waitFor();
     const resumeCalls = await page.evaluate(i => window.calls.slice(i).filter(m => m.method === 'tools/call').map(m => ({ name: m.params.name, args: m.params.arguments })), beforeResume);
     assert.equal(resumeCalls.filter(x => x.name === 'startStudy').length, 1, '学習時間の開始は利用者の明示操作で1回だけ');
@@ -886,18 +894,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('#otherText').inputValue(),'記述式から始める',
       '入力し直す場合も希望を保持');
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
-    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).waitFor();
+    await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '希望の保存だけでは学習を開始しない');
     // サーバーが記述式モードを確定できなかった場合、択一に切り替えずエラーを出す。
     await page.evaluate(() => { window.rejectDescriptiveStartOnce = true; });
-    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).click();
+    await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).click();
+    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
+    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
     await ui.getByText(/記述式から始める設定を確認できませんでした/).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '記述式の確定に失敗した場合は通常の択一開始を実行しない');
     assert.equal(await ui.getByRole('heading',{name:/午前の部.*問1/}).count(),0,
       '記述式の失敗時に午前の択一式を出題しない');
-    await ui.getByRole('button',{name:/この希望で記述式の学習を開始する/}).click();
+    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');
     assert.equal(await ui.locator('#descriptiveYear option').count(),19);
@@ -922,6 +932,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       plan:{fields:['午後の部（土地の記述）','午後の部（建物の記述）']},
     }));
     await ui.getByRole('button',{name:/この学習計画で始める/}).click();
+    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
+    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜開始する問題形式'}).waitFor();
     assert.equal(await ui.locator('#itemModes').count(),0,'記述式を未選択でも一般の3択に進まない');
     assert.equal(await ui.getByRole('button',{name:/記述式から始める/}).count(),1);
