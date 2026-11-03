@@ -44,7 +44,7 @@ test('学習計画の「記述式から始める」は土地家屋調査士だ�
   assert.equal(detect({name:'測量士補'},'記述式から始める'),false);
   assert.equal(detect({name:'土地家屋調査士'},'記述式の採点をしてください'),false);
   const planStart=script.slice(script.indexOf('  async function startStudyNow('),script.indexOf('  // 学習開始（U09）'));
-  assert.ok(planStart.indexOf("callTool('startStudy'") < planStart.indexOf('showDescriptiveMenu(2025)'),
+  assert.ok(planStart.indexOf("callTool('startStudy'") < planStart.indexOf('showDescriptiveMenu(2025,'),
     '学習開始の明示承認後にだけ記述式へ遷移する');
   assert.match(planStart,/saved\.startMode === 'descriptive' \|\| r\.startMode === 'descriptive'/,
     '画面の一時状態ではなく、サーバーの確定した開始区分で記述式へ進む');
@@ -59,12 +59,12 @@ test('自由入力の確定後は元の学習計画ではなく開始確認専�
   assert.match(source,/if \(text\) planWishConfirmation\(\);/,'希望があれば確認画面を開く');
   assert.match(source,/希望を反映しました｜学習開始の確認/,'確認結果が目で見て分かる');
   assert.match(source,/id="wishStart"/,'最終の学習開始ボタンを備える');
-  assert.match(source,/startStudyNow\(ov.name, studyLearner\)/,'学習開始の実処理へつながる');
+  assert.match(source,/startScopeSelectionForPlan\(ov.name, studyLearner\)/,'希望の確認後に開始分野の選択へ進む');
   assert.match(source,/id="wishEdit"/,'元の希望を保持したまま修正できる');
 });
 
 test('土地家屋調査士は開始区分が不明でも択一式3択に直行しない',()=>{
-  const start=script.indexOf('  function itemStart(r, learner){');
+  const start=script.indexOf('  function itemStart(r, learner, choice){');
   const end=script.indexOf('  // 項目開始A（U07）',start);
   const source=script.slice(start,end);
   assert.match(source,/r\.qualificationId === 'land_surveyor'/);
@@ -161,7 +161,7 @@ test('過去問一覧では2015〜2021年度と旧年度の記述式を択一と
 });
 
 test('iPhone用の記述式年度選択に2007〜2025年が揃い、旧年度も採点なしで開ける',()=>{
-  const start=script.indexOf('  function showDescriptiveMenu(year){');
+  const start=script.indexOf('  function showDescriptiveMenu(year, onlyQuestion){');
   const end=script.indexOf('  var descriptiveScreen = null;',start);
   assert.ok(start>=0 && end>start);
   const app={innerHTML:'',querySelectorAll:()=>[]};
