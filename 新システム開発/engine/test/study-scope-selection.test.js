@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { MemoryStore } from '../src/store.js';
 import { handle, overviewFor } from '../src/app.js';
+import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v175.js';
 
@@ -10,10 +11,13 @@ const SOURCE = { adapter:SRC.adapter, year:SRC.year, section:SRC.section,
   questionUrl:SRC.questionUrl, answerUrl:SRC.answerUrl };
 
 function setup() {
+  // Synthetic source for predictable field packets: never request live official PDFs.
+  CATALOG.surveyor.sources = [SOURCE];
   const web = fakeWeb({ [SRC.questionUrl]:pdf('scope-question'), [SRC.answerUrl]:pdf('scope-answer') });
-  const parse = fakeParser(web, { fieldIds:['s1','s2','s2'], answers:[3,1,4], figureOn:[] });
+  const parse = fakeParser(web, { src:{ ...SRC, qualificationId:'q063' },
+    fieldIds:['s1','s2','s2'], answers:[3,1,4], figureOn:[] });
   const env = { STORE:new MemoryStore(), API_TOKEN:TOKEN, PARSER_URL:'https://parser.example', now:T0,
-    fetchPdf:web.fetchPdf };
+    fetchPdf:web.fetchPdf, fetchText:async()=>'' };
   env.clock = () => env.now;
   env.parserFetch = async (url, init) => {
     const b = JSON.parse(init.body);
