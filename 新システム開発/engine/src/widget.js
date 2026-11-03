@@ -324,6 +324,9 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .stage-ack{color:var(--acc);font-weight:700;padding:8px 12px;border-left:3px solid var(--acc);margin:4px 0 10px}
 .stage-arrived{font-weight:700;border-left:3px solid var(--acc);padding:8px 12px;margin:8px 0 12px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.study-scope-select{display:block;width:100%;min-width:0;min-height:50px;box-sizing:border-box;font:inherit;font-size:16px;line-height:1.5;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 38px 10px 12px;margin:10px 0;white-space:normal}
+.study-scope-select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row button.study-scope-start{width:100%;min-height:48px}
 button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:balance;max-width:100%;box-sizing:border-box}
 .btn-line{display:block;white-space:nowrap}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
@@ -3084,13 +3087,16 @@ a{color:inherit}
       'placeholder="例：応用測量、宅建業法、筆界特定" style="width:100%;box-sizing:border-box;min-height:44px" />' +
       '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
       '<div id="studyScopeFreeError" role="status" aria-live="polite"></div></section>' +
-      '<div class="stem"><b>一覧から選択</b></div><div class="choices" id="studyScopeChoices">' +
-      choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
-        '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
-      '</div><div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
+      '<label for="studyScopeChoices" class="stem"><b>一覧から選択</b></label>' +
+      '<select id="studyScopeChoices" class="study-scope-select" aria-label="学習する分野を選択">' +
+      choices.map(function(c,i){ return '<option value="' + i + '">' + esc(c.label) + '</option>'; }).join('') +
+      '</select><div class="row"><button type="button" class="study-scope-start" id="studyScopeChooseStart">選択した内容で学習する</button></div>' +
+      '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
     var fieldInput = document.getElementById('studyScopeFreeField');
     var fieldSubmit = document.getElementById('studyScopeFreeStart');
     var fieldError = document.getElementById('studyScopeFreeError');
+    var scopeSelect = document.getElementById('studyScopeChoices');
+    var scopeSubmit = document.getElementById('studyScopeChooseStart');
     if (initialTopic) fieldInput.value = String(initialTopic).slice(0,80);
     scrollUp();
     var submitting = false;
@@ -3098,13 +3104,15 @@ a{color:inherit}
       if (!document.getElementById('studyScopeChoices')) return;
       submitting = false;
       fieldSubmit.disabled = false;
-      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
+      scopeSelect.disabled = false;
+      scopeSubmit.disabled = false;
     }
     async function commitChoice(choice){
       if (submitting) return;
       submitting = true;
       fieldSubmit.disabled = true;
-      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
+      scopeSelect.disabled = true;
+      scopeSubmit.disabled = true;
       try { await choose(choice); }
       catch(e) { fieldError.textContent = '選択した学習を開始できませんでした。学習記録は保持しています。同じ操作で再試行できます。'; }
       finally { resetSubmission(); }
@@ -3112,7 +3120,9 @@ a{color:inherit}
     // Unique catalog names are unambiguous; a separate topic search is used
     // only when there is no matching catalog field for this qualification.
     var normalizeField = function(t){
-      return String(t || '').normalize('NFKC').replace(/[\\s　・･／\/、，,（）()\-－]/g, '').toLowerCase();
+      // Keep Japanese characters and digits. A trailing '-' within a regexp
+      // character class can accidentally create a range that erases kanji.
+      return String(t || '').normalize('NFKC').replace(/[-\\s　・･／\/、，,（）()－]/g, '').toLowerCase();
     };
     function selectTypedField(){
       if (submitting) return;
@@ -3163,12 +3173,13 @@ a{color:inherit}
         e.preventDefault(); selectTypedField();
       }
     });
-    app.querySelectorAll('#studyScopeChoices button').forEach(function(button){
-      guardScopeClick(button);
-      button.onclick = function(){
-        commitChoice(choices[Number(button.getAttribute('data-study-scope'))]);
-      };
-    });
+    guardScopeClick(scopeSubmit);
+    scopeSubmit.onclick = function(){
+      var index = Number(scopeSelect.value);
+      if (!Number.isInteger(index) || index < 0 || index >= choices.length) return;
+      fieldError.textContent = '';
+      commitChoice(choices[index]);
+    };
     document.getElementById('studyScopeBack').onclick = back;
   }
   function startScopeSelectionForPlan(name, learner, note, initialTopic){

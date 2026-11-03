@@ -13,7 +13,9 @@ export function widgetHtml() {
   // falsely reports that a valid entry is blank. Put '-' first so it is literal.
   const malformedFieldMatcher = ".replace(/[\\s　・･／/、，,（）()-－]/g, '')";
   const literalHyphenFieldMatcher = ".replace(/[-\\s　・･／/、，,（）()－]/g, '')";
-  if (!next.includes(malformedFieldMatcher)) throw new Error('FIELD_MATCHER_MARKER_MISSING');
-  next = next.replace(malformedFieldMatcher, literalHyphenFieldMatcher);
+  // The base widget now uses the corrected matcher too; retain compatibility
+  // with either source form without depending on an outdated string marker.
+  if (next.includes(malformedFieldMatcher)) next = next.replace(malformedFieldMatcher, literalHyphenFieldMatcher);
+  else if (!next.includes(literalHyphenFieldMatcher)) throw new Error('FIELD_MATCHER_MARKER_MISSING');
   return next;
 }

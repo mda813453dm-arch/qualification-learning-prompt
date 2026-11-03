@@ -4,7 +4,7 @@ import { MemoryStore } from '../src/store.js';
 import { handle, overviewFor } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v176.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v177.js';
 
 const TOKEN = 'scope-selection-regression';
 const SOURCE = { adapter:SRC.adapter, year:SRC.year, section:SRC.section,
@@ -43,14 +43,18 @@ async function start(call) {
 
 test('study target UI exposes one free-entry box on initial study and resume',()=>{
   const html=widgetHtml();
-  assert.match(WIDGET_URI,/question-v176\.html/);
-  assert.equal(WIDGET_VERSION,'2026-11-03.176');
+  assert.match(WIDGET_URI,/question-v177\.html/);
+  assert.equal(WIDGET_VERSION,'2026-11-03.177');
   assert.match(html,/学習する分野を選択/);
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
   assert.match(html,/startScopeSelectionForPlan/);
   assert.match(html,/id="studyScopeFreeField"/);
   assert.match(html,/id="studyScopeFreeStart"/);
+  assert.match(html,/<select id="studyScopeChoices"/);
+  assert.match(html,/<option value="/);
+  assert.match(html,/id="studyScopeChooseStart">選択した内容で学習する/);
+  assert.doesNotMatch(html,/data-study-scope=/,'分野一覧はボタンでなくネイティブ選択欄');
   assert.match(html,/分野名・論点を直接入力/);
   assert.match(html,/登録分野名の一部でも指定できます/);
   assert.match(html,/複数の分野に一致/);
@@ -63,6 +67,7 @@ test('study target UI exposes one free-entry box on initial study and resume',()
   assert.ok(matcher, 'the rendered field-normalization regexp exists');
   const separator = new Function('return ' + matcher[1])();
   assert.equal('測量に関する'.replace(separator,''), '測量に関する');
+  assert.equal('8種制限'.replace(separator,''), '8種制限');
   assert.equal('宅建-業法'.replace(separator,''), '宅建業法');
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);

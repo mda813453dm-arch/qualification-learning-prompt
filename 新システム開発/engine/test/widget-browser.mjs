@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v176.js';
+import { widgetHtml } from '../src/widget-v177.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -259,6 +259,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '分野を選択する前は学習時間を開始しない');
     assert.equal(await ui.locator('#studyScopeFreeField').count(),1,'自由入力欄は一つだけ');
+    assert.equal(await ui.locator('select#studyScopeChoices').count(),1,'分野一覧はスマホ標準のプルダウン');
+    assert.equal(await ui.locator('#studyScopeChoices option').count(),3,'おまかせ・誤答復習・登録分野');
+    assert.equal(await ui.locator('button[data-study-scope]').count(),0,'分野別ボタンは並べない');
+    await ui.locator('#studyScopeChoices').selectOption('2');
+    assert.equal(await ui.locator('#studyScopeChoices').inputValue(),'2');
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length),0,
+      'プルダウンを動かしただけでは学習を開始しない');
     await ui.locator('#studyScopeFreeField').fill('');
     await ui.getByRole('button',{name:'入力した分野で学習する'}).click();
     assert.match(await ui.locator('#studyScopeFreeError').innerText(), /2～80文字/);
@@ -638,7 +645,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
     assert.equal(await page.evaluate(i => window.calls.slice(i).filter(m => m.params?.name === 'startStudy').length, beforeResume), 0,
       '再開時も希望を選ぶ前に時間計測を始めない');
-    await ui.getByRole('button', { name: /おまかせ（従来の頻出・分野順）/ }).click();
+    await ui.locator('#studyScopeChoices').selectOption('0');
+    await ui.getByRole('button', { name: '選択した内容で学習する' }).click();
     await ui.getByText('試験用の問題文').waitFor();
     const resumeCalls = await page.evaluate(i => window.calls.slice(i).filter(m => m.method === 'tools/call').map(m => ({ name: m.params.name, args: m.params.arguments })), beforeResume);
     assert.equal(resumeCalls.filter(x => x.name === 'startStudy').length, 1, '学習時間の開始は利用者の明示操作で1回だけ');
@@ -925,13 +933,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await page.evaluate(() => { window.rejectDescriptiveStartOnce = true; });
     await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).click();
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
-    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
+    await ui.locator('#studyScopeChoices').selectOption('0');
+    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
     await ui.getByText(/記述式の開始設定を確認できませんでした/).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '記述式の確定に失敗した場合は通常の択一開始を実行しない');
     assert.equal(await ui.getByRole('heading',{name:/午前の部.*問1/}).count(),0,
       '記述式の失敗時に午前の択一式を出題しない');
-    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
+    await ui.locator('#studyScopeChoices').selectOption('0');
+    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');
     assert.equal(await ui.locator('#descriptiveYear option').count(),19);
@@ -957,7 +967,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     }));
     await ui.getByRole('button',{name:/この学習計画で始める/}).click();
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
-    await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
+    await ui.locator('#studyScopeChoices').selectOption('0');
+    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜開始する問題形式'}).waitFor();
     assert.equal(await ui.locator('#itemModes').count(),0,'記述式を未選択でも一般の3択に進まない');
     assert.equal(await ui.getByRole('button',{name:/記述式から始める/}).count(),1);
