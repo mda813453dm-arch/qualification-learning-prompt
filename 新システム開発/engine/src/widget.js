@@ -1347,6 +1347,8 @@ a{color:inherit}
       var count = Number(data.answeredCount) || 0;
       var wrong = Number(data.wrongCount) || 0;
       var fields = Array.isArray(data.fields) ? data.fields : [];
+      if (data.startMode === 'descriptive')
+        fields = fields.filter(function(f){ return descriptiveScopeNumber(f) != null; });
       app.innerHTML = '<h2>' + esc(data.qualificationName || '資格学習') + '｜続きから再開</h2>' +
         '<div class="notice">前回の学習記録を読み込みました。試験概要・免除・学習状況・計画を最初から設定し直す必要はありません。</div>' +
         '<div class="stem">回答済み：' + esc(count) + '問　／　要復習：' + esc(wrong) + '問</div>' +
@@ -1380,6 +1382,10 @@ a{color:inherit}
             var field = chosen.fieldName;
             if (!fields.includes(field)) throw new Error('RESUME_FIELD_INVALID');
             studyField = field; saveIds();
+            if (descriptiveScopeNumber(field)) {
+              showDescriptiveMenu(2025, descriptiveScopeNumber(field));
+              return;
+            }
             app.innerHTML = '<div class="notice">再開する分野：' + esc(field) +
               '。学習方法を選んでください。</div>';
             itemMenu(field, state.sessionId || data.sessionId, async function(){
@@ -2096,15 +2102,16 @@ a{color:inherit}
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
   }
-  function showDescriptiveMenu(year){
+  function showDescriptiveMenu(year, onlyQuestion){
     year = Number(year) || 2025;
+    onlyQuestion = [11,21,22].includes(Number(onlyQuestion)) ? Number(onlyQuestion) : null;
     app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
       '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本の日本語OCR本文と照合用画像を区別します（OCRは誤認識の可能性があります）。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
       Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
-      '<div class="choices"><button data-desc="11">午前の部・問11（記述式）</button>' +
-      '<button data-desc="21">午後の部・問21（土地）</button>' +
-      '<button data-desc="22">午後の部・問22（建物）</button></div>' +
+      '<div class="choices"><button data-desc="11"' + (onlyQuestion && onlyQuestion !== 11 ? ' hidden' : '') + '>午前の部・問11（記述式）</button>' +
+      '<button data-desc="21"' + (onlyQuestion && onlyQuestion !== 21 ? ' hidden' : '') + '>午後の部・問21（土地）</button>' +
+      '<button data-desc="22"' + (onlyQuestion && onlyQuestion !== 22 ? ' hidden' : '') + '>午後の部・問22（建物）</button></div>' +
       '<div id="descriptiveError" class="notice" aria-live="polite"></div>' + endBar();
     app.querySelectorAll('button[data-desc]').forEach(function(button){
       button.onclick = async function(){
@@ -3033,6 +3040,13 @@ a{color:inherit}
       }, true);
     });
   }
+  function descriptiveScopeNumber(fieldName){
+    var name = String(fieldName || '');
+    if (/午前.*記述/.test(name)) return 11;
+    if (/午後.*土地.*記述/.test(name)) return 21;
+    if (/午後.*建物.*記述/.test(name)) return 22;
+    return null;
+  }
   // Initial study and resume share the same explicit target chooser.
   // This screen does not start a study or alter the learner's answers.
   function studyScopeMenu(fields, wrongCount, pendingQuestion, choose, back, notice){
@@ -3090,6 +3104,8 @@ a{color:inherit}
   function startScopeSelectionForPlan(name, learner, note){
     var d = draftPlan(), ov = onboardOv || {};
     var fields = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
+    if (d.startMode === 'descriptive' || wantsDescriptiveFirst(ov, d.otherNote))
+      fields = fields.filter(function(f){ return descriptiveScopeNumber(f) != null; });
     studyScopeMenu(fields, null, null,
       function(chosen){ return startStudyNow(name, learner, chosen); },
       function(){ planPanel([]); }, note);
@@ -3434,14 +3450,14 @@ a{color:inherit}
       startWasSent = true;
       var r = await callTool('startStudy', { qualificationName: name, learnerId: learner, sessionId: state.sessionId });
       if (!r || r.error || !r.studyId) throw new Error('STUDY_START_FAILED');
-      if (saved.startMode === 'descriptive' || r.startMode === 'descriptive') {
+      if (choice?.mode !== 'review' && (saved.startMode === 'descriptive' || r.startMode === 'descriptive')) {
         if (saved.startMode !== 'descriptive' || r.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
         studyLid = r.learnerId || learner;
         currentStudyId = r.studyId || currentStudyId;
         studyField = '午後の部（土地・建物の記述）';
         saveIds();
         completed = true;
-        showDescriptiveMenu(2025);
+        showDescriptiveMenu(2025, descriptiveScopeNumber(choice?.fieldName));
         return;
       }
       if (choice && choice.mode === 'review') {
@@ -3515,6 +3531,10 @@ a{color:inherit}
     // 「解説・確認・実践」3択へ進ませない。明示的に択一式を選んだ場合だけ表示。
     var landSurveyor = r.qualificationId === 'land_surveyor' || ov.qualificationId === 'land_surveyor' ||
       /土地家屋調査士/.test(String(ov.name || ''));
+    if (landSurveyor && descriptiveScopeNumber(chosenField)) {
+      showDescriptiveMenu(2025, descriptiveScopeNumber(chosenField));
+      return;
+    }
     if (landSurveyor) {
       app.innerHTML = initial + '<h2>土地家屋調査士｜開始する問題形式</h2>' +
         '<div class="notice">記述式の過去問を希望する場合は1を選んでください。記述式は採点なしで、問題・AI参考解説を同じ枠に表示します。</div>' +
