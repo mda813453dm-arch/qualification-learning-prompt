@@ -2727,7 +2727,7 @@ async function route(request, env, url, now) {
     const recordedSid = given ? await env.STORE.get(studySessionKey(given)) : null;
     const sameStartedSession = recordedSid ? recordedSid === requestedSid :
       !!(currentChat?.active && currentChat.sessionId === requestedSid);
-    const priorStudyId = sameBinding && sameStartedSession && await studyStartedInThisChat(env, given)
+    const priorStudyId = sameBinding && sameStartedSession && !stageNumber(b.stage) && await studyStartedInThisChat(env, given)
       ? await env.STORE.get(lastStudyKey(given)) : null;
     const priorStudy = priorStudyId ? await env.STORE.get(studyKey(priorStudyId), 'json') : null;
     if (priorStudy?.learnerId === given && priorStudy.endedAt == null) {
