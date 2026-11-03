@@ -16,7 +16,7 @@ import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
 import { readFigure } from './cache.js';
-import { PlanError, SET_SIZE, fieldPracticeTarget, updatePlan, availablePackets, findWanted, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
+import { PlanError, SET_SIZE, fieldPracticeTarget, updatePlan, availablePackets, findWanted, findVerifiedTopic, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
@@ -1415,11 +1415,11 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   const normalizedTopic = requestedTopic ? requestedTopic.normalize('NFKC').replace(/\s/g, '') : '';
   const topicFieldId = requestedTopic ? Object.entries(fieldNames).find(([,name]) =>
     name.normalize('NFKC').replace(/\s/g, '') === normalizedTopic)?.[0] : null;
-  const topicMatched = requestedTopic ? findWanted(state, topicCandidatePool, requestedTopic,
+  const topicMatched = requestedTopic ? findVerifiedTopic(state, topicCandidatePool, requestedTopic, state.qualificationId,
     topicFieldId && studyFieldOrder(state, cat).includes(topicFieldId) ? fieldNames : {}) : null;
   if (requestedTopic && !topicMatched) return { status: 'topicUnavailable',
     sessionId: id, topic: requestedTopic,
-    notice: '入力した分野・論点に該当する検証済みの公式過去問は見つかりませんでした。ほかの分野へは自動的に切り替えません。' };
+    notice: `「${requestedTopic}」の検索が完了しましたが、該当する検証済み公式過去問は見つかりませんでした。分野一覧から選ぶか、より具体的な論点名を入力してください。ほかの分野へは自動的に切り替えません。学習記録は変更していません。` };
   const wanted = topicMatched ?? targeted ?? continuePick ??
     (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
