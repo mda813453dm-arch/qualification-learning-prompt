@@ -3313,13 +3313,26 @@ a{color:inherit}
       document.getElementById('decide').click();
     };
   }
+  var studyStartPending = false;
+  function showStudyStartFailure(message) {
+    var error = document.getElementById('studyStartError');
+    if (!error) {
+      app.insertAdjacentHTML('beforeend', '<div id="studyStartError" class="notice" role="alert"></div>');
+      error = document.getElementById('studyStartError');
+    }
+    error.textContent = message;
+  }
   async function startStudyNow(name, learner){
+    // Touch/pointer compatibility on Android may dispatch more than one click.
+    if (studyStartPending) return;
+    studyStartPending = true;
     app.querySelectorAll('button').forEach(function(b){ b.disabled = true; });
+    var startWasSent = false, completed = false;
     try {
       var draft = draftPlan();
       var requestedDescriptive = draft.startMode ? draft.startMode === 'descriptive' : isDescriptiveStartWish(draft.otherNote);
       var saved = await callTool('saveStudyPlan', {
-        sessionId: learner, orderedFields: draft.orderedFields,
+        sessionId: state.sessionId || learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
         reviewPreset: draft.reviewPreset, reviewIntervalsMinutes: draft.reviewIntervalsMinutes || undefined,
         otherNote: draft.otherNote || undefined,
@@ -3327,24 +3340,44 @@ a{color:inherit}
       });
       if (!saved || saved.status !== 'planSaved' || saved.error) throw new Error('PLAN_SAVE_FAILED');
       if (requestedDescriptive && saved.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
-      var r = await callTool('startStudy', { qualificationName: name, learnerId: learner });
-      if (!r || r.error) { app.insertAdjacentHTML('beforeend', '<div class="notice">' + esc((r && r.hint) || '学習を始められませんでした。もう一度押してください。') + '</div>'); app.querySelectorAll('button').forEach(function(b){ b.disabled = false; }); return; }
+      startWasSent = true;
+      var r = await callTool('startStudy', { qualificationName: name, learnerId: learner, sessionId: state.sessionId });
+      if (!r || r.error || !r.studyId) throw new Error('STUDY_START_FAILED');
       if (saved.startMode === 'descriptive' || r.startMode === 'descriptive') {
         if (saved.startMode !== 'descriptive' || r.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
         studyLid = r.learnerId || learner;
         currentStudyId = r.studyId || currentStudyId;
         studyField = '午後の部（土地・建物の記述）';
         saveIds();
+        completed = true;
         showDescriptiveMenu(2025);
         return;
       }
+      completed = true;
       itemStart(r, learner);
     } catch (e) {
-      var message = e && e.message === 'DESCRIPTIVE_START_NOT_CONFIRMED' ?
-        '記述式から始める設定を確認できませんでした。択一式には切り替えません。もう一度押して再試行してください。' :
-        '学習を始められませんでした。もう一度押してください。';
-      app.insertAdjacentHTML('beforeend', '<div class="notice" role="alert">' + message + '</div>');
-      app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
+      // The POST may already have succeeded before the mobile bridge failed.
+      // Read only the current session; never start or grade again automatically.
+      if (startWasSent && state.sessionId) {
+        try {
+          var snapshot = await callTool('getStudySnapshot', { sessionId: state.sessionId });
+          if (snapshot && !snapshot.error &&
+              ['restoreIdle', 'sourceUnavailable', 'question', 'restoredGrade', 'resumeReady'].includes(snapshot.status)) {
+            completed = true;
+            render(snapshot);
+            return;
+          }
+        } catch (_) { /* preserve the approved plan for a manual retry */ }
+      }
+      var message = e && e.message === 'DESCRIPTIVE_START_NOT_CONFIRMED'
+        ? '記述式の開始設定を確認できませんでした。択一式には切り替えません。'
+        : e && e.message === 'PLAN_SAVE_FAILED'
+        ? '学習計画を保存できませんでした。設定を維持しています。もう一度押してください。'
+        : '学習開始を確認できませんでした。設定を維持しています。もう一度押してください。';
+      showStudyStartFailure(message);
+    } finally {
+      studyStartPending = false;
+      if (!completed) app.querySelectorAll('button').forEach(function(b){ b.disabled = false; });
     }
   }
   // 学習開始（U09）と項目開始（U07）：開始時刻・今回の位置・目的・理由・全体の進捗を見せ、この分野の進め方をボタンで選んでもらう
