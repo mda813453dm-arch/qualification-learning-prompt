@@ -3078,19 +3078,19 @@ a{color:inherit}
         '。おまかせでは前回の問題から再開します。</div>' : '') +
       (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
       '<section class="stem" aria-label="任意の分野を入力">' +
-      '<label for="studyFieldInput"><b>分野名・論点を自由入力</b></label>' +
+      '<label for="studyScopeFreeField"><b>分野名・論点を直接入力</b></label>' +
       '<div class="notice">登録分野名の一部でも指定できます。登録分野に一致しない場合は、入力した論点に該当する検証済み過去問だけを検索し、他の分野へ自動変更しません。</div>' +
-      '<input id="studyFieldInput" type="text" maxlength="80" autocomplete="off" ' +
+      '<input id="studyScopeFreeField" type="text" maxlength="80" autocomplete="off" ' +
       'placeholder="例：応用測量、宅建業法、筆界特定" style="width:100%;box-sizing:border-box;min-height:44px" />' +
-      '<div class="row"><button type="button" id="submitStudyField">入力した分野で学習する</button></div>' +
-      '<div id="studyFieldInputError" role="status" aria-live="polite"></div></section>' +
+      '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
+      '<div id="studyScopeFreeError" role="status" aria-live="polite"></div></section>' +
       '<div class="stem"><b>一覧から選択</b></div><div class="choices" id="studyScopeChoices">' +
       choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
         '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
       '</div><div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
-    var fieldInput = document.getElementById('studyFieldInput');
-    var fieldSubmit = document.getElementById('submitStudyField');
-    var fieldError = document.getElementById('studyFieldInputError');
+    var fieldInput = document.getElementById('studyScopeFreeField');
+    var fieldSubmit = document.getElementById('studyScopeFreeStart');
+    var fieldError = document.getElementById('studyScopeFreeError');
     if (initialTopic) fieldInput.value = String(initialTopic).slice(0,80);
     scrollUp();
     var submitting = false;
@@ -3118,7 +3118,7 @@ a{color:inherit}
       if (submitting) return;
       var raw = fieldInput.value.trim();
       var typed = normalizeField(raw);
-      if (!typed) { fieldError.textContent = '分野名または論点を入力してください。'; return; }
+      if (!typed) { fieldError.textContent = '分野名・論点を2～80文字で入力してください。'; return; }
       var exact = validFields.filter(function(f){ return normalizeField(f) === typed; });
       var matches = exact.length ? exact : typed.length >= 2 ? validFields.filter(function(f){
         return normalizeField(f).includes(typed);
@@ -3134,7 +3134,7 @@ a{color:inherit}
       } else if (typed.length >= 2) {
         commitChoice({ mode:'topic', topic:raw.slice(0,80), label:raw });
       } else {
-        fieldError.textContent = '2文字以上の分野名または論点を入力してください。';
+        fieldError.textContent = '分野名・論点を2～80文字で入力してください。';
       }
     }
     // Some mobile hosts send a stray click after the preceding screen changed.
