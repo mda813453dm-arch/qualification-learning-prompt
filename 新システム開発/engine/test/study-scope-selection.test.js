@@ -49,14 +49,14 @@ test('study target UI exposes one free-entry box on initial study and resume',()
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
   assert.match(html,/startScopeSelectionForPlan/);
-  assert.match(html,/id="studyScopeFreeField"/);
-  assert.match(html,/id="studyScopeFreeStart"/);
-  assert.match(html,/分野名・論点を直接入力/);
+  assert.match(html,/id="studyFieldInput"/);
+  assert.match(html,/id="submitStudyField"/);
+  assert.match(html,/分野名・論点を自由入力/);
   assert.match(html,/登録分野名の一部でも指定できます/);
   assert.match(html,/複数の分野に一致/);
   assert.match(html,/normalizeField/);
   assert.match(html,/mode:'topic'/);
-  assert.equal((html.match(/id="studyScopeFreeField"/g) || []).length, 1, 'only one field entry is rendered');
+  assert.equal((html.match(/id="studyFieldInput"/g) || []).length, 1, 'only one field entry is rendered');
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);
   assert.match(html,/fieldName: field/);
