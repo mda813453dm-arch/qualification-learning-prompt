@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v172.js';
+import { widgetHtml } from '../src/widget-v176.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -258,10 +258,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '分野を選択する前は学習時間を開始しない');
-    await ui.getByRole('button', { name: /おまかせ（従来の頻出・分野順）/ }).click();
+    await ui.locator('#studyFieldInput').fill('未登録分野');
+    await ui.getByRole('button',{name:'入力した分野を選択する'}).click();
+    assert.match(await ui.locator('#studyFieldInputError').innerText(), /該当する登録済み分野がありません/);
+    assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
+      '未登録分野を入力した時は学習を始めない');
+    await ui.locator('#studyFieldInput').fill('測量に関する');
+    await ui.getByRole('button',{name:'入力した分野を選択する'}).click();
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     // 最初の2回はエンジン呼び出し失敗。再表示専用APIでなく同じnextQuestionで復旧する。
     await ui.locator('#nextHere:not([disabled])').waitFor();
+    const initialFieldCalls = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').map(m=>m.params.arguments));
+    assert.equal(initialFieldCalls.at(-1).fieldName,'測量に関する法規','自由入力の部分一致は正式な登録分野を送る');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 1);
     assert.equal(await ui.locator('#nextStatus').count(), 1);
     await ui.getByRole('button', { name: '再試行' }).click();
