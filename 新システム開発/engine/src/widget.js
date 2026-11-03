@@ -3523,11 +3523,16 @@ a{color:inherit}
   function showStudyStartFailure(message) {
     // Keep an error next to the button that the learner actually pressed;
     // on long mobile pages an error appended at the bottom is easily missed.
+    var shownNextToButton = false;
     ['studyScopeFreeError', 'studyScopeChoiceStatus'].forEach(function(id){
       var status = document.getElementById(id);
-      if (status && /^(操作を受け付けました|通信中です)/.test(status.textContent))
+      if (status && /^(操作を受け付けました|通信中です)/.test(status.textContent)) {
         status.textContent = message;
+        shownNextToButton = true;
+      }
     });
+    // Avoid a second copy of the same error at the far end of the frame.
+    if (shownNextToButton) return;
     var error = document.getElementById('studyStartError');
     if (!error) {
       app.insertAdjacentHTML('beforeend', '<div id="studyStartError" class="notice" role="alert"></div>');
