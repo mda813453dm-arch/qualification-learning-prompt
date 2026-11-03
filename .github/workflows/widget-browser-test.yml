@@ -30,9 +30,6 @@ jobs:
           node-version: '22'
       - name: 配置スクリプトの構文検査
         run: bash -n 新システム開発/deploy/cloudshell-deploy.sh
-      - name: エンジン・通信の回帰試験
-        working-directory: 新システム開発/engine
-        run: npm test
       - name: 試験専用ブラウザを準備（本番依存には追加しない）
         run: |
           npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
@@ -50,6 +47,11 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-upload-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-anytime-upload-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-fast-resume-browser.mjs
+      # Browser regressions fail quickly; the full engine test is also run in
+      # the separate AI learning engine workflow. Keep it here for completeness.
+      - name: エンジン・通信の回帰試験
+        working-directory: 新システム開発/engine
+        run: npm test
       - name: 画面テストの合否をコミット状態に記録
         if: always()
         env:
