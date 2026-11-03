@@ -1,0 +1,26 @@
+name: 宅建8種制限・公開版出題確認
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/takken-eight-restrictions-live-check-request.txt'
+permissions:
+  contents: read
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 本番Cloud Runの新規テストセッションで8種制限の出題を検証
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          node 新システム開発/deploy/check-takken-eight-restrictions.mjs
