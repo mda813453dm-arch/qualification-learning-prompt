@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v174.js';
+import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v175.js';
 
 const rpc = (id, method, params={}) => ({ jsonrpc: '2.0', id, method, params });
 const baseUrl='https://qlp.example';
@@ -76,7 +76,7 @@ test('UI reopening reads prior session and does not create new session, grade, o
 
 test('Legacy widgets can report real rendering stage using their own version', async ()=>{
   const api=()=>{ throw Error('no API'); };
-  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170','2026-11-02.172','2026-11-02.173','2026-11-03.174']){
+  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170','2026-11-02.172','2026-11-02.173','2026-11-03.174','2026-11-03.175']){
     const value=(await handleRpc(rpc(7,'tools/call',{name:'reportUiEvent',arguments:{stage:'render_onboarding',version:ver}}),api,{widget:true,baseUrl})).result;
     assert.equal(value.structuredContent.status,'recorded');
   }
