@@ -1382,6 +1382,15 @@ a{color:inherit}
           }
           currentStudyId = resumedStudyId;
           saveIds();
+          if (chosen.mode === 'topic') {
+            var selectedTopic = await callTool('nextQuestion', {sessionId:state.sessionId || data.sessionId, topic:chosen.topic});
+            if (!selectedTopic || selectedTopic.error) throw new Error('TOPIC_RESUME_UNAVAILABLE');
+            if (selectedTopic.status === 'topicUnavailable') { openScope(selectedTopic.notice, chosen.topic); return; }
+            if (!['question','waiting','sourceUnavailable','remediation','confirmation_pending'].includes(selectedTopic.status))
+              throw new Error('TOPIC_RESUME_INVALID');
+            render(selectedTopic);
+            return;
+          }
           if (chosen.mode === 'field') {
             var field = chosen.fieldName;
             if (!fields.includes(field)) throw new Error('RESUME_FIELD_INVALID');
@@ -1420,9 +1429,9 @@ a{color:inherit}
           openScope('続きの学習を取得できませんでした。記録を保持しています。同じ選択肢から再試行できます。');
         } finally { isResuming = false; }
       }
-      function openScope(message){
+      function openScope(message, initialTopic){
         studyScopeMenu(fields, wrong, data.pendingQuestion,
-          resumeWithScope, function(){ render(data); }, message);
+          resumeWithScope, function(){ render(data); }, message, initialTopic);
       }
       document.getElementById('resumeSavedStudy').onclick = function(){ openScope(); };
       return;
@@ -3054,7 +3063,7 @@ a{color:inherit}
   }
   // Initial study and resume share the same explicit target chooser.
   // This screen does not start a study or alter the learner's answers.
-  function studyScopeMenu(fields, wrongCount, pendingQuestion, choose, back, notice){
+  function studyScopeMenu(fields, wrongCount, pendingQuestion, choose, back, notice, initialTopic){
     var validFields = [...new Set((Array.isArray(fields) ? fields : []).filter(function(f){
       return typeof f === 'string' && f.trim();
     }))];
@@ -3072,18 +3081,13 @@ a{color:inherit}
       '<input type="text" id="studyScopeFreeField" maxlength="80" autocomplete="off" ' +
       'placeholder="' + esc(validFields[0] || '学習したい分野名') + '" ' +
       'aria-describedby="studyScopeFreeHelp" style="width:100%;box-sizing:border-box;min-height:44px;margin:8px 0">' +
-      '<div id="studyScopeFreeHelp">下の一覧にない表現でも入力できます。登録されている分野と照合し、候補が複数ある場合は選び直せます。</div>' +
+      '<div id="studyScopeFreeHelp">分野名や論点名を自由に入力できます。公式問題の登録データに一致する問題だけを出題します。</div>' +
       '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
       '<div id="studyScopeFreeError" class="notice" role="status" aria-live="polite" hidden></div></div>' +
       '<div class="choices" id="studyScopeChoices">' +
       choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
         '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
-      '</div><section class="stem" aria-label="任意の分野を入力">' +
-      '<label for="studyFieldInput"><b>分野名を自由入力</b></label>' +
-      '<div class="notice">上の一覧にある分野名や、その一部を入力できます。別の分野へ自動変更しません。</div>' +
-      '<input id="studyFieldInput" type="text" maxlength="100" autocomplete="off" placeholder="学習したい分野名を入力" style="width:100%;box-sizing:border-box" />' +
-      '<div class="row"><button type="button" id="submitStudyField">入力した分野を選択する</button></div>' +
-      '<div id="studyFieldInputError" role="status" aria-live="polite"></div></section>' +
+      '</div>' +
       '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
     scrollUp();
     // Free input resolves only to fields for this qualification and this plan.
@@ -3092,6 +3096,7 @@ a{color:inherit}
       return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
     }
     var typed = document.getElementById('studyScopeFreeField');
+    if (initialTopic) typed.value = String(initialTopic).slice(0, 80);
     var typedGo = document.getElementById('studyScopeFreeStart');
     var typedError = document.getElementById('studyScopeFreeError');
     function showTypedError(message){
@@ -3101,7 +3106,7 @@ a{color:inherit}
     }
     function resolveTypedField(raw){
       var query = normalizeStudyField(raw);
-      if (!query) return { error:'分野名を入力してください。' };
+      if (query.length < 2 || query.length > 80 || /[<>\r\n]/.test(String(raw))) return { error:'分野・論点を2～80文字で入力してください。' };
       var exact = validFields.filter(function(name){ return normalizeStudyField(name) === query; });
       if (exact.length === 1) return { fieldName:exact[0] };
       var matches = query.length >= 2 ? validFields.filter(function(name){
@@ -3111,7 +3116,7 @@ a{color:inherit}
       if (matches.length > 1) return {
         error:'候補が複数あります：' + matches.slice(0, 8).join('、') + '。名称を詳しく入力するか、下の一覧から選択してください。'
       };
-      return { error:'「' + String(raw).slice(0, 80) + '」に一致する登録分野はありません。下の分野一覧から選ぶか、正式な分野名で入力してください。' };
+      return { topic:String(raw).normalize('NFKC').trim() };
     }
     typedGo.onclick = async function(){
       if (submitting) return;
@@ -3121,7 +3126,7 @@ a{color:inherit}
       submitting = true;
       typedGo.disabled = true;
       app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
-      try { await choose({ mode:'field', fieldName:result.fieldName, label:result.fieldName }); }
+      try { await choose(result.fieldName ? { mode:'field', fieldName:result.fieldName, label:result.fieldName } : { mode:'topic', topic:result.topic }); }
       catch(e) {
         showTypedError('分野を指定して学習を開始できませんでした。同じボタンから再試行できます。');
       } finally {
@@ -3173,53 +3178,16 @@ a{color:inherit}
         }
       };
     });
-    var fieldInput = document.getElementById('studyFieldInput');
-    var fieldSubmit = document.getElementById('submitStudyField');
-    var fieldError = document.getElementById('studyFieldInputError');
-    var normalizeField = function(t){
-      return String(t || '').normalize('NFKC').replace(/[\\s　・･／\/、，,（）()\-－]/g, '').toLowerCase();
-    };
-    function selectTypedField(){
-      if (submitting || !fieldInput) return;
-      var typed = normalizeField(fieldInput.value);
-      var matches = typed ? validFields.filter(function(f){
-        var canonical = normalizeField(f);
-        return canonical === typed || canonical.includes(typed);
-      }) : [];
-      if (!typed) {
-        fieldError.textContent = '分野名を入力してください。';
-        return;
-      }
-      var exactMatches = matches.filter(function(f){ return normalizeField(f) === typed; });
-      if (exactMatches.length === 1) matches = exactMatches;
-      if (matches.length !== 1) {
-        fieldError.textContent = matches.length
-          ? '複数の分野に一致します：' + matches.join('、') + '。分野名を詳しく入力するか一覧から選んでください。'
-          : '該当する登録済み分野がありません。上の分野一覧を確認してください。';
-        return;
-      }
-      fieldError.textContent = '';
-      var index = choices.findIndex(function(c){ return c.mode === 'field' && c.fieldName === matches[0]; });
-      var targetButton = app.querySelector('#studyScopeChoices button[data-study-scope="' + index + '"]');
-      if (targetButton) targetButton.click(); // uses the same guarded handler as list selection
-    }
-    fieldInput.addEventListener('input', function(){ fieldError.textContent = ''; });
-    fieldInput.addEventListener('keydown', function(e){
-      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
-        e.preventDefault(); selectTypedField();
-      }
-    });
-    fieldSubmit.onclick = selectTypedField;
     document.getElementById('studyScopeBack').onclick = back;
   }
-  function startScopeSelectionForPlan(name, learner, note){
+  function startScopeSelectionForPlan(name, learner, note, initialTopic){
     var d = draftPlan(), ov = onboardOv || {};
     var fields = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
     if (d.startMode === 'descriptive' || wantsDescriptiveFirst(ov, d.otherNote))
       fields = fields.filter(function(f){ return descriptiveScopeNumber(f) != null; });
     studyScopeMenu(fields, null, null,
       function(chosen){ return startStudyNow(name, learner, chosen); },
-      function(){ planPanel([]); }, note);
+      function(){ planPanel([]); }, note, initialTopic);
   }
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
@@ -3569,6 +3537,15 @@ a{color:inherit}
         saveIds();
         completed = true;
         showDescriptiveMenu(2025, descriptiveScopeNumber(choice?.fieldName));
+        return;
+      }
+      if (choice && choice.mode === 'topic') {
+        var target = await callTool('nextQuestion', {sessionId:state.sessionId || learner, topic:choice.topic});
+        if (!target || target.error) throw new Error('TOPIC_START_UNAVAILABLE');
+        completed = true;
+        if (target.status === 'topicUnavailable') startScopeSelectionForPlan(name, learner, target.notice, choice.topic);
+        else if (['question','waiting','sourceUnavailable','remediation','confirmation_pending'].includes(target.status)) render(target);
+        else startScopeSelectionForPlan(name, learner, '入力した論点を出題できませんでした。入力し直してください。', choice.topic);
         return;
       }
       if (choice && choice.mode === 'review') {
