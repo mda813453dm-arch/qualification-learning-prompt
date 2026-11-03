@@ -926,7 +926,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).click();
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     await ui.getByRole('button',{name:/おまかせ（従来の頻出・分野順）/}).click();
-    await ui.getByText(/記述式から始める設定を確認できませんでした/).waitFor();
+    await ui.getByText(/記述式の開始設定を確認できませんでした/).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '記述式の確定に失敗した場合は通常の択一開始を実行しない');
     assert.equal(await ui.getByRole('heading',{name:/午前の部.*問1/}).count(),0,
