@@ -25,6 +25,7 @@ export function newState({ qualificationId, learnerId = null, plan = {}, now }) 
       ...(Array.isArray(plan.orderedFields) ? { orderedFields: [...plan.orderedFields] } : {}),
       questionPreference: QUESTION_PREFERENCES.includes(plan.questionPreference) ? plan.questionPreference : 'any',
       questionPreferenceScope: PREFERENCE_SCOPES.includes(plan.questionPreferenceScope) ? plan.questionPreferenceScope : 'new' },
+    activeTopic: null, // 利用者が直接入力した論点。回答後の先読み・次問でも保持する
     history: {}, // questionId -> {result, selected, answeredAt, source}
     review: {}, // 論点ID（未分類なら問題ID） -> 復習の予定
     reviewPacing: { initialServed: 0, newAnswered: 0, sinceReview: 0 }, // 今回の学習の復習と実践の配分

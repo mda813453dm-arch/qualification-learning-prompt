@@ -1419,7 +1419,7 @@ a{color:inherit}
           }
           var next = await callTool('nextQuestion', {
             sessionId: state.sessionId || data.sessionId,
-            ...(chosen.mode === 'review' ? { question:'総復習（間違えた問題）' } : {}),
+            ...(chosen.mode === 'review' ? { question:'総復習（間違えた問題）', clearTopic:true } : { clearTopic:true }),
           });
           if (!next || next.error) throw new Error('RESUME_QUESTION_UNAVAILABLE');
           if (next.status === 'reviewEmpty' || next.status === 'no_matching_review') {

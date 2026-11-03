@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v178.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v179.js';
+import { widgetHtml as stable178Html } from './widget-v178.js';
 import { widgetHtml as stable177Html } from './widget-v177.js';
 import { widgetHtml as stable176Html } from './widget-v176.js';
 import { widgetHtml as stable175Html } from './widget-v175.js';
@@ -34,7 +35,7 @@ const source = {
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
-const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -117,8 +118,11 @@ export const TOOLS = [
   {
     name: 'nextQuestion',
     description: '次の問題を受け取る。未回答の問題があれば同じ問題を返す。status は question / waiting / finished。利用者が問題や分野を指定したとき（「問13を出して」「応用測量に移りたい」など）は question にその言葉を入れる。【記述式AI参考解説の後のみ】もしshowDescriptiveActionsがモデル側で呼び出せない場合、既存のnextQuestion({sessionId:現在の実セッションID,question:「記述式解説後の操作メニュー:」+現在のquestionId})で現在問の操作画面を読取専用取得できる。解説が完了してからだけ実行する。この特殊なquestionは問題を進めない。解説完了前・別問IDでは無効。解説が登録できない場合は学習枠への登録未完了を伝え、チャット本文に解説や番号選択肢を代替表示しない。',
-    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く' }, fieldName: { type: 'string', description: '学習画面の分野選択で選んだ正式な分野名（questionとの併用不可）' }, topic: { type: 'string', description: '利用者が自由入力した学習したい分野または論点（正式な分野名と違っても本文に該当する検証済み過去問だけ検索）。fieldNameおよびquestionとの併用不可' } } },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.fieldName ? { fieldName: a.fieldName } : (a.topic ? { topic: a.topic } : (a.question ? { question: a.question } : undefined))],
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く' }, fieldName: { type: 'string', description: '学習画面の分野選択で選んだ正式な分野名（questionとの併用不可）' }, topic: { type: 'string', description: '利用者が自由入力した学習したい分野または論点（正式な分野名と違っても本文に該当する検証済み過去問だけ検索）。fieldNameおよびquestionとの併用不可。指定後は次問にも継続する' }, clearTopic: { type: 'boolean', description: '利用者が「おまかせ」「間違えた問題の復習」に明示的に切り替えた場合だけtrueを指定し、以前の自由入力論点を解除する' } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, {
+      ...(a.fieldName ? { fieldName: a.fieldName } : a.topic ? { topic: a.topic } : a.question ? { question: a.question } : {}),
+      ...(a.clearTopic === true ? { clearTopic: true } : {}),
+    }],
   },
   {
     name: 'openDescriptiveQuestion',
@@ -661,6 +665,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v174.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v175.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v176.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v177.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v178.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -794,6 +799,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v178.html')) return stable178Html();
   if (uri.endsWith('/question-v177.html')) return stable177Html();
   if (uri.endsWith('/question-v176.html')) return stable176Html();
   if (uri.endsWith('/question-v175.html')) return stable175Html();

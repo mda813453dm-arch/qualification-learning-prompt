@@ -4,7 +4,7 @@ import { MemoryStore } from '../src/store.js';
 import { handle, overviewFor } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v178.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v179.js';
 
 const TOKEN = 'scope-selection-regression';
 const SOURCE = { adapter:SRC.adapter, year:SRC.year, section:SRC.section,
@@ -43,8 +43,8 @@ async function start(call) {
 
 test('study target UI exposes one free-entry box on initial study and resume',()=>{
   const html=widgetHtml();
-  assert.match(WIDGET_URI,/question-v178\.html/);
-  assert.equal(WIDGET_VERSION,'2026-11-03.178');
+  assert.match(WIDGET_URI,/question-v179\.html/);
+  assert.equal(WIDGET_VERSION,'2026-11-04.179');
   assert.match(html,/学習する分野を選択/);
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
@@ -63,6 +63,7 @@ test('study target UI exposes one free-entry box on initial study and resume',()
   assert.match(html,/複数の分野に一致/);
   assert.match(html,/normalizeField/);
   assert.match(html,/mode:'topic'/);
+  assert.match(html,/clearTopic:true/,'再開時におまかせを選んだら論点固定を解除する');
   assert.equal((html.match(/id="studyScopeFreeField"/g) || []).length, 1, 'only one field entry is rendered');
   // Regression: an unescaped hyphen at the end of a character class removed
   // all Japanese letters between ')' and the full-width hyphen.
@@ -139,4 +140,37 @@ test('free-typed topic uses only matching verified packets and does not fall bac
   assert.equal(chosen.status,200,JSON.stringify(chosen.body));
   assert.equal(chosen.body.status,'question');
   assert.equal(chosen.body.question.fieldName,'多角測量');
+});
+
+test('free-typed topic remains active for the graded next question and subsequent next calls',async()=>{
+  const {call}=setup(), first=await start(call), sid=first.sessionId;
+  const initial=await call('POST','/v1/sessions/'+sid+'/next',{topic:'多角測量'});
+  assert.equal(initial.body.status,'question');
+  assert.equal(initial.body.question.fieldName,'多角測量');
+  const answered=await call('POST','/v1/sessions/'+sid+'/answer',{
+    questionId:initial.body.question.questionId,value:'1',
+  });
+  assert.equal(answered.status,200,JSON.stringify(answered.body));
+  assert.equal(answered.body.next?.question?.fieldName,'多角測量',
+    '採点時の先読み出題でも選んだ論点から逸脱させない');
+  const following=await call('POST','/v1/sessions/'+sid+'/next',{});
+  assert.equal(following.body.status,'question',JSON.stringify(following.body));
+  assert.equal(following.body.question.fieldName,'多角測量',
+    '次の問題ボタンは自由入力した対象を保持する');
+});
+
+test('explicit switch to automatic selection clears the topic while preserving an unanswered question',async()=>{
+  const {env,call}=setup(), first=await start(call), sid=first.sessionId;
+  const initial=await call('POST','/v1/sessions/'+sid+'/next',{topic:'多角測量'});
+  assert.equal(initial.body.status,'question');
+  let state=JSON.parse(await env.STORE.get('ses/'+sid)).state;
+  assert.equal(state.activeTopic,'多角測量');
+  const auto=await call('POST','/v1/sessions/'+sid+'/next',{clearTopic:true});
+  assert.equal(auto.status,200,JSON.stringify(auto.body));
+  assert.equal(auto.body.question?.questionId,initial.body.question.questionId,
+    '明示変更でも未回答の公式問は勝手に廃棄しない');
+  state=JSON.parse(await env.STORE.get('ses/'+sid)).state;
+  assert.equal(state.activeTopic,null,'未回答問の再表示経路でもおまかせ変更を保存');
+  const invalid=await call('POST','/v1/sessions/'+sid+'/next',{topic:'多角測量',clearTopic:true});
+  assert.equal(invalid.status,400);
 });

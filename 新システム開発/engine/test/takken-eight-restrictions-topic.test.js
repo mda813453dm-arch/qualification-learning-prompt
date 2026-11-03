@@ -30,7 +30,12 @@ test('8種制限 does not expand to general takken law or other qualifications',
   const wrongField = item('3', 't3', '手付金等の保全について');
   const unrelatedSeller = item('self-seller', 't7', '宅地建物取引業者Ａが自ら売主として契約したときの37条書面の交付について');
   const mislabeledCivil = item('q041:2025:main:10', 't7', '民法上の契約不適合責任について', [], 10);
-  const results = [unrelated, wrongField, unrelatedSeller, mislabeledCivil];
+  // 実機で論点が逸れた2024年度問26（重要事項説明・35条）と同種の問題。
+  // 宅建業法の登録分野が同じでも8種制限の出題候補には含めない。
+  const importantMatters = item('q041:2024:main:26', 't7',
+    '宅地建物取引業法第35条に規定する重要事項の説明に関する次の記述のうち、正しいものはいくつあるか。',
+    ['ガス配管設備等に関して、所有権が家庭用プロパンガス販売会社にある場合には説明しなければならない。'], 26);
+  const results = [unrelated, wrongField, unrelatedSeller, mislabeledCivil, importantMatters];
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q041', fields), null);
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q063', fields), null);
 });

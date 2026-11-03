@@ -1217,7 +1217,7 @@ function pendingVisibleQuestionBeforeRemediation(state) {
   return !!(state.remediation?.required && cur?.questionId && !cur.grade &&
     cur.questionId !== state.remediation.triggerQuestionId);
 }
-async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null, selectedFieldId = null, requestedTopic = null } = {}) {
+async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null, selectedFieldId = null, requestedTopic = null, clearTopic = false } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
   const explicitQuestion = isExactQuestionRequest(want);
   let state = state0;
@@ -1409,17 +1409,22 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // Free-text user request is explicit: choose only verified source packets,
   // first by catalog field, then by exact phrase or verified question keyword.
   // Never fall back to a different topic or the default next question.
-  const topicCandidatePool = requestedTopic ? items.filter((x) =>
+  // 自由入力した論点は最初の1問だけで解除しない。採点直後の先読みと
+  // 「次の問題」のどちらも、明示変更があるまで同じ検証済み論点に限定する。
+  // 直接問指定・別分野指定・復習・おまかせへの明示変更は優先する。
+  const topicScope = requestedTopic ?? (!clearTopic && !selectedFieldId && !explicitQuestion &&
+    !reviewWant && (!want || want === CONTINUE_FIELD_WANT) ? state.activeTopic : null);
+  const topicCandidatePool = topicScope ? items.filter((x) =>
     x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive' &&
     !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId)) : [];
-  const normalizedTopic = requestedTopic ? requestedTopic.normalize('NFKC').replace(/\s/g, '') : '';
-  const topicFieldId = requestedTopic ? Object.entries(fieldNames).find(([,name]) =>
+  const normalizedTopic = topicScope ? topicScope.normalize('NFKC').replace(/\s/g, '') : '';
+  const topicFieldId = topicScope ? Object.entries(fieldNames).find(([,name]) =>
     name.normalize('NFKC').replace(/\s/g, '') === normalizedTopic)?.[0] : null;
-  const topicMatched = requestedTopic ? findVerifiedTopic(state, topicCandidatePool, requestedTopic, state.qualificationId,
+  const topicMatched = topicScope ? findVerifiedTopic(state, topicCandidatePool, topicScope, state.qualificationId,
     topicFieldId && studyFieldOrder(state, cat).includes(topicFieldId) ? fieldNames : {}) : null;
-  if (requestedTopic && !topicMatched) return { status: 'topicUnavailable',
-    sessionId: id, topic: requestedTopic,
-    notice: `「${requestedTopic}」の検索が完了しましたが、該当する検証済み公式過去問は見つかりませんでした。分野一覧から選ぶか、より具体的な論点名を入力してください。ほかの分野へは自動的に切り替えません。学習記録は変更していません。` };
+  if (topicScope && !topicMatched) return { status: 'topicUnavailable',
+    sessionId: id, topic: topicScope,
+    notice: `「${topicScope}」の検索が完了しましたが、該当する検証済み公式過去問は見つかりませんでした。分野一覧から選ぶか、より具体的な論点名を入力してください。ほかの分野へは自動的に切り替えません。学習記録は変更していません。` };
   const wanted = topicMatched ?? targeted ?? continuePick ??
     (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
@@ -1430,6 +1435,11 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       notice: '間違えた問題はまだありません。学習記録は変更していません。次の問題へ進むか、学習を終了してください。' };
   // 分野の指定なら、その分野の問が残っている間はそこから出す（別の分野を指定するまで）
   if (wanted?.fieldId) state = { ...state, focusField: wanted.fieldId };
+  // topicScope がない明示的な分野・問・復習・おまかせの選択でのみ解除。
+  // pin がこの状態を永続化するので、採点APIの先読み時にも同じ論点を使える。
+  if (topicMatched) state = { ...state, activeTopic: topicScope };
+  else if (selectedFieldId || clearTopic || explicitQuestion || reviewWant || want)
+    state = { ...state, activeTopic: null };
   const wantNotice = want && !reviewWant && !wanted ? `指定の問題・分野（${String(want).slice(0, 30)}）は、取り込んだ過去問の中に見つかりませんでした。` : null;
   const pick = wanted ? { status: 'question', ...wanted } : pickNext(state, items, { today: jstToday(now), now, job });
   // Direct question, field continuation and explicit review bypass pickNext().
@@ -1991,7 +2001,8 @@ async function route(request, env, url, now) {
       throw e;
     }
     const nextPlan = updated.plan;
-    await saveSession(env, id, updated, now);
+    // 計画を改めて承認したときは、前回の自由入力論点に拘束されない。
+    await saveSession(env, id, { ...updated, activeTopic: null }, now);
     return json(200, { status: 'planSaved', sessionId: id, orderedFields: ordered.map((f) => cat.fields[f]),
       methodChoice, reviewPreset: preset, reviewIntervalsMinutes: nextPlan.reviewIntervalsMinutes,
       qualificationId: state.qualificationId, startMode, planRevision: nextPlan.revision,
@@ -2125,6 +2136,9 @@ async function route(request, env, url, now) {
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
     const chosenFieldName = typeof b?.fieldName === 'string' ? b.fieldName : null;
     const requestedTopic = typeof b?.topic === 'string' ? b.topic.normalize('NFKC').trim() : null;
+    if (b?.clearTopic != null && typeof b.clearTopic !== 'boolean')
+      throw new HttpError(400, 'TOPIC_CLEAR_INVALID');
+    const clearTopic = b?.clearTopic === true;
     if (requestedTopic != null &&
         (requestedTopic.length < 2 || requestedTopic.length > 80 || /[<>\r\n]/.test(requestedTopic)))
       throw new HttpError(400, 'TOPIC_INVALID');
@@ -2133,7 +2147,8 @@ async function route(request, env, url, now) {
       .find(([, name]) => name === chosenFieldName)?.[0];
     if (chosenFieldName != null && (!selectedFieldId || !studyFieldOrder(state, chosenFieldCat).includes(selectedFieldId)))
       throw new HttpError(400, 'FIELD_INVALID');
-    if ((selectedFieldId && want) || (requestedTopic && (selectedFieldId || want)))
+    if ((selectedFieldId && want) || (requestedTopic && (selectedFieldId || want || clearTopic)) ||
+        (selectedFieldId && clearTopic))
       throw new HttpError(400, 'FIELD_QUESTION_CONFLICT');
     if (isExactQuestionRequest(want)) {
       const directStudyId = await startDirectStudy(env, state, now);
@@ -2164,7 +2179,11 @@ async function route(request, env, url, now) {
       return json(200, await nextView(env, id, updated, now, { want: null }));
     }
     if (state.descriptiveCurrent && !want) return json(200, descriptiveView(state.descriptiveCurrent, id, !!state.descriptiveCurrent.revealedAt));
-    return json(200, await nextView(env, id, state, now, { want, selectedFieldId, requestedTopic }));
+    // 「おまかせ」へ明示変更した場合は、未回答問の読取再表示になっても
+    // 旧論点への固定を解除する。未回答問・採点履歴そのものには手を付けない。
+    const nextState = clearTopic ? { ...state, activeTopic: null } : state;
+    if (clearTopic && state.activeTopic) await saveSession(env, id, nextState, now);
+    return json(200, await nextView(env, id, nextState, now, { want, selectedFieldId, requestedTopic, clearTopic }));
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {

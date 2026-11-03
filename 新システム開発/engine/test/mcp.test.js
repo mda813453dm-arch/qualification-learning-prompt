@@ -10,10 +10,18 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v178.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v179.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
+
+test('nextQuestion MCP forwards the persistent-topic reset only when explicitly requested', () => {
+  const tool = TOOLS.find((entry) => entry.name === 'nextQuestion');
+  assert.ok(tool);
+  assert.deepEqual(tool.api({sessionId:'test-session',topic:'8種制限'})[2],{topic:'8種制限'});
+  assert.deepEqual(tool.api({sessionId:'test-session'})[2],{});
+  assert.deepEqual(tool.api({sessionId:'test-session',clearTopic:true})[2],{clearTopic:true});
+});
 
 function makeEnv(parserOptions = {}) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('q-v1'), [SRC.answerUrl]: pdf('a-v1') });
@@ -209,8 +217,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v178\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-03.178');
+  assert.match(WIDGET_URI, /question-v179\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-04.179');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1285,7 +1293,7 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
 
 test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
   const { forModel } = await import('../src/mcp.js');
-  const { WIDGET_URI } = await import('../src/widget-v178.js');
+  const { WIDGET_URI } = await import('../src/widget-v179.js');
   const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
   const answer = TOOLS.find((t) => t.name === 'completeRemediation');
   assert.ok(reg && reg.appOnly && !reg.uiOnly);
