@@ -1046,6 +1046,7 @@ function resumeReadyView(id, state) {
     status: 'resumeReady', sessionId: id, learnerId: state.learnerId,
     qualificationId: state.qualificationId, qualificationName: catalog?.name ?? state.qualificationId,
     answeredCount: history.length, wrongCount: wrong,
+    fields: studyFieldOrder(state, catalog).map((fid) => catalog.fields[fid]),
     pendingQuestion: pendingLabel(state), restored: history.length,
     resumeMenu: RESUME_MENU,
     howToShow: '保存済みの学習状況だけを表示します。試験概要・免除・学習状況の初回質問や学習計画の承認をやり直しません。画面の「学習を再開する」を押すと、学習時間の計測を開始して未回答問または次の公式過去問へ進みます。',
@@ -1215,7 +1216,7 @@ function pendingVisibleQuestionBeforeRemediation(state) {
   return !!(state.remediation?.required && cur?.questionId && !cur.grade &&
     cur.questionId !== state.remediation.triggerQuestionId);
 }
-async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null } = {}) {
+async function nextView(env, id, state0, now, { prefetched = false, want: want0 = null, selectedFieldId = null } = {}) {
   let want = want0 ?? state0.directRequested ?? null;
   const explicitQuestion = isExactQuestionRequest(want);
   let state = state0;
@@ -1391,7 +1392,20 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
     ? wrongPool.filter((x) => x.packet.questionType === state.plan.questionPreference) : wrongPool;
   const reviewPool = eligibleReview.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? null) && x.packet.questionId !== (state.current?.questionId ?? null));
   const reviewPick = reviewPool.length ? reviewPool[Math.floor(Math.random() * reviewPool.length)] : eligibleReview[0] ?? null;
-  const wanted = continuePick ?? (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
+  // UI field choice is an exact catalog identifier, not fuzzy text matching.
+  // Never silently substitute another field when its verified questions are absent.
+  const chosenFieldItems = selectedFieldId ? items.filter((x) => x.packet.fieldId === selectedFieldId &&
+    x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive' &&
+    !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId)) : [];
+  const chosenUnseen = chosenFieldItems.find((x) => !state.history?.[x.packet.questionId]);
+  const chosenAnswered = chosenFieldItems.filter((x) => state.history?.[x.packet.questionId]);
+  const alternateChosen = chosenAnswered.filter((x) => x.packet.questionId !== (state.lastGrade?.questionId ?? state.current?.questionId));
+  const chosenPool = alternateChosen.length ? alternateChosen : chosenAnswered;
+  const chosenPacket = chosenUnseen ?? (chosenPool.length ? chosenPool[Math.floor(Math.random() * chosenPool.length)] : null);
+  if (selectedFieldId && !chosenPacket) return { status: 'fieldExhausted', sessionId: id,
+    notice: '選択した分野には出題可能な公式過去問がありません。他の分野を選ぶか、PDFの登録状況を確認してください。' };
+  const targeted = chosenPacket ? { item: chosenPacket, kind: chosenUnseen ? 'new' : 'review', fieldId: selectedFieldId } : null;
+  const wanted = targeted ?? continuePick ?? (reviewWant ? (reviewPick ? { item: reviewPick, kind: 'review' } : null) : want ? findWanted(state, items, want, fieldNames) : null);
   // 復習対象が無いときに通常の次問へ進めると、総復習の選択と違う動作になる。
   if (reviewWant && !wanted) return strictReview && wrongPool.length
     ? { status: 'no_matching_review', sessionId: id,
@@ -2093,6 +2107,13 @@ async function route(request, env, url, now) {
       throw new HttpError(409, 'QUALIFICATION_MISMATCH');
     await gateUse(env, state.learnerId, now);
     const want = typeof b?.question === 'string' && b.question.trim() ? b.question.trim().slice(0, 80) : state.directRequested ?? null;
+    const chosenFieldName = typeof b?.fieldName === 'string' ? b.fieldName : null;
+    const chosenFieldCat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId);
+    const selectedFieldId = chosenFieldName == null ? null : Object.entries(chosenFieldCat?.fields ?? {})
+      .find(([, name]) => name === chosenFieldName)?.[0];
+    if (chosenFieldName != null && (!selectedFieldId || !studyFieldOrder(state, chosenFieldCat).includes(selectedFieldId)))
+      throw new HttpError(400, 'FIELD_INVALID');
+    if (selectedFieldId && want) throw new HttpError(400, 'FIELD_QUESTION_CONFLICT');
     if (isExactQuestionRequest(want)) {
       const directStudyId = await startDirectStudy(env, state, now);
       await activateChatStudy(env, state.learnerId, state.qualificationId, directStudyId);
@@ -2122,7 +2143,7 @@ async function route(request, env, url, now) {
       return json(200, await nextView(env, id, updated, now, { want: null }));
     }
     if (state.descriptiveCurrent && !want) return json(200, descriptiveView(state.descriptiveCurrent, id, !!state.descriptiveCurrent.revealedAt));
-    return json(200, await nextView(env, id, state, now, { want }));
+    return json(200, await nextView(env, id, state, now, { want, selectedFieldId }));
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {
