@@ -8,13 +8,12 @@ export function widgetHtml() {
   const html = previousHtml();
   let next = html.replaceAll('2026-11-03.175', WIDGET_VERSION);
   if (next === html) throw new Error('WIDGET_VERSION_MARKER_MISSING');
-  // An empty free-text box cannot start studying, so it does not need the
-  // stale-tap guard used by the numbered choices. On mobile, a valid second
-  // tap after correcting an empty submission can lose its pointerdown event;
-  // the guard then swallows the click and leaves the old validation message.
-  // Keep the guard for numbered choices, which can overlap prior screen taps.
-  const guardedFreeSubmit = '    guardScopeClick(fieldSubmit);\n    fieldSubmit.onclick = selectTypedField;';
-  if (!next.includes(guardedFreeSubmit)) throw new Error('FREE_SCOPE_SUBMIT_MARKER_MISSING');
-  next = next.replace(guardedFreeSubmit, '    fieldSubmit.onclick = selectTypedField;');
+  // The old regexp's final "()-－" is parsed as a range from ')' to '－',
+  // which includes Japanese characters. It erases the entire typed field and
+  // falsely reports that a valid entry is blank. Put '-' first so it is literal.
+  const malformedFieldMatcher = ".replace(/[\\s　・･／/、，,（）()-－]/g, '')";
+  const literalHyphenFieldMatcher = ".replace(/[-\\s　・･／/、，,（）()－]/g, '')";
+  if (!next.includes(malformedFieldMatcher)) throw new Error('FIELD_MATCHER_MARKER_MISSING');
+  next = next.replace(malformedFieldMatcher, literalHyphenFieldMatcher);
   return next;
 }

@@ -57,6 +57,13 @@ test('study target UI exposes one free-entry box on initial study and resume',()
   assert.match(html,/normalizeField/);
   assert.match(html,/mode:'topic'/);
   assert.equal((html.match(/id="studyScopeFreeField"/g) || []).length, 1, 'only one field entry is rendered');
+  // Regression: an unescaped hyphen at the end of a character class removed
+  // all Japanese letters between ')' and the full-width hyphen.
+  const matcher = html.match(/normalize\('NFKC'\)\.replace\((\/\[[^\n]+?\]\/g), ''\)/);
+  assert.ok(matcher, 'the rendered field-normalization regexp exists');
+  const separator = new Function('return ' + matcher[1])();
+  assert.equal('測量に関する'.replace(separator,''), '測量に関する');
+  assert.equal('宅建-業法'.replace(separator,''), '宅建業法');
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);
   assert.match(html,/fieldName: field/);
