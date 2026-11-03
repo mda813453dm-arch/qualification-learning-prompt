@@ -436,7 +436,6 @@ export function findVerifiedTopic(state, items, topic, qualificationId, fields =
 
   const patterns = [
     /8種制限|八種制限/,
-    /自ら売主|自らが売主/,
     /クーリング[・･-]?オフ/,
     /手付金等?の?保全|保全措置/,
     /損害賠償額の?予定|違約金の?額/,
