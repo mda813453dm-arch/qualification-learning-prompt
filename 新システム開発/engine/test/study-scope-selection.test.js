@@ -51,10 +51,11 @@ test('study target UI is available for new study and resume (exact fields only)'
   assert.match(html,/startScopeSelectionForPlan/);
   assert.match(html,/id="studyScopeFreeField"/);
   assert.match(html,/id="studyScopeFreeStart"/);
-  assert.match(html,/分野名を自由入力/);
-  assert.match(html,/複数の分野に一致します/);
-  assert.match(html,/該当する登録済み分野がありません/);
-  assert.match(html,/selectTypedField/);
+  assert.match(html,/分野名を直接入力/);
+  assert.match(html,/分野名や論点名を自由に入力できます/);
+  assert.match(html,/候補が複数あります/);
+  assert.match(html,/resolveTypedField/);
+  assert.match(html,/mode:'topic'/);
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);
   assert.match(html,/fieldName: field/);
