@@ -113,8 +113,8 @@ export const TOOLS = [
   {
     name: 'nextQuestion',
     description: '次の問題を受け取る。未回答の問題があれば同じ問題を返す。status は question / waiting / finished。利用者が問題や分野を指定したとき（「問13を出して」「応用測量に移りたい」など）は question にその言葉を入れる。【記述式AI参考解説の後のみ】もしshowDescriptiveActionsがモデル側で呼び出せない場合、既存のnextQuestion({sessionId:現在の実セッションID,question:「記述式解説後の操作メニュー:」+現在のquestionId})で現在問の操作画面を読取専用取得できる。解説が完了してからだけ実行する。この特殊なquestionは問題を進めない。解説完了前・別問IDでは無効。解説が登録できない場合は学習枠への登録未完了を伝え、チャット本文に解説や番号選択肢を代替表示しない。',
-    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く' } } },
-    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.question ? { question: a.question } : undefined],
+    inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId, question: { type: 'string', description: '利用者が指定した問題または分野（例：「2025年度 問13」「応用測量」）。再開のとき「新しい問題から」を選ばれたら「新しい問題」。指定が無ければ省く' }, fieldName: { type: 'string', description: '学習画面の分野選択で選んだ正式な分野名（questionとの併用不可）' } } },
+    api: (a) => ['POST', `/v1/sessions/${encodeURIComponent(a.sessionId)}/next`, a.fieldName ? { fieldName: a.fieldName } : (a.question ? { question: a.question } : undefined)],
   },
   {
     name: 'openDescriptiveQuestion',
