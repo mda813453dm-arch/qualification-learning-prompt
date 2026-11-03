@@ -636,7 +636,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     const beforeResume = await page.evaluate(() => window.calls.length);
     await ui.getByRole('button', { name: '学習を再開する' }).click();
     await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
-    assert.equal(await page.evaluate(() => window.calls.slice(beforeResume).filter(m => m.params?.name === 'startStudy').length), 0,
+    assert.equal(await page.evaluate(i => window.calls.slice(i).filter(m => m.params?.name === 'startStudy').length, beforeResume), 0,
       '再開時も希望を選ぶ前に時間計測を始めない');
     await ui.getByRole('button', { name: /おまかせ（従来の頻出・分野順）/ }).click();
     await ui.getByText('試験用の問題文').waitFor();
