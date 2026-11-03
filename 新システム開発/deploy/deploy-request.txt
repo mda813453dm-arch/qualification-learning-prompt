@@ -506,3 +506,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-03 v175 start/resume field chooser: automatic frequent order, exact selected field, wrong-answer review; mobile regression recheck (9e160084)
 2026-11-03 v176: free-text study field/topic input on initial and resume screens; exact catalog match or strict verified-topic search, no fallback
 2026-11-03 v176 Japanese free-text field matcher correction, initial/resume scope browser regression, confirmed engine and Chromium/WebKit behavior; deploy latest ai-learning-system to Cloud Run with production smoke
+2026-11-03 v177 iPhone free-text field input: preserve Japanese/numbers including 8種制限, replace field buttons with native dropdown, new widget URI to bypass cache; engine 610/612 and 375px Chromium/WebKit checks; deploy ai-learning-system and verify public widget v177; no paid API; protect main/master_prompt.txt.
