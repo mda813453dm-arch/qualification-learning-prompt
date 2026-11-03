@@ -265,11 +265,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '空欄では学習を始めない');
     await ui.locator('#studyScopeFreeField').fill('測量に関する');
+    const typedBeforeSubmit = await ui.locator('#studyScopeFreeField').evaluate(el=>({
+      value:el.value, error:el.ownerDocument.getElementById('studyScopeFreeError')?.textContent,
+      submitDisabled:el.ownerDocument.getElementById('studyScopeFreeStart')?.disabled,
+      hasHandler:typeof el.ownerDocument.getElementById('studyScopeFreeStart')?.onclick,
+    }));
     await ui.getByRole('button',{name:'入力した分野で学習する'}).click();
     await ui.getByRole('button', { name: /実践問題から/ }).waitFor({timeout:6000}).catch(async err=>{
       const screen=await ui.locator('#app').innerText();
+      const fieldAfterSubmit=await ui.locator('#studyScopeFreeField').evaluate(el=>({
+        value:el.value, error:el.ownerDocument.getElementById('studyScopeFreeError')?.textContent,
+        submitDisabled:el.ownerDocument.getElementById('studyScopeFreeStart')?.disabled,
+      }));
       const calls=await page.evaluate(()=>window.calls.filter(x=>x.method==='tools/call').map(x=>({name:x.params.name,args:x.params.arguments})).slice(-8));
-      throw new Error('FIELD_SELECTION_DEBUG '+JSON.stringify({screen:screen.slice(0,1300),calls})+' '+err.message.slice(0,120));
+      throw new Error('FIELD_SELECTION_DEBUG '+JSON.stringify({screen:screen.slice(0,1300),typedBeforeSubmit,fieldAfterSubmit,calls})+' '+err.message.slice(0,120));
     });
     await ui.getByRole('button', { name: /実践問題から/ }).click();
     // 最初の2回はエンジン呼び出し失敗。再表示専用APIでなく同じnextQuestionで復旧する。
