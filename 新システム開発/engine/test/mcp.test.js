@@ -10,7 +10,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v177.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v178.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -102,6 +102,17 @@ test('initialize で接続版プロンプトを instructions として渡す（d
   // 通知には本文なしで 202
   const n = await handle(new Request('https://engine.example/mcp', { method: 'POST', headers: { authorization: `Bearer ${TOKEN}` }, body: JSON.stringify({ jsonrpc: '2.0', method: 'notifications/initialized' }) }), env);
   assert.equal(n.status, 202);
+});
+
+test('ボタン無反応の報告で学習枠を勝手に復元・切り替えない', () => {
+  const reopen = TOOLS.find(t => t.name === 'reopenMissingWidget');
+  assert.ok(reopen);
+  assert.match(reopen.description, /ボタンが見えているが押しても反応しない.*絶対に呼ばない/);
+  const instructions = appInstructions();
+  assert.match(instructions, /ボタンが反応しません.*不具合報告/);
+  assert.match(instructions, /reopenMissingWidget、openHandoffView、startSession、startStudy、nextQuestionを呼ばず/);
+  assert.match(forModel({status:'resumeReady',sessionId:'s',learnerId:'l'}).howToProceed,
+    /ボタンが見えているが反応しないときは別枠の復元を呼ばず/);
 });
 
 test('ツールの名前は GPT 用 API 定義の operationId と同じ（同じプロンプトで動く）', async () => {
@@ -198,8 +209,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v177\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-03.177');
+  assert.match(WIDGET_URI, /question-v178\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-03.178');
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1274,7 +1285,7 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
 
 test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
   const { forModel } = await import('../src/mcp.js');
-  const { WIDGET_URI } = await import('../src/widget-v177.js');
+  const { WIDGET_URI } = await import('../src/widget-v178.js');
   const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
   const answer = TOOLS.find((t) => t.name === 'completeRemediation');
   assert.ok(reg && reg.appOnly && !reg.uiOnly);

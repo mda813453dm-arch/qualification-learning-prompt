@@ -327,6 +327,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .study-scope-select{display:block;width:100%;min-width:0;min-height:50px;box-sizing:border-box;font:inherit;font-size:16px;line-height:1.5;color:var(--fg);background:var(--btn);border:1px solid var(--line);border-radius:10px;padding:10px 38px 10px 12px;margin:10px 0;white-space:normal}
 .study-scope-select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .row button.study-scope-start{width:100%;min-height:48px}
+.study-scope-status{font-size:14px;line-height:1.6;font-weight:600;color:var(--acc);min-height:1.5em;margin:5px 0 12px;overflow-wrap:anywhere}
 button{word-break:keep-all;overflow-wrap:normal;line-break:strict;text-wrap:balance;max-width:100%;box-sizing:border-box}
 .btn-line{display:block;white-space:nowrap}
 .row button{font:inherit;font-size:16px;font-weight:600;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--btn);color:var(--fg);cursor:pointer}
@@ -3086,20 +3087,23 @@ a{color:inherit}
       '<input id="studyScopeFreeField" type="text" maxlength="80" autocomplete="off" ' +
       'placeholder="例：応用測量、宅建業法、筆界特定" style="width:100%;box-sizing:border-box;min-height:44px" />' +
       '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
-      '<div id="studyScopeFreeError" role="status" aria-live="polite"></div></section>' +
+      '<div id="studyScopeFreeError" class="study-scope-status" role="status" aria-live="polite"></div></section>' +
       '<label for="studyScopeChoices" class="stem"><b>一覧から選択</b></label>' +
       '<select id="studyScopeChoices" class="study-scope-select" aria-label="学習する分野を選択">' +
       choices.map(function(c,i){ return '<option value="' + i + '">' + esc(c.label) + '</option>'; }).join('') +
       '</select><div class="row"><button type="button" class="study-scope-start" id="studyScopeChooseStart">選択した内容で学習する</button></div>' +
+      '<div id="studyScopeChoiceStatus" class="study-scope-status" role="status" aria-live="polite"></div>' +
       '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
     var fieldInput = document.getElementById('studyScopeFreeField');
     var fieldSubmit = document.getElementById('studyScopeFreeStart');
     var fieldError = document.getElementById('studyScopeFreeError');
     var scopeSelect = document.getElementById('studyScopeChoices');
     var scopeSubmit = document.getElementById('studyScopeChooseStart');
+    var scopeStatus = document.getElementById('studyScopeChoiceStatus');
     if (initialTopic) fieldInput.value = String(initialTopic).slice(0,80);
     scrollUp();
     var submitting = false;
+    var renderedAt = Date.now();
     function resetSubmission(){
       if (!document.getElementById('studyScopeChoices')) return;
       submitting = false;
@@ -3107,15 +3111,26 @@ a{color:inherit}
       scopeSelect.disabled = false;
       scopeSubmit.disabled = false;
     }
-    async function commitChoice(choice){
+    async function commitChoice(choice, statusNode){
       if (submitting) return;
       submitting = true;
       fieldSubmit.disabled = true;
       scopeSelect.disabled = true;
       scopeSubmit.disabled = true;
+      statusNode.textContent = '操作を受け付けました。学習を開始しています…';
+      fit();
+      var waiting = setTimeout(function(){
+        if (scopeSelect.isConnected && submitting)
+          statusNode.textContent = '通信中です。学習記録は保持されています。しばらくお待ちください…';
+      }, 8000);
       try { await choose(choice); }
-      catch(e) { fieldError.textContent = '選択した学習を開始できませんでした。学習記録は保持しています。同じ操作で再試行できます。'; }
-      finally { resetSubmission(); }
+      catch(e) { statusNode.textContent = '学習を開始できませんでした。記録は保持されています。同じボタンで再試行できます。'; }
+      finally {
+        clearTimeout(waiting);
+        if (scopeSelect.isConnected && /^(操作を受け付けました|通信中です)/.test(statusNode.textContent))
+          statusNode.textContent = '学習開始を確認できませんでした。設定を保持しています。同じボタンで再試行できます。';
+        resetSubmission();
+      }
     }
     // Unique catalog names are unambiguous; a separate topic search is used
     // only when there is no matching catalog field for this qualification.
@@ -3140,15 +3155,16 @@ a{color:inherit}
       }
       fieldError.textContent = '';
       if (matches.length === 1) {
-        commitChoice({ mode:'field', fieldName:matches[0], label:matches[0] });
+        commitChoice({ mode:'field', fieldName:matches[0], label:matches[0] }, fieldError);
       } else if (typed.length >= 2) {
-        commitChoice({ mode:'topic', topic:raw.slice(0,80), label:raw });
+        commitChoice({ mode:'topic', topic:raw.slice(0,80), label:raw }, fieldError);
       } else {
         fieldError.textContent = '分野名・論点を2～80文字で入力してください。';
       }
     }
-    // Some mobile hosts send a stray click after the preceding screen changed.
-    // A new pointer press or a keyboard-generated click is required.
+    // A late tap from the previous screen can land on the newly mounted button.
+    // Ignore only the immediate transition interval; after that, accept iOS
+    // hosts' click-only events, which may have no pointerdown/touchstart.
     function guardScopeClick(button){
       var pressed = false;
       function arm(){ pressed = true; }
@@ -3158,9 +3174,11 @@ a{color:inherit}
       button.addEventListener('pointercancel', function(){ pressed = false; });
       button.addEventListener('touchcancel', function(){ pressed = false; });
       button.addEventListener('click', function(event){
-        if (event.detail > 0 && !pressed) {
+        if (event.detail > 0 && !pressed && Date.now() - renderedAt < 300) {
           event.preventDefault();
           event.stopImmediatePropagation();
+          (button === fieldSubmit ? fieldError : scopeStatus).textContent =
+            '画面の切替直後でした。もう一度押してください。';
         }
         pressed = false;
       }, true);
@@ -3178,7 +3196,7 @@ a{color:inherit}
       var index = Number(scopeSelect.value);
       if (!Number.isInteger(index) || index < 0 || index >= choices.length) return;
       fieldError.textContent = '';
-      commitChoice(choices[index]);
+      commitChoice(choices[index], scopeStatus);
     };
     document.getElementById('studyScopeBack').onclick = back;
   }
@@ -3503,6 +3521,13 @@ a{color:inherit}
   }
   var studyStartPending = false;
   function showStudyStartFailure(message) {
+    // Keep an error next to the button that the learner actually pressed;
+    // on long mobile pages an error appended at the bottom is easily missed.
+    ['studyScopeFreeError', 'studyScopeChoiceStatus'].forEach(function(id){
+      var status = document.getElementById(id);
+      if (status && /^(操作を受け付けました|通信中です)/.test(status.textContent))
+        status.textContent = message;
+    });
     var error = document.getElementById('studyStartError');
     if (!error) {
       app.insertAdjacentHTML('beforeend', '<div id="studyStartError" class="notice" role="alert"></div>');

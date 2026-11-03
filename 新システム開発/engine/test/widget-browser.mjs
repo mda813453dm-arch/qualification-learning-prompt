@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v177.js';
+import { widgetHtml } from '../src/widget-v178.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -87,7 +87,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             window.savedPlanStartMode = m.params.arguments.startMode ||
               (/記述式から/.test(m.params.arguments.otherNote || '') ? 'descriptive' : 'standard');
             if (window.rejectDescriptiveStartOnce) { window.rejectDescriptiveStartOnce = false; window.savedPlanStartMode = 'standard'; }
-            reply({ structuredContent: { status: 'planSaved', startMode: window.savedPlanStartMode } });
+            const response={ structuredContent: { status: 'planSaved', startMode: window.savedPlanStartMode } };
+            if (window.delayScopeSavePlanOnce) {
+              window.delayScopeSavePlanOnce=false;
+              setTimeout(()=>reply(response),500);
+            } else reply(response);
           }
           else if (op === 'startStudy') reply({ structuredContent: { status: 'study', learnerId: 'testlearner', studyId: 'test-study', display: '学習を開始しました', startMode: window.savedPlanStartMode || 'standard' } });
           else if (op === 'nextQuestion') {
@@ -277,7 +281,14 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       submitDisabled:el.ownerDocument.getElementById('studyScopeFreeStart')?.disabled,
       hasHandler:typeof el.ownerDocument.getElementById('studyScopeFreeStart')?.onclick,
     }));
-    await ui.getByRole('button',{name:'入力した分野で学習する'}).click();
+    // iPhone's embedded host may dispatch click without pointerdown/touchstart.
+    // The old guard silently dropped this legitimate button press.
+    await page.waitForTimeout(380);
+    await page.evaluate(()=>{window.delayScopeSavePlanOnce=true;});
+    await ui.locator('#studyScopeFreeStart').evaluate(b =>
+      b.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,detail:1})));
+    assert.match(await ui.locator('#studyScopeFreeError').innerText(),/操作を受け付けました/,
+      'iPhoneのclick単体でも操作の受付を同じボタン直下に表示');
     await ui.getByRole('button', { name: /実践問題から/ }).waitFor({timeout:6000}).catch(async err=>{
       const screen=await ui.locator('#app').innerText();
       const fieldAfterSubmit=await ui.locator('#studyScopeFreeField').evaluate(el=>({

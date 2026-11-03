@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v177.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v178.js';
+import { widgetHtml as stable177Html } from './widget-v177.js';
 import { widgetHtml as stable176Html } from './widget-v176.js';
 import { widgetHtml as stable175Html } from './widget-v175.js';
 import { widgetHtml as stable174Html } from './widget-v174.js';
@@ -33,7 +34,7 @@ const source = {
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
-const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -227,7 +228,7 @@ export const TOOLS = [
   {
     name: 'reopenMissingWidget',
     appOnly: true,
-    description: '【利用者が学習画面の非表示・ボタン無反応・旧画面による操作不能を明示した場合だけ】同じ資格学習セッションの学習枠を新版で1回だけ再表示する。実sessionIdが分かれば指定し、分からなければ引数なしで呼ぶ。旧定義がsessionId必須なら current-chat と指定する。新規startSession/startStudy・採点・次問を呼ばない。既存の学習記録を読取専用で復元する。表示も操作も正常な場合には呼ばない。再表示でも問題が解消しなければ繰り返さず、同じ会話をWeb版で開く案内をする。',
+    description: '【学習枠そのものが見えないと利用者が明示した場合だけ】同じ資格学習セッションの学習枠を1回再表示する。ボタンが見えているが押しても反応しない・任意入力が進まないという報告では絶対に呼ばない。モデルが画面を勝手に「学習再開」へ切り替えてはいけない。実sessionIdが分かれば指定し、不明なら引数なし（旧定義のみcurrent-chat）。新規startSession/startStudy・採点・次問を呼ばず保存済み記録を読取専用で取得する。',
     inputSchema: { type: 'object', properties: { sessionId } },
     // ChatGPT が旧スキーマ（sessionId 必須）をキャッシュしていても復旧できる。
     api: (a) => ['GET', !a.sessionId || a.sessionId === 'current-chat'
@@ -659,9 +660,10 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v173.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v174.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v175.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v176.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v177.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
-const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習画面が見えない、または旧版のボタンが押しても機能しない場合は、実在しない操作を繰り返し案内しない。利用者が操作不能を明示した場合に限りreopenMissingWidgetを最大1回呼ぶ。実sessionIdが不明なら引数なしで、旧定義が必須ならsessionId=current-chatで同じ会話の学習を復元する。表示できなければブラウザ https://chatgpt.com/ で同じ会話を開いてもらう。新規startSessionは呼ばない。モバイルアプリ内での描画成功をサーバー応答だけで断定しない。';
+const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
 const BROWSER_FALLBACK = { reason: 'CHATGPT_ANDROID_WIDGET_NOT_RENDERED', url: 'https://chatgpt.com/', instruction: 'Android版ChatGPTアプリで学習画面が表示されない場合は、ブラウザのChatGPTで同じ会話を開いて操作してください。新規セッションを作り直す必要はありません。' };
 const WIDGET_HOW = '問題文・図・選択肢は、この下の問題の画面にエンジンが表示している。チャットに問題文・図・選択肢を書き直したり、別の図を探したり描いたりしない。画面のあとのチャットの文は1行まで（「画面の選択肢を押して答えてください」だけ）。長く書くと画面が上に押し出されて見えなくなる。利用者が番号をチャットに書いたら submitAnswer を呼ぶ。question の stem と choices は解説を頼まれたときのためのもの。';
 
@@ -758,7 +760,7 @@ export function forModel(body) {
 /** ChatGPT アプリには、GPTのような指示文を置く場所がない。AIが必ず読むツールの説明に、学習の始め方の順番を入れる（2026-10-18 アプリで試験概要・学習状況の聴取が飛ばされた） */
 /** アプリ用の指示文：GPTの指示文と同じ仕様。問題の表示だけ「問題の画面」に差し替える */
 export function appInstructions() {
-  const activeStudyRule = '【最優先：新しい学習起動は必ず新規セッション】利用者が@資格学習と資格名を入力して新しい学習画面を求めた場合は、同じチャットで学習中であってもstartSessionを呼び、新規画面・新規セッションを作る。同じ資格にも別資格にも適用する。前の画面は失効し、学習履歴・正誤・復習状況は引継ぎID別に保持する。最終利用者操作から60分経過したセッションは失効する。画面が見えないだけで新規起動を求めていないときは、reopenMissingWidgetで既存の画面を一度だけ復元し、勝手に新しい学習を開始しない。\n';
+  const activeStudyRule = '【最優先：既存の学習枠を勝手に切り替えない】「入力したがボタンが反応しません」「学習が始まりません」等の報告は不具合報告であり、新しい枠の起動・復元・学習開始・次問への移動指示ではない。学習枠が表示されている限りreopenMissingWidget、openHandoffView、startSession、startStudy、nextQuestionを呼ばず、元の枠と学習状態を維持する。枠内の操作受付・通信状況やエラー表示を確認するよう短く案内する。利用者が明示的に「学習枠自体が表示されない」と言ったときだけreopenMissingWidgetを1回使用する。【新しい学習起動は必ず新規セッション】利用者が@資格学習と資格名を入力して新しい学習画面を求めた場合は、同じチャットで学習中であってもstartSessionを呼び、新規画面・新規セッションを作る。同じ資格にも別資格にも適用する。前の画面は失効し、学習履歴・正誤・復習状況は引継ぎID別に保持する。最終利用者操作から60分経過したセッションは失効する。\n';
   const a = INSTRUCTIONS.indexOf('2. 表示：');
   const b = INSTRUCTIONS.indexOf('3. 利用者が番号を答えたら');
   if (a < 0 || b < 0) return activeStudyRule + INSTRUCTIONS;
@@ -792,6 +794,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v177.html')) return stable177Html();
   if (uri.endsWith('/question-v176.html')) return stable176Html();
   if (uri.endsWith('/question-v175.html')) return stable175Html();
   if (uri.endsWith('/question-v174.html')) return stable174Html();
