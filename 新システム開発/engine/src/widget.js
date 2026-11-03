@@ -3003,6 +3003,55 @@ a{color:inherit}
       }, true);
     });
   }
+  // Initial study and resume share the same explicit target chooser.
+  // This screen does not start a study or alter the learner's answers.
+  function studyScopeMenu(fields, wrongCount, pendingQuestion, choose, back, notice){
+    var validFields = [...new Set((Array.isArray(fields) ? fields : []).filter(function(f){
+      return typeof f === 'string' && f.trim();
+    }))];
+    var choices = [
+      { mode:'auto', label:'おまかせ（従来の頻出・分野順）' },
+      { mode:'review', label:'間違えた問題を復習' +
+        (Number.isInteger(wrongCount) ? '（記録上 ' + wrongCount + '問）' : '') },
+    ].concat(validFields.map(function(name){ return { mode:'field', fieldName:name, label:name }; }));
+    app.innerHTML = '<h2>学習する分野を選択</h2>' +
+      '<div class="notice">希望する分野、間違えた問題の復習、またはおまかせを選べます。選択するまでは学習を開始しません。</div>' +
+      (pendingQuestion ? '<div class="notice">前回の未回答問題：' + esc(pendingQuestion) +
+        '。おまかせでは前回の問題から再開します。</div>' : '') +
+      (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
+      '<div class="choices" id="studyScopeChoices">' +
+      choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
+        '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
+      '</div><div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
+    scrollUp();
+    var submitting = false;
+    app.querySelectorAll('#studyScopeChoices button').forEach(function(btn){
+      btn.onclick = async function(){
+        if (submitting) return;
+        submitting = true;
+        app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
+        try { await choose(choices[Number(btn.getAttribute('data-study-scope'))]); }
+        catch(e){
+          submitting = false;
+          app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
+          var box = document.getElementById('studyScopeError');
+          if (!box) {
+            app.insertAdjacentHTML('beforeend', '<div id="studyScopeError" class="notice" role="alert"></div>');
+            box = document.getElementById('studyScopeError');
+          }
+          box.textContent = '選択した学習を開始できませんでした。このボタンから再試行できます。';
+        }
+      };
+    });
+    document.getElementById('studyScopeBack').onclick = back;
+  }
+  function startScopeSelectionForPlan(name, learner, note){
+    var d = draftPlan(), ov = onboardOv || {};
+    var fields = d.orderedFields.length ? d.orderedFields : (ov.fields || []);
+    studyScopeMenu(fields, null, null,
+      function(chosen){ return startStudyNow(name, learner, chosen); },
+      function(){ planPanel([]); }, note);
+  }
   // 学習計画（エンジンが出す）。ボタンを押すと、エンジンが学習の開始を記録し、最初の問題を出す。ChatGPTに次の呼び出しを任せない
   function planPanel(got){
     var ov = onboardOv || {}, d = draftPlan();
@@ -3032,7 +3081,7 @@ a{color:inherit}
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
     guardNewPlanActions();
-    document.getElementById('startStudy').onclick = function(){ startStudyNow(ov.name, studyLearner); };
+    document.getElementById('startStudy').onclick = function(){ startScopeSelectionForPlan(ov.name, studyLearner); };
     document.getElementById('revise').onclick = planEditMenu;
     document.getElementById('notNow').onclick = function(){
       // 番号4が学習段階の番号4と同じでも、二度押しだけで終了させない。
@@ -3322,7 +3371,7 @@ a{color:inherit}
     }
     error.textContent = message;
   }
-  async function startStudyNow(name, learner){
+  async function startStudyNow(name, learner, choice){
     // Touch/pointer compatibility on Android may dispatch more than one click.
     if (studyStartPending) return;
     studyStartPending = true;
@@ -3353,8 +3402,22 @@ a{color:inherit}
         showDescriptiveMenu(2025);
         return;
       }
+      if (choice && choice.mode === 'review') {
+        var review = await callTool('nextQuestion', { sessionId: state.sessionId || learner,
+          question: '総復習（間違えた問題）' });
+        if (!review || review.error) throw new Error('REVIEW_START_FAILED');
+        completed = true;
+        if (review.status === 'reviewEmpty' || review.status === 'no_matching_review') {
+          startScopeSelectionForPlan(name, learner, review.notice);
+        } else if (['question','waiting','remediation','confirmation_pending','sourceUnavailable'].includes(review.status)) {
+          render(review);
+        } else {
+          startScopeSelectionForPlan(name, learner, '復習できる問題を確認できませんでした。他の学習方法を選んでください。');
+        }
+        return;
+      }
       completed = true;
-      itemStart(r, learner);
+      itemStart(r, learner, choice);
     } catch (e) {
       // The POST may already have succeeded before the mobile bridge failed.
       // Read only the current session; never start or grade again automatically.
@@ -3381,19 +3444,23 @@ a{color:inherit}
     }
   }
   // 学習開始（U09）と項目開始（U07）：開始時刻・今回の位置・目的・理由・全体の進捗を見せ、この分野の進め方をボタンで選んでもらう
-  function itemStart(r, learner){
+  function itemStart(r, learner, choice){
     var ov = onboardOv || {};
-    var fields = ov.fields || [];
-    var field = fields[0] || '';
+    var plannedFields = draftPlan().orderedFields;
+    var fields = plannedFields.length ? plannedFields : (ov.fields || []);
+    var chosenField = choice && choice.mode === 'field' && fields.includes(choice.fieldName) ? choice.fieldName : null;
+    var field = chosenField || fields[0] || '';
     studyLid = r.learnerId || learner; currentStudyId = r.studyId || currentStudyId; studyField = field || null; saveIds();
     var proceed = async function(){
-      var next = await callTool('nextQuestion', { sessionId: learner });
-      if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
+      var next = await callTool('nextQuestion', { sessionId: state.sessionId || learner,
+        ...(chosenField ? { fieldName: chosenField } : {}) });
+      if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable','fieldExhausted'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
       render(next);
     };
     var initial = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
     function startMultipleChoice(){
-      var reason = (ov.diagResult || []).length ? '初期診断の結果（暫定評価）で、誤答の多い分野から始めます。' : '公式の出題分野の順と出題数から、最初の分野にしました。';
+      var reason = chosenField ? '利用者が選択した分野です。' :
+        (ov.diagResult || []).length ? '初期診断の結果（暫定評価）を学習計画に反映しています。' : '学習計画の分野順・頻出度から進めます。';
       var h = initial;
       if (field) {
         h += '<div class="stem">📍今回の位置：' + esc(field) + '<br>🎯今回の目的：' + esc(field) + 'の要点をつかみ、過去問で得点できるか確かめる<br>🧭始める理由：' + esc(reason) + '</div>';
