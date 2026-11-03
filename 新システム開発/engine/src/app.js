@@ -1047,6 +1047,7 @@ function resumeReadyView(id, state) {
     qualificationId: state.qualificationId, qualificationName: catalog?.name ?? state.qualificationId,
     answeredCount: history.length, wrongCount: wrong,
     fields: studyFieldOrder(state, catalog).map((fid) => catalog.fields[fid]),
+    startMode: state.plan?.startMode === 'descriptive' ? 'descriptive' : 'standard',
     pendingQuestion: pendingLabel(state), restored: history.length,
     resumeMenu: RESUME_MENU,
     howToShow: '保存済みの学習状況だけを表示します。試験概要・免除・学習状況の初回質問や学習計画の承認をやり直しません。画面の「学習を再開する」を押すと、学習時間の計測を開始して未回答問または次の公式過去問へ進みます。',
