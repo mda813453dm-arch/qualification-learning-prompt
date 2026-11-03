@@ -422,6 +422,46 @@ export function findWanted(state, items, want, fields = {}) {
   return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new' };
 }
 
+/**
+ * Typed study topics remain limited to packets already validated by official
+ * question+answer evidence. A popular shorthand need not occur literally in
+ * the official question stem. For takken's 8種制限, match the actual statutory
+ * subjects only within the 宅建業法 catalog field (t7); never silently turn
+ * this request into every 宅建業法 question.
+ */
+export function findVerifiedTopic(state, items, topic, qualificationId, fields = {}) {
+  const plain = String(topic ?? '').normalize('NFKC').replace(/[\\s　・･／/、，,（）()－-]/g, '');
+  if (qualificationId !== 'q041' || !/^(?:8|八)種制限$/.test(plain))
+    return findWanted(state, items, topic, fields);
+
+  const patterns = [
+    /8種制限|八種制限/,
+    /自ら売主|自らが売主/,
+    /クーリング[・･-]?オフ/,
+    /手付金等?の?保全|保全措置/,
+    /損害賠償額の?予定|違約金の?額/,
+    /手付(?:金の?額|の?額|の?制限|金等)/,
+    /契約不適合責任|瑕疵担保責任|担保責任の?特約/,
+    /自己の所有に属しない|他人物売買/,
+    /割賦販売|所有権留保/,
+  ];
+  const hits = items.filter((x) => {
+    const p = x.packet ?? {};
+    if (p.fieldId !== 't7' || (state.skipped ?? []).some((v) => v.questionId === p.questionId))
+      return false;
+    const sourceText = [p.stem, ...(Array.isArray(p.choices) ? p.choices : [])]
+      .filter((v) => typeof v === 'string').join('').normalize('NFKC').replace(/\\s/g, '');
+    return patterns.some((pattern) => pattern.test(sourceText));
+  });
+  const unseen = hits.find((x) => !state.history?.[x.packet.questionId]);
+  const old = hits.filter((x) => state.history?.[x.packet.questionId]);
+  const other = old.filter((x) => x.packet.questionId !==
+    (state.lastGrade?.questionId ?? state.current?.questionId));
+  const candidates = other.length ? other : old;
+  const item = unseen ?? candidates[0];
+  return item ? { item, kind: state.history?.[item.packet.questionId] ? 'review' : 'new', fieldId:'t7' } : null;
+}
+
 /** 問題データの検証済み論点IDがある場合は同じ論点を1復習単位にまとめる。無ければ問題単位を維持し、分野全体を同じ論点と推測しない。 */
 function reviewKeyOf(p){
   return typeof p.reviewUnitId === 'string' && p.reviewUnitId.trim()
