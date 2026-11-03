@@ -4,7 +4,7 @@ import { MemoryStore } from '../src/store.js';
 import { handle, overviewFor } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v175.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v176.js';
 
 const TOKEN = 'scope-selection-regression';
 const SOURCE = { adapter:SRC.adapter, year:SRC.year, section:SRC.section,
@@ -43,12 +43,18 @@ async function start(call) {
 
 test('study target UI is available for new study and resume (exact fields only)',()=>{
   const html=widgetHtml();
-  assert.match(WIDGET_URI,/question-v175\.html/);
-  assert.equal(WIDGET_VERSION,'2026-11-03.175');
+  assert.match(WIDGET_URI,/question-v176\.html/);
+  assert.equal(WIDGET_VERSION,'2026-11-03.176');
   assert.match(html,/学習する分野を選択/);
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
   assert.match(html,/startScopeSelectionForPlan/);
+  assert.match(html,/id="studyFieldInput"/);
+  assert.match(html,/id="submitStudyField"/);
+  assert.match(html,/分野名を自由入力/);
+  assert.match(html,/複数の分野に一致します/);
+  assert.match(html,/該当する登録済み分野がありません/);
+  assert.match(html,/selectTypedField/);
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);
   assert.match(html,/fieldName: field/);
