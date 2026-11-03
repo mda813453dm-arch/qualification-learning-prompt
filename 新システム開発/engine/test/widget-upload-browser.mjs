@@ -37,7 +37,9 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
           }else if(m.params.name==='attachPdf'){
             reply({structuredContent:{status:'attached',year:m.params.arguments.year,sessionId:'test-session'}});
           }else if(m.params.name==='getOfficialLibrary'){
-            reply({structuredContent:{status:'officialLibrary',permissionedUpload:true,personalUploadedYears:[2020,2025],maxBatchFiles:10,answerFormat:'html',qualificationName:'行政書士'}});
+            reply({structuredContent:{status:'officialLibrary',permissionedUpload:true,
+              uploadPermissionConfirmed:true,remainingUploadFiles:10,
+              personalUploadedYears:[2020,2025],maxBatchFiles:10,answerFormat:'html',qualificationName:'行政書士'}});
           }else reply({structuredContent:{status:'recorded'}});
         }else if(m.method==='ui/message'){
           window.followups.push(m.params);
@@ -67,7 +69,7 @@ for (const [name, engine] of [['chromium',chromium],['webkit',webkit]]) {
     assert.equal(await ui.locator('#licensedChooseSaved').count(),0,'ChatGPT内PDFボタンを削除');
     const before = await page.evaluate(()=>window.calls.length);
     await ui.locator('#licensedAck').check();
-    await ui.getByText('確認済みです。',{exact:false}).waitFor();
+    await ui.getByText(/許諾確認を更新しました|許諾確認済みです/).waitFor();
     const calls=await page.evaluate(n=>window.calls.slice(n),before);
     assert.equal(calls.filter(c=>c.name==='confirmUploadRights').length,1,'許諾記録は1回');
     assert.equal(calls.filter(c=>c.name==='attachPdf').length,0,'ファイルを送信していないのに登録しない');
