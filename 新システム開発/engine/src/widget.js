@@ -1395,6 +1395,7 @@ a{color:inherit}
               if (!chosenNext || chosenNext.error ||
                   !['question','waiting','finished','remediation','sourceUnavailable','fieldExhausted'].includes(chosenNext.status))
                 throw new Error('RESUME_FIELD_UNAVAILABLE');
+              if (chosenNext.status === 'fieldExhausted') { openScope(chosenNext.notice); return; }
               render(chosenNext);
             });
             return;
@@ -2109,9 +2110,9 @@ a{color:inherit}
       '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本の日本語OCR本文と照合用画像を区別します（OCRは誤認識の可能性があります）。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
       Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
-      '<div class="choices"><button data-desc="11"' + (onlyQuestion && onlyQuestion !== 11 ? ' hidden' : '') + '>午前の部・問11（記述式）</button>' +
-      '<button data-desc="21"' + (onlyQuestion && onlyQuestion !== 21 ? ' hidden' : '') + '>午後の部・問21（土地）</button>' +
-      '<button data-desc="22"' + (onlyQuestion && onlyQuestion !== 22 ? ' hidden' : '') + '>午後の部・問22（建物）</button></div>' +
+      '<div class="choices"><button data-desc="11"' + (onlyQuestion && onlyQuestion !== 11 ? ' hidden style="display:none"' : '') + '>午前の部・問11（記述式）</button>' +
+      '<button data-desc="21"' + (onlyQuestion && onlyQuestion !== 21 ? ' hidden style="display:none"' : '') + '>午後の部・問21（土地）</button>' +
+      '<button data-desc="22"' + (onlyQuestion && onlyQuestion !== 22 ? ' hidden style="display:none"' : '') + '>午後の部・問22（建物）</button></div>' +
       '<div id="descriptiveError" class="notice" aria-live="polite"></div>' + endBar();
     app.querySelectorAll('button[data-desc]').forEach(function(button){
       button.onclick = async function(){
@@ -3059,7 +3060,7 @@ a{color:inherit}
         (Number.isInteger(wrongCount) ? '（記録上 ' + wrongCount + '問）' : '') },
     ].concat(validFields.map(function(name){ return { mode:'field', fieldName:name, label:name }; }));
     app.innerHTML = '<h2>学習する分野を選択</h2>' +
-      '<div class="notice">希望する分野、間違えた問題の復習、またはおまかせを選べます。選択するまでは学習を開始しません。</div>' +
+      '<div class="notice">希望する分野、間違えた問題の復習、またはおまかせを選べます。学習の開始前・再開前に選んだ希望を優先します。</div>' +
       (pendingQuestion ? '<div class="notice">前回の未回答問題：' + esc(pendingQuestion) +
         '。おまかせでは前回の問題から再開します。</div>' : '') +
       (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
@@ -3513,6 +3514,7 @@ a{color:inherit}
       var next = await callTool('nextQuestion', { sessionId: state.sessionId || learner,
         ...(chosenField ? { fieldName: chosenField } : {}) });
       if (!next || next.error || !['question','waiting','finished','remediation','sourceUnavailable','fieldExhausted'].includes(next.status)) throw new Error('FIRST_NEXT_UNAVAILABLE');
+      if (next.status === 'fieldExhausted') { startScopeSelectionForPlan(r.qualificationId || (onboardOv || {}).name, learner, next.notice); return; }
       render(next);
     };
     var initial = '<div class="notice" style="white-space:pre-wrap">' + esc(r.display || '') + '</div>';
