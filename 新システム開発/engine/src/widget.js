@@ -3508,6 +3508,14 @@ a{color:inherit}
     try {
       var draft = draftPlan();
       var requestedDescriptive = draft.startMode ? draft.startMode === 'descriptive' : isDescriptiveStartWish(draft.otherNote);
+      // The descriptive source is organized by land/building question, not by
+      // arbitrary keywords. Never treat an unmatched typed topic as all topics.
+      if (choice?.mode === 'topic' && requestedDescriptive) {
+        startScopeSelectionForPlan(name, learner,
+          '記述式は登録済みの土地・建物などの分野から選んでください。入力した語句に自動で別の記述式問題を割り当てません。',
+          choice.topic);
+        return;
+      }
       var saved = await callTool('saveStudyPlan', {
         sessionId: state.sessionId || learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
