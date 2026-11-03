@@ -4059,6 +4059,12 @@ a{color:inherit}
   // 通信通知が届かないiOSでも、最初の枠がサーバーの保存済み表示を取りに行く。
   // 重複通知とポーリングはrestoringで重複排除し、学習の出題・採点は実行しない。
   function studyViewPoll(){
+    // Starting-scope choice is intentionally a user decision. Background
+    // snapshots must not erase it while the learner is reading field names.
+    if (document.getElementById('studyScopeChoices')) {
+      setTimeout(studyViewPoll, 12000);
+      return;
+    }
     // 操作中や直後はUIに触らず、操作が止まった時だけ同期する。
     // フレーム間の更新通知はscheduleFirstFrameRefreshで別途即座に反映する。
     if (ownedSession && !locked && !sourceManagerOpen && !document.hidden && bridgeReady && !restoring &&
@@ -4068,6 +4074,7 @@ a{color:inherit}
   }
   setTimeout(studyViewPoll, 4500);
   async function restoreFromServer(manual){
+    if (!manual && document.getElementById('studyScopeChoices')) return;
     if (restoring || (!manual && (foregroundTransitionDepth > 0 ||
       Date.now() - lastForegroundTransitionAt < 1800))) return;
     if (!state.sessionId) {
