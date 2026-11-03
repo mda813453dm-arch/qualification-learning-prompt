@@ -3071,7 +3071,13 @@ a{color:inherit}
       '<div class="choices" id="studyScopeChoices">' +
       choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
         '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
-      '</div><div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
+      '</div><section class="stem" aria-label="任意の分野を入力">' +
+      '<label for="studyFieldInput"><b>分野名を自由入力</b></label>' +
+      '<div class="notice">上の一覧にある分野名や、その一部を入力できます。別の分野へ自動変更しません。</div>' +
+      '<input id="studyFieldInput" type="text" maxlength="100" autocomplete="off" placeholder="学習したい分野名を入力" style="width:100%;box-sizing:border-box" />' +
+      '<div class="row"><button type="button" id="submitStudyField">入力した分野を選択する</button></div>' +
+      '<div id="studyFieldInputError" role="status" aria-live="polite"></div></section>' +
+      '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
     scrollUp();
     var submitting = false;
     app.querySelectorAll('#studyScopeChoices button').forEach(function(btn){
@@ -3111,6 +3117,43 @@ a{color:inherit}
         }
       };
     });
+    var fieldInput = document.getElementById('studyFieldInput');
+    var fieldSubmit = document.getElementById('submitStudyField');
+    var fieldError = document.getElementById('studyFieldInputError');
+    var normalizeField = function(t){
+      return String(t || '').normalize('NFKC').replace(/[\\s　・･／\/、，,（）()\-－]/g, '').toLowerCase();
+    };
+    function selectTypedField(){
+      if (submitting || !fieldInput) return;
+      var typed = normalizeField(fieldInput.value);
+      var matches = typed ? validFields.filter(function(f){
+        var canonical = normalizeField(f);
+        return canonical === typed || canonical.includes(typed);
+      }) : [];
+      if (!typed) {
+        fieldError.textContent = '分野名を入力してください。';
+        return;
+      }
+      var exactMatches = matches.filter(function(f){ return normalizeField(f) === typed; });
+      if (exactMatches.length === 1) matches = exactMatches;
+      if (matches.length !== 1) {
+        fieldError.textContent = matches.length
+          ? '複数の分野に一致します：' + matches.join('、') + '。分野名を詳しく入力するか一覧から選んでください。'
+          : '該当する登録済み分野がありません。上の分野一覧を確認してください。';
+        return;
+      }
+      fieldError.textContent = '';
+      var index = choices.findIndex(function(c){ return c.mode === 'field' && c.fieldName === matches[0]; });
+      var targetButton = app.querySelector('#studyScopeChoices button[data-study-scope="' + index + '"]');
+      if (targetButton) targetButton.click(); // uses the same guarded handler as list selection
+    }
+    fieldInput.addEventListener('input', function(){ fieldError.textContent = ''; });
+    fieldInput.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
+        e.preventDefault(); selectTypedField();
+      }
+    });
+    fieldSubmit.onclick = selectTypedField;
     document.getElementById('studyScopeBack').onclick = back;
   }
   function startScopeSelectionForPlan(name, learner, note){
