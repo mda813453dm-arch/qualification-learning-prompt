@@ -430,7 +430,7 @@ export function findWanted(state, items, want, fields = {}) {
  * this request into every 宅建業法 question.
  */
 export function findVerifiedTopic(state, items, topic, qualificationId, fields = {}) {
-  const plain = String(topic ?? '').normalize('NFKC').replace(/[\\s　・･／/、，,（）()－-]/g, '');
+  const plain = String(topic ?? '').normalize('NFKC').replace(/[\s　・･／\/、，,（）()－-]/g, '');
   if (qualificationId !== 'q041' || !/^(?:8|八)種制限$/.test(plain))
     return findWanted(state, items, topic, fields);
 
@@ -450,7 +450,7 @@ export function findVerifiedTopic(state, items, topic, qualificationId, fields =
     if (p.fieldId !== 't7' || (state.skipped ?? []).some((v) => v.questionId === p.questionId))
       return false;
     const sourceText = [p.stem, ...(Array.isArray(p.choices) ? p.choices : [])]
-      .filter((v) => typeof v === 'string').join('').normalize('NFKC').replace(/\\s/g, '');
+      .filter((v) => typeof v === 'string').join('').normalize('NFKC').replace(/\s/g, '');
     return patterns.some((pattern) => pattern.test(sourceText));
   });
   const unseen = hits.find((x) => !state.history?.[x.packet.questionId]);
