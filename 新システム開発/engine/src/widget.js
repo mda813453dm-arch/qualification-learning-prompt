@@ -1341,49 +1341,79 @@ a{color:inherit}
     if (data.status === 'diagIntro') { diagIntro(data.diag, data.question); return; }
     if (data.status === 'diagResult') { diagResultScreen(data); return; }
     if (data.status === 'resumeReady') {
-      // 引継ぎ済みなら初回の試験概要・免除・学習状況・計画を再表示しない。
-      // 既存の出題・採点履歴を変更せず、学習開始を利用者が選ぶまで待つ。
+      // The learner keeps the previous plan and answer history. Target choice is
+      // a new user action, never automatic on a background restore.
       studyLid = data.learnerId || studyLid;
       var count = Number(data.answeredCount) || 0;
       var wrong = Number(data.wrongCount) || 0;
+      var fields = Array.isArray(data.fields) ? data.fields : [];
       app.innerHTML = '<h2>' + esc(data.qualificationName || '資格学習') + '｜続きから再開</h2>' +
         '<div class="notice">前回の学習記録を読み込みました。試験概要・免除・学習状況・計画を最初から設定し直す必要はありません。</div>' +
         '<div class="stem">回答済み：' + esc(count) + '問　／　要復習：' + esc(wrong) + '問</div>' +
-        (data.pendingQuestion ? '<div class="notice">前回未回答：' + esc(data.pendingQuestion) + '（その問題から再開します）</div>' : '') +
+        (data.pendingQuestion ? '<div class="notice">前回未回答：' + esc(data.pendingQuestion) +
+        '（おまかせならこの問題を優先します）</div>' : '') +
         '<div class="row"><button id="resumeSavedStudy">学習を再開する</button></div>';
       saveIds();
       var resumedStudyId = null, isResuming = false;
-      document.getElementById('resumeSavedStudy').onclick = async function(){
+      async function resumeWithScope(chosen){
         if (isResuming) return;
-        isResuming = true; this.disabled = true;
-        var btn = this; btn.textContent = '学習記録を開いています…';
+        isResuming = true;
         try {
           if (!resumedStudyId) {
-            var started = await callTool('startStudy', { qualificationName: data.qualificationName, learnerId: data.learnerId });
+            var started = await callTool('startStudy', {
+              qualificationName: data.qualificationName, learnerId: data.learnerId,
+              sessionId: state.sessionId || data.sessionId,
+            });
             if (!started || started.error || !started.studyId) throw new Error('RESUME_STUDY_NOT_STARTED');
             resumedStudyId = started.studyId;
-            if (started.startMode === 'descriptive') {
-              studyLid = started.learnerId || data.learnerId;
-              currentStudyId = resumedStudyId;
+            studyLid = started.learnerId || data.learnerId;
+            if (started.startMode === 'descriptive' && chosen.mode === 'auto') {
+              currentStudyId = resumedStudyId; saveIds();
               studyField = '午後の部（土地・建物の記述）';
-              saveIds();
               showDescriptiveMenu(2025);
               return;
             }
           }
-          currentStudyId = resumedStudyId; saveIds();
-          var next = await callTool('nextQuestion', { sessionId: state.sessionId });
-          if (!next || next.error || !['question','waiting','finished','remediation','confirmation_pending','sourceUnavailable'].includes(next.status)) {
-            throw new Error('RESUME_QUESTION_UNAVAILABLE');
+          currentStudyId = resumedStudyId;
+          saveIds();
+          if (chosen.mode === 'field') {
+            var field = chosen.fieldName;
+            if (!fields.includes(field)) throw new Error('RESUME_FIELD_INVALID');
+            studyField = field; saveIds();
+            app.innerHTML = '<div class="notice">再開する分野：' + esc(field) +
+              '。学習方法を選んでください。</div>';
+            itemMenu(field, state.sessionId || data.sessionId, async function(){
+              var chosenNext = await callTool('nextQuestion', {
+                sessionId: state.sessionId || data.sessionId, fieldName: field,
+              });
+              if (!chosenNext || chosenNext.error ||
+                  !['question','waiting','finished','remediation','sourceUnavailable','fieldExhausted'].includes(chosenNext.status))
+                throw new Error('RESUME_FIELD_UNAVAILABLE');
+              render(chosenNext);
+            });
+            return;
           }
+          var next = await callTool('nextQuestion', {
+            sessionId: state.sessionId || data.sessionId,
+            ...(chosen.mode === 'review' ? { question:'総復習（間違えた問題）' } : {}),
+          });
+          if (!next || next.error) throw new Error('RESUME_QUESTION_UNAVAILABLE');
+          if (next.status === 'reviewEmpty' || next.status === 'no_matching_review') {
+            openScope(next.notice || '復習対象がありません。他の学習方法を選んでください。');
+            return;
+          }
+          if (!['question','waiting','finished','remediation','confirmation_pending','sourceUnavailable','restoreIdle','fieldExhausted'].includes(next.status))
+            throw new Error('RESUME_QUESTION_UNAVAILABLE');
           render(next);
         } catch(e) {
-          btn.disabled = false; btn.textContent = '学習を再開する';
-          var msg = document.getElementById('resumeError');
-          if (!msg) { app.insertAdjacentHTML('beforeend','<div class="notice" id="resumeError" role="alert"></div>'); msg = document.getElementById('resumeError'); }
-          msg.textContent = '続きの問題を取得できませんでした。学習記録は保持しています。もう一度押してください。';
+          openScope('続きの学習を取得できませんでした。記録を保持しています。同じ選択肢から再試行できます。');
         } finally { isResuming = false; }
-      };
+      }
+      function openScope(message){
+        studyScopeMenu(fields, wrong, data.pendingQuestion,
+          resumeWithScope, function(){ render(data); }, message);
+      }
+      document.getElementById('resumeSavedStudy').onclick = function(){ openScope(); };
       return;
     }
     if (data.planReady) { planDraft = null; onboardOv = Object.assign({}, data.overview || {}, { fields: (data.plan && data.plan.fields) || [], diagResult: data.diagResult || [] }); studyLearner = data.learnerId || state.sessionId; planPanel([(data.plan && data.plan.note) || '']); return; }
