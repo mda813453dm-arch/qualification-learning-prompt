@@ -559,6 +559,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
         status: 'officialLibrary', permissionedUpload: true, sessionId: 'test-session',
         qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
         personalUploadedYears: [2023], maxBatchFiles:10,
+        uploadPermissionConfirmed:true, remainingUploadFiles:9,
       };
     });
     await page.evaluate(r => window.deliver(r), result({status:'attached',sessionId,year:2023}));
