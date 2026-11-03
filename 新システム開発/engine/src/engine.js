@@ -446,7 +446,11 @@ export function findVerifiedTopic(state, items, topic, qualificationId, fields =
   ];
   const hits = items.filter((x) => {
     const p = x.packet ?? {};
-    if (p.fieldId !== 't7' || (state.skipped ?? []).some((v) => v.questionId === p.questionId))
+    // Takken's law questions are numbered 26-45. Some imported packets have
+    // broad field labels that are not enough to prove a statutory-topic match.
+    if (p.fieldId !== 't7' || !Number.isInteger(p.questionNumber) ||
+        p.questionNumber < 26 || p.questionNumber > 45 ||
+        (state.skipped ?? []).some((v) => v.questionId === p.questionId))
       return false;
     const sourceText = [p.stem, ...(Array.isArray(p.choices) ? p.choices : [])]
       .filter((v) => typeof v === 'string').join('').normalize('NFKC').replace(/\s/g, '');
