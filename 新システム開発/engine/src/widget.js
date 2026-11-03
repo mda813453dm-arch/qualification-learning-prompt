@@ -3068,6 +3068,13 @@ a{color:inherit}
       (pendingQuestion ? '<div class="notice">前回の未回答問題：' + esc(pendingQuestion) +
         '。おまかせでは前回の問題から再開します。</div>' : '') +
       (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
+      '<div class="stem"><label for="studyScopeFreeField"><b>分野名を直接入力</b></label>' +
+      '<input type="text" id="studyScopeFreeField" maxlength="80" autocomplete="off" ' +
+      'placeholder="' + esc(validFields[0] || '学習したい分野名') + '" ' +
+      'aria-describedby="studyScopeFreeHelp" style="width:100%;box-sizing:border-box;min-height:44px;margin:8px 0">' +
+      '<div id="studyScopeFreeHelp">下の一覧にない表現でも入力できます。登録されている分野と照合し、候補が複数ある場合は選び直せます。</div>' +
+      '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
+      '<div id="studyScopeFreeError" class="notice" role="status" aria-live="polite" hidden></div></div>' +
       '<div class="choices" id="studyScopeChoices">' +
       choices.map(function(c,i){return '<button type="button" data-study-scope="' + i +
         '"><b>' + (i+1) + '</b><span>' + esc(c.label) + '</span></button>';}).join('') +
@@ -3079,6 +3086,55 @@ a{color:inherit}
       '<div id="studyFieldInputError" role="status" aria-live="polite"></div></section>' +
       '<div class="row"><button type="button" id="studyScopeBack">前の画面へ戻る</button></div>';
     scrollUp();
+    // Free input resolves only to fields for this qualification and this plan.
+    // It never creates an unverified field or guesses a replacement.
+    function normalizeStudyField(value){
+      return String(value || '').normalize('NFKC').replace(/\s+/g, '').toLowerCase();
+    }
+    var typed = document.getElementById('studyScopeFreeField');
+    var typedGo = document.getElementById('studyScopeFreeStart');
+    var typedError = document.getElementById('studyScopeFreeError');
+    function showTypedError(message){
+      typedError.hidden = false;
+      typedError.textContent = message;
+      typed.focus();
+    }
+    function resolveTypedField(raw){
+      var query = normalizeStudyField(raw);
+      if (!query) return { error:'分野名を入力してください。' };
+      var exact = validFields.filter(function(name){ return normalizeStudyField(name) === query; });
+      if (exact.length === 1) return { fieldName:exact[0] };
+      var matches = query.length >= 2 ? validFields.filter(function(name){
+        return normalizeStudyField(name).includes(query);
+      }) : [];
+      if (matches.length === 1) return { fieldName:matches[0] };
+      if (matches.length > 1) return {
+        error:'候補が複数あります：' + matches.slice(0, 8).join('、') + '。名称を詳しく入力するか、下の一覧から選択してください。'
+      };
+      return { error:'「' + String(raw).slice(0, 80) + '」に一致する登録分野はありません。下の分野一覧から選ぶか、正式な分野名で入力してください。' };
+    }
+    typedGo.onclick = async function(){
+      if (submitting) return;
+      var result = resolveTypedField(typed.value);
+      if (result.error) { showTypedError(result.error); return; }
+      typedError.hidden = true;
+      submitting = true;
+      typedGo.disabled = true;
+      app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = true; });
+      try { await choose({ mode:'field', fieldName:result.fieldName, label:result.fieldName }); }
+      catch(e) {
+        showTypedError('分野を指定して学習を開始できませんでした。同じボタンから再試行できます。');
+      } finally {
+        if (document.getElementById('studyScopeFreeField')) {
+          submitting = false; typedGo.disabled = false;
+          app.querySelectorAll('#studyScopeChoices button').forEach(function(b){ b.disabled = false; });
+        }
+      }
+    };
+    typed.oninput = function(){ typedError.hidden = true; };
+    typed.onkeydown = function(e){
+      if (e.key === 'Enter') { e.preventDefault(); typedGo.click(); }
+    };
     var submitting = false;
     app.querySelectorAll('#studyScopeChoices button').forEach(function(btn){
       // A delayed mobile compatibility click may hit newly rendered choices
