@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { findVerifiedTopic } from '../src/engine.js';
 
-const item = (questionId, fieldId, stem, choices = []) =>
-  ({ packet: { questionId, fieldId, stem, choices } });
+const item = (questionId, fieldId, stem, choices = [], questionNumber = 29) =>
+  ({ packet: { questionId, fieldId, stem, choices, questionNumber } });
 const state = (extra = {}) => ({ history: {}, skipped: [], ...extra });
 const fields = { t7: '宅地建物取引業法と関係法令', t3: '法令上の制限' };
 
@@ -29,7 +29,8 @@ test('8種制限 does not expand to general takken law or other qualifications',
   const unrelated = item('37', 't7', '媒介契約の書面の交付と報酬について');
   const wrongField = item('3', 't3', '手付金等の保全について');
   const unrelatedSeller = item('self-seller', 't7', '宅地建物取引業者Ａが自ら売主として契約したときの37条書面の交付について');
-  const results = [unrelated, wrongField, unrelatedSeller];
+  const mislabeledCivil = item('q041:2025:main:10', 't7', '民法上の契約不適合責任について', [], 10);
+  const results = [unrelated, wrongField, unrelatedSeller, mislabeledCivil];
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q041', fields), null);
   assert.equal(findVerifiedTopic(state(), results, '8種制限', 'q063', fields), null);
 });
