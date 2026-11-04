@@ -10,12 +10,24 @@ assert.ok(script);
 assert.doesNotThrow(() => new Function(script), '配信HTMLのJavaScript構文');
 
 const helpers = script.slice(script.indexOf('  function esc(s)'), script.indexOf('  function safeUrl(u)'));
-const { esc, explanationHtml } = new Function('descriptiveBlockHtml',
-  helpers + '\nreturn {esc,explanationHtml};')(
+const { esc, explanationHtml, readableMath } = new Function('descriptiveBlockHtml',
+  helpers + '\nreturn {esc,explanationHtml,readableMath};')(
     ({kind,rows}) => kind === 'table'
       ? '<table><tbody>' + rows.map(r => '<tr>' + r.map(c=>'<td>'+c+'</td>').join('') + '</tr>').join('') + '</tbody></table>'
       : ''
   );
+
+test('測量のAI解説でLaTeXの命令文字列を見せず数式を読みやすく表示する',()=>{
+  const formula=String.raw`\(9^2=11^2+14^2-2\times11\times14\cos B\)、\(\cos B=\frac{236}{308}\approx0.76623\)`;
+  const human=readableMath(formula);
+  assert.match(human,/2×11×14×cos B/);
+  assert.match(human,/236\)\/\(308\)≈0\.76623/);
+  assert.doesNotMatch(human,/\\(?:times|approx|frac|cos)/);
+  const html=explanationHtml(String.raw`面積は\(S=\tfrac12\times11\times14\sin B\approx49.5\mathrm{m^2}\)です。`);
+  assert.match(html,/1\/2×11×14×sin B≈49\.5m²/);
+  assert.doesNotMatch(html,/\\(?:times|approx|tfrac|mathrm|sin)/);
+  assert.match(explanationHtml(String.raw`\(<img onerror="bad()">\)`),/&lt;img/,'HTMLは実行しない');
+});
 
 test('旧年度スキャンの本文は文字で表示し、原本画像は必要時だけ開く',()=>{
   const begin=script.indexOf('  function safeUrl(u)');

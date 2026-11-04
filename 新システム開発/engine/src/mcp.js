@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v182.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v183.js';
+import { widgetHtml as stable182Html } from './widget-v182.js';
 import { widgetHtml as stable181Html } from './widget-v181.js';
 import { widgetHtml as stable180Html } from './widget-v180.js';
 import { widgetHtml as stable179Html } from './widget-v179.js';
@@ -38,7 +39,7 @@ const source = {
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
-const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-04.181', '2026-11-04.180', '2026-11-04.179', '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-04.182', '2026-11-04.181', '2026-11-04.180', '2026-11-04.179', '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -672,6 +673,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v178.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v179.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v180.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v181.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v182.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -785,7 +787,8 @@ export function appInstructions() {
   const sharingFlow = '\n【公式過去問の共有保存】共有キャッシュで確認できた実際の年度と資格ごとの試験区分（宅建は本試験、2020・2021年度は10月／12月等）だけを学習画面で表示する。資格と関係のない午前／午後などの区分を追加しない。対応年度であっても未保存なら保存済みと言わない。ほかの利用者が保存済みの部は、その共通データを再利用し、PDF再添付を求めない。未保存の部だけ案内する。以前の会話に添付されたPDFを、現在の学習画面のPDFとして自動取り込んだと推測しない。本人からこの会話へ実際に新しいPDFが添付されたときだけ、原本と正答の同一性を照合する。PDFが1個ならattachPdf、2〜10個ならattachPdfBatchを優先して使う。PDF添付の選択ボタンだけではファイル検索・取り込み・会話メッセージの作成を始めない。利用者向け画面では共有・キャッシュ・URL台帳件数・未登録保存キーなどの内部情報を表示しない。年度と利用可能問題数、公式PDF登録の案内だけ出す。\n【内部処理の非表示】PDFの検索履歴・照合手順・取り込みツール名・保存キー・内部ログ・解析器の事情・AIへの命令文を利用者の会話に書かない。必要な利用者向け案内は学習画面内で簡潔に出す。添付がないときに以前のファイルを探したり、見つかったと報告して処理を続けたりしない。\n';
   const redisplayFlow = '\n【問題の初回表示失敗】利用者が「出てません」「問題が表示されない」「1回で出ない」と報告した場合は、既存の学習枠がある場合は、その枠の再表示・復元ボタンによるgetStudySnapshotの読取専用更新を優先する。モデルはrestoreStudyViewを呼ばない。既存枠が完全に失われ、利用者が明示的に新しい枠で再開を求めた場合だけopenHandoffViewを使用する。問題IDを維持し、勝手に次問へ進めない。成功応答を確認するまでは表示成功と言わない。\n';
   const handoffFlow = '\n【引継ぎからの再開】引継ぎIDや引継ぎデータを受け取ったら、startSessionを呼ばずimportHandoffを呼ぶ。成功後に返されたsessionIdをそのままopenHandoffView({sessionId})へ渡し、登録済みの表示画面に「学習を再開する」ボタンを出す。旧版の接続環境ではimportHandoffだけでは画面が出ないので、openHandoffViewの呼出しを絶対に省略しない。免除・試験概要・学習状況・計画を聞き直さず、本人が再開ボタンを押すまで待つ。\n';
-  return activeStudyRule + (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + lessonFlow + explanationFlow + descriptiveFlow + sharingFlow + redisplayFlow + handoffFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
+  const readableEquationRule = '\n【数式を読みやすく表示】学習枠へ登録する数学・測量の解説は、利用者にLaTeX命令（バックスラッシュ付きtimes、approx、frac、cdot等）を見せない。乗算は「×」、概数は「≈」または「約」、分数は「1/2」や「（分子）÷（分母）」、角度は「°」、平方メートルは「m²」を使い、日本語で途中計算を示す。数式の後で値を変えたり丸めを省略したりしない。\n';
+  return activeStudyRule + (INSTRUCTIONS.slice(0, a) + display + INSTRUCTIONS.slice(b) + noInvent + confirmationFlow + lessonFlow + explanationFlow + descriptiveFlow + readableEquationRule + sharingFlow + redisplayFlow + handoffFlow).replace('「学習したい資格名を入力してください。（例：宅建、測量士補）」', '「受験する資格名を教えてください。」');
 }
 
 // アプリでは、資格の一覧をツールの説明に書かない（ChatGPTが資格の選択肢を勝手に作ったため）。資格名は利用者が自由に入力する
@@ -805,6 +808,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v182.html')) return stable182Html();
   if (uri.endsWith('/question-v181.html')) return stable181Html();
   if (uri.endsWith('/question-v180.html')) return stable180Html();
   if (uri.endsWith('/question-v179.html')) return stable179Html();

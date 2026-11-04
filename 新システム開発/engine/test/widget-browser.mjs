@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v182.js';
+import { widgetHtml } from '../src/widget-v183.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -275,6 +275,17 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#studyScopeFreeError').innerText(), /2～80文字/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '空欄では学習を始めない');
+    // iPhone内の埋め込み画面でclickが欠けてもtouchendで反応する。
+    await ui.locator('#studyScopeFreeField').fill('a');
+    await page.waitForTimeout(350);
+    await ui.locator('#studyScopeFreeStart').evaluate(b => {
+      const t=new Event('touchstart',{bubbles:true});
+      Object.defineProperty(t,'touches',{value:[{clientX:24,clientY:24}]});b.dispatchEvent(t);
+      const e=new Event('touchend',{bubbles:true});
+      Object.defineProperty(e,'changedTouches',{value:[{clientX:24,clientY:24}]});b.dispatchEvent(e);
+    });
+    assert.match(await ui.locator('#studyScopeFreeError').innerText(),/2～80文字/,
+      'clickなしでもタップ操作へ応答する');
     await ui.locator('#studyScopeFreeField').fill('測量に関する');
     const typedBeforeSubmit = await ui.locator('#studyScopeFreeField').evaluate(el=>({
       value:el.value, error:el.ownerDocument.getElementById('studyScopeFreeError')?.textContent,
@@ -916,6 +927,26 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.preparedQuestionCalls),beforeMankan+1);
     assert.equal(await page.evaluate(() => window.followups.length),beforeMankanChat,
       '固定の確認問題はチャットへ二重の作問依頼を送らない');
+    // 測量士補は1分野だけ先頭へ移すのではなく、全8分野の順位を編集できる。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan',planReady:true,learnerId,sessionId,
+      overview:overviewFor('q063'),plan:{fields:overviewFor('q063').fields},
+    }));
+    await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+    await ui.getByRole('button',{name:'1 分野・優先順位'}).click();
+    const initialOrder=await ui.locator('.field-order-row b').allInnerTexts();
+    assert.equal(initialOrder.length,8);
+    await ui.locator('[data-move="up"][data-index="7"]').click();
+    await ui.locator('[data-move="up"][data-index="6"]').click();
+    const reordered=await ui.locator('.field-order-row b').allInnerTexts();
+    assert.equal(reordered[5],initialOrder[7],'8位から6位へ動かせる');
+    assert.equal(reordered[0],initialOrder[0],'他分野を勝手に先頭へ動かさない');
+    await ui.locator('[data-move="down"][data-index="0"]').click();
+    const finalOrder=await ui.locator('.field-order-row b').allInnerTexts();
+    assert.equal(finalOrder[1],initialOrder[0],'1位以外の順位も順次変更できる');
+    await ui.getByRole('button',{name:'この順番を保存する'}).click();
+    assert.deepEqual(await ui.locator('.stem ol.ov-l li').allInnerTexts(),finalOrder,
+      '8分野の順番を維持して学習計画に戻る');
     // 通常の自由記述希望も承認ボタンで開始し、分野選択を空欄に戻さない。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan',planReady:true,learnerId,sessionId,

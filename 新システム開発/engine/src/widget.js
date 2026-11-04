@@ -304,6 +304,7 @@ h2{font-size:19px;font-weight:700;color:var(--acc);background:var(--accbg);margi
 .descriptive-source-image{margin:8px 0 16px}.descriptive-source-image summary{cursor:pointer;color:var(--acc);font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--btn)}.descriptive-source-image[open] summary{margin-bottom:8px}
 .descriptive-source[open] summary{margin-bottom:8px}.descriptive-page{margin:12px 0 18px}.descriptive-page .fig{margin-top:5px}
 .descriptive-explanation{font-size:16px;line-height:1.8;overflow-wrap:anywhere;margin:8px 0 18px}
+.field-order-list{padding-left:1.5em;margin:14px 0}.field-order-row{padding:9px 0;border-bottom:1px solid var(--line)}.field-order-row .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:5px}.field-order-row button{min-width:95px;min-height:44px;flex:0 1 auto}
 .descriptive-explanation p{margin:10px 0 16px;white-space:normal;line-height:1.85}
 .descriptive-explanation h2{color:var(--fg);background:transparent;border-radius:0;font-size:19px;margin:24px 0 10px;line-height:1.5;border-bottom:1px solid var(--line);padding:0 0 7px}
 .descriptive-explanation h3{color:var(--fg);font-size:17px;margin:20px 0 9px;line-height:1.5}
@@ -408,12 +409,34 @@ a{color:inherit}
   }); }
   function notify(method, params){ window.parent.postMessage({ jsonrpc: '2.0', method: method, params: params || {} }, '*'); }
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  // モデルがLaTeXを返しても、利用者にtimes/approx/frac等の命令文字列を
+  // 見せない。外部ライブラリを使わず演算記号と読める式に変換してからescapeする。
+  function readableMath(s){
+    var t=String(s == null ? '' : s), slash=String.fromCharCode(92);
+    for (var n=0;n<3;n++) {
+      t=t.replace(/\\\\(?:dfrac|tfrac|frac)\\s*\\{([^{}]+)\\}\\s*\\{([^{}]+)\\}/g,
+        function(_,a,b){return '('+a+')/('+b+')';});
+    }
+    t=t.replace(/\\\\(?:dfrac|tfrac|frac)\\s*(\\d)\\s*(\\d)\\b/g,'$1/$2');
+    t=t.replace(/\\\\(?:mathrm|text|mathbf)\\{([^{}]*)\\}/g,'$1');
+    t=t.replace(/\\\\sqrt\\{([^{}]*)\\}/g,'√($1)');
+    var symbols={times:'×',cdot:'×',approx:'≈',div:'÷',pm:'±',leq:'≤',geq:'≥',neq:'≠',
+      circ:'°',degree:'°',theta:'θ',alpha:'α',beta:'β',Delta:'Δ',pi:'π',
+      sin:'sin',cos:'cos',tan:'tan',left:'',right:''};
+    Object.keys(symbols).forEach(function(k){ t=t.split(slash+k).join(symbols[k]); });
+    t=t.split(slash+'(').join('').split(slash+')').join('')
+      .split(slash+'[').join('').split(slash+']').join('');
+    t=t.replace(/\\^\\{-1\\}/g,'⁻¹').replace(/\\^\\{2\\}/g,'²').replace(/\\^2\\b/g,'²')
+      .replace(/\\^\\{3\\}/g,'³').replace(/\\^3\\b/g,'³');
+    t=t.replace(/\\^°/g,'°');
+    t=t.replace(/(\\d)(sin|cos|tan)(?=\\s|[A-Z(])/g,'$1×$2');
+    return t;
+  }
   // AI解説はツールの文字列を必ずエスケープしてから、限定したMarkdownだけ描画する。
   // HTMLやJavaScriptを解説文から実行させない。
   function explanationInline(s){
-    return esc(s).replace(/\\x60([^\\x60\\n]+)\\x60/g, '<code>$1</code>')
-      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>')
-      .replace(/\\\\\\((.*?)\\\\\\)/g, '<span class="math-inline">$1</span>');
+    return esc(readableMath(s)).replace(/\\x60([^\\x60\\n]+)\\x60/g, '<code>$1</code>')
+      .replace(/\\*\\*([^*\\n]+)\\*\\*/g, '<strong>$1</strong>');
   }
   function explanationHtml(markdown){
     var lines = String(markdown || '').replace(/\\r\\n/g,'\\n').split('\\n'), html = [], i = 0;
@@ -426,18 +449,18 @@ a{color:inherit}
         var mathLines=[]; i++;
         while(i<lines.length && lines[i].trim() !== endMark) mathLines.push(lines[i++]);
         if(i<lines.length)i++;
-        html.push('<p class="equation">'+esc(mathLines.join('\\n'))+'</p>');continue;
+        html.push('<p class="equation">'+esc(readableMath(mathLines.join('\\n')))+'</p>');continue;
       }
       if (/^\\s*\x60\x60\x60/.test(line)) {
         var codeLines=[];i++;
         while(i<lines.length && !/^\\s*\x60\x60\x60/.test(lines[i])) codeLines.push(lines[i++]);
         if(i<lines.length)i++;
-        html.push('<pre><code>'+esc(codeLines.join('\\n'))+'</code></pre>');continue;
+        html.push('<pre><code>'+esc(readableMath(codeLines.join('\\n')))+'</code></pre>');continue;
       }
       if (/^\\s*\\|.*\\|\\s*$/.test(line) && /^\\s*\\|[\\s|:-]+\\|\\s*$/.test(lines[i+1] || '')) {
         var tableLines=[line, lines[i+1]]; i+=2;
         while(i<lines.length && /^\\s*\\|.*\\|\\s*$/.test(lines[i])) tableLines.push(lines[i++]);
-        html.push(stemHtml(tableLines.join('\\n'))); continue;
+        html.push(stemHtml(readableMath(tableLines.join('\\n')))); continue;
       }
       var heading=line.match(/^\\s*#{1,4}\\s+(.+)$/);
       if (heading){var depth=(line.match(/^\\s*(#{1,4})/)||[])[1]?.length||3;html.push((depth<=2?'<h2>':'<h3>')+explanationInline(heading[1])+(depth<=2?'</h2>':'</h3>'));i++;continue;}
@@ -2238,7 +2261,7 @@ a{color:inherit}
   function descriptiveSummaryHtml(entries){
     if (!Array.isArray(entries) || !entries.length) return '';
     var rows = entries.map(function(entry){
-      return '<li><b>問' + esc(entry.number) + '</b>：' + esc(entry.answer) + '</li>';
+      return '<li><b>問' + esc(entry.number) + '</b>：' + esc(readableMath(entry.answer)) + '</li>';
     }).join('');
     return '<section class="descriptive-answer-summary" aria-label="各問のAI参考解答">' +
       '<h3>各問の参考解答一覧（AI作成）</h3><ol>' + rows + '</ol></section>';
@@ -3234,6 +3257,31 @@ a{color:inherit}
     }
     guardScopeClick(fieldSubmit);
     fieldSubmit.onclick = selectTypedField;
+    // iPhoneアプリ内の埋め込み画面では、入力欄を閉じた直後のタップで
+    // touchend は届いても click が届かない場合がある。二重実行は
+    // commitChoice の submitting ガードで防ぐ。
+    function touchFallback(button, action){
+      var origin=null, handledAt=0;
+      function start(e){
+        var t=e.touches && e.touches[0];
+        origin=t?{x:t.clientX,y:t.clientY}:null;
+      }
+      function activate(){
+        var now=Date.now();
+        if (submitting || now-renderedAt<300 || now-handledAt<650) return;
+        handledAt=now;
+        action();
+      }
+      button.addEventListener('touchstart',start,{passive:true});
+      button.addEventListener('touchend',function(e){
+        var t=e.changedTouches && e.changedTouches[0];
+        if(origin && t && Math.abs(t.clientX-origin.x)<12 && Math.abs(t.clientY-origin.y)<12)
+          activate();
+        origin=null;
+      },{passive:true});
+      button.addEventListener('touchcancel',function(){origin=null;});
+    }
+    touchFallback(fieldSubmit,selectTypedField);
     fieldInput.addEventListener('input', function(){ fieldError.textContent = ''; });
     fieldInput.addEventListener('keydown', function(e){
       if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) {
@@ -3247,6 +3295,7 @@ a{color:inherit}
       fieldError.textContent = '';
       commitChoice(choices[index], scopeStatus);
     };
+    touchFallback(scopeSubmit,function(){scopeSubmit.onclick();});
     document.getElementById('studyScopeBack').onclick = back;
   }
   function startScopeSelectionForPlan(name, learner, note, initialTopic){
@@ -3329,34 +3378,44 @@ a{color:inherit}
   function planEditFields(){
     var fields = (onboardOv && onboardOv.fields || []).slice();
     if(!fields.length){ app.innerHTML='<div class="notice">公式の分野を確認できないため変更できません。</div><button id="backPlan">戻る</button>'; document.getElementById('backPlan').onclick=planEditMenu; return; }
-    app.innerHTML = '<h2>分野・優先順位</h2><div class="notice">優先する分野を選ぶか、公式の分野名を全て順番に指定してください。</div>' +
-      '<div class="choices">' + fields.map(function(f,i){return '<button data-field="' + i + '"><b>' + (i+1) + '</b><span>' + esc(f) + 'を優先する</span></button>';}).join('') +
-      '<button id="fieldDiag"><b>' + (fields.length+1) + '</b><span>診断問題で苦手分野を確認</span></button>' +
-      '<button id="fieldCustom"><b>' + (fields.length+2) + '</b><span>分野順を自由指定</span></button>' +
-      '<button id="fieldBack"><b>' + (fields.length+3) + '</b><span>戻る</span></button></div><div id="fieldInput"></div>';
-    scrollUp();
-    app.querySelectorAll('[data-field]').forEach(function(b){ b.onclick=function(){
-      var top=fields[Number(b.getAttribute('data-field'))];
-      draftPlan().orderedFields=[top].concat(fields.filter(function(x){return x!==top;}));
-      planRevised('優先分野：'+top);
-    };});
-    document.getElementById('fieldBack').onclick=planEditMenu;
-    document.getElementById('fieldDiag').onclick=async function(){
-      this.disabled=true;
-      try {var r=await callTool('diagStep',{sessionId:studyLearner,action:'preview'});if(!r?.diag)throw Error();diagPreview(r.diag);}
-      catch(e){this.disabled=false;app.insertAdjacentHTML('beforeend','<div class="notice">診断問題を取得できませんでした。</div>');}
-    };
-    document.getElementById('fieldCustom').onclick=function(){
-      document.getElementById('fieldInput').innerHTML='<div class="notice">分野名を「、」区切りで全て入力してください。公式分野以外や重複がある場合は変更しません。</div><textarea id="fieldOrder" rows="3"></textarea><button id="fieldConfirm">この順番を確認する</button>';
-      document.getElementById('fieldOrder').value=draftPlan().orderedFields.join('、');
-      document.getElementById('fieldConfirm').onclick=function(){
-        var entered=document.getElementById('fieldOrder').value.split(/[、,\\n]/).map(function(x){return x.trim();}).filter(Boolean);
-        if(entered.length!==fields.length||new Set(entered).size!==fields.length||entered.some(function(x){return fields.indexOf(x)<0;})){
-          app.insertAdjacentHTML('beforeend','<div class="notice" role="alert">登録済みの全分野を重複なく指定してください。変更していません。</div>');return;
-        }
-        draftPlan().orderedFields=entered;planRevised('指定した分野順を反映しました。');
+    // 全分野の順位を手元で入れ替え、最後に一括で保存する。タップごとに
+    // 計画画面へ戻すと2位以下を指定できないため、編集中は画面を維持する。
+    var order = draftPlan().orderedFields.filter(function(f){ return fields.includes(f); });
+    order = [...new Set(order)].concat(fields.filter(function(f){ return !order.includes(f); }));
+    function showOrderEditor(focusIndex){
+      app.innerHTML = '<h2>学習する分野の順番を変更</h2>' +
+        '<div class="notice">各分野の「上へ」「下へ」で全ての順位を並べ替えられます。最後に「この順番を保存する」を押してください。保存前は学習計画を変更しません。</div>' +
+        '<ol class="field-order-list">' + order.map(function(f,i){
+          return '<li id="fieldOrderRow' + i + '" class="field-order-row"><div><b>' + esc(f) + '</b></div>' +
+            '<div class="row"><button type="button" data-move="up" data-index="' + i + '" aria-label="' + esc(f) + 'を上へ"' + (i===0?' disabled':'') + '>↑ 上へ</button>' +
+            '<button type="button" data-move="down" data-index="' + i + '" aria-label="' + esc(f) + 'を下へ"' + (i===order.length-1?' disabled':'') + '>↓ 下へ</button></div></li>';
+        }).join('') + '</ol>' +
+        '<div class="choices"><button id="fieldSave">この順番を保存する</button>' +
+        '<button id="fieldDiag">診断問題で苦手分野を確認</button>' +
+        '<button id="fieldBack">変更せず戻る</button></div>';
+      app.querySelectorAll('[data-move]').forEach(function(b){b.onclick=function(){
+        var i=Number(b.getAttribute('data-index'));
+        var j=i+(b.getAttribute('data-move')==='up'?-1:1);
+        if (!Number.isInteger(i)||j<0||j>=order.length) return;
+        var moved=order.splice(i,1)[0]; order.splice(j,0,moved);
+        showOrderEditor(j);
+      };});
+      document.getElementById('fieldSave').onclick=function(){
+        draftPlan().orderedFields=order.slice();
+        planRevised('指定した全分野の順位を反映しました。');
       };
-    };
+      document.getElementById('fieldBack').onclick=planEditMenu;
+      document.getElementById('fieldDiag').onclick=async function(){
+        this.disabled=true;
+        try {var r=await callTool('diagStep',{sessionId:studyLearner,action:'preview'});if(!r?.diag)throw Error();diagPreview(r.diag);}
+        catch(e){this.disabled=false;app.insertAdjacentHTML('beforeend','<div class="notice">診断問題を取得できませんでした。</div>');}
+      };
+      if (Number.isInteger(focusIndex)) {
+        var row=document.getElementById('fieldOrderRow'+focusIndex);
+        if(row && row.scrollIntoView) row.scrollIntoView({block:'nearest'});
+      } else scrollUp();
+    }
+    showOrderEditor(null);
   }
   function planEditMethods(){
     var opts = [['explain','解説重視',[60,20,20]],['check','確認問題重視',[20,60,20]],
