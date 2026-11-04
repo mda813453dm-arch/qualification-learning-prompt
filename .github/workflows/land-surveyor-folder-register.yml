@@ -1,0 +1,44 @@
+name: 土地家屋調査士 フォルダ原本・参考解答登録
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/folder-import-request.json'
+permissions:
+  contents: read
+concurrency:
+  group: land-surveyor-folder-register
+  cancel-in-progress: false
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Tests before processing supplied documents
+        working-directory: 新システム開発/engine
+        run: node --test test/folder-intake.test.js test/descriptive-actions.test.js
+      - name: Validate request phase
+        id: request
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const r=JSON.parse(fs.readFileSync('新システム開発/deploy/folder-import-request.json','utf8'));
+          if(!['dry-run','import'].includes(r.phase))throw Error('INVALID_PHASE');
+          fs.appendFileSync(process.env.GITHUB_OUTPUT,'phase='+r.phase+'\n');
+          JS
+      - uses: google-github-actions/auth@v2
+        if: steps.request.outputs.phase == 'import'
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: Storage clients
+        if: steps.request.outputs.phase == 'import'
+        run: npm ci --prefix 新システム開発/engine
+      - name: Validate all original hashes, register, and read back
+        env:
+          CREDENTIAL_JSON: ${{ secrets.GCP_SA_KEY }}
+        run: node 新システム開発/engine/scripts/import-land-surveyor-folder.mjs 新システム開発/deploy/folder-import-request.json

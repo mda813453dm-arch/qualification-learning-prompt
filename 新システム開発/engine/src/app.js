@@ -12,6 +12,7 @@
  */
 import { CATALOG } from './catalog.js';
 import { legacyLandSectionFromArchivedFileName } from './land-surveyor-archive.js';
+import { readFolderReferenceDocuments } from './folder-intake.js';
 import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
@@ -2089,12 +2090,14 @@ async function route(request, env, url, now) {
     if (method === 'GET' && parts[4] === 'context' && parts.length === 5) {
       const cur = state.descriptiveCurrent;
       if (!cur?.text || !cur?.pageNumbers?.length) throw new HttpError(404, 'DESCRIPTIVE_NOT_OPEN');
+      const providedReferenceDocuments = await readFolderReferenceDocuments(env.STORE,cur);
       return json(200, { status: 'descriptiveContext', sessionId: id,
         questionId: cur.questionId, shownAt: cur.shownAt,
         revealed: !!cur.revealedAt, year: cur.year, section: cur.section, number: cur.number,
         officialQuestionText: cleanDescriptivePageFolios(cur.text), originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
         ...(descriptiveProvidedReference(cur) ? { providedReference: descriptiveProvidedReference(cur) } : {}),
+        ...(providedReferenceDocuments.length ? { providedReferenceDocuments } : {}),
         coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
         coordinateExplanationGuidance: cur.number === 22
           ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算や関数電卓による座標操作は追加しない。'
