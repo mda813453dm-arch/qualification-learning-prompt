@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v181.js';
+import { widgetHtml } from '../src/widget-v182.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -916,6 +916,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.preparedQuestionCalls),beforeMankan+1);
     assert.equal(await page.evaluate(() => window.followups.length),beforeMankanChat,
       '固定の確認問題はチャットへ二重の作問依頼を送らない');
+    // 通常の自由記述希望も承認ボタンで開始し、分野選択を空欄に戻さない。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan',planReady:true,learnerId,sessionId,
+      overview:overviewFor('takken'), plan:{fields:['宅地建物取引業法と関係法令']},
+    }));
+    await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+    await ui.getByRole('button',{name:'4 その他'}).click();
+    await ui.locator('#otherText').fill('8種制限');
+    await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+    await ui.getByRole('button',{name:/この希望の過去問から学習を開始する/}).click();
+    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor({state:'detached'});
+    assert.equal(await ui.locator('#studyScopeFreeField').count(),0,'通常希望の承認で空欄の分野選択に戻らない');
+    assert.ok(await page.evaluate(() => window.calls.some(m=>m.params?.name==='nextQuestion' && m.params?.arguments?.topic==='8種制限')),
+      '任意希望を次問の検索条件に直接引き渡す');
     // 「その他の希望」は開始承認後に記述式の年度・問題選択へ反映される。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan', planReady:true, learnerId, sessionId,
@@ -937,22 +951,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('#otherText').inputValue(),'記述式から始める',
       '入力し直す場合も希望を保持');
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
-    await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).waitFor();
+    await ui.getByRole('button',{name:/この希望で学習を開始し記述式の年度・問題を選ぶ/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '希望の保存だけでは学習を開始しない');
     // サーバーが記述式モードを確定できなかった場合、択一に切り替えずエラーを出す。
     await page.evaluate(() => { window.rejectDescriptiveStartOnce = true; });
-    await ui.getByRole('button',{name:/この希望で記述式の学習分野を選ぶ/}).click();
-    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
-    await ui.locator('#studyScopeChoices').selectOption('0');
-    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
+    await ui.getByRole('button',{name:/この希望で学習を開始し記述式の年度・問題を選ぶ/}).click();
     await ui.getByText(/記述式の開始設定を確認できませんでした/).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '記述式の確定に失敗した場合は通常の択一開始を実行しない');
     assert.equal(await ui.getByRole('heading',{name:/午前の部.*問1/}).count(),0,
       '記述式の失敗時に午前の択一式を出題しない');
-    await ui.locator('#studyScopeChoices').selectOption('0');
-    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
+    await ui.getByRole('button',{name:/この希望で学習を開始し記述式の年度・問題を選ぶ/}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor();
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2025');
     assert.equal(await ui.locator('#descriptiveYear option').count(),19);
@@ -968,6 +978,31 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:/2025年度.*問22/}).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='submitAnswer').length),gradingCallsBeforeDesc,
       '記述式を表示しても採点APIを呼ばない');
+
+    // 回帰：記述式を希望した後、未登録の自由入力論点で開始しても
+    // 「学習する分野を選択」に戻る無限ループを起こさない。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan',planReady:true,learnerId,sessionId,
+      overview:overviewFor('land_surveyor'),
+      plan:{fields:['午前の部（測量・記述）','午後の部（土地の記述）','午後の部（建物の記述）']},
+    }));
+    await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+    await ui.getByRole('button',{name:'4 その他'}).click();
+    await ui.locator('#otherText').fill('記述式から始める');
+    await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+    await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).click();
+    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
+    await ui.locator('#studyScopeFreeField').fill('2022年度 午前の部 座標');
+    const startedBeforeTopic=await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
+    await ui.locator('#studyScopeFreeStart').click();
+    await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor({timeout:12000});
+    assert.match(await ui.locator('#app').innerText(),/2022年度 午前の部 座標/);
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2022');
+    assert.equal(await ui.locator('button[data-desc="11"]').isVisible(),true);
+    assert.equal(await ui.locator('button[data-desc="21"]').isVisible(),false);
+    assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startedBeforeTopic+1);
+    assert.equal(await ui.locator('#studyScopeFreeField').count(),0,'開始を承認した後は元の分野入力へ戻さない');
 
     // 自由入力がなくても土地家屋調査士では択一式用の3択をいきなり出さない。
     // 記述式・択一式を明示的に選ぶ専用入口で誤出題を防ぐ。

@@ -1387,6 +1387,11 @@ a{color:inherit}
           currentStudyId = resumedStudyId;
           saveIds();
           if (chosen.mode === 'topic') {
+            if (data.startMode === 'descriptive') {
+              studyField = '記述式（希望：' + chosen.topic + '）'; saveIds();
+              showDescriptiveMenu(descriptiveTopicYear(chosen.topic), descriptiveTopicNumber(chosen.topic), chosen.topic);
+              return;
+            }
             var selectedTopic = await callTool('nextQuestion', {sessionId:state.sessionId || data.sessionId, topic:chosen.topic});
             if (!selectedTopic || selectedTopic.error) throw new Error('TOPIC_RESUME_UNAVAILABLE');
             if (selectedTopic.status === 'topicUnavailable') { openScope(selectedTopic.notice, chosen.topic); return; }
@@ -2120,10 +2125,11 @@ a{color:inherit}
     document.getElementById('skip').onclick = function(){ answer('スキップ'); };
     document.getElementById('dk').onclick = function(){ answer('分からない'); };
   }
-  function showDescriptiveMenu(year, onlyQuestion){
+  function showDescriptiveMenu(year, onlyQuestion, requestedTopic){
     year = Number(year) || 2025;
     onlyQuestion = [11,21,22].includes(Number(onlyQuestion)) ? Number(onlyQuestion) : null;
     app.innerHTML = '<h2>土地家屋調査士｜記述式問題</h2>' +
+      (requestedTopic ? '<div class="stage-arrived" role="status">✓ 入力した希望「' + esc(requestedTopic) + '」を保持しました。関連する記述式の年度・問題を選んでください。対象問題が一致するかは公式原本で確認します。</div>' : '') +
       '<div class="notice">記述式は自動採点しません。2007〜2014年度は原本の日本語OCR本文と照合用画像を区別します（OCRは誤認識の可能性があります）。午前・午後の択一式の成績にも加えません。記述式では通常の「解説・確認問題・実践問題」の3択は使いません。公式原本の設問を開いてからAI参考解答・解説を依頼できます。記述式専用の確認問題・AI作成実践問題は未対応です。</div>' +
       '<label for="descriptiveYear">年度</label><select id="descriptiveYear">' +
       Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
@@ -3066,7 +3072,7 @@ a{color:inherit}
   // 画面内で新たに pointer/touch/mouse down したボタンの click のみ操作として受け付ける。
   // detail=0 はキーボード・支援技術による正当なクリックとして受け付ける。
   function guardNewPlanActions(){
-    ['startStudy', 'revise', 'diag', 'notNow', 'wishStart', 'wishEdit', 'wishPlan'].forEach(function(id){
+    ['startStudy', 'revise', 'diag', 'notNow', 'wishStart', 'wishScope', 'wishEdit', 'wishPlan'].forEach(function(id){
       var b = document.getElementById(id);
       if (!b) return;
       var pressed = false;
@@ -3093,6 +3099,21 @@ a{color:inherit}
     if (/午後.*建物.*記述/.test(name)) return 22;
     return null;
   }
+  // 自由入力が登録分野名に一致しない場合でも「午前・問11」等は
+  // 公式の記述式問題番号への希望として保持する。曖昧な場合は問題を
+  // 決めつけず選択画面へ進み、ユーザー自身に選択してもらう。
+  function descriptiveTopicNumber(topic){
+    var t = String(topic || '').normalize('NFKC').replace(/\\s+/g,'');
+    if (/午前|問11|第11問/.test(t)) return 11;
+    if (/問21|第21問|午後.*土地/.test(t)) return 21;
+    if (/問22|第22問|午後.*建物/.test(t)) return 22;
+    return null;
+  }
+  function descriptiveTopicYear(topic){
+    var t = String(topic || '').normalize('NFKC');
+    var m = t.match(/(^|[^0-9])(20(?:0[7-9]|1\\d|2[0-5]))(?=$|[^0-9])/);
+    return m ? Number(m[2]) : 2025;
+  }
   // Initial study and resume share the same explicit target chooser.
   // This screen does not start a study or alter the learner's answers.
   function studyScopeMenu(fields, wrongCount, pendingQuestion, choose, back, notice, initialTopic){
@@ -3111,7 +3132,7 @@ a{color:inherit}
       (notice ? '<div class="notice" role="status">' + esc(notice) + '</div>' : '') +
       '<section class="stem" aria-label="任意の分野を入力">' +
       '<label for="studyScopeFreeField"><b>分野名・論点を直接入力</b></label>' +
-      '<div class="notice">登録分野名の一部でも指定できます。登録分野に一致しない場合は、入力した論点に該当する検証済み過去問だけを検索し、他の分野へ自動変更しません。</div>' +
+      '<div class="notice">登録分野名の一部でも指定できます。登録分野に一致しない場合は、入力した論点に該当する検証済み過去問だけを検索し、他の分野へ自動変更しません。記述式を選択済みの場合は、希望を保持して年度・問の選択画面へ進みます。</div>' +
       '<input id="studyScopeFreeField" type="text" maxlength="80" autocomplete="off" ' +
       'placeholder="例：応用測量、宅建業法、筆界特定" style="width:100%;box-sizing:border-box;min-height:44px" />' +
       '<div class="row"><button type="button" id="studyScopeFreeStart">入力した分野で学習する</button></div>' +
@@ -3441,14 +3462,21 @@ a{color:inherit}
       '<div class="stage-arrived" role="status">✓ 入力された希望を計画案に反映しました。学習はまだ始まっていません。</div>' +
       '<div class="stem"><b>今回の希望：</b>' + esc(d.otherNote || '') + '</div>' +
       (descriptiveFirst ? '<div class="stem"><b>開始後の画面：</b>土地家屋調査士の記述式は、選んだ分野に対応する問11／問21／問22の年度を選択します。自動採点はしません。</div>' :
-        '<div class="notice">希望は学習計画に記録します。未対応の操作を自動で実行するものではありません。</div>') +
-      '<div class="notice">下のボタンを押した後、開始する分野または復習を選びます。入力を直すこともできます。</div>' +
-      '<div class="choices"><button id="wishStart"><b>1</b><span>' + (descriptiveFirst ? 'この希望で記述式の学習分野を選ぶ' : 'この希望で学習分野を選ぶ') + '</span></button>' +
-      '<button id="wishEdit"><b>2</b><span>希望を入力し直す</span></button>' +
-      '<button id="wishPlan"><b>3</b><span>学習計画に戻る</span></button></div>';
+        '<div class="notice">入力した希望を検索条件として検証済みの過去問から出題します。該当問題がなければ理由を表示し、他分野へ勝手に切り替えません。</div>') +
+      '<div class="notice">' + (descriptiveFirst ? '下のボタンで学習を開始し、記述式の年度・問題選択へ進みます。分野選択へ戻りません。' : '下のボタンで入力した論点から学習を開始します。分野一覧から選び直すこともできます。') + '</div>' +
+      '<div class="choices"><button id="wishStart"><b>1</b><span>' + (descriptiveFirst ? 'この希望で学習を開始し記述式の年度・問題を選ぶ' : 'この希望の過去問から学習を開始する') + '</span></button>' +
+      (!descriptiveFirst ? '<button id="wishScope"><b>2</b><span>別の分野・復習を選ぶ</span></button>' : '') +
+      '<button id="wishEdit"><b>' + (descriptiveFirst ? '2' : '3') + '</b><span>希望を入力し直す</span></button>' +
+      '<button id="wishPlan"><b>' + (descriptiveFirst ? '3' : '4') + '</b><span>学習計画に戻る</span></button></div>';
     scrollUp();
     guardNewPlanActions();
-    document.getElementById('wishStart').onclick = function(){ startScopeSelectionForPlan(ov.name, studyLearner); };
+    document.getElementById('wishStart').onclick = function(){
+      startStudyNow(ov.name, studyLearner,
+        { mode:'topic', topic:d.otherNote || (descriptiveFirst ? '記述式' : ''), label:d.otherNote || '' });
+    };
+    if (!descriptiveFirst) document.getElementById('wishScope').onclick = function(){
+      startScopeSelectionForPlan(ov.name, studyLearner, '入力済みの希望を残したまま、分野を選び直せます。', d.otherNote);
+    };
     document.getElementById('wishEdit').onclick = planEditOther;
     document.getElementById('wishPlan').onclick = function(){ planPanel(['その他の希望を計画案に反映しました。']); };
   }
@@ -3577,14 +3605,9 @@ a{color:inherit}
     try {
       var draft = draftPlan();
       var requestedDescriptive = draft.startMode ? draft.startMode === 'descriptive' : isDescriptiveStartWish(draft.otherNote);
-      // The descriptive source is organized by land/building question, not by
-      // arbitrary keywords. Never treat an unmatched typed topic as all topics.
-      if (choice?.mode === 'topic' && requestedDescriptive) {
-        startScopeSelectionForPlan(name, learner,
-          '記述式は登録済みの土地・建物などの分野から選んでください。入力した語句に自動で別の記述式問題を割り当てません。',
-          choice.topic);
-        return;
-      }
+      // An unmatched topic for descriptive study stays an explicit preference.
+      // The learner must choose the official year and question; it must never
+      // be changed silently into an unrelated multiple-choice question.
       var saved = await callTool('saveStudyPlan', {
         sessionId: state.sessionId || learner, orderedFields: draft.orderedFields,
         methodChoice: draft.methodChoice, methodDistribution: draft.methodDistribution || undefined,
@@ -3601,10 +3624,12 @@ a{color:inherit}
         if (saved.startMode !== 'descriptive' || r.startMode !== 'descriptive') throw new Error('DESCRIPTIVE_START_NOT_CONFIRMED');
         studyLid = r.learnerId || learner;
         currentStudyId = r.studyId || currentStudyId;
-        studyField = '午後の部（土地・建物の記述）';
+        studyField = choice?.mode === 'topic' ? '記述式（希望：' + choice.topic + '）' : '午後の部（土地・建物の記述）';
         saveIds();
         completed = true;
-        showDescriptiveMenu(2025, descriptiveScopeNumber(choice?.fieldName));
+        showDescriptiveMenu(choice?.mode === 'topic' ? descriptiveTopicYear(choice.topic) : 2025,
+          choice?.mode === 'topic' ? descriptiveTopicNumber(choice.topic) : descriptiveScopeNumber(choice?.fieldName),
+          choice?.mode === 'topic' ? choice.topic : null);
         return;
       }
       if (choice && choice.mode === 'topic') {
