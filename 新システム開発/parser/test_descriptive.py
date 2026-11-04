@@ -57,6 +57,16 @@ class DescriptiveTest(unittest.TestCase):
                          "only the problem-body number remains, never the footer")
         doc.close()
 
+    def test_parenthesized_folio_only_page_does_not_extend_a_question(self):
+        doc = fitz.open()
+        q = doc.new_page(width=595, height=842)
+        q.insert_text((60, 95), '第11問', fontname='japan')
+        appendix = doc.new_page(width=595, height=842)
+        appendix.insert_text((290, 815), '(12)')
+        self.assertEqual(descriptive._page_lines(appendix), [])
+        self.assertEqual(find_descriptive_pages(doc, '午前の部', 11), [1])
+        doc.close()
+
     def test_never_accepts_unpinned_pdf(self):
         doc = self.sample("午後の部", ["令和7年度 午後の部", "第21問", "第22問"])
         with self.assertRaisesRegex(DescriptiveError, "DESCRIPTIVE_SHA_MISMATCH"):

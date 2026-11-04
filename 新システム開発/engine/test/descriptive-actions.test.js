@@ -10,6 +10,7 @@ const Q1 = 'land_surveyor:2025:午前の部:11';
 const Q2 = 'land_surveyor:2025:午後の部:21';
 const Q3 = 'land_surveyor:2025:午後の部:22';
 const Q2022 = 'land_surveyor:2022:午前の部:11';
+const Q2018 = 'land_surveyor:2018:午前の部:11';
 const landExplanation='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
   '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
   '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
@@ -299,4 +300,30 @@ test('2022午前11の誤数値解説は登録拒否し、保存済みの旧誤�
   const published=await send(e,'GET',route+'?questionId='+encodeURIComponent(Q2022));
   assert.equal(published.status,200);
   assert.deepEqual(published.body.answerSummary,correctSummary);
+});
+
+test('2018午前11の参照解答は学習セッションに提供され、誤答の登録と表示を防ぐ',async()=>{
+  const e=env();await store(e,Q2018,T0,T0+1);
+  const prefix='/v1/sessions/'+SID+'/descriptive';
+  const ctx=await send(e,'GET',prefix+'/context');
+  assert.equal(ctx.status,200);
+  assert.equal(ctx.body.providedReference.choices.length,10);
+  assert.equal(ctx.body.providedReference.answers[3].answer,'土地面積330.34㎡');
+  assert.match(ctx.body.providedReference.sourceUrl,/h30_11\/$/);
+  assert.match(ctx.body.providedReference.note,/小問2/);
+  assert.equal(ctx.body.officialModelAnswerVerified,false);
+  const wrong=ctx.body.providedReference.answers.map(({number,answer})=>({number,answer}));
+  wrong[3]={number:4,answer:'土地面積330.43㎡'};
+  const prose=ctx.body.providedReference.answers.map(({number,answer})=>
+    `## 問${number}：座標法と検算\n${'原本と数値を照合する。'.repeat(25)}\n${answer}`
+  ).join('\n')+'\nS=Abs(Imag(A*Conjg(B)+B*Conjg(C)))/2';
+  const bad=await send(e,'POST',prefix+'/actions',{
+    questionId:Q2018,shownAt:T0,explanationMarkdown:prose,answerSummary:wrong });
+  assert.equal(bad.status,422);
+  assert.equal(bad.body.error,'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH');
+  const correct=await send(e,'POST',prefix+'/actions',{
+    questionId:Q2018,shownAt:T0,explanationMarkdown:prose,
+    answerSummary:ctx.body.providedReference.answers.map(({number,answer})=>({number,answer})) });
+  assert.equal(correct.status,200,JSON.stringify(correct.body));
+  assert.equal(correct.body.status,'descriptiveActions');
 });

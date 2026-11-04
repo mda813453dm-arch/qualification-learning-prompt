@@ -40,7 +40,7 @@ for(const [section,n,count] of [['午前の部',11,2],['午後の部',21,10],['�
   assert.equal(d.question.gradingMode,'none');
   assert.equal(d.question.correctAnswer,undefined);
   assert.equal(d.question.choices,undefined);
-  assert.equal(d.question.pages.length,count);
+  assert.equal(d.question.pages.length,count,`${d.question.questionId}: PDF heading/boundary page count differs`);
   assert.ok(d.question.text.length>500);
   // 文字・表・図を独立表示できること。ページ全体の画像は学習画面で使用しない。
   assert.ok(Array.isArray(d.question.layout) && d.question.layout.length >= 3,

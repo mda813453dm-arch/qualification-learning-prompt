@@ -50,7 +50,10 @@ def _page_lines(page):
             if lines[i] == token:
                 lines.pop(i)
                 break
-    return lines
+    # The old parser already removed unambiguously parenthesized folios. Keep
+    # that behavior: it also prevents an otherwise empty trailing PDF page
+    # from being counted as another descriptive question page.
+    return [line for line in lines if not FOOTER.fullmatch(line)]
 
 
 def _is_printed_page_number(text, bbox, page):

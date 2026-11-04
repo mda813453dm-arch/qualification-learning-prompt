@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation,
+  descriptiveProvidedReference, validateDescriptiveProvidedReference,
   cleanDescriptivePageFolios, cleanDescriptiveLayout, SCANNED_DESCRIPTIVE_FILES } from '../src/descriptive.js';
+import { LAND_SURVEYOR_AM_REFERENCES } from '../src/land-surveyor-am-references.js';
 import { CATALOG } from '../src/catalog.js';
 import { renderDescriptive } from '../src/parser-client.js';
 import { forModel } from '../src/mcp.js';
@@ -9,6 +11,47 @@ import archiveManifest from '../data/land-surveyor-archive-source-manifest.json'
 import { PNG } from './helpers.js';
 
 const pins = CATALOG.land_surveyor.officialPdfPins;
+
+test('講師の午前解説21記事から2013〜2019の択一70答・記述式小問を年度別に照合登録', () => {
+  const expected = {
+    2013: [3,1,5,5,3,1,4,1,2,2], 2014: [2,1,3,3,2,2,1,3,3,3],
+    2015: [4,4,4,4,3,2,1,3,1,3], 2016: [4,3,3,4,2,5,2,5,1,1],
+    2017: [2,4,4,4,2,3,5,4,5,4], 2018: [3,4,2,2,4,4,4,5,3,2],
+    2019: [2,3,4,5,5,5,1,2,1,4],
+  };
+  for (const [year, choices] of Object.entries(expected)) {
+    const ref = descriptiveProvidedReference({year:Number(year),section:'午前の部',number:11});
+    assert.deepEqual(ref.choices, choices);
+    assert.deepEqual(ref.choices,LAND_SURVEYOR_AM_REFERENCES[year].choices);
+    assert.equal(ref.choicesSources.length,2);
+    assert.match(ref.sourceUrl, /nakayama-am_kaisetu_.*_11\/$/);
+    assert.match(ref.choicesAnswerPdf,/^https:\/\/izuki\.net\//);
+    assert.equal(ref.answers[0].number,1);
+    assert.equal(ref.answers.at(-1).tokens.length,0,'記事で省略された作図を正答捏造しない');
+    assert.match(ref.source,/公式模範解答ではない/);
+  }
+  assert.match(descriptiveProvidedReference({year:2018,section:'午前の部',number:11}).note,/小問2/);
+  assert.equal(descriptiveProvidedReference({year:2018,section:'午後の部',number:21}),null);
+  assert.equal(descriptiveProvidedReference({year:2020,section:'午前の部',number:11}),null);
+});
+
+test('2013〜2019午前の講師参考解答と異なるAI答案は登録禁止、全小問一致のみ許可', () => {
+  for (const year of [2013,2014,2015,2016,2017,2018,2019]) {
+    const question = {year,section:'午前の部',number:11};
+    const reference = descriptiveProvidedReference(question);
+    const summary = reference.answers.map(({number,answer}) => ({number,answer}));
+    const markdown = reference.answers.map(({number,answer}) =>
+      `## 問${number}：解答の照合\n${answer}。原本で検証する。`).join('\n');
+    assert.deepEqual(validateDescriptiveProvidedReference(markdown,summary,question),{ok:true},`${year} positive`);
+    const first = reference.answers[0];
+    const badSummary = summary.map(x=>x.number===first.number?{...x,answer:'誤答 999.99'}:x);
+    assert.equal(validateDescriptiveProvidedReference(markdown,badSummary,question).code,
+      'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH',`${year} mismatched summary`);
+    const badMarkdown = markdown.replace(first.answer,'誤答 999.99');
+    assert.equal(validateDescriptiveProvidedReference(badMarkdown,summary,question).code,
+      'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH',`${year} mismatched explanation`);
+  }
+});
 
 test('保存済みの旧PDF文字データにも印刷ページ番号を表示しない（表と図は維持）', () => {
   const input='第11問 正しい本文\n（ ）12\n面積の条件\n(13)\n測点の関係。() 14';

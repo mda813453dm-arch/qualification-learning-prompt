@@ -2299,10 +2299,11 @@ a{color:inherit}
     var answers = Array.isArray(ref.answers) ? ref.answers : [];
     var title = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
     app.innerHTML = '<h2>' + esc(title) + '｜解説の再確認</h2>' +
-      '<div class="notice" role="alert">前回のAI参考解答は提供された解答案と数値が一致しなかったため、表示を停止しました。正しい解説として使用しないでください。</div>' +
-      '<section class="descriptive-answer-summary"><h3>提供された解答案の数値（公式模範解答ではありません）</h3><ul>' +
+      '<div class="notice" role="alert">前回のAI参考解答は照合先の解答案と数値が一致しなかったため、表示を停止しました。正しい解説として使用しないでください。</div>' +
+      '<section class="descriptive-answer-summary"><h3>参照先の解答案（公式模範解答ではありません）</h3><p>' + esc(ref.source || '') + '</p><ul>' +
       answers.map(function(a){ return '<li>問' + esc(a.number) + '：' + esc(a.answer) + '</li>'; }).join('') +
-      '</ul><p>' + esc(ref.roundingNote || '') + '</p></section>' +
+      '</ul><p>' + esc(ref.roundingNote || '') + '</p>' +
+      (safeUrl(ref.sourceUrl) ? '<p>解答の根拠：<a target="_blank" rel="noopener" href="' + esc(safeUrl(ref.sourceUrl)) + '">掲載記事を確認</a></p>' : '') + '</section>' +
       '<div class="row"><button id="retryDescriptiveSolution">原本を照合して解説を再作成する</button></div>' +
       descriptiveMenuButtons() + endBar();
     if (!publishDescriptive(q, 'reveal')) return;
@@ -2314,8 +2315,8 @@ a{color:inherit}
         if (!await requireCurrentDescriptive(q)) return;
         showDescriptivePending(q);
         waitForPublishedDescriptive(q);
-        await ask(title + 'の誤ったAI参考解説を訂正してください。元の問題と提供された解答案を照合し、正答値・角度方向・面積の途中丸めを検算してから学習枠へ再登録してください。',
-          'getDescriptiveContextのprovidedReferenceを参照し、問1から問4の結論と通常解法・複素数による独立計算を照合してください。2022年度午前問11の誤った旧解説を再利用せず、showDescriptiveActionsでanswerSummaryと全小問解説を更新してください。');
+        await ask(title + 'の誤ったAI参考解説を訂正してください。元の問題と参照先の解答案を照合し、正答値・角度方向・面積の途中丸めを検算してから学習枠へ再登録してください。',
+          'getDescriptiveContextのprovidedReferenceを参照し、対象年度の全小問の結論と通常解法・複素数による独立計算を照合してください。異なる年度・旧誤解説を再利用せず、showDescriptiveActionsでanswerSummaryと全小問解説を更新してください。');
       } catch(e) { showDescriptiveRevision(d); }
     };
   }
@@ -2355,8 +2356,8 @@ a{color:inherit}
             response.question?.questionId !== q.questionId) throw new Error('DESCRIPTIVE_REVEAL_NOT_CONFIRMED');
         render(response);
         var isLand = q.number === 11 || q.number === 21;
-        await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、公式模範解答とは区別してください。自動採点はしないでください。',
-          isLand ? label + 'のAI参考解答・解説をお願いします。土地の座標計算は三角関数と複素数の両方で示し、結果を照合してください（自動採点なし）。' :
+        await ask(label + 'の参考解答・解説を表示してください。原本の資料で検証し、getDescriptiveContextにprovidedReferenceがある場合は対応する年度の参照解答案と数値を照合してください。公式模範解答とは区別し、自動採点はしないでください。',
+          isLand ? label + 'のAI参考解答・解説をお願いします。土地の座標計算は三角関数と複素数の両方で示し、getDescriptiveContextの参照解答案がある場合は小問ごとに照合してください（自動採点なし）。' :
             label + 'の建物のAI参考解答・解説をお願いします。不要な三角関数・複素数の座標計算を加えないでください（自動採点なし）。');
       } catch(e){
         var err = document.getElementById('descriptiveRevealError');

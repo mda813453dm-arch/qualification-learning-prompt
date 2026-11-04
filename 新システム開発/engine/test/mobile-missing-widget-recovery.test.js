@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v180.js';
+import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-v181.js';
 
 const rpc = (id, method, params={}) => ({ jsonrpc: '2.0', id, method, params });
 const baseUrl='https://qlp.example';

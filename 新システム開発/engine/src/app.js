@@ -2098,8 +2098,10 @@ async function route(request, env, url, now) {
         coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
         coordinateExplanationGuidance: cur.number === 22
           ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算や関数電卓による座標操作は追加しない。'
-          : descriptiveProvidedReference(cur)
+          : Number(cur.year) === 2022 && descriptiveProvidedReference(cur)
             ? '2022年度午前第11問は利用者から提供されたアガルートの解答案と結果を照合する。問1 B=(-26.27,-6.84)、問2 水平角279°29′・距離28.58m、問3 F=(1.51,1.40)、問4 面積321.87㎡。別の旧AI解説には水平角の向き・面積の誤りがあるため再利用禁止。利用者の計算では未丸め座標321.887299…㎡、B/F座標を0.01mに丸めた計算321.8717㎡となる。原本が途中座標の丸めを指定するか必ず確認し、断定できない場合は未検証として明示する。通常の三角関数・座標法と複素数Conjg/Imagを原本の図面・方向角に沿って独立に検算し、結果・計算過程を各小問に明示する。提供値は法務省の公式模範解答ではない。'
+          : descriptiveProvidedReference(cur)
+            ? '2013〜2019年度の午前問11は、中山祐介講師の当該年度の個別解説（providedReference）に記載された小問ごとの数値と照合する。sourceUrlから年度を確かめ、問題PDFの測点・方向角・丸め規則を検証する。記事に作図がない場合は図面を推測せず未確認と明示する。2018年度のブログ小問3見出しは小問2と誤記されているため設問順と問題原本を確認する。通常の三角関数・座標法と複素数Conjg/Imagの独立した計算方法を正確に示し、非公式の参考解答として登録する。'
           : '土地の座標計算・面積計算を要する小問では原本の数値・方位定義・丸め規則を確認し、(1)通常の三角関数・座標法、(2)点名をメモリー保存した複素数による解法、(3)関数電卓の機能名で実際の入力式と途中値、(4)計算結果の照合を小問ごとに示す。方向角・距離だけでなく面積も省略しない。北がX軸正方向・東がY軸正方向ならz=X+iY、X=Real(z)、Y=Imag(z)。面積ではImagとConjg/Conjを使う。四角形ABGEの例ならS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、またはS=Abs(Imag((A-G)*Conjg(B-E)))/2。頂点の順序、四角形の形状、符号、積の演算順序を原本の見取図で照合し、結果に絶対値を取って2で割る。各点の未丸めの計算値を使い、途中丸めを避け、最後に原本指定の切り捨て・四捨五入をする。丸めたG座標を用いて95.92m2が必ず得られると主張しない。PDFで確認できない数値を推測しない。',
         calculatorExplanation: [11, 21].includes(cur.number) ? {
           format: 'generic-function-names-not-model-specific-button-sequences',

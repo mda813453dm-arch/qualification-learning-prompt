@@ -1,4 +1,5 @@
 /** 土地家屋調査士の記述式。既存の択一問題や採点履歴は変更しない。 */
+import { landSurveyorMorningReference } from './land-surveyor-am-references.js';
 // 2007-2014は無料の日本語OCR仮読取と原本画像照合。旧年度の択一採点用PINには混ぜない。
 // 2007-2008の元サイトのam/pmファイル名は現行の11問／22問区分と逆。
 export const SCANNED_DESCRIPTIVE_FILES = Object.freeze({
@@ -58,10 +59,10 @@ export function requestedDescriptive(text) {
 export const PROVIDED_REFERENCE_2022_AM11 = Object.freeze({
   source: '利用者提供・令和4年度午前第11問の答案用紙画像（アガルート掲載、公式模範解答ではない）',
   answers: Object.freeze([
-    { number: 1, answer: 'B点 X=-26.27m、Y=-6.84m' },
-    { number: 2, answer: '水平角279°29′、水平距離28.58m' },
-    { number: 3, answer: 'F点 X=1.51m、Y=1.40m' },
-    { number: 4, answer: '土地面積321.87㎡' },
+    { number: 1, answer: 'B点 X=-26.27m、Y=-6.84m', tokens: ['-26.27','-6.84'] },
+    { number: 2, answer: '水平角279°29′、水平距離28.58m', tokens: ["279°29'",'28.58'] },
+    { number: 3, answer: 'F点 X=1.51m、Y=1.40m', tokens: ['1.51','1.40'] },
+    { number: 4, answer: '土地面積321.87㎡', tokens: ['321.87'] },
   ]),
   roundingNote: '利用者の再計算ではB点・F点の座標を0.01mに丸めてから面積計算すると321.8717㎡、未丸め座標では321.887299…㎡。原本の丸め指定は別途照合する。',
 });
@@ -69,7 +70,10 @@ export const PROVIDED_REFERENCE_2022_AM11 = Object.freeze({
 const isProvidedReferenceTarget = (current) =>
   Number(current?.year) === 2022 && current?.section === '午前の部' && Number(current?.number) === 11;
 export function descriptiveProvidedReference(current) {
-  return isProvidedReferenceTarget(current) ? PROVIDED_REFERENCE_2022_AM11 : null;
+  if (isProvidedReferenceTarget(current)) return PROVIDED_REFERENCE_2022_AM11;
+  if (current?.section === '午前の部' && Number(current?.number) === 11)
+    return landSurveyorMorningReference(current.year);
+  return null;
 }
 
 const pageFolio = /^(?:[（(]\s*[）)]\s*\d{1,3}|[（(]\s*\d{1,3}\s*[）)])$/;
@@ -96,14 +100,17 @@ const normalizedCalculation = (value) => String(value ?? '').normalize('NFKC')
 function hasExactNumber(text, numeric) {
   return new RegExp(`(^|[^0-9.])${numeric.replace('.', '\\.')}(?![0-9])`).test(text);
 }
-const answerChecks = [
-  (s) => hasExactNumber(s, '-26.27') && hasExactNumber(s, '-6.84'),
-  (s) => /279°29'/.test(s) && hasExactNumber(s, '28.58'),
-  (s) => hasExactNumber(s, '1.51') && hasExactNumber(s, '1.40'),
-  (s) => hasExactNumber(s, '321.87'),
-];
+function hasReferenceTokens(value, tokens) {
+  const text = normalizedCalculation(value);
+  return tokens.every((token) => {
+    const expected = normalizedCalculation(token);
+    return /^-?\d+(?:\.\d+)?$/.test(expected)
+      ? hasExactNumber(text, expected) : text.includes(expected);
+  });
+}
 export function validateDescriptiveProvidedReference(markdown, summary, current) {
-  if (!isProvidedReferenceTarget(current)) return { ok: true };
+  const reference = descriptiveProvidedReference(current);
+  if (!reference) return { ok: true };
   if (!Array.isArray(summary)) return { ok: false, code: 'DESCRIPTIVE_REFERENCE_SUMMARY_REQUIRED' };
   const prose = String(markdown ?? '').normalize('NFKC');
   const sections = [...prose.matchAll(
@@ -113,10 +120,12 @@ export function validateDescriptiveProvidedReference(markdown, summary, current)
     if (idx < 0) return '';
     return prose.slice(sections[idx].index, sections[idx + 1]?.index);
   };
-  for (let number = 1; number <= 4; number++) {
+  for (const ref of reference.answers) {
+    const number = ref.number;
+    if (!ref.tokens?.length) continue; // 作図の原本答案を推測で補完しない。
     const answer = summary.find((entry) => entry?.number === number)?.answer;
-    if (!answer || !answerChecks[number - 1](normalizedCalculation(answer)) ||
-        !answerChecks[number - 1](normalizedCalculation(chunkFor(number))))
+    if (!answer || !hasReferenceTokens(answer, ref.tokens) ||
+        !hasReferenceTokens(chunkFor(number), ref.tokens))
       return { ok: false, code: 'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH', number };
   }
   return { ok: true };
