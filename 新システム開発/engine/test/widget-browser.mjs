@@ -919,7 +919,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 通常の自由記述希望も承認ボタンで開始し、分野選択を空欄に戻さない。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan',planReady:true,learnerId,sessionId,
-      overview:overviewFor('takken'), plan:{fields:['宅地建物取引業法と関係法令']},
+      overview:overviewFor('q041'), plan:{fields:['宅地建物取引業法と関係法令']},
     }));
     await ui.getByRole('button',{name:/学習計画を見直す/}).click();
     await ui.getByRole('button',{name:'4 その他'}).click();
