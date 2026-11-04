@@ -1,9 +1,10 @@
 {
-  "phase": "dry-run",
+  "phase": "import",
   "requestId": "2026-11-04-user-past-exam-folder",
   "qualificationId": "land_surveyor",
   "expectedDocuments": 43,
   "envelopeFile": "folder-import.encrypted.json",
-  "envelopeSha256": "d7b6d0213845e375cafdc6317c7c6ced36854fee00956282ffce00fcabd9df1c",
-  "publicKeySha256": "f7fb1d8f9acf474c927f45811e450260a06971411992b6266c3f8d8d253b1306"
+  "envelopeSha256": "880c6da9041924b13d5a5822e50710609701f93ff2169435fdce51cfda69abf6",
+  "publicKeySha256": "f7fb1d8f9acf474c927f45811e450260a06971411992b6266c3f8d8d253b1306",
+  "approvedAction": "REGISTER_USER_FOLDER_SOURCES"
 }

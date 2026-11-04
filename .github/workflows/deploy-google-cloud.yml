@@ -69,6 +69,12 @@ jobs:
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
           node 新システム開発/deploy/seed-land-surveyor-archive.mjs
 
+      - name: 登録したフォルダ参考解答の公開版参照・先出し防止を確認
+        run: |
+          export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
+          export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
+          node 新システム開発/deploy/check-folder-references.mjs
+
       - name: 学習者が貼るプロンプトを表示する（トークンは入っていない）
         run: |
           echo "===== 学習者が貼るプロンプト ここから ====="
