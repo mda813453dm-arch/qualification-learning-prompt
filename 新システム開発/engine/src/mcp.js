@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v179.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v180.js';
+import { widgetHtml as stable179Html } from './widget-v179.js';
 import { widgetHtml as stable178Html } from './widget-v178.js';
 import { widgetHtml as stable177Html } from './widget-v177.js';
 import { widgetHtml as stable176Html } from './widget-v176.js';
@@ -35,7 +36,7 @@ const source = {
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
-const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-04.179', '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -155,7 +156,7 @@ export const TOOLS = [
   },
   {
     name: 'getDescriptiveContext',
-    description: '記述式の参考解答を作成する場合だけ、現在の同一セッションに登録した公式問題文・年度・部・出典・ページ番号を読み取る。公式模範解答は未確認。自動採点しない。土地家屋調査士の土地（午前問11・午後問21）の座標計算と面積計算を要する小問は、原本で数値・方位・見取図・丸め規則を検証し、通常の座標法と関数電卓の複素数計算を両方解説する。面積も省略せずConjg/ConjとImagを使う。例：外周A→B→G→Eの面積=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、対角線AGとBEの場合=Abs(Imag((A-G)*Conjg(B-E)))/2。点名を保存した変数を使い未丸め値から計算、最後に原本指定どおりに丸め、結果を照合する。Canon F-789SGとCASIO fx-JPシリーズを想定するが、機種別の固定キー順や非対応メモリー動作は発明しない。建物（午後問22）には不要な座標計算を追加しない。',
+    description: '記述式の参考解答を作成する場合だけ、現在の同一セッションに登録した公式問題文・年度・部・出典・ページ番号を読み取る。公式模範解答は未確認。自動採点しない。2022年度午前第11問ではprovidedReferenceに利用者提供の解答案の数値（非公式）がある。これを各小問の答え・計算結果と照合し、方向角・面積の途中丸めを確認する。矛盾する参考解説は登録できない。土地家屋調査士の土地（午前問11・午後問21）の座標計算と面積計算を要する小問は、原本で数値・方位・見取図・丸め規則を検証し、通常の座標法と関数電卓の複素数計算を両方解説する。面積も省略せずConjg/ConjとImagを使う。例：外周A→B→G→Eの面積=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、対角線AGとBEの場合=Abs(Imag((A-G)*Conjg(B-E)))/2。点名を保存した変数を使い未丸め値から計算、最後に原本指定どおりに丸め、結果を照合する。Canon F-789SGとCASIO fx-JPシリーズを想定するが、機種別の固定キー順や非対応メモリー動作は発明しない。建物（午後問22）には不要な座標計算を追加しない。',
     inputSchema: { type: 'object', required: ['sessionId'], properties: { sessionId } },
     api: a => ['GET', `/v1/sessions/${encodeURIComponent(a.sessionId)}/descriptive/context`],
   },
@@ -666,6 +667,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v175.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v176.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v177.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v178.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v179.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -799,6 +801,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v179.html')) return stable179Html();
   if (uri.endsWith('/question-v178.html')) return stable178Html();
   if (uri.endsWith('/question-v177.html')) return stable177Html();
   if (uri.endsWith('/question-v176.html')) return stable176Html();

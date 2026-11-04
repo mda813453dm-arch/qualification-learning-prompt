@@ -9,6 +9,7 @@ const SID = '11111111-2222-4333-8444-555555555555';
 const Q1 = 'land_surveyor:2025:午前の部:11';
 const Q2 = 'land_surveyor:2025:午後の部:21';
 const Q3 = 'land_surveyor:2025:午後の部:22';
+const Q2022 = 'land_surveyor:2022:午前の部:11';
 const landExplanation='## 問1：条件と根拠\n'+ '原本を確認し通常解法の座標法・三角関数を示す。'.repeat(19) +
   '\n## 問2：面積と検算\n'+ '通常解法で結果を求め、根拠を照合し、検算する。'.repeat(18) +
   '\nS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2';
@@ -25,7 +26,7 @@ async function send(e, method, route, payload){
 async function store(e, questionId, shownAt, revealedAt){
   await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0,
     state:{ qualificationId:'land_surveyor',
-      descriptiveCurrent:{ questionId,year:2025,
+      descriptiveCurrent:{ questionId,year:Number(questionId.split(':')[1]),
         section:questionId.includes('午前')?'午前の部':'午後の部',
         number:Number(questionId.match(/:(\d+)$/)?.[1]),shownAt,revealedAt,
         text:'公式原本の内容を保持',pageNumbers:[14],
@@ -253,4 +254,49 @@ test('記述式の各小問の参考解答を解説と同時登録し、再表�
   const mismatched=await send(e,'POST',path,{questionId:Q1,shownAt:T0,explanationMarkdown:landExplanation,
     answerSummary:[{number:1,answer:'未確認'},{number:99,answer:'架空の問'}]});
   assert.equal(mismatched.status,422,'存在しない小問番号は拒否');
+});
+
+test('2022午前11の誤数値解説は登録拒否し、保存済みの旧誤解説も復元表示しない',async()=>{
+  const e=env();await store(e,Q2022,T0,T0+1);
+  const route='/v1/sessions/'+SID+'/descriptive/actions';
+  const explanatory=(values)=>values.map((v,i)=>
+    '## 問'+(i+1)+'：通常解法・座標法・三角関数による計算と検算\n'+
+    '原本の方位角と測点の方向に従い数値を照合する。'.repeat(18)+
+    '\n求めた結果は'+v+'。複素数のConjgとImagを使う別解でも向きと結果を検算する。'
+  ).join('\n');
+  const bad=explanatory(['B点(-16.49,8.33)','水平角80°31′、距離28.58m','F点(1.51,1.40)','95.98㎡']);
+  const badSummary=[{number:1,answer:'-16.49,8.33'},{number:2,answer:'80°31′、28.58m'},
+    {number:3,answer:'1.51,1.40'},{number:4,answer:'95.98㎡'}];
+  const failed=await send(e,'POST',route,{questionId:Q2022,shownAt:T0,
+    explanationMarkdown:bad,answerSummary:badSummary});
+  assert.equal(failed.status,422);
+  assert.equal(failed.body.error,'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH');
+  const saved=JSON.parse(await e.STORE.get('ses/'+SID));
+  saved.state.descriptiveCurrent.explanationMarkdown=bad;
+  saved.state.descriptiveCurrent.answerSummary=badSummary;
+  await e.STORE.put('ses/'+SID,JSON.stringify(saved));
+  const unsafe=await send(e,'GET',route+'?questionId='+encodeURIComponent(Q2022));
+  assert.equal(unsafe.status,409,'旧画面を再取得しても誤解説を再公開しない');
+  const hidden=descriptiveView(saved.state.descriptiveCurrent,SID,true);
+  assert.equal(hidden.status,'descriptiveReveal');
+  assert.equal(hidden.explanationMarkdown,undefined);
+  assert.equal(hidden.referenceCorrectionRequired,true);
+  assert.equal(hidden.providedReference.answers[3].answer,'土地面積321.87㎡');
+  const context=await send(e,'GET','/v1/sessions/'+SID+'/descriptive/context');
+  assert.equal(context.status,200);
+  assert.match(context.body.providedReference.source,/利用者提供/);
+  assert.equal(context.body.officialModelAnswerVerified,false);
+
+  const correct=explanatory(['B点(-26.27,-6.84)','水平角279°29′、距離28.58m',
+    'F点(1.51,1.40)','321.87㎡']);
+  const correctSummary=[{number:1,answer:'B点(-26.27,-6.84)'},
+    {number:2,answer:'279°29′、28.58m'},{number:3,answer:'1.51、1.40'},
+    {number:4,answer:'321.87㎡'}];
+  const ok=await send(e,'POST',route,{questionId:Q2022,shownAt:T0,
+    explanationMarkdown:correct,answerSummary:correctSummary});
+  assert.equal(ok.status,200,JSON.stringify(ok.body));
+  assert.equal(ok.body.status,'descriptiveActions');
+  const published=await send(e,'GET',route+'?questionId='+encodeURIComponent(Q2022));
+  assert.equal(published.status,200);
+  assert.deepEqual(published.body.answerSummary,correctSummary);
 });

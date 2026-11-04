@@ -16,6 +16,7 @@ HEADER = re.compile(r"^第\s*(\d{1,2})\s*問(?:\s|$)")
 APPENDIX = re.compile(r"^(?:付録|附録|関数表|三角関数表|答案用紙|解答用紙|三角関数値表|数表)")
 FOOTER = re.compile(r"^[\-─‐ー－]*\s*[（(]\s*\d+\s*[）)]\s*[\-─‐ー－]*$")
 FOOTER_FRAGMENT = re.compile(r"^[()\d\-─‐ー－]+$")
+SPLIT_FOOTER = re.compile(r"^(?:[（(]\s*[）)]\s*\d{1,3}|[（(]\s*\d{1,3}\s*[）)])$")
 
 
 class DescriptiveError(ValueError):
@@ -28,8 +29,28 @@ def _norm(value):
 
 
 def _page_lines(page):
-    return [_norm(s) for s in page.get_text("text", sort=True).splitlines()
-            if _norm(s) and not FOOTER.fullmatch(_norm(s))]
+    lines = [_norm(s) for s in page.get_text("text", sort=True).splitlines() if _norm(s)]
+    # Text alone cannot distinguish a page footer "( ) 12" from an identical
+    # token in the problem body. Locate *physical* footer text blocks first,
+    # then remove only their matching occurrences from the raw text. Some
+    # PDFs split the brackets/digits into separate blocks.
+    blocks = page.get_text("blocks", sort=True)
+    if not isinstance(blocks, list):
+        return lines
+    for block in reversed(blocks):
+        if not isinstance(block, (tuple, list)) or len(block) < 5:
+            continue
+        token = _norm(block[4])
+        if not (FOOTER.fullmatch(token) or SPLIT_FOOTER.fullmatch(token)
+                or FOOTER_FRAGMENT.fullmatch(token)):
+            continue
+        if not _is_printed_page_number(token, block[:4], page):
+            continue
+        for i in range(len(lines) - 1, -1, -1):
+            if lines[i] == token:
+                lines.pop(i)
+                break
+    return lines
 
 
 def _is_printed_page_number(text, bbox, page):

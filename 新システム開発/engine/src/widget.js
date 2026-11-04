@@ -2293,12 +2293,39 @@ a{color:inherit}
       if (status) status.textContent = 'AI参考解説の登録完了をまだ確認できていません。未確認の解説や操作ボタンは表示しません。「再確認する」でこの問題の登録状態を読み直せます。';
     }
   }
+  function showDescriptiveRevision(d){
+    var q = d.question || {};
+    var ref = d.providedReference || {};
+    var answers = Array.isArray(ref.answers) ? ref.answers : [];
+    var title = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
+    app.innerHTML = '<h2>' + esc(title) + '｜解説の再確認</h2>' +
+      '<div class="notice" role="alert">前回のAI参考解答は提供された解答案と数値が一致しなかったため、表示を停止しました。正しい解説として使用しないでください。</div>' +
+      '<section class="descriptive-answer-summary"><h3>提供された解答案の数値（公式模範解答ではありません）</h3><ul>' +
+      answers.map(function(a){ return '<li>問' + esc(a.number) + '：' + esc(a.answer) + '</li>'; }).join('') +
+      '</ul><p>' + esc(ref.roundingNote || '') + '</p></section>' +
+      '<div class="row"><button id="retryDescriptiveSolution">原本を照合して解説を再作成する</button></div>' +
+      descriptiveMenuButtons() + endBar();
+    if (!publishDescriptive(q, 'reveal')) return;
+    scrollUp(); bindEnd(); bindDescriptiveNavigation(q);
+    var retry = document.getElementById('retryDescriptiveSolution');
+    retry.onclick = async function(){
+      retry.disabled = true;
+      try {
+        if (!await requireCurrentDescriptive(q)) return;
+        showDescriptivePending(q);
+        waitForPublishedDescriptive(q);
+        await ask(title + 'の誤ったAI参考解説を訂正してください。元の問題と提供された解答案を照合し、正答値・角度方向・面積の途中丸めを検算してから学習枠へ再登録してください。',
+          'getDescriptiveContextのprovidedReferenceを参照し、問1から問4の結論と通常解法・複素数による独立計算を照合してください。2022年度午前問11の誤った旧解説を再利用せず、showDescriptiveActionsでanswerSummaryと全小問解説を更新してください。');
+      } catch(e) { showDescriptiveRevision(d); }
+    };
+  }
   function showDescriptiveQuestion(d){
     var q = d.question || {};
     state.question = null; state.answered = false;
     var label = String(q.year || '') + '年度 ' + (q.section || '') + ' 問' + String(q.number || '');
     var already = d.status === 'descriptiveReveal';
     if (already){
+      if (d.referenceCorrectionRequired){ showDescriptiveRevision(d); return; }
       // チャットへの本文出力で代用しない。保存済みの解説全文を同じ枠へ読取復元する。
       showDescriptivePending(q);
       waitForPublishedDescriptive(q);

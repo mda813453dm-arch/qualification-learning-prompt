@@ -45,6 +45,11 @@ class DescriptiveTest(unittest.TestCase):
                          fitz.Rect(273, 515, 324, 533), page))
         self.assertFalse(descriptive._is_printed_page_number("200.00",
                          fitz.Rect(294, 808, 345, 823), page))
+        # Raw text extraction is used alongside structured layout in the
+        # question context. The printed folio must disappear there too.
+        raw_lines = descriptive._page_lines(page)
+        self.assertEqual(raw_lines.count("(   ) 12"), 1,
+                         "raw page text keeps the body token but drops footer")
         with patch("qlp_parser.server.page_layout", return_value=([], [])):
             layout, _ = descriptive.structured_descriptive(doc, [1])
         combined = "".join(x["text"] for x in layout if x["kind"] == "text")

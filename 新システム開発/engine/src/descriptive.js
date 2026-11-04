@@ -50,6 +50,83 @@ export function requestedDescriptive(text) {
   if (t.includes('午後') && section !== '午後の部') return null;
   return { year, section, number };
 }
+
+// User-provided answer-sheet evidence (AGAROOT, 2022 / R4, morning Q11).
+// This is NOT a Ministry of Justice model answer. The ministry's published
+// answer-key PDF covers multiple choice and cannot verify these four results.
+// Keep the provenance visible to the model; never present this as official.
+export const PROVIDED_REFERENCE_2022_AM11 = Object.freeze({
+  source: '利用者提供・令和4年度午前第11問の答案用紙画像（アガルート掲載、公式模範解答ではない）',
+  answers: Object.freeze([
+    { number: 1, answer: 'B点 X=-26.27m、Y=-6.84m' },
+    { number: 2, answer: '水平角279°29′、水平距離28.58m' },
+    { number: 3, answer: 'F点 X=1.51m、Y=1.40m' },
+    { number: 4, answer: '土地面積321.87㎡' },
+  ]),
+  roundingNote: '利用者の再計算ではB点・F点の座標を0.01mに丸めてから面積計算すると321.8717㎡、未丸め座標では321.887299…㎡。原本の丸め指定は別途照合する。',
+});
+
+const isProvidedReferenceTarget = (current) =>
+  Number(current?.year) === 2022 && current?.section === '午前の部' && Number(current?.number) === 11;
+export function descriptiveProvidedReference(current) {
+  return isProvidedReferenceTarget(current) ? PROVIDED_REFERENCE_2022_AM11 : null;
+}
+
+const pageFolio = /^(?:[（(]\s*[）)]\s*\d{1,3}|[（(]\s*\d{1,3}\s*[）)])$/;
+/** Legacy parsed sessions may still contain printed PDF page numbers. This
+ * filters display text, never the source PDF or any table/figure data. */
+export function cleanDescriptivePageFolios(value) {
+  if (typeof value !== 'string') return value;
+  return value.split('\n').filter((line) => !pageFolio.test(line.trim()))
+    .join('\n').replace(/(?:[。．]\s*)[（(]\s*[）)]\s*\d{1,3}(?=\s*$)/, (whole) => whole.slice(0, 1));
+}
+export function cleanDescriptiveLayout(layout) {
+  if (!Array.isArray(layout)) return [];
+  return layout.map((block) => block?.kind === 'text'
+    ? { ...block, text: cleanDescriptivePageFolios(block.text) } : block)
+    .filter((block) => block?.kind !== 'text' || block.text?.trim());
+}
+
+// A numerical answer previously registered for this pinned question was
+// demonstrably inconsistent with the supplied answer-sheet. Reject it even if
+// the explanation is long and contains mathematically plausible prose.
+const normalizedCalculation = (value) => String(value ?? '').normalize('NFKC')
+  .replace(/[−–—－]/g, '-').replace(/[′’‘＇]/g, "'")
+  .replace(/度/g, '°').replace(/分/g, "'").replace(/\s+/g, '');
+function hasExactNumber(text, numeric) {
+  return new RegExp(`(^|[^0-9.])${numeric.replace('.', '\\.')}(?![0-9])`).test(text);
+}
+const answerChecks = [
+  (s) => hasExactNumber(s, '-26.27') && hasExactNumber(s, '-6.84'),
+  (s) => /279°29'/.test(s) && hasExactNumber(s, '28.58'),
+  (s) => hasExactNumber(s, '1.51') && hasExactNumber(s, '1.40'),
+  (s) => hasExactNumber(s, '321.87'),
+];
+export function validateDescriptiveProvidedReference(markdown, summary, current) {
+  if (!isProvidedReferenceTarget(current)) return { ok: true };
+  if (!Array.isArray(summary)) return { ok: false, code: 'DESCRIPTIVE_REFERENCE_SUMMARY_REQUIRED' };
+  const prose = String(markdown ?? '').normalize('NFKC');
+  const sections = [...prose.matchAll(
+    /^\s*#{1,4}\s*(?:第\s*)?問\s*(\d{1,2})(?=\s|[：:（(]|$)/gm)];
+  const chunkFor = (n) => {
+    const idx = sections.findIndex((match) => Number(match[1]) === n);
+    if (idx < 0) return '';
+    return prose.slice(sections[idx].index, sections[idx + 1]?.index);
+  };
+  for (let number = 1; number <= 4; number++) {
+    const answer = summary.find((entry) => entry?.number === number)?.answer;
+    if (!answer || !answerChecks[number - 1](normalizedCalculation(answer)) ||
+        !answerChecks[number - 1](normalizedCalculation(chunkFor(number))))
+      return { ok: false, code: 'DESCRIPTIVE_REFERENCE_ANSWER_MISMATCH', number };
+  }
+  return { ok: true };
+}
+
+export function hasPublishableDescriptiveExplanation(stored) {
+  if (typeof stored?.explanationMarkdown !== 'string' || !stored.explanationMarkdown.trim()) return false;
+  return validateDescriptiveProvidedReference(stored.explanationMarkdown,
+    stored.answerSummary, stored).ok;
+}
 /**
  * AI作成の参考解説を公開する前に、関数電卓だけの断片的な説明を拒否する。
  * 数値・公式正答の正しさはここでは保証せず、原本照合はモデルに求める。
@@ -106,18 +183,25 @@ export function validateDescriptiveAnswerSummary(summary, markdown) {
 }
 
 export function descriptiveView(stored, sessionId, revealed = false) {
-  const explanationMarkdown = revealed && typeof stored.explanationMarkdown === 'string'
+  const explanationMarkdown = revealed && hasPublishableDescriptiveExplanation(stored)
     ? stored.explanationMarkdown : '';
   return { status: explanationMarkdown ? 'descriptiveActions' : revealed ? 'descriptiveReveal' : 'descriptiveQuestion', sessionId,
     ...(explanationMarkdown ? { explanationMarkdown, answerSummary: stored.answerSummary ?? [] } : {}),
+    ...(revealed && descriptiveProvidedReference(stored) ? {
+      providedReference: descriptiveProvidedReference(stored),
+      referenceCorrectionRequired: !!stored.explanationMarkdown && !explanationMarkdown,
+    } : {}),
     question: { kind: 'descriptive', gradingMode: 'none', questionId: stored.questionId,
       year: stored.year, section: stored.section, number: stored.number,
       shownAt: stored.shownAt ?? null,
-      ...(revealed ? {} : { text: stored.text, pages: stored.pages, layout: stored.layout ?? [] }),
+      ...(revealed ? {} : { text: cleanDescriptivePageFolios(stored.text), pages: stored.pages,
+        layout: cleanDescriptiveLayout(stored.layout) }),
       sourceUrl: stored.sourceUrl,
       drawingAutoGraded: false },
     notice: revealed
-      ? '採点は行いません。公式模範解答は確認できていません。AI参考解答は公式正解ではありません。'
+      ? (stored.explanationMarkdown && !explanationMarkdown
+        ? '前回のAI参考解答は提供された解答案と不一致のため、表示を停止しました。解答・解説の再作成を依頼してください。採点は行いません。'
+        : '採点は行いません。公式模範解答は確認できていません。AI参考解答は公式正解ではありません。')
       : stored.year <= 2014
         ? '記述式・採点なし。OCRによる本文の仮読取と原本画像を区別しています。数値や図面は原本で確認してください。'
         : '記述式・採点なし。公式原本の問題と図表を表示しています。' };

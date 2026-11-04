@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, SCANNED_DESCRIPTIVE_FILES } from '../src/descriptive.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation,
+  cleanDescriptivePageFolios, cleanDescriptiveLayout, SCANNED_DESCRIPTIVE_FILES } from '../src/descriptive.js';
 import { CATALOG } from '../src/catalog.js';
 import { renderDescriptive } from '../src/parser-client.js';
 import { forModel } from '../src/mcp.js';
@@ -8,6 +9,26 @@ import archiveManifest from '../data/land-surveyor-archive-source-manifest.json'
 import { PNG } from './helpers.js';
 
 const pins = CATALOG.land_surveyor.officialPdfPins;
+
+test('保存済みの旧PDF文字データにも印刷ページ番号を表示しない（表と図は維持）', () => {
+  const input='第11問 正しい本文\n（ ）12\n面積の条件\n(13)\n測点の関係。() 14';
+  const cleaned=cleanDescriptivePageFolios(input);
+  assert.equal(cleaned,'第11問 正しい本文\n面積の条件\n測点の関係。');
+  const blocks=[
+    {kind:'text',text:'原本の数値\n( ) 12'},
+    {kind:'table',rows:[['12','正しい表の数値']]},
+    {kind:'figure',src:'https://example.test/figure.png'},
+  ];
+  const result=cleanDescriptiveLayout(blocks);
+  assert.equal(result[0].text,'原本の数値');
+  assert.deepEqual(result[1],blocks[1]);
+  assert.deepEqual(result[2],blocks[2]);
+  const saved={questionId:'land_surveyor:2022:午前の部:11',year:2022,section:'午前の部',number:11,
+    text:input,layout:blocks,sourceUrl:'https://www.moj.go.jp/content/001383834.pdf'};
+  const view=descriptiveView(saved,'session',false);
+  assert.equal(view.question.text,cleaned);
+  assert.deepEqual(view.question.layout,result);
+});
 
 test('記述式はSHA確認済み2015〜2025年度の午前11・午後21/22だけ受け、原本SHAを保持する', () => {
   for (const year of [2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025]) {

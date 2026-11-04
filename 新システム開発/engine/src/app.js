@@ -22,7 +22,9 @@ import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice, importHistoryView } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, renderDescriptive, uploadedParse } from './parser-client.js';
-import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, validateDescriptiveAnswerSummary } from './descriptive.js';
+import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, validateDescriptiveAnswerSummary,
+  validateDescriptiveProvidedReference, descriptiveProvidedReference, hasPublishableDescriptiveExplanation,
+  cleanDescriptivePageFolios, cleanDescriptiveLayout } from './descriptive.js';
 import { handleRpc } from './mcp.js';
 import { sourceKey as storedSourceKey, withStoredSources } from './source-store.js';
 import { officialLibrary, publicLibraryView, combineWithSharedJob } from './official-library.js';
@@ -471,7 +473,7 @@ async function openDescriptive(env, id, state, now, requested) {
     await env.STORE.put(`pgimg/${spec.sha}/${n}`, parsed.pages[`p${n}.png`], { expirationTtl: SESSION_TTL_S });
   const base = env.PUBLIC_BASE_URL ?? '';
   const layout = [];
-  for (const block of parsed.layout) {
+  for (const block of cleanDescriptiveLayout(parsed.layout)) {
     if (block.kind !== 'figure') { layout.push(block); continue; }
     await env.STORE.put(`diagram/${spec.sha}/${spec.number}/${block.file}`,
       parsed.diagrams[block.file], { expirationTtl: SESSION_TTL_S });
@@ -479,7 +481,7 @@ async function openDescriptive(env, id, state, now, requested) {
   }
   const current = {
     ...spec, sourceUrl: spec.url,
-    text: parsed.text, layout,
+    text: cleanDescriptivePageFolios(parsed.text), layout,
     pageNumbers,
     pages: pageNumbers.map(n => ({ page: n, url: `${base}/v1/pageimg/${spec.sha}/p${n}.png` })),
     // 同一ミリ秒に問を開き直しても表示世代を区別する。旧画面の登録を防ぐ。
@@ -2055,7 +2057,7 @@ async function route(request, env, url, now) {
       if (!cur || !expected || expected !== cur.questionId ||
           (method === 'POST' && args.shownAt != null &&
             (!Number.isFinite(Number(args.shownAt)) || Number(args.shownAt) !== Number(cur.shownAt))) ||
-          (method === 'GET' && !cur.explanationMarkdown))
+          (method === 'GET' && !hasPublishableDescriptiveExplanation(cur)))
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       const explanationMarkdown = method === 'POST' ? args.explanationMarkdown : cur.explanationMarkdown;
       let answerSummary = cur.answerSummary ?? [];
@@ -2068,6 +2070,9 @@ async function route(request, env, url, now) {
         const summaryCheck = validateDescriptiveAnswerSummary(args.answerSummary, explanationMarkdown);
         if (!summaryCheck.ok) throw new HttpError(422, summaryCheck.code);
         answerSummary = summaryCheck.rows;
+        const referenceCheck = validateDescriptiveProvidedReference(explanationMarkdown, answerSummary, cur);
+        if (!referenceCheck.ok) throw new HttpError(422, referenceCheck.code,
+          `提供された解答案と問${referenceCheck.number ?? '?'}の数値が一致しません。原本・方向角・丸めを再検証してください。`);
         // 画面の「解答表示」通知が失われても、同一の現行問題に完成した解説を
         // 登録できる。別問・古い表示時刻は上で拒否する。採点しない。
         await saveSession(env, id, { ...state, descriptiveCurrent: {
@@ -2087,11 +2092,14 @@ async function route(request, env, url, now) {
       return json(200, { status: 'descriptiveContext', sessionId: id,
         questionId: cur.questionId, shownAt: cur.shownAt,
         revealed: !!cur.revealedAt, year: cur.year, section: cur.section, number: cur.number,
-        officialQuestionText: cur.text, originalPdf: cur.sourceUrl,
+        officialQuestionText: cleanDescriptivePageFolios(cur.text), originalPdf: cur.sourceUrl,
         originalPageNumbers: cur.pageNumbers, imageUrls: cur.pages.map(p => p.url),
+        ...(descriptiveProvidedReference(cur) ? { providedReference: descriptiveProvidedReference(cur) } : {}),
         coordinateExplanationMethods: [11, 21].includes(cur.number) ? ['trigonometry', 'complex_numbers', 'scientific_calculator'] : [],
         coordinateExplanationGuidance: cur.number === 22
           ? '建物記述式は登記・建物調査に関する問題の要件と図面・申請書類を解説する。不要な三角関数・複素数の座標計算や関数電卓による座標操作は追加しない。'
+          : descriptiveProvidedReference(cur)
+            ? '2022年度午前第11問は利用者から提供されたアガルートの解答案と結果を照合する。問1 B=(-26.27,-6.84)、問2 水平角279°29′・距離28.58m、問3 F=(1.51,1.40)、問4 面積321.87㎡。別の旧AI解説には水平角の向き・面積の誤りがあるため再利用禁止。利用者の計算では未丸め座標321.887299…㎡、B/F座標を0.01mに丸めた計算321.8717㎡となる。原本が途中座標の丸めを指定するか必ず確認し、断定できない場合は未検証として明示する。通常の三角関数・座標法と複素数Conjg/Imagを原本の図面・方向角に沿って独立に検算し、結果・計算過程を各小問に明示する。提供値は法務省の公式模範解答ではない。'
           : '土地の座標計算・面積計算を要する小問では原本の数値・方位定義・丸め規則を確認し、(1)通常の三角関数・座標法、(2)点名をメモリー保存した複素数による解法、(3)関数電卓の機能名で実際の入力式と途中値、(4)計算結果の照合を小問ごとに示す。方向角・距離だけでなく面積も省略しない。北がX軸正方向・東がY軸正方向ならz=X+iY、X=Real(z)、Y=Imag(z)。面積ではImagとConjg/Conjを使う。四角形ABGEの例ならS=Abs(Imag(A*Conjg(B)+B*Conjg(G)+G*Conjg(E)+E*Conjg(A)))/2、またはS=Abs(Imag((A-G)*Conjg(B-E)))/2。頂点の順序、四角形の形状、符号、積の演算順序を原本の見取図で照合し、結果に絶対値を取って2で割る。各点の未丸めの計算値を使い、途中丸めを避け、最後に原本指定の切り捨て・四捨五入をする。丸めたG座標を用いて95.92m2が必ず得られると主張しない。PDFで確認できない数値を推測しない。',
         calculatorExplanation: [11, 21].includes(cur.number) ? {
           format: 'generic-function-names-not-model-specific-button-sequences',
@@ -2160,7 +2168,7 @@ async function route(request, env, url, now) {
     if (want?.startsWith(actionsPrefix)) {
       const cur = state.descriptiveCurrent;
       const askedId = want.slice(actionsPrefix.length);
-      if (state.qualificationId !== 'land_surveyor' || !cur?.explanationMarkdown ||
+      if (state.qualificationId !== 'land_surveyor' || !hasPublishableDescriptiveExplanation(cur) ||
           !askedId || askedId !== cur.questionId)
         throw new HttpError(409, 'DESCRIPTIVE_ACTIONS_STALE');
       return json(200, { status: 'descriptiveActions', sessionId: id,
