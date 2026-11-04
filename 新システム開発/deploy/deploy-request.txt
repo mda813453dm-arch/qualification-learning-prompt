@@ -516,3 +516,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-04 JST descriptive answer correction, widget v180 / a076059: remove printed ( )12-style page folios using page geometry and cached display sanitization, preserve figures/tables; quarantine preexisting incorrect AI explanation for land surveyor 2022 morning Q11; verify answer-sheet values B(-26.27,-6.84), horizontal angle 279deg29min / 28.58m, F(1.51,1.40), area321.87m2 as user-provided AGAROOT nonofficial answer, enforce before publishing updated explanation. Deploy ai-learning-system, run all engine/parser/widget/live smoke checks, preserve user state, no paid API, main and master_prompt.txt untouched.
 2026-11-04 再配置依頼（v181／2013〜2019年度午前の部・21記事の出典付き解答照合、2018小問表記注意、記述式誤解答登録防止、印刷ページ番号の除去と実接続テスト再実行）
 2026-11-04 利用者承認済み：フォルダ原本43資料・記述式参考解答23問の参照機能を配置。Actionsで原本全件検証後に保存・読み戻し。現行の択一330問と利用者の学習記録を保持。非公式資料の数値は採点正答に追加しない。
+
+2026-11-04 JST v182: 任意希望の開始確認から空欄の分野選択へ戻るループを修正。記述式の自由入力は希望・年度・問を保持し、未登録希望は勝手に他分野に切り替えない。
