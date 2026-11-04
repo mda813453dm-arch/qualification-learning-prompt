@@ -1,0 +1,37 @@
+name: 土地家屋調査士 PDF転送用の公開鍵確認（本番書込みなし）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/folder-intake-request.json'
+permissions:
+  contents: read
+concurrency:
+  group: land-surveyor-folder-intake
+  cancel-in-progress: false
+jobs:
+  intake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - name: Validate read-only request
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const r=JSON.parse(fs.readFileSync('新システム開発/deploy/folder-intake-request.json','utf8'));
+          if(r.phase!=='public-key')throw Error('ONLY_PUBLIC_KEY_EXPORT_ALLOWED');
+          JS
+      - name: Export only the public encryption key
+        env:
+          CREDENTIAL_JSON: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          node --input-type=module <<'JS'
+          import {createPublicKey,createHash} from 'node:crypto';
+          const credentials=JSON.parse(process.env.CREDENTIAL_JSON);
+          const key=createPublicKey(credentials.private_key).export({type:'spki',format:'der'});
+          console.log('INTAKE_PUBLIC_KEY_BASE64='+key.toString('base64'));
+          console.log('INTAKE_PUBLIC_KEY_SHA256='+createHash('sha256').update(key).digest('hex'));
+          JS
