@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
-import { WIDGET_URI } from '../src/widget-v183.js';
+import { WIDGET_URI } from '../src/widget-v184.js';
 
 test('AI explanation publication does not mount a second study widget', async () => {
   const result = await handleRpc(

@@ -4,7 +4,7 @@ import { MemoryStore } from '../src/store.js';
 import { handle, overviewFor } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v183.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v184.js';
 
 const TOKEN = 'scope-selection-regression';
 const SOURCE = { adapter:SRC.adapter, year:SRC.year, section:SRC.section,
@@ -43,8 +43,8 @@ async function start(call) {
 
 test('study target UI exposes one free-entry box on initial study and resume',()=>{
   const html=widgetHtml();
-  assert.match(WIDGET_URI,/question-v183\.html/);
-  assert.equal(WIDGET_VERSION,'2026-11-04.183');
+  assert.match(WIDGET_URI,/question-v184\.html/);
+  assert.equal(WIDGET_VERSION,'2026-11-05.184');
   assert.match(html,/学習する分野を選択/);
   assert.match(html,/間違えた問題を復習/);
   assert.match(html,/おまかせ（従来の頻出・分野順）/);
@@ -76,6 +76,10 @@ test('study target UI exposes one free-entry box on initial study and resume',()
   assert.match(html,/resumeWithScope/);
   assert.match(html,/fieldName: chosenField/);
   assert.match(html,/fieldName: field/);
+  assert.match(html,/fieldOrderExplicit: false/,'初期計画は任意分野の選択を残す');
+  assert.match(html,/draftPlan\(\)\.fieldOrderExplicit=true/,'確定した順位を開始の意思として保持する');
+  assert.match(html,/if \(draftPlan\(\)\.fieldOrderExplicit\) \{\s*startStudyNow\(ov\.name, studyLearner, \{ mode:'auto' \}\)/,
+    '明示的に並べ替えた学習計画からは分野再選択を挟まず開始する');
 });
 
 test('exact field choice only returns packets in the requested field; invalid or exempt field is rejected',async()=>{

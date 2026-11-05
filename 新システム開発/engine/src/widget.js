@@ -3071,6 +3071,8 @@ a{color:inherit}
   function draftPlan(){
     if (!planDraft) planDraft = {
       orderedFields: (onboardOv && onboardOv.fields || []).slice(),
+      // 分野順を明示的に保存したら開始時に同じ分野を再選択させない。
+      fieldOrderExplicit: false,
       methodChoice: 'balanced', methodDistribution: null,
       reviewPreset: 'ai', reviewIntervalsMinutes: null, reviewLabel: '標準（1→3→7→14→30日）',
     };
@@ -3329,14 +3331,23 @@ a{color:inherit}
       '<div class="stem"><b>復習：</b>' + esc(d.reviewLabel || '標準（1→3→7→14→30日）') + '</div>' +
       (d.otherNote ? '<div class="stem"><b>その他の希望：</b>' + esc(d.otherNote) + '</div>' : '') +
       (descriptiveFirst ? '<div class="stage-arrived" role="status">✓「記述式から始める」を計画案に反映しました。下の開始ボタンを押すと学習を開始し、記述式の年度・問題選択に進みます。自動採点はしません。</div>' : '') +
-      '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。</div>' +
+      '<div class="notice">変更した内容は開始承認まで確定しません。確認してから開始してください。' +
+      (d.fieldOrderExplicit ? '指定した全分野の順番をそのまま使います。開始時に分野を選び直す必要はありません。' : '') + '</div>' +
       '<div class="choices"><button id="startStudy"><b>1</b><span>' + (descriptiveFirst ? '学習を開始して記述式を選ぶ' : 'この学習計画で始める') + '</span></button>' +
       '<button id="revise"><b>2</b><span>学習計画を見直す</span></button>' +
       '<button id="diag"' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? ' disabled' : '') + '><b>3</b><span>' + (ov.overviewOnly && !(ov.sharedLibrary && ov.sharedLibrary.totalQuestions) ? '初期診断（利用可能な過去問なし）' : '初期診断で苦手分野を調べる') + '</span></button>' +
       '<button id="notNow"><b>4</b><span>今は学習しない</span></button></div>';
     scrollUp();
     guardNewPlanActions();
-    document.getElementById('startStudy').onclick = function(){ startScopeSelectionForPlan(ov.name, studyLearner); };
+    document.getElementById('startStudy').onclick = function(){
+      // 従来の初回・再開時の自由選択は維持。ただし利用者が学習計画で
+      // 全分野の順を確定済みなら再選択を求めず、保存・開始へ直接進む。
+      if (draftPlan().fieldOrderExplicit) {
+        startStudyNow(ov.name, studyLearner, { mode:'auto' });
+      } else {
+        startScopeSelectionForPlan(ov.name, studyLearner);
+      }
+    };
     document.getElementById('revise').onclick = planEditMenu;
     document.getElementById('notNow').onclick = function(){
       // 番号4が学習段階の番号4と同じでも、二度押しだけで終了させない。
@@ -3402,6 +3413,7 @@ a{color:inherit}
       };});
       document.getElementById('fieldSave').onclick=function(){
         draftPlan().orderedFields=order.slice();
+        draftPlan().fieldOrderExplicit=true;
         planRevised('指定した全分野の順位を反映しました。');
       };
       document.getElementById('fieldBack').onclick=planEditMenu;

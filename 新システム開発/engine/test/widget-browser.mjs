@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v183.js';
+import { widgetHtml } from '../src/widget-v184.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -947,6 +947,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:'この順番を保存する'}).click();
     assert.deepEqual(await ui.locator('.stem ol.ov-l li').allInnerTexts(),finalOrder,
       '8分野の順番を維持して学習計画に戻る');
+    assert.match(await ui.locator('#app').innerText(), /開始時に分野を選び直す必要はありません/);
+    const orderStartIndex = await page.evaluate(() => window.calls.length);
+    await ui.getByRole('button',{name:/この学習計画で始める/}).click();
+    await ui.getByText(/今回の位置：/).waitFor();
+    assert.equal(await ui.getByRole('heading',{name:'学習する分野を選択'}).count(),0,
+      '明示的な全分野順位を確定済みなら開始時の再選択画面は出さない');
+    const afterOrderStart=await page.evaluate(i=>window.calls.slice(i).filter(m=>m.method==='tools/call')
+      .map(m=>({name:m.params.name,args:m.params.arguments})),orderStartIndex);
+    assert.equal(afterOrderStart.filter(x=>x.name==='startStudy').length,1,
+      '学習計画の開始承認1回で学習を開始する');
+    assert.deepEqual(afterOrderStart.find(x=>x.name==='saveStudyPlan')?.args.orderedFields,finalOrder,
+      '再選択なしで全分野の優先順位を保存する');
+    assert.match(await ui.locator('#app').innerText(),new RegExp('今回の位置：'+finalOrder[0]),
+      '開始後の最優先分野は計画の第1位を維持する');
     // 通常の自由記述希望も承認ボタンで開始し、分野選択を空欄に戻さない。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan',planReady:true,learnerId,sessionId,
