@@ -1,8 +1,9 @@
-// Regression: Android ChatGPT WebView must not crop long iframe on host scroll.
+// Regression: Android ChatGPT WebView must let users swipe inside the study
+// panel without visible navigation buttons or host width/height collapse.
 // The host is simulated; this does not claim Android ChatGPT device certification.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v172.js';
+import { widgetHtml } from '../src/widget-v185.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -75,21 +76,12 @@ try {
       }
       if (android) {
         const nav=frame.locator('#qlpAndroidScrollTools');
-        await nav.waitFor({state:'visible'});
-        assert.equal(await nav.getByRole('button').count(),3,'navigation buttons persist outside #app');
-        assert.equal(await app.evaluate(el=>getComputedStyle(el).touchAction),'none');
+        assert.equal(await nav.isVisible(),false,'Android navigation buttons are not shown');
+        assert.equal(await app.evaluate(el=>getComputedStyle(el).touchAction),'pan-y',
+          'native Android vertical panning is enabled');
+        assert.equal(await app.getAttribute('tabindex'),'0','Android panel is keyboard-scrollable');
 
-        // Buttons must work even when Android ChatGPT steals iframe touch gestures.
-        await nav.locator('button[data-jump="down"]').click();
-        assert.ok((await measure()).scrollTop>100, 'down button advances within fixed iframe');
-        await nav.locator('button[data-jump="end"]').click();
-        const end=await measure();
-        assert.ok(end.scrollTop>=end.scrollHeight-end.height-5, 'last button reaches the real answer controls');
-        await nav.locator('button[data-jump="up"]').click();
-        assert.ok((await measure()).scrollTop<end.scrollTop-50, 'up button moves back');
-        await app.evaluate(el=>{el.scrollTop=0;});
-
-        // Unlike the previous test, send a real mobile touch sequence (not JS scrollTop).
+        // Send a physical gesture; programmatic scrollTop is not sufficient.
         const box=await app.boundingBox();
         assert.ok(box,'Android panel is visible for a physical drag gesture');
         const x=box.x+box.width/2;
