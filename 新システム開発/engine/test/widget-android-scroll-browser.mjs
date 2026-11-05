@@ -3,7 +3,7 @@
 // The host is simulated; this does not claim Android ChatGPT device certification.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v185.js';
+import { widgetHtml } from '../src/widget-v186.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -60,6 +60,11 @@ try {
         scrollHeight:el.scrollHeight,
         scrollTop:el.scrollTop,
         overflow:getComputedStyle(el).overflowY,
+        rootHeight:document.scrollingElement.clientHeight,
+        rootScrollHeight:document.scrollingElement.scrollHeight,
+        rootScrollTop:document.scrollingElement.scrollTop,
+        rootOverflow:getComputedStyle(document.documentElement).overflowY,
+        rootOverscroll:getComputedStyle(document.documentElement).overscrollBehaviorY,
         capped:document.documentElement.classList.contains('qlp-android-embedded'),
         iframeHeight:window.frameElement.getBoundingClientRect().height,
         iframeWidth:window.frameElement.getBoundingClientRect().width
@@ -67,9 +72,13 @@ try {
       const before=await measure();
       assert.equal(before.capped, android, name+': Android-only mode');
       if(android){
-        assert.ok(before.scrollHeight>before.height+1000, 'Android content remains independently scrollable');
-        assert.ok(before.height>=420 && before.height<=702, 'bounded Android viewport');
-        assert.equal(before.overflow,'auto');
+        assert.ok(before.rootScrollHeight>before.rootHeight+1000,
+          'Android document has scrollable overflow within the iframe');
+        assert.ok(before.iframeHeight>=420 && before.iframeHeight<=702,
+          'Android host sees a bounded iframe');
+        assert.equal(before.overflow,'visible','inner app is no longer a nested scroll container');
+        assert.equal(before.rootOverflow,'auto','iframe document owns Android vertical scrolling');
+        assert.equal(before.rootOverscroll,'contain','iframe cannot chain overscroll into host');
       }else{
         assert.ok(before.height>2000,'iOS retains full natural content height');
         assert.ok(before.scrollHeight<=before.height+2,'iOS has no nested vertical scrollbar');
@@ -95,7 +104,8 @@ try {
         }
         await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
         await page.waitForTimeout(100);
-        assert.ok((await measure()).scrollTop>90,'physical Android drag scrolls inner panel');
+        assert.ok((await measure()).rootScrollTop>90,
+          'physical Android drag scrolls the iframe document, not the host');
         assert.ok(Math.abs((await page.evaluate(()=>window.scrollY))-outerBefore)<4,
           'Android drag does not scroll the parent ChatGPT host');
         await cdp.detach();
@@ -103,13 +113,17 @@ try {
         assert.equal(await frame.locator('#qlpAndroidScrollTools').count(),0,
           'iPhone retains natural-height view with no inner-scroll navigation');
       }
-      await app.evaluate(el=>{ el.scrollTop=el.scrollHeight/2; });
+      await app.evaluate(el=>{
+        if (document.documentElement.classList.contains('qlp-android-embedded'))
+          document.scrollingElement.scrollTop=document.scrollingElement.scrollHeight/2;
+        else el.scrollTop=el.scrollHeight/2;
+      });
       await page.evaluate(()=>window.scrollTo(0,750));
       await page.waitForTimeout(160);
       const after=await measure();
       if(android){
-        assert.ok(after.scrollTop>200,'Android inner panel can be scrolled');
-        assert.ok(Math.abs(after.height-before.height)<3,'Android panel does not collapse on scroll');
+        assert.ok(after.rootScrollTop>200,'Android iframe document can be scrolled');
+        assert.ok(Math.abs(after.height-before.height)<3,'Android content height does not collapse on scroll');
         assert.ok(Math.abs(after.iframeHeight-before.iframeHeight)<4,'host iframe height remains stable');
         assert.ok(Math.abs(after.iframeWidth-before.iframeWidth)<4,'host iframe width remains stable');
       }
