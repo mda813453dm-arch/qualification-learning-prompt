@@ -2,12 +2,13 @@
 
 問題：行頭「問1」「第1問」「問題1」と、1〜10またはア〜コの選択肢。
 正答：別PDFに行単位「問1 正解 3」「問1 3」等を明記したものに限る。
-図・式・文章はPDF原本の問単位画像で表示し、OCR文字を正本にしない。
+文章をテキスト層から検証可能な範囲で抽出する。図表・式が不明瞭な問、
+本文または選択肢が抽出できない問は原本画像を保持し、未検証と明記する。
 曖昧な正答・不完全な選択肢・記述式は除外する。
 """
 import re
 import unicodedata
-from ..core import ParseError, RawQuestion
+from ..core import ParseError, RawQuestion, clean_text
 
 QUALIFICATION_ID = "generic"
 SECTION = "択一"
@@ -37,11 +38,13 @@ def parse_questions(doc):
     for k, (start, number) in enumerate(starts):
         body=lines[start:(starts[k+1][0] if k+1<len(starts) else len(lines))]
         choices=[]
-        for _, t, _, _ in body[1:]:
+        starts=[]
+        for j, (_, t, _, _) in enumerate(body[1:], 1):
             match=_OPTION.match(t)
             if match:
                 label=int(match[1]) if match[1] else _MARKS.index(match[2])+1
                 choices.append(label)
+                starts.append(j)
         # Numerically consistent, contiguous option labels only. Refuse guessed count.
         if not (2 <= len(choices) <= 10 and choices == list(range(1,len(choices)+1))):
             continue
@@ -54,9 +57,37 @@ def parse_questions(doc):
             bottom=min(rect.y1,max(r[3] for r in rows)+8)
             if bottom <= top: continue
             crops.append((pn,(rect.x0+12,top,rect.x1-12,bottom)))
-        questions.append(RawQuestion(number=number,stem="",choices=[str(i) for i in range(1,len(choices)+1)],
-          pages=pages,has_graphics=True,stem_mode="official_image",choice_mode="official_image",
-          crops=crops,preserve_aspect=True,notes=["generic_official_question_image", "unverified_ocr_text_not_used"]))
+        # 問号・連続する選択肢番号は本文の根拠にはならない。全選択肢の本文が
+        # 存在し、本文も取得できた問だけ text にする。図表が埋め込まれた問は
+        # 画像を保持して原本照合待ちとする（文字の誤欠落を隠さない）。
+        stem_lines=[_HEADING.sub('',body[0][1],count=1).strip()] + [r[1] for r in body[1:starts[0]]]
+        stem=clean_text('\n'.join(stem_lines))
+        option_text=[]
+        for i, begin in enumerate(starts):
+            stop=starts[i+1] if i+1<len(starts) else len(body)
+            first=_OPTION.sub('',body[begin][1],count=1).strip()
+            option_text.append(clean_text('\n'.join([first]+[r[1] for r in body[begin+1:stop]])))
+        has_visual=False
+        for pn in pages:
+            page=doc[pn-1]
+            if hasattr(page,'get_image_info') and page.get_image_info():
+                has_visual=True
+                break
+            # 表の罫線やベクトル図形は get_image_info() では検出できない。
+            # 装飾線だけを見た場合でも、安全側に倒して原本画像を保持する。
+            if hasattr(page,'get_drawings') and page.get_drawings():
+                has_visual=True
+                break
+        complete=bool(stem and all(option_text) and not has_visual)
+        if complete:
+            questions.append(RawQuestion(number=number,stem=stem,choices=option_text,
+              pages=pages,has_graphics=False,stem_mode='text',choice_mode='text',
+              notes=['generic_pdf_text_layer_extracted', 'manual_visual_comparison_pending']))
+        else:
+            questions.append(RawQuestion(number=number,stem='',choices=[str(i) for i in range(1,len(choices)+1)],
+              pages=pages,has_graphics=True,stem_mode='official_image',choice_mode='official_image',
+              crops=crops,preserve_aspect=True,notes=['generic_official_question_image',
+                'text_or_graphics_not_independently_verified']))
     return questions
 
 

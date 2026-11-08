@@ -8,6 +8,7 @@
  */
 import { readResult } from './cache.js';
 import { descriptiveSpec, DESCRIPTIVE_FILES, SCANNED_DESCRIPTIVE_FILES } from './descriptive.js';
+import { auditQuestionPackets } from './question-text-audit.js';
 
 const SHARED_OWNER = '_shared';
 
@@ -57,8 +58,9 @@ async function ipaReadyRows(store, cat) {
 
 export function publicLibraryView(library) {
   if (!library) return null;
-  const { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear, descriptive } = library;
+  const { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear, descriptive, textQuality } = library;
   return { supportedYears, stored, missing, completeYears, totalQuestions, sectionsByYear,
+    ...(textQuality ? { textQuality } : {}),
     ...(descriptive ? { descriptive } : {}) };
 }
 
@@ -92,6 +94,7 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
   const stored = [];
   const missing = [];
   const sources = [];
+  const textQuality = { total: 0, fullyText: 0, imageOnly: 0, ocrPending: 0, pendingCount: 0 };
   await Promise.all(expected.map(async (item) => {
     const keyParts = {
       qualificationId: cat.qualificationId,
@@ -118,6 +121,8 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
             ['text', 'ocr'].includes(p.stemMode) && ['text', 'ocr'].includes(p.choiceMode) &&
             p.verification?.visual === 'question_level_pdf_graphics_checked')));
     if (valid) {
+      const quality = auditQuestionPackets(packets);
+      for (const name of Object.keys(textQuality)) textQuality[name] += quality[name];
       stored.push({ year: item.year, section: item.section, questions: item.count,
         ...(cat.qualificationId === 'land_surveyor' && [2022,2023,2024,2025].includes(item.year)
           ? { writtenQuestions: item.section === '午前の部' ? 1 : 2 } : {}),
@@ -146,6 +151,7 @@ export async function officialLibrary(store, cat, parserVersion, now = Date.now(
   return {
     supportedYears, sectionsByYear,
     stored, missing, completeYears,
+    textQuality,
     totalQuestions: stored.reduce((sum, row) => sum + row.questions, 0),
     ...(descriptive ? { descriptive } : {}),
     sources,

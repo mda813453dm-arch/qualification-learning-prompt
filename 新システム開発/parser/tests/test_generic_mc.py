@@ -15,7 +15,7 @@ class Page:
 def block(text, y):
     return (30, y, 520, y + 19, text, 0, 0)
 
-def test_simple_official_text_produces_image_packet():
+def test_simple_official_text_produces_actual_text_packet():
     doc = [Page([
         block("問1  正しいものを選べ", 60),
         block("1. A", 95), block("2. B", 130), block("3. C", 165),
@@ -25,8 +25,10 @@ def test_simple_official_text_produces_image_packet():
     out = generic_mc.parse_questions(doc)
     assert [q.number for q in out] == [1, 2]
     assert [len(q.choices) for q in out] == [3, 2]
-    assert all(q.stem_mode == "official_image" and q.choice_mode == "official_image" for q in out)
-    assert all(q.crops for q in out)
+    assert all(q.stem_mode == "text" and q.choice_mode == "text" for q in out)
+    assert all(not q.crops for q in out)
+    assert out[0].stem == '正しいものを選べ'
+    assert out[0].choices == ['A', 'B', 'C']
 
 def test_incomplete_choices_not_guessed():
     doc = [Page([block("問1", 50), block("1. A", 80), block("3. C", 110)])]

@@ -28,6 +28,7 @@ test('宅建は原本を照合した50の文章問題を図がなくても共通
   await writeResult(store,key,result,{},now);
   const ready = await officialLibrary(store,cat,'0.8.2',now);
   assert.equal(ready.totalQuestions,50);
+  assert.deepEqual(ready.textQuality, { total:50, fullyText:50, imageOnly:0, ocrPending:0, pendingCount:0 });
   assert.deepEqual(ready.completeYears,[2025]);
   assert.equal(ready.missing.length,11);
   assert(ready.missing.some(x=>x.year===2020&&x.section==='10月'));

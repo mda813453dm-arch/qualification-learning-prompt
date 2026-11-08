@@ -36,3 +36,9 @@ test('missing choices and figures are reported independently', () => {
   assert(reasons.includes('CHOICES_INCOMPLETE'));
   assert(reasons.includes('FIGURES_MISSING'));
 });
+
+test('text extracted by a generic adapter is pending until its source is visually checked', () => {
+  const reasons = textAuditReasons({ ...valid,
+    evidence: { notes: ['generic_pdf_text_layer_extracted', 'manual_visual_comparison_pending'] } });
+  assert.deepEqual(reasons, ['SOURCE_VISUAL_COMPARISON_PENDING']);
+});

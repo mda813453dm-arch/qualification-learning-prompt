@@ -12,6 +12,7 @@ const IMAGE_NOTES = new Set([
   'generic_official_question_image',
   'ipa_fe_b_full_official_question_crop',
   'source_sha_pinned_image_heading_review',
+  'manual_visual_comparison_pending',
 ]);
 
 const nonempty = (value) => typeof value === 'string' && value.trim().length > 0;
@@ -34,7 +35,12 @@ export function textAuditReasons(packet) {
     reasons.push('OCR_UNVERIFIED');
   }
   if (Array.isArray(p.evidence?.notes) && p.evidence.notes.some((note) => IMAGE_NOTES.has(note))) {
-    reasons.push('FULL_QUESTION_CROP_RECORDED');
+    if (p.evidence.notes.some((note) => note === 'manual_visual_comparison_pending')) {
+      reasons.push('SOURCE_VISUAL_COMPARISON_PENDING');
+    }
+    if (p.evidence.notes.some((note) => note !== 'manual_visual_comparison_pending' && IMAGE_NOTES.has(note))) {
+      reasons.push('FULL_QUESTION_CROP_RECORDED');
+    }
   }
   if (p.diagramRequired && !Array.isArray(p.figures)) reasons.push('FIGURES_MISSING');
   if (p.diagramRequired && Array.isArray(p.figures) && !p.figures.length) reasons.push('FIGURES_MISSING');
