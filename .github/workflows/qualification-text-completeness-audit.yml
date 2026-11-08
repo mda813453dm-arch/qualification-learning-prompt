@@ -1,0 +1,26 @@
+name: 保存済み全資格の問題文・選択肢の画像残存監査（読み取りのみ）
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/all-qualification-text-audit-request.txt'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: production
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - name: 全保存資格・全年度・全所有者の問題文、選択肢、画像残存を監査
+        run: node 新システム開発/engine/scripts/audit-all-saved-question-text.mjs
+
