@@ -1,7 +1,7 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v186.js';
+import { widgetHtml } from '../src/widget-v187.js';
 import { overviewFor } from '../src/app.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -258,7 +258,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.match(await ui.locator('#app').innerText(), /学習計画/);
     assert.equal(await ui.getByRole('button', { name: /この学習計画で始める/ }).count(), 1);
     assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
-    await ui.getByRole('button', { name: /この学習計画で始める/ }).click();
+    await ui.getByRole('button', { name: /特定の分野・間違えた問題から始める/ }).click();
     await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'startStudy').length), 0,
       '分野を選択する前は学習時間を開始しない');
@@ -961,6 +961,26 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '再選択なしで全分野の優先順位を保存する');
     assert.match(await ui.locator('#app').innerText(),new RegExp('今回の位置：'+finalOrder[0]),
       '開始後の最優先分野は計画の第1位を維持する');
+    // 利用者報告（2026-11-08）：計画を変更したあとも、開始ボタンは
+    // 分野再選択を開かず、保存してそのまま学習へ進む。順位以外の変更も同じ。
+    await page.evaluate(r => window.deliver(r), result({
+      status:'needPlan',planReady:true,learnerId,sessionId,
+      overview:overviewFor('q063'),plan:{fields:overviewFor('q063').fields},
+    }));
+    await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+    await ui.getByRole('button',{name:'2 学習方法・配分'}).click();
+    await ui.getByRole('button',{name:'3 公式過去問重視'}).click();
+    const directStartIndex=await page.evaluate(()=>window.calls.length);
+    await ui.getByRole('button',{name:/この学習計画で始める/}).click();
+    await ui.getByText(/今回の位置：/).waitFor();
+    assert.equal(await ui.getByRole('heading',{name:'学習する分野を選択'}).count(),0,
+      '学習方法だけ変えた場合も、開始承認後に同じ分野選択へ戻らない');
+    const directCalls=await page.evaluate(i=>window.calls.slice(i).filter(m=>m.method==='tools/call')
+      .map(m=>({name:m.params.name,args:m.params.arguments})),directStartIndex);
+    assert.equal(directCalls.filter(x=>x.name==='startStudy').length,1,
+      '学習計画の開始承認で学習時間を1回だけ開始する');
+    assert.equal(directCalls.find(x=>x.name==='saveStudyPlan')?.args.methodChoice,'practice',
+      '変更後の学習方法を保存してから開始する');
     // 通常の自由記述希望も承認ボタンで開始し、分野選択を空欄に戻さない。
     await page.evaluate(r => window.deliver(r), result({
       status:'needPlan',planReady:true,learnerId,sessionId,
@@ -1036,7 +1056,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#otherText').fill('記述式から始める');
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
     await ui.getByRole('button',{name:/学習計画に戻る/}).click();
-    await ui.getByRole('button',{name:/学習を開始して記述式を選ぶ/}).click();
+    await ui.getByRole('button',{name:/特定の分野・間違えた問題から始める/}).click();
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     await ui.locator('#studyScopeFreeField').fill('2022年度 午前の部 座標');
     const startedBeforeTopic=await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
@@ -1057,9 +1077,6 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       plan:{fields:['午後の部（土地の記述）','午後の部（建物の記述）']},
     }));
     await ui.getByRole('button',{name:/この学習計画で始める/}).click();
-    await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
-    await ui.locator('#studyScopeChoices').selectOption('0');
-    await ui.getByRole('button',{name:'選択した内容で学習する'}).click();
     await ui.getByRole('heading',{name:'土地家屋調査士｜開始する問題形式'}).waitFor();
     assert.equal(await ui.locator('#itemModes').count(),0,'記述式を未選択でも一般の3択に進まない');
     assert.equal(await ui.getByRole('button',{name:/記述式から始める/}).count(),1);
