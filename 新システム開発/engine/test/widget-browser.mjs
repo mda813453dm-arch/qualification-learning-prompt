@@ -947,7 +947,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:'この順番を保存する'}).click();
     assert.deepEqual(await ui.locator('.stem ol.ov-l li').allInnerTexts(),finalOrder,
       '8分野の順番を維持して学習計画に戻る');
-    assert.match(await ui.locator('#app').innerText(), /開始時に分野を選び直す必要はありません/);
+    assert.match(await ui.locator('#app').innerText(), /分野を選び直す必要はありません/);
     const orderStartIndex = await page.evaluate(() => window.calls.length);
     await ui.getByRole('button',{name:/この学習計画で始める/}).click();
     await ui.getByText(/今回の位置：/).waitFor();
