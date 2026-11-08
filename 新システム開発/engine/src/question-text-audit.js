@@ -21,6 +21,7 @@ export function textAuditReasons(packet) {
   const p = packet ?? {};
   const reasons = [];
   const choices = Array.isArray(p.choices) ? p.choices : [];
+  const notes = Array.isArray(p.evidence?.notes) ? p.evidence.notes : [];
   const imageText = p.stemMode === 'official_image' || p.choiceMode === 'official_image';
   if (imageText) reasons.push('FULL_QUESTION_IMAGE');
   if (!nonempty(p.stem)) reasons.push('STEM_EMPTY');
@@ -34,11 +35,15 @@ export function textAuditReasons(packet) {
       p.verification?.choices === 'ocr_unverified') {
     reasons.push('OCR_UNVERIFIED');
   }
-  if (Array.isArray(p.evidence?.notes) && p.evidence.notes.some((note) => IMAGE_NOTES.has(note))) {
-    if (p.evidence.notes.some((note) => note === 'manual_visual_comparison_pending')) {
+  if (notes.some((note) => IMAGE_NOTES.has(note)) ||
+      p.verification?.questionText === 'visual_comparison_pending' ||
+      p.verification?.choices === 'visual_comparison_pending') {
+    if (notes.includes('manual_visual_comparison_pending') ||
+        p.verification?.questionText === 'visual_comparison_pending' ||
+        p.verification?.choices === 'visual_comparison_pending') {
       reasons.push('SOURCE_VISUAL_COMPARISON_PENDING');
     }
-    if (p.evidence.notes.some((note) => note !== 'manual_visual_comparison_pending' && IMAGE_NOTES.has(note))) {
+    if (notes.some((note) => note !== 'manual_visual_comparison_pending' && IMAGE_NOTES.has(note))) {
       reasons.push('FULL_QUESTION_CROP_RECORDED');
     }
   }

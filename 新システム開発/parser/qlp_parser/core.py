@@ -294,8 +294,10 @@ def build_result(*, qualification_id, year, section, question_source, question_s
             "answerPdfSha256": answer_sha,
             "evidence": {"questionPdfPages": q.pages, "questionRect": q.rect, "field": cls.get("method"), "fieldEvidence": cls.get("evidence"), "notes": list(q.notes)},
             "verification": {
-                "questionText": _TEXT_CHECK[q.stem_mode],
-                "choices": _TEXT_CHECK[q.choice_mode],
+                "questionText": ("visual_comparison_pending" if "manual_visual_comparison_pending" in q.notes
+                                 else _TEXT_CHECK[q.stem_mode]),
+                "choices": ("visual_comparison_pending" if "manual_visual_comparison_pending" in q.notes
+                            else _TEXT_CHECK[q.choice_mode]),
                 "answer": "same_year_official_answer_checked",
                 "visual": "official_pdf_crop_rendered" if figures.get(q.number) else "question_level_pdf_graphics_checked",
                 "field": "verified" if cls.get("verified") else "unverified",
