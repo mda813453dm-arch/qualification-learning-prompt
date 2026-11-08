@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v187.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v188.js';
+import { widgetHtml as stable187Html } from './widget-v187.js';
 import { widgetHtml as stable186Html } from './widget-v186.js';
 import { widgetHtml as stable185Html } from './widget-v185.js';
 import { widgetHtml as stable184Html } from './widget-v184.js';
@@ -44,6 +45,8 @@ const source = {
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
 const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
 const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-05.186', '2026-11-05.185', '2026-11-05.184', '2026-11-04.183', '2026-11-04.182', '2026-11-04.181', '2026-11-04.180', '2026-11-04.179', '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
+
+ACCEPTED_WIDGET_VERSIONS.push('2026-11-08.187');
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -682,6 +685,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v183.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v184.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v185.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v186.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v187.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -816,6 +820,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v187.html')) return stable187Html();
   if (uri.endsWith('/question-v186.html')) return stable186Html();
   if (uri.endsWith('/question-v185.html')) return stable185Html();
   if (uri.endsWith('/question-v184.html')) return stable184Html();

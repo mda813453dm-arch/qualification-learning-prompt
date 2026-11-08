@@ -255,12 +255,23 @@ def parse_questions(doc):
         rect = (round(min(b[1] for b in first), 1), round(max(b[2] for b in first), 1)) if first else None
         mode, crops, classification_text = "text", [], None
         if read_by_ocr:
-            # スキャン問題の字・選択肢の誤認を出題内容に混ぜない。
-            # OCR文字は分野分類の補助にだけ使い、ユーザーには原本PDFの画像を表示する。
+            # OCRの本文・全選択肢が実際に得られている場合は文字を表示し、
+            # 原本画像も照合用に保持する。採点の根拠は独立した公式解答表のまま。
+            # 不完全なOCRを4つの選択肢に見せかけることは禁止する。
             classification_text = clean_text("\n".join(b[3] for b in body))
-            mode, has_graphics = "official_image", True
-            stem_lines, choices = [], [str(n) for n in range(1, CHOICE_COUNT + 1)]
-            notes.append("official_original_image_question")
+            stem = clean_text("\n".join(stem_lines))
+            extracted_choices = [clean_text("\n".join(c)) for c in choices]
+            complete = (len(stem) >= 10 and len(extracted_choices) == CHOICE_COUNT
+                        and all(len(c) >= 2 and not c.isdigit() for c in extracted_choices)
+                        and "trailing_text_dropped" not in notes)
+            if complete:
+                mode = "ocr"
+                notes.append("ocr_text_display_with_original_reference")
+                notes.append("manual_visual_comparison_pending")
+            else:
+                mode, has_graphics = "official_image", True
+                stem_lines, choices = [], [str(n) for n in range(1, CHOICE_COUNT + 1)]
+                notes.append("official_original_image_question")
             notes.append("read_by_ocr")
             for p in pages:
                 on_page = [b for b in body if b[0] + 1 == p]

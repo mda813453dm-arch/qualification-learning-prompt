@@ -5,6 +5,12 @@
 
 - 必要なもの：Python 3.10以上、PyMuPDF 1.26.5。日本語が図形になったPDF（測量士補R8など）を文字にするには Tesseract と日本語データ（Ubuntu: `apt-get install tesseract-ocr tesseract-ocr-jpn`、開発時は 5.3.4）。
   Tesseractが無い環境（経路Aのアプリ側で入っていない場合など）では、本文を公式PDFの画像で見せる形に自動で切り替わる。経路B（Cloud Run）のイメージには入れる。
+
+- 全資格共通の画像／文字判定（2026-11-08）：
+  - 汎用択一PDFは問題本文と選択肢の全文が取得でき、当該問題の範囲に図表がない場合だけ文字で表示する。別問やページ端のロゴは図表として数えない。
+  - 宅建のスキャンPDFでOCRが本文と四肢を取得できた場合は、`ocr` として文字を表示し、原本画像を照合用に保持する。原本との独立した目視照合が終わるまで `manual_visual_comparison_pending` とし、検証済みテキストとして扱わない。選択肢を一つでも読めない場合は原本画像に戻す。
+  - 出題画面は資格名にかかわらず、OCRで文字が完全に表示できる問題の重複原本画像だけを折りたたむ。図表を参照する問題、文字未完成の問題は画像を表示し続ける。
+  - この変更だけでは過去に登録した `official_image` データは書き換わらない。原本PDFのハッシュ・公式正答との対応を維持して対象年度の再解析・確認・再登録が必要。
 - 実行例：`python -m qlp_parser.cli --adapter takken --year 2025 --question-pdf R7.pdf --question-url <公式URL>`
 - 図の書き出し：`--assets-dir <フォルダ>` を付けると、公式PDFから切り出したPNGを書き出す（パケットの figures にファイル名・SHA-256・切り出し範囲）
 - テスト：`python -m unittest discover -s tests`（実PDFの受入テストは `TAKKEN_R7_PDF=<パス>`、`SURVEYOR_R8_Q=<問題PDF> SURVEYOR_R8_A=<正答PDF>` を付けたときだけ動く）

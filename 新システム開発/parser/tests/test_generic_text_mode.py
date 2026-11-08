@@ -20,7 +20,8 @@ class Page:
         return self.blocks if mode == 'blocks' else ''
 
     def get_image_info(self):
-        return [1] if self.images else []
+        return [{'bbox': (30, 50, 520, 125)}] if self.images is True else (
+            [{'bbox': (30, 500, 520, 600)}] if self.images == 'outside' else [])
 
 
 class GenericTextModeTest(unittest.TestCase):
@@ -54,6 +55,13 @@ class GenericTextModeTest(unittest.TestCase):
     def test_missing_choice_stays_excluded(self):
         page = Page([block('問1', 40), block('1. A', 75), block('3. C', 100)])
         self.assertEqual(generic_mc.parse_questions([page]), [])
+
+    def test_unrelated_graphic_on_same_page_does_not_force_full_question_image(self):
+        page = Page([block('問1 正しいものを選べ', 40),
+                     block('1. 表示登記', 75), block('2. 権利登記', 100)], images='outside')
+        q, = generic_mc.parse_questions([page])
+        self.assertEqual(q.stem_mode, 'text')
+        self.assertEqual(q.choices, ['表示登記', '権利登記'])
 
 
 if __name__ == '__main__':

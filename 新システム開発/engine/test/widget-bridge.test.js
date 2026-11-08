@@ -61,7 +61,19 @@ test('ITパスポートの文字問題は原本PDFリンクを優先し、取り
   const unreadable = await renderQuestion(makeQuestion({choiceMode:'official_image',choices:['ア','イ','ウ','エ']}));
   assert.doesNotMatch(unreadable,/<details class="descriptive-source-image">/,'読取不能な選択肢の原本画像を隠さない');
   const otherQualification = await renderQuestion(makeQuestion({questionId:'surveyor_assistant:2026:公開問題:1'}));
-  assert.doesNotMatch(otherQualification,/<details class="descriptive-source-image">/,'他資格の画像表示は変更しない');
+  assert.match(otherQualification,/<details class="descriptive-source-image">/,
+    '測量士補のOCR本文が読める場合も重複画像を閉じる');
+  const fiveChoices = await renderQuestion(makeQuestion({
+    questionId:'land_surveyor:2025:午後の部:1',
+    choices:['登記名義人の表示','地目変更','表題登記','分筆登記','滅失登記'],
+  }));
+  assert.match(fiveChoices,/<details class="descriptive-source-image">/,
+    '五肢択一でも全資格共通の判定を使用する');
+  const surveyorFigure = await renderQuestion(makeQuestion({
+    questionId:'q063:2026:公開問題:1',stem:'次の図の測量値から正しいものを選べ。',
+  }));
+  assert.doesNotMatch(surveyorFigure,/<details class="descriptive-source-image">/,
+    '図表を使う問は全資格で図を隠さない');
 });
 
 test('UIは正しいバージョンで初期化し、initializedより前に診断・高さ通知を送らない', async () => {

@@ -512,18 +512,22 @@ a{color:inherit}
   }
   function needsInlineOriginalImage(q){
     if (q.stemMode === 'official_image' || q.choiceMode === 'official_image') return true;
+    // 文字層から取得した図付き問題は、図がないと答えられない可能性がある。
+    // 原本画像を畳むのはOCR本文・全選択肢を表示できる場合だけ。
+    if (q.stemMode !== 'ocr' && q.choiceMode !== 'ocr') return true;
     var choices = Array.isArray(q.choices) ? q.choices : [];
-    if (!String(q.stem || '').trim() || choices.length !== 4 || choices.some(function(c){
-      return !String(c || '').trim() || /^[アイウエ]$/.test(String(c).trim());
+    if (!String(q.stem || '').trim() || choices.length < 2 || choices.length > 10 || choices.some(function(c){
+      return !String(c || '').trim() || /^(?:[1-9]|10|[アイウエオカキクケコ])$/.test(String(c).trim());
     })) return true;
     // 図表の文字がOCRに含まれない場合は、問題を解く前に原本の図を見せる。
     return /(?:次の|以下の|下記の|右の|左の|下の|上の)\\s*(?:図|表|グラフ|フローチャート|画面|プログラム)|(?:図|表)\\s*[0-9１-９①-⑨]|図に示|表に示|フローチャート|構成図|状態遷移図|ER図|ネットワーク図|グラフ|疑似言語|擬似言語|プログラム例/.test(String(q.stem));
   }
   function questionFigureHtml(q){
     var images = (q.figureUrls || []).map(function(u, i){ return safeUrl(u) ? figureHtml(u, i) : ''; }).join('');
-    if (!images || !isItpassQuestion(q) || needsInlineOriginalImage(q)) return images;
-    // OCRで本文と四肢が読める通常のiパス問題は、公式PDFの重複画像を初期表示しない。
-    // 既存の取り込み済み問題にも適用し、誤読確認の原本画像は任意で開ける。
+    if (!images || needsInlineOriginalImage(q)) return images;
+    // 全資格：OCRで本文と選択肢を表示できる通常問は、公式PDFの重複画像を
+    // 初期表示しない。図表が必要な問は上の判定で従来どおり直接表示する。
+    // 画像は消さず、元PDF照合のためにいつでも開ける。
     return '<details class="descriptive-source-image"><summary>原本の問題画像も確認する</summary>' + images + '</details>';
   }
   // 問題文と表はネイティブ要素で表示する。原本の照合用画像は閉じておき、

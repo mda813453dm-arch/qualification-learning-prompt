@@ -70,12 +70,21 @@ def parse_questions(doc):
         has_visual=False
         for pn in pages:
             page=doc[pn-1]
-            if hasattr(page,'get_image_info') and page.get_image_info():
+            rows=[r for r in body if r[0]==pn]
+            top=min(r[2] for r in rows)-5
+            bottom=max(r[3] for r in rows)+5
+            # 表紙のロゴ・別問の図を同じページに含むだけでは、この問を
+            # 画像扱いにしない。必ずこの問の縦範囲と交差する図を検出する。
+            imgs=page.get_image_info() if hasattr(page,'get_image_info') else []
+            if any((isinstance(i,dict) and i.get('bbox') and
+                    i['bbox'][3]>top and i['bbox'][1]<bottom)
+                   for i in imgs):
                 has_visual=True
                 break
             # 表の罫線やベクトル図形は get_image_info() では検出できない。
-            # 装飾線だけを見た場合でも、安全側に倒して原本画像を保持する。
-            if hasattr(page,'get_drawings') and page.get_drawings():
+            drawings=page.get_drawings() if hasattr(page,'get_drawings') else []
+            if any(d.get('rect') is not None and d['rect'].y1>top and d['rect'].y0<bottom
+                   for d in drawings):
                 has_visual=True
                 break
         complete=bool(stem and all(option_text) and not has_visual)
