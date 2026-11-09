@@ -4502,7 +4502,8 @@ a{color:inherit}
     }
     var busy = document.getElementById('qlpBusy');
     var busyHeight = busy && busy !== app && !busy.hidden ? (busy.offsetHeight || 0) : 0;
-    var h = isAndroid ? Math.max(420, Math.min(702, Math.round(window.innerHeight * 0.78))) : Math.ceil(app.offsetHeight + busyHeight) + 2;
+    var h = Math.ceil(app.offsetHeight + busyHeight) + 2;
+    if (isAndroid) h = Math.max(420, Math.min(702, Math.round(window.innerHeight * 0.78)));
     try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
     if (bridgeReady) notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
   }
