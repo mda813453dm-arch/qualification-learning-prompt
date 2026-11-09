@@ -287,6 +287,10 @@ body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-se
    iframeへの高さ通知はfit()/ResizeObserverが担当し、内容に上限を設けない。 */
 #app.study-viewport{height:auto;max-height:none;overflow:visible;overscroll-behavior:auto;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 html,body{height:auto;min-height:0;overflow:visible}
+/* Android embedded ChatGPT: retain a bounded, touch-scrollable document. */
+html.qlp-android-embedded,html.qlp-android-embedded body{height:100%;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
+html.qlp-android-embedded #app.study-viewport{touch-action:pan-y;overscroll-behavior-y:contain}
+
 /* 全画面は利用者・ホストによる選択時だけ対応する。学習中の強制切替はしない。 */
 html.study-fullscreen #app.study-viewport:not(.is-old){padding-top:calc(64px + env(safe-area-inset-top,0px))}
 #app.is-old{height:auto;min-height:0;max-height:none;overflow:visible;padding:4px 8px}.old-screen{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--sub);font-size:12px;line-height:1.35}.old-screen button{font:inherit;border:1px solid var(--line);border-radius:7px;background:var(--btn);color:var(--fg);padding:3px 7px;cursor:pointer;white-space:nowrap}
@@ -4489,9 +4493,16 @@ a{color:inherit}
   // iPhoneではクリックで全画面に切り替えると二重のスクロール画面が生まれるため自動呼出ししない。
   // 内容の自然高さでホストに枠サイズを伝える。旧枠に置き換わった場合も縮む。
   function fit(){
+    var isAndroid = /Android/i.test(navigator.userAgent || '');
+    document.documentElement.classList.toggle('qlp-android-embedded', isAndroid);
+    if (isAndroid) {
+      document.documentElement.style.height = '100%';
+      document.body.style.height = '100%';
+      app.setAttribute('tabindex', '0');
+    }
     var busy = document.getElementById('qlpBusy');
     var busyHeight = busy && busy !== app && !busy.hidden ? (busy.offsetHeight || 0) : 0;
-    var h = Math.ceil(app.offsetHeight + busyHeight) + 2;
+    var h = isAndroid ? Math.max(420, Math.min(702, Math.round(window.innerHeight * 0.78))) : Math.ceil(app.offsetHeight + busyHeight) + 2;
     try { if (window.openai && window.openai.notifyIntrinsicHeight) window.openai.notifyIntrinsicHeight(h); } catch (e) {}
     if (bridgeReady) notify('ui/notifications/size-changed', { width: window.innerWidth, height: h });
   }
