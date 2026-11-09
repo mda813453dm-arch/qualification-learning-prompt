@@ -530,3 +530,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-08 JST v187: 学習計画の「この学習計画で始める」を押しても分野再選択画面に遷移する不具合（順位を変更しない場合や学習方法のみ変更した場合）を修正。承認ボタンは設定変更種類に関係なくsaveStudyPlan→startStudyへ直結。任意分野・誤答復習を選ぶときだけ別ボタン「特定の分野・間違えた問題から始める」で選択画面を開く。学習履歴・旧セッション・旧ウィジェットURIを保持。v186 Android指スクロール変更を維持。634件ローカルテスト0失敗、375pxモバイル実画面テスト・エンジンCI成功。公開版で学習計画の保存・問題遷移を確認。main/master_prompt.txt書込禁止、追加有料APIなし。
 
 2026-11-08 JST v187再配置：前回Cloud Run本体の配置・375pxモバイル実画面テストは成功。公開後の解説スモーク検査が旧widget-v186 URIを期待して失敗したため、check-explanation.mjsをv187参照に修正。既存学習記録は維持し、main/master_prompt.txt変更なし。公開版スモーク完了まで検証を続ける。
+
+2026-11-09 Android embedded touch scroll fix b44d3a0279f7df42f2fd2fa1255562a8c4591bb5: deploy and verify production.
