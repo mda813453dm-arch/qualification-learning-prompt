@@ -532,3 +532,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-08 JST v187再配置：前回Cloud Run本体の配置・375pxモバイル実画面テストは成功。公開後の解説スモーク検査が旧widget-v186 URIを期待して失敗したため、check-explanation.mjsをv187参照に修正。既存学習記録は維持し、main/master_prompt.txt変更なし。公開版スモーク完了まで検証を続ける。
 
 2026-11-09 Android embedded touch scroll fix b44d3a0279f7df42f2fd2fa1255562a8c4591bb5: deploy and verify production.
+
+2026-11-10 Android scroll CI fix 4ea1eae: guard navigator for non-browser tests; redeploy after regression tests and verify public release.
