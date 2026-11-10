@@ -4494,7 +4494,7 @@ a{color:inherit}
   // 内容の自然高さでホストに枠サイズを伝える。旧枠に置き換わった場合も縮む。
   function fit(){
     var isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
-    document.documentElement.classList.toggle('qlp-android-embedded', isAndroid);
+    if (document.documentElement.classList && typeof document.documentElement.classList.toggle === 'function') document.documentElement.classList.toggle('qlp-android-embedded', isAndroid);
     if (isAndroid) {
       document.documentElement.style.height = '100%';
       document.body.style.height = '100%';
