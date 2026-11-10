@@ -4493,7 +4493,7 @@ a{color:inherit}
   // iPhoneではクリックで全画面に切り替えると二重のスクロール画面が生まれるため自動呼出ししない。
   // 内容の自然高さでホストに枠サイズを伝える。旧枠に置き換わった場合も縮む。
   function fit(){
-    var isAndroid = /Android/i.test(navigator.userAgent || '');
+    var isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
     document.documentElement.classList.toggle('qlp-android-embedded', isAndroid);
     if (isAndroid) {
       document.documentElement.style.height = '100%';
