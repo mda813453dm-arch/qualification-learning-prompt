@@ -534,3 +534,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-09 Android embedded touch scroll fix b44d3a0279f7df42f2fd2fa1255562a8c4591bb5: deploy and verify production.
 
 2026-11-10 Android scroll CI fix 4ea1eae: guard navigator for non-browser tests; redeploy after regression tests and verify public release.
+
+2026-11-10 Android scroll widget test compatibility fix fc7533d: classList guard, retry regression test and Cloud Run deployment.
