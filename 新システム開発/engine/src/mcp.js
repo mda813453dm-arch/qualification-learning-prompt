@@ -5,7 +5,8 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v188.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v189.js';
+import { widgetHtml as stable188Html } from './widget-v188.js';
 import { widgetHtml as stable187Html } from './widget-v187.js';
 import { widgetHtml as stable186Html } from './widget-v186.js';
 import { widgetHtml as stable185Html } from './widget-v185.js';
@@ -686,6 +687,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v184.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v185.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v186.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v187.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v188.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -820,6 +822,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v188.html')) return stable188Html();
   if (uri.endsWith('/question-v187.html')) return stable187Html();
   if (uri.endsWith('/question-v186.html')) return stable186Html();
   if (uri.endsWith('/question-v185.html')) return stable185Html();
