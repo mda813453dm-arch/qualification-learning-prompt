@@ -5,7 +5,7 @@ import { explainHow } from './explain.js';
  * ツール名は ChatGPT の GPT 用 API 定義（openapi.yaml）の operationId と同じにして、同じプロンプトで動くようにしている。
  */
 import { INSTRUCTIONS } from './instructions.js';
-import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v189.js';
+import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-v190.js';
 import { widgetHtml as stable188Html } from './widget-v188.js';
 import { widgetHtml as stable187Html } from './widget-v187.js';
 import { widgetHtml as stable186Html } from './widget-v186.js';
