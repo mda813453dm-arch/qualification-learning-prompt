@@ -536,3 +536,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-10 Android scroll CI fix 4ea1eae: guard navigator for non-browser tests; redeploy after regression tests and verify public release.
 
 2026-11-10 Android scroll widget test compatibility fix fc7533d: classList guard, retry regression test and Cloud Run deployment.
+
+2026-11-11 Fix production smoke check to validate current widget v188 instead of stale v187 (dab1d87); re-run deployment verification.
