@@ -542,3 +542,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-11 v189: publish new widget resource URI to invalidate Android ChatGPT cached v188 HTML while preserving v188 legacy; re-run full tests and production checks.
 
 2026-11-11 v189 regression fix: align lesson publish metadata test with latest widget URI (32af007), re-run full CI and verified production deploy.
+
+2026-11-11 Android ChatGPT nested-scroll follow-up acf4dcdaa86cd03a9c7d0aa5c1c1c7b0b5dd39c7: run full regression tests, deploy to Cloud Run, verify current published widget resource, and do not claim Android app touch success without real-device confirmation.
