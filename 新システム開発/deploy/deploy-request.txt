@@ -540,3 +540,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-11 Fix production smoke check to validate current widget v188 instead of stale v187 (dab1d87); re-run deployment verification.
 
 2026-11-11 v189: publish new widget resource URI to invalidate Android ChatGPT cached v188 HTML while preserving v188 legacy; re-run full tests and production checks.
+
+2026-11-11 v189 regression fix: align lesson publish metadata test with latest widget URI (32af007), re-run full CI and verified production deploy.
