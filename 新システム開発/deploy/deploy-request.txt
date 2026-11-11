@@ -546,3 +546,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-11 Android ChatGPT nested-scroll follow-up acf4dcdaa86cd03a9c7d0aa5c1c1c7b0b5dd39c7: run full regression tests, deploy to Cloud Run, verify current published widget resource, and do not claim Android app touch success without real-device confirmation.
 
 2026-11-11 v190 Android ChatGPT scroll fix: deploy widget-v190.js (58a657d) wired via mcp.js (9a4f692), invalidate cached v189 resource, run regression and production smoke; require real Android app confirmation before marking fixed.
+
+2026-11-11 v190 regression repair: align lesson-publish-metadata.test.js and mcp.test.js expected widget URI with v190 (58d6391, 05bf4ea). Re-run full CI, Cloud Run deploy and production smoke. Android native swipe behavior remains unverified.
