@@ -10,7 +10,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v189.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v190.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -1293,7 +1293,7 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
 
 test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
   const { forModel } = await import('../src/mcp.js');
-  const { WIDGET_URI } = await import('../src/widget-v189.js');
+  const { WIDGET_URI } = await import('../src/widget-v190.js');
   const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
   const answer = TOOLS.find((t) => t.name === 'completeRemediation');
   assert.ok(reg && reg.appOnly && !reg.uiOnly);
