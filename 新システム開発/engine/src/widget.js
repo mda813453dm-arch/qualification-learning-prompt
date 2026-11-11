@@ -288,8 +288,9 @@ body{margin:0;font:16px/1.7 -apple-system,"Hiragino Sans","Noto Sans JP",sans-se
 #app.study-viewport{height:auto;max-height:none;overflow:visible;overscroll-behavior:auto;scroll-behavior:auto;scroll-padding-top:0;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
 html,body{height:auto;min-height:0;overflow:visible}
 /* Android embedded ChatGPT: retain a bounded, touch-scrollable document. */
-html.qlp-android-embedded,html.qlp-android-embedded body{height:100%;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch}
-html.qlp-android-embedded #app.study-viewport{touch-action:pan-y;overscroll-behavior-y:contain}
+/* Keep one scroll owner inside the widget instead of competing html/body scrollers. */
+html.qlp-android-embedded,html.qlp-android-embedded body{height:100%;min-height:0;overflow:hidden}
+html.qlp-android-embedded #app.study-viewport{height:100%;max-height:100%;min-height:0;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;box-sizing:border-box}
 
 /* 全画面は利用者・ホストによる選択時だけ対応する。学習中の強制切替はしない。 */
 html.study-fullscreen #app.study-viewport:not(.is-old){padding-top:calc(64px + env(safe-area-inset-top,0px))}
