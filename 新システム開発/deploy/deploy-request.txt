@@ -544,3 +544,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-11 v189 regression fix: align lesson publish metadata test with latest widget URI (32af007), re-run full CI and verified production deploy.
 
 2026-11-11 Android ChatGPT nested-scroll follow-up acf4dcdaa86cd03a9c7d0aa5c1c1c7b0b5dd39c7: run full regression tests, deploy to Cloud Run, verify current published widget resource, and do not claim Android app touch success without real-device confirmation.
+
+2026-11-11 v190 Android ChatGPT scroll fix: deploy widget-v190.js (58a657d) wired via mcp.js (9a4f692), invalidate cached v189 resource, run regression and production smoke; require real Android app confirmation before marking fixed.
