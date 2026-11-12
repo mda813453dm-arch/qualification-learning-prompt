@@ -4,14 +4,17 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { widgetHtml as currentHtml, WIDGET_VERSION } from '../src/widget-current.js';
+import { widgetHtml as legacy191Html } from '../src/widget-v191.js';
 import { widgetHtml as legacy190Html } from '../src/widget-v190.js';
 import { widgetHtml as legacy189Html } from '../src/widget-v189.js';
 
 // owner: どの要素がAndroidの縦スクロールを担うか。
-//  inner    = 現在版(v190〜)。iframe文書は固定し、#app だけが枠内でスクロールする。
+//  natural  = 現在版(v192〜)。AndroidもiPhoneと同じく内容全体の高さで表示し、外側の会話でスクロールする。
+//  inner    = 旧版v190・v191。iframe文書は固定し、#app だけが枠内でスクロールする。
 //  document = 旧版v189。iframe文書がスクロールする（キャッシュ済み会話向けに不変で残す）。
 const variants = [
-  ['current '+WIDGET_VERSION, currentHtml, 'inner'],
+  ['current '+WIDGET_VERSION, currentHtml, 'natural'],
+  ['legacy 2026-11-12.191', legacy191Html, 'inner'],
   ['legacy 2026-11-11.190', legacy190Html, 'inner'],
   ['legacy 2026-11-11.189', legacy189Html, 'document'],
 ];
@@ -27,6 +30,7 @@ try {
  for (const [label, widgetHtml, owner] of variants) {
   for (const [agentName, ua, android] of agents) {
     const name = label+' / '+agentName;
+    const bounded = android && owner !== 'natural';
     const context = await browser.newContext({
       viewport: { width:393, height:852 },
       screen: { width:393, height:852 },
@@ -83,8 +87,8 @@ try {
         iframeWidth:window.frameElement.getBoundingClientRect().width
       }));
       const before=await measure();
-      assert.equal(before.capped, android, name+': Android-only mode');
-      if(android){
+      assert.equal(before.capped, bounded, name+': Android bounded mode only in legacy versions');
+      if(bounded){
         if(owner==='document') assert.ok(before.rootScrollHeight>before.rootHeight+1000,
           'Android document has scrollable overflow within the iframe');
         assert.ok(before.iframeHeight>=420 && before.iframeHeight<=702,
@@ -104,7 +108,7 @@ try {
         assert.ok(before.height>2000,'iOS retains full natural content height');
         assert.ok(before.scrollHeight<=before.height+2,'iOS has no nested vertical scrollbar');
       }
-      if (android) {
+      if (bounded) {
         const nav=frame.locator('#qlpAndroidScrollTools');
         assert.equal(await nav.isVisible(),false,'Android navigation buttons are not shown');
         assert.equal(await app.evaluate(el=>getComputedStyle(el).touchAction),'pan-y',
@@ -136,6 +140,25 @@ try {
       } else {
         assert.equal(await frame.locator('#qlpAndroidScrollTools').count(),0,
           'iPhone retains natural-height view with no inner-scroll navigation');
+        if (android) {
+          // v192: the whole content is shown; the host (outer chat) owns vertical drags.
+          assert.ok(before.iframeHeight>2000,'Android host receives the full content height like iPhone');
+          assert.ok(before.rootScrollHeight<=before.rootHeight+2,'Android iframe document has nothing to scroll');
+          const box=await app.boundingBox();
+          const x=box.x+box.width/2, y=500;
+          const cdp=await context.newCDPSession(page);
+          const outerBefore=await page.evaluate(()=>window.scrollY);
+          await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+          for(let i=1;i<=6;i++){
+            await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-i*32}]});
+            await page.waitForTimeout(18);
+          }
+          await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+          await page.waitForTimeout(150);
+          assert.ok((await page.evaluate(()=>window.scrollY))-outerBefore>50,
+            'Android drag over the frame scrolls the outer chat (no inner scroll needed)');
+          await cdp.detach();
+        }
       }
       await app.evaluate((el,owner)=>{
         if (document.documentElement.classList.contains('qlp-android-embedded') && owner==='document')
@@ -145,7 +168,7 @@ try {
       await page.evaluate(()=>window.scrollTo(0,750));
       await page.waitForTimeout(160);
       const after=await measure();
-      if(android){
+      if(bounded){
         if(owner==='inner'){
           assert.ok(after.scrollTop>200,'Android #app can be scrolled');
           assert.equal(after.rootScrollTop,0,'iframe document stays fixed');

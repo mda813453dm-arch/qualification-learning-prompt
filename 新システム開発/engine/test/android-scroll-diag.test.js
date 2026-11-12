@@ -41,11 +41,16 @@ test('Scroll diagnostics reject identifiers, nested data and oversized values', 
   }
 });
 
-test('v191 adds Android-only passive diagnostics and keeps v190 scroll CSS', () => {
+test('v192 shows Android like iPhone (natural height) and keeps Android-only passive diagnostics', () => {
   const html=widgetHtml();
   assert.match(html,/id="qlp-v191-scroll-diag"/);
   assert.match(html,/if\(!\/Android\/i\.test\(ua\)\)return;/,'diagnostics do not run on iPhone');
-  assert.match(html,/qlp-android-v190-inner-scroll/);
+  assert.match(html,/var isAndroid = false; \/\/ v192/,'Android no longer caps the frame height');
+  assert.match(html,/if \(false \/\* v192/,'Android no longer enters the bounded inner-scroll mode');
+  const main=html.slice(0,html.indexOf('<script id="qlp-v191-scroll-diag">'));
+  assert.equal((main.match(/\/Android\/i\.test\(/g)||[]).length,1,'only the disabled legacy branch mentions Android in the main script');
+  assert.match(html,/⓪全体表示/);
+  assert.match(html,/m\.tc>=m\.te/,'cancelled gestures are judged as 2');
   const script=html.slice(html.indexOf('<script id="qlp-v191-scroll-diag">'));
   assert.doesNotMatch(script,/preventDefault\(/,'measurement never cancels touch scrolling');
   assert.doesNotMatch(script,/sessionId|studyId|learnerId|localStorage/,'no identifiers are collected');

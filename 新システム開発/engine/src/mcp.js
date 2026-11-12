@@ -6,6 +6,7 @@ import { explainHow } from './explain.js';
  */
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-current.js';
+import { widgetHtml as stable191Html } from './widget-v191.js';
 import { widgetHtml as stable190Html } from './widget-v190.js';
 import { widgetHtml as stable189Html } from './widget-v189.js';
 import { widgetHtml as stable188Html } from './widget-v188.js';
@@ -73,6 +74,7 @@ ACCEPTED_WIDGET_VERSIONS.push('2026-11-08.187');
 // 公開済みの旧版画面が自分の版で表示状況を報告できるようにする（v190切替時の登録漏れを修正）。
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-08.188', '2026-11-11.189');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-11.190');
+ACCEPTED_WIDGET_VERSIONS.push('2026-11-12.191');
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -719,6 +721,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v187.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v188.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v189.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v190.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v191.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -853,6 +856,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v191.html')) return stable191Html();
   if (uri.endsWith('/question-v190.html')) return stable190Html();
   if (uri.endsWith('/question-v189.html')) return stable189Html();
   if (uri.endsWith('/question-v188.html')) return stable188Html();

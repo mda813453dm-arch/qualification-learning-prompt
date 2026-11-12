@@ -61,40 +61,45 @@ try {
       await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
       await cdp.detach();
       await page.waitForTimeout(200);
-      await pill.click();
+      // v192: the frame is full height and the drag scrolled the outer page; the button sits at the frame top.
+      // The diagnostic controls are position:fixed at the frame top; press them by element.
+      await pill.evaluate(el=>el.click());
       const panel=frame.locator('#qlpScrollDiagPanel');
       assert.equal(await panel.isVisible(),true,'panel opens');
       const text=await panel.locator('pre').textContent();
       assert.match(text,/タッチ start\/move\/end\/cancel: [1-9]\d*\/[1-9]\d*\//,'touch counts are shown');
-      assert.match(text,/#app 高さ\/内容\/位置: 4\d\d(\.\d)? \/ \d{4}/,'inner element metrics are shown');
-      assert.match(text,/判定: ⑤/,'simulated host: scroll position changed');
+      assert.match(text,/#app 高さ\/内容\/位置: \d{4}(\.\d)? \/ \d{4}/,'inner element metrics are shown (full height, v192)');
+      assert.match(text,/判定: ⓪全体表示/,'v192: whole content shown, no inner scroll needed');
       assert.match(text,new RegExp('版 '+WIDGET_VERSION.replace(/\./g,'\\.')));
       // Programmatic scroll test and fullscreen request.
-      await panel.getByRole('button',{name:'枠内を自動で動かす'}).click();
+      await panel.getByRole('button',{name:'枠内を自動で動かす'}).evaluate(el=>el.click());
       await page.waitForTimeout(300);
-      assert.match(await panel.locator('pre').textContent(),/自動スクロール試験: #appが動いた/);
-      await panel.getByRole('button',{name:'全画面で試す'}).click();
+      assert.match(await panel.locator('pre').textContent(),/自動スクロール試験: どちらも動かない/,'nothing to scroll inside the frame');
+      await panel.getByRole('button',{name:'全画面で試す'}).evaluate(el=>el.click());
       await page.waitForTimeout(100);
       // Manual report goes through reportUiEvent with aggregate values only.
-      await panel.getByRole('button',{name:'結果を送る'}).click();
+      await panel.getByRole('button',{name:'結果を送る'}).evaluate(el=>el.click());
       await page.waitForTimeout(200);
       const calls=await frame.locator('body').evaluate(()=>window.__calls.filter(c=>c.args&&c.args.stage==='android_scroll_diag'));
       assert.ok(calls.length>=1,'diagnostic report sent');
       const last=calls[calls.length-1].args;
       assert.equal(last.version,WIDGET_VERSION);
       assert.deepEqual(Object.keys(last).sort(),['diag','stage','version']);
-      assert.ok(last.diag.ts>0 && last.diag.tm>0 && last.diag.appSH>last.diag.appCH);
+      assert.ok(last.diag.ts>0 && last.diag.tm>0 && last.diag.embedded===false);
       assert.ok(Object.keys(last.diag).every(k=>/^[A-Za-z][A-Za-z0-9]{0,15}$/.test(k)));
       assert.ok(Object.values(last.diag).every(v=>['number','string','boolean'].includes(typeof v)));
       assert.equal(await frame.locator('body').evaluate(()=>window.__fs&&window.__fs.mode),'fullscreen');
       // Verdict branches for the real-device decision tree.
       const verdicts=await frame.locator('body').evaluate(()=>{
         const v=window.qlpScrollDiag.verdict;
-        const base={ts:5,tm:20,tc:0,appSH:4000,appCH:420,rootSH:420,rootCH:420,appMaxTop:100,docMaxTop:0};
-        return [v({...base,ts:0}),v({...base,tm:0,tc:5}),v({...base,appSH:420}),v({...base,appMaxTop:0}),v(base)].map(s=>s[0]);
+        const base={embedded:true,ts:5,tm:20,te:5,tc:0,appSH:4000,appCH:420,rootSH:420,rootCH:420,appMaxTop:100,docMaxTop:0};
+        // Real device 2026-11-12 (v191): 18/14/4/14 with #app moved 47px -> must be 2, not 5.
+        const device={...base,ts:18,tm:14,te:4,tc:14,appSH:2932,appMaxTop:47};
+        const natural={...base,embedded:false,appSH:4779,appCH:4779,rootSH:4781,rootCH:4781};
+        return [v(natural),v({...natural,rootSH:6000,rootCH:700}),v({...base,ts:0}),v(device),v({...base,appSH:420}),v({...base,appMaxTop:0}),v(base)].map(s=>s[0]);
       });
-      assert.deepEqual(verdicts,['①','②','③','④','⑤']);
-      await panel.getByRole('button',{name:'閉じる'}).click();
+      assert.deepEqual(verdicts,['⓪','⑥','①','②','③','④','⑤']);
+      await panel.getByRole('button',{name:'× 閉じる'}).evaluate(el=>el.click());
       assert.equal(await panel.isVisible(),false);
       assert.deepEqual(errors,[],name+' browser exceptions');
       console.log(name+' PASS '+text.split('\n')[0]);
