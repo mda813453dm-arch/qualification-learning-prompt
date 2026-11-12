@@ -3,7 +3,16 @@
 // The host is simulated; this does not claim Android ChatGPT device certification.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml } from '../src/widget-v189.js';
+import { widgetHtml as currentHtml, WIDGET_VERSION } from '../src/widget-current.js';
+import { widgetHtml as legacy189Html } from '../src/widget-v189.js';
+
+// owner: どの要素がAndroidの縦スクロールを担うか。
+//  inner    = 現在版(v190〜)。iframe文書は固定し、#app だけが枠内でスクロールする。
+//  document = 旧版v189。iframe文書がスクロールする（キャッシュ済み会話向けに不変で残す）。
+const variants = [
+  ['current '+WIDGET_VERSION, currentHtml, 'inner'],
+  ['legacy 2026-11-11.189', legacy189Html, 'document'],
+];
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -13,7 +22,9 @@ const agents = [
   ['iphone', 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1', false],
 ];
 try {
-  for (const [name, ua, android] of agents) {
+ for (const [label, widgetHtml, owner] of variants) {
+  for (const [agentName, ua, android] of agents) {
+    const name = label+' / '+agentName;
     const context = await browser.newContext({
       viewport: { width:393, height:852 },
       screen: { width:393, height:852 },
@@ -72,13 +83,21 @@ try {
       const before=await measure();
       assert.equal(before.capped, android, name+': Android-only mode');
       if(android){
-        assert.ok(before.rootScrollHeight>before.rootHeight+1000,
+        if(owner==='document') assert.ok(before.rootScrollHeight>before.rootHeight+1000,
           'Android document has scrollable overflow within the iframe');
         assert.ok(before.iframeHeight>=420 && before.iframeHeight<=702,
           'Android host sees a bounded iframe');
-        assert.equal(before.overflow,'visible','inner app is no longer a nested scroll container');
-        assert.equal(before.rootOverflow,'auto','iframe document owns Android vertical scrolling');
         assert.equal(before.rootOverscroll,'contain','iframe cannot chain overscroll into host');
+        if(owner==='inner'){
+          assert.equal(before.overflow,'auto','#app is the single Android scroll owner');
+          assert.equal(before.rootOverflow,'hidden','iframe document does not compete for the gesture');
+          assert.ok(before.rootScrollHeight<=before.rootHeight+1,'iframe document itself is not scrollable');
+          assert.ok(before.height<=before.iframeHeight+1,'#app is bounded to the iframe height');
+          assert.ok(before.scrollHeight>before.height+1000,'#app has scrollable overflow inside the frame');
+        }else{
+          assert.equal(before.overflow,'visible','legacy v189: inner app is not a nested scroll container');
+          assert.equal(before.rootOverflow,'auto','legacy v189: iframe document owns Android vertical scrolling');
+        }
       }else{
         assert.ok(before.height>2000,'iOS retains full natural content height');
         assert.ok(before.scrollHeight<=before.height+2,'iOS has no nested vertical scrollbar');
@@ -104,7 +123,10 @@ try {
         }
         await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
         await page.waitForTimeout(100);
-        assert.ok((await measure()).rootScrollTop>90,
+        const dragged=await measure();
+        if(owner==='inner') assert.ok(dragged.scrollTop>90,
+          'physical Android drag scrolls #app inside the frame, not the host');
+        else assert.ok(dragged.rootScrollTop>90,
           'physical Android drag scrolls the iframe document, not the host');
         assert.ok(Math.abs((await page.evaluate(()=>window.scrollY))-outerBefore)<4,
           'Android drag does not scroll the parent ChatGPT host');
@@ -113,16 +135,19 @@ try {
         assert.equal(await frame.locator('#qlpAndroidScrollTools').count(),0,
           'iPhone retains natural-height view with no inner-scroll navigation');
       }
-      await app.evaluate(el=>{
-        if (document.documentElement.classList.contains('qlp-android-embedded'))
+      await app.evaluate((el,owner)=>{
+        if (document.documentElement.classList.contains('qlp-android-embedded') && owner==='document')
           document.scrollingElement.scrollTop=document.scrollingElement.scrollHeight/2;
         else el.scrollTop=el.scrollHeight/2;
-      });
+      },owner);
       await page.evaluate(()=>window.scrollTo(0,750));
       await page.waitForTimeout(160);
       const after=await measure();
       if(android){
-        assert.ok(after.rootScrollTop>200,'Android iframe document can be scrolled');
+        if(owner==='inner'){
+          assert.ok(after.scrollTop>200,'Android #app can be scrolled');
+          assert.equal(after.rootScrollTop,0,'iframe document stays fixed');
+        }else assert.ok(after.rootScrollTop>200,'Android iframe document can be scrolled');
         assert.ok(Math.abs(after.height-before.height)<3,'Android content height does not collapse on scroll');
         assert.ok(Math.abs(after.iframeHeight-before.iframeHeight)<4,'host iframe height remains stable');
         assert.ok(Math.abs(after.iframeWidth-before.iframeWidth)<4,'host iframe width remains stable');
@@ -131,4 +156,5 @@ try {
       console.log(name+' PASS '+JSON.stringify({before,after}));
     } finally {await context.close();}
   }
+ }
 } finally {await browser.close();}

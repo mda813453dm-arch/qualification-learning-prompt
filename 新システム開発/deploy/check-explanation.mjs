@@ -1,7 +1,7 @@
 // 配置後の読取専用検査。学習を新規作成・採点・変更せず、トークンを出力しない。
 import assert from 'node:assert/strict';
 // Always validate the actively served widget URI/version, not a cached legacy revision.
-import { WIDGET_URI, WIDGET_VERSION } from '../engine/src/widget-v189.js';
+import { WIDGET_URI, WIDGET_VERSION } from '../engine/src/widget-current.js';
 const base = process.env.QLP_BASE_URL;
 const token = process.env.QLP_TEST_TOKEN;
 assert.ok(base && token, '公開先と構成済み認証が必要');

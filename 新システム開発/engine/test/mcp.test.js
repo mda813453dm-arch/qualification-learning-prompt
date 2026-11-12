@@ -10,7 +10,7 @@ import { appKey, handle, onboardingSteps, overviewFor } from '../src/app.js';
 import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-v190.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-current.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -217,8 +217,10 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  assert.match(WIDGET_URI, /question-v189\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-11.189');
+  // 検査したHTMLの版＝公開する版（v190：Android枠内スクロールの単一スクロール担当）。
+  assert.match(WIDGET_URI, /question-v190\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-11.190');
+  assert.match(html, /qlp-android-v190-inner-scroll/);
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 
@@ -1293,7 +1295,7 @@ test('解説・次へのメニューには学習ID等を渡せる', () => {
 
 test('AI作成確認問題は出題時の正答固定を行い、AIには画面の本文・選択肢を再配布しない', async () => {
   const { forModel } = await import('../src/mcp.js');
-  const { WIDGET_URI } = await import('../src/widget-v190.js');
+  const { WIDGET_URI } = await import('../src/widget-current.js');
   const reg = TOOLS.find((t) => t.name === 'registerRemediationQuestion');
   const answer = TOOLS.find((t) => t.name === 'completeRemediation');
   assert.ok(reg && reg.appOnly && !reg.uiOnly);
