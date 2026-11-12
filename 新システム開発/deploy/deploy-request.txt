@@ -552,3 +552,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-12 v190 legacy repair 74bd83e: keep v189 URI/HTML/version as legacy after the v190 switch (root cause of tests 226/290), test the current widget via widget-current.js, run full CI, deploy to Cloud Run and production smoke. Android native app swipe remains unverified on a real device.
 
 2026-11-12 production check for v189 legacy: check-explanation.mjs now reads ui://qlp/question-v189.html and reportUiEvent for 188/189/current on Cloud Run (read-only). Redeploy same engine as 74bd83e to run it. Android native app swipe remains unverified on a real device.
+
+2026-11-12 v191 Android scroll diagnostics e7a5d4f: v190 still fails on the real Android ChatGPT app (user report 18:25 JST). Deploy diagnostic widget v191 (Android-only, passive counters, reportUiEvent android_scroll_diag), keep v190/v189 legacy, run regression and production checks. Android scrolling remains unresolved until confirmed on the real device.
