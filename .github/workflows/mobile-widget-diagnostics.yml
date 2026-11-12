@@ -20,7 +20,7 @@ jobs:
       - name: UIリソースの読取発生状況（個人情報なし・集計のみ）
         run: |
           set -euo pipefail
-          QUERY='resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND timestamp>="2026-11-02T00:15:00Z" AND (jsonPayload.event="widget_resource_read" OR jsonPayload.event="widget_session_start_responded" OR jsonPayload.event="widget_ui" OR jsonPayload.event="widget_session_start_called")'
+          QUERY='resource.type="cloud_run_revision" AND resource.labels.service_name="qlp-engine" AND timestamp>="2026-11-02T00:15:00Z" AND (jsonPayload.event="widget_resource_read" OR jsonPayload.event="widget_session_start_responded" OR jsonPayload.event="widget_ui" OR jsonPayload.event="widget_session_start_called" OR jsonPayload.event="widget_scroll_diag")'
           gcloud logging read "$QUERY" --project qualification-learning --limit 2500 --format=json > /tmp/mobile-events.json
           python3 - <<'PY'
           import json
@@ -48,6 +48,13 @@ jobs:
               if not isinstance(d,dict):continue
               if d.get('event') in ('widget_resource_read','widget_session_start_responded','widget_ui'):
                   print(x.get('timestamp','')[:19],d.get('event'),d.get('stage',''),d.get('status',''),d.get('legacy',''))
+          print('ANDROID SCROLL DIAGNOSTICS (AGGREGATE VALUES ONLY)')
+          keys=['trigger','elapsed','ts','tm','te','tc','tmPrevented','pd','pm','pc','maxDy','appCH','appSH','appST','appMaxTop','rootCH','rootSH','docMaxTop','sApp','sDoc','appOv','appTA','rootOv','iw','ih','sh','dm','mh','dev','progTest','fs','embedded','ua']
+          for x in logs:
+              d=x.get('jsonPayload')
+              if not isinstance(d,dict) or d.get('event')!='widget_scroll_diag':continue
+              g=d.get('diag') or {}
+              print(x.get('timestamp','')[:19],d.get('version',''),' '.join('%s=%s'%(k,g.get(k,'')) for k in keys))
           print('EVENTS BY UTC HOUR')
           for k,n in sorted(buckets.items()):print(k[0],k[1],n)
           print('TOTAL',sum(kinds.values()))

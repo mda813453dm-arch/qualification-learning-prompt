@@ -6,6 +6,7 @@ import { explainHow } from './explain.js';
  */
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-current.js';
+import { widgetHtml as stable190Html } from './widget-v190.js';
 import { widgetHtml as stable189Html } from './widget-v189.js';
 import { widgetHtml as stable188Html } from './widget-v188.js';
 import { widgetHtml as stable187Html } from './widget-v187.js';
@@ -45,12 +46,33 @@ const source = {
   },
 };
 const sessionId = { type: 'string', description: 'startSession / importHandoff で受け取った sessionId' };
-const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other'];
+const UI_STAGES = ['bridge_ready', 'legacy_ready', 'render_onboarding', 'render_question', 'render_other', 'android_scroll_diag'];
+// Android実機のスクロール診断値（集計値のみ）。識別子・学習内容は受け付けない。
+const DIAG_KEY = /^[A-Za-z][A-Za-z0-9]{0,15}$/;
+const DIAG_MAX_KEYS = 64;
+function sanitizeScrollDiag(d) {
+  if (d === undefined) return undefined;
+  if (!d || typeof d !== 'object' || Array.isArray(d)) return null;
+  const keys = Object.keys(d);
+  if (keys.length > DIAG_MAX_KEYS) return null;
+  const out = {};
+  for (const k of keys) {
+    if (!DIAG_KEY.test(k)) return null;
+    const v = d[k];
+    if (typeof v === 'number') { if (!Number.isFinite(v)) return null; out[k] = v; }
+    else if (typeof v === 'boolean') out[k] = v;
+    else if (typeof v === 'string') { if (v.length > 160) return null; out[k] = v; }
+    else return null;
+  }
+  return out;
+}
+
 const ACCEPTED_WIDGET_VERSIONS = [WIDGET_VERSION, '2026-11-05.186', '2026-11-05.185', '2026-11-05.184', '2026-11-04.183', '2026-11-04.182', '2026-11-04.181', '2026-11-04.180', '2026-11-04.179', '2026-11-03.178', '2026-11-03.177', '2026-11-03.176', '2026-11-03.175', '2026-11-03.174', '2026-11-02.173', '2026-11-02.172', '2026-11-02.171', '2026-11-02.170', '2026-11-01.168', '2026-11-01.169'];
 
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-08.187');
 // 公開済みの旧版画面が自分の版で表示状況を報告できるようにする（v190切替時の登録漏れを修正）。
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-08.188', '2026-11-11.189');
+ACCEPTED_WIDGET_VERSIONS.push('2026-11-11.190');
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -59,9 +81,13 @@ export const TOOLS = [
     appOnly: true,
     uiOnly: true,
     description: '画面の通信と描画の到達点だけを記録する。学習データを送らず、画面も変更しない。',
-    inputSchema: { type: 'object', required: ['stage', 'version'], additionalProperties: false, properties: { stage: { type: 'string', enum: UI_STAGES }, version: { type: 'string', enum: ACCEPTED_WIDGET_VERSIONS } } },
+    inputSchema: { type: 'object', required: ['stage', 'version'], additionalProperties: false, properties: { stage: { type: 'string', enum: UI_STAGES }, version: { type: 'string', enum: ACCEPTED_WIDGET_VERSIONS }, diag: { type: 'object', description: 'android_scroll_diag の集計値のみ（数値・真偽・160文字以内の文字列）' } } },
     local: (a) => {
-      if (!UI_STAGES.includes(a.stage) || !ACCEPTED_WIDGET_VERSIONS.includes(a.version) || Object.keys(a).some((k) => !['stage', 'version'].includes(k))) return null;
+      if (!UI_STAGES.includes(a.stage) || !ACCEPTED_WIDGET_VERSIONS.includes(a.version) || Object.keys(a).some((k) => !['stage', 'version', 'diag'].includes(k))) return null;
+      if (a.diag !== undefined && a.stage !== 'android_scroll_diag') return null;
+      const diag = sanitizeScrollDiag(a.diag);
+      if (diag === null) return null;
+      if (diag) { console.log(JSON.stringify({ event: 'widget_scroll_diag', version: a.version, diag })); return { status: 'recorded' }; }
       console.log(JSON.stringify({ event: 'widget_ui', stage: a.stage, version: a.version }));
       return { status: 'recorded' };
     },
@@ -692,6 +718,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v186.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v187.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v188.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v189.html');
+LEGACY_WIDGET_URIS.push('ui://qlp/question-v190.html');
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -826,6 +853,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v190.html')) return stable190Html();
   if (uri.endsWith('/question-v189.html')) return stable189Html();
   if (uri.endsWith('/question-v188.html')) return stable188Html();
   if (uri.endsWith('/question-v187.html')) return stable187Html();

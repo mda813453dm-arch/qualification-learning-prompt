@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION } from '../src/widget-current.js';
 import { WIDGET_URI as V189_URI, WIDGET_VERSION as V189_VERSION } from '../src/widget-v189.js';
+import { WIDGET_URI as V190_URI, WIDGET_VERSION as V190_VERSION } from '../src/widget-v190.js';
 
 const rpc = (id, method, params={}) => ({ jsonrpc: '2.0', id, method, params });
 const baseUrl='https://qlp.example';
@@ -38,9 +39,17 @@ test('Cached iPhone UI URIs receive stable legacy HTML, not Android v170 touch h
   assert.ok(cached189.contents[0].text.includes(V189_VERSION));
   assert.doesNotMatch(cached189.contents[0].text,/qlp-android-v190-inner-scroll/,'v189 HTML stays immutable');
   assert.match(current.text,/qlp-android-v190-inner-scroll/,'current widget carries the v190 Android inner-scroll owner');
+  // 直前の公開版v190を開いたままの会話は、診断を含まないv190のHTMLを受け取る。
+  assert.notEqual(V190_URI,WIDGET_URI,'v190 is no longer the current URI');
+  const cached190=(await handleRpc(rpc(13,'resources/read',{uri:V190_URI}),api,{widget:true,baseUrl})).result;
+  assert.equal(cached190.contents?.[0]?.uri,V190_URI,'cached v190 URI must not become Unknown resource');
+  assert.ok(cached190.contents[0].text.includes(V190_VERSION));
+  assert.match(cached190.contents[0].text,/qlp-android-v190-inner-scroll/);
+  assert.doesNotMatch(cached190.contents[0].text,/qlp-v191-scroll-diag/,'v190 HTML stays immutable');
   const resources=(await handleRpc(rpc(5,'resources/list'),api,{widget:true,baseUrl})).result.resources;
   assert.equal(resources.filter(x=>x.uri===WIDGET_URI).length,1,'latest URI only once');
   assert.equal(resources.filter(x=>x.uri===V189_URI).length,1,'previous v189 URI remains listed for cached sessions');
+  assert.equal(resources.filter(x=>x.uri===V190_URI).length,1,'previous v190 URI remains listed for cached sessions');
 });
 
 test('UI reopening without sessionId uses only the server-bound conversation', async () => {
@@ -85,7 +94,7 @@ test('UI reopening reads prior session and does not create new session, grade, o
 
 test('Legacy widgets can report real rendering stage using their own version', async ()=>{
   const api=()=>{ throw Error('no API'); };
-  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170','2026-11-02.172','2026-11-02.173','2026-11-03.174','2026-11-03.175','2026-11-03.176','2026-11-03.177','2026-11-03.178','2026-11-08.188','2026-11-11.189',WIDGET_VERSION]){
+  for(const ver of ['2026-11-01.168','2026-11-01.169','2026-11-02.170','2026-11-02.172','2026-11-02.173','2026-11-03.174','2026-11-03.175','2026-11-03.176','2026-11-03.177','2026-11-03.178','2026-11-08.188','2026-11-11.189','2026-11-11.190',WIDGET_VERSION]){
     const value=(await handleRpc(rpc(7,'tools/call',{name:'reportUiEvent',arguments:{stage:'render_onboarding',version:ver}}),api,{widget:true,baseUrl})).result;
     assert.equal(value.structuredContent.status,'recorded');
   }

@@ -32,7 +32,12 @@ const legacy189 = await rpc('resources/read', { uri:'ui://qlp/question-v189.html
 assert.equal(legacy189.contents[0].uri, 'ui://qlp/question-v189.html', 'v189 URIが公開版で解決できる');
 assert.ok(legacy189.contents[0].text.includes('2026-11-11.189'), 'v189 URIはその版のHTMLを維持');
 assert.ok(!legacy189.contents[0].text.includes('qlp-android-v190-inner-scroll'), 'v189へv190の変更を流し込まない');
-for (const version of ['2026-11-08.188', '2026-11-11.189', WIDGET_VERSION]) {
+// 直前の公開版v190（v191切替後の旧版）も維持する。
+const legacy190 = await rpc('resources/read', { uri:'ui://qlp/question-v190.html' });
+assert.equal(legacy190.contents[0].uri, 'ui://qlp/question-v190.html', 'v190 URIが公開版で解決できる');
+assert.ok(legacy190.contents[0].text.includes('2026-11-11.190'), 'v190 URIはその版のHTMLを維持');
+assert.ok(!legacy190.contents[0].text.includes('qlp-v191-scroll-diag'), 'v190へv191の診断を流し込まない');
+for (const version of ['2026-11-08.188', '2026-11-11.189', '2026-11-11.190', WIDGET_VERSION]) {
   // 表示段階の報告は集計ログだけで、学習記録・採点を変更しない。
   const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version } });
   assert.equal(reported.isError, undefined, `${version} の画面が表示状況を報告できる`);
@@ -62,6 +67,10 @@ assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visi
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
+assert.ok(resource.contents[0].text.includes('qlp-v191-scroll-diag'), 'Android実機スクロール診断が公開版に含まれる');
+// 診断値の受付（集計値のみ・学習記録は変更しない）。
+const diagReport = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'android_scroll_diag', version: WIDGET_VERSION, diag: { trigger: 'deploy-check', ts: 0, tm: 0 } } });
+assert.equal(diagReport.isError, undefined, 'スクロール診断の報告を公開版が受け付ける');
 assert.ok(resource.contents[0].text.includes('preparedLessons["管理組合の運営の円滑化"] = '),
   'マンション管理士の確認問題3問を公開画面が内蔵している');
 assert.ok(resource.contents[0].text.includes('確認問題は未登録です。'),
