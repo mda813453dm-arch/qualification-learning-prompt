@@ -548,3 +548,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-11 v190 Android ChatGPT scroll fix: deploy widget-v190.js (58a657d) wired via mcp.js (9a4f692), invalidate cached v189 resource, run regression and production smoke; require real Android app confirmation before marking fixed.
 
 2026-11-11 v190 regression repair: align lesson-publish-metadata.test.js and mcp.test.js expected widget URI with v190 (58d6391, 05bf4ea). Re-run full CI, Cloud Run deploy and production smoke. Android native swipe behavior remains unverified.
+
+2026-11-12 v190 legacy repair 74bd83e: keep v189 URI/HTML/version as legacy after the v190 switch (root cause of tests 226/290), test the current widget via widget-current.js, run full CI, deploy to Cloud Run and production smoke. Android native app swipe remains unverified on a real device.
