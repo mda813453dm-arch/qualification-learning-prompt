@@ -27,6 +27,16 @@ const legacy168 = await rpc('resources/read', { uri:'ui://qlp/question-v168.html
 assert.ok(legacy168.contents[0].text.includes('2026-11-01.168'), '旧iPhone URIは安定版を保持');
 assert.ok(!legacy168.contents[0].text.includes('qlpAndroidScrollTools'),
   '旧iPhoneリソースへ新しいAndroidタッチ処理を流し込まない');
+// 直前の公開版v189を開いたままの会話でも画面が消えない（v190切替時の登録漏れの回帰）。
+const legacy189 = await rpc('resources/read', { uri:'ui://qlp/question-v189.html' });
+assert.equal(legacy189.contents[0].uri, 'ui://qlp/question-v189.html', 'v189 URIが公開版で解決できる');
+assert.ok(legacy189.contents[0].text.includes('2026-11-11.189'), 'v189 URIはその版のHTMLを維持');
+assert.ok(!legacy189.contents[0].text.includes('qlp-android-v190-inner-scroll'), 'v189へv190の変更を流し込まない');
+for (const version of ['2026-11-08.188', '2026-11-11.189', WIDGET_VERSION]) {
+  // 表示段階の報告は集計ログだけで、学習記録・採点を変更しない。
+  const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version } });
+  assert.equal(reported.isError, undefined, `${version} の画面が表示状況を報告できる`);
+}
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.sessionId, '保存済み問題の読取引数が公開されている');
 assert.ok(list.tools.find(t => t.name === 'explainSpec')?.inputSchema.properties.explanationRef, '学習参照番号による復元ツールが公開されている');
 assert.ok(list.tools.find(t => t.name === 'showMenu')?.inputSchema.properties.explanationRef,
