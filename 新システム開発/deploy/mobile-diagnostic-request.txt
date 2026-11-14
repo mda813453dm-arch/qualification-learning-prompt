@@ -1,3 +1,2 @@
-2026-11-14T11:50+09:00 Android ChatGPT app: user reports inner scroll still broken and names v190, although v192 (natural height) was deployed 2026-11-12T10:15Z.
-Read-only: which widget versions were actually read/rendered and which Android scroll diagnostics arrived since v192 deploy.
-SINCE=2026-11-12T10:15:00Z
+2026-11-14T14:40+09:00 Android ChatGPT app: user confirms the whole study content is shown without inner scroll (resolved). Read-only check that the device actually loaded v192.
+SINCE=2026-11-14T02:47:00Z
