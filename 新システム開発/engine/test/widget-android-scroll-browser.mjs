@@ -4,6 +4,7 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { widgetHtml as currentHtml, WIDGET_VERSION } from '../src/widget-current.js';
+import { widgetHtml as legacy192Html } from '../src/widget-v192.js';
 import { widgetHtml as legacy191Html } from '../src/widget-v191.js';
 import { widgetHtml as legacy190Html } from '../src/widget-v190.js';
 import { widgetHtml as legacy189Html } from '../src/widget-v189.js';
@@ -14,6 +15,7 @@ import { widgetHtml as legacy189Html } from '../src/widget-v189.js';
 //  document = 旧版v189。iframe文書がスクロールする（キャッシュ済み会話向けに不変で残す）。
 const variants = [
   ['current '+WIDGET_VERSION, currentHtml, 'natural'],
+  ['legacy 2026-11-12.192', legacy192Html, 'natural'],
   ['legacy 2026-11-12.191', legacy191Html, 'inner'],
   ['legacy 2026-11-11.190', legacy190Html, 'inner'],
   ['legacy 2026-11-11.189', legacy189Html, 'document'],

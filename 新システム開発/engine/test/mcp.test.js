@@ -217,11 +217,12 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  // 検査したHTMLの版＝公開する版（v192：AndroidもiPhoneと同じ内容全体の高さで表示。診断は維持）。
-  assert.match(WIDGET_URI, /question-v192\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-12.192');
+  // 検査したHTMLの版＝公開する版（v193：v192の全体表示のまま、スクロール診断メニューを削除）。
+  assert.match(WIDGET_URI, /question-v193\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-14.193');
   assert.match(html, /qlp-v192-natural-height/);
-  assert.match(html, /qlp-v191-scroll-diag/);
+  assert.match(html, /qlp-v193-no-scroll-diag/);
+  assert.doesNotMatch(html, /qlp-v191-scroll-diag/);
   assert.match(TOOLS.find(x => x.name === 'explainSpec').description, /公式過去問の照合用/);
 });
 

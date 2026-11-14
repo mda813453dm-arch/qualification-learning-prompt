@@ -42,7 +42,13 @@ const legacy191 = await rpc('resources/read', { uri:'ui://qlp/question-v191.html
 assert.equal(legacy191.contents[0].uri, 'ui://qlp/question-v191.html', 'v191 URIが公開版で解決できる');
 assert.ok(legacy191.contents[0].text.includes('2026-11-12.191'), 'v191 URIはその版のHTMLを維持');
 assert.ok(!legacy191.contents[0].text.includes('qlp-v192-natural-height'), 'v191へv192の変更を流し込まない');
-for (const version of ['2026-11-08.188', '2026-11-11.189', '2026-11-11.190', '2026-11-12.191', WIDGET_VERSION]) {
+// 直前の公開版v192（全体表示＋スクロール診断）も維持する。
+const legacy192 = await rpc('resources/read', { uri:'ui://qlp/question-v192.html' });
+assert.equal(legacy192.contents[0].uri, 'ui://qlp/question-v192.html', 'v192 URIが公開版で解決できる');
+assert.ok(legacy192.contents[0].text.includes('2026-11-12.192'), 'v192 URIはその版のHTMLを維持');
+assert.ok(legacy192.contents[0].text.includes('qlp-v191-scroll-diag'), 'v192 URIは診断付きのまま');
+assert.ok(!legacy192.contents[0].text.includes('qlp-v193-no-scroll-diag'), 'v192へv193の変更を流し込まない');
+for (const version of ['2026-11-08.188', '2026-11-11.189', '2026-11-11.190', '2026-11-12.191', '2026-11-12.192', WIDGET_VERSION]) {
   // 表示段階の報告は集計ログだけで、学習記録・採点を変更しない。
   const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version } });
   assert.equal(reported.isError, undefined, `${version} の画面が表示状況を報告できる`);
@@ -72,10 +78,11 @@ assert.deepEqual(list.tools.find(t => t.name === 'explainSpec')?._meta?.ui?.visi
 assert.match(list.tools.find(t => t.name === 'nextQuestion')?.description || '', /公式解説資料の安全な取得/, '既存のモデル公開ツールに解説参照の予備経路を公開');
 const resource = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(resource.contents[0].text.includes(WIDGET_VERSION), '検査済みUIの版が公開されている');
-assert.ok(resource.contents[0].text.includes('qlp-v191-scroll-diag'), 'Android実機スクロール診断が公開版に含まれる');
+assert.ok(!resource.contents[0].text.includes('qlp-v191-scroll-diag'), '公開版からスクロール診断メニューを外した（v193）');
+assert.ok(resource.contents[0].text.includes('qlp-v193-no-scroll-diag'), 'スクロール診断を外した版が公開されている');
 assert.ok(resource.contents[0].text.includes('qlp-v192-natural-height'), 'AndroidもiPhoneと同じ内容全体の高さで表示する版が公開されている');
-// 診断値の受付（集計値のみ・学習記録は変更しない）。
-const diagReport = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'android_scroll_diag', version: WIDGET_VERSION, diag: { trigger: 'deploy-check', ts: 0, tm: 0 } } });
+// 診断値の受付（旧版v192の画面から。集計値のみ・学習記録は変更しない）。
+const diagReport = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'android_scroll_diag', version: '2026-11-12.192', diag: { trigger: 'deploy-check', ts: 0, tm: 0 } } });
 assert.equal(diagReport.isError, undefined, 'スクロール診断の報告を公開版が受け付ける');
 assert.ok(resource.contents[0].text.includes('preparedLessons["管理組合の運営の円滑化"] = '),
   'マンション管理士の確認問題3問を公開画面が内蔵している');

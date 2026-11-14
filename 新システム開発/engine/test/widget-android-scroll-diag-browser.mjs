@@ -1,8 +1,10 @@
-// Browser check of the v191 Android scroll diagnostics. This simulates the host;
-// it proves the measuring tool works, NOT that the Android ChatGPT app scrolls.
+// Browser check of the Android scroll diagnostics in legacy v192 (cached sessions).
+// v193 (current) removed the diagnostics menu; this also checks that it shows no button.
+// This simulates the host; it proves the measuring tool works, NOT that the Android ChatGPT app scrolls.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { widgetHtml, WIDGET_VERSION } from '../src/widget-current.js';
+import { widgetHtml, WIDGET_VERSION } from '../src/widget-v192.js';
+import { widgetHtml as currentHtml, WIDGET_VERSION as CURRENT_VERSION } from '../src/widget-current.js';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
@@ -103,6 +105,58 @@ try {
       assert.equal(await panel.isVisible(),false);
       assert.deepEqual(errors,[],name+' browser exceptions');
       console.log(name+' PASS '+text.split('\n')[0]);
+    } finally { await context.close(); }
+  }
+  // Current version (v193): the diagnostics menu is removed on Android and iPhone,
+  // no diagnostic report is sent, and the frame keeps the full content height.
+  for (const [name, ua] of agents) {
+    const context = await browser.newContext({ viewport:{width:393,height:852}, screen:{width:393,height:852}, userAgent:ua, isMobile:true, hasTouch:true });
+    try {
+      const page = await context.newPage();
+      const errors = [];
+      page.on('pageerror', e=>errors.push(e.message));
+      await page.route('https://qlp.test/**', route=>route.fulfill({ contentType:'text/html',
+        body:'<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;min-height:3500px"></body></html>' }));
+      await page.goto('https://qlp.test/');
+      await page.evaluate(html=>{
+        const iframe=document.createElement('iframe');
+        iframe.id='study'; iframe.style.cssText='display:block;width:100%;height:120px;border:0';
+        window.addEventListener('message',event=>{
+          if(event.source!==iframe.contentWindow||!event.data||event.data.jsonrpc!=='2.0')return;
+          if(event.data.method==='ui/initialize')
+            iframe.contentWindow.postMessage({jsonrpc:'2.0',id:event.data.id,result:{protocolVersion:'2026-01-26',hostCapabilities:{}}},'*');
+          if(event.data.method==='tools/call')
+            iframe.contentWindow.postMessage({jsonrpc:'2.0',id:event.data.id,result:{structuredContent:{status:'recorded'}}},'*');
+        });
+        const shim='<script>window.__calls=[];window.openai={toolOutput:null,displayMode:"inline",maxHeight:500,'+
+          'callTool:function(n,a){window.__calls.push({name:n,args:a});return Promise.resolve({structuredContent:{status:"recorded"}});},'+
+          'notifyIntrinsicHeight:function(h){window.frameElement.style.height=Math.ceil(h)+"px"}};<\/script><script>';
+        iframe.srcdoc=html.replace('<script>',shim);
+        document.body.appendChild(iframe);
+      }, currentHtml());
+      const frame=page.frameLocator('#study');
+      const app=frame.locator('#app');
+      await app.waitFor();
+      await app.evaluate(el=>{ el.innerHTML='<h2>試験概要</h2>'+Array.from({length:90},(_,i)=>'<section style="padding:12px;border-bottom:1px solid #888">過去問 '+(i+1)+'</section>').join(''); });
+      await page.waitForTimeout(300);
+      assert.equal(await frame.locator('#qlpScrollDiagPill').count(),0,name+' current: no diagnostic button');
+      assert.equal(await frame.locator('#qlpScrollDiagPanel').count(),0,name+' current: no diagnostic panel');
+      const box=await app.boundingBox();
+      const x=box.x+box.width/2, y=Math.min(box.y+300,700);
+      const cdp=await context.newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});
+      for(let i=1;i<=4;i++){ await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x,y:y-i*30}]}); await page.waitForTimeout(18); }
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});
+      await cdp.detach();
+      await page.waitForTimeout(1800);
+      const m=await app.evaluate(el=>({h:el.clientHeight,sh:el.scrollHeight,frameH:window.frameElement.getBoundingClientRect().height,
+        diag:window.__calls.filter(c=>c.args&&c.args.stage==='android_scroll_diag').length,api:typeof window.qlpScrollDiag}));
+      assert.ok(m.h>2000 && m.sh<=m.h+2,name+' current: full content height, no inner scroll');
+      assert.ok(m.frameH>2000,name+' current: host frame shows the whole content');
+      assert.equal(m.diag,0,name+' current: no diagnostic report is sent');
+      assert.equal(m.api,'undefined',name+' current: diagnostic API is gone');
+      assert.deepEqual(errors,[],name+' current browser exceptions');
+      console.log(name+' current '+CURRENT_VERSION+' PASS (no diagnostics menu)');
     } finally { await context.close(); }
   }
 } finally { await browser.close(); }
