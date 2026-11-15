@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { handleRpc } from '../src/mcp.js';
 import { WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
 import { WIDGET_VERSION as V192_VERSION, widgetHtml as v192Html } from '../src/widget-v192.js';
+import { WIDGET_VERSION as V193_VERSION, widgetHtml as v193Html } from '../src/widget-v193.js';
 import { widgetHtml as v190Html } from '../src/widget-v190.js';
 
 const rpc = (id, method, params={}) => ({ jsonrpc: '2.0', id, method, params });
@@ -60,9 +61,9 @@ test('legacy v192 (cached sessions) keeps natural height and Android-only passiv
   assert.doesNotMatch(html,/qlp-v193-no-scroll-diag/,'v192 HTML stays immutable');
 });
 
-test('v193 removes the scroll diagnostics menu and keeps the v192 natural-height display', () => {
-  const html=widgetHtml();
-  assert.equal(WIDGET_VERSION,'2026-11-14.193');
+test('v193 cached URI remains the unchanged diagnostic-free natural-height widget', () => {
+  const html=v193Html();
+  assert.equal(V193_VERSION,'2026-11-14.193');
   assert.match(html,/qlp-v193-no-scroll-diag/);
   // 診断ボタン・パネル・計測・自動報告がすべて無い。
   assert.doesNotMatch(html,/qlp-v191-scroll-diag|qlpScrollDiag|スクロール診断|android_scroll_diag/);
@@ -71,7 +72,7 @@ test('v193 removes the scroll diagnostics menu and keeps the v192 natural-height
   assert.match(html,/if \(false \/\* v192/);
   assert.equal((html.match(/\/Android\/i\.test\(/g)||[]).length,1,'only the disabled legacy branch mentions Android');
   // 診断以外はv192と同一（版番号と目印だけが違う）。
-  const strip=s=>s.replaceAll(V192_VERSION,'V').replaceAll(WIDGET_VERSION,'V');
+  const strip=s=>s.replaceAll(V192_VERSION,'V').replaceAll(V193_VERSION,'V');
   let old=strip(v192Html());
   const a=old.indexOf('\n<style id="qlp-v191-scroll-diag-style">');old=old.slice(0,a)+old.slice(old.indexOf('</style>',a)+8);
   const b=old.indexOf('<script id="qlp-v191-scroll-diag">');old=old.slice(0,b)+old.slice(old.indexOf('</script>',b)+9);
