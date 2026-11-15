@@ -4,6 +4,7 @@ import { CATALOG } from '../src/catalog.js';
 import { splitInlineQuestionStatements } from '../src/question-layout.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
 import { widgetHtml as old193Html } from '../src/widget-v193.js';
+import { widgetHtml as old194Html } from '../src/widget-v194.js';
 
 const surveyor = '次の a ～ e の文から誤っているものを選べ。 a. 「測量」とは土地の測量をいう。 b. 「測量作業機関」とは測量する者をいう。 c. 「測量標」とは標識をいう。 d. 承諾が必要である。 e. 公共測量は規定に従う。';
 
@@ -49,11 +50,14 @@ test('原文優先：小数・少数のラベル・元のMarkdown表・HTML特�
   ]) assert.equal(splitInlineQuestionStatements(text), text);
 });
 
-test('新URIと旧版の不変性：v194のみ段落分割し、v193の全体表示は維持', () => {
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v194.html');
-  assert.equal(WIDGET_VERSION, '2026-11-15.194');
-  const current = widgetHtml(), old = old193Html();
+test('新URIと旧版の不変性：v195で全出題経路を整形し、v194・v193は維持', () => {
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v195.html');
+  assert.equal(WIDGET_VERSION, '2026-11-16.195');
+  const current = widgetHtml(), old = old193Html(), old194 = old194Html();
   assert.match(current, /inline-statement-paragraphs-v194/);
+  assert.match(current, /all-question-modes-v195/);
+  assert.doesNotMatch(old194, /all-question-modes-v195/);
+  assert.match(old194, /inline-statement-paragraphs-v194/);
   assert.match(current, /\.choices \.opt span\{white-space:pre-wrap/);
   assert.match(current, /qlp-v192-natural-height/);
   assert.doesNotMatch(current, /qlp-v191-scroll-diag/);
