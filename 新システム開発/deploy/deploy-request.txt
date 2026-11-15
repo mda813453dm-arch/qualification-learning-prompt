@@ -563,3 +563,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-16 v194 retry: the prior run 43724279208 found one stale regression test asserting current URI v193. Update android-scroll-diag.test.js to read stable v193 directly (cb93d53), while v194 remains current. Repeat all tests and Cloud Run smoke checks; no claims of comprehensive records audit until data-wide verification.
 
 2026-11-16 v194 follow-up: include AI confirmation and remediation question text in the same display-only paragraph formatter (7133ff0), add cross-qualification tests (260d680), keep immutable v193. Deploy current branch and run full regression plus public checks; manual mobile confirmation pending.
+
+2026-11-16 v195 FINAL: v194 already entered deployment, so freeze legacy v194 unchanged; publish new v195 for AI confirmation/remediation paragraph formatting in addition to all 103-qualification shared official and diagnostic questions. Verify v193/v194 legacy stable, all npm regressions, Cloud Run deploy and all production checks. Only confirm production after workflow status success; verify new UI in new chat.
