@@ -36,6 +36,8 @@ test('全資格共通：ア〜オ・（1）〜（5）・丸数字を分離し、
   assert.match(html, /if \(q\.stem\) h \+= '<div class="stem">' \+ stemHtml\(q\.stem\)/);
   assert.match(html, /function diagQuestion\(q, head\)/);
   assert.match(html, /'<div class="stem">' \+ stemHtml\(q\.stem\)/);
+  assert.match(html, /stemHtml\(d\.question\)/, 'AI登録の通常確認問題も段落を復元する');
+  assert.match(html, /stemHtml\(d\.question \|\| ''\)/, 'AI登録の補強問題も段落を復元する');
 });
 
 test('原文優先：小数・少数のラベル・元のMarkdown表・HTML特殊文字は書き換えない', () => {
