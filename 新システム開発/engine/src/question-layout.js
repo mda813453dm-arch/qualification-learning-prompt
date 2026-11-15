@@ -23,7 +23,7 @@ export function splitInlineQuestionStatements(input) {
     var matches = [], match;
     definition.pattern.lastIndex = 0;
     while ((match = definition.pattern.exec(source)) !== null) {
-      var label = match[2].normalize('NFKC');
+      var label = match[2].normalize('NFKC').toLowerCase();
       var number = definition.labels.indexOf(label);
       var at = match.index + match[1].length;
       if (number >= 0 && !isMarkdownTableRow(at)) matches.push({ at: at, number: number });
