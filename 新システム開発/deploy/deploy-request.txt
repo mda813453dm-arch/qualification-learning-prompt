@@ -559,3 +559,5 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-14 17:45 再配置（v193：スクロール診断メニューを外す。表示はv192のまま。水野さんの指示）
 
 2026-11-15 v194 OCR readability across all qualifications: deploy shared statement paragraph formatter for initial diagnosis and official questions, preserve exact registered question/choice/answer data, keep natural-height Android/iPhone, retain v193 legacy URI. Run full npm regression suite and all Cloud Run production checks. Mobile real-device verification still required.
+
+2026-11-16 v194 retry: the prior run 43724279208 found one stale regression test asserting current URI v193. Update android-scroll-diag.test.js to read stable v193 directly (cb93d53), while v194 remains current. Repeat all tests and Cloud Run smoke checks; no claims of comprehensive records audit until data-wide verification.
