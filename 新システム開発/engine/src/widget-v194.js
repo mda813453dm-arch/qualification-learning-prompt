@@ -17,6 +17,17 @@ export function widgetHtml() {
     var lines=splitInlineQuestionStatements(t).split(/\r?\n/), out=[];`;
   if (html.split(target).length !== 2) throw new Error('V194_STEM_ANCHOR_MISSING');
   html = html.replace(target, replacement);
+  // AI-registered confirmation/remediation questions use the same display formatter.
+  // The stored question, answer keys and registration payload are never modified.
+  for (const [before, after] of [
+    [`'<div class="stem">' + esc(d.question) + '</div><div class="choices">'`,
+     `'<div class="stem">' + stemHtml(d.question) + '</div><div class="choices">'`],
+    [`'<div class="stem">' + esc(d.question || '') + '</div><div class="choices" id="remediationChoices">'`,
+     `'<div class="stem">' + stemHtml(d.question || '') + '</div><div class="choices" id="remediationChoices">'`],
+  ]) {
+    if (html.split(before).length !== 2) throw new Error('V194_QUESTION_RENDER_ANCHOR_MISSING');
+    html = html.replace(before, after);
+  }
   const head = '</head>';
   if (html.split(head).length !== 2) throw new Error('V194_HEAD_ANCHOR_MISSING');
   html = html.replace(head, '<style id="qlp-v194-question-layout">.choices .opt span{white-space:pre-wrap;overflow-wrap:anywhere}</style>' +
