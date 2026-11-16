@@ -23,6 +23,8 @@ export const SEPARATION_LABELS = {
   choice_image: '選択肢が原本画像の問題',
 };
 
+/** 登録のない問（受講者の取り込み・今後の取り込み）で、自動判定の図を出すときの注意。 */
+export const AUTO_FIGURE_NOTICE = '図の切り出しは自動判定で、まだ目視で確認していません。図が欠けている、または本文・選択肢が重なって見える場合は、選択肢の後の原本の問題画像（または公式の問題PDF）で確認してください。';
 export const UNVERIFIED_NOTICE = '図表分離未検証：この問題の図表は、まだ図表だけを切り出せていません。図表は原本の問題画像（または公式の問題PDF）で確認してください。';
 const FIGURE_REF = /(?:図|表|グラフ|地図|写真|資料)\s*[0-9０-９①-⑨]|(?:次の|下の|右の|左の|以下の|下記の|上の)\s*(?:図|表|グラフ|地図|写真|フローチャート|画面|資料)|図に示|表に示|図のよう|表のよう|フローチャート|状態遷移図|ER図|構成図/;
 
@@ -111,6 +113,7 @@ export function separateFigures(packet, urlOf) {
   const notices = [];
   const figureRef = FIGURE_REF.test(String(overrides?.stem ?? packet.stem ?? '').normalize('NFKC'));
   if (status === 'unverified' && (figureRef || sources.length) && !figures.some((f) => f.role === 'figure')) notices.push(UNVERIFIED_NOTICE);
+  else if (status === 'unverified' && figures.some((f) => f.role === 'figure')) notices.push(AUTO_FIGURE_NOTICE);
   return { figures, sources, status, notices, overrides, check: entry?.check ?? 'geometry' };
 }
 

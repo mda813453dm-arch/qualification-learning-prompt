@@ -46,6 +46,52 @@ const add = registry.questions[key].add[0];
 assert.equal(sha(await img.arrayBuffer()), add.sha256, '目視確認した表6の画像と同じ');
 console.log('PASS 2025 測量士補 問6', fileOf(inline[0]), q.questionPdfSha256.slice(0, 12));
 
+// 4) 代表ケース：ITパスポートの選択肢画像・未検証・図表なし・図の再判定と本文の訂正、複数の図、土地家屋調査士の畳んだ問
+async function open(qualificationId, year, questionNumber, section) {
+  const res = await rpc('tools/call', { name: 'startSession', arguments: { qualificationId, sources: [],
+    requestedQuestion: { year, questionNumber, ...(section ? { section } : {}) } } });
+  assert.ok(!res.isError, `${qualificationId} ${year} ${section ?? ''} 問${questionNumber}: ` + JSON.stringify(res.structuredContent ?? res.content).slice(0, 300));
+  const qq = (res._meta?.qlp ?? res.structuredContent).question;
+  assert.equal(qq.questionNumber, questionNumber);
+  assert.equal(qq.correctAnswer, undefined, '回答前に正答を出さない');
+  return qq;
+}
+const roles = (qq) => (qq.figures ?? []).map((f) => f.role);
+async function fetchAll(qq) {
+  for (const u of qq.figureUrls ?? qq.figures.map((f) => f.url)) {
+    const r = await fetch(u.startsWith('http') ? u : base + u);
+    assert.equal(r.status, 200, u);
+  }
+}
+{
+  const c2 = await open('ITパスポート', 2016, 2, '春期');
+  assert.equal(c2.figureSeparation?.status, 'verified');
+  assert.deepEqual(roles(c2), ['choice_image']);
+  await fetchAll(c2);
+  console.log('PASS ITパスポート 2016春 問2 選択肢だけの画像');
+  const u52 = await open('ITパスポート', 2016, 52, '春期');
+  assert.equal(u52.figureSeparation?.status, 'unverified');
+  assert.ok(!roles(u52).includes('figure'), '未検証の問に図として画像を出さない');
+  assert.ok((u52.sourceImageUrls ?? []).length >= 1, '原本の問題画像は畳んで出す');
+  console.log('PASS ITパスポート 2016春 問52 未検証（原本を畳む）');
+  const n3 = await open('ITパスポート', 2016, 3, '春期');
+  assert.equal(n3.figureSeparation?.status, 'not_needed');
+  assert.equal(roles(n3).length, 0, '図表なしの問は本文と選択肢の間に画像を出さない');
+  console.log('PASS ITパスポート 2016春 問3 図表なし');
+  const f60 = await open('ITパスポート', 2016, 60, '春期');
+  assert.equal(f60.figureSeparation?.status, 'verified');
+  assert.deepEqual(roles(f60), ['figure']);
+  assert.match(f60.stem, /システム構成a～cについて/);
+  assert.match(f60.stem, /─□─は装置を表し/);
+  await fetchAll(f60);
+  console.log('PASS ITパスポート 2016春 問60 図だけ・本文を原本どおりに訂正');
+  const m7 = await open('測量士補', 2022, 7);
+  assert.equal(m7.figureSeparation?.status, 'verified');
+  assert.ok(roles(m7).filter((r) => r === 'figure').length >= 2, '複数の図');
+  await fetchAll(m7);
+  console.log('PASS 測量士補 2022 問7 複数の図');
+}
+
 let n = 0;
 for (const [k, e] of Object.entries(registry.questions)) {
   for (const a of e.add ?? []) {

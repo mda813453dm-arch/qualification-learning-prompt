@@ -5,7 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { present } from '../src/engine.js';
-import { separateFigures, inlineFigureUrls, registryEntry, UNVERIFIED_NOTICE } from '../src/figure-separation.js';
+import { separateFigures, inlineFigureUrls, registryEntry, UNVERIFIED_NOTICE, AUTO_FIGURE_NOTICE } from '../src/figure-separation.js';
 import { splitInlineQuestionStatements } from '../src/question-layout.js';
 import { widgetHtml } from '../src/widget-current.js';
 import { widgetHtml as v195Html } from '../src/widget-v195.js';
@@ -260,4 +260,37 @@ test('目視で決めた問：理由が記録され、確認済みは図か選�
     for (const r of Object.values(e.figures ?? {})) assert.notEqual(r, 'question_image', key);
   }
   assert.ok(visual >= 250);
+});
+
+test('未検証・選択肢が原本画像の問は、図として本文と選択肢の間に画像を出さない（欠けた図を確認済みのように見せない）', () => {
+  for (const [key, e] of Object.entries(REGISTRY.questions)) {
+    if (e.status !== 'unverified' && e.status !== 'choice_image') continue;
+    assert.ok(!Object.values(e.figures ?? {}).includes('figure'), key);
+    assert.ok(!(e.add ?? []).some((a) => a.role === 'figure'), key);
+  }
+  // 土地家屋調査士 2019 午前 問10：既存の画像は地図の一部が欠けていたため、原本の画像として畳む
+  const ls = Object.entries(REGISTRY.questions).find(([k]) => k.startsWith('fc83edc0b7c2') && k.split(':')[1].split('@')[0] === '10')[1];
+  assert.equal(ls.status, 'unverified');
+  assert.deepEqual(Object.values(ls.figures), ['source']);
+});
+
+test('本文の読み取り誤りを原本どおりに戻した問は、目視の記録を持つ（ITパスポート 2016春 問60・2017 問72）', () => {
+  const q60 = REGISTRY.questions['776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc:60'];
+  assert.match(q60.overrides.stem, /システム構成a～cについて/);
+  assert.match(q60.overrides.stem, /─□─は装置を表し/);
+  assert.ok(q60.overrides.verifiedBy);
+  const q72 = Object.entries(REGISTRY.questions).find(([k]) => k.startsWith('3f501237dd35') && k.split(':')[1].split('@')[0] === '72')[1];
+  assert.match(q72.overrides.stem, /01011010と01101011を加算/);
+  assert.ok(q72.overrides.verifiedBy);
+});
+
+test('登録のない問（受講者の取り込み）で自動判定の図を出すときは、目視未確認の注意を出す', () => {
+  const urlOf = (file) => `https://qlp.test/v1/figure/${encodeURIComponent(file)}`;
+  const sep = separateFigures({ qualificationId: 'q999', year: 2026, section: 'main', questionPdfSha256: 'f'.repeat(64), questionNumber: 3,
+    stemMode: 'text', choiceMode: 'text', stem: '次の図について',
+    figures: [{ file: 'up-q3-p1.png', width: 600, height: 300, page: 1, rect: [80, 300, 500, 420] }],
+    evidence: { questionPdfPages: [1], questionRect: [100, 700] } }, urlOf);
+  assert.equal(sep.status, 'unverified');
+  assert.deepEqual(sep.figures.map((f) => f.role), ['figure']);
+  assert.ok(sep.notices.includes(AUTO_FIGURE_NOTICE));
 });

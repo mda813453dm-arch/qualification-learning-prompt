@@ -70,6 +70,7 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--crops', required=True)
     ap.add_argument('--report', required=True)
+    ap.add_argument('--detail', help='問ごとの判定（資格・年度・区分・問番号・検出・最終状態）を書き出す先（集計の検算用）')
     ap.add_argument('--refined', default=os.path.join(HERE, 'figure_candidates_refined.json'))
     ap.add_argument('--choices', default=os.path.join(HERE, 'choice_region_candidates.json'))
     a = ap.parse_args()
@@ -88,6 +89,7 @@ def main():
     report = defaultdict(lambda: defaultdict(int))
     used_rules = set()
     by_section = defaultdict(dict)
+    detail = []
 
     def add_crop(row, q, k, spec):
         qsha = row['questionPdfSha256']
@@ -197,6 +199,10 @@ def main():
                 r['unverified'] += int(entry['status'] in ('unverified', 'choice_image'))
                 r['imageQuestion'] += int(entry['status'] == 'image_question')
                 r['newCrops'] += len(entry.get('add', []))
+                detail.append({'qualificationId': qid, 'year': year, 'section': section, 'questionPdfSha256': qsha,
+                               'questionNumber': n, 'questionId': q.get('questionId'), 'audit': st, 'detected': bool(defect),
+                               'status': entry['status'], 'check': entry['check'], 'crops': len(entry.get('add', [])),
+                               'cropRoles': [x['role'] for x in entry.get('add', [])], 'why': entry.get('why')})
     for key, secs in by_section.items():
         vals = list(secs.values())
         if all(json.dumps(v, sort_keys=True) == json.dumps(vals[0], sort_keys=True) for v in vals):
@@ -219,6 +225,9 @@ def main():
     rows = [{'qualificationId': k[0], 'year': k[1], 'section': k[2], 'questionPdfSha256': k[3], **v} for k, v in sorted(report.items(), key=lambda kv: (kv[0][0], str(kv[0][1]), kv[0][2]))]
     with open(a.report, 'w', encoding='utf-8') as f:
         json.dump(rows, f, ensure_ascii=False, indent=1)
+    if a.detail:
+        with open(a.detail, 'w', encoding='utf-8') as f:
+            json.dump(detail, f, ensure_ascii=False, indent=1)
     print('questions', len(registry), 'newCrops', len(manifest))
 
 
