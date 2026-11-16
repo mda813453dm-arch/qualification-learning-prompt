@@ -39,6 +39,18 @@ function lookup(sha, number, section) {
   return (section != null ? QUESTIONS[`${key}@${section}`] : null) ?? QUESTIONS[key] ?? null;
 }
 
+/**
+ * 判定表の登録が、保存データの本文の形（文字か原本画像か）と合うか。
+ * 本文が原本画像の問を目視で文字に起こした登録（overrides.stemMode が text）は、本文が原本画像の保存データに当てはめる。
+ * 採点後の再表示（present の結果）は本文の形が text になっているので、その登録の形にも合う。
+ */
+function shapeMatches(entry, packet) {
+  if (!entry) return false;
+  const imageStem = packet?.stemMode === 'official_image';
+  if (entry.overrides?.stemMode === 'text' && entry.overrides?.fromImageQuestion) return true;
+  return (entry.status === 'image_question') === imageStem;
+}
+
 /** 登録のない問の画像の役割（保存済みの座標で判定。迷えば照合用）。 */
 function geometricRole(packet, figure) {
   if (packet.stemMode === 'official_image') return 'question_image';
@@ -72,7 +84,7 @@ function geometricRole(packet, figure) {
 export function separateFigures(packet, urlOf) {
   let entry = registryEntry(packet);
   // 監査した分解結果と本文の形（文字か原本画像か）が違う保存データには、判定表を当てはめない
-  if (entry && (entry.status === 'image_question') !== (packet.stemMode === 'official_image')) entry = null;
+  if (!shapeMatches(entry, packet)) entry = null;
   const stored = packet.figures ?? [];
   const figures = [], sources = [];
   let status;
@@ -122,7 +134,7 @@ export function inlineFigureUrls(question) {
   const urls = (question?.figureUrls ?? (question?.figures ?? []).map((f) => f.url)).filter(Boolean);
   const sha = question?.questionPdfSha256 ?? /\/([a-f0-9]{64})\//.exec(urls[0] ?? '')?.[1];
   const entry = sha && Number.isInteger(question?.questionNumber) ? lookup(sha, question.questionNumber, question.section) : null;
-  if (!entry || (entry.status === 'image_question') !== (question.stemMode === 'official_image')) return urls;
+  if (!entry || !shapeMatches(entry, question)) return urls;
   return urls.filter((u) => {
     const file = decodeURIComponent(String(u).split('/').pop() ?? '');
     const role = (entry.figures ?? {})[file];

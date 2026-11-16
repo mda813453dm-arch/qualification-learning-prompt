@@ -32,9 +32,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     // 幅が980pxになり、375pxのボタン改行試験を偽の広幅で実行してしまう。
     await page.route('https://qlp.test/**', route => route.fulfill({ contentType: 'text/html',
       body: '<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body></body></html>' }));
+    // 正しく読める PNG にする（v197 は読めない画像を「図を表示できませんでした」に置き換えるため）
     await page.route('https://qlp.test/figure.png', route => route.fulfill({
       contentType: 'image/png', headers: { 'access-control-allow-origin': '*' },
-      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAAWHRFWHRTb3VyY2UAT2ZmaWNpYWwgdGVzdCBpbWFnZSByZWZlcmVuY2U6IHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4d9amawAAABRJREFUeJxj/P//PwMMMDEgAdwcAJZuAwXyJb75AAAAAElFTkSuQmCC', 'base64'),
+      body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAQ0lEQVR42u3PMQ0AAAgDIG1g/5Y20sQDGtA5VXWVJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk1aZcsBDhYqnkMAAAAASUVORK5CYII=', 'base64'),
     }));
     await page.goto('https://qlp.test/');
     await page.evaluate(({ html, first, question, nextQuestion }) => {
