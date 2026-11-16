@@ -103,6 +103,18 @@ async function fetchAll(qq) {
   assert.ok(roles(m7).filter((r) => r === 'figure').length >= 2, '複数の図');
   await fetchAll(m7);
   console.log('PASS 測量士補 2022 問7 複数の図');
+  const l1 = await open('土地家屋調査士', 2015, 1, '午前の部');
+  assert.equal(l1.stemMode, 'text', '本文が原本画像だった問を文字の本文で出す');
+  assert.equal(l1.figureSeparation?.status, 'verified');
+  assert.equal(roles(l1).filter((r) => r === 'figure').length, 2, '図表だけの画像2枚');
+  assert.ok(!roles(l1).includes('question_image'), '問題全体の画像を本文の代わりに出さない');
+  assert.ok((l1.sourceImageUrls ?? []).length >= 1, '原本の問題画像は照合用に残す');
+  assert.equal(l1.choices.length, 5);
+  await fetchAll(l1);
+  console.log('PASS 土地家屋調査士 2015 午前 問1 本文を文字に・図表だけの画像（第7回）');
+  const l20 = await open('土地家屋調査士', 2023, 20, '午後の部');
+  assert.equal(l20.stemMode, 'text'); assert.equal(l20.figureSeparation?.status, 'not_needed'); assert.equal(roles(l20).length, 0);
+  console.log('PASS 土地家屋調査士 2023 午後 問20 図表なし・文字だけ（第7回）');
 }
 
 let n = 0;

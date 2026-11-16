@@ -14955,6 +14955,1660 @@
    "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
    "round": 7,
    "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 1,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-4d6c-午前の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 2,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-4d6c-午前の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 3,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 6,
+     "rect": [
+      96.6,
+      248.3,
+      543.6,
+      617.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 4,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 7,
+     "rect": [
+      96.8,
+      184.1,
+      398.4,
+      281.0
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 5,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 8,
+     "rect": [
+      96.8,
+      162.7,
+      450.9,
+      387.2
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 6,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 9,
+     "rect": [
+      96.6,
+      248.3,
+      481.3,
+      531.0
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 9,
+     "rect": [
+      96.8,
+      526.5,
+      372.9,
+      644.5
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 7,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-4d6c-午前の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 8,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-4d6c-午前の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 9,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 12,
+     "rect": [
+      96.6,
+      205.5,
+      543.6,
+      549.0
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "4d6c",
+   "n": 10,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 13,
+     "rect": [
+      96.8,
+      226.9,
+      319.1,
+      387.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-4d6c-午前の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 1,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 2,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 3,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 4,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 5,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 6,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 7,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 8,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 9,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 10,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 11,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no11-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 12,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no12-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 13,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no13-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 14,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no14-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 15,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no15-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 16,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no16-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 17,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no17-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 18,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no18-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 19,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no19-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2018,
+   "sha": "28fa",
+   "n": 20,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-28fa-午後の部-no20-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2020,
+   "sha": "6c1e",
+   "n": 1,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 2,
+     "rect": [
+      93.4,
+      126.3,
+      507.2,
+      647.9
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-6c1e-午前の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2020,
+   "sha": "6c1e",
+   "n": 10,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 12,
+     "rect": [
+      88,
+      147,
+      484,
+      397
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 12,
+     "rect": [
+      96,
+      418,
+      536,
+      762
+     ],
+     "role": "choice_image"
+    }
+   ],
+   "overrides": "land_surveyor-6c1e-午前の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 1,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-d887-午前の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 2,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-d887-午前の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 3,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 4,
+     "rect": [
+      88.1,
+      261.2,
+      431.5,
+      616.5
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 4,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 5,
+     "rect": [
+      88.3,
+      218.4,
+      409.8,
+      439.9
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 5,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 6,
+     "rect": [
+      82.9,
+      218.4,
+      443.0,
+      492.2
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 6,
+     "rect": [
+      88.3,
+      498.6,
+      422.5,
+      616.7
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 6,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 7,
+     "rect": [
+      88.3,
+      175.6,
+      395.6,
+      314.8
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 7,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 8,
+     "rect": [
+      88.1,
+      261.2,
+      388.9,
+      503.6
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 8,
+     "rect": [
+      88.3,
+      507.5,
+      333.3,
+      646.8
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 8,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 9,
+     "rect": [
+      88.1,
+      175.6,
+      468.4,
+      447.9
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 9,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 10,
+     "rect": [
+      88.1,
+      197.0,
+      431.3,
+      462.9
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 10,
+     "rect": [
+      88.3,
+      466.0,
+      303.5,
+      605.3
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "d887",
+   "n": 10,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 11,
+     "rect": [
+      88.1,
+      286.3,
+      432.1,
+      510.7
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 11,
+     "rect": [
+      88.3,
+      507.1,
+      303.5,
+      646.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-d887-午前の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 1,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 2,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 3,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 4,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 5,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 6,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 7,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 8,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 9,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 10,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 11,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no11-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 12,
+   "section": "午後の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 13,
+     "rect": [
+      99.1,
+      325.3,
+      450.4,
+      573.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-51e7-午後の部-no12-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 13,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no13-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 14,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no14-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 15,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no15-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 16,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no16-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 17,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no17-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 18,
+   "section": "午後の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 19,
+     "rect": [
+      88.1,
+      282.4,
+      431.6,
+      439.7
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-51e7-午後の部-no18-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 19,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no19-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2022,
+   "sha": "51e7",
+   "n": 20,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-51e7-午後の部-no20-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 1,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-169a-午前の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 2,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 3,
+     "rect": [
+      88.1,
+      197.0,
+      458.7,
+      442.6
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 3,
+     "rect": [
+      88.3,
+      439.6,
+      395.6,
+      621.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 3,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 4,
+     "rect": [
+      88.1,
+      261.2,
+      434.7,
+      600.6
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 4,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-169a-午前の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 5,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 6,
+     "rect": [
+      88.3,
+      154.1,
+      333.3,
+      293.4
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 6,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 7,
+     "rect": [
+      88.1,
+      218.4,
+      447.5,
+      469.3
+     ],
+     "role": "figure"
+    },
+    {
+     "page": 7,
+     "rect": [
+      88.3,
+      461.0,
+      319.1,
+      600.3
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 7,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-169a-午前の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 8,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 9,
+     "rect": [
+      88.3,
+      175.6,
+      395.6,
+      336.1
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 9,
+   "section": "午前の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-169a-午前の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "169a",
+   "n": 10,
+   "section": "午前の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 11,
+     "rect": [
+      88.1,
+      175.6,
+      498.6,
+      544.1
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-169a-午前の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 1,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no1-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 2,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no2-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 3,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no3-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 4,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no4-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 5,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no5-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 6,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no6-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 7,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no7-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 8,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no8-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 9,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no9-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 10,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no10-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 11,
+   "section": "午後の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 12,
+     "rect": [
+      99.1,
+      410.9,
+      496.3,
+      588.3
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-30e8-午後の部-no11-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 12,
+   "section": "午後の部",
+   "status": "verified",
+   "existing": "source",
+   "add": [
+    {
+     "page": 13,
+     "rect": [
+      99.1,
+      475.1,
+      527.2,
+      664.0
+     ],
+     "role": "figure"
+    }
+   ],
+   "overrides": "land_surveyor-30e8-午後の部-no12-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 13,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no13-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 14,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no14-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 15,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no15-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 16,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no16-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 17,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no17-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 18,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no18-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 19,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no19-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
+  },
+  {
+   "q": "land_surveyor",
+   "year": 2023,
+   "sha": "30e8",
+   "n": 20,
+   "section": "午後の部",
+   "status": "not_needed",
+   "existing": "source",
+   "add": [],
+   "overrides": "land_surveyor-30e8-午後の部-no20-iq",
+   "why": "本文が原本画像の問を、文字の本文・図表だけの画像・文字の選択肢に分けた（目視で照合）",
+   "round": 7,
+   "iq": true
   }
  ],
  "overrides": {
@@ -16907,7 +18561,7 @@
    "round": 7
   },
   "land_surveyor-34fa-午前の部-no5-iq": {
-   "stem": "次の〔図〕のとおり，Ａ点及びＢ点を結ぶ直線をＢ点から2.00 ｍ延長したところにある点をＣ点とする場合において，Ａ点及びＢ点の座標値が次の〔座標値一覧表〕のとおりであるとき，Ａ点及びＣ点をＡ点から1：2 に内分するＰ点の座標値として最も近いものは，後記１から５までのうち，どれか。",
+   "stem": "次の〔図〕のとおり，Ａ点及びＢ点を結ぶ直線をＢ点から2.00 ｍ延長したところにある点をＣ点とする場合において，Ａ点及びＢ点の座標値が次の〔座標値一覧表〕のとおりであるとき，Ａ点及びＣ点をＡ点から1：2に内分するＰ点の座標値として最も近いものは，後記１から５までのうち，どれか。",
    "stemMode": "text",
    "choices": [
     "Ｘ座標（ｍ）：310.82　Ｙ座標（ｍ）：108.36",
@@ -16922,7 +18576,7 @@
    "round": 7
   },
   "land_surveyor-34fa-午前の部-no6-iq": {
-   "stem": "縮尺1/1000 の地形図上に，標高66.5 ｍのＡ点と標高59.0 ｍのＢ点がある。Ａ点及びＢ点間の水平距離を90.0 ｍとし，Ａ点及びＢ点の傾斜が一定であるとする場合，Ａ点及びＢ点を結ぶ線分上において，Ａ点から最も近い等高線までの図上距離として最も近いものは，後記１から５までのうち，どれか。ただし，等高線は，標高0 ｍを基準とし，1 ｍ間隔とする。",
+   "stem": "縮尺1/1000の地形図上に，標高66.5 ｍのＡ点と標高59.0 ｍのＢ点がある。Ａ点及びＢ点間の水平距離を90.0 ｍとし，Ａ点及びＢ点の傾斜が一定であるとする場合，Ａ点及びＢ点を結ぶ線分上において，Ａ点から最も近い等高線までの図上距離として最も近いものは，後記１から５までのうち，どれか。ただし，等高線は，標高0 ｍを基準とし，1 ｍ間隔とする。",
    "stemMode": "text",
    "choices": [
     "0.3ｃｍ",
@@ -17252,7 +18906,7 @@
    "round": 7
   },
   "land_surveyor-688d-午後の部-no18-iq": {
-   "stem": "登記所に保存される情報の保存期間に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　職権表示登記等事件簿に記録された情報は，立件の日から５年間保存される。\nイ　閉鎖した建物所在図は，閉鎖した日から50 年間保存される。\nウ　共同担保目録は，当該共同担保目録に記録されている全ての事項を抹消した日から10 年間保存される。\nエ　閉鎖した土地所在図は，申請書類つづり込み帳につづり込まれたものを除き，閉鎖した日から30 年間保存される。\nオ　筆界特定書に記載され，又は記録された情報は，10 年間保存される。",
+   "stem": "登記所に保存される情報の保存期間に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　職権表示登記等事件簿に記録された情報は，立件の日から５年間保存される。\nイ　閉鎖した建物所在図は，閉鎖した日から50年間保存される。\nウ　共同担保目録は，当該共同担保目録に記録されている全ての事項を抹消した日から10年間保存される。\nエ　閉鎖した土地所在図は，申請書類つづり込み帳につづり込まれたものを除き，閉鎖した日から30年間保存される。\nオ　筆界特定書に記載され，又は記録された情報は，10年間保存される。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17297,7 +18951,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no1-iq": {
-   "stem": "測量の誤差に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\nア　トランシットの望遠鏡の正（右）及び反（左）の観測値を平均することにより，視準線誤差，水平軸誤差，鉛直軸誤差，偏心誤差及び外心誤差を消去することができる。\nイ　多角測量における新点位置の精度は，多角網の形状により影響を受けるため，選点に当たっては，点間距離及び角度は均等になるように網の形状を考慮する必要がある。\nウ　GNSS 測量において，2 周波の観測により，電離層遅延誤差を軽減することができる。\nエ　光波測距儀の器械定数の変化による誤差は，測定距離に比例する。\nオ　トータルステーションにより，2 対回観測を行った結果から得られた水平角は，平均値を採用する。",
+   "stem": "測量の誤差に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\nア　トランシットの望遠鏡の正（右）及び反（左）の観測値を平均することにより，視準線誤差，水平軸誤差，鉛直軸誤差，偏心誤差及び外心誤差を消去することができる。\nイ　多角測量における新点位置の精度は，多角網の形状により影響を受けるため，選点に当たっては，点間距離及び角度は均等になるように網の形状を考慮する必要がある。\nウ　GNSS測量において，2周波の観測により，電離層遅延誤差を軽減することができる。\nエ　光波測距儀の器械定数の変化による誤差は，測定距離に比例する。\nオ　トータルステーションにより，2対回観測を行った結果から得られた水平角は，平均値を採用する。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17312,7 +18966,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no2-iq": {
-   "stem": "GNSS 測量機を用いた基準点測量を行った結果，次の〔表〕のとおり，基準点A から基準点B まで及び基準点A から基準点C までの地心直交座標系（平成14 年国土交通省告示第185 号）におけるX 軸，Y 軸及びZ 軸方向について，基線ベクトル成分を得た。なお，〔表〕中のΔX，ΔY 及びΔZ は，それぞれの基線ベクトル成分を示したものである。基準点B から基準点C までの斜距離が最も近いものは，後記1 から5 までのうち，どれか。",
+   "stem": "GNSS測量機を用いた基準点測量を行った結果，次の〔表〕のとおり，基準点Aから基準点Bまで及び基準点Aから基準点Cまでの地心直交座標系（平成14年国土交通省告示第185号）におけるX軸，Y軸及びZ軸方向について，基線ベクトル成分を得た。なお，〔表〕中のΔX，ΔY及びΔZは，それぞれの基線ベクトル成分を示したものである。基準点Bから基準点Cまでの斜距離が最も近いものは，後記1から5までのうち，どれか。",
    "stemMode": "text",
    "choices": [
     "490.227 m",
@@ -17327,7 +18981,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no3-iq": {
-   "stem": "次の〔図〕は，A 点における平面直角座標系（平成14 年国土交通省告示第9 号）の北方向で，X 軸に平行な方向（以下「座標の北方向」という。），真北方向，磁北方向及びB 点の方向を示したものである。各方向から作られる角について，次のアからオまでの記述のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\nア　A 点を通る磁北方向から時計回りにB 点を測定した測線への角を磁方位角という。\nイ　A 点を通る磁北方向から時計回りに真北方向までの角度を真北方向角という。\nウ　A 点を通る座標の北方向から時計回りにB 点を測定した測線への角を方向角という。\nエ　A 点を通る真北方向から時計回りにB 点を測定した測線への角を方位角という。\nオ　A 点を通る磁北方向から時計回りに座標の北方向までの角度を偏角という。",
+   "stem": "次の〔図〕は，A点における平面直角座標系（平成14年国土交通省告示第9号）の北方向で，X軸に平行な方向（以下「座標の北方向」という。），真北方向，磁北方向及びB点の方向を示したものである。各方向から作られる角について，次のアからオまでの記述のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\nア　A点を通る磁北方向から時計回りにB点を測定した測線への角を磁方位角という。\nイ　A点を通る磁北方向から時計回りに真北方向までの角度を真北方向角という。\nウ　A点を通る座標の北方向から時計回りにB点を測定した測線への角を方向角という。\nエ　A点を通る真北方向から時計回りにB点を測定した測線への角を方位角という。\nオ　A点を通る磁北方向から時計回りに座標の北方向までの角度を偏角という。",
    "stemMode": "text",
    "choices": [
     "アエ",
@@ -17342,7 +18996,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no4-iq": {
-   "stem": "次の〔文章〕は，標高，楕円体高及びジオイド高の関係について述べたものである。（ア）から（エ）までに入る語句の組合せとして最も適切なものは，後記1 から5 までのうち，どれか。\n〔文章〕\n平均海面を陸地内部まで延長したと仮定したときにできる仮想的な面のことを（ア）という。この面を高さの基準面とし，その面から地表までの高さを（イ）という。\nそして，〔図〕に示す準拠楕円体から（ア）までの高さを（ウ）といい，準拠楕円体から地表までの高さを（エ）という。\nGNSS 測量では，（エ）と（ウ）の関係を利用して（イ）を求めることができる。",
+   "stem": "次の〔文章〕は，標高，楕円体高及びジオイド高の関係について述べたものである。（ア）から（エ）までに入る語句の組合せとして最も適切なものは，後記1から5までのうち，どれか。\n〔文章〕\n平均海面を陸地内部まで延長したと仮定したときにできる仮想的な面のことを（ア）という。この面を高さの基準面とし，その面から地表までの高さを（イ）という。\nそして，〔図〕に示す準拠楕円体から（ア）までの高さを（ウ）といい，準拠楕円体から地表までの高さを（エ）という。\nGNSS測量では，（エ）と（ウ）の関係を利用して（イ）を求めることができる。",
    "stemMode": "text",
    "choices": [
     "（ア）：ジオイド　（イ）：ジオイド高　（ウ）：楕円体高　（エ）：標高",
@@ -17357,7 +19011,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no5-iq": {
-   "stem": "次の〔図〕のとおり，A 点，B 点及びC 点を順次結んだ直線で区割りされた甲土地及び乙土地について，これらの土地の面積を変えずに直線CD 上にP 点を設置し直線APで区割りしたとき，PC の距離として最も近いものは，後記1 から5 までのうち，どれか。\nなお，〔表〕は現地を観測した結果である。",
+   "stem": "次の〔図〕のとおり，A点，B点及びC点を順次結んだ直線で区割りされた甲土地及び乙土地について，これらの土地の面積を変えずに直線CD上にP点を設置し直線APで区割りしたとき，PCの距離として最も近いものは，後記1から5までのうち，どれか。\nなお，〔表〕は現地を観測した結果である。",
    "stemMode": "text",
    "choices": [
     "9.30 m",
@@ -17372,7 +19026,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no6-iq": {
-   "stem": "次の〔図〕のとおり，基準点測量において，既知点A から既知点B への視通を確保することができなかったため，既知点A を点C に偏心して，次の〔表〕のとおりの結果を得た。この場合の既知点A から既知点B までの水平距離S として最も近いものは，後記1 から5 までのうち，どれか。\nただし，cos θ ＝ －0.5000　　sin θ ＝ －0.8660 とする。",
+   "stem": "次の〔図〕のとおり，基準点測量において，既知点Aから既知点Bへの視通を確保することができなかったため，既知点Aを点Cに偏心して，次の〔表〕のとおりの結果を得た。この場合の既知点Aから既知点Bまでの水平距離Sとして最も近いものは，後記1から5までのうち，どれか。\nただし，cos θ ＝ －0.5000　　sin θ ＝ －0.8660とする。",
    "stemMode": "text",
    "choices": [
     "1,015 m",
@@ -17387,7 +19041,7 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no7-iq": {
-   "stem": "A 点を中心とする単曲線BC で次の〔図〕のような道路の中心線を計画したところ，C点付近で埋蔵文化財が発見されたためB 点及びD 点の位置は変更せずにC 点をE 点に変更することになった場合において，F 点を中心とする単曲線BE の弧長の距離として最も近いものは，後記1 から5 までのうち，どれか。ただし，直線AB 及び直線AC の距離はいずれも400 m であり，∠CDE の角度は12°，円周率は3.14 とするものとする。",
+   "stem": "A点を中心とする単曲線BCで次の〔図〕のような道路の中心線を計画したところ，C点付近で埋蔵文化財が発見されたためB点及びD点の位置は変更せずにC点をE点に変更することになった場合において，F点を中心とする単曲線BEの弧長の距離として最も近いものは，後記1から5までのうち，どれか。ただし，直線AB及び直線ACの距離はいずれも400 mであり，∠CDEの角度は12°，円周率は3.14とするものとする。",
    "stemMode": "text",
    "choices": [
     "413.36 m",
@@ -17402,14 +19056,14 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no8-iq": {
-   "stem": "基準点測量により，3 方向の水平角観測を行い，次の〔表〕のとおりの結果を得た。この場合において，倍角差及び観測差の制限に関する記述のうち正しいものは，後記1 から5 までのうち，どれか。ただし，制限は倍角差25″，観測差15″ とするものとする。",
+   "stem": "基準点測量により，3方向の水平角観測を行い，次の〔表〕のとおりの結果を得た。この場合において，倍角差及び観測差の制限に関する記述のうち正しいものは，後記1から5までのうち，どれか。ただし，制限は倍角差25″，観測差15″とするものとする。",
    "stemMode": "text",
    "choices": [
-    "B 方向の倍角差は，制限を超えている。",
-    "B 方向の観測差は，制限を超えている。",
-    "C 方向の倍角差は，制限を超えている。",
-    "C 方向の観測差は，制限を超えている。",
-    "A 及びB 方向の倍角差及び観測差は，全て制限を超えていない。"
+    "B方向の倍角差は，制限を超えている。",
+    "B方向の観測差は，制限を超えている。",
+    "C方向の倍角差は，制限を超えている。",
+    "C方向の観測差は，制限を超えている。",
+    "A及びB方向の倍角差及び観測差は，全て制限を超えていない。"
    ],
    "choiceMode": "text",
    "fromImageQuestion": true,
@@ -17417,14 +19071,14 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no9-iq": {
-   "stem": "次の〔図〕のA101 点，A102 点及びP 点の座標値は，次の〔表〕のとおりである。A101点に器械を据えA102 点を後視点としたとき，P 点を現地に測設するために必要な時計回りの角度及びA101 点からP 点までの距離として最も近いものは，後記1 から5 までのうち，どれか。",
+   "stem": "次の〔図〕のA101点，A102点及びP点の座標値は，次の〔表〕のとおりである。A101点に器械を据えA102点を後視点としたとき，P点を現地に測設するために必要な時計回りの角度及びA101点からP点までの距離として最も近いものは，後記1から5までのうち，どれか。",
    "stemMode": "text",
    "choices": [
-    "角度：165° 16′ 40″　距離：13.90 m",
-    "角度：165° 16′ 45″　距離：13.90 m",
-    "角度：165° 16′ 50″　距離：12.89 m",
-    "角度：194° 43′ 10″　距離：13.90 m",
-    "角度：194° 43′ 15″　距離：12.89 m"
+    "角度：165°16′40″　距離：13.90 m",
+    "角度：165°16′45″　距離：13.90 m",
+    "角度：165°16′50″　距離：12.89 m",
+    "角度：194°43′10″　距離：13.90 m",
+    "角度：194°43′15″　距離：12.89 m"
    ],
    "choiceMode": "text",
    "fromImageQuestion": true,
@@ -17432,14 +19086,14 @@
    "round": 7
   },
   "land_surveyor-78f7-午前の部-no10-iq": {
-   "stem": "次の〔図〕及び〔表〕のとおりA 点及びB 点を使用してC 点に取り付ける結合多角測量を行い，次の〔観測結果〕のとおりの結果を得た。この場合にQ 点の座標値として最も近いものは，後記1 から5 までのうち，どれか。ただし，座標の閉合差は均等配分計算するものとする。",
+   "stem": "次の〔図〕及び〔表〕のとおりA点及びB点を使用してC点に取り付ける結合多角測量を行い，次の〔観測結果〕のとおりの結果を得た。この場合にQ点の座標値として最も近いものは，後記1から5までのうち，どれか。ただし，座標の閉合差は均等配分計算するものとする。",
    "stemMode": "text",
    "choices": [
-    "X 座標：2238.96 m　Y 座標：1588.95 m",
-    "X 座標：2238.96 m　Y 座標：1589.03 m",
-    "X 座標：2239.04 m　Y 座標：1588.95 m",
-    "X 座標：2239.04 m　Y 座標：1589.03 m",
-    "X 座標：2239.03 m　Y 座標：1589.02 m"
+    "X座標：2238.96 m　Y座標：1588.95 m",
+    "X座標：2238.96 m　Y座標：1589.03 m",
+    "X座標：2239.04 m　Y座標：1588.95 m",
+    "X座標：2239.04 m　Y座標：1589.03 m",
+    "X座標：2239.03 m　Y座標：1589.02 m"
    ],
    "choiceMode": "text",
    "fromImageQuestion": true,
@@ -17447,7 +19101,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no1-iq": {
-   "stem": "任意代理に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　Ａの任意代理人Ｂが，Ａのためにすることを示して，Ｃからその所有する建物を買い受けた場合において，Ｂが当該建物に瑕疵があることを知っていたときは，Ａは，Ｃに対し，売主の瑕疵担保責任を問うことができない。\nイ　Ａから何らの代理権も与えられていないＢが，Ａのためにすることを示して，Ａ所有の不動産をＣに売却した場合において，Ｃが，Ｂに売買契約を締結する代理権があると信じ，そのように信じたことに正当な理由があるときは，表見代理が成立する。\nウ　未成年者も任意代理人になることができるが，未成年者のした代理行為は，その法定代理人が取り消すことができる。\nエ　本人Ａの許諾を得て任意代理人Ｂが復代理人Ｃを選任した場合には，Ｂは，Ａに対し，Ｃの選任につき責任を負わない。\nオ　代理権を有しない者がした契約の本人による追認は，その契約を相手方が取り消した後は，することができない。",
+   "stem": "任意代理に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　Ａの任意代理人Ｂが，Ａのためにすることを示して，Ｃからその所有する建物を買い受けた場合において，Ｂが当該建物に瑕疵があることを知っていたときは，Ａは，Ｃに対し，売主の瑕疵担保責任を問うことができない。\nイ　Ａから何らの代理権も与えられていないＢが，Ａのためにすることを示して，Ａ所有の不動産をＣに売却した場合において，Ｃが，Ｂに売買契約を締結する代理権があると信じ，そのように信じたことに正当な理由があるときは，表見代理が成立する。\nウ　未成年者も任意代理人になることができるが，未成年者のした代理行為は，その法定代理人が取り消すことができる。\nエ　本人Ａの許諾を得て任意代理人Ｂが復代理人Ｃを選任した場合には，Ｂは，Ａに対し，Ｃの選任につき責任を負わない。\nオ　代理権を有しない者がした契約の本人による追認は，その契約を相手方が取り消した後は，することができない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17462,7 +19116,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no2-iq": {
-   "stem": "次の対話は，不動産の物権変動に関する教授と学生との対話である。教授の質問に対する次のアからオまでの学生の解答のうち，判例の趣旨に照らし誤っているものの組合せは，後記1 から5 までのうち，どれか。\n教授：　Ａ所有の土地をＢがＣに売却し，その後ＢがＡから当該土地を買い受けた場合において，いずれの売買契約にも所有権の移転時期や方法に関する特約がないときは，当該土地の所有権は，いつの時点でＣに移転しますか。\n学生：ア　ＢがＡから当該土地を買い受け，かつ，ＡからＢへの所有権の移転の登記がされた時点で，Ｃに当該土地の所有権が移転することになります。\n教授：　Ｃが占有しているＡ所有の土地をＡがＢに売却し，ＡからＢへの所有権の移転の登記がされた後，Ｃにつき当該土地の取得時効が完成して，Ｃが時効を援用した場合，Ｃは，Ｂに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：イ　はい。Ｃは，Ｂに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却し，ＡからＢへの所有権の移転の登記がされた後，Ａが，Ｂの債務不履行により，当該売買契約を解除しました。しかし，その解除後，ＢがＣに当該土地を売却し，ＢからＣへの所有権の移転の登記がされた場合，Ａは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：ウ　はい。Ａは，Ｃに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却したが，ＡからＢへの所有権の移転の登記がされる前に，Ｃが権原なく当該土地の占有を開始した場合，Ｂは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：エ　はい。Ｂは，Ｃに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却した後ＡからＢへの所有権の移転の登記がされる前に，Ｂからその登記の申請を受任していたＣが，Ａから当該土地を買い受け，ＡからＣへの所有権の移転の登記がされた場合，Ｂは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：オ　はい。Ｂは，Ｃに対し，当該土地の所有権を主張することができます。",
+   "stem": "次の対話は，不動産の物権変動に関する教授と学生との対話である。教授の質問に対する次のアからオまでの学生の解答のうち，判例の趣旨に照らし誤っているものの組合せは，後記1から5までのうち，どれか。\n教授：　Ａ所有の土地をＢがＣに売却し，その後ＢがＡから当該土地を買い受けた場合において，いずれの売買契約にも所有権の移転時期や方法に関する特約がないときは，当該土地の所有権は，いつの時点でＣに移転しますか。\n学生：ア　ＢがＡから当該土地を買い受け，かつ，ＡからＢへの所有権の移転の登記がされた時点で，Ｃに当該土地の所有権が移転することになります。\n教授：　Ｃが占有しているＡ所有の土地をＡがＢに売却し，ＡからＢへの所有権の移転の登記がされた後，Ｃにつき当該土地の取得時効が完成して，Ｃが時効を援用した場合，Ｃは，Ｂに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：イ　はい。Ｃは，Ｂに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却し，ＡからＢへの所有権の移転の登記がされた後，Ａが，Ｂの債務不履行により，当該売買契約を解除しました。しかし，その解除後，ＢがＣに当該土地を売却し，ＢからＣへの所有権の移転の登記がされた場合，Ａは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：ウ　はい。Ａは，Ｃに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却したが，ＡからＢへの所有権の移転の登記がされる前に，Ｃが権原なく当該土地の占有を開始した場合，Ｂは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：エ　はい。Ｂは，Ｃに対し，当該土地の所有権を主張することができます。\n教授：　Ａ所有の土地をＡがＢに売却した後ＡからＢへの所有権の移転の登記がされる前に，Ｂからその登記の申請を受任していたＣが，Ａから当該土地を買い受け，ＡからＣへの所有権の移転の登記がされた場合，Ｂは，Ｃに対し，登記なくして当該土地の所有権を主張することができますか。\n学生：オ　はい。Ｂは，Ｃに対し，当該土地の所有権を主張することができます。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17477,7 +19131,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no3-iq": {
-   "stem": "相続人がＡ及びＢの2 名存在する場合における相続に関する次のアからオまでの記述のうち，判例の趣旨に照らし正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　相続人Ａは，いったん相続の承認をしたが，自己のために相続の開始があったことを知った時から3 か月以内であれば，その承認を撤回することができる。\nイ　相続人Ａが単独で単純承認をした場合，相続人Ｂは，限定承認をすることができない。\nウ　相続人Ａは，相続の放棄をするためには，相続の放棄について相続人Ｂの承諾を得る必要がある。\nエ　相続人Ａは，限定承認をした場合には，以後，善良な管理者の注意をもって，相続財産の管理を継続しなければならない。\nオ　相続人Ａが相続の放棄をし，相続人Ｂは単純承認をしたが，相続財産たる表題登記のみがある不動産について，Ａの債権者の申請により代位による所有権の保存の登記がされた後，Ａの法定相続分に対する仮差押えの登記がされたときは，この仮差押えの登記は無効である。",
+   "stem": "相続人がＡ及びＢの2名存在する場合における相続に関する次のアからオまでの記述のうち，判例の趣旨に照らし正しいものの組合せは，後記1から5までのうち，どれか。\nア　相続人Ａは，いったん相続の承認をしたが，自己のために相続の開始があったことを知った時から3か月以内であれば，その承認を撤回することができる。\nイ　相続人Ａが単独で単純承認をした場合，相続人Ｂは，限定承認をすることができない。\nウ　相続人Ａは，相続の放棄をするためには，相続の放棄について相続人Ｂの承諾を得る必要がある。\nエ　相続人Ａは，限定承認をした場合には，以後，善良な管理者の注意をもって，相続財産の管理を継続しなければならない。\nオ　相続人Ａが相続の放棄をし，相続人Ｂは単純承認をしたが，相続財産たる表題登記のみがある不動産について，Ａの債権者の申請により代位による所有権の保存の登記がされた後，Ａの法定相続分に対する仮差押えの登記がされたときは，この仮差押えの登記は無効である。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17492,7 +19146,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no4-iq": {
-   "stem": "次の〔文章〕中の（　①　）から（　⑦　）までの空欄に後記の〔語句群〕の中から適切な語句を選んで入れると，不動産登記に関する文章となる。（　②　），（　③　），（　⑤　）及び（　⑦　）の空欄に入れるべき語句の組合せとして最も適切なものは，後記1 から5までのうち，どれか。ただし，文章中の【　Ａ　】及び【　Ｂ　】には適当な語句が入るものとし，同一の数字又は記号には同一の語句が入り，異なる数字又は記号には同一の語句は入らないものとする。\n〔文章〕\n不動産登記法は，不動産の【　Ａ　】及び不動産に関する【　Ｂ　】を公示するための登記に関する制度について定めることにより，国民の権利の保全を図り，もって取引の安全と円滑に資することを目的とする。【　Ａ　】に関する登記は，登記の対象となる不動産の（　①　）を公示し，当該不動産を特定することを目的としており，【　Ｂ　】に関する登記は，当該不動産の（　②　）を公示することを目的としている。【　Ａ　】に関する登記と【　Ｂ　】に関する登記は，登記簿に，（　③　）を一筆の土地又は一個の（　④　）ごとに（　⑤　）に区分して，登記記録として記録することにより行う。\n民法では，土地及びその（　⑥　）は不動産とすると規定しているが，不動産登記法では，土地又は（　④　）を不動産と定義している。さらに，不動産登記規則は，登記の対象となる（　④　）は，屋根及び周壁又はこれらに類するものを有し，土地に定着した建造物であって，その目的とする（　⑦　）に供し得る状態にあるものでなければならないとしている。\n〔語句群〕\n登記情報，　権利関係，　登記事項，　不動産番号，　物理的状況，　表題部と権利部，甲区と乙区，　種類，　用途，　定着物，　建物，　従物",
+   "stem": "次の〔文章〕中の（　①　）から（　⑦　）までの空欄に後記の〔語句群〕の中から適切な語句を選んで入れると，不動産登記に関する文章となる。（　②　），（　③　），（　⑤　）及び（　⑦　）の空欄に入れるべき語句の組合せとして最も適切なものは，後記1から5までのうち，どれか。ただし，文章中の【　Ａ　】及び【　Ｂ　】には適当な語句が入るものとし，同一の数字又は記号には同一の語句が入り，異なる数字又は記号には同一の語句は入らないものとする。\n〔文章〕\n不動産登記法は，不動産の【　Ａ　】及び不動産に関する【　Ｂ　】を公示するための登記に関する制度について定めることにより，国民の権利の保全を図り，もって取引の安全と円滑に資することを目的とする。【　Ａ　】に関する登記は，登記の対象となる不動産の（　①　）を公示し，当該不動産を特定することを目的としており，【　Ｂ　】に関する登記は，当該不動産の（　②　）を公示することを目的としている。【　Ａ　】に関する登記と【　Ｂ　】に関する登記は，登記簿に，（　③　）を一筆の土地又は一個の（　④　）ごとに（　⑤　）に区分して，登記記録として記録することにより行う。\n民法では，土地及びその（　⑥　）は不動産とすると規定しているが，不動産登記法では，土地又は（　④　）を不動産と定義している。さらに，不動産登記規則は，登記の対象となる（　④　）は，屋根及び周壁又はこれらに類するものを有し，土地に定着した建造物であって，その目的とする（　⑦　）に供し得る状態にあるものでなければならないとしている。\n〔語句群〕\n登記情報，　権利関係，　登記事項，　不動産番号，　物理的状況，　表題部と権利部，甲区と乙区，　種類，　用途，　定着物，　建物，　従物",
    "stemMode": "text",
    "choices": [
     "（②）：権利関係　（③）：登記情報　（⑤）：表題部と権利部　（⑦）：種類",
@@ -17507,7 +19161,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no5-iq": {
-   "stem": "登記識別情報の通知に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\nア　所有権の登記名義人であるＡの申請により，甲土地と乙土地との合筆の登記をする場合において，Ａからあらかじめ登記識別情報の通知を希望しない旨の申出があったときは，登記識別情報は通知されない。\nイ　所有権の登記名義人であるＡの申請により，甲土地と乙土地との合筆の登記をする場合において，甲土地と乙土地に，登記の目的，申請の受付の年月日及び受付番号並びに登記原因及びその日付が同一のＢを登記名義人とする抵当権の設定の登記がされているときは，Ｂに登記識別情報が通知される。\nウ　Ａを所有権の登記名義人とする甲土地と乙土地との合筆の登記を，資格者代理人Ｂが電子申請の方法により申請するに際し，Ｂが登記識別情報の通知を受けるための特別の委任を受けていた場合において，登記識別情報の送信が可能になった時から30日以内にＢが自己の使用に係る電子計算機に備えられたファイルに当該登記識別情報を記録しないときは，Ｂに登記識別情報は通知されない。\nエ　Ａを所有権の登記名義人とする甲土地と乙土地との合筆の登記を，資格者代理人Ｂが書面申請の方法により申請するに際し，Ｂが登記識別情報の通知を受けるための特別の委任を受けていた場合において，登記完了の時から3 月以内にＢが登記識別情報を記載した書面を受領しないときは，Ｂに登記識別情報は通知されない。\nオ　官庁の嘱託により，当該官庁を所有権の登記名義人とする甲土地と乙土地との合筆の登記をする場合には，当該官庁からあらかじめ登記識別情報の通知を希望する旨の申出があっても，登記識別情報は通知されない。",
+   "stem": "登記識別情報の通知に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\nア　所有権の登記名義人であるＡの申請により，甲土地と乙土地との合筆の登記をする場合において，Ａからあらかじめ登記識別情報の通知を希望しない旨の申出があったときは，登記識別情報は通知されない。\nイ　所有権の登記名義人であるＡの申請により，甲土地と乙土地との合筆の登記をする場合において，甲土地と乙土地に，登記の目的，申請の受付の年月日及び受付番号並びに登記原因及びその日付が同一のＢを登記名義人とする抵当権の設定の登記がされているときは，Ｂに登記識別情報が通知される。\nウ　Ａを所有権の登記名義人とする甲土地と乙土地との合筆の登記を，資格者代理人Ｂが電子申請の方法により申請するに際し，Ｂが登記識別情報の通知を受けるための特別の委任を受けていた場合において，登記識別情報の送信が可能になった時から30日以内にＢが自己の使用に係る電子計算機に備えられたファイルに当該登記識別情報を記録しないときは，Ｂに登記識別情報は通知されない。\nエ　Ａを所有権の登記名義人とする甲土地と乙土地との合筆の登記を，資格者代理人Ｂが書面申請の方法により申請するに際し，Ｂが登記識別情報の通知を受けるための特別の委任を受けていた場合において，登記完了の時から3月以内にＢが登記識別情報を記載した書面を受領しないときは，Ｂに登記識別情報は通知されない。\nオ　官庁の嘱託により，当該官庁を所有権の登記名義人とする甲土地と乙土地との合筆の登記をする場合には，当該官庁からあらかじめ登記識別情報の通知を希望する旨の申出があっても，登記識別情報は通知されない。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17522,7 +19176,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no6-iq": {
-   "stem": "申請情報に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\nア　甲土地から乙土地を分筆する分筆の登記を申請する場合において，甲土地の不動産番号を申請情報の内容としたときは，分筆前の土地の所在，地番，地目及び地積を申請情報の内容とすることを要しない。\nイ　会社法人等番号を有する法人が所有する甲土地から乙土地を分筆する分筆の登記を申請する場合において，当該法人の会社法人等番号を添付情報として提供したときは，当該法人の代表者の氏名を申請情報の内容とすることを要しない。\nウ　土地の表題部所有者の氏名についての更正の登記を申請する場合には，更正前の氏名を申請情報の内容とすることを要しない。\nエ　土地の表題登記を申請する場合において，土地の所有者であるＡ及びＢの持分が相等しいときは，Ａ及びＢの持分を申請情報の内容とすることを要しない。\nオ　甲土地から乙土地を分筆する分筆の登記を申請する場合において，登録免許税が免除されるときは，免除の根拠となる法令の条項を申請情報の内容としなければならない。",
+   "stem": "申請情報に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\nア　甲土地から乙土地を分筆する分筆の登記を申請する場合において，甲土地の不動産番号を申請情報の内容としたときは，分筆前の土地の所在，地番，地目及び地積を申請情報の内容とすることを要しない。\nイ　会社法人等番号を有する法人が所有する甲土地から乙土地を分筆する分筆の登記を申請する場合において，当該法人の会社法人等番号を添付情報として提供したときは，当該法人の代表者の氏名を申請情報の内容とすることを要しない。\nウ　土地の表題部所有者の氏名についての更正の登記を申請する場合には，更正前の氏名を申請情報の内容とすることを要しない。\nエ　土地の表題登記を申請する場合において，土地の所有者であるＡ及びＢの持分が相等しいときは，Ａ及びＢの持分を申請情報の内容とすることを要しない。\nオ　甲土地から乙土地を分筆する分筆の登記を申請する場合において，登録免許税が免除されるときは，免除の根拠となる法令の条項を申請情報の内容としなければならない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17537,7 +19191,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no7-iq": {
-   "stem": "所有権を有することを証する情報に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　Ａが所有権の登記名義人である互いに接続する2 個の区分建物について，隔壁の除去などの物理的な変更を伴わずに1 個の区分建物ではない建物とする場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nイ　Ａが所有権の登記名義人である建物について，一部取壊しの工事が完了した3 週間後に増築の工事が完成した場合において，一の申請情報によって建物の表題部の変更の登記を申請するときは，全ての工事完成後の床面積が減少する場合であっても，所有権を有することを証する情報を添付しなければならない。\nウ　Ａが所有権の登記名義人である建物の全部を取り壊し，当該建物の材料を用いて当該建物と同じ種類，構造及び床面積の建物を別の土地に建築した場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nエ　Ａが所有権の登記名義人である建物の屋根を瓦から亜鉛メッキにふき替える工事を行った場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nオ　Ａが所有権の登記名義人である種類が車庫の建物について，床面積を変更することなく，当該車庫の開口部にシャッターを設置して倉庫とした場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。",
+   "stem": "所有権を有することを証する情報に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　Ａが所有権の登記名義人である互いに接続する2個の区分建物について，隔壁の除去などの物理的な変更を伴わずに1個の区分建物ではない建物とする場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nイ　Ａが所有権の登記名義人である建物について，一部取壊しの工事が完了した3週間後に増築の工事が完成した場合において，一の申請情報によって建物の表題部の変更の登記を申請するときは，全ての工事完成後の床面積が減少する場合であっても，所有権を有することを証する情報を添付しなければならない。\nウ　Ａが所有権の登記名義人である建物の全部を取り壊し，当該建物の材料を用いて当該建物と同じ種類，構造及び床面積の建物を別の土地に建築した場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nエ　Ａが所有権の登記名義人である建物の屋根を瓦から亜鉛メッキにふき替える工事を行った場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。\nオ　Ａが所有権の登記名義人である種類が車庫の建物について，床面積を変更することなく，当該車庫の開口部にシャッターを設置して倉庫とした場合に行う登記の申請には，所有権を有することを証する情報を添付しなければならない。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17552,7 +19206,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no8-iq": {
-   "stem": "次の対話は，表示に関する登記の電子申請（書面を提出する方法により添付情報を提供する場合を除く。）についての土地家屋調査士（以下「調査士」という。）と補助者との対話である。調査士の質問に対する次のアからオまでの補助者の解答のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\n調査士：　表示に関する登記の申請方法には，電子申請と書面申請がありますが，今日は電子申請の方法について確認してみましょう。\nまず，申請情報には電子署名が必要ですか。\n補助者：ア　はい。申請人又はその代表者若しくは代理人（以下「申請人等」という。）が，申請情報に電子署名を行わなければなりません。\n調査士：　次に，申請情報と併せて提供する添付情報には，電子署名が必要ですか。\n補助者：イ　いいえ。添付情報は，電子署名が行われている必要はありません。\n調査士：　電子署名が行われている情報を送信するときは，他に何か送信しなければならないものはありますか。\n補助者：ウ　はい。電子署名を行った者を確認するために，電子証明書を送信しなければなりません。\n調査士：　申請人等が電子申請の方法により申請をする場合において，書面に記載された情報を電磁的記録に記録したものを添付情報とするときは，当該電磁的記録には電子署名が必要ですか。\n補助者：エ　はい。当該電磁的記録を作成した者による電子署名が行われているものでなければなりません。\n調査士：　最後に，申請人等が電子申請の方法により申請をする場合において，書面に記載された情報を電磁的記録に記録したものを添付情報とするときは，当該申請人等は，当該書面を登記官に提示する必要はありますか。\n補助者：オ　いいえ。飽くまで当該電磁的記録に記録したものが添付情報となりますので，当該書面を登記官に提示する必要はありません。",
+   "stem": "次の対話は，表示に関する登記の電子申請（書面を提出する方法により添付情報を提供する場合を除く。）についての土地家屋調査士（以下「調査士」という。）と補助者との対話である。調査士の質問に対する次のアからオまでの補助者の解答のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\n調査士：　表示に関する登記の申請方法には，電子申請と書面申請がありますが，今日は電子申請の方法について確認してみましょう。\nまず，申請情報には電子署名が必要ですか。\n補助者：ア　はい。申請人又はその代表者若しくは代理人（以下「申請人等」という。）が，申請情報に電子署名を行わなければなりません。\n調査士：　次に，申請情報と併せて提供する添付情報には，電子署名が必要ですか。\n補助者：イ　いいえ。添付情報は，電子署名が行われている必要はありません。\n調査士：　電子署名が行われている情報を送信するときは，他に何か送信しなければならないものはありますか。\n補助者：ウ　はい。電子署名を行った者を確認するために，電子証明書を送信しなければなりません。\n調査士：　申請人等が電子申請の方法により申請をする場合において，書面に記載された情報を電磁的記録に記録したものを添付情報とするときは，当該電磁的記録には電子署名が必要ですか。\n補助者：エ　はい。当該電磁的記録を作成した者による電子署名が行われているものでなければなりません。\n調査士：　最後に，申請人等が電子申請の方法により申請をする場合において，書面に記載された情報を電磁的記録に記録したものを添付情報とするときは，当該申請人等は，当該書面を登記官に提示する必要はありますか。\n補助者：オ　いいえ。飽くまで当該電磁的記録に記録したものが添付情報となりますので，当該書面を登記官に提示する必要はありません。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17567,7 +19221,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no9-iq": {
-   "stem": "書面申請の場合における添付書面（磁気ディスクを除く。）の原本の還付に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　建物の表題登記の申請をする際に所有権を有することを証する情報として提供した工事施工会社作成に係る工事完了引渡証明書に添付する印鑑に関する証明書は，原本の還付を請求することができる。\nイ　所有権の登記がある建物についての建物の合併の登記を資格者代理人から申請する場合において，当該資格者代理人が作成し提供する本人確認情報は，原本の還付を請求することができる。\nウ　建物の表題部の変更の登記を表題部所有者の相続人が申請する場合において，相続を証する書面として提供した戸籍謄本又は抄本及び除籍謄本は，相続関係説明図を添付することにより，原本の還付を請求することができる。\nエ　所有権の登記がある建物について建物の合体による登記等を申請する際に提供した登記識別情報を記載した書面は，原本の還付を請求することができる。\nオ　原本の還付は，申請人の申出があっても，原本を送付する方法によってすることができない。",
+   "stem": "書面申請の場合における添付書面（磁気ディスクを除く。）の原本の還付に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　建物の表題登記の申請をする際に所有権を有することを証する情報として提供した工事施工会社作成に係る工事完了引渡証明書に添付する印鑑に関する証明書は，原本の還付を請求することができる。\nイ　所有権の登記がある建物についての建物の合併の登記を資格者代理人から申請する場合において，当該資格者代理人が作成し提供する本人確認情報は，原本の還付を請求することができる。\nウ　建物の表題部の変更の登記を表題部所有者の相続人が申請する場合において，相続を証する書面として提供した戸籍謄本又は抄本及び除籍謄本は，相続関係説明図を添付することにより，原本の還付を請求することができる。\nエ　所有権の登記がある建物について建物の合体による登記等を申請する際に提供した登記識別情報を記載した書面は，原本の還付を請求することができる。\nオ　原本の還付は，申請人の申出があっても，原本を送付する方法によってすることができない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17582,7 +19236,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no10-iq": {
-   "stem": "表示に関する登記の申請の却下又は取下げに関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　電子申請の方法による登記の申請の取下げは，電子情報処理組織を使用して申請を取り下げる旨の情報を登記所に提供する方法によってしなければならない。\nイ　登記官が登記を完了した後であっても，登記完了証が交付されるまでの間は，登記の申請の取下げをすることができる。\nウ　書面申請の方法による登記の申請であって登録免許税の納付を要するものを取り下げた者は，当該登記の申請書に貼り付けられた印紙で消印がされたものを当該取下げの日から1 年以内に再使用したい旨の申出をすることができる。\nエ　書面申請の方法による登記の申請が却下されたときは，偽造された書面その他の不正な登記の申請のために用いられた疑いがある書面を除き，申請書及びその添付書面はいずれも還付される。\nオ　委任による代理人によってされた登記の申請が却下されるときであっても，却下決定書は，当該登記の申請人に交付され，当該代理人に交付されることはない。",
+   "stem": "表示に関する登記の申請の却下又は取下げに関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　電子申請の方法による登記の申請の取下げは，電子情報処理組織を使用して申請を取り下げる旨の情報を登記所に提供する方法によってしなければならない。\nイ　登記官が登記を完了した後であっても，登記完了証が交付されるまでの間は，登記の申請の取下げをすることができる。\nウ　書面申請の方法による登記の申請であって登録免許税の納付を要するものを取り下げた者は，当該登記の申請書に貼り付けられた印紙で消印がされたものを当該取下げの日から1年以内に再使用したい旨の申出をすることができる。\nエ　書面申請の方法による登記の申請が却下されたときは，偽造された書面その他の不正な登記の申請のために用いられた疑いがある書面を除き，申請書及びその添付書面はいずれも還付される。\nオ　委任による代理人によってされた登記の申請が却下されるときであっても，却下決定書は，当該登記の申請人に交付され，当該代理人に交付されることはない。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17597,7 +19251,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no11-iq": {
-   "stem": "土地の表題部所有者に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　表題部所有者であるＡの住所が登記上の住所から数回にわたって変更を生じている場合であっても，直ちに現在の住所に変更する旨の表題部所有者の住所についての変更の登記を申請することができる。\nイ　表題部所有者であるＡ及びＢの持分が誤ってＡは3 分の2 ，Ｂは3 分の1 と登記されているが，真実の持分はＡが4 分の3 ，Ｂが4 分の1 である場合には，これを是正するためのＡ及びＢの持分についての更正の登記は，Ｂの承諾を証する情報を提供しても，Ａが単独で申請することはできない。\nウ　表題部所有者がＡ及びＢである場合において，Ｂが死亡してその相続人がＡのみであるときは，Ａは自己のみを表題部所有者とする表題部所有者の変更の登記を申請することができる。\nエ　真実の所有者がＡ及びＢであるにもかかわらず，Ｂのみが表題部所有者として登記されている場合において，Ａ及びＢが，Ａの持分を2 分の1 ，Ｂの持分を2 分の1 とする表題部所有者についての更正の登記を申請するときは，Ａの住所を証する情報を提供しなければならない。\nオ　表題部所有者である特例有限会社Ａは，その商号中に株式会社という文字を用いる商号の変更をした場合であっても，表題部所有者の名称についての変更の登記を申請することができない。",
+   "stem": "土地の表題部所有者に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　表題部所有者であるＡの住所が登記上の住所から数回にわたって変更を生じている場合であっても，直ちに現在の住所に変更する旨の表題部所有者の住所についての変更の登記を申請することができる。\nイ　表題部所有者であるＡ及びＢの持分が誤ってＡは3分の2，Ｂは3分の1と登記されているが，真実の持分はＡが4分の3，Ｂが4分の1である場合には，これを是正するためのＡ及びＢの持分についての更正の登記は，Ｂの承諾を証する情報を提供しても，Ａが単独で申請することはできない。\nウ　表題部所有者がＡ及びＢである場合において，Ｂが死亡してその相続人がＡのみであるときは，Ａは自己のみを表題部所有者とする表題部所有者の変更の登記を申請することができる。\nエ　真実の所有者がＡ及びＢであるにもかかわらず，Ｂのみが表題部所有者として登記されている場合において，Ａ及びＢが，Ａの持分を2分の1，Ｂの持分を2分の1とする表題部所有者についての更正の登記を申請するときは，Ａの住所を証する情報を提供しなければならない。\nオ　表題部所有者である特例有限会社Ａは，その商号中に株式会社という文字を用いる商号の変更をした場合であっても，表題部所有者の名称についての変更の登記を申請することができない。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17612,7 +19266,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no12-iq": {
-   "stem": "地図等の訂正に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　地図に準ずる図面に表示された土地の地番に誤りがある場合において，その訂正の申出をするときは，地図訂正申出情報と併せて土地所在図又は地積測量図を提供しなければならない。\nイ　地図に準ずる図面に表示された土地の形状に誤りがある場合において，その訂正の申出をするときは，地図訂正申出情報と併せて土地所在図又は地積測量図を提供しなければならない。\nウ　地図に表示された隣接する二筆の土地の区画の誤りの訂正の申出をする場合において，当該土地が同一の登記所の管轄区域内にあるときは，一の地図訂正申出情報により申出をすることができる。\nエ　地図に表示された土地の区画に誤りがある場合に，当該土地の所有権を売買により取得した者は，所有権の移転の登記を受ける前であっても，当該土地の区画の誤りの訂正の申出をすることができる。\nオ　地図に表示された土地の区画に誤りがある場合において，当該土地の登記記録の地積に錯誤があるときは，当該土地の区画の誤りの訂正の申出は，地積に関する更正の登記の申請と併せてしなければならない。",
+   "stem": "地図等の訂正に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　地図に準ずる図面に表示された土地の地番に誤りがある場合において，その訂正の申出をするときは，地図訂正申出情報と併せて土地所在図又は地積測量図を提供しなければならない。\nイ　地図に準ずる図面に表示された土地の形状に誤りがある場合において，その訂正の申出をするときは，地図訂正申出情報と併せて土地所在図又は地積測量図を提供しなければならない。\nウ　地図に表示された隣接する二筆の土地の区画の誤りの訂正の申出をする場合において，当該土地が同一の登記所の管轄区域内にあるときは，一の地図訂正申出情報により申出をすることができる。\nエ　地図に表示された土地の区画に誤りがある場合に，当該土地の所有権を売買により取得した者は，所有権の移転の登記を受ける前であっても，当該土地の区画の誤りの訂正の申出をすることができる。\nオ　地図に表示された土地の区画に誤りがある場合において，当該土地の登記記録の地積に錯誤があるときは，当該土地の区画の誤りの訂正の申出は，地積に関する更正の登記の申請と併せてしなければならない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17627,7 +19281,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no13-iq": {
-   "stem": "土地の表示に関する登記に関する次のアからオまでの記述のうち，Ａ欄に記載した登記原因たる事実が生じた場合に申請又は嘱託をすることになるＢ欄に記載した登記の目的の組合せとして，正しいものの組合せは，後記1 から5 までのうち，どれか。\n（参考）\n河川法（昭和３９年法律第１６７号）\n（河川区域）\n第6 条　この法律において「河川区域」とは，次の各号に掲げる区域をいう。\n一　河川の流水が継続して存する土地及び地形，草木の生茂の状況その他その状況が河川の流水が継続して存する土地に類する状況を呈している土地（河岸の土地を含み，洪水その他異常な天然現象により一時的に当該状況を呈している土地を除く。）の区域\n二　河川管理施設の敷地である土地の区域\n三　堤外の土地（政令で定めるこれに類する土地及び政令で定める遊水地を含む。第三項において同じ。）の区域のうち，第一号に掲げる区域と一体として管理を行う必要があるものとして河川管理者が指定した区域\n2 〜6 　（略）",
+   "stem": "土地の表示に関する登記に関する次のアからオまでの記述のうち，Ａ欄に記載した登記原因たる事実が生じた場合に申請又は嘱託をすることになるＢ欄に記載した登記の目的の組合せとして，正しいものの組合せは，後記1から5までのうち，どれか。\n（参考）\n河川法（昭和３９年法律第１６７号）\n（河川区域）\n第6条　この法律において「河川区域」とは，次の各号に掲げる区域をいう。\n一　河川の流水が継続して存する土地及び地形，草木の生茂の状況その他その状況が河川の流水が継続して存する土地に類する状況を呈している土地（河岸の土地を含み，洪水その他異常な天然現象により一時的に当該状況を呈している土地を除く。）の区域\n二　河川管理施設の敷地である土地の区域\n三　堤外の土地（政令で定めるこれに類する土地及び政令で定める遊水地を含む。第三項において同じ。）の区域のうち，第一号に掲げる区域と一体として管理を行う必要があるものとして河川管理者が指定した区域\n2 〜6 　（略）",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17642,7 +19296,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no14-iq": {
-   "stem": "隣接する甲土地を乙土地に合筆する合筆の登記（以下「本件合筆の登記」という。）に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　Ａを所有権の登記名義人とする甲土地と乙土地のうち，乙土地にのみ抵当権の設定の登記がされている場合には，当該抵当権の登記名義人が作成した当該抵当権を消滅させることを承諾したことを証する情報を添付して，本件合筆の登記を申請することができる。\nイ　甲土地と乙土地に，登記の目的，申請の受付の年月日及び受付番号並びに登記原因及びその日付が同一の抵当権の設定の登記がされている場合において，その後，甲土地についてのみ抵当権の順位の変更の登記がされているときは，本件合筆の登記を申請することはできない。\nウ　甲土地の所有権の登記名義人がＡ，乙土地の所有権の登記名義人がＢである場合において，Ａが死亡してその相続人がＢのみであるときは，甲土地の所有権の移転の登記をしなくても，ＢがＡの唯一の相続人であることを証する情報を提供すれば，本件合筆の登記を申請することができる。\nエ　乙土地の所有権の登記名義人であるＡを地上権者とする地上権の設定の登記が，Ｂを所有権の登記名義人とする甲土地にされている場合には，その後にＡが甲土地の所有権の登記名義人になったときであっても，当該地上権の抹消の登記をした後でなければ，本件合筆の登記を申請することはできない。\nオ　地図を作成するために必要があると認めるときは，甲土地と乙土地の所有権の登記名義人であるＡに異議があるときであっても，登記官は，職権で，本件合筆の登記をすることができる。",
+   "stem": "隣接する甲土地を乙土地に合筆する合筆の登記（以下「本件合筆の登記」という。）に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　Ａを所有権の登記名義人とする甲土地と乙土地のうち，乙土地にのみ抵当権の設定の登記がされている場合には，当該抵当権の登記名義人が作成した当該抵当権を消滅させることを承諾したことを証する情報を添付して，本件合筆の登記を申請することができる。\nイ　甲土地と乙土地に，登記の目的，申請の受付の年月日及び受付番号並びに登記原因及びその日付が同一の抵当権の設定の登記がされている場合において，その後，甲土地についてのみ抵当権の順位の変更の登記がされているときは，本件合筆の登記を申請することはできない。\nウ　甲土地の所有権の登記名義人がＡ，乙土地の所有権の登記名義人がＢである場合において，Ａが死亡してその相続人がＢのみであるときは，甲土地の所有権の移転の登記をしなくても，ＢがＡの唯一の相続人であることを証する情報を提供すれば，本件合筆の登記を申請することができる。\nエ　乙土地の所有権の登記名義人であるＡを地上権者とする地上権の設定の登記が，Ｂを所有権の登記名義人とする甲土地にされている場合には，その後にＡが甲土地の所有権の登記名義人になったときであっても，当該地上権の抹消の登記をした後でなければ，本件合筆の登記を申請することはできない。\nオ　地図を作成するために必要があると認めるときは，甲土地と乙土地の所有権の登記名義人であるＡに異議があるときであっても，登記官は，職権で，本件合筆の登記をすることができる。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17657,7 +19311,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no15-iq": {
-   "stem": "建物の表示に関する登記の申請義務に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　新築した建物又は区分建物以外の表題登記がない建物の所有権を取得した者は，その所有権の取得の日から1 月以内に，表題登記を申請しなければならない。\nイ　区分建物である建物が新築され，その表題登記完了後に規約敷地が生じたときであっても，区分建物の表題部所有者は，区分建物の表題部の変更の登記を申請することを要しない。\nウ　いずれも表題登記があるが所有権の登記がない二以上の建物が合体して1 個の建物となった場合には，当該建物の表題部所有者は，当該合体の日から1 月以内に，合体後の建物についての建物の表題登記及び合体前の建物についての建物の表題部の登記の抹消を申請しなければならない。\nエ　区分建物の種類に変更があった後に共用部分である旨の登記がされた場合には，当該登記がされた区分建物の所有者は，共用部分である旨の規約を設定した日から1 月以内に，当該区分建物の種類の変更の登記を申請しなければならない。\nオ　甲区分建物及び乙区分建物からなる一棟の建物の床面積に変更がある場合において，甲区分建物の所有権の登記名義人が，当該一棟の建物の表題部の変更の登記を申請したときは，乙区分建物の所有権の登記名義人も，当該一棟の建物の表題部の変更の登記を申請しなければならない。",
+   "stem": "建物の表示に関する登記の申請義務に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　新築した建物又は区分建物以外の表題登記がない建物の所有権を取得した者は，その所有権の取得の日から1月以内に，表題登記を申請しなければならない。\nイ　区分建物である建物が新築され，その表題登記完了後に規約敷地が生じたときであっても，区分建物の表題部所有者は，区分建物の表題部の変更の登記を申請することを要しない。\nウ　いずれも表題登記があるが所有権の登記がない二以上の建物が合体して1個の建物となった場合には，当該建物の表題部所有者は，当該合体の日から1月以内に，合体後の建物についての建物の表題登記及び合体前の建物についての建物の表題部の登記の抹消を申請しなければならない。\nエ　区分建物の種類に変更があった後に共用部分である旨の登記がされた場合には，当該登記がされた区分建物の所有者は，共用部分である旨の規約を設定した日から1月以内に，当該区分建物の種類の変更の登記を申請しなければならない。\nオ　甲区分建物及び乙区分建物からなる一棟の建物の床面積に変更がある場合において，甲区分建物の所有権の登記名義人が，当該一棟の建物の表題部の変更の登記を申請したときは，乙区分建物の所有権の登記名義人も，当該一棟の建物の表題部の変更の登記を申請しなければならない。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17672,7 +19326,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no16-iq": {
-   "stem": "建物の構造に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5 までのうち，どれか。\nア　主要構造部が鉄骨造であって，壁構造ではない建物で，当該建物の外壁に軽量気泡コンクリートを使用している場合には，建物の構造欄には，「鉄骨・鉄筋コンクリート造」と表示する。\nイ　床面積が100.00 平方メートルの平家建の建物で，当該建物の床面積の65.00 平方メートルの部分の屋根がスレートでふかれており，残りの床面積の部分の屋根がかわらでふかれているときは，建物の構造欄には，かわら及びスレートをいずれも表示の対象とする。\nウ　2 階層からなる建物の2 階層部分の天井の上に，収納式の階段を利用して出入りする構造で物置として使用されている屋根裏部屋がある場合において，当該屋根裏部屋の床から天井までの高さが1.5 メートルであるときは，建物の構造欄には，「3 階建」と表示する。\nエ　3 階層からなる建物の1 階層部分の床面が地盤面下にある場合において，1 階層部分の床面から地盤面までの高さが1.1 メートルで1 階層部分の床面から1 階層部分の天井までの高さが2.7 メートルのときは，建物の構造欄には，「3 階建」と表示する。\nオ　店舗として使用されている平家建の建物が鉄骨の柱により地盤面から2.0 メートル床上げされている場合において，床上げされた場所が外気と遮断する壁のない店舗用の駐車場として使用されているときは，建物の構造欄には，「平家建」と表示する。",
+   "stem": "建物の構造に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　主要構造部が鉄骨造であって，壁構造ではない建物で，当該建物の外壁に軽量気泡コンクリートを使用している場合には，建物の構造欄には，「鉄骨・鉄筋コンクリート造」と表示する。\nイ　床面積が100.00平方メートルの平家建の建物で，当該建物の床面積の65.00平方メートルの部分の屋根がスレートでふかれており，残りの床面積の部分の屋根がかわらでふかれているときは，建物の構造欄には，かわら及びスレートをいずれも表示の対象とする。\nウ　2階層からなる建物の2階層部分の天井の上に，収納式の階段を利用して出入りする構造で物置として使用されている屋根裏部屋がある場合において，当該屋根裏部屋の床から天井までの高さが1.5メートルであるときは，建物の構造欄には，「3階建」と表示する。\nエ　3階層からなる建物の1階層部分の床面が地盤面下にある場合において，1階層部分の床面から地盤面までの高さが1.1メートルで1階層部分の床面から1階層部分の天井までの高さが2.7メートルのときは，建物の構造欄には，「3階建」と表示する。\nオ　店舗として使用されている平家建の建物が鉄骨の柱により地盤面から2.0メートル床上げされている場合において，床上げされた場所が外気と遮断する壁のない店舗用の駐車場として使用されているときは，建物の構造欄には，「平家建」と表示する。",
    "stemMode": "text",
    "choices": [
     "アエ",
@@ -17687,7 +19341,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no17-iq": {
-   "stem": "区分建物の登記の申請に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　Ａを表題部所有者とする区分建物ではない甲建物に接続してＢにより乙区分建物が新築されて一棟の建物となったことによって，甲建物が区分建物になった場合において，甲建物の表題部の変更の登記及び乙区分建物についての表題登記を申請するときは，Ａ及びＢは，住所を証する情報を提供しなければならない。\nイ　甲区分建物が属する一棟の建物が所在する土地を分筆したことにより当該一棟の建物が所在する土地の地番が変更した場合において，甲区分建物についての表題部の変更の登記を申請するときは，添付情報として変更後の建物図面及び各階平面図を提供しなければならない。\nウ　いずれも表題登記がある区分建物ではない甲建物及び乙建物が増築工事により相互に接続して区分建物になった場合には，甲建物及び乙建物についての表題部の変更の登記の申請は，一括してしなければならない。\nエ　所有権が敷地権として登記されているいずれも主である甲区分建物及び乙区分建物を区分合併して，これらの区分建物が属する一棟の建物が区分建物ではない建物になった場合におけるこれらの区分建物の区分合併の登記の申請は，敷地権の表示を抹消するための区分建物の表題部の変更の登記の申請と併せてしなければならない。\nオ　甲区分建物の所有権の原始取得者が甲区分建物の表題登記を申請しない場合には，甲区分建物の転得者は，当該原始取得者に代位して甲区分建物の表題登記を申請することができる。",
+   "stem": "区分建物の登記の申請に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　Ａを表題部所有者とする区分建物ではない甲建物に接続してＢにより乙区分建物が新築されて一棟の建物となったことによって，甲建物が区分建物になった場合において，甲建物の表題部の変更の登記及び乙区分建物についての表題登記を申請するときは，Ａ及びＢは，住所を証する情報を提供しなければならない。\nイ　甲区分建物が属する一棟の建物が所在する土地を分筆したことにより当該一棟の建物が所在する土地の地番が変更した場合において，甲区分建物についての表題部の変更の登記を申請するときは，添付情報として変更後の建物図面及び各階平面図を提供しなければならない。\nウ　いずれも表題登記がある区分建物ではない甲建物及び乙建物が増築工事により相互に接続して区分建物になった場合には，甲建物及び乙建物についての表題部の変更の登記の申請は，一括してしなければならない。\nエ　所有権が敷地権として登記されているいずれも主である甲区分建物及び乙区分建物を区分合併して，これらの区分建物が属する一棟の建物が区分建物ではない建物になった場合におけるこれらの区分建物の区分合併の登記の申請は，敷地権の表示を抹消するための区分建物の表題部の変更の登記の申請と併せてしなければならない。\nオ　甲区分建物の所有権の原始取得者が甲区分建物の表題登記を申請しない場合には，甲区分建物の転得者は，当該原始取得者に代位して甲区分建物の表題登記を申請することができる。",
    "stemMode": "text",
    "choices": [
     "アイ",
@@ -17702,7 +19356,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no18-iq": {
-   "stem": "建物の滅失の登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　建物の所有権の登記名義人が当該建物を自ら取り壊した場合において，当該建物の滅失の登記の申請をするときは，当該登記名義人の印鑑に関する証明書を添付しなければならない。\nイ　建物図面が備え付けられていない建物を取り壊した場合において，当該建物の滅失の登記の申請をするときは，当該建物が存していた場所を特定するために建物図面を添付しなければならない。\nウ　団地共用部分である旨の登記がある建物の滅失の登記を申請する場合には，当該建物の所有者を証する情報を添付しなければならない。\nエ　借地上に存する建物の所有権の登記名義人が当該建物を建替えのために取り壊した場合には，当該借地に賃借権の設定の登記がされていないときであっても，当該建物の所有権の登記名義人は，当該建物の滅失の登記を申請しなければならない。\nオ　抵当権の設定の登記がある建物が焼失した場合において，当該建物の滅失の登記の申請をするときは，当該抵当権の登記名義人の承諾を証する情報を添付しなければならない。",
+   "stem": "建物の滅失の登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　建物の所有権の登記名義人が当該建物を自ら取り壊した場合において，当該建物の滅失の登記の申請をするときは，当該登記名義人の印鑑に関する証明書を添付しなければならない。\nイ　建物図面が備え付けられていない建物を取り壊した場合において，当該建物の滅失の登記の申請をするときは，当該建物が存していた場所を特定するために建物図面を添付しなければならない。\nウ　団地共用部分である旨の登記がある建物の滅失の登記を申請する場合には，当該建物の所有者を証する情報を添付しなければならない。\nエ　借地上に存する建物の所有権の登記名義人が当該建物を建替えのために取り壊した場合には，当該借地に賃借権の設定の登記がされていないときであっても，当該建物の所有権の登記名義人は，当該建物の滅失の登記を申請しなければならない。\nオ　抵当権の設定の登記がある建物が焼失した場合において，当該建物の滅失の登記の申請をするときは，当該抵当権の登記名義人の承諾を証する情報を添付しなければならない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17717,7 +19371,7 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no19-iq": {
-   "stem": "筆界特定に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1 から5 までのうち，どれか。\nア　筆界調査委員は，対象土地の筆界特定のために必要な事実の調査に当たっては，筆界特定が対象土地の所有権の境界の特定をも目的とするものであることに留意しなければならない。\nイ　筆界調査委員は，あらかじめ，筆界特定の申請人及び関係人に対し，対象土地の測量又は実地調査を行う旨並びにその日時及び場所を通知して，これに立ち会う機会を与えた場合には，当該申請人及び関係人が立会いをしないときであっても，当該筆界調査委員は，当該対象土地の測量又は実地調査をすることができる。\nウ　筆界調査委員は，意見聴取等の期日に立ち会う場合には，筆界特定登記官の許可を得なくとも，筆界特定の申請人若しくは関係人又は参考人に対し質問を発することができる。\nエ　筆界調査委員は，筆界特定のために，柵で囲まれた他人の占有する土地の実地調査をする場合において，当該土地の占有者の承諾があるときは，日出前であっても，当該土地に立ち入ることができる。\nオ　筆界特定の関係人は，筆界が特定されるまでの間は，当該筆界特定の手続において作成された調書及び提出された資料を閲覧することはできない。",
+   "stem": "筆界特定に関する次のアからオまでの記述のうち，正しいものの組合せは，後記1から5までのうち，どれか。\nア　筆界調査委員は，対象土地の筆界特定のために必要な事実の調査に当たっては，筆界特定が対象土地の所有権の境界の特定をも目的とするものであることに留意しなければならない。\nイ　筆界調査委員は，あらかじめ，筆界特定の申請人及び関係人に対し，対象土地の測量又は実地調査を行う旨並びにその日時及び場所を通知して，これに立ち会う機会を与えた場合には，当該申請人及び関係人が立会いをしないときであっても，当該筆界調査委員は，当該対象土地の測量又は実地調査をすることができる。\nウ　筆界調査委員は，意見聴取等の期日に立ち会う場合には，筆界特定登記官の許可を得なくとも，筆界特定の申請人若しくは関係人又は参考人に対し質問を発することができる。\nエ　筆界調査委員は，筆界特定のために，柵で囲まれた他人の占有する土地の実地調査をする場合において，当該土地の占有者の承諾があるときは，日出前であっても，当該土地に立ち入ることができる。\nオ　筆界特定の関係人は，筆界が特定されるまでの間は，当該筆界特定の手続において作成された調書及び提出された資料を閲覧することはできない。",
    "stemMode": "text",
    "choices": [
     "アウ",
@@ -17732,7 +19386,1379 @@
    "round": 7
   },
   "land_surveyor-c260-午後の部-no20-iq": {
-   "stem": "土地家屋調査士法人（社員のうちに，民間紛争解決手続代理関係業務を行うことができる土地家屋調査士はいないものとする。）に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1 から5 までのうち，どれか。\nア　土地家屋調査士法人は，定款又は総社員の同意によって，社員のうち特に土地家屋調査士法人を代表すべきものを定めることができる。\nイ　土地家屋調査士法人の社員である土地家屋調査士は，全て業務を執行する権利を有し，義務を負う。\nウ　土地家屋調査士法人の社員である土地家屋調査士は，土地家屋調査士の登録の取消しがあった場合であっても，総社員の同意がなければ，当該法人の社員を脱退することはない。\nエ　土地家屋調査士法人は，その事務所に，当該事務所の所在地を管轄する法務局又は地方法務局の管轄区域内に設立された土地家屋調査士会の会員である社員を常駐させなければならない。\nオ　土地家屋調査士法人は，社員となろうとする土地家屋調査士が1 人で定款を定めて設立することができる。",
+   "stem": "土地家屋調査士法人（社員のうちに，民間紛争解決手続代理関係業務を行うことができる土地家屋調査士はいないものとする。）に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記1から5までのうち，どれか。\nア　土地家屋調査士法人は，定款又は総社員の同意によって，社員のうち特に土地家屋調査士法人を代表すべきものを定めることができる。\nイ　土地家屋調査士法人の社員である土地家屋調査士は，全て業務を執行する権利を有し，義務を負う。\nウ　土地家屋調査士法人の社員である土地家屋調査士は，土地家屋調査士の登録の取消しがあった場合であっても，総社員の同意がなければ，当該法人の社員を脱退することはない。\nエ　土地家屋調査士法人は，その事務所に，当該事務所の所在地を管轄する法務局又は地方法務局の管轄区域内に設立された土地家屋調査士会の会員である社員を常駐させなければならない。\nオ　土地家屋調査士法人は，社員となろうとする土地家屋調査士が1人で定款を定めて設立することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no1-iq": {
+   "stem": "トータルステーションを水平に設置するために使用する管形気泡管の感度が32″/2 ｍｍである場合における管形気泡管の曲率半径として最も近いものは，後記１から５までのうち，どれか。ただし，ρ″＝2.0″×10⁵ とする。",
+   "stemMode": "text",
+   "choices": [
+    "10.50 ｍ",
+    "11.50 ｍ",
+    "12.50 ｍ",
+    "13.50 ｍ",
+    "14.50 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no2-iq": {
+   "stem": "光波測距儀を使用した測定距離に関する次の１から５までの記述のうち，誤っているものは，どれか。",
+   "stemMode": "text",
+   "choices": [
+    "器械定数は，測定距離に比例しない。",
+    "湿度の変化は，測定距離に影響する。",
+    "気圧が高くなると，測定距離は長くなる。",
+    "気温が上がると，測定距離は長くなる。",
+    "気圧１hPaの変化が測定距離に与える影響は，気温１℃の変化が測定距離に与える影響よりも小さい。"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no3-iq": {
+   "stem": "次の〔図〕のとおり，既知点Ａから既知点Ｂまでの結合多角測量を行ったところ，次の〔観測結果〕，〔距離測定結果〕及び〔閉合差の結果〕のとおりの結果を得た。既知点Ａにおける既知点Ｃの方向角ＴＡ＝8°54′05″，既知点Ｂにおける既知点Ｄの方向角ＴＢ＝92°12′55″を用いて，閉合差の配分を行った。新点Ｐ２における，既知点Ｂの方向角及びこの測量の精度を閉合比で表した場合の値として最も近いものの組合せは，後記１から５までのうち，どれか。\n　なお，北は，Ｘ軸正方向に一致するものとする。",
+   "stemMode": "text",
+   "choices": [
+    "方向角：2°47′56″　閉合比：1/50000",
+    "方向角：2°47′56″　閉合比：1/43000",
+    "方向角：2°47′56″　閉合比：1/73000",
+    "方向角：2°47′59″　閉合比：1/43000",
+    "方向角：2°47′59″　閉合比：1/73000"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no4-iq": {
+   "stem": "平面直角座標系（平成14年国土交通省告示第９号）においてＡ点にて真北測量を行った結果，真北方向角は＋0°2′0″であった。Ａ点からＢ点への方位角及び平面距離として最も近いものの組合せは，後記１から５までのうち，どれか。\n なお，Ａ点及びＢ点の座標値は，次の〔表〕のとおりとする。",
+   "stemMode": "text",
+   "choices": [
+    "方位角：61°49′20″　平面距離：87.60 ｍ",
+    "方位角：61°49′20″　平面距離：87.62 ｍ",
+    "方位角：61°51′20″　平面距離：87.60 ｍ",
+    "方位角：61°51′20″　平面距離：87.62 ｍ",
+    "方位角：61°53′20″　平面距離：87.62 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no5-iq": {
+   "stem": "トータルステーションを用いて，天頂を０°とする鉛直角を観測し，次の〔表〕のとおりの結果を得た。視準点Ｔ１，Ｔ２及びＴ３の高低角並びに高度定数の較差として正しいものの組合せは，後記１から５までのうち，どれか。",
+   "stemMode": "text",
+   "choices": [
+    "高低角Ｔ１：＋0°42′27″　高低角Ｔ２：－5°59′29″　高低角Ｔ３：－1°6′20″　高度定数の較差：２″",
+    "高低角Ｔ１：＋0°42′34″　高低角Ｔ２：－5°59′29″　高低角Ｔ３：－1°6′22″　高度定数の較差：12″",
+    "高低角Ｔ１：－0°42′27″　高低角Ｔ２：＋5°59′27″　高低角Ｔ３：＋1°6′20″　高度定数の較差：２″",
+    "高低角Ｔ１：－0°42′27″　高低角Ｔ２：＋5°59′27″　高低角Ｔ３：＋1°6′20″　高度定数の較差：12″",
+    "高低角Ｔ１：－0°42′27″　高低角Ｔ２：＋5°59′29″　高低角Ｔ３：＋1°6′22″　高度定数の較差：12″"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no6-iq": {
+   "stem": "次の〔図〕のとおり，既知点Ｔ１において，既知点Ｔ２を零方向としてＰ点の位置を特定し，境界標を設置する予定であったが，既知点Ｔ１の測量標が亡失していた。そこで，既知点Ｔ１の代わりに，既知点Ｔ３において，既知点Ｔ２を零方向としてＰ点の位置を特定する場合に，水平角βの値として最も近いものは，後記１から５までのうち，どれか。\n なお，北は，Ｘ軸正方向に一致するものとし，既知点Ｔ１，Ｔ２及びＴ３の座標値は，次の〔表〕のとおりとする。",
+   "stemMode": "text",
+   "choices": [
+    "332°56′57″",
+    "333°56′57″",
+    "334°56′57″",
+    "335°56′57″",
+    "336°56′57″"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no7-iq": {
+   "stem": "GNSS測量又は衛星測位システムに関する次の１から５までの記述のうち，正しいものは，どれか。",
+   "stemMode": "text",
+   "choices": [
+    "ネットワーク型RTK法において，GPS及び準天頂衛星を使用する場合には，同時に４衛星以上を使用しなければならない。",
+    "日本の準天頂軌道衛星は，日本での利用に適した軌道上にあるため，東南アジア，オセアニア地域では，測位信号を受信することができない。",
+    "日本の準天頂軌道衛星は，常に地球と同じ周期で回っているため，日本から見ると止まっているように見える。",
+    "衛星測位システムにより標高を求める場合には，国土地理院が提供するジオイド・モデルにより求めたジオイド高を用いて楕円体高を補正して行う。",
+    "GNSS測量におけるマルチパスによる影響は，GNSS衛星から発信される２周波の観測により軽減することができる。"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no8-iq": {
+   "stem": "平面直角座標系（平成14年国土交通省告示第９号）に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　平面直角座標系では，ガウスの等距離投影法によって投影している。\nイ　平面直角座標系では，日本全国を18の区域に分けている。\nウ　平面直角座標系では，同一の座標系においてＸ座標値が同じである別の地点での縮尺係数は異ならない。\nエ　平面直角座標系では，座標系原点におけるＸ軸は，真北に向かう値を正としている。\nオ　平面直角座標系のＸ軸上での縮尺係数は，0.9999とされている。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イウ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no9-iq": {
+   "stem": "次の〔図〕のとおり，水準点Ｅを新設するため，水準点Ａ，Ｂ，Ｃ及びＤを既知点として水準測量を行い，次の〔観測結果〕のとおりの結果を得た。この場合における水準点Ｅの標高の最確値として最も近いものは，後記１から５までのうち，どれか。\n なお，既知点Ａ，Ｂ，Ｃ及びＤの水準点の標高は，それぞれ次の〔表〕のとおりとする。",
+   "stemMode": "text",
+   "choices": [
+    "4.001 ｍ",
+    "4.003 ｍ",
+    "4.005 ｍ",
+    "4.007 ｍ",
+    "4.009 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-4d6c-午前の部-no10-iq": {
+   "stem": "計画道路の中心線の線上に測点番号№１から順次18.00 ｍの間隔で測設した測点番号№１から測点番号№５までの５本の木杭の縦断測量を行い，現況の高さ（標高）について，次の〔表〕のとおりの結果を得た。測点番号№１における計画道路の計画高を標高18.90 ｍとして測点番号№１から測点番号№５に向かって1.50 ％の上り勾配の計画道路を造成する場合において，現況の高さ（標高）に対して切土をする高さが最も高い測点番号は，後記１から５までのうち，どれか。",
+   "stemMode": "text",
+   "choices": [
+    "測点番号№１",
+    "測点番号№２",
+    "測点番号№３",
+    "測点番号№４",
+    "測点番号№５"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no1-iq": {
+   "stem": "行為能力に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　未成年後見人が選任されている未成年者については，後見開始の審判をして成年後見人を付することができない。\nイ　成年被後見人が日用品を買い受けた場合には，その売主が買主について後見が開始していることを知らなかったときであっても，買主の成年後見人は，当該日用品の売買契約を取り消すことができる。\nウ　被保佐人に十分な判断能力がある場合には，被保佐人と契約を締結しようとする者は，家庭裁判所に対し，利害関係人として，保佐開始の審判の取消しを請求することができる。\nエ　被保佐人は，保証契約を締結する前にその行為をすることについて保佐人の同意を得たとしても，自己の判断でその保証契約の締結をやめることができる。\nオ　本人以外の者の請求により補助開始の審判をするには，本人の同意が必要である。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no2-iq": {
+   "stem": "付合に関する次のアからオまでの記述のうち，判例の趣旨に照らし正しいものの組合せは，後記１から５までのうち，どれか。\nア　土地を使用する権原を有しない者が当該土地に小麦の種をまき，これを育てた場合には，成育した小麦の所有権は，種をまいた者に帰属する。\nイ　建物の賃借人が賃貸人の承諾を得て当該建物を増築した場合であっても，その増築部分が取引上の独立性を有しないときは，当該賃借人は，当該増築部分の所有権を取得しない。\nウ　ＢがＡからＡの所有する土地を買い受けて立木を植栽した後に，Ｃが当該立木とともに当該土地をＡから買い受けてその所有権の移転の登記を備えた場合には，Ｂは，当該立木につき対抗要件を備えていなくとも，Ｃに対し，当該立木の所有権を主張することができる。\nエ　Ａが所有する甲動産に甲動産の賃借人Ｂが所有する乙動産が付合したときは，甲動産が主たる動産であったとしても，Ｂは，乙動産の所有権を失わない。\nオ　不動産の付合によって付合した物の所有権を喪失し，損失を受けた者は，当該不動産の付合によって所有権を取得した者に対し，その償金を請求することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no3-iq": {
+   "stem": "Ａを被相続人とする代襲相続に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　Ａの死亡時に，その直系卑属がなく，かつ，Ａの父Ｂは既に死亡している場合には，Ｂの母Ｃは，Ｂを代襲してＡの相続人となる。\nイ　Ａの子ＢがＡの死亡の後にＡの相続を放棄した場合には，Ｂの子Ｃは，Ｂを代襲してＡの相続人となる。\nウ　Ａが家庭裁判所に請求してその子Ｂについて推定相続人の廃除をした後に死亡した場合には，Ｂの廃除後からＡの死亡時までの間に出生したＢの子Ｃは，Ｂを代襲してＡの相続人となる。\nエ　Ａの相続人となるべき者が兄Ｂのみである場合において，Ｂ及びＢの子ＣがＡの死亡時に既に死亡しているときは，Ｃの子Ｄは，Ｂ及びＣを代襲してＡの相続人となる。\nオ　Ａの子Ｂが故意にＡを死亡するに至らせたために刑に処せられた場合には，Ｂの子Ｃは，Ｂを代襲してＡの相続人となる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イエ",
+    "イオ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no4-iq": {
+   "stem": "表示に関する登記の申請情報及び添付情報に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　同一の登記所に対して同時に二以上の申請をする場合において，各申請に共通する添付情報を一の申請の申請情報と併せて提供するときは，当該添付情報を当該一の申請の申請情報と併せて提供した旨を他の申請の申請情報の内容としなければならない。\nイ　会社法人等番号を有しない法人が土地の地積に関する更正の登記を申請するときは，作成後３月以内の当該法人の代表者の資格を証する情報を添付情報として提供しなければならない。\nウ　表題部所有者の相続人が土地の分筆の登記を申請する場合において，その相続に関して法定相続情報一覧図の写しを添付情報として提供するときは，当該登記の申請人は，その表題部所有者の相続人である旨を申請情報の内容とする必要はない。\nエ　電子申請により所有権の登記のある土地の合筆の登記の申請をする場合には，電子申請における添付情報の提供方法の特例（不動産登記令附則第５条に規定する添付情報の提供方法に関する特例）により，登記識別情報が記載された書面を添付情報として登記所に提出することができる。\nオ　電子申請をした土地の地目に関する変更の登記の申請情報に補正することができる不備がある場合において，登記官が定めた相当の期間内に当該登記の申請人がその不備を補正するときは，当該登記の申請人は，電子情報処理組織を使用する方法により当該申請情報の補正をしなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no5-iq": {
+   "stem": "次の対話は，登記官による調査に関する教授と学生の対話である。教授の質問に対する次のアからオまでの学生の解答のうち，正しいものの組合せは，後記１から５までのうち，どれか。\n教授：　登記官による調査について考えてみましょう。\n　登記官は，不動産の表示に関する登記について，不動産登記法の規定により申請をすべき事項で申請のないものを発見したときは，直ちに職権でその登記をしなければなりませんか。\n学生：ア　登記官は，直ちに職権でその登記をすることなく，その申請の義務がある者に登記の申請を催告することとされています。\n教授：　次に，登記官が行う土地の表示に関する登記についての実地調査では，どのような事項を調査することになりますか。\n学生：イ　土地の表示に関する登記についての実地調査では，その土地の地目や地積，筆界を調査することはできますが，表題登記がされていない土地の所有者が誰であるかを調査することはできません。\n教授：　登記官が実地調査を行う時間帯に制限はありますか。\n学生：ウ　登記官は，日出から日没までの間に限り，実地調査を行うことができます。\n教授：　登記官は，登記所の職員に実地調査を行わせることができますか。\n学生：エ　登記官は，自ら実地調査を行わなければならないので，登記所の職員に実地調査を行わせることはできません。\n教授：　最後に，登記官による実地調査において不動産の検査を妨げた土地の所有者に対する刑事罰は定められていますか。\n学生：オ　不動産登記法上，そのような刑事罰は定められていません。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no6-iq": {
+   "stem": "登記所備付地図（以下「地図」という。）に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　地図は，一筆又は二筆以上の土地ごとに作成し，各土地の区画を明確にし，地番を表示するものとされている。\nイ　地図の訂正の申出は，その地図に表示された土地の表題部所有者が二人である場合には，そのうちの一人からすることができる。\nウ　閉鎖した地図は，閉鎖した日から50年間保存される。\nエ　国土調査法の規定により登記所に送付された地籍図は，地図として備え付けることを不適当とする特別の事情がある場合を除き，地図として備え付けられる。\nオ　登記官は，地図に表示された土地の区画に誤りがあると認める場合であっても，その訂正の申出がない限り，訂正をすることはできない。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イエ",
+    "イオ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no7-iq": {
+   "stem": "本人確認情報に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　資格者代理人が本人確認情報を提供して登記を申請した場合において，登記官がその本人確認情報の内容を相当と認めることができないときは，当該申請は，直ちに却下される。\nイ　資格者代理人が申請人の氏名を知らず，又は当該申請人と面識がない場合において，当該申請人から運転免許証の提示を受ける方法により本人確認を行うときは，その運転免許証は，当該資格者代理人が提示を受ける日において有効なものでなければならない。\nウ　資格者代理人が申請人の氏名を知り，かつ，当該申請人と面識がある場合に提供する本人確認情報は，当該申請人の氏名を知り，かつ，当該申請人と面識がある旨のほか，その面識が生じた経緯を明らかにするものでなければならない。\nエ　資格者代理人が法人である申請人の本人確認情報を提供する場合には，当該資格者代理人は当該法人の代表者と面談しなければならない。\nオ　本人確認情報と併せて提供する資格者代理人である土地家屋調査士が所属する土地家屋調査士会が発行した職印に関する証明書は，発行後３月以内のものであることを要する。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no8-iq": {
+   "stem": "土地の表示に関する登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　抵当権の設定の登記がされている土地について，地積に関する更正の登記を申請する場合には，その申請情報と併せて，当該抵当権の登記名義人が登記記録上の地積を更正することについて承諾したことを証する情報を提供しなければならない。\nイ　いずれも所有権の登記がある甲土地と乙土地とを合筆する合筆の登記の申請をする場合には，その申請情報と併せて，当該合筆に係る甲土地及び乙土地それぞれの所有権の登記名義人の登記識別情報をいずれも提供しなければならない。\nウ　地番区域が相互に異なり，所有権の登記名義人が同一である甲土地と乙土地のそれぞれについて，当該登記名義人が地積に関する更正の登記を申請する場合において，甲土地と乙土地とが同一の登記所の管轄区域内にあるときは，一の申請情報により，当該申請をすることができる。\nエ　所有権の登記がある甲土地から乙土地及び丙土地を分筆する分筆の登記を申請した場合において，その登記が完了したときは，分筆後のいずれの土地についても，新たな登記識別情報は通知されない。\nオ　書面申請により分筆の登記を申請する場合において，受領証の交付を請求するときは，申請書の内容と同一の内容を記載した書面に地積測量図の写しを添付したものを提出しなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イオ",
+    "ウエ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no9-iq": {
+   "stem": "次の対話は，土地の地目に関する教授と学生の対話である。教授の質問に対する次のアからオまでの学生の解答のうち，正しいものの組合せは，後記１から５までのうち，どれか。\n教授：　土地の地目について考えてみましょう。\n　公衆の遊楽のために供する土地の地目と競馬場内の馬場の地目は，同じ地目ですか。\n学生：ア　公衆の遊楽のために供する土地の地目は雑種地であり，競馬場内の馬場の地目も雑種地であることから，同じ地目です。\n教授：　幼稚園の園舎の敷地の地目と，その園舎と一体的に利用されている運動場の地目は，同じ地目ですか。\n学生：イ　幼稚園の園舎の敷地の地目は学校用地であり，その園舎と一体的に利用されている運動場の地目も学校用地であることから，同じ地目です。\n教授：　共同住宅の敷地の地目と石油タンクの敷地の地目は，同じ地目ですか。\n学生：ウ　共同住宅は登記の対象となる建物ですから，その敷地の地目は宅地であるのに対し，石油タンクは登記の対象とならない建造物ですから，その敷地の地目は雑種地であるので，違う地目です。\n教授：　高圧線の下の土地で他の目的に使用することができない区域にあるものの地目と変電所の敷地の地目は，同じ地目ですか。\n学生：エ　高圧線の下の土地で他の目的に使用することができない区域にあるものの地目は雑種地であるのに対し，変電所の敷地の地目は宅地であるので，違う地目です。\n教授：　最後に，かんがい用の水路の地目と水力発電のための排水路の地目は，同じ地目ですか。\n学生：オ　かんがい用の水路の地目は用悪水路であるのに対し，水力発電のための排水路の地目は雑種地であるので，違う地目です。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イウ",
+    "イオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no10-iq": {
+   "stem": "次のアからオまでの建造物のうち，建物として登記することができないものの組合せは，後記１から５までのうち，どれか。\nア　競馬場の観覧席のうち，屋根を有しない部分\nイ　土地に固定している浮船を利用した店舗\nウ　ガード下を利用して築造した倉庫\nエ　容易に運搬することができる切符売場\nオ　廃車となった鉄道車両に基礎工事や付帯設備等を施した居宅",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no11-iq": {
+   "stem": "次の〔文章〕の中の（①）から（⑦）までの空欄に後記の〔語句群〕の中から適切な語句を選んで入れると，建物の登記に関する文章となる。（①）から（⑦）までの空欄に入る語句の組合せとして最も適切なものは，後記１から５までのうち，どれか。\nただし，文章中の【Ａ】及び【Ｂ】には適当な語句が入るものとし，同一の数字又は記号には同一の語句が入り，異なる数字又は記号には同一の語句は入らないものとする。\n〔文章〕\n【Ａ】とは，例えば，マンションやビルの各部屋のように，一棟の建物の（①）区分された部分で独立して（②），店舗，事務所又は倉庫その他建物としての用途に供することができるものであって，建物の区分所有等に関する法律に規定する（③）であるもの（（④）を含みます。）をいいます。\nしたがって，マンションなどの各部屋を【Ａ】として登記するには，次のⅠ及びⅡの要件が必要です。\nⅠ　各部屋が（①）の独立性を有していること。\n　各部屋が，仕切り壁，床，天井等によって，他の部屋と（①）はっきり区別されていなければなりません。\nⅡ　各部屋が（⑤）の独立性を備えていること。\n　各部屋が，それだけで（②），店舗，事務所又は倉庫などの用途に使用できるものでなければなりません。\n【Ｂ】とは，【Ａ】について（③）を所有するための建物の敷地に関する権利として（⑥）の登記記録に登記されたものであって，（③）と分離して処分することができないものをいいます。\n登記官は，表示に関する登記のうち，【Ａ】に関する【Ｂ】について表題部に最初に登記をするときは，当該【Ｂ】の目的である（⑥）の登記記録について，（⑦），当該登記記録中の所有権，地上権その他の権利が【Ｂ】である旨の登記をしなければなりません。これは，【Ｂ】である権利については，その旨を（⑥）の登記記録に明らかにし，その権利変動が建物の登記記録によって公示されていることを示すためです。\n〔語句群〕\n土地，建物，附属建物，住居，家屋，駐車場，専有部分，共用部分，法定共用部分，規約共用部分，構造上，利用上，法令上，申請により，職権で",
+   "stemMode": "text",
+   "choices": [
+    "①法令上　④規約共用部分　⑥建物",
+    "②住居　④法定共用部分　⑦職権で",
+    "②駐車場　⑤構造上　⑥建物",
+    "③専有部分　⑤利用上　⑦職権で",
+    "③共用部分　⑥土地　⑦申請により"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no12-iq": {
+   "stem": "建物の表題部の登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　増築による建物の表題部の変更の登記後に，当該建物の登記記録の床面積に誤りがあることが判明した場合には，表題部所有者又は所有権の登記名義人は，その誤りを知った時から１月以内に，当該建物の表題部の更正の登記を申請しなければならない。\nイ　共用部分である旨の登記がされている建物の表題部の更正の登記の申請は，当該建物の所有者全員で行うことを要する。\nウ　区分建物ではない表題登記がある建物に接続して区分建物が新築された場合における当該区分建物についての表題登記の申請は，当該表題登記がある建物についての表題部の変更の登記の申請と併せてしなければならない。\nエ　Ｂが所有する土地に区分建物が属する一棟の建物を新築したＡが，当該建物の完成後，Ｂからその土地を買い受けて，敷地権付き区分建物として当該建物の表題登記を申請した場合において，当該敷地権付き区分建物の表題部に記録される敷地権に係る登記の登記原因の日付は，当該建物の表題登記の申請日である。\nオ　区分建物である建物を新築した場合において，その表題登記をする前にその所有権の原始取得者であるＡが死亡したときは，Ａの相続人は，表題部所有者を亡Ａとする当該建物についての表題登記を申請することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no13-iq": {
+   "stem": "建物の床面積に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　エレベーター室は，１階部分のみ床面積に算入される。\nイ　建物に附属する屋外の階段は，その階段を利用しないと上階に上がれない場合には，床面積に算入される。\nウ　建物の内部にある煙突の一部が外部に及んでいる場合には，当該煙突の全部について各階の床面積に算入されない。\nエ　建物の一部が上階まで吹抜になっている場合には，その吹抜の部分は，上階の床面積に算入されない。\nオ　地階があるときは，その床面積は，地上階の床面積の記録の次に記録される。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no14-iq": {
+   "stem": "附属建物の登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　附属建物がある建物の表題登記をする場合において，附属建物の新築の日が主である建物の新築の日と同一であるときは，附属建物の表示欄の原因及びその日付欄の記録は要しない。\nイ　表題部に附属建物に関する事項を記録する場合において，当該附属建物の種類，構造及び床面積が直前に記録された附属建物の記録と同一のときは，「同上」と記録される。\nウ　附属建物の種類に関する変更の登記をする場合において，表題部に附属建物に関する記録をするときは，当該変更後の附属建物の種類，構造及び床面積が記録され，当該変更前の附属建物の符号を除くその登記事項の全部が抹消される。\nエ　区分建物でない建物の登記記録において，主である建物が存在する土地の地番と附属建物である地下車庫が存在する土地の地番とが同一ではない場合には，当該附属建物が存在する土地の地番は，主である建物の表示欄の所在欄に記録されない。\nオ　附属建物が主である建物と同一の一棟の建物に属する区分建物である場合において，当該附属建物に関する登記事項を記録するには，その一棟の建物の所在する市，区，郡，町，村，字及び土地の地番並びに構造及び床面積を記録することを要する。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no15-iq": {
+   "stem": "建物の分割の登記に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　主である建物と附属建物との間に道路が築造されたときは，登記官は，その建物の分割の登記を職権ですることができる。\nイ　共用部分である旨の登記がある建物であっても，建物の分割の登記をすることができる。\nウ　甲建物の附属建物を分割して乙建物とする建物の分割の登記を申請する場合において，甲建物を増築したことにより床面積の変更が生じているときは，当該増築による表題部の変更の登記と当該建物の分割の登記とを一の申請情報によって申請することができる。\nエ　抵当権の設定の登記がされている甲建物から，その附属建物を分割して乙建物とする建物の分割の登記をする場合において，分割後の甲建物について当該抵当権を消滅させるときは，当該抵当権の登記名義人がその消滅を承諾したことを証する情報及び登記識別情報を提供しなければならない。\nオ　甲建物について所有権の登記がされた後，附属建物を新築したことによる甲建物の表題部の変更の登記がされている場合において，その附属建物を分割して乙建物とする建物の分割の登記の申請をしたときは，申請人があらかじめ登記識別情報の通知を希望しない旨の申出をしない限り，分割後の乙建物についての登記識別情報が通知される。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no16-iq": {
+   "stem": "共用部分である旨の登記及び団地共用部分である旨の登記に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　共用部分である旨の登記がされる場合には，当該建物の表題部所有者の登記又は権利に関する登記が抹消される。\nイ　規約による共用部分である旨の登記は，登記官が職権ですることができる。\nウ　共用部分である旨の登記をするときは，表題部の原因及びその日付欄に当該規約の設定の年月日が記録される。\nエ　共用部分である旨の登記がある建物について，共用部分である旨を定めた規約を廃止したことにより当該建物の表題登記の申請がされた場合において，当該申請に基づく表題登記がされるときは，当該建物の登記記録が閉鎖され，新たに登記記録が作成される。\nオ　団地共用部分である旨の登記がある建物について，その種類を物置から集会所に変更した場合には，当該建物の所有者は，当該建物の表題部の変更の登記を申請しなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no17-iq": {
+   "stem": "登記事項の証明等に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　地積測量図の一部の写しの交付を請求することはできない。\nイ　権利部に所有権の保存の登記がされているときであっても，表題部のみを記載事項とする登記事項証明書の交付を請求することはできる。\nウ　登記事項証明書の交付を請求する場合において，共同担保目録に記録された事項についても証明を求めるときは，その旨を請求情報の内容としなければならない。\nエ　地図に準ずる図面の全部の写しの交付の請求は，その請求に係る不動産の所在地を管轄する登記所以外の登記所の登記官に対してはすることができない。\nオ　請求書を登記所に提出する方法により登記事項証明書の交付の請求をする場合において，請求人の申出により，送付の方法により登記事項証明書の交付を受けるときは，手数料のほか送付に要する費用も納付しなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イウ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no18-iq": {
+   "stem": "登記官の処分又は不作為についての審査請求に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\n　なお，当該処分又は当該不作為に係る処分についての申請は，平成28年４月１日以降にされたものとする。\nア　当該登記官を監督する法務局又は地方法務局の長（以下「監督法務局長等」という。）は，処分についての審査請求を理由があると認め，又は審査請求に係る不作為に係る処分をすべきものと認めるときは，当該登記官がすべき相当の処分を自らすることができる。\nイ　登記官の処分に不服がある者は，当該処分があったことを知った日の翌日から起算して３月を経過したときは，審査請求をすることができない。\nウ　監督法務局長等が審査請求につき裁決をしたときは，当該監督法務局長等は，裁決書の謄本及び審理員意見書の写しを審査請求人及び登記官に交付する。\nエ　監督法務局長等は，審査請求に係る不作為に係る処分についての申請を却下すべきものと認めるときは，登記官に当該申請を却下する処分を命じなければならない。\nオ　監督法務局長等が裁決をした場合において，その審査請求について審理員に提出された証拠書類があるときは，当該証拠書類を提出した者が返還しないことに同意している場合を除き，当該監督法務局長等は，当該証拠書類をその提出した者に速やかに返還しなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no19-iq": {
+   "stem": "筆界特定に関する次のアからオまでの記述のうち，誤っているものの組合せは，後記１から５までのうち，どれか。\nア　筆界特定登記官は，申請人の地位の承継があった場合には，既に当該承継に係る申請人に係る意見聴取等の期日を開いたときであっても，改めて意見聴取等の期日を開かなければならない。\nイ　意見聴取等の期日は，対象土地において開くことができる。\nウ　申請人及び関係人に係る意見聴取等の期日は，同一の日時に申請人及び関係人を同席させて開くことはできない。\nエ　意見聴取等の期日における申請人，関係人又は参考人の陳述については，ビデオテープその他の適当と認める記録用の媒体に記録し，これをもって調書の記録に代えることができる。\nオ　筆界特定登記官は，意見聴取等の期日において，対象土地の所有権の登記名義人であった者や対象土地周辺の宅地開発を行った者に，参考人としてその知っている事実を陳述させることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-28fa-午後の部-no20-iq": {
+   "stem": "土地家屋調査士名簿の登録及び土地家屋調査士会への入会に関する次のアからオまでの記述のうち，正しいものの組合せは，後記１から５までのうち，どれか。\nア　土地家屋調査士が引き続き２年以上業務を行わないときは，日本土地家屋調査士会連合会は，当該土地家屋調査士について土地家屋調査士名簿の登録を取り消さなければならない。\nイ　土地家屋調査士法人は，その成立の日から２週間以内に，その主たる事務所の所在地を管轄する法務局又は地方法務局の管轄区域内に設立された土地家屋調査士会及び日本土地家屋調査士会連合会に成立した旨を届け出なければ，当該土地家屋調査士会の会員となることができない。\nウ　土地家屋調査士名簿の登録を申請した者は，その申請の日から３月を経過しても日本土地家屋調査士会連合会が当該申請に対して何らの処分をしないときは，当該登録を拒否されたものとして，法務大臣に対して審査請求をすることができる。\nエ　土地家屋調査士が禁錮以上の刑に処せられた場合において，その刑の全部の執行が猶予されているときは，日本土地家屋調査士会連合会は，当該土地家屋調査士について土地家屋調査士名簿の登録を取り消すことができない。\nオ　土地家屋調査士は，所属する土地家屋調査士会を変更する場合を除き，土地家屋調査士名簿に登録を受けた事項に変更が生じたときは，遅滞なく，所属する土地家屋調査士会を経由して，日本土地家屋調査士会連合会にその旨を届け出なければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-6c1e-午前の部-no1-iq": {
+   "stem": "次の基準点成果表についての記述として誤っているものは，後記1から5までのうち，どれか。",
+   "stemMode": "text",
+   "choices": [
+    "4級基準点1A274において，視準点1A273を基準として視準点1A275までの夾角は，127° 3′ 35.3″である。",
+    "4級基準点1A274は，座標原点の南西方向に位置している。",
+    "4級基準点1A274において，視準点1A273の方位角は，69° 57′ 10.9″である。",
+    "ジオイド高は，楕円体高と標高の差によって求められる。",
+    "4級基準点1A274から視準点1A275までの球面距離は，135.187 mである。"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-6c1e-午前の部-no10-iq": {
+   "stem": "次の〔図〕は，国土地理院刊行の電子地図25000と同様の作成方法に基づき作成された地図（縮尺を変更）である。この〔図〕内に示す美術館から神社までの標高断面図として最も適切なものは，後記1から5までのうち，どれか。",
+   "stemMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no1-iq": {
+   "stem": "ＧＮＳＳ測量に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　ＧＮＳＳ測量により、楕円体高を直接求めることができる。\nイ　ＧＮＳＳ測量機を用いた基準点測量では、アンテナ高が必要である。\nウ　ＧＮＳＳ衛星からの電波が遮られたために観測データが欠落し、位相記録が不連続となる現象をマルチパスという。\nエ　基線解析を行う観測点間の距離が長い場合における電離層の影響により生ずる誤差は、２周波の電波の観測により軽減することができる。\nオ　基線解析を行うに当たっては、ＧＮＳＳ衛星の軌道情報を要しない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no2-iq": {
+   "stem": "誤差に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　鋼巻尺を温度変化により縮んだまま使用して測定したために生ずる誤差は、不定誤差である。\nイ　巻尺を使用して１目盛以下を目測するときの測定者の読定の偏りにより生ずる個人誤差は、定誤差である。\nウ　光波測距儀を使用して観測した距離の測定値は、気温が高くなると短くなる。\nエ　測定回数が十分に多い場合には、小さい誤差は、大きい誤差よりも多く発生する。\nオ　測定値に大きな定誤差が含まれている場合には、最小二乗法を適用することにより、最確値を求めることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no3-iq": {
+   "stem": "次の〔図〕のとおり、トランシットの望遠鏡内にあるスタジア線を用いて直立するホテルの距離観測を行った。鉛直角（Ｖ）を66°3′10″としてホテルの14階の角の点（Ａ点）を視準したとき、上スタジア線に14階の窓の上端が、下スタジア線に14階の窓の下端がそれぞれ重なった。この窓の高さが1.00 ｍであるとき、Ａ点の垂直下でホテルと地表面が接する点（Ｂ点）と器械点との水平距離（ＨＳ）の値として最も近いものは、後記１から５までのうち、どれか。\n　ただし、望遠鏡内の上スタジア線と下スタジア線の間の距離の100倍が、器械点から視準したＡ点までの距離である。",
+   "stemMode": "text",
+   "choices": [
+    "16.48 ｍ",
+    "40.59 ｍ",
+    "66.31 ｍ",
+    "83.52 ｍ",
+    "91.39 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no4-iq": {
+   "stem": "既知点Ａから出発し、既知点Ｂに結合する多角測量を行ったところ、次の〔観測結果〕のとおりの結果を得た。この場合において、閉合差をコンパス法則により補正量を算出して配分したときの測点４の合緯距（Ｘ座標）及び合経距（Ｙ座標）の値として最も近いものは、後記１から５までのうち、どれか。\n　ただし、水平角の観測と平面距離の測定のそれぞれの精度及び閉合比は許容範囲内にあるものとする。",
+   "stemMode": "text",
+   "choices": [
+    "Ｘ座標（ｍ）：－148.40　Ｙ座標（ｍ）：－1042.69",
+    "Ｘ座標（ｍ）：－148.40　Ｙ座標（ｍ）：－1042.72",
+    "Ｘ座標（ｍ）：－148.43　Ｙ座標（ｍ）：－1042.72",
+    "Ｘ座標（ｍ）：－148.43　Ｙ座標（ｍ）：－1042.75",
+    "Ｘ座標（ｍ）：－148.46　Ｙ座標（ｍ）：－1042.75"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no5-iq": {
+   "stem": "次の〔図〕のとおり、既知点Ｔ１、Ｔ２及びＴ４を使用し、甲土地の境界点であるＡ点の測量を行った。既知点Ｔ２の座標値は、次の〔表１〕のとおりであり、観測結果は、次の〔表２〕のとおりである。この場合において、Ａ点の座標値として最も近いものは、後記１から５までのうち、どれか。\n　ただし、既知点Ｔ２から既知点Ｔ１への方向角は、325°30′50″である。また、閉合差の制限は考慮しないものとする。",
+   "stemMode": "text",
+   "choices": [
+    "Ｘ座標（ｍ）：213.88　Ｙ座標（ｍ）：308.51",
+    "Ｘ座標（ｍ）：213.99　Ｙ座標（ｍ）：308.61",
+    "Ｘ座標（ｍ）：214.10　Ｙ座標（ｍ）：308.71",
+    "Ｘ座標（ｍ）：214.21　Ｙ座標（ｍ）：308.81",
+    "Ｘ座標（ｍ）：214.32　Ｙ座標（ｍ）：308.91"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no6-iq": {
+   "stem": "基準点測量において、既知点Ａから既知点Ｂへの視通を確保することができなかったため、既知点ＡをＣ点に偏心して観測を行い、次の〔表〕のとおりの結果を得た。この場合におけるＣ点と既知点Ａを結んだ直線とＣ点と既知点Ｂを結んだ直線の時計回りの夾角（∠ＡＣＢ）の値として最も近いものは、後記１から５までのうち、どれか。",
+   "stemMode": "text",
+   "choices": [
+    "81°25′",
+    "81°32′",
+    "81°43′",
+    "81°50′",
+    "81°56′"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no7-iq": {
+   "stem": "次の〔図〕のとおり、Ａ、Ｂ、Ｃ、Ｆ、Ｅ及びＡの各点を順次直線で結んだ範囲の甲土地とＣ、Ｄ、Ｅ、Ｆ及びＣの各点を順次直線で結んだ範囲の乙土地があり、次の〔表〕は甲土地と乙土地を測量した成果である。Ａ点とＥ点を結んだ直線上にＸ点を設置してＣ点とＸ点を結んだ直線により新たに甲′土地（Ａ、Ｂ、Ｃ、Ｘ及びＡの各点を順次直線で結んだ範囲の土地）と乙′土地（Ｃ、Ｄ、Ｅ、Ｘ及びＣの各点を順次直線で結んだ範囲の土地）の区画に変更し、甲土地と甲′土地、乙土地と乙′土地の各面積がそれぞれ等しいものとする場合におけるＥ点とＸ点の水平距離として最も近いものは、後記１から５までのうち、どれか。",
+   "stemMode": "text",
+   "choices": [
+    "8.56 ｍ",
+    "8.66 ｍ",
+    "8.76 ｍ",
+    "8.86 ｍ",
+    "8.96 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no8-iq": {
+   "stem": "次の〔図〕に対応する特定の平面直角座標系（平成14年国土交通省告示第９号）のＡ点、Ｂ点及びＣ点の各位置において観測を行った結果を平面直角座標に投影した場合における次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　Ａ点における観測結果を平面直角座標に投影した平面距離は、球面距離と等しくなる。\nイ　Ａ点は、原点から約90ｋｍ離れている。\nウ　Ｂ点における観測結果を平面直角座標に投影した平面距離は、球面距離より長くなる。\nエ　Ｃ点における観測結果を平面直角座標に投影した平面距離は、球面距離より長くなる。\nオ　原点におけるＸ軸の正方向は、真北方向と一致しない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no9-iq": {
+   "stem": "次の〔図〕のとおり、Ａ、Ｂ、Ｃ、Ｄ及びＡの各点を順次直線で結んだ範囲の敷地があり、Ａ点からＤ点までの座標値は次の〔表〕のとおりである。Ａ点とＤ点を結んだ直線（以下「ＡＤ線」という。）に直交し、かつ、Ｃ点と交わる直線をＲ線とし、これをＡ点側に４ｍ平行移動したＬ線とＡＤ線との交点をＰ点とした場合におけるＡ点からＰ点までの距離として最も近いものは、後記１から５までのうち、どれか。",
+   "stemMode": "text",
+   "choices": [
+    "18.89 ｍ",
+    "18.92 ｍ",
+    "18.95 ｍ",
+    "18.98 ｍ",
+    "19.01 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-d887-午前の部-no10-iq": {
+   "stem": "次の〔図〕のとおり、Ａ、Ｂ、Ｃ、Ｄ及びＡの各点を順次直線で結んだ範囲の敷地（以下「甲区画」という。）と、これに隣接するＡ、Ｄ、Ｐ及びＡの各点を順次直線で結んだ範囲の敷地（以下「乙区画」という。）があり、甲区画の各点の座標値は次の〔表〕のとおりである。また、Ａ点とＰ点を結んだ直線の長さは52.00 ｍであり、Ｄ点とＰ点を結んだ直線の長さは39.00 ｍである。\n　この場合において、Ａ、Ｂ、Ｅ、Ｆ及びＡの各点を順次直線で結んだ範囲の敷地（以下「丙区画」という。）が長方形となり、かつ、丙区画の面積が甲区画の面積と乙区画の面積を合計した値の80 ％となるようにＥ点とＦ点を新たに設定するときのＦ点のＸ座標の値として最も近いものは、後記１から５までのうち、どれか。\n　ただし、Ｅ点は、Ｂ点とＣ点を結んだ直線上に設定するものとする。",
+   "stemMode": "text",
+   "choices": [
+    "41.12 ｍ",
+    "44.02 ｍ",
+    "46.34 ｍ",
+    "48.66 ｍ",
+    "52.72 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no1-iq": {
+   "stem": "制限行為能力者に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　制限行為能力者が行為能力者であることを信じさせるため詐術を用いたときは、その行為を取り消すことができない。\nイ　時効の期間満了前６か月以内の間に成年被後見人に成年後見人がない場合には、その成年被後見人が行為能力者となった時又は成年後見人が就職した時から６か月を経過するまでの間は、その成年被後見人に対して、時効は完成しない。\nウ　被保佐人が第三者のために保証人となる場合には、保佐人の同意を得る必要はない。\nエ　本人以外の者の請求により保佐開始の審判をするには、本人の同意がなければならない。\nオ　後見開始の審判をする場合において、本人が被保佐人であるときは、家庭裁判所は、その本人に係る保佐開始の審判を取り消さなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no2-iq": {
+   "stem": "意思表示に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの組合せは、後記１から５までのうち、どれか。\nア　ＡがＢと通謀してＡの所有する甲土地をＢに売却したように仮装し、ＡからＢへの所有権の移転の登記がされた。その後、Ｂから甲土地を買い受けたＣが、ＡＢ間の売却が仮装のものであることについて善意であった場合には、Ｃは、ＢからＣへの甲土地の所有権の移転の登記がされていなくても、Ａに対して甲土地の所有権の取得を対抗することができる。\nイ　ＡがＢと通謀してＡの所有する甲土地をＢに売却したように仮装し、ＡからＢへの所有権の移転の登記がされた。その後、Ｂが死亡し、ＡＢ間の売却が仮装のものであることについて善意のＣがＢを単独で相続した場合には、Ｃは、Ａに対して甲土地の所有権の取得を対抗することができる。\nウ　ＡがＢと通謀してＡの所有する甲土地をＢに売却したように仮装し、ＡからＢへの所有権の移転の登記がされた。その後、甲土地が、Ｂから、ＡＢ間の売却が仮装のものであることについて善意のＣに売却され、さらにＣから、ＡＢ間の売却が仮装のものであることについて悪意のＤに売却された場合には、Ｄは、Ａに対して甲土地の所有権の取得を対抗することができない。\nエ　ＡがＢの詐欺により甲土地をＢに売却した後、Ｂは、詐欺の事実について善意であるが、そのことについて過失があるＣに甲土地を売却した。その後、Ａが詐欺を理由としてＡＢ間の売買の意思表示を取り消した場合には、Ｃは、Ａに対して甲土地の所有権の取得を対抗することができない。\nオ　ＡがＢの強迫により甲土地をＢに売却した後、Ｂは、強迫の事実について善意で、そのことについて過失がないＣに甲土地を売却した。その後、Ａが強迫を理由としてＡＢ間の売買の意思表示を取り消した場合には、Ｃは、Ａに対して甲土地の所有権の取得を対抗することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no3-iq": {
+   "stem": "Ａについて相続が開始し、その親族が妻Ｂ及び子Ｃのみである場合の相続に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　ＢがＡを強迫してＡに相続に関する遺言をさせ、その後、Ａについて相続が開始したときは、Ｂは、Ａの相続人となることができない。\nイ　Ｂが自己のために相続の開始があったことを知った時から法定の期間内に限定承認又は相続の放棄をしなかった場合には、Ｂは、単純承認をしたものとみなされる。\nウ　Ｂ及びＣが相続人となる場合には、Ｂのみが単独で、限定承認をすることができる。\nエ　Ｂが相続の放棄をした場合には、Ｂは、Ａの相続に関しては、初めから相続人とならなかったものとみなされる。\nオ　Ｃが相続の放棄をした場合には、それがＢの強迫によるものであっても、Ｃは、強迫を理由として相続の放棄を取り消すことができない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no4-iq": {
+   "stem": "登記記録等の保存期間に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　土地に関する閉鎖された登記記録の保存期間は、閉鎖した日から30年間である。\nイ　法定相続情報一覧図つづり込み帳の保存期間は、作成の年の翌年から30年間である。\nウ　閉鎖された各階平面図の保存期間は、閉鎖した日から30年間である。\nエ　筆界特定書以外の筆界特定手続記録に記載され、又は記録された情報の保存期間は、対象土地の所在地を管轄する登記所が当該筆界特定手続記録の送付を受けた年の翌年から30年間である。\nオ　土地の表題部所有者の持分の更正の登記の申請を書面を提出する方法により行った場合における申請書の保存期間は、受付の日から30年間である。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no5-iq": {
+   "stem": "次の対話は、登記識別情報に関する教授と学生との対話である。教授の質問に対する次のアからオまでの学生の解答のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\n教授：　まず、登記識別情報の通知について考えてみましょう。成年後見人が、いずれも成年被後見人が所有権の登記名義人である甲土地と乙土地について、成年被後見人の法定代理人として合筆の登記を申請し、その登記が完了したときは、登記識別情報は誰に対して通知されますか。\n学生：ア　登記識別情報は、成年後見人に対して通知されます。\n教授：　いずれもＡ及びＢが所有権の登記名義人である甲土地と乙土地について、Ａ及びＢが合筆の登記を申請し、その登記が完了したときは、登記識別情報はどのように通知されますか。\n学生：イ　登記官は、Ａ又はＢのいずれか一方に登記識別情報を通知すれば足ります。\n教授：　次に、登記識別情報に関する証明について考えてみましょう。土地家屋調査士が本人を代理して登記識別情報に関する証明を請求する場合には、代理人の権限を証する情報を提供しなければなりませんか。\n学生：ウ　はい。代理人の権限を証する情報を提供しなければなりません。\n教授：　それでは、登記識別情報に関する証明の請求は、電子情報処理組織を使用する方法により行うことができますか。\n学生：エ　はい。電子情報処理組織を使用する方法により行うことができます。\n教授：　最後に、官庁又は公署が登記識別情報の通知を受けるべき者である場合には、登記識別情報は通知されますか。\n学生：オ　いいえ。当該官庁又は公署があらかじめ登記識別情報の通知を希望する旨の申出をした場合を除き、登記識別情報を通知することを要しないものとされています。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イウ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no6-iq": {
+   "stem": "地目に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　石油タンクの敷地の地目を宅地とすることはできない。\nイ　別の土地にある湧出口から温泉を引き込んだ源泉かけ流しの温泉宿の敷地の地目は、鉱泉地とする。\nウ　河川管理施設である防水のために築造された堤防の天端の部分が一般交通の用に供する道路として利用されている場合には、当該堤防の占める土地の地目は、堤とする。\nエ　村落の間にある通水路が占める土地の地目は、井溝とする。\nオ　公衆の遊楽のために供する一筆の土地内にテニスコートが設置されている場合には、当該土地の地目を公園とすることはできない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no7-iq": {
+   "stem": "土地の表題部の変更又は更正の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　土地の地積が誤って登記されていることを知った当該土地の所有権の登記名義人は、地積が誤っていることを知った日から１か月以内に、地積に関する更正の登記を申請しなければならない。\nイ　甲土地の地積に関する更正の登記を申請する場合において、登記所に備え付けられた甲土地の地積測量図に記載された地積と更正後の地積の差が公差の範囲内であるときは、地積測量図の提供を省略することができる。\nウ　甲土地の表題登記の申請に際して提供された地積測量図の求積計算が誤っていたために誤った地積により表題登記がされたときは、甲土地の表題部所有者は、地積測量図の訂正の申出によって甲土地の登記記録の地積を訂正することができる。\nエ　雑種地として登記されている土地を宅地の用途に変更した場合には、当該土地の所有権の登記名義人は、当該用途に変更があった日から１か月以内に、地目に関する変更の登記を申請しなければならない。\nオ　登記記録の地積が30歩から99平方メートルに換算して書き替えられている土地の地目を宅地に変更する登記を申請する場合には、当該換算による１平方メートルの100分の１までの結果を地積とすることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no8-iq": {
+   "stem": "土地の分筆の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　抵当権の登記がある土地について分筆の登記を申請する場合において、当該抵当権の登記名義人が作成した当該抵当権を分筆後の一方の土地について消滅させることを承諾したことを証する情報を記載した書面を提出するときは、当該書面に添付する当該抵当権の登記名義人の印鑑に関する証明書は、作成後３か月以内のものでなければならない。\nイ　買戻しの特約の登記がされている甲土地から乙土地を分筆する登記をする場合には、当該買戻し特約の買戻し期間が経過していたとしても、登記官は、乙土地の登記記録の権利部の相当区に、甲土地の登記記録から当該買戻しの特約の登記を転写しなければならない。\nウ　一棟の建物に属する区分建物が甲建物及び乙建物であり、甲建物及び乙建物に丙土地の賃借権を敷地権とする登記がされている場合において、丙土地の所有権の登記名義人が丙土地の分筆の登記を申請するときは、甲建物及び乙建物の所有権の登記名義人の承諾を証する情報を提供しなければならない。\nエ　根抵当権設定の仮登記がある土地について分筆の登記がされたときは、登記官は、新たに共同担保目録を作成しなければならない。\nオ　土地の所有権の登記名義人がＡ及びＢであり、Ａが死亡してその相続人がＣ及びＤである場合において、当該土地の一部が別地目となったときは、Ｄは、単独で、当該土地の一部地目変更分筆登記を申請することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no9-iq": {
+   "stem": "所有権の登記名義人が同一である隣接する甲土地と乙土地の合筆の登記（以下「本件合筆の登記」という。）に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\n　なお、他の合筆の登記の制限事由は考慮しないものとする。\nア　乙土地が第三者に使用貸借されているとしても、本件合筆の登記を申請することができる。\nイ　いずれも同一の区分建物の敷地権である旨の登記がされている甲土地及び乙土地について、本件合筆の登記を申請することはできない。\nウ　乙土地にのみ抵当権の設定の登記がある場合であっても、当該抵当権の登記名義人が作成した当該抵当権を消滅させることを承諾したことを証する情報を提供して、本件合筆の登記を申請することができる。\nエ　甲土地及び乙土地の所在する字（地番区域でないものを含む。）が同一であっても、甲土地及び乙土地が同一の地図又は地図に準ずる図面に記録されていないときは、本件合筆の登記を申請することはできない。\nオ　甲土地及び乙土地に登記の目的、申請の受付の年月日及び受付番号並びに登記原因及びその日付がいずれも同一の内容である抵当権の設定の登記がされているが、甲土地にのみ抵当権の順位の変更の登記がされている場合には、本件合筆の登記を申請することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no10-iq": {
+   "stem": "建物の認定に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　園芸用の温床施設は、鉄材で骨組みされて地面に固着し、屋根及び周壁が強固なガラスで築造された建造物であっても、建物として登記することはできない。\nイ　円柱状の形をした大型の給水タンクは、建物として登記することはできない。\nウ　土地の上に鉄骨柱の土台を置いて基礎とし、この上に組立式で容易に移動可能な事務所を設置した場合には、当該事務所は、建物として登記することができる。\nエ　高架鉄道の線路敷地の高架下を屋根として利用し、外気を分断する周壁を築造して高架下と一体化させた店舗は、建物として登記することができる。\nオ　海底からの脚柱によって支えられた永久的な構築物である桟橋の上に建築された屋根及び周壁を有する水族館は、建物として登記することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no11-iq": {
+   "stem": "建物の所在又は家屋番号に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　区分建物である甲建物に区分建物でない附属建物があるときは、甲建物の表題部の附属建物の表示欄の構造欄に附属建物の所在が記録される。\nイ　区分建物の属する一棟の建物に共用部分である２階ベランダ部分を増築したことにより一棟の建物が隣接する土地にまたがった場合には、当該隣接する土地の地番を当該一棟の建物の所在欄に加える旨の当該区分建物の表題部の変更の登記を申請することはできない。\nウ　４番の土地及び６番の土地にまたがる建物は、当該建物の所在する床面積の多い部分が６番の土地に所在するときであっても、当該建物の所在欄には「４番地、６番地」と記録される。\nエ　土地の合筆の登記により建物の所在地番が変更した場合には、家屋番号の変更の登記を併せて申請しなければならない。\nオ　表題登記がある建物がえい行移転により甲登記所の管轄区域から乙登記所の管轄区域に移動した場合には、当該建物の不動産所在事項に関する変更の登記の申請は、甲登記所又は乙登記所のいずれにもすることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no12-iq": {
+   "stem": "建物の床面積に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　建物の出窓の高さが1.5メートル未満であっても、出窓の下部が床面と同一の高さであれば、床面積に算入する。\nイ　建物の屋上にある建物内部との出入口としてのみ使用される階段室であっても、外気分断性がある場合には、床面積に算入する。\nウ　建物に附属する屋根及び手すりの付いている屋外の階段は、床面積に算入しない。\nエ　次の〔図１〕のとおり、建物の内部にあるダストシュートの一部が外部にまたがっている場合には、斜線部分のみを床面積に算入する。\nオ　次の〔図２〕のとおり、停車場の上屋を有する乗降場がある場合には、その乗降場の床面積は、斜線部分の面積により計算する。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no13-iq": {
+   "stem": "建物の表題登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　区分建物でない建物の表題登記を申請する場合には、建物の名称を申請情報の内容とすることはできない。\nイ　Ａが所有する土地上に建物が新築された場合において、当該建物の所有者であるＢが当該建物の表題登記を申請するときは、Ｂは、当該土地の借地権を有していることを証する情報を提供しなければならない。\nウ　共用部分である旨の登記がある建物について、共用部分である旨を定めた規約を廃止したときは、当該規約の廃止後に当該建物の所有権を取得した者は、その所有権の取得の日から１か月以内に、当該建物の表題登記を申請しなければならない。\nエ　新築した区分建物でない建物をＡ及びＢが共有する場合には、Ａは、単独で、Ａ及びＢを表題部所有者とする当該建物の表題登記を申請することができる。\nオ　Ａが区分建物である甲建物を新築した後、ＡがＢに甲建物を売却した場合には、甲建物の表題登記の申請は、Ａ及びＢが共同してしなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no14-iq": {
+   "stem": "附属建物に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　区分建物でない乙建物を敷地権付き区分建物である甲建物の附属建物とする建物の合併の登記を申請することはできない。\nイ　主である建物とその附属建物がいずれも同一の一棟の建物に属する敷地権のある区分建物である場合には、登記記録の表題部には、当該主である建物に係る敷地権と当該附属建物に係る敷地権を区別して記録しなければならない。\nウ　同一の土地上にいずれも区分建物であって、それぞれ別の一棟の建物に属する甲建物と乙建物がある場合において、甲建物を主である建物、乙建物を附属建物とする表題登記を申請するときは、乙建物が属する一棟の建物の所在地番を申請情報の内容とすることを要しない。\nエ　甲建物とその附属建物である乙建物が同一の土地上にある場合において、甲建物を取り壊して、当該土地上に同じ床面積の丙建物を新築したときは、甲建物の登記記録の主である建物の表示を丙建物の表示に変更する建物の表題部の変更の登記を申請することはできない。\nオ　主である建物とその附属建物が同時に取り壊された場合において、建物の滅失の登記をするときは、その登記原因及び日付は「年月日主である建物取壊し、年月日附属建物取壊し」と記録される。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no15-iq": {
+   "stem": "合体後の建物についての建物の表題登記及び合体前の建物についての建物の表題部の登記の抹消（以下「合体による登記等」という。）に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　表題登記のみがある甲建物と所有権の登記がある乙建物が合体して一個の建物となった後に、表題部所有者の更正の登記により甲建物の表題部所有者となった者は、当該登記から１か月以内に、合体による登記等を申請しなければならない。\nイ　Ａ及びＢが共有する表題登記がない甲建物と、Ｃ及びＤが表題部所有者である表題登記のみがある乙建物と、Ｅ及びＦが所有権の登記名義人である所有権の登記がある丙建物が合体して１個の建物となった場合には、Ａは、単独で、合体による登記等を申請することができる。\nウ　一棟の建物にいずれも所有権の登記がある区分建物である甲建物及び乙建物が属する場合において、甲建物及び乙建物の隔壁を除去して１個の区分建物でない建物としたときは、甲建物及び乙建物の所有権の登記名義人は、合体による登記等を申請することはできない。\nエ　表題登記がない甲建物と所有権の登記がある乙建物が合体して一個の建物となった場合における合体による登記等の申請と表題登記がない甲建物の所有者を合体後の建物の登記名義人とする所有権の登記の申請は、併せてすることを要しない。\nオ　いずれも表題登記がない甲建物及び乙建物が合体して一個の建物となった場合において、当該建物について表題登記をするときは、登記原因及びその日付は「年月日合体」と記録される。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no16-iq": {
+   "stem": "乙建物を甲建物の附属建物とする建物の合併の登記（以下「本件合併の登記」という。）に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\n　なお、他の合併の登記の制限事由は考慮しないものとする。\nア　甲建物及び乙建物の所有権の登記名義人であるＡが死亡した場合には、Ａの相続人であるＢは、甲建物及び乙建物について相続による所有権の移転の登記をした後でなければ、本件合併の登記を申請することができない。\nイ　甲建物及び乙建物がそれぞれ異なる登記所の管轄に属する場合であっても、本件合併の登記を申請することができる。\nウ　乙建物の種類に変更が生じている場合には、当該変更に係る建物の表題部の変更の登記及び本件合併の登記の申請は、一の申請情報によってすることができる。\nエ　いずれも同一の一棟の建物に属する区分建物であり、共用部分である旨の登記がされている甲建物及び乙建物について、本件合併の登記を申請することはできない。\nオ　住居表示の実施により甲建物及び乙建物の所有権の登記名義人であるＡの住所に変更があったときは、Ａは、住所の変更の登記をすることなく、住居表示の実施を証する情報を提供して、本件合併の登記を申請することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no17-iq": {
+   "stem": "区分建物の登記の申請に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　いずれも表題登記がある区分建物でない甲建物及び乙建物が増築工事により相互に接続して区分建物となった場合における甲建物及び乙建物についての表題部の変更の登記の申請は、一括してしなければならない。\nイ　区分建物の所有権の登記名義人Ａが当該区分建物について当該区分建物が属する一棟の建物の床面積の変更の登記を申請する場合には、併せて当該一棟の建物に属する他の区分建物についての一棟の建物の床面積の変更の登記を申請しなければならない。\nウ　区分建物が属する一棟の建物が新築された場合において、当該区分建物が敷地権付き区分建物でないときは、当該区分建物の表題登記の申請は、当該一棟の建物に属する他の区分建物についての表題登記の申請と併せてすることを要しない。\nエ　表題登記がある区分建物でない建物に接続して区分建物が新築された場合には、当該区分建物についての表題登記の申請は、当該区分建物でない建物についての表題部の変更の登記の申請と併せてしなければならない。\nオ　区分建物をＡが新築した後にＡが死亡した場合には、Ａの唯一の相続人であるＢは、当該区分建物を相続した日から１か月以内に、当該区分建物についての表題登記を申請しなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no18-iq": {
+   "stem": "次の〔図〕のとおり、甲土地及び乙土地の上に一棟の建物に属する丁区分建物及び戊区分建物が存在し、丙土地はＡ及びＢの駐車場として使用されている。甲土地、乙土地及び丙土地の所有権の登記名義人はＡ及びＢであり、Ａは丁区分建物の、Ｂは戊区分建物の新築時の所有者（丁区分建物及び戊区分建物に表題登記がない場合）又は表題部所有者（丁区分建物及び戊区分建物に表題登記がある場合）である。この場合に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\n　なお、問題文に明記されている場合を除き、専有部分とその専有部分に係る敷地利用権とを分離して処分することができる旨を定めた規約（以下「分離処分可能規約」という。）はないものとする。\nア　Ａは、甲土地及び乙土地のＡの共有持分権を敷地権として、表題登記がない丁区分建物について表題登記を申請することはできない。\nイ　丙土地が規約により表題登記がある戊区分建物の敷地とされた場合には、Ｂは、丙土地が敷地となった日から１か月以内に、丙土地について有する登記された敷地利用権を敷地権として表示する戊区分建物の表題部の変更の登記を申請しなければならない。\nウ　Ａは、丙土地を丁区分建物の敷地とすることについてＡのみが賛成した旨が記載された集会の議事録を申請書に添付することにより、丙土地のＡの共有持分権を敷地権として、丁区分建物の表題登記を申請することができる。\nエ　丁区分建物及び戊区分建物の表題部に甲土地及び乙土地に係る敷地権が登記されている場合には、Ａは、丁区分建物についてのみ甲土地及び乙土地の敷地利用権との分離処分可能規約を設定したことを証する情報を提供して、丁区分建物についてのみ甲土地及び乙土地に係る敷地権の登記を抹消する表題部の変更の登記を申請することができる。\nオ　甲土地のＡの共有持分権に丁区分建物の敷地権である旨の登記がされている場合において、当該敷地権である旨の登記がされた後の売買を原因とする当該共有持分権の移転の登記をしようとするときは、その前提として、当該共有持分権に係る敷地権の登記を抹消する丁区分建物の表題部の変更の登記をすることを要しない。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no19-iq": {
+   "stem": "筆界特定に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　筆界特定の申請人は、筆界特定の申請後、遅滞なく、筆界特定の申請をした旨を関係人に自ら通知しなければならない。\nイ　既に筆界特定がされている土地の筆界について更に筆界特定の申請がされた場合には、既にされた筆界特定の内容に明白かつ重大な誤りがあったとしても、筆界特定登記官は、当該申請を却下しなければならない。\nウ　対象土地の所有権の登記名義人は、筆界特定の申請人でない場合であっても、筆界特定の手続における測量に要する費用の概算額の一部を予納しなければならない。\nエ　筆界特定の申請は、申請の趣旨を明らかにしてしなければならない。\nオ　甲土地及び乙土地を対象土地とする筆界特定の申請と甲土地及び丙土地を対象土地とする筆界特定の申請は、一の筆界特定申請情報によってすることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-51e7-午後の部-no20-iq": {
+   "stem": "土地家屋調査士又は土地家屋調査士法人に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記１から５までのうち、どれか。\nア　土地家屋調査士は、日本土地家屋調査士会連合会の定める様式により事件簿を調製し、その閉鎖後７年間保存しなければならない。\nイ　土地家屋調査士会は、所属の会員に対し土地家屋調査士法の規定により注意勧告をしたときは、その旨を公表しなければならない。\nウ　土地家屋調査士法人は、社員が２名以上いる場合には、社員のうち土地家屋調査士法人を代表すべきものを定款で定めなければならない。\nエ　土地家屋調査士法人の社員は、総社員の同意があるときであっても、自己又は第三者のためにその土地家屋調査士法人の業務の範囲に属する業務を行ってはならない。\nオ　従たる事務所を設置する土地家屋調査士法人は、その従たる事務所に、当該事務所の所在地を管轄する法務局又は地方法務局の管轄区域内に設立された土地家屋調査士会の会員である社員を常駐させなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イオ",
+    "ウエ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no1-iq": {
+   "stem": "座標系に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　平面直角座標系（平成14年国土交通省告示第9号）は、日本全国を19の座標系に区分している。\nイ　平面直角座標系は、ガウス・クリューゲルの等角投影法で表される。\nウ　日本ではＩＴＲＦ94座標系を採用していたが、平成23年の東北地方太平洋沖地震に伴う測量成果改定により、全国的にＩＴＲＦ2008座標系に基づくものとなった。\nエ　国際地球基準座標系（ＩＴＲＦ座標系）とは、ＧＮＳＳやＶＬＢＩなどの宇宙測地技術の観測データに基づいた平面直角座標系をいう。\nオ　地心直交座標系（平成14年国土交通省告示第185号）とは、回転楕円体の中心を原点とした3次元直交座標系をいう。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no2-iq": {
+   "stem": "次の〔図〕のとおりの地積測量図が備え付けられた土地を測量したところ、次の〔表〕のとおりの結果を得た。〔図〕の辺長及び形状により亡失点Ｐを復元した場合において、亡失点Ｐの座標値として最も近いものは、後記1から5までのうち、どれか。\n ただし、〔図〕は地積測量図の抜粋であり、Ｅ点はＡ点とＤ点を結ぶ直線上の点である。",
+   "stemMode": "text",
+   "choices": [
+    "Ｘ座標（ｍ）：69.21　Ｙ座標（ｍ）：77.45",
+    "Ｘ座標（ｍ）：69.21　Ｙ座標（ｍ）：77.47",
+    "Ｘ座標（ｍ）：69.22　Ｙ座標（ｍ）：77.49",
+    "Ｘ座標（ｍ）：69.23　Ｙ座標（ｍ）：77.46",
+    "Ｘ座標（ｍ）：69.23　Ｙ座標（ｍ）：77.47"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no3-iq": {
+   "stem": "次の〔図〕のＡ点、Ｂ点、Ｃ点、Ｄ点及びＡ点を順次直線で結んだ区画（以下「本件区画」という。）を測量したところ、次の〔表〕のとおりの結果を得た。Ａ点とＤ点を結ぶ直線上にＥ点を、Ｂ点とＣ点を結ぶ直線上にＦ点を設け、Ｅ点とＦ点を結ぶ直線により、本件区画をＡ点、Ｂ点、Ｆ点、Ｅ点及びＡ点を順次直線で結んだ区画（以下「（イ）部分」という。）とＣ点、Ｄ点、Ｅ点、Ｆ点及びＣ点を順次直線で結んだ区画（以下「（ロ）部分」という。）に分割し、（イ）部分と（ロ）部分の面積の割合が4：5となった。この場合において、Ｅ点の座標値を（Ｘ＝55.00、Ｙ＝107.89）とするとき、Ｆ点のＹ座標値として最も近いものは、後記1から5までのうち、どれか。",
+   "stemMode": "text",
+   "choices": [
+    "107.69",
+    "107.86",
+    "107.89",
+    "107.94",
+    "107.98"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no4-iq": {
+   "stem": "航空機に搭載されたカメラで地上を撮影した空中写真を用いて行う写真測量に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　高塔や高層ビルなどの高さのある鉛直に立つ地物は、鉛直写真上では鉛直点を中心として放射状に広がるように写る。\nイ　空中写真の判読に当たり、写真上の陰影からその地物の形状を知ることができる。\nウ　撮影計画において、撮影コースの始めと終わりの撮影区域外をそれぞれ最低1モデル以上設定する。\nエ　デジタル航空カメラは、一般に雲を透過して撮影できる。\nオ　起伏のある土地を撮影した写真の地上画素寸法は、同一写真の中であれば、どこでも同じになる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no5-iq": {
+   "stem": "点Ａにおいて、点Ｂを基準方向として点Ｃ方向の水平角を複数回観測し、次の〔観測結果〕のとおりの結果を得た。この場合における当該水平角の最確値に対する標準偏差の値として最も近いものは後記1から5までのうち、どれか。",
+   "stemMode": "text",
+   "choices": [
+    "0.98″",
+    "1.35″",
+    "3.39″",
+    "5.65″",
+    "5.87″"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no6-iq": {
+   "stem": "次の〔図〕のとおり、Ａ点から順次Ｂ点、Ｃ点、Ｄ点、Ｅ点及びＡ点について、閉合多角測量を行い、次の〔観測結果〕のとおりの結果を得た。観測水平角の閉合差を各観測点に均等に配分した場合、Ｄ点からＥ点への調整後の方向角として正しいものは後記1から5までのうち、どれか。\n ただし、北はＸ軸の正方向に一致し、Ａ点からＢ点への調整前の方向角αは、59°20′40″とする。",
+   "stemMode": "text",
+   "choices": [
+    "273°33′24″",
+    "273°33′28″",
+    "273°33′44″",
+    "273°33′56″",
+    "273°33′58″"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no7-iq": {
+   "stem": "新点Ａの標高を求めるため、新点Ａから既知点Ｂに対して高低角＋3°00′及び斜距離384.00 ｍの観測結果を得た。新点Ａの標高に最も近い値は、後記1から5までのうち、どれか。\n ただし、新点Ａの機械高は1.60 ｍ、既知点Ｂの目標高は1.50 ｍ、既知点Ｂの標高は100.00 ｍ、両差は0.01 ｍとする。なお、ジオイドの起伏は考慮しないものとし、斜距離は、気象補正、器械定数補正及び反射定数補正が行われているものとする。",
+   "stemMode": "text",
+   "choices": [
+    "79.79 ｍ",
+    "79.80 ｍ",
+    "79.81 ｍ",
+    "79.99 ｍ",
+    "80.01 ｍ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no8-iq": {
+   "stem": "既知点Ａ、Ｂ、Ｃ、Ｄ及びＥから多角測量により新点Ｐの座標を求めたところ、次の〔表〕のとおりの結果を得た。新点ＰのＸ座標を簡易水平網平均計算で求めた最確値と最も近くなる路線は、後記1から5までのうち、どれか。\n ただし、水平角の閉合差の補正量については配分済みである。",
+   "stemMode": "text",
+   "choices": [
+    "Ａ→Ｐ",
+    "Ｂ→Ｐ",
+    "Ｃ→Ｐ",
+    "Ｄ→Ｐ",
+    "Ｅ→Ｐ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no9-iq": {
+   "stem": "等高線に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　等高線の間隔は、地形図の縮尺に応じて定められている。\nイ　等高線が急に屈曲しており、その屈曲が標高の低いほうに向かって膨らんでいる箇所は、谷筋を表す。\nウ　同一の等高線は、途中で2本以上に分岐することはない。\nエ　傾斜が急な箇所の場合には、等高線の間隔は広くなる。\nオ　計曲線とは、等高線のうち、主曲線の5本目ごとに太線で示した線をいう。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-169a-午前の部-no10-iq": {
+   "stem": "縮尺が不明である次の〔図〕を判読した結果に関するアからオまでの記述のうち、適切なものの組合せは、後記1から5までのうち、どれか。\n ただし、〔図〕に記載されている地図記号は電子地形図25000と同様の地図記号であり、神社から博物館までの実際の直線距離は240 ｍとする。\nア　電子基準点から水準点までの直線距離は、約462 ｍである。\nイ　Ａ地点を含む斜線で囲まれた区画の面積は、約5600 ㎡である。\nウ　Ａ地点から警察署までの直線距離は、Ａ地点から消防署までの直線距離よりも約60 ｍ短い。\nエ　Ａ地点の東側にある道路の幅員は、約24 ｍである。\nオ　保健所は、Ａ地点から南西方向約290 ｍの位置にある。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no1-iq": {
+   "stem": "無効及び取消しに関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　買主が売買契約を締結した当時に意思能力を有しなかったために当該契約が無効とされる場合には、売主は、買主に対し、当該契約に基づく目的物の引渡義務を負わない。\nイ　売買契約が虚偽表示により無効である場合において、売主及び買主がそれぞれ無効であることを知って追認したときは、当該契約は、初めから有効であったものとみなされる。\nウ　買主が強迫を理由として売買契約を取り消したときは、当該契約は、初めから無効であったものとみなされる。\nエ　未成年者が法定代理人の同意を得なければすることができない契約をその同意を得ることなく締結した場合において、当該法定代理人が当該契約を追認したときであっても、当該未成年者本人は、法定の期間内に相手方に対して意思表示をすることにより、当該契約を取り消すことができる。\nオ　取消権は、取消しの原因となっていた状況が消滅し、かつ、取消権者が取消権を有することを知った後でなければ、時効によって消滅することはない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イエ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no2-iq": {
+   "stem": "物権的請求権に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの組合せは、後記1から5までのうち、どれか。\nア　Ａが甲土地の所有者Ｂから甲土地を買った場合において、ＡＢ間の売買契約上、甲土地の所有権の移転時期に関する特約がないときは、Ａは、当該契約締結後直ちに、Ｂに対して所有権に基づき甲土地の引渡しを請求することができる。\nイ　Ａが甲土地の所有者Ｂから甲土地を買った場合において、甲土地について、ＢからＡへの所有権の移転の登記がされていないときは、Ａは、甲土地を占有する無権利者Ｃに対して甲土地の明渡しを請求することができない。\nウ　Ａが甲土地を所有し、その旨の登記がされている場合において、無権利者Ｂが甲土地上に乙建物を建て、占有補助者であるＣと共に居住しているときは、Ｃを建物から退去させるためには、Ａは、Ｃに対し、乙建物から退去して甲土地を明け渡すことを請求しなければならない。\nエ　Ａ及びＢが甲土地を共有している場合において、無権利者Ｃが甲土地に産業廃棄物を不法投棄したときは、Ａは、単独で、Ｃに対して当該産業廃棄物を撤去するよう請求することができる。\nオ　所有権が時効によって消滅することはないが、所有権に基づく返還請求権は時効によって消滅する。",
+   "stemMode": "text",
+   "choices": [
+    "アエ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no3-iq": {
+   "stem": "遺言に関する次のアからオまでの記述のうち、判例の趣旨に照らし正しいものの組合せは、後記1から5までのうち、どれか。\nア　遺言の全文、日付及び氏名がカーボン紙を用いて複写の方法で記載された自筆証書遺言は、無効である。\nイ　遺言者の推定相続人は、公正証書遺言の証人となることができない。\nウ　夫婦は、同一の証書により共同で遺言をすることができる。\nエ　遺言執行者の指定は、第三者に委託することができない。\nオ　遺言者が前の遺言と抵触する遺言をしたときは、前の遺言のうち抵触する部分は、後の遺言によって撤回されたものとみなされる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イエ",
+    "イオ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no4-iq": {
+   "stem": "不動産の表示に関する登記の申請があった場合の登記官による調査に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　建物の表題登記の申請がされた場合には、登記官は、当該建物の所有者に関する事項について調査することができる。\nイ　不動産の表示に関する登記の申請が申請人となるべき者以外の者によってされていると疑うに足りる相当な理由がある場合において、当該申請を却下すべきときであっても、登記官は、当該申請の申請人に対し、その申請の権限の有無を調査しなければならない。\nウ　土地の表示に関する登記についての実地調査を行う場合には、登記官は、日出から日没までの間に限り、当該実地調査を行うことができる。\nエ　不動産の表示に関する登記の申請があった場合には、登記官は、登記所の職員に当該不動産の実地調査を行わせることはできない。\nオ　不動産の表示に関する登記についての実地調査を行う場合には、登記官は、当該不動産の所有者その他の関係者に対し、文書の提示を求めることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no5-iq": {
+   "stem": "表題部の登記記録等に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　土地区画整理事業により従前の1個の土地に照応して1個の換地を定めた換地処分が行われた場合には、当該換地について表題部の登記記録が新たに作成される。\nイ　建物を新築する場合の不動産工事の先取特権の保存の登記がされている建物の建築が完了した場合において、当該建物の表題登記を申請し、当該登記がされるときは、当該建物の表題部の登記記録が新たに作成される。\nウ　甲土地の一部を分筆して、これを乙土地に合筆しようとする場合において、分筆の登記及び合筆の登記を一の申請情報により申請し、その旨の登記がされるときは、甲土地から分筆し、乙土地に合筆した土地の表題部の登記記録は作成されない。\nエ　表題登記のある甲建物を隣接する他の土地上に解体移転した場合において、解体移転後の建物の表題部に関する登記を申請したときは、甲建物の表題部の登記記録に解体及び移転した旨が記録される。\nオ　区分建物として表題登記のある甲建物及び乙建物からなる一棟の建物の中間部分を取り壊し、甲建物及び乙建物が区分建物でないそれぞれ別の建物となった場合において、甲建物及び乙建物の表題部に関する登記を申請し、その旨の登記がされるときは、甲建物及び乙建物の表題部の登記記録が新たに作成される。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イエ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no6-iq": {
+   "stem": "地図に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　地図を作成するための測量は、基本測量の成果である電子基準点を基礎として行うことができる。\nイ　電磁的記録に記録された地図には、基本三角点等の位置のみならず、その名称及びその座標値を記録しなければならない。\nウ　土地家屋調査士が作成した測量成果である実測図であって、国土調査法第19条第5項の指定を受け、登記所に送付されるものについては、不適当とする特別の事情がある場合を除き、これを地図として登記所に備え付けることができる。\nエ　新たに地図が備え付けられたことにより、電磁的記録に記録されている地図に準ずる図面が閉鎖された場合には、当該地図に準ずる図面の情報の内容を証明した書面の交付を請求することはできない。\nオ　地図に表示された土地の区画に誤りがあることによる地図の訂正の申出をする場合において、当該申出の際に添付する地積測量図に記録された地積と当該土地の登記記録上の地積との差が公差の範囲内であっても、当該申出は、地積に関する更正の登記の申請と併せてしなければならない。\n（参考）\n国土調査法\n第19条　（略）\n2～4　（略）\n5　国土調査以外の測量及び調査を行った者が当該測量及び調査の結果作成された地図及び簿冊について政令で定める手続により国土調査の成果としての認証を申請した場合においては、国土交通大臣又は事業所管大臣は、これらの地図及び簿冊が第2項の規定により認証を受けた国土調査の成果と同等以上の精度又は正確さを有すると認めたときは、これらを同項の規定によって認証された国土調査の成果と同一の効果があるものとして指定することができる。\n6～8（略）",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no7-iq": {
+   "stem": "土地の表題登記に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　公有水面埋立法に基づく埋立工事が竣工した土地の表題登記を申請する場合には、所有権を証する情報として公有水面埋立法の規定による竣功認可書を提供することができる。\nイ　国が所有する表題登記がない土地の売払いを受けた者が、当該土地の表題登記を申請する場合には、当該表題登記の登記原因を「国有財産売払」として申請しなければならない。\nウ　Ａが表題登記がない土地の所有権を原始取得した場合において、Ａが当該土地の表題登記を申請する前に、当該土地をＢに売却したときであっても、Ａは、当該土地の表題登記を申請することができる。\nエ　土地区画整理事業区域内で仮換地が指定された表題登記がない従前の土地について換地処分による登記を申請する場合において、必要があるときは、土地区画整理事業を施行する者は、当該従前の土地の所有者に代位して、土地の表題登記を申請することができる。\nオ　地方公共団体の所有する土地について、当該地方公共団体が土地の表題登記を嘱託する場合には、所有権を証する情報の提供を省略することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イウ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no8-iq": {
+   "stem": "地目に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　学校教育法の規定により設置された幼稚園の園舎の敷地である土地の地目は、学校用地とする。\nイ　高圧線の下にある建物の敷地である土地の地目は、雑種地とする。\nウ　水力発電のためにのみ使用される排水路の地目は、雑種地とする。\nエ　牧場地域内にある牧畜のために使用する牧草栽培地である土地の地目は、畑とする。\nオ　人の遺体又は遺骨を埋葬する規模の大きな墓地の地目は、霊園とする。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イウ",
+    "イオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no9-iq": {
+   "stem": "土地の分筆の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　抵当権の設定の登記がされた土地について分筆の登記がされた後は、錯誤を原因とする当該分筆の登記の抹消をすることはできない。\nイ　抵当権の設定の登記がされた甲土地から乙土地を分筆する分筆の登記をする場合には、分筆後の甲土地及び乙土地の2筆の土地について、抵当権者が当該抵当権を消滅させることを承諾したことを証する情報が提供されたとしても、登記官は、分筆後の甲土地及び乙土地に係る当該抵当権が消滅した旨の登記をすることはできない。\nウ　甲土地の所有権の登記名義人であるＡが死亡し、その相続人がＢ及びＣである場合において、ＢＣ間で、Ｂが甲土地の所有権を単独で取得することを内容とする遺産分割協議が成立したときであっても、Ｂは、甲土地の分筆の登記を申請することはできない。\nエ　地方公共団体及び私人が所有権の登記名義人である土地について、当該私人が分筆の登記を申請する場合には、登録免許税は課されない。\nオ　甲土地から乙土地を分筆する分筆の登記をする場合において、甲土地に筆界特定がされた旨の記録があるときは、当該記録は、乙土地の登記記録に転写される。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イウ",
+    "イオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no10-iq": {
+   "stem": "建物図面及び各階平面図に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　建物図面及び各階平面図には、申請人及び作成者の住所を記録しなければならない。\nイ　書面を提出する方法により地下のみの附属建物がある建物の建物図面を提供する場合には、附属建物の地下1階の形状を朱書きする。\nウ　各階平面図の床面積の計算において、不算入とすべき出窓を算入した誤りがある場合には、表題部所有者若しくは所有権の登記名義人又はこれらの相続人その他の一般承継人は、各階平面図の訂正の申出をすることができる。\nエ　建物の表題登記がされ、既に建物図面及び各階平面図が登記所に提出されている建物について、附属建物の滅失による表題部の変更の登記を申請する場合には、建物図面及び各階平面図の提供を省略することができる。\nオ　2階建の建物の各階平面図を作成する場合において、2階の階層を表示するときは、1階の位置を点線をもって表示する。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no11-iq": {
+   "stem": "建物の認定に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　公衆用道路上に屋根覆いを施したアーケード付街路のうち、その周辺が店舗に囲まれており、かつ、アーケードを有する部分に限り、建物として登記することができる。\nイ　上部が倉庫として利用されている寺院の山門であって、当該倉庫部分が周壁を有して外気と分断されているものであっても、建物として登記することはできない。\nウ　次の〔図1 〕のとおり、主たる部分の構成材料が鉄骨であり、屋根及び周壁が永続性のある膜構造の塩化ビニールの特殊シートで覆われた建造物は、建物として登記することができる。\nエ　次の〔図2 〕のとおり、最上部が屋根及び周壁を有する展望台となっており、当該展望台の下部が鉄筋コンクリートを主たる構成材料として建築された階段室となっている場合には、当該展望台を建物として登記することができる。\nオ　屋根及び外壁があり、内部に車を格納する回転式のパーキング機械が設置されているタワー状の立体駐車場は、建物として登記することはできない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アウ",
+    "イオ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no12-iq": {
+   "stem": "建物の床面積に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　建物の一部が2階から最上階まで吹抜けとなっている場合には、1階から最上階までの各階の吹抜け構造の部分は、建物の床面積に算入しない。\nイ　区分建物でない鉄筋コンクリート造の建物について、壁の厚みが各階ごとに異なる場合には、各階ごとに壁の中心線で囲まれた部分の水平投影面積により床面積を算出する。\nウ　次の〔図1 〕のとおり、区分建物を内壁で囲まれた部分により床面積を算出する場合において、当該区分建物が鉄筋コンクリート造であって、柱と壁を兼ねている構造の部分が柱状に凸凹しているときは、その柱状に凸凹している部分は、専有部分の範囲から除外して床面積を算出する。\nエ　次の〔図2 〕のとおり、ビル内の地下において、1方向のみを壁構造とし、他の3方向は鉄製のシャッターで仕切られており、営業中はシャッターを上げ、閉店後はシャッターを閉める構造の店舗部分は、区分建物の専有部分の床面積に算入しない。\nオ　次の〔図3 〕のとおり、機械室、冷却装置室及び屋上に出入りするための階段室が設置されている天井高2.5メートルの塔屋について、当該塔屋の一部が、管理事務所及び倉庫として使用されている場合には、管理事務所及び倉庫として使用されていない部分も含めた当該塔屋全体を建物の床面積に算入する。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イウ",
+    "イオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no13-iq": {
+   "stem": "建物の表題登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記１から５までのうち、どれか。\nア　株式会社Ａ及び株式会社Ｂが区分建物である甲建物の所有権の原始取得者である場合において、甲建物の表題登記を申請する前に、株式会社Ｃが株式会社Ｂを吸収合併したときは、吸収合併存続会社である株式会社Ｃは、表題部所有者を株式会社Ａ及び株式会社Ｃとする甲建物の表題登記を申請することができる。\nイ　建物の表題登記の申請情報として建物の所在を提供する場合において、当該建物の登記記録の所在に「甲郡乙町大字丙字丁」と記録されており、地番区域が大字である丙と定められているときであっても、小字である丁の記載を省略することはできない。\nウ　区分建物でない建物の表題登記の申請をし、建物の名称を申請情報として提供して登記が完了した場合には、当該建物の名称は、当該建物の登記記録の表題部の建物の名称欄に記録される。\nエ　数個の区分建物が属する一棟の建物を新築した場合には、その全ての区分建物について、一の申請情報により建物の表題登記を申請しなければならない。\nオ　区分建物である表題登記のない建物の所有権の原始取得者が複数いる場合において、当該区分建物の表題登記を申請するときは、その原始取得者のうちの一人から当該申請をすることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アエ",
+    "イウ",
+    "イオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no14-iq": {
+   "stem": "次の対話は、建物の表示に関する登記の添付情報に関する土地家屋調査士（以下「調査士」という。）と補助者との対話である。調査士の質問に対する次のアからオまでの補助者の解答のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\n調査士：　建物の表題登記を申請する場合を考えてみましょう。申請人が建物の敷地を所有していない場合には、当該申請人に当該敷地を利用することについて正当な権原があることを証する情報を提供しなければなりませんか。\n補助者：ア　はい。当該敷地を利用することについての正当な権原があることを証する情報を添付する必要があります。\n調査士：　建物の表題登記を申請する際に、所有権を証する情報として工事施工会社作成に係る工事完了引渡証明書を提供し、これに当該会社の印鑑に関する証明書を添付した場合には、当該印鑑に関する証明書は、作成後3か月以内のものでなければなりませんか。\n補助者：イ　いいえ。当該印鑑に関する証明書は、作成後3か月以内のものである必要はありません。\n調査士：　Ａ株式会社の支店の支配人として登記された者が、Ａ株式会社が所有する建物の表題登記の申請に係る申請人となる場合には、Ａ株式会社の会社法人等番号と併せて当該支配人の権限を証する情報を提供しなければなりませんか。\n補助者：ウ　いいえ。支配人の権限を証する情報を提供する必要はありません。\n調査士：　建物の表題登記を申請する場合には、申請人の住所を証する情報は、作成後3か月以内のものでなければなりませんか。\n補助者：エ　いいえ。当該住所を証する情報は、作成後3か月以内のものである必要はありません。\n調査士：　2棟の建物が合体して1個の建物になったことにより、合体後の建物についての建物の表題登記及び合体前の建物についての建物の表題部の登記の抹消を申請する場合において、合体前の各建物について所有権の登記があるときは、当該各建物の所有権の登記名義人の住所を証する情報を提供しなければなりませんか。\n補助者：オ　いいえ。登記記録から所有権者の住所が明らかなので、住所を証する情報は必要ありません。",
+   "stemMode": "text",
+   "choices": [
+    "アウ",
+    "アオ",
+    "イウ",
+    "イエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no15-iq": {
+   "stem": "建物の分割の登記に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　甲建物の附属建物として登記されている2棟の建物について、1棟を主である建物とし、残りの1棟をその附属建物とする場合には、甲建物から当該2棟の建物を乙建物と丙建物にそれぞれ分割する建物の分割の登記がされた後に、丙建物を乙建物の附属建物とする建物の合併の登記を申請しなければならない。\nイ　Ａが所有する甲建物の附属建物として登記されている建物について処分禁止の仮処分命令を得た債権者であるＢは、当該仮処分命令の正本を代位原因を証する情報として提供して、Ａに代位して、当該建物の分割の登記を申請することができる。\nウ　建物の分割の登記を申請する場合において提供する建物図面及び各階平面図には、分割後の各建物を表示し、これに符号を付さなければならない。\nエ　甲建物に1から3までの符号が付された附属建物が3棟ある場合において、符号2の附属建物を分割したときは、符号3の附属建物の符号は、符号2に変更される。\nオ　家屋番号5番である甲建物の附属建物を分割して乙建物とする場合には、甲建物の登記記録の附属建物の表示欄の原因及びその日付欄に、「5番の1、5番の2に分割」と記録される。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no16-iq": {
+   "stem": "合体後の建物についての建物の表題登記及び合体前の建物についての建物の表題部の登記の抹消（以下「合体による登記等」という。）に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　いずれも表題登記がない甲建物及び乙建物が合体して1個の建物となった場合において、合体による登記等を申請するときは、当該申請と併せて合体前の甲建物及び乙建物の表題登記の申請をしなければならない。\nイ　いずれも区分建物でない甲建物の附属建物と乙建物とが合体した場合には、甲建物の分割の登記をすることなく、合体による登記等を申請することができる。\nウ　Ａが所有権の登記名義人である甲建物及び乙建物が合体して丙建物となった後に、Ａが死亡し、その相続人がＢ及びＣである場合には、Ｂは、単独で、合体による登記等を申請することができる。\nエ　Ａが表題部所有者として記録されている区分建物でない甲建物とＢが表題部所有者として記録されている区分建物でない乙建物とが増築により合体し、合体後の建物が一棟の建物に属する2個の区分建物としての要件を備えた場合において、当該合体後の建物について、Ａ及びＢが区分所有の意思を示したときであっても、合体による登記等を申請しなければならない。\nオ　合体前の建物に記録されている所有権の登記名義人の住所が現在の住所と異なる場合には、当該所有権の登記名義人の住所の変更の登記を申請することなく、当該建物について合体による登記等を申請することができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no17-iq": {
+   "stem": "共用部分である旨の登記又は団地共用部分である旨の登記に関する次のアからオまでの記述のうち、誤っているものの組合せは、後記1から5までのうち、どれか。\nア　表題登記のある建物について共用部分とする旨の規約を定めた場合には、当該建物の表題部所有者は、当該規約を定めた日から1か月以内に、共用部分である旨の登記を申請しなければならない。\nイ　所有権の登記がない建物について共用部分である旨の登記がされる場合には、当該建物の表題部所有者に関する登記事項を抹消する記号が記録される。\nウ　共用部分である旨の登記がある建物について、当該建物の種類を倉庫から車庫に変更した場合には、規約により共用部分の所有者と定められた者は、当該建物の表題部の変更の登記を申請しなければならない。\nエ　団地共用部分である旨の登記がある区分建物でない建物について、建物の区分の登記を申請する場合には、当該建物の所有者を証する情報を添付情報として提供しなければならない。\nオ　団地共用部分を共用すべき者の所有する区分建物でない建物について、団地共用部分である旨の登記を申請する場合において、当該建物の不動産番号を申請情報の内容とするときであっても、当該建物の家屋番号を申請情報の内容としなければならない。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アオ",
+    "イウ",
+    "ウエ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no18-iq": {
+   "stem": "筆界特定の手続に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　筆界調査委員が実地調査を行うために他人の土地に立ち入る場合において、当該土地の占有者がいないときは、あらかじめ土地の表題部所有者又は所有権登記名義人に通知をしなければならない。\nイ　筆界調査委員は、対象土地の筆界特定のために必要な事実の調査を終了した場合には、申請人に対し、対象土地の筆界特定についての意見を提出しなければならない。\nウ　対象土地の筆界特定をしたことにより対象土地の地積が算出できる場合には、筆界特定の内容を表示した図面に当該土地の地積が記載される。\nエ　筆界調査委員が筆界特定のために必要な事実の調査をする場合には、筆界調査委員は、申請人及び関係人以外のその他の者からその知っている事実を聴取し又は資料の提出を求めることができる。\nオ　筆界特定の手続における測量に要する費用は、申請人が負担する。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イウ",
+    "ウオ",
+    "エオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no19-iq": {
+   "stem": "法定相続情報を記載した書面（以下「法定相続情報一覧図」という。）の保管及び法定相続情報一覧図の写しの交付の申出に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　委任を受けた土地家屋調査士が、法定相続情報一覧図の写しの交付の申出をする場合には、代理人の権限を証する書面として、委任状以外の書面を添付する必要はない。\nイ　法定相続情報一覧図の保管の申出は、申出人の住所地を管轄する登記所に申出をすることができる。\nウ　法定相続情報一覧図の保管の申出をする際に申出書に添付する法定相続情報一覧図には、相続開始の時における同順位の相続人の住所を記載しなければならない。\nエ　法定相続情報一覧図の保管の申出をするには、被相続人が不動産の表題部所有者又は所有権の登記名義人として登記されていることを要する。\nオ　法定相続情報一覧図の写しの再交付の申出は、当該法定相続情報一覧図の保管の申出をした申出人のみがすることができる。",
+   "stemMode": "text",
+   "choices": [
+    "アイ",
+    "アエ",
+    "イオ",
+    "ウエ",
+    "ウオ"
+   ],
+   "choiceMode": "text",
+   "fromImageQuestion": true,
+   "verifiedBy": "本文が原本画像だった問。公式PDFの文字層から本文・選択肢を取り出し、ページの画像と並べて目視で一字ずつ照合（2026-11-17）。図表は図表だけの範囲を切り出し、問題全体の画像は照合用に残した",
+   "round": 7
+  },
+  "land_surveyor-30e8-午後の部-no20-iq": {
+   "stem": "土地家屋調査士又は土地家屋調査士法人に関する次のアからオまでの記述のうち、正しいものの組合せは、後記1から5までのうち、どれか。\nア　土地家屋調査士が死亡したときは、その相続人は、遅滞なく、その旨を日本土地家屋調査士会連合会に届け出なければならない。\nイ　土地家屋調査士が引き続き2年以上業務を行わないときは、日本土地家屋調査士会連合会は、その登録を取り消さなければならない。\nウ　土地家屋調査士法人は、定款の定めによらなければ、社員のうち特に土地家屋調査士法人を代表すべきものを定めることができない。\nエ　法務大臣は、土地家屋調査士又は土地家屋調査士法人について、戒告の処分をしたときには、遅滞なく、その旨を官報をもって公告しなければならない。\nオ　法務大臣は、土地家屋調査士法人に対する懲戒処分として、当該法人の業務の一部に限った業務の停止を命ずることはできない。",
    "stemMode": "text",
    "choices": [
     "アエ",
