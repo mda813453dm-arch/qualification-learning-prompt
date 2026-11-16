@@ -200,7 +200,7 @@ test('判定表：全ての「確認済み」は図だけの画像を持ち、�
     if (e.status === 'verified') { verified++; assert.ok(inline > 0, key); }
     if (e.status === 'not_needed') assert.equal(inline, 0, key);
     for (const a of e.add ?? []) {
-      assert.match(a.file, /-q\d+-p\d+-[sc]\d+\.png$/, key);
+      assert.match(a.file, /-q\d+-p\d+-[sc]\d+(-r\d+)?\.png$/, key);
       assert.equal(a.owner, '_shared');
       assert.match(a.sha256, /^[0-9a-f]{64}$/);
     }

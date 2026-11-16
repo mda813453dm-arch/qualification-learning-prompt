@@ -94,7 +94,9 @@ def main():
     def add_crop(row, q, k, spec):
         qsha = row['questionPdfSha256']
         prefix = f"{row['qualificationId']}-{row['year']}-{qsha[:12]}-q{q['questionNumber']}-p{spec['page']}"
-        name = f"{prefix}-{'c' if spec['role'] == 'choice_image' else 's'}{k}.png"
+        # 公開済みの画像は上書きしない（Cloud Storage へは cp -n）。範囲を直した画像は rev を付けて別名にする
+        rev = f"-r{spec['rev']}" if spec.get('rev') else ''
+        name = f"{prefix}-{'c' if spec['role'] == 'choice_image' else 's'}{k}{rev}.png"
         data, w, h, clip = render(a.pdf, qsha, spec['page'], spec['rect'], trim=spec.get('trim', False))
         os.makedirs(os.path.join(a.crops, qsha), exist_ok=True)
         with open(os.path.join(a.crops, qsha, name), 'wb') as f:
