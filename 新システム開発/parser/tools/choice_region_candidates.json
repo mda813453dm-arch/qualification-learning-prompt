@@ -1,5 +1,178 @@
 [
  {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "questionPdfSha256": "3513b442ace6bfc3212d0afe766e628b908c762917b50fcd5298e1b2f9bd1ebd",
+  "questionNumber": 21,
+  "choice": {
+   "page": 21,
+   "rect": [
+    87.2,
+    73.1,
+    575.3,
+    783.0
+   ],
+   "firstLine": "1. 北緯 82”46'54/ 東経 180' 22′ 34?",
+   "lastLine": "5. 北緯 82\" 47' 287 東経 180' 227 00?"
+  },
+  "figures": [
+   {
+    "page": 20,
+    "rect": [
+     86.0,
+     195.4,
+     511.0,
+     743.4
+    ],
+    "cut": []
+   }
+  ],
+  "stemCoverage": 0.85
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "561692b95a4ffb22c5571d24ba3d9938fe2c2eb582e454908f3524180266501c",
+  "questionNumber": 2,
+  "choice": {
+   "page": 4,
+   "rect": [
+    86.2,
+    370.2,
+    575.2,
+    467.0
+   ],
+   "firstLine": "1. a, b",
+   "lastLine": "5.d, e"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "561692b95a4ffb22c5571d24ba3d9938fe2c2eb582e454908f3524180266501c",
+  "questionNumber": 6,
+  "choice": {
+   "page": 7,
+   "rect": [
+    85.8,
+    540.4,
+    575.2,
+    640.1
+   ],
+   "firstLine": "1. + 0.999901",
+   "lastLine": "5. + + 1.000001"
+  },
+  "figures": [
+   {
+    "page": 7,
+    "rect": [
+     86.5,
+     230.0,
+     373.5,
+     499.3
+    ],
+    "cut": []
+   }
+  ],
+  "stemCoverage": 1.08
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "8203e4cdb1ff223e285ed3accb7a7b9cd9211c0bad505ceca7ba78d73b00a24e",
+  "questionNumber": 23,
+  "choice": {
+   "page": 8,
+   "rect": [
+    86.7,
+    171.5,
+    575.2,
+    268.8
+   ],
+   "firstLine": "1. 三角点 → 海岸線 道路 建物 植生",
+   "lastLine": "5. 三角点 海岸線 → 道路 植生 建物"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac",
+  "questionNumber": 2,
+  "choice": {
+   "page": 4,
+   "rect": [
+    86.2,
+    370.2,
+    575.2,
+    467.0
+   ],
+   "firstLine": "1. a, b",
+   "lastLine": "5.d, e"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac",
+  "questionNumber": 6,
+  "choice": {
+   "page": 7,
+   "rect": [
+    85.8,
+    540.4,
+    575.2,
+    640.1
+   ],
+   "firstLine": "1. + 0.999901",
+   "lastLine": "5. + + 1.000001"
+  },
+  "figures": [
+   {
+    "page": 7,
+    "rect": [
+     86.5,
+     230.0,
+     373.5,
+     499.3
+    ],
+    "cut": []
+   }
+  ],
+  "stemCoverage": 1.08
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionPdfSha256": "b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac",
+  "questionNumber": 23,
+  "choice": {
+   "page": 23,
+   "rect": [
+    86.7,
+    171.5,
+    575.2,
+    268.8
+   ],
+   "firstLine": "1. 三角点 → 海岸線 道路 建物 植生",
+   "lastLine": "5. 三角点 海岸線 → 道路 植生 建物"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
   "qualificationId": "ap",
   "year": 2017,
   "section": "春期午前",
@@ -57,24 +230,18 @@
   "section": "春期午前",
   "questionPdfSha256": "bd2737a30ba4cd5778e920423791d6a9a00ea7faefe8283c6a5e939531328c20",
   "questionNumber": 8,
-  "choice": null,
-  "figures": [
-   {
-    "page": 7,
-    "rect": [
-     122.5,
-     118.9,
-     403.5,
-     179.8
-    ],
-    "cut": [
-     [
-      "top",
-      "ア演算を行うために , メモリから読み出したデータを保持する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 7,
+   "rect": [
+    75.7,
+    101.4,
+    495.5,
+    182.6
+   ],
+   "firstLine": "ア演算を行うために , メモリから読み出したデータを保持する。",
+   "lastLine": "エエ命令を読み出すために , 次の命令が格納されたアドレスを保持する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -83,7 +250,17 @@
   "section": "春期午前",
   "questionPdfSha256": "bd2737a30ba4cd5778e920423791d6a9a00ea7faefe8283c6a5e939531328c20",
   "questionNumber": 9,
-  "choice": null,
+  "choice": {
+   "page": 7,
+   "rect": [
+    74.5,
+    283.3,
+    495.5,
+    383.8
+   ],
+   "firstLine": "ア仕事量に応じて , プロセッサへ供給する電源電圧やクロック周波数を変える。",
+   "lastLine": "るコアに割り当てる。"
+  },
   "figures": [],
   "stemCoverage": 1.05
  },
@@ -272,7 +449,17 @@
   "section": "春期午前",
   "questionPdfSha256": "bd2737a30ba4cd5778e920423791d6a9a00ea7faefe8283c6a5e939531328c20",
   "questionNumber": 75,
-  "choice": null,
+  "choice": {
+   "page": 36,
+   "rect": [
+    75.2,
+    505.1,
+    495.5,
+    584.6
+   ],
+   "firstLine": "ア在庫量の把握は発注時期だけでよい。",
+   "lastLine": "エエ発注量には経済的発注量を用いると効果的である。"
+  },
   "figures": [],
   "stemCoverage": 1.23
  },
@@ -282,7 +469,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "f653d813d30fad44bde192c6a7b9d0dde40e1227aa79e5fdea8b6504b3bc76d8",
   "questionNumber": 1,
-  "choice": null,
+  "choice": {
+   "page": 4,
+   "rect": [
+    74.0,
+    102.8,
+    495.5,
+    183.6
+   ],
+   "firstLine": "ア全ての標本点が正の傾きをもつ直線上にあるときは , 相関係数が十 1 になる。",
+   "lastLine": "エエ無相関のときは , 相関係数が一 1 になる。"
+  },
   "figures": [],
   "stemCoverage": 1.08
  },
@@ -434,19 +631,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "f653d813d30fad44bde192c6a7b9d0dde40e1227aa79e5fdea8b6504b3bc76d8",
   "questionNumber": 35,
-  "choice": null,
-  "figures": [
-   {
-    "page": 18,
-    "rect": [
-     78.3,
-     508.2,
-     465.3,
-     668.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 18,
+   "rect": [
+    78.3,
+    468.1,
+    495.5,
+    667.7
+   ],
+   "firstLine": "ア管理ステーションから定期的にネットワーク機器の MIB (Management",
+   "lastLine": "能とするアーキテクチャ"
+  },
+  "figures": [],
   "stemCoverage": 1.03
  },
  {
@@ -475,24 +671,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "f653d813d30fad44bde192c6a7b9d0dde40e1227aa79e5fdea8b6504b3bc76d8",
   "questionNumber": 47,
-  "choice": null,
-  "figures": [
-   {
-    "page": 24,
-    "rect": [
-     74.2,
-     383.1,
-     427.1,
-     446.1
-    ],
-    "cut": [
-     [
-      "top",
-      "アスタブは , テスト対象モジュールからの戻り値を表示・印刷する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 24,
+   "rect": [
+    53.8,
+    365.9,
+    495.5,
+    586.1
+   ],
+   "firstLine": "アスタブは , テスト対象モジュールからの戻り値を表示・印刷する。",
+   "lastLine": "ウーペダプロガラミシグエエリファタタリング"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -632,7 +822,17 @@
   "section": "春期午前",
   "questionPdfSha256": "fead1be5eda1186606d04c20d8146463a918b3943600e1eef2e7a8a974a96a73",
   "questionNumber": 11,
-  "choice": null,
+  "choice": {
+   "page": 6,
+   "rect": [
+    74.7,
+    265.1,
+    495.5,
+    406.3
+   ],
+   "firstLine": "ア主記憶と外部記憶を一元的にアドレス付けし , 主記憶の物理容量を超えるメモ",
+   "lastLine": "るようにする。"
+  },
   "figures": [],
   "stemCoverage": 1.13
  },
@@ -642,7 +842,17 @@
   "section": "春期午前",
   "questionPdfSha256": "fead1be5eda1186606d04c20d8146463a918b3943600e1eef2e7a8a974a96a73",
   "questionNumber": 18,
-  "choice": null,
+  "choice": {
+   "page": 9,
+   "rect": [
+    73.8,
+    402.1,
+    495.5,
+    481.9
+   ],
+   "firstLine": "ア共有資源を管理する。",
+   "lastLine": "エエセグメンテーションを実現する。"
+  },
   "figures": [],
   "stemCoverage": 1.14
  },
@@ -754,29 +964,18 @@
   "section": "春期午前",
   "questionPdfSha256": "fead1be5eda1186606d04c20d8146463a918b3943600e1eef2e7a8a974a96a73",
   "questionNumber": 51,
-  "choice": null,
-  "figures": [
-   {
-    "page": 24,
-    "rect": [
-     102.5,
-     108.8,
-     441.0,
-     185.3
-    ],
-    "cut": []
-   },
-   {
-    "page": 24,
-    "rect": [
-     84.8,
-     207.4,
-     420.0,
-     268.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 24,
+   "rect": [
+    74.2,
+    107.2,
+    495.5,
+    267.8
+   ],
+   "firstLine": "ア開発ツールの新機能の教育が不十分と分かったので , 開発ツールの教育期間を",
+   "lastLine": "ト担当者と交代した。"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -785,24 +984,18 @@
   "section": "春期午前",
   "questionPdfSha256": "fead1be5eda1186606d04c20d8146463a918b3943600e1eef2e7a8a974a96a73",
   "questionNumber": 65,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     83.5,
-     366.1,
-     382.0,
-     446.2
-    ],
-    "cut": [
-     [
-      "top",
-      "ア相手先ブランドで販売する電子機器の設計だけを受託し , 製造は相手先で行う。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    73.5,
+    348.4,
+    495.5,
+    448.8
+   ],
+   "firstLine": "ア相手先ブランドで販売する電子機器の設計だけを受託し , 製造は相手先で行う。",
+   "lastLine": "エエ生産設備をもつ企業が , 他社からの委託を受けて電子機器を製造する。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -1004,24 +1197,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "f9b2c668f49cd0f29290df0427860d5e40c2fc124830f62825d98e3e75cc1977",
   "questionNumber": 61,
-  "choice": null,
-  "figures": [
-   {
-    "page": 31,
-    "rect": [
-     113.5,
-     167.3,
-     357.0,
-     226.7
-    ],
-    "cut": [
-     [
-      "top",
-      "ア管理品質向上のために , マネジメント , レポーティング , 分析などを支援する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 31,
+   "rect": [
+    71.8,
+    148.7,
+    495.5,
+    229.2
+   ],
+   "firstLine": "ア管理品質向上のために , マネジメント , レポーティング , 分析などを支援する。",
+   "lastLine": "エエルーチン化された業務のコスト削減や処理効率向上を図る。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -1030,24 +1217,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "f9b2c668f49cd0f29290df0427860d5e40c2fc124830f62825d98e3e75cc1977",
   "questionNumber": 72,
-  "choice": null,
-  "figures": [
-   {
-    "page": 36,
-    "rect": [
-     83.1,
-     183.4,
-     430.5,
-     266.8
-    ],
-    "cut": [
-     [
-      "top",
-      "需要の変動に応じて迅速にサービスを提供する考え方である。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 36,
+   "rect": [
+    73.8,
+    105.7,
+    495.5,
+    267.1
+   ],
+   "firstLine": "アインターネットオークションなどで , 売り手と買い手の取引を安全に行うため",
+   "lastLine": "せ , 現実世界での行動や認知を支援する技術である。"
+  },
+  "figures": [],
   "stemCoverage": 1.11
  },
  {
@@ -1056,7 +1237,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "f9b2c668f49cd0f29290df0427860d5e40c2fc124830f62825d98e3e75cc1977",
   "questionNumber": 74,
-  "choice": null,
+  "choice": {
+   "page": 37,
+   "rect": [
+    72.6,
+    107.4,
+    495.5,
+    187.9
+   ],
+   "firstLine": "ア企業経営のための財務戦略の立案と遂行",
+   "lastLine": "エエビジネス価値を最大化させる IT サービス活用の促進"
+  },
   "figures": [],
   "stemCoverage": 1.16
  },
@@ -1214,24 +1405,18 @@
   "section": "春期午前",
   "questionPdfSha256": "6603308387c4ef7e2648db30be973e4ca6de936012351e5aa4e1fa94550e56ee",
   "questionNumber": 51,
-  "choice": null,
-  "figures": [
-   {
-    "page": 26,
-    "rect": [
-     82.9,
-     226.6,
-     439.0,
-     329.9
-    ],
-    "cut": [
-     [
-      "top",
-      "する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 26,
+   "rect": [
+    73.0,
+    127.6,
+    495.5,
+    328.8
+   ],
+   "firstLine": "アプロジェクトの計画に照らしてプロジェクトパフォーマンスを監視し , 測定し ,",
+   "lastLine": "プロジェクトの成果物の提示を支援するために使用する。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -1260,19 +1445,18 @@
   "section": "春期午前",
   "questionPdfSha256": "6603308387c4ef7e2648db30be973e4ca6de936012351e5aa4e1fa94550e56ee",
   "questionNumber": 58,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     73.3,
-     128.0,
-     370.5,
-     187.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    73.3,
+    107.6,
+    495.5,
+    187.4
+   ],
+   "firstLine": "ア監査計画の立案や監査業務の進捗管理を行うための手順",
+   "lastLine": "エエ監査テーマに合わせて , 監査チームを編成する手順"
+  },
+  "figures": [],
   "stemCoverage": 1.11
  },
  {
@@ -1281,24 +1465,18 @@
   "section": "春期午前",
   "questionPdfSha256": "6603308387c4ef7e2648db30be973e4ca6de936012351e5aa4e1fa94550e56ee",
   "questionNumber": 59,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     83.4,
-     325.0,
-     402.0,
-     385.6
-    ],
-    "cut": [
-     [
-      "top",
-      "いこととする。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    73.3,
+    287.4,
+    495.5,
+    388.3
+   ],
+   "firstLine": "ア監査対象部門が , 経営者の指摘事項に対するリスク受容を理由に改善を行わな",
+   "lastLine": "エエシステム監査人が , 監査対象部門の改善実施状況を確認する。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -1307,19 +1485,18 @@
   "section": "春期午前",
   "questionPdfSha256": "6603308387c4ef7e2648db30be973e4ca6de936012351e5aa4e1fa94550e56ee",
   "questionNumber": 71,
-  "choice": null,
-  "figures": [
-   {
-    "page": 35,
-    "rect": [
-     74.0,
-     448.2,
-     459.5,
-     588.6
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 35,
+   "rect": [
+    73.8,
+    427.1,
+    495.5,
+    589.7
+   ],
+   "firstLine": "アインターネットを介して遠隔地に設置した 3D プリンタへ設計データを送り ,",
+   "lastLine": "用いて構築し , 現実世界では実施できないようなシミュレーションを行うこと"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -1369,19 +1546,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 4,
-  "choice": null,
-  "figures": [
-   {
-    "page": 4,
-    "rect": [
-     74.5,
-     122.0,
-     461.7,
-     281.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 4,
+   "rect": [
+    74.5,
+    120.8,
+    495.5,
+    281.3
+   ],
+   "firstLine": "ア半つかのグループに分かれている既存データ間に分離境界を定め , 新たなデー",
+   "lastLine": "曲線によってデータの補完や未来予測を行う回帰分析"
+  },
+  "figures": [],
   "stemCoverage": 0.97
  },
  {
@@ -1421,19 +1597,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 14,
-  "choice": null,
-  "figures": [
-   {
-    "page": 8,
-    "rect": [
-     83.4,
-     164.7,
-     454.5,
-     283.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 8,
+   "rect": [
+    73.8,
+    123.5,
+    495.5,
+    283.4
+   ],
+   "firstLine": "ア応答時間に最も影響びあるボトルネックだけに着目して , 適切な変更を行うこ",
+   "lastLine": "ソースの有効利用を向上させることである。"
+  },
+  "figures": [],
   "stemCoverage": 1.0
  },
  {
@@ -1550,19 +1725,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 44,
-  "choice": null,
-  "figures": [
-   {
-    "page": 20,
-    "rect": [
-     77.1,
-     430.7,
-     392.5,
-     525.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 20,
+   "rect": [
+    66.8,
+    344.5,
+    495.5,
+    524.4
+   ],
+   "firstLine": "アサーバに FIN パケットを送信し , サーバからの応答を観測して , 稼働している",
+   "lastLine": "スと判断する。"
+  },
+  "figures": [],
   "stemCoverage": 1.19
  },
  {
@@ -1571,7 +1745,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 51,
-  "choice": null,
+  "choice": {
+   "page": 24,
+   "rect": [
+    71.1,
+    164.0,
+    495.5,
+    324.2
+   ],
+   "firstLine": "ア戦略目標に整合させるよう , 関連する複数のプロジェクトに影響する制約条件",
+   "lastLine": "ジェクトのアクティビティへ適用する。"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -1581,19 +1765,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 57,
-  "choice": null,
-  "figures": [
-   {
-    "page": 27,
-    "rect": [
-     112.0,
-     563.9,
-     394.0,
-     660.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 27,
+   "rect": [
+    74.0,
+    562.2,
+    495.5,
+    663.1
+   ],
+   "firstLine": "アサービスデスクに対する顧客満足度が合意したサービス目標を満たしているか",
+   "lastLine": "エエ利用者からの障害報告を受けて , 既知の誤りに該当するかどうかを照合する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -1602,28 +1785,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 58,
-  "choice": null,
-  "figures": [
-   {
-    "page": 28,
-    "rect": [
-     72.3,
-     179.3,
-     458.8,
-     261.8
-    ],
-    "cut": [
-     [
-      "top",
-      "ア既存の社内情報システムとの TID の一元管理の可否が検討されているか。"
-     ],
-     [
-      "top",
-      "イクラウドサービスの障害時における最大許容停止時間が検討されているか。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 28,
+   "rect": [
+    72.3,
+    142.0,
+    495.5,
+    262.3
+   ],
+   "firstLine": "ア既存の社内情報システムとの TID の一元管理の可否が検討されているか。",
+   "lastLine": "採用されているかどうかが検討されているか。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -1632,24 +1805,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "31aaa0686e9bdae6bec22f3d2ab930627637908cbb54eaf6676282ec3d27d8e6",
   "questionNumber": 59,
-  "choice": null,
-  "figures": [
-   {
-    "page": 28,
-    "rect": [
-     82.2,
-     400.1,
-     462.4,
-     523.1
-    ],
-    "cut": [
-     [
-      "top",
-      "回答を入手する技法をいう。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 28,
+   "rect": [
+    72.3,
+    363.0,
+    495.5,
+    523.0
+   ],
+   "firstLine": "アインタビュー法とは , システム監査人が , 直接 , 関係者に口頭で問い合わせ ,",
+   "lastLine": "監査対象部門の見解を取りまとめた結果をシステム監査人が点検する技法をいう。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -1851,7 +2018,17 @@
   "section": "10月午前",
   "questionPdfSha256": "1574cc9c17739d9227b6464676163d2cf4182826b0c946ba70c8b8f6aa0ef438",
   "questionNumber": 48,
-  "choice": null,
+  "choice": {
+   "page": 27,
+   "rect": [
+    76.2,
+    448.4,
+    495.5,
+    650.6
+   ],
+   "firstLine": "アコミュニケーション , シンプル , フィードバック , 勇気 , 尊重の五つの価値を",
+   "lastLine": "成し。フィーチャを単位として計画し , フィーチャ単位に設計と構築を繰り返す。"
+  },
   "figures": [
    {
     "page": 27,
@@ -1872,21 +2049,6 @@
      369.9
     ],
     "cut": []
-   },
-   {
-    "page": 27,
-    "rect": [
-     87.0,
-     505.5,
-     408.0,
-     609.0
-    ],
-    "cut": [
-     [
-      "top",
-      "ラクティスを推奨する。"
-     ]
-    ]
    }
   ],
   "stemCoverage": 1.0
@@ -1968,19 +2130,18 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 13,
-  "choice": null,
-  "figures": [
-   {
-    "page": 8,
-    "rect": [
-     68.2,
-     369.5,
-     454.5,
-     547.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 8,
+   "rect": [
+    68.0,
+    366.6,
+    495.5,
+    546.5
+   ],
+   "firstLine": "アフェールセーフとは , 利用者の誤操作によってシステムが異常終了してしまう",
+   "lastLine": "持されるような設計方法である。"
+  },
+  "figures": [],
   "stemCoverage": 1.11
  },
  {
@@ -2040,19 +2201,18 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 42,
-  "choice": null,
-  "figures": [
-   {
-    "page": 22,
-    "rect": [
-     78.8,
-     104.9,
-     455.4,
-     305.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 22,
+   "rect": [
+    69.4,
+    104.3,
+    495.5,
+    304.3
+   ],
+   "firstLine": "ア産業標準化法に基づいて経済産業省に設置されている審議会であり , 産業標準",
+   "lastLine": "担う組織である。"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -2081,24 +2241,18 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 54,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     82.2,
-     181.3,
-     377.5,
-     282.9
-    ],
-    "cut": [
-     [
-      "top",
-      "享受する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    71.4,
+    144.4,
+    495.5,
+    285.8
+   ],
+   "firstLine": "アいかなる積極的行動も取らないが , 好機が実現したときにそのベネフィットを",
+   "lastLine": "エエ好機の発生確率や影響度 , 又はその両者を増大させる。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -2107,7 +2261,17 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 59,
-  "choice": null,
+  "choice": {
+   "page": 32,
+   "rect": [
+    69.0,
+    386.5,
+    495.5,
+    545.0
+   ],
+   "firstLine": "アマスタファイルが置かれているサーバを二重化し , 耐障害性の向上を図ってい",
+   "lastLine": "きあ"
+  },
   "figures": [],
   "stemCoverage": 1.0
  },
@@ -2127,24 +2291,18 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 62,
-  "choice": null,
-  "figures": [
-   {
-    "page": 33,
-    "rect": [
-     91.0,
-     509.1,
-     459.5,
-     586.2
-    ],
-    "cut": [
-     [
-      "top",
-      "達を行い開発費の不足を補う。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 33,
+   "rect": [
+    81.2,
+    428.3,
+    495.5,
+    593.0
+   ],
+   "firstLine": "ア構築するシステムの概要や予算をインターネットなどにオープンに告知し , ア",
+   "lastLine": "トレージ容量 , ネットワーク機能などをソフトウェアで構成し , 運用管理を行う。"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -2153,7 +2311,17 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 64,
-  "choice": null,
+  "choice": {
+   "page": 34,
+   "rect": [
+    67.3,
+    367.3,
+    495.5,
+    526.6
+   ],
+   "firstLine": "ア調達者から供給者候補に対して , システム化の目的や業務内容などを示し , 必",
+   "lastLine": "すること"
+  },
   "figures": [],
   "stemCoverage": 1.11
  },
@@ -2173,19 +2341,18 @@
   "section": "春期午前",
   "questionPdfSha256": "f5740921e635739d0d707ae68c5db14d49525c4e09cba4b0243c3d85e4095e07",
   "questionNumber": 68,
-  "choice": null,
-  "figures": [
-   {
-    "page": 36,
-    "rect": [
-     69.9,
-     106.9,
-     452.8,
-     264.6
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 36,
+   "rect": [
+    69.9,
+    104.8,
+    495.5,
+    265.7
+   ],
+   "firstLine": "ア上位企業の市場シェアを奪うことを目標に , 製品 , サービス , 販売促進 , 流通",
+   "lastLine": "の顧客をターゲットにした全方位戦略をとる。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -2224,19 +2391,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "925e7ba7c230c42ce653d1cd43198a47dfe7c88493800d0a13af0297c18bb9af",
   "questionNumber": 5,
-  "choice": null,
-  "figures": [
-   {
-    "page": 6,
-    "rect": [
-     72.3,
-     106.2,
-     451.1,
-     264.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 6,
+   "rect": [
+    72.3,
+    104.3,
+    495.5,
+    264.2
+   ],
+   "firstLine": "アある間隔おきに取り出した要素から成る部分列をそれぞれ整列し , 更に間隔を話",
+   "lastLine": "この操作を繰り返して , 未整列の部分を縮めていく。"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -2265,39 +2431,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "925e7ba7c230c42ce653d1cd43198a47dfe7c88493800d0a13af0297c18bb9af",
   "questionNumber": 9,
-  "choice": null,
-  "figures": [
-   {
-    "page": 7,
-    "rect": [
-     75.9,
-     365.8,
-     410.5,
-     467.9
-    ],
-    "cut": [
-     [
-      "top",
-      "空間を提供する。"
-     ]
-    ]
-   },
-   {
-    "page": 7,
-    "rect": [
-     76.6,
-     544.4,
-     367.8,
-     636.9
-    ],
-    "cut": [
-     [
-      "top",
-      "ない。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 7,
+   "rect": [
+    1.3,
+    324.4,
+    495.5,
+    638.9
+   ],
+   "firstLine": "ア主記憶と外部記憶を一元的にアドレス付けし , 主記憶の物理容量を超えるメモリ",
+   "lastLine": "ウ因加 h 1"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -2581,19 +2726,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "925e7ba7c230c42ce653d1cd43198a47dfe7c88493800d0a13af0297c18bb9af",
   "questionNumber": 73,
-  "choice": null,
-  "figures": [
-   {
-    "page": 39,
-    "rect": [
-     76.4,
-     506.4,
-     389.0,
-     628.0
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 39,
+   "rect": [
+    76.4,
+    503.6,
+    495.5,
+    630.0
+   ],
+   "firstLine": "ア演算処理のリソースをセンサ端末の近傍に置くことによって , アプリケーション",
+   "lastLine": "エエ周りの環境から微小なエネルギーを収穫して , 電力に変換する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -2602,7 +2746,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "925e7ba7c230c42ce653d1cd43198a47dfe7c88493800d0a13af0297c18bb9af",
   "questionNumber": 77,
-  "choice": null,
+  "choice": {
+   "page": 41,
+   "rect": [
+    76.6,
+    472.7,
+    495.5,
+    555.4
+   ],
+   "firstLine": "ア売上高の増加が大きな利益に結び付きやすい。",
+   "lastLine": "正不況時にも , 売上高の減少が大きな損失に結び付かず不況抵抗力は強い。"
+  },
   "figures": [
    {
     "page": 41,
@@ -2610,7 +2764,7 @@
      76.6,
      342.1,
      426.6,
-     553.4
+     471.7
     ],
     "cut": []
    }
@@ -2796,7 +2950,17 @@
   "section": "春期午前",
   "questionPdfSha256": "70efa5ffb5676105191c6e53f6897c00eec46ad4c3007d1b930b0016aacc9a5a",
   "questionNumber": 5,
-  "choice": null,
+  "choice": {
+   "page": 4,
+   "rect": [
+    79.0,
+    469.3,
+    495.5,
+    548.6
+   ],
+   "firstLine": "ア空き領域のアドレスをキーとする 2 分探索木",
+   "lastLine": "エエアドレスに対応したビットマップ"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -2856,7 +3020,17 @@
   "section": "春期午前",
   "questionPdfSha256": "70efa5ffb5676105191c6e53f6897c00eec46ad4c3007d1b930b0016aacc9a5a",
   "questionNumber": 11,
-  "choice": null,
+  "choice": {
+   "page": 7,
+   "rect": [
+    77.6,
+    271.1,
+    495.5,
+    678.3
+   ],
+   "firstLine": "ア想定される CPU 使用率に対して , サーバの能力が過剰なとき , CPU の能力を減ら",
+   "lastLine": "を増やすこと"
+  },
   "figures": [
    {
     "page": 6,
@@ -2872,16 +3046,6 @@
       "イ記憶するセルの電子の量に応じて , 複数のビット情報を記録する。"
      ]
     ]
-   },
-   {
-    "page": 7,
-    "rect": [
-     87.9,
-     370.2,
-     410.0,
-     430.5
-    ],
-    "cut": []
    }
   ],
   "stemCoverage": 1.09
@@ -2892,7 +3056,17 @@
   "section": "春期午前",
   "questionPdfSha256": "70efa5ffb5676105191c6e53f6897c00eec46ad4c3007d1b930b0016aacc9a5a",
   "questionNumber": 13,
-  "choice": null,
+  "choice": {
+   "page": 8,
+   "rect": [
+    75.7,
+    504.6,
+    495.5,
+    678.3
+   ],
+   "firstLine": "アフェールセーフは , 構成部品の信頼性を高めて , 故障が起きないようにする技術",
+   "lastLine": "える技術である。"
+  },
   "figures": [
    {
     "page": 7,
@@ -2933,7 +3107,17 @@
   "section": "春期午前",
   "questionPdfSha256": "70efa5ffb5676105191c6e53f6897c00eec46ad4c3007d1b930b0016aacc9a5a",
   "questionNumber": 15,
-  "choice": null,
+  "choice": {
+   "page": 8,
+   "rect": [
+    75.7,
+    504.6,
+    495.5,
+    664.8
+   ],
+   "firstLine": "アフェールセーフは , 構成部品の信頼性を高めて , 故障が起きないようにする技術",
+   "lastLine": "える技術である。"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -2994,7 +3178,17 @@
   "section": "春期午前",
   "questionPdfSha256": "70efa5ffb5676105191c6e53f6897c00eec46ad4c3007d1b930b0016aacc9a5a",
   "questionNumber": 23,
-  "choice": null,
+  "choice": {
+   "page": 13,
+   "rect": [
+    76.6,
+    130.9,
+    495.5,
+    291.4
+   ],
+   "firstLine": "ア超音波を送出し , その反射波を測定することによって , 対象物の有無の検知及び",
+   "lastLine": "方向 , 距離及び形状を計測する。"
+  },
   "figures": [],
   "stemCoverage": 1.0
  },
@@ -3158,7 +3352,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "fe0ecb20676af5e67385cccba3b2ac7b8a03d88a2e4858a7fa16427702c63fa2",
   "questionNumber": 12,
-  "choice": null,
+  "choice": {
+   "page": 9,
+   "rect": [
+    79.5,
+    134.0,
+    496.0,
+    215.5
+   ],
+   "firstLine": "アシリアル ATA などの接続方式によって内蔵ストレージとして 1 対 1 に接続する。",
+   "lastLine": "エエプロトコルは NFS (Network File System) を使用し , LAN で接続する。"
+  },
   "figures": [],
   "stemCoverage": 1.06
  },
@@ -3234,19 +3438,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "fe0ecb20676af5e67385cccba3b2ac7b8a03d88a2e4858a7fa16427702c63fa2",
   "questionNumber": 25,
-  "choice": null,
-  "figures": [
-   {
-    "page": 15,
-    "rect": [
-     89.6,
-     378.7,
-     437.5,
-     475.8
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 15,
+   "rect": [
+    1.3,
+    356.5,
+    496.0,
+    576.0
+   ],
+   "firstLine": "アウェアラブルカメラ , 慣性センサーなどを用いて非言語情報を認識する処理",
+   "lastLine": "肖"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -3325,7 +3528,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "fe0ecb20676af5e67385cccba3b2ac7b8a03d88a2e4858a7fa16427702c63fa2",
   "questionNumber": 52,
-  "choice": null,
+  "choice": {
+   "page": 27,
+   "rect": [
+    74.2,
+    295.1,
+    496.0,
+    374.9
+   ],
+   "firstLine": "アスケジュール効率が , 計画よりも良い。",
+   "lastLine": "エエプロジェクトの進捗が , 計画よりも進んでいる。"
+  },
   "figures": [],
   "stemCoverage": 1.0
  },
@@ -3345,19 +3558,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "fe0ecb20676af5e67385cccba3b2ac7b8a03d88a2e4858a7fa16427702c63fa2",
   "questionNumber": 57,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     78.1,
-     133.8,
-     465.5,
-     290.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    78.1,
+    131.9,
+    496.0,
+    292.1
+   ],
+   "firstLine": "ア障害からの復旧時に差分バックアップのデータだけ処理すればよいので , フルバ",
+   "lastLine": "間が長い。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -3366,7 +3578,17 @@
   "section": "春期午前",
   "questionPdfSha256": "aaaa80a132d543435e1c3d7dcf5edb9762f8c2d5db46b78cba205017789a543c",
   "questionNumber": 1,
-  "choice": null,
+  "choice": {
+   "page": 4,
+   "rect": [
+    83.1,
+    127.6,
+    495.5,
+    286.8
+   ],
+   "firstLine": "アある袋から取り出した二つの玉の色が同じと推定することができる確率を求める",
+   "lastLine": "める場合"
+  },
   "figures": [],
   "stemCoverage": 1.04
  },
@@ -3493,7 +3715,17 @@
   "section": "春期午前",
   "questionPdfSha256": "aaaa80a132d543435e1c3d7dcf5edb9762f8c2d5db46b78cba205017789a543c",
   "questionNumber": 34,
-  "choice": null,
+  "choice": {
+   "page": 20,
+   "rect": [
+    74.2,
+    134.5,
+    495.5,
+    314.4
+   ],
+   "firstLine": "ア単一の物理サーバ内の仮想サーバ同士が , 外部のネットワーク機器を経由せずに ,",
+   "lastLine": "ウェア (0SS) で実現する方式"
+  },
   "figures": [],
   "stemCoverage": 0.96
  },
@@ -3503,24 +3735,18 @@
   "section": "春期午前",
   "questionPdfSha256": "aaaa80a132d543435e1c3d7dcf5edb9762f8c2d5db46b78cba205017789a543c",
   "questionNumber": 35,
-  "choice": null,
-  "figures": [
-   {
-    "page": 20,
-    "rect": [
-     73.0,
-     473.1,
-     458.1,
-     595.1
-    ],
-    "cut": [
-     [
-      "top",
-      "にパスワードを再発行することができる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 20,
+   "rect": [
+    73.0,
+    434.8,
+    495.5,
+    595.2
+   ],
+   "firstLine": "ア利用者がカード会社による本人認証に用いるパスワードを忘れた場合でも , 安全",
+   "lastLine": "いるのが人間であることを確認した上で , カード会社が追加の本人認証を行う。"
+  },
+  "figures": [],
   "stemCoverage": 1.03
  },
  {
@@ -3661,19 +3887,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "08103c1758973e085b66672cfc404c28b2035bff8603570d88506a98df5a7908",
   "questionNumber": 16,
-  "choice": null,
-  "figures": [
-   {
-    "page": 10,
-    "rect": [
-     78.1,
-     353.8,
-     467.4,
-     518.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 10,
+   "rect": [
+    78.1,
+    354.8,
+    495.5,
+    519.4
+   ],
+   "firstLine": "ア各タスクの優先度を決めて , 優先度が高い順に実行し , CPU 割当てまでの待ち時",
+   "lastLine": "能待ち行列の先頭のタスクに CPU を割り当てる。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -3703,7 +3928,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "08103c1758973e085b66672cfc404c28b2035bff8603570d88506a98df5a7908",
   "questionNumber": 41,
-  "choice": null,
+  "choice": {
+   "page": 22,
+   "rect": [
+    79.8,
+    136.0,
+    495.5,
+    235.7
+   ],
+   "firstLine": "アコンピュータで必要なセキュリティ設定項目を識別するための識別子",
+   "lastLine": "エエセキュリティ製品の種別を識別するための識別子"
+  },
   "figures": [],
   "stemCoverage": 1.04
  },
@@ -3804,7 +4039,17 @@
   "section": "春期午前",
   "questionPdfSha256": "1e95bc839260464cbadb209a3d41685cad66662dc1f33cdb187c1b03c6607c2c",
   "questionNumber": 19,
-  "choice": null,
+  "choice": {
+   "page": 12,
+   "rect": [
+    72.8,
+    369.5,
+    496.0,
+    451.4
+   ],
+   "firstLine": "ア自動制御であり , 偏差の比例 , 積分及び微分の 3 要素で制御する。",
+   "lastLine": "エエリレーシーケンス回路のハードウェアによって制御する。"
+  },
   "figures": [],
   "stemCoverage": 1.09
  },
@@ -3864,28 +4109,18 @@
   "section": "春期午前",
   "questionPdfSha256": "1e95bc839260464cbadb209a3d41685cad66662dc1f33cdb187c1b03c6607c2c",
   "questionNumber": 45,
-  "choice": null,
-  "figures": [
-   {
-    "page": 24,
-    "rect": [
-     3.0,
-     148.9,
-     439.5,
-     211.8
-    ],
-    "cut": [
-     [
-      "top",
-      "ア設計工程内で , 設計工程の成果物の問題点を発見する。"
-     ],
-     [
-      "top",
-      "イ品質保証部門が , 全成果物の出荷の可否を判定する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 24,
+   "rect": [
+    81.0,
+    111.2,
+    496.0,
+    212.9
+   ],
+   "firstLine": "ア設計工程内で , 設計工程の成果物の問題点を発見する。",
+   "lastLine": "エエプロジェクトマネジメントのプロセス上の問題点を発見する。"
+  },
+  "figures": [],
   "stemCoverage": 1.21
  },
  {
@@ -4073,7 +4308,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "1e705af2f38ad50eeebcad436b8476264a6f101e3c0d8cfa2f177f9962770f27",
   "questionNumber": 42,
-  "choice": null,
+  "choice": {
+   "page": 21,
+   "rect": [
+    73.3,
+    108.4,
+    495.5,
+    273.6
+   ],
+   "firstLine": "アクラウドサービスにおける情報漏えいなどのリスクを低減するために , 設定の監",
+   "lastLine": "ジとして提供するクラウドサービス"
+  },
   "figures": [],
   "stemCoverage": 1.08
  },
@@ -4139,7 +4384,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "1e705af2f38ad50eeebcad436b8476264a6f101e3c0d8cfa2f177f9962770f27",
   "questionNumber": 78,
-  "choice": null,
+  "choice": {
+   "page": 37,
+   "rect": [
+    71.4,
+    327.5,
+    495.5,
+    406.8
+   ],
+   "firstLine": "アインターネットで公開されたフリーソフトウェア",
+   "lastLine": "エエプログラム言語や規約 (プログラム言語の用法についての特別の約束)"
+  },
   "figures": [],
   "stemCoverage": 1.12
  },
@@ -4185,19 +4440,18 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 7,
-  "choice": null,
-  "figures": [
-   {
-    "page": 6,
-    "rect": [
-     117.0,
-     263.4,
-     438.0,
-     340.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 6,
+   "rect": [
+    76.9,
+    262.7,
+    495.5,
+    343.2
+   ],
+   "firstLine": "ア顧客番号から求めたハッシュ値が指し示す位置に配置されているデータ構造",
+   "lastLine": "エエ顧客番号をセルに格納し , セルのアドレス順に配置されているデータ構千"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -4318,19 +4572,18 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 37,
-  "choice": null,
-  "figures": [
-   {
-    "page": 19,
-    "rect": [
-     75.0,
-     327.2,
-     461.7,
-     527.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 19,
+   "rect": [
+    75.0,
+    325.1,
+    495.5,
+    526.3
+   ],
+   "firstLine": "ア攻撃者が , Web アプリケーションの入力データとしてデータベースへの命令文",
+   "lastLine": "スする。"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -4359,19 +4612,18 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 41,
-  "choice": null,
-  "figures": [
-   {
-    "page": 21,
-    "rect": [
-     88.2,
-     104.2,
-     457.5,
-     264.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 21,
+   "rect": [
+    77.8,
+    103.8,
+    495.5,
+    263.8
+   ],
+   "firstLine": "ア公式の記録において使われる全世界共通の日時情報を , 暗号化通信を用いて安",
+   "lastLine": "んされないように通知するサービス"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -4432,24 +4684,18 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 63,
-  "choice": null,
-  "figures": [
-   {
-    "page": 31,
-    "rect": [
-     73.0,
-     163.0,
-     459.3,
-     246.4
-    ],
-    "cut": [
-     [
-      "top",
-      "イサービス事業者が用意したサーバの利用権を利用者に貸し出す。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 31,
+   "rect": [
+    73.0,
+    105.7,
+    495.5,
+    245.8
+   ],
+   "firstLine": "ア運用管理面では , サーバの稼働監視インシデント対応などを全て利用者が担",
+   "lastLine": "合せは自由に行う。"
+  },
+  "figures": [],
   "stemCoverage": 1.19
  },
  {
@@ -4458,19 +4704,18 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 68,
-  "choice": null,
-  "figures": [
-   {
-    "page": 32,
-    "rect": [
-     126.0,
-     586.5,
-     327.5,
-     623.0
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 32,
+   "rect": [
+    75.4,
+    545.9,
+    495.5,
+    625.9
+   ],
+   "firstLine": "アシェア追撃などのリーダ攻撃に必要な差別化戦略",
+   "lastLine": "エエ全市場をカバーし , 最大シェアを確保する全方位戦略"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -4479,7 +4724,17 @@
   "section": "春期午前",
   "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
   "questionNumber": 71,
-  "choice": null,
+  "choice": {
+   "page": 33,
+   "rect": [
+    71.8,
+    531.0,
+    495.5,
+    611.0
+   ],
+   "firstLine": "ア基準日程 (完成時期 , リードタイム日数 )",
+   "lastLine": "エエ部品構成表 (最終製品における各部品の構成と所要量 )"
+  },
   "figures": [
    {
     "page": 33,
@@ -4487,7 +4742,7 @@
      71.8,
      442.3,
      467.0,
-     610.2
+     530.0
     ],
     "cut": []
    }
@@ -4697,7 +4952,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "03c224fe68475103a0437cd11716db473a4e0a1bad2181b0262e6f0115d4cacd",
   "questionNumber": 33,
-  "choice": null,
+  "choice": {
+   "page": 15,
+   "rect": [
+    80.7,
+    126.8,
+    495.5,
+    285.8
+   ],
+   "firstLine": "アインターネットへのアクセスをキャッシュしておくことによって , その後に同",
+   "lastLine": "る。"
+  },
   "figures": [],
   "stemCoverage": 0.95
  },
@@ -4717,19 +4982,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "03c224fe68475103a0437cd11716db473a4e0a1bad2181b0262e6f0115d4cacd",
   "questionNumber": 56,
-  "choice": null,
-  "figures": [
-   {
-    "page": 23,
-    "rect": [
-     82.6,
-     526.6,
-     451.5,
-     645.8
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 23,
+   "rect": [
+    73.3,
+    484.9,
+    495.5,
+    645.8
+   ],
+   "firstLine": "ア業務処理がバックアップ処理と重なると応答時間が長くなる可能性がある場合",
+   "lastLine": "体を使用する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -4738,7 +5002,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "03c224fe68475103a0437cd11716db473a4e0a1bad2181b0262e6f0115d4cacd",
   "questionNumber": 59,
-  "choice": null,
+  "choice": {
+   "page": 24,
+   "rect": [
+    73.0,
+    484.2,
+    495.5,
+    644.9
+   ],
+   "firstLine": "ア監査業務を経験したことのある被監査部門の管理者をヒアリングの対象者とし",
+   "lastLine": "ステム監査人が行う。"
+  },
   "figures": [],
   "stemCoverage": 1.27
  },
@@ -4748,24 +5022,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "03c224fe68475103a0437cd11716db473a4e0a1bad2181b0262e6f0115d4cacd",
   "questionNumber": 63,
-  "choice": null,
-  "figures": [
-   {
-    "page": 26,
-    "rect": [
-     104.5,
-     361.0,
-     434.5,
-     421.2
-    ],
-    "cut": [
-     [
-      "top",
-      "アカスタマセンタへの問合せに対し , 登録済みの顧客情報から連絡先を抽出する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 26,
+   "rect": [
+    74.0,
+    343.8,
+    495.5,
+    424.1
+   ],
+   "firstLine": "アカスタマセンタへの問合せに対し , 登録済みの顧客情報から連絡先を抽出する。",
+   "lastLine": "エエ多種多様なソーシャルメディアの大量な書込みを分析し , 商品の改善を行う。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -4795,7 +5063,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "03c224fe68475103a0437cd11716db473a4e0a1bad2181b0262e6f0115d4cacd",
   "questionNumber": 67,
-  "choice": null,
+  "choice": {
+   "page": 28,
+   "rect": [
+    72.3,
+    103.6,
+    495.5,
+    183.8
+   ],
+   "firstLine": "ア競合他社に比べて高い生産効率",
+   "lastLine": "エエ低いマーケットシェア ."
+  },
   "figures": [],
   "stemCoverage": 1.1
  },
@@ -4875,19 +5153,18 @@
   "section": "春期午前",
   "questionPdfSha256": "75ed3191ffee7083b776c29cdcb12b0a9f27196edaa32fed8642ff157d34af23",
   "questionNumber": 25,
-  "choice": null,
-  "figures": [
-   {
-    "page": 14,
-    "rect": [
-     72.3,
-     342.3,
-     424.5,
-     421.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 14,
+   "rect": [
+    72.3,
+    321.0,
+    495.5,
+    421.7
+   ],
+   "firstLine": "アインターネットで動画や音声データのストリーミング配信を制御するための通",
+   "lastLine": "エエワンセグやインターネットで用いられる動画データの圧縮符号化方式"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -4896,19 +5173,18 @@
   "section": "春期午前",
   "questionPdfSha256": "75ed3191ffee7083b776c29cdcb12b0a9f27196edaa32fed8642ff157d34af23",
   "questionNumber": 26,
-  "choice": null,
-  "figures": [
-   {
-    "page": 14,
-    "rect": [
-     82.2,
-     583.3,
-     444.6,
-     662.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 14,
+   "rect": [
+    71.6,
+    501.7,
+    495.5,
+    662.2
+   ],
+   "firstLine": "ア過去に録画された映像を視聴することによって , その時代のその場所にいたか",
+   "lastLine": "よって , 実際には存在しない場所や世界を , あたかも現実のように体感できる。"
+  },
+  "figures": [],
   "stemCoverage": 1.08
  },
  {
@@ -4957,19 +5233,18 @@
   "section": "春期午前",
   "questionPdfSha256": "75ed3191ffee7083b776c29cdcb12b0a9f27196edaa32fed8642ff157d34af23",
   "questionNumber": 61,
-  "choice": null,
-  "figures": [
-   {
-    "page": 29,
-    "rect": [
-     86.0,
-     169.0,
-     435.0,
-     289.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 29,
+   "rect": [
+    76.2,
+    123.0,
+    495.5,
+    288.5
+   ],
+   "firstLine": "ア応対マニュアルや顧客の基本情報を電子化したものを , オペレータの要求時に",
+   "lastLine": "レータに対するロールプレイング研修を繰り返して実施する。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -4988,7 +5263,17 @@
   "section": "春期午前",
   "questionPdfSha256": "75ed3191ffee7083b776c29cdcb12b0a9f27196edaa32fed8642ff157d34af23",
   "questionNumber": 67,
-  "choice": null,
+  "choice": {
+   "page": 31,
+   "rect": [
+    75.0,
+    577.8,
+    495.5,
+    658.6
+   ],
+   "firstLine": "アスケールメリットはあるが , シナジー効果はない。",
+   "lastLine": "エエスケールメリットとシナジー効果がともにない。"
+  },
   "figures": [
    {
     "page": 31,
@@ -5120,28 +5405,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "15c0f1776ba5c22802089c4a74e2ba5484ff2c7f0015212929b0218cc7bbc62e",
   "questionNumber": 27,
-  "choice": null,
-  "figures": [
-   {
-    "page": 15,
-    "rect": [
-     71.1,
-     287.1,
-     449.4,
-     350.3
-    ],
-    "cut": [
-     [
-      "top",
-      "アデータ項目 “受信年月日 \" のデータ型として , 日付型と文字列型が混在する。"
-     ],
-     [
-      "top",
-      "イデータ項目 “受注金額 \" の取り得る値の範囲がテーブルによって異なる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 15,
+   "rect": [
+    71.1,
+    249.5,
+    495.5,
+    349.9
+   ],
+   "firstLine": "アデータ項目 “受信年月日 \" のデータ型として , 日付型と文字列型が混在する。",
+   "lastLine": "エエデータ項目 “取引先 ” が , “取引先コード ” か “取引先名 ” か , 判別できない。"
+  },
+  "figures": [],
   "stemCoverage": 0.97
  },
  {
@@ -5170,7 +5445,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "15c0f1776ba5c22802089c4a74e2ba5484ff2c7f0015212929b0218cc7bbc62e",
   "questionNumber": 36,
-  "choice": null,
+  "choice": {
+   "page": 18,
+   "rect": [
+    74.2,
+    388.2,
+    495.5,
+    467.8
+   ],
+   "firstLine": "アアプリケーションソフトウェアの改ざんを利用者が検知できるようにする。",
+   "lastLine": "エエアプリケーションソフトウェアの利用者による修正や改変を不可能にする。"
+  },
   "figures": [],
   "stemCoverage": 1.1
  },
@@ -5272,7 +5557,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "15c0f1776ba5c22802089c4a74e2ba5484ff2c7f0015212929b0218cc7bbc62e",
   "questionNumber": 55,
-  "choice": null,
+  "choice": {
+   "page": 27,
+   "rect": [
+    72.6,
+    128.0,
+    495.5,
+    288.2
+   ],
+   "firstLine": "ア特定の資源の利用状況を時系列に把握して , 将来における利用の変化を予測す",
+   "lastLine": "したモデルを作成する。"
+  },
   "figures": [],
   "stemCoverage": 1.05
  },
@@ -5292,24 +5587,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "15c0f1776ba5c22802089c4a74e2ba5484ff2c7f0015212929b0218cc7bbc62e",
   "questionNumber": 71,
-  "choice": null,
-  "figures": [
-   {
-    "page": 34,
-    "rect": [
-     137.5,
-     123.4,
-     403.5,
-     184.1
-    ],
-    "cut": [
-     [
-      "top",
-      "アアナログ式の機器を除く , ディジタル式の機器が対象となる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 34,
+   "rect": [
+    76.2,
+    101.9,
+    495.5,
+    186.5
+   ],
+   "firstLine": "アアナログ式の機器を除く , ディジタル式の機器が対象となる。",
+   "lastLine": "エエ人や生物を除く , 形のある全てのものが対象となる。"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -5471,24 +5760,18 @@
   "section": "春期午前",
   "questionPdfSha256": "55210d293f5fd96673cc1131acea3f8237209b4599d95d48bad02964abe62eb6",
   "questionNumber": 23,
-  "choice": null,
-  "figures": [
-   {
-    "page": 12,
-    "rect": [
-     113.5,
-     143.8,
-     393.5,
-     203.3
-    ],
-    "cut": [
-     [
-      "top",
-      "ア交流から直流への変換 , 直流から交流への変換で生じる電力損失を低減できる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 12,
+   "rect": [
+    73.0,
+    126.4,
+    495.5,
+    206.6
+   ],
+   "firstLine": "ア交流から直流への変換 , 直流から交流への変換で生じる電力損失を低減できる。",
+   "lastLine": "エエトランスを用いて容易に昇圧 , 降圧ができる。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -5818,28 +6101,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "4cd404654bb4f465befc78a3ac44c79bcd0f019b12b68f93a38d9836710c7cb0",
   "questionNumber": 36,
-  "choice": null,
-  "figures": [
-   {
-    "page": 20,
-    "rect": [
-     78.6,
-     381.4,
-     448.5,
-     464.1
-    ],
-    "cut": [
-     [
-      "top",
-      "ウェアのハッシュ値のリストと照合してマルウェアを特定する。"
-     ],
-     [
-      "top",
-      "イ検体をサンドボックス上で実行し , その動作や外部との通信を観測する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 20,
+   "rect": [
+    69.0,
+    324.6,
+    495.5,
+    464.4
+   ],
+   "firstLine": "ア検体のハッシュ値を計算し , オンラインデータベースに登録された既知のマル",
+   "lastLine": "が偽装された不正なプログラムファイルを検出する。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -5924,24 +6197,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "4cd404654bb4f465befc78a3ac44c79bcd0f019b12b68f93a38d9836710c7cb0",
   "questionNumber": 62,
-  "choice": null,
-  "figures": [
-   {
-    "page": 31,
-    "rect": [
-     81.7,
-     207.4,
-     457.5,
-     289.1
-    ],
-    "cut": [
-     [
-      "top",
-      "トを配置する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 31,
+   "rect": [
+    71.6,
+    125.9,
+    495.5,
+    289.0
+   ],
+   "firstLine": "ア業務システムなどのデータ入力 , 照合のような標準化された定型作業を , 事務",
+   "lastLine": "コンピュータ制御で無人化した自動倉庫システムに置き換える。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -5960,7 +6227,17 @@
   "section": "秋期午前",
   "questionPdfSha256": "4cd404654bb4f465befc78a3ac44c79bcd0f019b12b68f93a38d9836710c7cb0",
   "questionNumber": 65,
-  "choice": null,
+  "choice": {
+   "page": 32,
+   "rect": [
+    72.6,
+    266.3,
+    495.5,
+    366.5
+   ],
+   "firstLine": "ア業務を構成する機能間の情報 (データ ) の流れを明確にする。",
+   "lastLine": "エエ他システムとの情報授受などのインタフェースを明確にする。"
+  },
   "figures": [],
   "stemCoverage": 1.18
  },
@@ -5970,19 +6247,18 @@
   "section": "秋期午前",
   "questionPdfSha256": "4cd404654bb4f465befc78a3ac44c79bcd0f019b12b68f93a38d9836710c7cb0",
   "questionNumber": 66,
-  "choice": null,
-  "figures": [
-   {
-    "page": 32,
-    "rect": [
-     72.3,
-     448.1,
-     459.5,
-     606.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 32,
+   "rect": [
+    72.3,
+    447.0,
+    495.5,
+    606.7
+   ],
+   "firstLine": "ア顧客との良好な関係を維持することで個々の顧客から長期間にわたって安定し",
+   "lastLine": "ローチを目指すマヤーケティング手法"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -6015,286 +6291,6 @@
    }
   ],
   "stemCoverage": 1.04
- },
- {
-  "qualificationId": "q090",
-  "year": 2022,
-  "section": "年度共通",
-  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
-  "questionNumber": 51,
-  "choice": {
-   "page": 43,
-   "rect": [
-    103.7,
-    337.2,
-    575.2,
-    431.5
-   ],
-   "firstLine": "1 アメリカ 日本 中国 インド イギリス ドイツ",
-   "lastLine": "5 アメリカ 中国 インド 日本 ドイツ イギリス"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2022,
-  "section": "年度共通",
-  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
-  "questionNumber": 52,
-  "choice": {
-   "page": 44,
-   "rect": [
-    103.7,
-    337.2,
-    575.2,
-    431.5
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 ウ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2022,
-  "section": "年度共通",
-  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
-  "questionNumber": 54,
-  "choice": {
-   "page": 45,
-   "rect": [
-    103.7,
-    410.9,
-    575.2,
-    597.4
-   ],
-   "firstLine": "1 国連環境計画 パリ協定 京都議定書 ラムサール 気候変動枠組",
-   "lastLine": "条約 条約"
-  },
-  "figures": [],
-  "stemCoverage": 1.0
- },
- {
-  "qualificationId": "q090",
-  "year": 2022,
-  "section": "年度共通",
-  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
-  "questionNumber": 55,
-  "choice": {
-   "page": 46,
-   "rect": [
-    103.7,
-    539.9,
-    575.2,
-    634.2
-   ],
-   "firstLine": "1 ア ウ オ キ ケ",
-   "lastLine": "5 イ エ オ キ ケ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2022,
-  "section": "年度共通",
-  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
-  "questionNumber": 56,
-  "choice": {
-   "page": 47,
-   "rect": [
-    103.7,
-    355.7,
-    575.2,
-    450.0
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 エ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.0
- },
- {
-  "qualificationId": "q090",
-  "year": 2023,
-  "section": "年度共通",
-  "questionPdfSha256": "c4c2682f7cc2afbdb0863fbb4e4d107ec90d8086751d4dd0a6cbf1f35a324cd5",
-  "questionNumber": 18,
-  "choice": {
-   "page": 14,
-   "rect": [
-    103.7,
-    429.4,
-    575.2,
-    523.7
-   ],
-   "firstLine": "1 正しい 誤り 正しい",
-   "lastLine": "5 誤り 誤り 誤り"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2023,
-  "section": "年度共通",
-  "questionPdfSha256": "c4c2682f7cc2afbdb0863fbb4e4d107ec90d8086751d4dd0a6cbf1f35a324cd5",
-  "questionNumber": 21,
-  "choice": {
-   "page": 17,
-   "rect": [
-    103.7,
-    521.5,
-    575.2,
-    615.8
-   ],
-   "firstLine": "1 代位責任 自己責任 有責性 組織的",
-   "lastLine": "5 自己責任 代位責任 職務関連性 重大な"
-  },
-  "figures": [],
-  "stemCoverage": 1.0
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 12,
-  "choice": {
-   "page": 11,
-   "rect": [
-    103.7,
-    668.9,
-    575.2,
-    763.2
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 ウ・エ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 16,
-  "choice": {
-   "page": 14,
-   "rect": [
-    103.7,
-    539.9,
-    575.2,
-    634.2
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 ウ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.0
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 18,
-  "choice": {
-   "page": 16,
-   "rect": [
-    103.7,
-    447.8,
-    575.2,
-    542.1
-   ],
-   "firstLine": "1 ア・ウ",
-   "lastLine": "5 ウ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 0.99
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 25,
-  "choice": {
-   "page": 22,
-   "rect": [
-    103.7,
-    576.8,
-    575.2,
-    671.1
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 エ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 37,
-  "choice": {
-   "page": 32,
-   "rect": [
-    103.7,
-    668.9,
-    575.2,
-    763.2
-   ],
-   "firstLine": "1 ア・ウ",
-   "lastLine": "5 ウ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2024,
-  "section": "年度共通",
-  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
-  "questionNumber": 50,
-  "choice": {
-   "page": 42,
-   "rect": [
-    103.7,
-    650.5,
-    575.2,
-    744.8
-   ],
-   "firstLine": "1 ア・イ",
-   "lastLine": "5 エ・オ"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
- },
- {
-  "qualificationId": "q090",
-  "year": 2025,
-  "section": "年度共通",
-  "questionPdfSha256": "fca8a98d1ff630058e6492ffe103233ba25640b0ef12c18de4a6e8a37f8e217d",
-  "questionNumber": 5,
-  "choice": {
-   "page": 5,
-   "rect": [
-    103.7,
-    424.7,
-    575.3,
-    524.0
-   ],
-   "firstLine": "1 会期　 特別 臨時 権限又は権能",
-   "lastLine": "5 会期　 臨時 特別 権利又は利益"
-  },
-  "figures": [],
-  "stemCoverage": 1.01
  },
  {
   "qualificationId": "q006",
@@ -6342,7 +6338,17 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 25,
-  "choice": null,
+  "choice": {
+   "page": 12,
+   "rect": [
+    68.7,
+    270.1,
+    495.5,
+    350.6
+   ],
+   "firstLine": "アガス会社が検針作業で取り扱う個人情報の管理",
+   "lastLine": "エ鉄道会社が定期券販売で取り扱う個人情報の管理"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -6382,7 +6388,17 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 44,
-  "choice": null,
+  "choice": {
+   "page": 21,
+   "rect": [
+    69.4,
+    130.7,
+    495.5,
+    210.5
+   ],
+   "firstLine": "ア財務的なリスクへの対応として保険を掛ける。",
+   "lastLine": "エリスク発生時の対処に必要な予備費用を計上する。"
+  },
   "figures": [],
   "stemCoverage": 1.06
  },
@@ -6392,19 +6408,18 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 46,
-  "choice": null,
-  "figures": [
-   {
-    "page": 21,
-    "rect": [
-     125.0,
-     613.1,
-     356.0,
-     650.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 21,
+   "rect": [
+    68.5,
+    572.5,
+    495.5,
+    652.1
+   ],
+   "firstLine": "ア詳細情報から積み上げる見積り方法より作業負荷が大きい。",
+   "lastLine": "エ他の見積り方法より見積りに要する費用は少ないが , 正確さでは劣る。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -6423,7 +6438,17 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 49,
-  "choice": null,
+  "choice": {
+   "page": 22,
+   "rect": [
+    69.0,
+    512.3,
+    495.5,
+    611.5
+   ],
+   "firstLine": "ア基幹システムで生成されたデータをユーザ自身が抽出・加工するためのソフト",
+   "lastLine": "エユーザの要求を理解するために作成する簡易むソフトウェア"
+  },
   "figures": [],
   "stemCoverage": 1.11
  },
@@ -6473,19 +6498,18 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 58,
-  "choice": null,
-  "figures": [
-   {
-    "page": 27,
-    "rect": [
-     78.3,
-     518.0,
-     380.0,
-     576.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 27,
+   "rect": [
+    68.7,
+    478.7,
+    495.5,
+    577.9
+   ],
+   "firstLine": "アウイルスを検知 , 除去する機能を電子メールシステムに導入する。",
+   "lastLine": "エ停電に備えて , サーバルーム向けの自家発電装置を導入する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -6494,28 +6518,18 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 71,
-  "choice": null,
-  "figures": [
-   {
-    "page": 32,
-    "rect": [
-     68.7,
-     365.6,
-     452.8,
-     446.1
-    ],
-    "cut": [
-     [
-      "top",
-      "品質の保証を行いやすい。"
-     ],
-     [
-      "top",
-      "イ回線交換方式はメタリック線を使用するので , アナログ信号だけを扱える。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 32,
+   "rect": [
+    68.7,
+    308.3,
+    495.5,
+    449.0
+   ],
+   "firstLine": "ア回線交換方式では , 通信利用者間で通信経路を占有するので , 接続速度や回線",
+   "lastLine": "る。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -6544,24 +6558,18 @@
   "section": "春期",
   "questionPdfSha256": "776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc",
   "questionNumber": 77,
-  "choice": null,
-  "figures": [
-   {
-    "page": 34,
-    "rect": [
-     117.0,
-     328.6,
-     417.5,
-     369.1
-    ],
-    "cut": [
-     [
-      "top",
-      "イ問題発生時の損害に備えて , 保険に入った。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 34,
+   "rect": [
+    69.4,
+    291.2,
+    495.5,
+    371.3
+   ],
+   "firstLine": "アセキュリティ対策を行って , 問題発生の可能性を下げた。",
+   "lastLine": "エエリスクの大きいサービスから撤退した。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -6590,7 +6598,17 @@
   "section": "秋期",
   "questionPdfSha256": "40dadf76068a4d84ff8d1e718f6db1cd938b40483a483ea103f52b35fbef8f58",
   "questionNumber": 36,
-  "choice": null,
+  "choice": {
+   "page": 13,
+   "rect": [
+    70.4,
+    422.5,
+    495.5,
+    582.2
+   ],
+   "firstLine": "ア開発したソフトウェアの規模によらず必ず導入後のシステム監査を行い , 監査",
+   "lastLine": "化して利用部門に伝える必要はない。"
+  },
   "figures": [],
   "stemCoverage": 1.07
  },
@@ -6701,7 +6719,17 @@
   "section": "秋期",
   "questionPdfSha256": "40dadf76068a4d84ff8d1e718f6db1cd938b40483a483ea103f52b35fbef8f58",
   "questionNumber": 60,
-  "choice": null,
+  "choice": {
+   "page": 23,
+   "rect": [
+    71.1,
+    237.2,
+    495.5,
+    397.2
+   ],
+   "firstLine": "ア動作周波数は , 1 秒間に発生する , 演算処理のタイミングを合わせる信号の数",
+   "lastLine": "あり , 一次キャッシュよりも二次キャッシュの方が CPU コアに近い。"
+  },
   "figures": [
    {
     "page": 23,
@@ -6709,7 +6737,7 @@
      71.1,
      124.9,
      457.1,
-     397.1
+     236.2
     ],
     "cut": []
    }
@@ -6722,24 +6750,18 @@
   "section": "秋期",
   "questionPdfSha256": "40dadf76068a4d84ff8d1e718f6db1cd938b40483a483ea103f52b35fbef8f58",
   "questionNumber": 62,
-  "choice": null,
-  "figures": [
-   {
-    "page": 24,
-    "rect": [
-     120.0,
-     148.9,
-     420.5,
-     209.5
-    ],
-    "cut": [
-     [
-      "top",
-      "アセキュリティ対策を行って , 問題発生の可能性を下げた。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 24,
+   "rect": [
+    72.3,
+    131.9,
+    495.5,
+    212.2
+   ],
+   "firstLine": "アセキュリティ対策を行って , 問題発生の可能性を下げた。",
+   "lastLine": "エリスクの大きいサービスから撤退した。 ]"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -6834,24 +6856,18 @@
   "section": "秋期",
   "questionPdfSha256": "40dadf76068a4d84ff8d1e718f6db1cd938b40483a483ea103f52b35fbef8f58",
   "questionNumber": 88,
-  "choice": null,
-  "figures": [
-   {
-    "page": 32,
-    "rect": [
-     118.0,
-     446.5,
-     359.0,
-     507.1
-    ],
-    "cut": [
-     [
-      "top",
-      "ア関連するデータをポインタで結び , アクセス効率を高める。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 32,
+   "rect": [
+    70.9,
+    429.2,
+    495.5,
+    509.0
+   ],
+   "firstLine": "ア関連するデータをポインタで結び , アクセス効率を高める。",
+   "lastLine": "エデータを重複してもたないことなどによって , 保守性を高める。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -7064,19 +7080,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 7,
-  "choice": null,
-  "figures": [
-   {
-    "page": 4,
-    "rect": [
-     78.8,
-     131.6,
-     455.0,
-     268.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 4,
+   "rect": [
+    69.0,
+    108.1,
+    495.5,
+    268.3
+   ],
+   "firstLine": "ア企業の情報システムにおいて , 起こり得るトラブルを想定して , その社会的影",
+   "lastLine": "み合わせてシステムを和柔軟に構築する仕組み"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -7105,24 +7120,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 14,
-  "choice": null,
-  "figures": [
-   {
-    "page": 6,
-    "rect": [
-     113.5,
-     368.2,
-     405.0,
-     427.8
-    ],
-    "cut": [
-     [
-      "top",
-      "ア時間の経過や状況の変化に伴う , システムの状態の遷移を表記する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 6,
+   "rect": [
+    66.6,
+    349.8,
+    495.5,
+    429.4
+   ],
+   "firstLine": "ア時間の経過や状況の変化に伴う , システムの状態の遷移を表記する。",
+   "lastLine": "エデータの流れに着目し , 業務のデータの流れと処理の関係を表記する。"
+  },
+  "figures": [],
   "stemCoverage": 1.15
  },
  {
@@ -7177,24 +7186,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 45,
-  "choice": null,
-  "figures": [
-   {
-    "page": 20,
-    "rect": [
-     116.0,
-     125.6,
-     427.0,
-     185.9
-    ],
-    "cut": [
-     [
-      "top",
-      "アコンピュータシステムの定常的なオペレーションに適用する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 20,
+   "rect": [
+    68.5,
+    109.1,
+    495.5,
+    187.9
+   ],
+   "firstLine": "アコンピュータシステムの定常的なオペレーションに適用する。",
+   "lastLine": "エエチームを編成して , システムを構築するときに適用する。"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -7223,24 +7226,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 54,
-  "choice": null,
-  "figures": [
-   {
-    "page": 23,
-    "rect": [
-     78.8,
-     167.1,
-     437.0,
-     290.1
-    ],
-    "cut": [
-     [
-      "top",
-      "ムの機能を設計する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 23,
+   "rect": [
+    69.4,
+    129.2,
+    495.5,
+    288.5
+   ],
+   "firstLine": "アシステムで使われるデータを定義むることから開始し , それに基づいてシステ",
+   "lastLine": "取りを記述する。"
+  },
+  "figures": [],
   "stemCoverage": 1.08
  },
  {
@@ -7259,24 +7256,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 63,
-  "choice": null,
-  "figures": [
-   {
-    "page": 26,
-    "rect": [
-     124.0,
-     608.0,
-     406.5,
-     667.9
-    ],
-    "cut": [
-     [
-      "top",
-      "ア組織に存在するリスクを洗い出す。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 26,
+   "rect": [
+    68.0,
+    591.0,
+    495.5,
+    670.1
+   ],
+   "firstLine": "ア組織に存在するリスクを洗い出す。",
+   "lastLine": "エリスクへの対処方法を選択し , 具体的な管理策の計画を立てる。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -7325,7 +7316,17 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 75,
-  "choice": null,
+  "choice": {
+   "page": 31,
+   "rect": [
+    62.2,
+    289.3,
+    495.5,
+    369.1
+   ],
+   "firstLine": "ア情報セキュリティリスクアセスメント",
+   "lastLine": "エエリスクの決定"
+  },
   "figures": [],
   "stemCoverage": 1.07
  },
@@ -7355,7 +7356,17 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 79,
-  "choice": null,
+  "choice": {
+   "page": 32,
+   "rect": [
+    68.2,
+    509.9,
+    495.5,
+    590.2
+   ],
+   "firstLine": "アデータにディジタル署名を付与する。",
+   "lastLine": "エ負荷分散装置を導入する。"
+  },
   "figures": [],
   "stemCoverage": 1.01
  },
@@ -7375,19 +7386,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 84,
-  "choice": null,
-  "figures": [
-   {
-    "page": 34,
-    "rect": [
-     67.0,
-     412.1,
-     375.5,
-     469.1
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 34,
+   "rect": [
+    67.0,
+    389.9,
+    495.5,
+    470.6
+   ],
+   "firstLine": "ア自社が管理する通信回線を使用して , 同一敷地内の建物間を結ぶネットワーク",
+   "lastLine": "エフロア内の各 PC を結ぶボネットワーク"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -7452,24 +7462,18 @@
   "section": "春期",
   "questionPdfSha256": "3f501237dd353ecb9ee29b55448c96efeb54d727a4c67100400f2e5172d085ca",
   "questionNumber": 93,
-  "choice": null,
-  "figures": [
-   {
-    "page": 38,
-    "rect": [
-     67.3,
-     167.6,
-     452.6,
-     270.2
-    ],
-    "cut": [
-     [
-      "top",
-      "を有償で提供した。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 38,
+   "rect": [
+    67.3,
+    130.2,
+    495.5,
+    270.2
+   ],
+   "firstLine": "ア自社で 0SS を導入した際のノウハウを生かし , 他社の 0SS 導入作業のサポート",
+   "lastLine": "性能を改善した。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -7579,24 +7583,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 26,
-  "choice": null,
-  "figures": [
-   {
-    "page": 12,
-    "rect": [
-     68.2,
-     286.9,
-     235.5,
-     349.6
-    ],
-    "cut": [
-     [
-      "top",
-      "ア開発期間の短縮方法を検討する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 12,
+   "rect": [
+    68.2,
+    269.6,
+    495.5,
+    349.4
+   ],
+   "firstLine": "ア開発期間の短縮方法を検討する。",
+   "lastLine": "エ最新技術の導入を計画する。"
+  },
+  "figures": [],
   "stemCoverage": 1.11
  },
  {
@@ -7645,19 +7643,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 37,
-  "choice": null,
-  "figures": [
-   {
-    "page": 16,
-    "rect": [
-     174.5,
-     378.6,
-     378.5,
-     413.6
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 16,
+   "rect": [
+    67.5,
+    316.0,
+    495.5,
+    415.9
+   ],
+   "firstLine": "アプロジェクト成果物に関する詳細な記載内容の記述",
+   "lastLine": "エプロジェクト成果物を作成するためのスケジュールの作成及び進捗の管理"
+  },
+  "figures": [],
   "stemCoverage": 0.99
  },
  {
@@ -7676,7 +7673,17 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 39,
-  "choice": null,
+  "choice": {
+   "page": 17,
+   "rect": [
+    68.7,
+    109.3,
+    495.5,
+    229.2
+   ],
+   "firstLine": "アシステムの利用者に対して初期パスワードを発行する。",
+   "lastLine": "正する。"
+  },
   "figures": [],
   "stemCoverage": 1.11
  },
@@ -7686,7 +7693,17 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 45,
-  "choice": null,
+  "choice": {
+   "page": 19,
+   "rect": [
+    68.0,
+    389.6,
+    495.5,
+    550.3
+   ],
+   "firstLine": "アベンダ側の作業で進捗と品質に影響する問題が発生し , 対策が完了していない",
+   "lastLine": "完了時に報告を求め , その作業結果を確認する。"
+  },
   "figures": [],
   "stemCoverage": 1.01
  },
@@ -7716,19 +7733,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 48,
-  "choice": null,
-  "figures": [
-   {
-    "page": 20,
-    "rect": [
-     67.5,
-     330.1,
-     453.8,
-     529.6
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 20,
+   "rect": [
+    67.5,
+    329.2,
+    495.5,
+    529.7
+   ],
+   "firstLine": "ア機密性を重視する場合はプロジェクトメンバを限定した会議を開催する , 効率",
+   "lastLine": "クトメンバにあるので , 情報を受け取ったことを確認する必要はない。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -7737,19 +7753,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 51,
-  "choice": null,
-  "figures": [
-   {
-    "page": 21,
-    "rect": [
-     109.0,
-     330.7,
-     368.0,
-     387.7
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 21,
+   "rect": [
+    69.0,
+    309.5,
+    495.5,
+    390.2
+   ],
+   "firstLine": "ア打合せの場において , 参加者の合意形成をサポートするスキルの獲得",
+   "lastLine": "エ部品調達先との生産計画の共有化による製品在庫数の削減"
+  },
+  "figures": [],
   "stemCoverage": 1.03
  },
  {
@@ -7768,7 +7783,17 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 57,
-  "choice": null,
+  "choice": {
+   "page": 23,
+   "rect": [
+    66.8,
+    339.2,
+    495.5,
+    419.5
+   ],
+   "firstLine": "アリスク対応つリスク評価つリスク分析",
+   "lastLine": "エリスク分析つリスク評価つリスク対応"
+  },
   "figures": [],
   "stemCoverage": 1.08
  },
@@ -7814,19 +7839,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 62,
-  "choice": null,
-  "figures": [
-   {
-    "page": 25,
-    "rect": [
-     68.2,
-     130.8,
-     356.8,
-     211.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 25,
+   "rect": [
+    68.2,
+    130.2,
+    495.5,
+    209.5
+   ],
+   "firstLine": "ア異機種のコンピュータ間でのデータの互換性の確保",
+   "lastLine": "エエデータを格納した装置の障害に備えたバックアップの省略"
+  },
+  "figures": [],
   "stemCoverage": 1.08
  },
  {
@@ -7855,24 +7879,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 67,
-  "choice": null,
-  "figures": [
-   {
-    "page": 26,
-    "rect": [
-     67.5,
-     307.0,
-     426.5,
-     389.4
-    ],
-    "cut": [
-     [
-      "top",
-      "ア紫外線を利用してデータを消去し , 書き換えることができるメモリである。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 26,
+   "rect": [
+    67.5,
+    289.8,
+    495.5,
+    389.3
+   ],
+   "firstLine": "ア紫外線を利用してデータを消去し , 書き換えることができるメモリである。",
+   "lastLine": "エエリフレッシュ動作が必要なメモリで , 主記憶によく使われる。"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -7941,24 +7959,18 @@
   "section": "秋期",
   "questionPdfSha256": "d592baee4feef6f7e9ff59aa6fccb0f186ea2db60cbe2decf14eb922ef73b114",
   "questionNumber": 78,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     79.5,
-     307.5,
-     438.0,
-     367.2
-    ],
-    "cut": [
-     [
-      "top",
-      "う。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    68.5,
+    269.6,
+    495.5,
+    369.8
+   ],
+   "firstLine": "ア会社が支給したモバイル端末に対して , システム設定や状態監視を集中して行",
+   "lastLine": "エホスト名と IP アドレスの対応情報を管理し , 端末からの問合せに応答する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -8077,7 +8089,17 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 18,
-  "choice": null,
+  "choice": {
+   "page": 9,
+   "rect": [
+    68.7,
+    390.1,
+    495.5,
+    469.7
+   ],
+   "firstLine": "ア勤務先の監督官庁からの感謝状",
+   "lastLine": "エ通報の内容に応じた報奨金"
+  },
   "figures": [],
   "stemCoverage": 0.97
  },
@@ -8087,24 +8109,18 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 20,
-  "choice": null,
-  "figures": [
-   {
-    "page": 10,
-    "rect": [
-     66.8,
-     471.9,
-     457.6,
-     534.6
-    ],
-    "cut": [
-     [
-      "top",
-      "ア自由杜放なアイディアは控え , 実現可能なアイディアの提出を求める。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 10,
+   "rect": [
+    66.8,
+    454.7,
+    495.5,
+    534.2
+   ],
+   "firstLine": "ア自由杜放なアイディアは控え , 実現可能なアイディアの提出を求める。",
+   "lastLine": "エ量よりも質の高いアイディアを追求するために , アイディアの批判を奨励する。"
+  },
+  "figures": [],
   "stemCoverage": 1.17
  },
  {
@@ -8289,24 +8305,18 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 67,
-  "choice": null,
-  "figures": [
-   {
-    "page": 31,
-    "rect": [
-     106.0,
-     378.1,
-     455.5,
-     438.3
-    ],
-    "cut": [
-     [
-      "top",
-      "ア機密情報の取得を目的として , オフィスから廃棄された記録メディアをあさる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 31,
+   "rect": [
+    69.4,
+    360.6,
+    495.5,
+    441.8
+   ],
+   "firstLine": "ア機密情報の取得を目的として , オフィスから廃棄された記録メディアをあさる。",
+   "lastLine": "エバックドアを利用して , 他人の PC を遠隔操作する。"
+  },
+  "figures": [],
   "stemCoverage": 1.18
  },
  {
@@ -8315,7 +8325,17 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 70,
-  "choice": null,
+  "choice": {
+   "page": 32,
+   "rect": [
+    68.2,
+    309.2,
+    495.5,
+    449.8
+   ],
+   "firstLine": "ア異なる情報資産について , 脅威と脆弱性のレベルが同じであれば , その資産価",
+   "lastLine": "分析手法を用いる。"
+  },
   "figures": [],
   "stemCoverage": 1.13
  },
@@ -8391,7 +8411,17 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 91,
-  "choice": null,
+  "choice": {
+   "page": 40,
+   "rect": [
+    69.7,
+    102.8,
+    495.5,
+    242.4
+   ],
+   "firstLine": "アデータの処理や保存などがサーバ側で行われ , 端末内にデータが残らないので ,",
+   "lastLine": "できるので , 利便性が高い。"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -8421,19 +8451,18 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 97,
-  "choice": null,
-  "figures": [
-   {
-    "page": 41,
-    "rect": [
-     78.6,
-     503.4,
-     439.5,
-     610.2
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 41,
+   "rect": [
+    67.0,
+    509.4,
+    495.5,
+    609.6
+   ],
+   "firstLine": "ア自社システムを攻撃して不正侵入を試みるテストを実施して , 脆弱性を発見する。",
+   "lastLine": "リスクを低減する。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -8442,7 +8471,17 @@
   "section": "春期",
   "questionPdfSha256": "d107400bcd48aa941c69fe0e00b2db7ddbe5078a1e213592754fc1d440ac2a13",
   "questionNumber": 98,
-  "choice": null,
+  "choice": {
+   "page": 42,
+   "rect": [
+    68.0,
+    127.1,
+    495.5,
+    206.6
+   ],
+   "firstLine": "アデータにディジタル署名を付与する。",
+   "lastLine": "エエデータを暗号化して保存する。"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -8492,24 +8531,18 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 12,
-  "choice": null,
-  "figures": [
-   {
-    "page": 6,
-    "rect": [
-     115.5,
-     344.9,
-     405.0,
-     406.4
-    ],
-    "cut": [
-     [
-      "top",
-      "ア為替の大幅な変動によって , 多額の損失が発生した。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 6,
+   "rect": [
+    67.3,
+    328.0,
+    495.5,
+    408.0
+   ],
+   "firstLine": "ア為替の大幅な変動によって , 多額の損失が発生した。",
+   "lastLine": "エ品質データの改ざんの発覚によって , 当該商品のリコールが発生した。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -8548,7 +8581,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 30,
-  "choice": null,
+  "choice": {
+   "page": 12,
+   "rect": [
+    66.6,
+    446.8,
+    495.5,
+    606.2
+   ],
+   "firstLine": "ア企業などにおいて , 従業員が私物の情報端末を自社のネットワークに接続する",
+   "lastLine": "効率化を図ること"
+  },
   "figures": [],
   "stemCoverage": 1.16
  },
@@ -8558,7 +8601,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 36,
-  "choice": null,
+  "choice": {
+   "page": 15,
+   "rect": [
+    67.5,
+    175.1,
+    495.5,
+    254.4
+   ],
+   "firstLine": "アプロジェクトで利用する開発場所の変更",
+   "lastLine": "エプロジェクトの作業に , 顧客が行う運用テストの支援を追加"
+  },
   "figures": [],
   "stemCoverage": 1.0
  },
@@ -8568,7 +8621,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 37,
-  "choice": null,
+  "choice": {
+   "page": 15,
+   "rect": [
+    67.3,
+    335.4,
+    495.5,
+    495.4
+   ],
+   "firstLine": "アシステムテストで測定したレスポンスタイムが要件を満たさないので , ソフト",
+   "lastLine": "ラムを修正もた。"
+  },
   "figures": [],
   "stemCoverage": 1.16
  },
@@ -8578,7 +8641,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 43,
-  "choice": null,
+  "choice": {
+   "page": 18,
+   "rect": [
+    67.0,
+    166.7,
+    495.5,
+    246.0
+   ],
+   "firstLine": "アプロジェクト全体の開発スケジュール",
+   "lastLine": "エプロジェクト全体を , 実行 , 監視コントロールするための計画書"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -8638,7 +8711,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 64,
-  "choice": null,
+  "choice": {
+   "page": 26,
+   "rect": [
+    69.0,
+    506.3,
+    495.5,
+    586.3
+   ],
+   "firstLine": "アドメイン名と IP アドレスの対応関係を管理する。",
+   "lastLine": "エプライベート IP アドレスとグローバル IP アドレスを相互変換する。"
+  },
   "figures": [],
   "stemCoverage": 1.13
  },
@@ -8648,7 +8731,17 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 76,
-  "choice": null,
+  "choice": {
+   "page": 30,
+   "rect": [
+    68.7,
+    587.2,
+    495.5,
+    666.7
+   ],
+   "firstLine": "ア格納された順序に関係なく指定された任意の場所のデータを取り出す。",
+   "lastLine": "エエデータがキーをもっており , キーの優先度でデータを取り出す。"
+  },
   "figures": [],
   "stemCoverage": 1.08
  },
@@ -8678,19 +8771,18 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 82,
-  "choice": null,
-  "figures": [
-   {
-    "page": 33,
-    "rect": [
-     86.0,
-     348.0,
-     333.0,
-     403.5
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 33,
+   "rect": [
+    66.1,
+    346.2,
+    495.5,
+    426.2
+   ],
+   "firstLine": "アサーバをデュプレックスシステムで構成して運用する。",
+   "lastLine": "エ情報の改ざんを防止する対策を施す。"
+  },
+  "figures": [],
   "stemCoverage": 1.02
  },
  {
@@ -8699,19 +8791,18 @@
   "section": "秋期",
   "questionPdfSha256": "1039f12bd7fd9f8f112c7af3219b807c917227f07f8f1d53b486f4e57ab37b74",
   "questionNumber": 91,
-  "choice": null,
-  "figures": [
-   {
-    "page": 36,
-    "rect": [
-     70.9,
-     350.4,
-     454.0,
-     467.4
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 36,
+   "rect": [
+    70.9,
+    347.6,
+    495.5,
+    468.5
+   ],
+   "firstLine": "アインターネットを利用した仮想的な私的ネットワークのこと",
+   "lastLine": "て , 相互接続性が確認できた機器だけに与えられるブランド名のこと"
+  },
+  "figures": [],
   "stemCoverage": 1.2
  },
  {
@@ -8816,24 +8907,18 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 32,
-  "choice": null,
-  "figures": [
-   {
-    "page": 13,
-    "rect": [
-     79.8,
-     302.5,
-     459.5,
-     424.5
-    ],
-    "cut": [
-     [
-      "top",
-      "が完了するまで契約の締結を待たなければならない。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 13,
+   "rect": [
+    69.7,
+    264.6,
+    495.5,
+    425.3
+   ],
+   "firstLine": "ア請負業務着手後は , 仕様変更による工数の増加が起こりやすいので , 詳細設計",
+   "lastLine": "開発完了時に委託者と受託者双方で協議して取り決めなければならない。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -8842,7 +8927,17 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 33,
-  "choice": null,
+  "choice": {
+   "page": 13,
+   "rect": [
+    69.9,
+    525.2,
+    495.5,
+    605.8
+   ],
+   "firstLine": "アゲーム内で相手の戦略に応じて自分の戦略を決定する。",
+   "lastLine": "エ大量データを分析して有用な事実や関係性を発見する。"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -8852,24 +8947,18 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 37,
-  "choice": null,
-  "figures": [
-   {
-    "page": 15,
-    "rect": [
-     68.7,
-     392.0,
-     454.5,
-     474.6
-    ],
-    "cut": [
-     [
-      "top",
-      "ようにリスク対応策を計画する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 15,
+   "rect": [
+    68.7,
+    314.3,
+    495.5,
+    474.5
+   ],
+   "firstLine": "アプロジェクトは期限が決まっているので , プロジェクト開始時点において全て",
+   "lastLine": "ときに都度計画する。"
+  },
+  "figures": [],
   "stemCoverage": 0.97
  },
  {
@@ -8948,7 +9037,17 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 45,
-  "choice": null,
+  "choice": {
+   "page": 18,
+   "rect": [
+    69.7,
+    346.7,
+    495.5,
+    466.8
+   ],
+   "firstLine": "ア依頼を受け入れ , 予算や要員を確保する。",
+   "lastLine": "を更新する。"
+  },
   "figures": [],
   "stemCoverage": 1.05
  },
@@ -8984,24 +9083,18 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 63,
-  "choice": null,
-  "figures": [
-   {
-    "page": 26,
-    "rect": [
-     106.5,
-     143.3,
-     424.0,
-     203.5
-    ],
-    "cut": [
-     [
-      "top",
-      "ア業務内容の監査結果に基づいた是正処置として , サーバの監視方法を変更する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 26,
+   "rect": [
+    69.0,
+    126.6,
+    495.5,
+    205.7
+   ],
+   "firstLine": "ア業務内容の監査結果に基づいた是正処置として , サーバの監視方法を変更する。",
+   "lastLine": "エサーバの動作を定められた運用手順に従って監視する。"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -9162,7 +9255,17 @@
   "section": "春期",
   "questionPdfSha256": "cb99812da5186c372558b4e9434c435752ba0f64eab7643cecdf5138f1aed335",
   "questionNumber": 92,
-  "choice": null,
+  "choice": {
+   "page": 37,
+   "rect": [
+    69.7,
+    586.7,
+    495.5,
+    667.0
+   ],
+   "firstLine": "アデータに冗長性をもたせて , データ誤りを検出する。",
+   "lastLine": "エデータを可逆圧縮して , アクセス効率を向上させる。"
+  },
   "figures": [],
   "stemCoverage": 0.99
  },
@@ -9256,19 +9359,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 13,
-  "choice": null,
-  "figures": [
-   {
-    "page": 7,
-    "rect": [
-     69.9,
-     104.5,
-     454.2,
-     225.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 7,
+   "rect": [
+    69.9,
+    105.5,
+    495.5,
+    225.8
+   ],
+   "firstLine": "ア人工知能における学習の仕組み",
+   "lastLine": "エエソフトウェアのロボットを利用して , 定型的な仕事を効率化するツール"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -9277,7 +9379,17 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 16,
-  "choice": null,
+  "choice": {
+   "page": 8,
+   "rect": [
+    70.6,
+    126.1,
+    495.5,
+    206.4
+   ],
+   "firstLine": "アベンダ企業からシステムの詳細な見積金額を入手し , 契約金額を確定する。",
+   "lastLine": "エベンダ企業に提案書の提出を求め , 発注先を決定する。"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -9287,19 +9399,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 17,
-  "choice": null,
-  "figures": [
-   {
-    "page": 8,
-    "rect": [
-     81.0,
-     305.8,
-     456.5,
-     423.0
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 8,
+   "rect": [
+    70.9,
+    285.5,
+    495.5,
+    427.0
+   ],
+   "firstLine": "ア最初に商品を消費したときに感じた価値や満足度が , 消費する量が増えるに従",
+   "lastLine": "することに注力してしまい , 結果的に市場でのシェアの確保に失敗する現象"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -9338,24 +9449,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 33,
-  "choice": null,
-  "figures": [
-   {
-    "page": 15,
-    "rect": [
-     69.7,
-     142.9,
-     454.0,
-     266.3
-    ],
-    "cut": [
-     [
-      "top",
-      "イトにエントリーされたデータから採用候補者を選定する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 15,
+   "rect": [
+    69.7,
+    106.0,
+    495.5,
+    168.6
+   ],
+   "firstLine": "ア高度で非定型な判断だけを人間の代わりに自動で行うソフトウェアが , 求人サ",
+   "lastLine": "イ人間の形をしたロボットが , 銀行の窓口での接客など非定型な業務を自動で行"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -9501,7 +9606,17 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 64,
-  "choice": null,
+  "choice": {
+   "page": 28,
+   "rect": [
+    69.4,
+    105.7,
+    495.5,
+    225.6
+   ],
+   "firstLine": "ア誤ってデータを修正したり , データを故意に改ざんされたりしないようにする。",
+   "lastLine": "合が生じないようにする。"
+  },
   "figures": [],
   "stemCoverage": 1.09
  },
@@ -9511,24 +9626,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 67,
-  "choice": null,
-  "figures": [
-   {
-    "page": 29,
-    "rect": [
-     106.5,
-     300.5,
-     428.0,
-     361.0
-    ],
-    "cut": [
-     [
-      "top",
-      "ア警備員や監視カメラによって , 入退室確認と室内での作業監視を行う。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 29,
+   "rect": [
+    70.2,
+    283.3,
+    495.5,
+    362.9
+   ],
+   "firstLine": "ア警備員や監視カメラによって , 入退室確認と室内での作業監視を行う。",
+   "lastLine": "エ部屋の存在とそこで保管している情報を , 全社員に周知する。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -9537,19 +9646,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 69,
-  "choice": null,
-  "figures": [
-   {
-    "page": 30,
-    "rect": [
-     69.9,
-     148.5,
-     454.5,
-     265.8
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 30,
+   "rect": [
+    69.9,
+    105.5,
+    495.5,
+    265.9
+   ],
+   "firstLine": "ア一般利用者が , 気になるニュースへのリンクやコメントなどを投稿するサービ",
+   "lastLine": "その旧を通知する仕組み"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -9599,19 +9707,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 86,
-  "choice": null,
-  "figures": [
-   {
-    "page": 37,
-    "rect": [
-     69.7,
-     266.7,
-     455.2,
-     406.0
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 37,
+   "rect": [
+    69.7,
+    265.6,
+    495.5,
+    405.8
+   ],
+   "firstLine": "アインターネット上で , 特定利用者に対して , 機密に属する情報の提供サービス",
+   "lastLine": "る情報を暗号化する。"
+  },
+  "figures": [],
   "stemCoverage": 0.99
  },
  {
@@ -9620,28 +9727,18 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 88,
-  "choice": null,
-  "figures": [
-   {
-    "page": 38,
-    "rect": [
-     70.9,
-     142.4,
-     448.5,
-     204.6
-    ],
-    "cut": [
-     [
-      "top",
-      "ア本人の手の指の静脈の形で認証する。"
-     ],
-     [
-      "top",
-      "イ本人の電子証明書で認証する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 38,
+   "rect": [
+    70.9,
+    104.8,
+    495.5,
+    204.7
+   ],
+   "firstLine": "ア本人の手の指の静脈の形で認証する。",
+   "lastLine": "エエワンタイムパスワードを用いて認証する。"
+  },
+  "figures": [],
   "stemCoverage": 1.17
  },
  {
@@ -9650,7 +9747,17 @@
   "section": "秋期",
   "questionPdfSha256": "c7db27f493feb9cd9a65309a244521fcc221ee90b5aa2127aa6fad1630eb13db",
   "questionNumber": 97,
-  "choice": null,
+  "choice": {
+   "page": 42,
+   "rect": [
+    69.9,
+    125.9,
+    495.5,
+    285.1
+   ],
+   "firstLine": "ア可用性を確保おすることは , 利用者が不用意に情報記えんいをしてしまうリスクを",
+   "lastLine": "誤入力を防ぐための入力チェックがある。"
+  },
   "figures": [],
   "stemCoverage": 1.06
  },
@@ -9660,7 +9767,17 @@
   "section": "公開問題",
   "questionPdfSha256": "631fe215712475fae9f5e6ef81c02b30033f45a070dc8bae9d04c62283ac32f9",
   "questionNumber": 5,
-  "choice": null,
+  "choice": {
+   "page": 4,
+   "rect": [
+    68.0,
+    104.0,
+    495.5,
+    243.8
+   ],
+   "firstLine": "ア作業負荷の均衡を図り , かつ , 前工程から引き取る部品の種類と量を平準化し",
+   "lastLine": "法を簡素化した。"
+  },
   "figures": [],
   "stemCoverage": 1.07
  },
@@ -9742,7 +9859,17 @@
   "section": "公開問題",
   "questionPdfSha256": "631fe215712475fae9f5e6ef81c02b30033f45a070dc8bae9d04c62283ac32f9",
   "questionNumber": 22,
-  "choice": null,
+  "choice": {
+   "page": 11,
+   "rect": [
+    67.3,
+    163.6,
+    495.5,
+    304.6
+   ],
+   "firstLine": "アのロックを解除ずる。",
+   "lastLine": "する。 7"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -9792,19 +9919,18 @@
   "section": "公開問題",
   "questionPdfSha256": "631fe215712475fae9f5e6ef81c02b30033f45a070dc8bae9d04c62283ac32f9",
   "questionNumber": 54,
-  "choice": null,
-  "figures": [
-   {
-    "page": 25,
-    "rect": [
-     58.5,
-     185.4,
-     416.0,
-     284.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 25,
+   "rect": [
+    67.8,
+    164.3,
+    495.5,
+    283.9
+   ],
+   "firstLine": "ア全体のスケジュール遅延を防止するために , テスト要員を増員する。",
+   "lastLine": "エテスト工程用の PC がなくてもテストを行える方法を準備する。"
+  },
+  "figures": [],
   "stemCoverage": 1.03
  },
  {
@@ -9924,28 +10050,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 1,
-  "choice": null,
-  "figures": [
-   {
-    "page": 2,
-    "rect": [
-     72.6,
-     196.4,
-     430.5,
-     258.6
-    ],
-    "cut": [
-     [
-      "top",
-      "ア業務上でのデータのやり取りを把握し , ワークフローを明らかにする。"
-     ],
-     [
-      "top",
-      "イ現行業務でのデータの流れを把握し , 業務遂行上の問題点を明らかにする。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 2,
+   "rect": [
+    72.6,
+    159.2,
+    495.5,
+    258.7
+   ],
+   "firstLine": "ア業務上でのデータのやり取りを把握し , ワークフローを明らかにする。",
+   "lastLine": "エエデータ項目を詳細に検討し , データベースの実装方法を明らかにする。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -9954,19 +10070,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 5,
-  "choice": null,
-  "figures": [
-   {
-    "page": 3,
-    "rect": [
-     82.4,
-     410.0,
-     432.5,
-     509.7
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 3,
+   "rect": [
+    72.6,
+    352.4,
+    495.5,
+    511.7
+   ],
+   "firstLine": "アシステム全体を管理する大型汎用機などのコンピュータに , データを一極集中",
+   "lastLine": "共有すること"
+  },
+  "figures": [],
   "stemCoverage": 1.07
  },
  {
@@ -9995,7 +10110,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 10,
-  "choice": null,
+  "choice": {
+   "page": 5,
+   "rect": [
+    73.0,
+    370.7,
+    495.5,
+    488.9
+   ],
+   "firstLine": "アカーナビゲーションシステムなどに用いられている最短経路の探索機能の実現",
+   "lastLine": "もの"
+  },
   "figures": [],
   "stemCoverage": 1.01
  },
@@ -10005,19 +10130,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 19,
-  "choice": null,
-  "figures": [
-   {
-    "page": 10,
-    "rect": [
-     41.0,
-     111.4,
-     461.5,
-     273.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 10,
+   "rect": [
+    72.8,
+    112.4,
+    495.5,
+    272.6
+   ],
+   "firstLine": "ア大量のデータから未知の状況を予測するためには , 統計学的な分析手法に加え",
+   "lastLine": "ては , 分析の目的にかかわらず , 対象から除外する。"
+  },
+  "figures": [],
   "stemCoverage": 1.14
  },
  {
@@ -10026,24 +10150,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 21,
-  "choice": null,
-  "figures": [
-   {
-    "page": 11,
-    "rect": [
-     113.5,
-     127.3,
-     458.0,
-     187.9
-    ],
-    "cut": [
-     [
-      "top",
-      "ア顧客の消費行動を , 時代 , 年齢 , 世代の三つの観点から分析する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 11,
+   "rect": [
+    72.6,
+    109.8,
+    495.5,
+    190.6
+   ],
+   "firstLine": "ア顧客の消費行動を , 時代 , 年齢 , 世代の三つの観点から分析する。",
+   "lastLine": "エリピート顧客を , 最新購買日 , 購買頻度 , 購買金額の三つの観点から分析する。"
+  },
+  "figures": [],
   "stemCoverage": 1.2
  },
  {
@@ -10204,7 +10322,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 58,
-  "choice": null,
+  "choice": {
+   "page": 27,
+   "rect": [
+    73.3,
+    500.3,
+    495.5,
+    580.8
+   ],
+   "firstLine": "アサークル型のセキュリティゲートを設置する。",
+   "lastLine": "エエサーバルームの入り口に入退室管理簿を置いて記録させる。"
+  },
   "figures": [],
   "stemCoverage": 1.09
  },
@@ -10214,24 +10342,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 60,
-  "choice": null,
-  "figures": [
-   {
-    "page": 28,
-    "rect": [
-     73.5,
-     450.8,
-     459.8,
-     573.8
-    ],
-    "cut": [
-     [
-      "top",
-      "パスワードを入力することによって認証を行える。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 28,
+   "rect": [
+    73.5,
+    413.2,
+    495.5,
+    572.6
+   ],
+   "firstLine": "ア画面に表示されたゆがんだ文字列の画像を読み取って入力した後 , 利用者 ID と",
+   "lastLine": "わり , パスワードを入力することによってログインできる。"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -10331,7 +10453,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 93,
-  "choice": null,
+  "choice": {
+   "page": 42,
+   "rect": [
+    73.3,
+    132.6,
+    495.5,
+    211.7
+   ],
+   "firstLine": "アブログから収集した記事の情報",
+   "lastLine": "エブログ用のデザインテンプレート"
+  },
   "figures": [],
   "stemCoverage": 0.98
  },
@@ -10341,24 +10473,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b833b28aedafca36b128ee234cc222eef7946c9a060e5da78171d77e6a1069dc",
   "questionNumber": 99,
-  "choice": null,
-  "figures": [
-   {
-    "page": 45,
-    "rect": [
-     110.0,
-     311.6,
-     421.5,
-     351.5
-    ],
-    "cut": [
-     [
-      "top",
-      "リスク回避に分類される。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 45,
+   "rect": [
+    72.6,
+    154.0,
+    495.5,
+    354.0
+   ],
+   "firstLine": "アリスク対応において , リスクへの対応策を分類したものであり , リスクの顕在",
+   "lastLine": "産がもつ脆形性を客観的な数値で表す手法は。リスク保有に分類される。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -10377,24 +10503,18 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 14,
-  "choice": null,
-  "figures": [
-   {
-    "page": 7,
-    "rect": [
-     81.2,
-     367.7,
-     420.5,
-     450.6
-    ],
-    "cut": [
-     [
-      "top",
-      "にできる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 7,
+   "rect": [
+    71.4,
+    291.2,
+    495.5,
+    450.5
+   ],
+   "firstLine": "アソフトウェアパッケージの包装を開封してしまうと , 使用許諾条件を理解してい",
+   "lastLine": "と , 契約は成立する。"
+  },
+  "figures": [],
   "stemCoverage": 1.06
  },
  {
@@ -10509,7 +10629,17 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 38,
-  "choice": null,
+  "choice": {
+   "page": 18,
+   "rect": [
+    76.6,
+    109.3,
+    495.5,
+    249.1
+   ],
+   "firstLine": "アテストプログラムを先に作成し , そのテストに合格するようにコードを記述する",
+   "lastLine": "ジャイル開発のアプローチの一つである。"
+  },
   "figures": [],
   "stemCoverage": 1.01
  },
@@ -10559,7 +10689,17 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 41,
-  "choice": null,
+  "choice": {
+   "page": 19,
+   "rect": [
+    71.6,
+    391.3,
+    495.5,
+    470.4
+   ],
+   "firstLine": "アグリーン TIT に対応した機器の設置",
+   "lastLine": "エ無停電電源装置の設置"
+  },
   "figures": [],
   "stemCoverage": 1.03
  },
@@ -10686,19 +10826,18 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 55,
-  "choice": null,
-  "figures": [
-   {
-    "page": 25,
-    "rect": [
-     70.9,
-     163.5,
-     455.9,
-     257.9
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 25,
+   "rect": [
+    70.9,
+    161.2,
+    495.5,
+    259.4
+   ],
+   "firstLine": "アクレジットカード情報を取り扱う事業者に求められるセキュリティ基準",
+   "lastLine": "ステム"
+  },
+  "figures": [],
   "stemCoverage": 1.12
  },
  {
@@ -10717,19 +10856,18 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 62,
-  "choice": null,
-  "figures": [
-   {
-    "page": 28,
-    "rect": [
-     78.3,
-     270.5,
-     427.1,
-     369.0
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 28,
+   "rect": [
+    78.3,
+    269.2,
+    495.5,
+    369.6
+   ],
+   "firstLine": "アアクセスポイントを経由せず , 端末同士が相互に通信を行う無線ネットワーク",
+   "lastLine": "エ本店と支店など , 遠く離れた拠点問を結ぶ広域ネットワーク"
+  },
+  "figures": [],
   "stemCoverage": 1.16
  },
  {
@@ -10778,19 +10916,18 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 69,
-  "choice": null,
-  "figures": [
-   {
-    "page": 31,
-    "rect": [
-     81.0,
-     430.9,
-     440.0,
-     528.5
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 31,
+   "rect": [
+    71.4,
+    371.9,
+    495.5,
+    531.6
+   ],
+   "firstLine": "ア情報システムへの攻撃段階を , 偵察 , 攻撃 , 目的の実行などの複数のフェーズに",
+   "lastLine": "を対象に . ネットワーク上で次々と転送されること"
+  },
+  "figures": [],
   "stemCoverage": 1.13
  },
  {
@@ -10819,24 +10956,18 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 77,
-  "choice": null,
-  "figures": [
-   {
-    "page": 34,
-    "rect": [
-     76.6,
-     468.3,
-     461.7,
-     591.3
-    ],
-    "cut": [
-     [
-      "top",
-      "ア素引を用意することによって , データの検索時の検索速度を高めることができる。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 34,
+   "rect": [
+    76.6,
+    451.1,
+    495.5,
+    590.6
+   ],
+   "firstLine": "ア素引を用意することによって , データの検索時の検索速度を高めることができる。",
+   "lastLine": "ができる。"
+  },
+  "figures": [],
   "stemCoverage": 1.09
  },
  {
@@ -10906,7 +11037,17 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 91,
-  "choice": null,
+  "choice": {
+   "page": 41,
+   "rect": [
+    71.4,
+    483.5,
+    495.5,
+    643.0
+   ],
+   "firstLine": "アあらゆる文字の組合せを総当たりで機械的に入力することによって , パスワード",
+   "lastLine": "ッファをあぶふれさせ , 不正にプログラムを実行させる。"
+  },
   "figures": [],
   "stemCoverage": 1.12
  },
@@ -10936,7 +11077,17 @@
   "section": "公開問題",
   "questionPdfSha256": "6749c07752a8f31378274adfce2ca267a54be6de851f450beb435b5417776026",
   "questionNumber": 94,
-  "choice": null,
+  "choice": {
+   "page": 42,
+   "rect": [
+    76.9,
+    431.6,
+    495.5,
+    511.4
+   ],
+   "firstLine": "アインクの微細な粒子を用紙に直接吹き付けて印字する。",
+   "lastLine": "エレーザ光によって感光体にトナーを付着させて用紙に印字する。"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -11097,7 +11248,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca",
   "questionNumber": 32,
-  "choice": null,
+  "choice": {
+   "page": 14,
+   "rect": [
+    70.4,
+    128.8,
+    495.5,
+    266.6
+   ],
+   "firstLine": "アベンダー企業から情報収集を行いシステムの技術的な課題や実現性を把握する",
+   "lastLine": "るもの"
+  },
   "figures": [],
   "stemCoverage": 0.98
  },
@@ -11127,7 +11288,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca",
   "questionNumber": 40,
-  "choice": null,
+  "choice": {
+   "page": 17,
+   "rect": [
+    69.9,
+    390.6,
+    495.5,
+    549.8
+   ],
+   "firstLine": "ア運用側で利用する画面のイメージを明確にするために , 開発側が要件定義段階で",
+   "lastLine": "性を向上させる。"
+  },
   "figures": [],
   "stemCoverage": 1.05
  },
@@ -11197,19 +11368,18 @@
   "section": "公開問題",
   "questionPdfSha256": "b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca",
   "questionNumber": 72,
-  "choice": null,
-  "figures": [
-   {
-    "page": 33,
-    "rect": [
-     70.4,
-     432.5,
-     450.2,
-     591.8
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 33,
+   "rect": [
+    70.4,
+    430.4,
+    495.5,
+    591.1
+   ],
+   "firstLine": "ア個人情報を取り扱わなかいなど , リスクを伴う活動自体を停止したり , リスク要因",
+   "lastLine": "リスクを誰識した上で特に対策を講じず , そのリスクを受け入れること"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -11289,7 +11459,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca",
   "questionNumber": 92,
-  "choice": null,
+  "choice": {
+   "page": 42,
+   "rect": [
+    69.9,
+    355.1,
+    495.5,
+    495.4
+   ],
+   "firstLine": "ア電子メールのプロトコルには , 受信に SMTP, 送信に POP3 が使われる。",
+   "lastLine": "電子メールを一つのメールボックスに保存することができる。"
+  },
   "figures": [],
   "stemCoverage": 1.18
  },
@@ -11339,7 +11519,17 @@
   "section": "公開問題",
   "questionPdfSha256": "b890d17ffd551cfd5fd4f731e70245a6ef34d0f7b2b474d4282943b5d7771eca",
   "questionNumber": 98,
-  "choice": null,
+  "choice": {
+   "page": 44,
+   "rect": [
+    70.2,
+    294.1,
+    495.5,
+    454.3
+   ],
+   "firstLine": "アカーナビゲーションシステムやゲームコントローラーに内蔵されて , 速度がどれ",
+   "lastLine": "度や道のアップダウンを検知して消費エネルギーを計算したりする。"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -11349,24 +11539,18 @@
   "section": "公開問題",
   "questionPdfSha256": "e6771ec9506f385c5a07d22e261535ee82ff285c95cbd9ad08c4e8b941892f55",
   "questionNumber": 9,
-  "choice": null,
-  "figures": [
-   {
-    "page": 5,
-    "rect": [
-     81.9,
-     476.2,
-     442.5,
-     578.6
-    ],
-    "cut": [
-     [
-      "top",
-      "思考プロセスによって概数を求める手法である。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 5,
+   "rect": [
+    72.1,
+    438.1,
+    495.5,
+    577.2
+   ],
+   "firstLine": "ア正確に算出することが極めて難しい数量に対して , 把握している情報と論理的な",
+   "lastLine": "を行うことによって , ある分野の将来予測に関する総意を得る手法である。"
+  },
+  "figures": [],
   "stemCoverage": 1.04
  },
  {
@@ -11596,24 +11780,18 @@
   "section": "公開問題",
   "questionPdfSha256": "e6771ec9506f385c5a07d22e261535ee82ff285c95cbd9ad08c4e8b941892f55",
   "questionNumber": 86,
-  "choice": null,
-  "figures": [
-   {
-    "page": 39,
-    "rect": [
-     93.5,
-     144.5,
-     420.0,
-     204.5
-    ],
-    "cut": [
-     [
-      "top",
-      "ア業務内容の監査結果に基づいた是正処置として , サーバの監視方法を変更する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 39,
+   "rect": [
+    72.8,
+    127.6,
+    495.5,
+    206.4
+   ],
+   "firstLine": "ア業務内容の監査結果に基づいた是正処置として , サーバの監視方法を変更する。",
+   "lastLine": "エ定められた運用手順に従ってサーバの動作を監視する。"
+  },
+  "figures": [],
   "stemCoverage": 1.05
  },
  {
@@ -11759,24 +11937,18 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 17,
-  "choice": null,
-  "figures": [
-   {
-    "page": 8,
-    "rect": [
-     66.6,
-     377.6,
-     448.0,
-     520.7
-    ],
-    "cut": [
-     [
-      "top",
-      "手法やツールである。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 8,
+   "rect": [
+    66.6,
+    320.5,
+    495.5,
+    519.8
+   ],
+   "firstLine": "ア一連の業務で実際に遂行したシステムの操作ログなどを収集し , 現行の業務プ",
+   "lastLine": "得する手段である。"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -11785,19 +11957,18 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 20,
-  "choice": null,
-  "figures": [
-   {
-    "page": 10,
-    "rect": [
-     105.0,
-     182.3,
-     297.0,
-     237.3
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 10,
+   "rect": [
+    68.0,
+    161.2,
+    495.5,
+    240.7
+   ],
+   "firstLine": "アシステム化計画に基づいた開発コストの見積り ]",
+   "lastLine": "エベンダー企業の技術者が保有している技術資格"
+  },
+  "figures": [],
   "stemCoverage": 1.03
  },
  {
@@ -11806,7 +11977,17 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 22,
-  "choice": null,
+  "choice": {
+   "page": 10,
+   "rect": [
+    65.6,
+    501.5,
+    495.5,
+    580.3
+   ],
+   "firstLine": "アデータを学習し , 分析する AI",
+   "lastLine": "エビッグデータを , 様々な手法で分析するデータサイエンス"
+  },
   "figures": [],
   "stemCoverage": 1.02
  },
@@ -11836,7 +12017,17 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 50,
-  "choice": null,
+  "choice": {
+   "page": 23,
+   "rect": [
+    67.3,
+    360.8,
+    495.5,
+    460.6
+   ],
+   "firstLine": "ア質問に対して , ソフトウェアがリアルタイムで自動応答する仕組み",
+   "lastLine": "エエルール化された定型的な操作を人間の代わりにソフトウェアが自動で行う仕組み"
+  },
   "figures": [],
   "stemCoverage": 1.12
  },
@@ -11946,7 +12137,17 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 79,
-  "choice": null,
+  "choice": {
+   "page": 37,
+   "rect": [
+    66.1,
+    582.1,
+    495.5,
+    660.2
+   ],
+   "firstLine": "ア画像や文書ファイルの内容を縮小して表示したもの",
+   "lastLine": "エ複数のファイルを一つのファイルにまとめたもの"
+  },
   "figures": [],
   "stemCoverage": 1.2
  },
@@ -11976,19 +12177,18 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 91,
-  "choice": null,
-  "figures": [
-   {
-    "page": 42,
-    "rect": [
-     76.6,
-     360.6,
-     432.0,
-     516.6
-    ],
-    "cut": []
-   }
-  ],
+  "choice": {
+   "page": 42,
+   "rect": [
+    66.6,
+    359.4,
+    495.5,
+    518.4
+   ],
+   "firstLine": "アリスク対応の実施手順であり , リスク回避 , リスク移転 , リスク低減 , リスク",
+   "lastLine": "より厳重に管理することは , リスク低減に該当する。"
+  },
+  "figures": [],
   "stemCoverage": 1.01
  },
  {
@@ -12017,24 +12217,18 @@
   "section": "公開問題",
   "questionPdfSha256": "3407e427c58b5692352d191bd5ee17a3c99feab95d38454ac19d0aef0ac16be9",
   "questionNumber": 95,
-  "choice": null,
-  "figures": [
-   {
-    "page": 44,
-    "rect": [
-     105.0,
-     135.2,
-     423.0,
-     195.6
-    ],
-    "cut": [
-     [
-      "top",
-      "アデータウェアハウスからと業務ごとに必要な情報を抽出する。"
-     ]
-    ]
-   }
-  ],
+  "choice": {
+   "page": 44,
+   "rect": [
+    68.0,
+    117.2,
+    495.5,
+    198.7
+   ],
+   "firstLine": "アデータウェアハウスからと業務ごとに必要な情報を抽出する。",
+   "lastLine": "エ膨大な情報から統計的手法などを用いて , ビジネスに活用できる情報を探索する。"
+  },
+  "figures": [],
   "stemCoverage": 1.1
  },
  {
@@ -12365,6 +12559,286 @@
    ],
    "firstLine": "ア a イ a, c b, c I C",
    "lastLine": "ア a イ a, c b, c I C"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
+  "questionNumber": 51,
+  "choice": {
+   "page": 43,
+   "rect": [
+    103.7,
+    337.2,
+    575.2,
+    431.5
+   ],
+   "firstLine": "1 アメリカ 日本 中国 インド イギリス ドイツ",
+   "lastLine": "5 アメリカ 中国 インド 日本 ドイツ イギリス"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
+  "questionNumber": 52,
+  "choice": {
+   "page": 44,
+   "rect": [
+    103.7,
+    337.2,
+    575.2,
+    431.5
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 ウ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
+  "questionNumber": 54,
+  "choice": {
+   "page": 45,
+   "rect": [
+    103.7,
+    410.9,
+    575.2,
+    597.4
+   ],
+   "firstLine": "1 国連環境計画 パリ協定 京都議定書 ラムサール 気候変動枠組",
+   "lastLine": "条約 条約"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
+  "questionNumber": 55,
+  "choice": {
+   "page": 46,
+   "rect": [
+    103.7,
+    539.9,
+    575.2,
+    634.2
+   ],
+   "firstLine": "1 ア ウ オ キ ケ",
+   "lastLine": "5 イ エ オ キ ケ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "questionPdfSha256": "6c208e00a4dedd8a2b7e637bb70ad811af2efd3de1220f20c513f48282f5bbca",
+  "questionNumber": 56,
+  "choice": {
+   "page": 47,
+   "rect": [
+    103.7,
+    355.7,
+    575.2,
+    450.0
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 エ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2023,
+  "section": "年度共通",
+  "questionPdfSha256": "c4c2682f7cc2afbdb0863fbb4e4d107ec90d8086751d4dd0a6cbf1f35a324cd5",
+  "questionNumber": 18,
+  "choice": {
+   "page": 14,
+   "rect": [
+    103.7,
+    429.4,
+    575.2,
+    523.7
+   ],
+   "firstLine": "1 正しい 誤り 正しい",
+   "lastLine": "5 誤り 誤り 誤り"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2023,
+  "section": "年度共通",
+  "questionPdfSha256": "c4c2682f7cc2afbdb0863fbb4e4d107ec90d8086751d4dd0a6cbf1f35a324cd5",
+  "questionNumber": 21,
+  "choice": {
+   "page": 17,
+   "rect": [
+    103.7,
+    521.5,
+    575.2,
+    615.8
+   ],
+   "firstLine": "1 代位責任 自己責任 有責性 組織的",
+   "lastLine": "5 自己責任 代位責任 職務関連性 重大な"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 12,
+  "choice": {
+   "page": 11,
+   "rect": [
+    103.7,
+    668.9,
+    575.2,
+    763.2
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 ウ・エ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 16,
+  "choice": {
+   "page": 14,
+   "rect": [
+    103.7,
+    539.9,
+    575.2,
+    634.2
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 ウ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.0
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 18,
+  "choice": {
+   "page": 16,
+   "rect": [
+    103.7,
+    447.8,
+    575.2,
+    542.1
+   ],
+   "firstLine": "1 ア・ウ",
+   "lastLine": "5 ウ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 0.99
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 25,
+  "choice": {
+   "page": 22,
+   "rect": [
+    103.7,
+    576.8,
+    575.2,
+    671.1
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 エ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 37,
+  "choice": {
+   "page": 32,
+   "rect": [
+    103.7,
+    668.9,
+    575.2,
+    763.2
+   ],
+   "firstLine": "1 ア・ウ",
+   "lastLine": "5 ウ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "questionPdfSha256": "a1f331eea109007798ac75004d26028a3387c999a6f61f532d01d1f8591b4ea4",
+  "questionNumber": 50,
+  "choice": {
+   "page": 42,
+   "rect": [
+    103.7,
+    650.5,
+    575.2,
+    744.8
+   ],
+   "firstLine": "1 ア・イ",
+   "lastLine": "5 エ・オ"
+  },
+  "figures": [],
+  "stemCoverage": 1.01
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2025,
+  "section": "年度共通",
+  "questionPdfSha256": "fca8a98d1ff630058e6492ffe103233ba25640b0ef12c18de4a6e8a37f8e217d",
+  "questionNumber": 5,
+  "choice": {
+   "page": 5,
+   "rect": [
+    103.7,
+    424.7,
+    575.3,
+    524.0
+   ],
+   "firstLine": "1 会期　 特別 臨時 権限又は権能",
+   "lastLine": "5 会期　 臨時 特別 権利又は利益"
   },
   "figures": [],
   "stemCoverage": 1.01

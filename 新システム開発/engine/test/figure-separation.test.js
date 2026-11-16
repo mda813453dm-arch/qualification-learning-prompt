@@ -223,12 +223,41 @@ test('ITパスポート（2016 春期）：図は図だけ、選択肢が原本�
   const q2 = separateFigures(packet(2, 'official_image'), urlOf);
   assert.equal(q2.status, 'verified');
   assert.deepEqual(q2.figures.map((f) => [f.file, f.role]), [['q006-2016-776343b7960b-q2-p2-c0.png', 'choice_image']]);
-  // 問60：候補の図が右端で切れていたため承認していない。確認済みにも、図だけの画像にもしない
+  // 問60：自動の候補は右端で切れていたため不採用。目視で範囲を決め直し、a〜c の3つの図と記号が全部入る画像だけを出す
   const e60 = REGISTRY.questions[`${sha}:60`];
-  assert.equal(e60.status, 'unverified');
-  assert.equal((e60.add ?? []).length, 0);
+  assert.equal(e60.status, 'verified');
+  assert.equal(e60.check, 'visual');
+  assert.deepEqual(e60.add.map((a) => a.role), ['figure']);
+  assert.ok(e60.add[0].rect[2] >= 405 && e60.add[0].rect[3] >= 428, '図 c の右端と記号 a〜c まで入る');
+  const q60 = separateFigures(packet(60), urlOf);
+  assert.deepEqual(q60.figures.map((f) => f.role), ['figure']);
+  assert.deepEqual(q60.sources.map((s) => s.file), ['q006-2016-776343b7960b-q60-p28.png']);
+  // 問52・78・95：図の範囲が本文・選択肢と分けられなかった。確認済みにせず、図だけの画像も出さない
+  for (const n of [52, 78, 95]) {
+    const e = REGISTRY.questions[`${sha}:${n}`];
+    assert.equal(e.status, 'unverified', `問${n}`);
+    assert.equal((e.add ?? []).length, 0, `問${n}`);
+  }
   // ITパスポートは15回分すべてに図だけ・選択肢だけの画像がある
   const q006Adds = Object.values(REGISTRY.questions).flatMap((e) => e.add ?? []).filter((a) => a.file.startsWith('q006-'));
   assert.ok(q006Adds.length >= 150);
   assert.equal(new Set(q006Adds.map((a) => a.file.split('-')[2])).size, 15);
+});
+
+test('目視で決めた問：理由が記録され、確認済みは図か選択肢だけの画像を持ち、図なしの問は画像を足さない', () => {
+  let visual = 0;
+  for (const [key, e] of Object.entries(REGISTRY.questions)) {
+    if (e.check !== 'visual') continue;
+    visual += 1;
+    assert.ok(e.why, `理由がない ${key}`);
+    if (e.status === 'verified') {
+      const own = (e.add ?? []).filter((a) => a.role === 'figure' || a.role === 'choice_image');
+      const kept = Object.values(e.figures ?? {}).filter((r) => r === 'figure');
+      assert.ok(own.length + kept.length > 0, `確認済みなのに図・選択肢の画像がない ${key}`);
+    }
+    if (e.status === 'not_needed') assert.equal((e.add ?? []).length, 0, `図なしの問に画像 ${key}`);
+    // 問題全体の画像は図として出さない（照合用に畳む）
+    for (const r of Object.values(e.figures ?? {})) assert.notEqual(r, 'question_image', key);
+  }
+  assert.ok(visual >= 250);
 });

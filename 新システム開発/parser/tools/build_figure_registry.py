@@ -32,7 +32,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 
 def match(rule, row, q):
     return (rule['q'] == row['qualificationId'] and int(rule['year']) == int(row['year'])
-            and row['questionPdfSha256'].startswith(rule['sha']) and int(rule['n']) == int(q['questionNumber']))
+            and row['questionPdfSha256'].startswith(rule['sha']) and int(rule['n']) == int(q['questionNumber'])
+            and rule.get('section', row['section']) == row['section'])
 
 
 def trim_blank(pg, clip, pad=4.0):

@@ -22,8 +22,25 @@ from refine_figure_candidates import refine  # noqa: E402
 
 FIRST = {'ア': re.compile(r'^\s*ア(?:\s|[.．]|$)'), '1': re.compile(r'^\s*[1１](?:\s|[.．]|$)')}
 LAST = {'ア': re.compile(r'^\s*エ(?:\s|[.．]|$)|\sエ\s'), '1': re.compile(r'^\s*[4４5５](?:\s|[.．]|$)')}
+# OCR では「ア調達者から…」のように記号と本文の間の空白が落ちる。「ア」「イ」「ウ」が同じ字下げで順に並ぶときだけ選択肢の始まりとみなす
+LOOSE = {'ア': [re.compile(r'^\s*' + k) for k in ('ア', 'イ', '[ウツ]')], '1': [re.compile(r'^\s*' + k) for k in ('[1１]', '[2２]', '[3３]')]}
 NEXT_Q = re.compile(r'^\s*(?:問\s*\d{1,3}|〔?No\.?\s*\d{1,2})')
 FOOTER = re.compile(r'^\s*[-－―ー]?\s*\d{1,3}\s*[-－―ー]?\s*$')
+
+
+def loose_starts(inside, kind):
+    a, b, c = LOOSE[kind]
+    norm = [unicodedata.normalize('NFKC', l.text) for l in inside]
+    out = []
+    for i, l in enumerate(inside):
+        if not a.match(norm[i]):
+            continue
+        rest = [(j, inside[j]) for j in range(i + 1, len(inside)) if abs(inside[j].x0 - l.x0) <= 10]
+        jb = next((j for j, m in rest if b.match(norm[j])), None)
+        jc = next((j for j, m in rest if c.match(norm[j]) and jb is not None and j > jb), None)
+        if jb is not None and jc is not None:
+            out.append(i)
+    return out
 
 
 def main():
@@ -58,6 +75,8 @@ def main():
                     lines, _ = A.page_lines(doc[pno - 1], p, cache)
                     inside = sorted([l for l in lines if reg.y0 <= (l.y0 + l.y1) / 2 <= reg.y1], key=lambda l: l.y0)
                     starts = [i for i, l in enumerate(inside) if FIRST[kind].match(unicodedata.normalize('NFKC', l.text))]
+                    if not starts:
+                        starts = loose_starts(inside, kind)
                     if not starts:
                         continue
                     i0 = starts[-1] if kind == 'ア' else starts[0]

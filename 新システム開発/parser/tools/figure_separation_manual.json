@@ -1853,6 +1853,4911 @@
       ],
       "overrides": "q063-2022-no19",
       "why": "図19（作業工程の図）だけを切り出す。保存済みの本文の後ろに図の縦書きの文字が崩れて混ざっていたため、本文を原本の2文だけに戻した"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 12,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 14,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 46,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 49,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 51,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 27,
+          "rect": [
+            153.0,
+            136.8,
+            363.0,
+            250.8
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 59,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 5,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 27,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 57,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 71,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 2,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 3,
+          "rect": [
+            161.0,
+            402.8,
+            351.0,
+            508.8
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 15,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 21,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 10,
+          "rect": [
+            169.0,
+            524.4,
+            355.0,
+            586.4
+          ],
+          "role": "figure"
+        },
+        {
+          "page": 10,
+          "rect": [
+            76.0,
+            604.9,
+            439.0,
+            628.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 52,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 3,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 3,
+          "rect": [
+            189.0,
+            527.1,
+            319.0,
+            617.1
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 21,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 24,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 41,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 11,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 46,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 65,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 27,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 14,
+          "rect": [
+            121.0,
+            161.2,
+            355.0,
+            247.2
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 61,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 77,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 37,
+          "rect": [
+            173.0,
+            101.5,
+            331.0,
+            211.5
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2020,
+      "sha": "1574",
+      "n": 8,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "10月午前"
+    },
+    {
+      "q": "ap",
+      "year": 2020,
+      "sha": "1574",
+      "n": 13,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "10月午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 6,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 48,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 26,
+          "rect": [
+            201.0,
+            147.4,
+            323.0,
+            365.4
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 4,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 5,
+          "rect": [
+            201.0,
+            417.8,
+            319.0,
+            535.8
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 13,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 23,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 13,
+          "rect": [
+            133.0,
+            208.8,
+            391.0,
+            370.8
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 24,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 68,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 37,
+          "rect": [
+            141.0,
+            377.7,
+            383.0,
+            539.7
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 74,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2022,
+      "sha": "be15",
+      "n": 41,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2022,
+      "sha": "be15",
+      "n": 51,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2022,
+      "sha": "be15",
+      "n": 59,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2022,
+      "sha": "be15",
+      "n": 61,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2022,
+      "sha": "be15",
+      "n": 69,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 51,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 56,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 64,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 68,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 74,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 53,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 28,
+          "rect": [
+            93.0,
+            146.8,
+            395.0,
+            376.8
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 66,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 75,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 12,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 25,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 36,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 52,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 27,
+          "rect": [
+            115.5,
+            504.2,
+            419.5,
+            614.2
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 4 イ 5 ウ 6 エ 7"
+            ],
+            [
+              "top",
+              "る。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 63,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 13,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 51,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 55,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 74,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e95",
+      "n": 47,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e95",
+      "n": 52,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e95",
+      "n": 55,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 1,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 4,
+          "rect": [
+            169.0,
+            123.6,
+            343.0,
+            241.6
+          ],
+          "role": "figure"
+        },
+        {
+          "page": 4,
+          "rect": [
+            75.0,
+            258.1,
+            385.5,
+            295.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 20,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 12,
+          "rect": [
+            214.0,
+            398.0,
+            297.5,
+            476.5
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 29 イ 25 ウ 86 エ 106"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 26,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 62,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 68,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 18,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 11,
+          "rect": [
+            129.0,
+            361.7,
+            383.0,
+            475.7
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 55,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 37,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 41,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 57,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 64,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 68,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 72,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 76,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 62,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 78,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 35,
+          "rect": [
+            149.0,
+            216.2,
+            367.0,
+            370.2
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 5,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 8,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 29,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 38,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 42,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 52,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 26,
+          "rect": [
+            131.5,
+            160.6,
+            386.5,
+            291.1
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 30 イ 47 ウ 52 エ 53"
+            ],
+            [
+              "top",
+              "を除く週 5 日間で行うものとする。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 74,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 77,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 36,
+          "rect": [
+            137.0,
+            357.3,
+            383.0,
+            511.3
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 13,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 15,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 9,
+          "rect": [
+            89.0,
+            136.1,
+            423.0,
+            250.1
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 56,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 66,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 77,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 34,
+          "rect": [
+            197.0,
+            103.6,
+            337.5,
+            182.6
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ウ b は a の属性である。エ b は a の目的である。"
+            ],
+            [
+              "bottom",
+              "ア b は a の原因である。イ b は a の手段である。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 78,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 34,
+          "rect": [
+            109.0,
+            317.4,
+            407.0,
+            423.4
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 37,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 56,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 73,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期午前"
+    },
+    {
+      "q": "fe",
+      "year": 2023,
+      "sha": "a381",
+      "n": 19,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "科目A"
+    },
+    {
+      "q": "fe",
+      "year": 2025,
+      "sha": "3c33",
+      "n": 10,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "科目A"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2020,
+      "sha": "6c1e",
+      "n": 3,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 5,
+          "rect": [
+            97.0,
+            180.5,
+            347.0,
+            627.0
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2020,
+      "sha": "6c1e",
+      "n": 5,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 7,
+          "rect": [
+            97.0,
+            201.7,
+            355.0,
+            496.2
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "記1 から5 までのうち，どれか。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2020,
+      "sha": "6c1e",
+      "n": 7,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 9,
+          "rect": [
+            97.0,
+            180.5,
+            385.0,
+            523.2
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "記1 から5 までのうち，どれか。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2021,
+      "sha": "0a25",
+      "n": 2,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 3,
+          "rect": [
+            97.0,
+            196.3,
+            408.0,
+            625.3
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "のの組合せは，後記1 から5 までのうち，どれか。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2025,
+      "sha": "4a90",
+      "n": 4,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 7,
+          "rect": [
+            97.5,
+            181.1,
+            424.0,
+            634.6
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "land_surveyor",
+      "year": 2025,
+      "sha": "4a90",
+      "n": 7,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 10,
+          "rect": [
+            97.5,
+            288.6,
+            486.5,
+            567.6
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "午前の部"
+    },
+    {
+      "q": "q002",
+      "year": 2024,
+      "sha": "92d0",
+      "n": 53,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 22,
+          "rect": [
+            53.0,
+            156.7,
+            542.5,
+            316.7
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "する。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "2024年5月"
+    },
+    {
+      "q": "q002",
+      "year": 2024,
+      "sha": "92d0",
+      "n": 53,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 22,
+          "rect": [
+            53.0,
+            156.7,
+            542.5,
+            316.7
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "する。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "202405学科"
+    },
+    {
+      "q": "q002",
+      "year": 2026,
+      "sha": "525d",
+      "n": 55,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            95.0,
+            448.7,
+            470.5,
+            616.7
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "による養子）である。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "2026年5月"
+    },
+    {
+      "q": "q002",
+      "year": 2026,
+      "sha": "525d",
+      "n": 55,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            95.0,
+            448.7,
+            470.5,
+            616.7
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "による養子）である。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "202605学科"
+    },
+    {
+      "q": "q003",
+      "year": 2024,
+      "sha": "3114",
+      "n": 57,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 14,
+          "rect": [
+            85.5,
+            152.9,
+            347.0,
+            320.9
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "2024年5月"
+    },
+    {
+      "q": "q003",
+      "year": 2024,
+      "sha": "3114",
+      "n": 57,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 14,
+          "rect": [
+            85.5,
+            152.9,
+            347.0,
+            320.9
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "202405学科"
+    },
+    {
+      "q": "q003",
+      "year": 2026,
+      "sha": "e1b0",
+      "n": 57,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 16,
+          "rect": [
+            85.5,
+            153.4,
+            468.0,
+            269.4
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "2026年5月"
+    },
+    {
+      "q": "q003",
+      "year": 2026,
+      "sha": "e1b0",
+      "n": 57,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 16,
+          "rect": [
+            85.5,
+            153.4,
+            468.0,
+            269.4
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "202605学科"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 1,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 2,
+          "rect": [
+            69.0,
+            171.2,
+            455.0,
+            277.2
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 5,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 9,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 11,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 23,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 30,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 14,
+          "rect": [
+            161.0,
+            142.5,
+            427.0,
+            320.5
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 51,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 60,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 28,
+          "rect": [
+            95.0,
+            346.9,
+            410.0,
+            430.4
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ウ c, a,b エ c, b, a"
+            ],
+            [
+              "bottom",
+              "ア a, b, c イ b, a, c"
+            ],
+            [
+              "top",
+              "置が動作していなければならない。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 62,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 63,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 64,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 80,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 36,
+          "rect": [
+            161.5,
+            204.4,
+            342.0,
+            256.9
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "とする。"
+            ],
+            [
+              "bottom",
+              "choices"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 87,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 39,
+          "rect": [
+            57.0,
+            222.5,
+            151.0,
+            340.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 90,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 91,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 41,
+          "rect": [
+            57.0,
+            202.3,
+            303.0,
+            316.3
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 12,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 21,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 8,
+          "rect": [
+            57.0,
+            454.1,
+            395.0,
+            604.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 35,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 40,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 15,
+          "rect": [
+            61.0,
+            326.6,
+            383.0,
+            432.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 49,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 54,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 70,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 93,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 35,
+          "rect": [
+            61.0,
+            199.0,
+            287.0,
+            309.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 94,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 99,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 38,
+          "rect": [
+            61.0,
+            363.5,
+            283.0,
+            497.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 43,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 44,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 19,
+          "rect": [
+            57.0,
+            420.4,
+            347.0,
+            534.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 47,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 48,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            57.0,
+            180.6,
+            323.0,
+            290.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 51,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 72,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 83,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 34,
+          "rect": [
+            57.0,
+            179.6,
+            191.0,
+            309.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 97,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 9,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 14,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 15,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 8,
+          "rect": [
+            61.0,
+            220.6,
+            307.0,
+            330.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 19,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 28,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 13,
+          "rect": [
+            53.0,
+            181.3,
+            415.0,
+            371.3
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 35,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 15,
+          "rect": [
+            61.0,
+            500.8,
+            371.0,
+            634.8
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 41,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 50,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 76,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 29,
+          "rect": [
+            57.0,
+            556.6,
+            311.0,
+            670.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 13,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 21,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 11,
+          "rect": [
+            57.0,
+            202.0,
+            347.0,
+            344.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 65,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 30,
+          "rect": [
+            57.0,
+            362.5,
+            183.0,
+            476.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 82,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 99,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 6,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 4,
+          "rect": [
+            63.0,
+            140.1,
+            441.0,
+            270.6
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 77 イ 99 ウ 119 エ 129"
+            ],
+            [
+              "top",
+              "とする。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 7,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 4,
+          "rect": [
+            61.0,
+            404.0,
+            291.0,
+            514.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 17,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 41,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 17,
+          "rect": [
+            61.0,
+            217.5,
+            359.0,
+            335.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 44,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 18,
+          "rect": [
+            57.0,
+            399.2,
+            315.0,
+            513.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 48,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 77,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            57.0,
+            256.1,
+            375.0,
+            398.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 2,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 16,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 7,
+          "rect": [
+            57.0,
+            391.7,
+            395.0,
+            505.7
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 49,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 52,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            61.0,
+            218.9,
+            411.0,
+            328.9
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 53,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            65.0,
+            520.6,
+            299.0,
+            630.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 59,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 24,
+          "rect": [
+            57.0,
+            116.5,
+            443.0,
+            314.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 60,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 61,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 25,
+          "rect": [
+            57.0,
+            217.2,
+            319.0,
+            331.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 66,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 72,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 29,
+          "rect": [
+            57.0,
+            197.2,
+            271.0,
+            311.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 78,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            67.0,
+            140.8,
+            440.0,
+            288.8
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 1 イ 2 ウ 3 エ 4"
+            ],
+            [
+              "top",
+              "員は何人か。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 86,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 35,
+          "rect": [
+            57.0,
+            437.4,
+            219.0,
+            555.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 89,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "春期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 2,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 3,
+          "rect": [
+            133.0,
+            147.2,
+            367.0,
+            329.2
+          ],
+          "role": "figure"
+        },
+        {
+          "page": 3,
+          "rect": [
+            61.0,
+            339.2,
+            251.0,
+            449.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 43,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 60,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 26,
+          "rect": [
+            57.0,
+            117.2,
+            399.0,
+            231.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 65,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 28,
+          "rect": [
+            57.0,
+            358.6,
+            355.0,
+            472.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 76,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            169.0,
+            157.0,
+            339.0,
+            307.0
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 93,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 40,
+          "rect": [
+            57.0,
+            177.0,
+            251.0,
+            291.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 95,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 41,
+          "rect": [
+            57.0,
+            177.2,
+            235.0,
+            291.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 99,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 43,
+          "rect": [
+            65.0,
+            177.7,
+            219.0,
+            299.7
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "秋期"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 1,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 2,
+          "rect": [
+            61.0,
+            248.6,
+            219.0,
+            362.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 10,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 15,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 21,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 34,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 41,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 19,
+          "rect": [
+            61.0,
+            197.0,
+            303.0,
+            311.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 47,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 55,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 25,
+          "rect": [
+            87.5,
+            362.1,
+            413.0,
+            485.6
+          ],
+          "role": "figure"
+        },
+        {
+          "page": 25,
+          "rect": [
+            61.0,
+            500.3,
+            303.0,
+            614.3
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 59,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 61,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 28,
+          "rect": [
+            61.0,
+            238.0,
+            315.0,
+            352.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 66,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 30,
+          "rect": [
+            61.0,
+            178.7,
+            247.0,
+            292.7
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 71,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 32,
+          "rect": [
+            75.0,
+            420.1,
+            424.0,
+            527.6
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア 9 イ 1 ウ 2 エ 3"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 81,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 37,
+          "rect": [
+            61.0,
+            218.4,
+            247.0,
+            332.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 85,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 38,
+          "rect": [
+            61.0,
+            410.6,
+            423.0,
+            528.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 87,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 39,
+          "rect": [
+            61.0,
+            418.5,
+            247.0,
+            532.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 92,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 42,
+          "rect": [
+            61.0,
+            138.9,
+            375.0,
+            252.9
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 94,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 43,
+          "rect": [
+            61.0,
+            258.7,
+            291.0,
+            376.7
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 99,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 17,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 34,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 50,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 23,
+          "rect": [
+            69.0,
+            191.1,
+            439.0,
+            465.1
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 52,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 64,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 67,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            61.0,
+            207.6,
+            251.0,
+            321.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 69,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 32,
+          "rect": [
+            61.0,
+            247.3,
+            311.0,
+            361.3
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 74,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 35,
+          "rect": [
+            26.5,
+            155.9,
+            389.0,
+            385.3
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "字句の適切な組合せはどれか。"
+            ]
+          ]
+        },
+        {
+          "page": 35,
+          "rect": [
+            61.0,
+            400.0,
+            295.0,
+            514.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 89,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 40,
+          "rect": [
+            61.0,
+            448.5,
+            323.0,
+            562.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 27,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 57,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 26,
+          "rect": [
+            65.0,
+            165.6,
+            283.0,
+            279.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 59,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 27,
+          "rect": [
+            57.0,
+            161.4,
+            211.0,
+            275.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 60,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 27,
+          "rect": [
+            57.0,
+            487.4,
+            251.0,
+            605.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 67,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 72,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            57.0,
+            203.6,
+            267.0,
+            321.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 88,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 40,
+          "rect": [
+            65.0,
+            226.4,
+            215.0,
+            340.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 89,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 90,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 41,
+          "rect": [
+            134.0,
+            170.3,
+            331.0,
+            276.3
+          ],
+          "role": "figure"
+        },
+        {
+          "page": 41,
+          "rect": [
+            57.0,
+            291.8,
+            351.0,
+            405.8
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、図・表だけと選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 8,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 4,
+          "rect": [
+            57.0,
+            339.2,
+            263.0,
+            453.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 24,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 35,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 37,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 16,
+          "rect": [
+            57.0,
+            488.2,
+            231.0,
+            602.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 47,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            57.0,
+            220.4,
+            443.0,
+            334.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 48,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            57.0,
+            522.5,
+            319.0,
+            636.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 63,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 29,
+          "rect": [
+            57.0,
+            261.1,
+            267.0,
+            375.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 69,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 71,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 17,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 41,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 18,
+          "rect": [
+            84.0,
+            184.4,
+            430.0,
+            290.9
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "bottom",
+              "ア B イ C ウ D エ E"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 55,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 75,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            61.0,
+            422.1,
+            219.0,
+            536.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 5,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 24,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 30,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 14,
+          "rect": [
+            57.0,
+            153.1,
+            327.0,
+            267.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 37,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 17,
+          "rect": [
+            57.0,
+            380.0,
+            207.0,
+            494.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 40,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 45,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 21,
+          "rect": [
+            61.0,
+            351.0,
+            275.0,
+            481.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 62,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 29,
+          "rect": [
+            53.0,
+            372.6,
+            283.0,
+            486.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 66,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 31,
+          "rect": [
+            63.0,
+            184.2,
+            414.0,
+            663.7
+          ],
+          "role": "figure",
+          "cut": [
+            [
+              "top",
+              "どれか。"
+            ]
+          ]
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 69,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 32,
+          "rect": [
+            53.0,
+            533.2,
+            207.0,
+            647.2
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 71,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            53.0,
+            372.3,
+            183.0,
+            486.3
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 72,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 34,
+          "rect": [
+            57.0,
+            250.7,
+            207.0,
+            364.7
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 73,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 35,
+          "rect": [
+            53.0,
+            251.6,
+            415.0,
+            365.6
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 83,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 39,
+          "rect": [
+            57.0,
+            271.4,
+            275.0,
+            385.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 84,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 87,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 55,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 26,
+          "rect": [
+            73.0,
+            251.0,
+            315.0,
+            365.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 68,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            61.0,
+            120.0,
+            311.0,
+            234.0
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 69,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 33,
+          "rect": [
+            61.0,
+            388.9,
+            431.0,
+            502.9
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 76,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 37,
+          "rect": [
+            61.0,
+            421.1,
+            211.0,
+            535.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 80,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 39,
+          "rect": [
+            61.0,
+            238.8,
+            211.0,
+            356.8
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 88,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 43,
+          "rect": [
+            61.0,
+            359.5,
+            195.0,
+            485.5
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 89,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 44,
+          "rect": [
+            73.0,
+            201.1,
+            267.0,
+            331.1
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q006",
+      "year": 2026,
+      "sha": "1693",
+      "n": 99,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 48,
+          "rect": [
+            61.0,
+            400.4,
+            311.0,
+            518.4
+          ],
+          "role": "choice_image"
+        }
+      ],
+      "why": "原本を目視し、選択肢の表（文字にできない部分）の範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "公開問題"
+    },
+    {
+      "q": "q018",
+      "year": 2021,
+      "sha": "9992",
+      "n": 1,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 3,
+          "rect": [
+            222.5,
+            269.0,
+            372.5,
+            298.9
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2010,
+      "sha": "5cf9",
+      "n": 1,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2010,
+      "sha": "5cf9",
+      "n": 39,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 3,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 4,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 6,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 9,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 23,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 27,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 35,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2011,
+      "sha": "a64d",
+      "n": 37,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2012,
+      "sha": "1d3c",
+      "n": 46,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q041",
+      "year": 2025,
+      "sha": "829c",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "年度共通"
+    },
+    {
+      "q": "q041",
+      "year": 2025,
+      "sha": "829c",
+      "n": 45,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "main"
+    },
+    {
+      "q": "q098",
+      "year": 2025,
+      "sha": "ee68",
+      "n": 14,
+      "status": "not_needed",
+      "existing": "source",
+      "add": [],
+      "why": "原本を目視し、図・表が無いことを確かめた。本文と選択肢は文字で表示し、原本の画像は折りたたんで残す",
+      "round": 3,
+      "section": "通関実務"
+    },
+    {
+      "q": "q098",
+      "year": 2025,
+      "sha": "ee68",
+      "n": 15,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 24,
+          "rect": [
+            101.0,
+            369.0,
+            527.0,
+            539.0
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "通関実務"
+    },
+    {
+      "q": "q098",
+      "year": 2025,
+      "sha": "ee68",
+      "n": 16,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 25,
+          "rect": [
+            109.5,
+            152.7,
+            526.0,
+            471.7
+          ],
+          "role": "figure"
+        }
+      ],
+      "why": "原本を目視し、図・表だけの範囲を切り出した。出来上がりの画像も目視で確認",
+      "round": 3,
+      "section": "通関実務"
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 25,
+      "status": "verified",
+      "existing": "source",
+      "add": [
+        {
+          "page": 15,
+          "rect": [
+            60.0,
+            356.5,
+            496.0,
+            480.0
+          ],
+          "role": "choice_image",
+          "trim": true
+        }
+      ],
+      "why": "選択肢（文字にできない部分）だけを切り出した。自動の範囲は下の余白とページ端の印まで含んでいたため、目視で範囲を決めた",
+      "round": 3
     }
   ],
   "overrides": {
@@ -3562,6 +8467,1183 @@
       "year": 2026,
       "sha": "1693",
       "n": 97,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 8,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 9,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "bd27",
+      "n": 75,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 1,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2017,
+      "sha": "f653",
+      "n": 35,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 11,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 18,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 51,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "fead",
+      "n": 65,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 61,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 72,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2018,
+      "sha": "f9b2",
+      "n": 74,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 51,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 58,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 59,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "6603",
+      "n": 71,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 4,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 14,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 44,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 51,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 57,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 58,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2019,
+      "sha": "31aa",
+      "n": 59,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 13,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 42,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 54,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 59,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 62,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 64,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "f574",
+      "n": 68,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 5,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 73,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2021,
+      "sha": "925e",
+      "n": 77,
+      "f": [
+        0
+      ]
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 5,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 15,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "70ef",
+      "n": 23,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 12,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 52,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2023,
+      "sha": "fe0e",
+      "n": 57,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 1,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 34,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "aaaa",
+      "n": 35,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 16,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2024,
+      "sha": "0810",
+      "n": 41,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e95",
+      "n": 19,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e95",
+      "n": 45,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 42,
+      "f": []
+    },
+    {
+      "q": "ap",
+      "year": 2025,
+      "sha": "1e70",
+      "n": 78,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 7,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 37,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 41,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 63,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 68,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "31e5",
+      "n": 71,
+      "f": [
+        0
+      ]
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 33,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 56,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 59,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 63,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2017,
+      "sha": "03c2",
+      "n": 67,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 25,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 26,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 61,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "75ed",
+      "n": 67,
+      "f": [
+        0
+      ]
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 27,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 36,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 55,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2018,
+      "sha": "15c0",
+      "n": 71,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "5521",
+      "n": 23,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 36,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 62,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 65,
+      "f": []
+    },
+    {
+      "q": "fe",
+      "year": 2019,
+      "sha": "4cd4",
+      "n": 66,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 25,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 44,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 46,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 49,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 58,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 71,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "7763",
+      "n": 77,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 36,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 60,
+      "f": [
+        0
+      ]
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 62,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2016,
+      "sha": "40da",
+      "n": 88,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 7,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 14,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 45,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 54,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 63,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 75,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 79,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 84,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "3f50",
+      "n": 93,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 26,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 37,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 39,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 45,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 48,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 51,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 57,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 62,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 67,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2017,
+      "sha": "d592",
+      "n": 78,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 18,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 20,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 67,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 70,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 91,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 97,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "d107",
+      "n": 98,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 12,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 30,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 36,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 37,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 43,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 64,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 76,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 82,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2018,
+      "sha": "1039",
+      "n": 91,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 32,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 33,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 37,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 45,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 63,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "cb99",
+      "n": 92,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 13,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 16,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 17,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 64,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 67,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 69,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 86,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 88,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2019,
+      "sha": "c7db",
+      "n": 97,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 5,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2020,
+      "sha": "631f",
+      "n": 54,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 1,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 5,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 10,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 19,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 21,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 58,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 60,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 93,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2021,
+      "sha": "b833",
+      "n": 99,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 14,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 38,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 41,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 55,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 62,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 69,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 77,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 91,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2022,
+      "sha": "6749",
+      "n": 94,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 32,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 40,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 72,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 92,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2023,
+      "sha": "b890",
+      "n": 98,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 9,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2024,
+      "sha": "e677",
+      "n": 86,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 17,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 20,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 22,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 50,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 79,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 91,
+      "f": []
+    },
+    {
+      "q": "q006",
+      "year": 2025,
+      "sha": "3407",
+      "n": 95,
       "f": []
     }
   ]
