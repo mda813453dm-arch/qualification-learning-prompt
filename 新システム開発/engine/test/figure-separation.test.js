@@ -232,11 +232,13 @@ test('ITパスポート（2016 春期）：図は図だけ、選択肢が原本�
   const q60 = separateFigures(packet(60), urlOf);
   assert.deepEqual(q60.figures.map((f) => f.role), ['figure']);
   assert.deepEqual(q60.sources.map((s) => s.file), ['q006-2016-776343b7960b-q60-p28.png']);
-  // 問52・78・95：図の範囲が本文・選択肢と分けられなかった。確認済みにせず、図だけの画像も出さない
+  // 問52・78・95：自動では範囲を決められず、原本ページを1問ずつ目視して表・図だけの範囲を決めた（第5回）
   for (const n of [52, 78, 95]) {
     const e = REGISTRY.questions[`${sha}:${n}`];
-    assert.equal(e.status, 'unverified', `問${n}`);
-    assert.equal((e.add ?? []).length, 0, `問${n}`);
+    assert.equal(e.status, 'verified', `問${n}`);
+    assert.equal(e.check, 'visual', `問${n}`);
+    assert.deepEqual(e.add.map((a) => a.role), ['figure'], `問${n}`);
+    assert.match(e.why, /目視/);
   }
   // ITパスポートは15回分すべてに図だけ・選択肢だけの画像がある
   const q006Adds = Object.values(REGISTRY.questions).flatMap((e) => e.add ?? []).filter((a) => a.file.startsWith('q006-'));
@@ -268,10 +270,14 @@ test('未検証・選択肢が原本画像の問は、図として本文と選�
     assert.ok(!Object.values(e.figures ?? {}).includes('figure'), key);
     assert.ok(!(e.add ?? []).some((a) => a.role === 'figure'), key);
   }
-  // 土地家屋調査士 2019 午前 問10：既存の画像は地図の一部が欠けていたため、原本の画像として畳む
+  // 土地家屋調査士 2019 午前 問10：既存の画像は地図の一部が欠けていたため畳み、地図と表の全体を目視で切り出し直した
   const ls = Object.entries(REGISTRY.questions).find(([k]) => k.startsWith('fc83edc0b7c2') && k.split(':')[1].split('@')[0] === '10')[1];
-  assert.equal(ls.status, 'unverified');
+  assert.equal(ls.status, 'verified');
   assert.deepEqual(Object.values(ls.figures), ['source']);
+  assert.deepEqual(ls.add.map((a) => a.role), ['figure']);
+  assert.ok(ls.add[0].rect[3] >= 645, '地図の下端と表まで入る');
+  assert.equal(ls.overrides.choices.length, 5);
+  assert.ok(ls.overrides.verifiedBy);
 });
 
 test('本文の読み取り誤りを原本どおりに戻した問は、目視の記録を持つ（ITパスポート 2016春 問60・2017 問72）', () => {
