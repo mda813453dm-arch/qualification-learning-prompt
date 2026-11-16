@@ -217,9 +217,10 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  // 検査したHTMLの版＝公開する版（v196：v195の整形を維持し、図表だけを本文と選択肢の間に出す）。
-  assert.match(WIDGET_URI, /question-v196\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-16.196');
+  // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
+  assert.match(WIDGET_URI, /question-v197\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-17.197');
+  assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
   assert.match(html, /inline-statement-paragraphs-v194/);

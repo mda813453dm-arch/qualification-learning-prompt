@@ -1,12 +1,13 @@
 // 実ブラウザ（375px、Chromium と WebKit）で図表分離の表示順を確かめる。
 // 2025年度測量士補・問6：年度・問番号・分野 → 本文（文字） → 表6の画像だけ → 選択肢1〜5（文字） → 回答操作。
 // 問題全体の画像は選択肢の後ろの「原本の問題画像を確認する」に畳んであり、開くまで見えない。
-// 旧版 v195 の画面も同じ問をエラーなく出せること（旧URIの互換）も確かめる。
+// 旧版 v196・v195 の画面も同じ問をエラーなく出せること（旧URIの互換）も確かめる。
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { present } from '../src/engine.js';
 import { widgetHtml } from '../src/widget-current.js';
+import { widgetHtml as v196Html } from '../src/widget-v196.js';
 import { widgetHtml as v195Html } from '../src/widget-v195.js';
 
 const require = createRequire(import.meta.url);
@@ -24,7 +25,7 @@ const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAQ0l
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const browser = await engine.launch({ headless: true });
   try {
-    for (const [label, html] of [['v196', widgetHtml()], ['v195', v195Html()]]) {
+    for (const [label, html] of [['v197', widgetHtml()], ['v196', v196Html()], ['v195', v195Html()]]) {
       const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
@@ -72,7 +73,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.deepEqual(visible.map((i) => i.file), ['q063-2025-561692b95a4f-q6-p7-s0.png'], `${name} ${label}: 見える画像は表6だけ ${JSON.stringify(layout.imgs)}`);
       assert.ok(visible[0].afterStem && visible[0].beforeChoices, `${name} ${label}: 表6は本文と選択肢の間`);
       assert.ok(layout.text.indexOf('2025') < layout.text.indexOf('表6は'), `${name} ${label}: 年度が本文より前`);
-      if (label === 'v196') {
+      if (label !== 'v195') {
         const src = layout.imgs.find((i) => i.file === 'q063-2025-561692b95a4f-q6-p7.png');
         assert.ok(src && !src.visible && !src.beforeChoices, `${name}: 問題全体の画像は選択肢の後ろに畳む`);
         await w.getByText('原本の問題画像を確認する', { exact: false }).click();
