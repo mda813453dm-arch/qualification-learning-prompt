@@ -573,3 +573,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-16T19:36:47Z figure separation rounds 4-6 (all 294 remaining questions visually decided; unverified 0; 1042 crops)
 2026-11-16T19:45:29Z figure separation rounds 4-6 + exact section match for requested questions (2016 秋期 問80 etc.)
 2026-11-17 第7回：土地家屋調査士の角度記号6問の訂正、学習画面 v197（図を取得できないときの代わりの表示）
+2026-11-16T23:22:03Z 第7回の公開（本文が原本画像だった土地家屋調査士152問・マンション管理士3問・ITパスポート3問を文字に）
