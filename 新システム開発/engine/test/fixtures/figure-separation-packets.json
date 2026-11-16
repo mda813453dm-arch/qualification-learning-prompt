@@ -1,0 +1,551 @@
+[
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionId": "q063:2025:main:6",
+  "questionNumber": 6,
+  "fieldId": "s7",
+  "unitId": "地図編集",
+  "stem": "表 6 は , 基準点成果などの情報の抜枠である。ア及びイに入るべき符号とウに入るべき数値の組合せとして最も適当なものはどれか。次の 1 ~ 5 の中から選べ。ただし , 平面直角座標系 ( 平成 14 年国土交通省告示第 9 号 ) の 11 系における座標系原点の緯及び経度は , 次のとおりである。",
+  "stemMode": "ocr",
+  "choices": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5"
+  ],
+  "choiceMode": "official_image",
+  "correctAnswer": 1,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2025-561692b95a4f-q6-p7.png",
+    "page": 7,
+    "rect": [
+     66,
+     70.3,
+     529.7,
+     640.1
+    ],
+    "zoom": 3,
+    "width": 3080,
+    "height": 1711,
+    "sha256": "3e5873631af5033114fccdece389549cceca331096e7a11db01450d851d13b88"
+   }
+  ],
+  "questionPdfUrl": "https://www.gsi.go.jp/common/000270177.pdf",
+  "questionPdfSha256": "561692b95a4ffb22c5571d24ba3d9938fe2c2eb582e454908f3524180266501c",
+  "evidence": {
+   "questionPdfPages": [
+    7
+   ],
+   "questionRect": [
+    76.3,
+    634.1
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "平面直角座標",
+   "notes": [
+    "choice_text_outlined"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionId": "q063:2025:main:6",
+  "questionNumber": 6,
+  "fieldId": "s7",
+  "unitId": "地図編集",
+  "stem": "表 6 は , 基準点成果などの情報の抜枠である。ア及びイに入るべき符号とウに入るべき数値の組合せとして最も適当なものはどれか。次の 1 ~ 5 の中から選べ。ただし , 平面直角座標系 ( 平成 14 年国土交通省告示第 9 号 ) の 11 系における座標系原点の緯及び経度は , 次のとおりである。",
+  "stemMode": "ocr",
+  "choices": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5"
+  ],
+  "choiceMode": "official_image",
+  "correctAnswer": 1,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2025-b39f46132558-q6-p7.png",
+    "page": 7,
+    "rect": [
+     66,
+     70.3,
+     529.7,
+     640.1
+    ],
+    "zoom": 3,
+    "width": 3080,
+    "height": 1711,
+    "sha256": "c67f5cb62a372c9d2c8afd7c31a088ba377f5c13bd0978bd430cdb6d5ca8312a"
+   }
+  ],
+  "questionPdfUrl": "https://qlp-engine-ojsw3j46qa-an.a.run.app/v1/attached/b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac.pdf",
+  "questionPdfSha256": "b39f461325586fc12ef57a5383a872045d2d9075748a731358fcb67ae7f1e8ac",
+  "evidence": {
+   "questionPdfPages": [
+    7
+   ],
+   "questionRect": [
+    76.3,
+    634.1
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "平面直角座標",
+   "notes": [
+    "choice_text_outlined"
+   ]
+  }
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2017,
+  "section": "春期午前",
+  "questionId": "fe:2017:春期午前:74",
+  "questionNumber": 74,
+  "fieldId": "fe_general",
+  "unitId": null,
+  "stem": "インターネット広告などで見られるアフィリエイトプログラムのモデル例の ⑤ に当てはまるものはどれか。ここで , ① て ⑧⑥ はこのモデルでの業務順序を示し , ①,\n②③, ④, ⑤⑧ はアーエのいずれかに対応する。Web サイト運営者\n① 《本 ⑤ Web サイト閲覧者オンラインモール EC サイト (広告主 )",
+  "stemMode": "ocr",
+  "choices": [
+   "Web サイト上の掲載広告をクリックする。",
+   "アフィリエイトプログラムに同意し参加する。",
+   "希望する商品を購入する。",
+   "商品の売上に応じた成功報酬を支払う。"
+  ],
+  "choiceMode": "ocr",
+  "correctAnswer": 4,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "fe-2017-31e5bc9c556b-q74-p35.png",
+    "page": 35,
+    "rect": [
+     20,
+     60.5,
+     495.5,
+     418.8
+    ],
+    "zoom": 3,
+    "width": 1937,
+    "height": 1076,
+    "sha256": "c2fd6d0e18f3323bd2b57d4cc3d040eb0d7c0c79f3a42fcb42bdd123d89f937b"
+   }
+  ],
+  "questionPdfUrl": "https://www.ipa.go.jp/shiken/mondai-kaiotu/gmcbt8000000fzx1-att/2017h29h_fe_am_qs.pdf",
+  "questionPdfSha256": "31e5bc9c556b3da1e38ad8defe3bd34791b345550c899510cb245c1e0b5a5156",
+  "evidence": {
+   "questionPdfPages": [
+    35
+   ],
+   "questionRect": [
+    66.5,
+    412.8
+   ],
+   "field": "IPA_FE_OFFICIAL_SECTION",
+   "fieldEvidence": null,
+   "notes": [
+    "table_text_dropped",
+    "read_by_ocr"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "main",
+  "questionId": "q041:2016:main:1",
+  "questionNumber": 1,
+  "fieldId": "t2",
+  "unitId": "民法",
+  "stem": "次の記述のうち、民法の条文に規定されているものはどれか。",
+  "stemMode": "ocr",
+  "choices": [
+   "利息を生ずべき債権について別段の意思表示がないときは、その利率は、年3%とする旨",
+   "賃貸人は 賃借人が賃貸借に基づく金銭債務を履行しないときは、敷金をその債務の弁済に充てることができる旨",
+   "免責的債務引受は、債権者と引受人となる者との契約によってすることができる旨",
+   "契約により当事者の一方が第三者に対してある給付をすることを約したときは、その第三者は、債務者に対して直接にその給付を請求する権利を有する旨"
+  ],
+  "choiceMode": "ocr",
+  "correctAnswer": 4,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q041-2016-87923a287018-q1-p2.png",
+    "page": 2,
+    "rect": [
+     20,
+     52.3,
+     575.4,
+     229
+    ],
+    "zoom": 3,
+    "width": 1667,
+    "height": 531,
+    "sha256": "f0bd28e23fde4b2771fc4ef923e4fb735f384d18922058b5a30a51870ba08cf9"
+   }
+  ],
+  "questionPdfUrl": "https://www.retio.or.jp/wp-content/uploads/2024/10/H28-q_a.pdf",
+  "questionPdfSha256": "87923a2870184f9a0a26c76c056255aa94fa50242ff9aeda0a61eadf64699983",
+  "evidence": {
+   "questionPdfPages": [
+    2
+   ],
+   "questionRect": [
+    58.3,
+    223
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "民法",
+   "notes": [
+    "read_by_ocr"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "年度共通",
+  "questionId": "q041:2016:年度共通:1",
+  "questionNumber": 1,
+  "fieldId": "t2",
+  "unitId": "民法",
+  "stem": "",
+  "stemMode": "official_image",
+  "choices": [
+   "1",
+   "2",
+   "3",
+   "4"
+  ],
+  "choiceMode": "official_image",
+  "correctAnswer": 4,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q041-2016-87923a287018-q1-p2.png",
+    "page": 2,
+    "rect": [
+     16,
+     45.8,
+     579.4,
+     268.9
+    ],
+    "zoom": 3,
+    "width": 1691,
+    "height": 670,
+    "sha256": "1b07203f81e666820cf877a7d4e681389eb14e10b968676912305de86563e7da",
+    "svgFile": "q041-2016-87923a287018-q1-p2.svg",
+    "svgSha256": "0c71998cd144f92f390b7819b2a1d23e8e87b0ce2a2239222d5c3e539efbc074"
+   }
+  ],
+  "questionPdfUrl": "https://www.retio.or.jp/wp-content/uploads/2024/10/H28-q_a.pdf",
+  "questionPdfSha256": "87923a2870184f9a0a26c76c056255aa94fa50242ff9aeda0a61eadf64699983",
+  "evidence": {
+   "questionPdfPages": [
+    2
+   ],
+   "questionRect": [
+    57.8,
+    223.7
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "民法",
+   "notes": [
+    "official_original_image_question",
+    "read_by_ocr"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "questionId": "q063:2024:main:8",
+  "questionNumber": 8,
+  "fieldId": "s3",
+  "unitId": "GNSS測量",
+  "stem": "次の文は , 公共測量における GNSS 測量機を用いた基準点測量において , 電子基準点 A, B を既知点とした場合のセミ・ダイナミック補正について述べたものである。表 8-1 は , 観測で得られた電子基準点 A から新点 C 及び新点 C から電子基準点 B までの基線ベクトルの Y 成分を示したものである。表 8-2 は各点における地殻変動補正パラメータから求めた Y 方向の補正量を示しており、元期座標値と今期座標値は , 「今期座標値 = 元期座標値 +地殻変動補正パラメータから求めた補正量」の関係がある。新点 C における元期の Y 座標値を求めるとき , 表 8-3 のア〜エに入る数値の組合せとして最も適当なものはどれか。次の 1 ~ 5 の中から選べ。ただし , 基線ベクトルの観測誤差並びに X 方向及び楕円体高の補正量は考えないものとする。なお、関数の値が必要な場合は、巻末の関数表を使用すること。表 8-1基線基線ベクトルの Y 成分 (m)電子基準点 A → 新点 C +7,000.000新点 C → 電子基準点 B +13,000.040表 8-2地殻変動補正パラメータから求めた Y 方向の補正量 (m)名称( 今期の Y 座標値 - 元期の Y 座標値 )電子基準点 A +0.010電子基準点 B +0.040新点 C +0.020",
+  "stemMode": "ocr",
+  "choices": [
+   "ア：-0.020、イ：+19,999.960、ウ：+6,999.960、エ：+6,999.980",
+   "ア：-0.020、イ：+19,999.960、ウ：+7,000,000、エ：+6,999.980",
+   "ア：0.000、イ：+20,000.020、ウ：+6,999.960、エ：+7,000.000",
+   "ア：0.000、イ：+20,000.040、ウ：+6.999.980、エ：+7,000.000",
+   "ア：0.000、イ：+20,000.040、ウ：+7,000.020、エ：+7,000.000"
+  ],
+  "choiceMode": "ocr",
+  "correctAnswer": 4,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2024-7da3c3792182-q8-p9.png",
+    "page": 9,
+    "rect": [
+     0,
+     67.1,
+     595.3,
+     757.7
+    ],
+    "zoom": 3,
+    "width": 3731,
+    "height": 2073,
+    "sha256": "46f8c784dbf27a33d3f0184273801996401ec49c83d8c2d1e862ee4da404048d"
+   },
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2024-7da3c3792182-q8-p10.png",
+    "page": 10,
+    "rect": [
+     0,
+     0,
+     595.3,
+     427.9
+    ],
+    "zoom": 3,
+    "width": 2311,
+    "height": 1284,
+    "sha256": "a06bfae2436d64ba54477c6e499a2e8f9c6dc394e176a69d68aa8258f4d1fffc",
+    "svgFile": "q063-2024-7da3c3792182-q8-p10.svg",
+    "svgSha256": "16f94f388f8a4743b79e0623efc80374ea192323b8b7c300ec225c0e516f5420"
+   }
+  ],
+  "questionPdfUrl": "https://qlp-engine-ojsw3j46qa-an.a.run.app/v1/attached/7da3c3792182f71d753817d70e04b1c6c9dbb81077b478136ad1bc958a481af1.pdf",
+  "questionPdfSha256": "7da3c3792182f71d753817d70e04b1c6c9dbb81077b478136ad1bc958a481af1",
+  "evidence": {
+   "questionPdfPages": [
+    9,
+    10
+   ],
+   "questionRect": [
+    76.1,
+    534.5
+   ],
+   "field": "rule:topic",
+   "fieldEvidence": "GNSS",
+   "notes": [
+    "question_continues_next_page"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "questionId": "q063:2022:main:3",
+  "questionNumber": 3,
+  "fieldId": "s2",
+  "unitId": "多角測量",
+  "stem": "次の文は，測量の誤差について述べたものである。 ア ～ エ に入る語句及び数値の組合せとして最も適当なものはどれか。次の中から選べ。なお，関数の値が必要な場合は，巻末の関数表を使用すること。\nア は，測定の条件が変わらなければ大きさや現れ方が一定している誤差である。一方， イ は，原因が不明又は原因が分かってもその影響を除去できない誤差である。このように測定値には誤差が含まれ，真の値を測定することは不可能である。しかし，ある長さや角度に対する イ だけを含む測定値の一群を用いて，理論的に，真の値に最も近いと考えられる値を求めることは可能であり，このようにして求めた値を，最確値という。ある水平角について，トータルステーションを用いて同じ条件で5 回測定し，表3 の結果を得たとき， ア が取り除かれているとすれば，最確値は ウ ，最確値の標準偏差の値は エ となる。表3測定値45°22’ 25\"45°22’ 28\"45°22’ 24\"45°22’ 25\"45°22’ 23\"\nア イ ウ エ",
+  "stemMode": "text",
+  "choices": [
+   "ア：系統誤差、イ：偶然誤差、ウ：45°22’ 23\"、エ：0.8\"",
+   "ア：系統誤差、イ：偶然誤差、ウ：45°22’ 25\"、エ：0.8\"",
+   "ア：系統誤差、イ：偶然誤差、ウ：45°22’ 25\"、エ：1.7\"",
+   "ア：偶然誤差、イ：系統誤差、ウ：45°22’ 23\"、エ：1.7\"",
+   "ア：偶然誤差、イ：系統誤差、ウ：45°22’ 25\"、エ：1.7\""
+  ],
+  "choiceMode": "text",
+  "correctAnswer": 2,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2022-647c4ca1b291-q3-p5.png",
+    "page": 5,
+    "rect": [
+     63.4,
+     66.2,
+     526.9,
+     648.9
+    ],
+    "zoom": 3,
+    "width": 3148,
+    "height": 1749,
+    "sha256": "bec5ead215846ca8238b78aae294f52c6c3d5de9eb70bd490cc899a6f257d0a5"
+   }
+  ],
+  "questionPdfUrl": "https://qlp-engine-ojsw3j46qa-an.a.run.app/v1/attached/647c4ca1b2911a4d5b58d949841d84b8687d3858dfa91370e59dac70582b579d.pdf",
+  "questionPdfSha256": "647c4ca1b2911a4d5b58d949841d84b8687d3858dfa91370e59dac70582b579d",
+  "evidence": {
+   "questionPdfPages": [
+    5
+   ],
+   "questionRect": [
+    72.2,
+    642.9
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "水平角",
+   "notes": []
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "questionId": "q063:2023:main:21",
+  "questionNumber": 21,
+  "fieldId": "s7",
+  "unitId": "地図編集",
+  "stem": "図 21 は , 国土地理院がインターネットで公開しているウェブ地図「地理院地図」の一部 ( 縮尺を変更 , 一部を改変 ) である。この図にある自然災害伝承碑の経緯度で最も近いものを次のページの中から選べ。ただし , 表 21 に示す数値は , 図の中にある裁判所及び税務署の経緯度を表す。なお , 関数の値が必要な場合は , 巻末の関数表を使用すること。城内で¥ 23文町城西正中新の江文化会館町新丁 ┣ 戸 5.4 島原駅田内 [ 内 29 2 上町特別市支援学校の町 ++ S新建浦 A 陸上の養25 川谷川町万殖萩原 ( 二萩卍町場原卍高島 ( 二 )1, 加新町萩原美弁天町町寺町 134 霊丘公園体上の原「中」堀卍図 21表 21緯度経度裁判所北緯 32 ° 47′16 ″ 東経 130 ° 22'06\"税務署北緯 32 ° 46′56 ″ 東経 130 ° 22′23 \"",
+  "stemMode": "ocr",
+  "choices": [
+   "1",
+   "2",
+   "3",
+   "4",
+   "5"
+  ],
+  "choiceMode": "official_image",
+  "correctAnswer": 3,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2023-3513b442ace6-q21-p20.png",
+    "page": 20,
+    "rect": [
+     0,
+     66.4,
+     595.3,
+     757.7
+    ],
+    "zoom": 3,
+    "width": 3735,
+    "height": 2075,
+    "sha256": "d73661a5b2877ee983c8818b91b3c4d5d3ec488d8cdb7c3978ce3121f890f872"
+   },
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2023-3513b442ace6-q21-p21.png",
+    "page": 21,
+    "rect": [
+     0,
+     0,
+     595.3,
+     754.7
+    ],
+    "zoom": 3,
+    "width": 4077,
+    "height": 2265,
+    "sha256": "10d55d209aef3d0efa8a30ba3521e2a0785dc33f9b4b95899d526b6cdf6b3247",
+    "svgFile": "q063-2023-3513b442ace6-q21-p21.svg",
+    "svgSha256": "932a2f11f033d82e19db0d8844c195e5025c7e0a02d2a19662f9e0c0d707a122"
+   }
+  ],
+  "questionPdfUrl": "https://qlp-engine-ojsw3j46qa-an.a.run.app/v1/attached/3513b442ace6bfc3212d0afe766e628b908c762917b50fcd5298e1b2f9bd1ebd.pdf",
+  "questionPdfSha256": "3513b442ace6bfc3212d0afe766e628b908c762917b50fcd5298e1b2f9bd1ebd",
+  "evidence": {
+   "questionPdfPages": [
+    20,
+    21
+   ],
+   "questionRect": [
+    75.4,
+    732.2
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "地理院地図",
+   "notes": [
+    "question_continues_next_page"
+   ]
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "questionId": "q063:2025:main:13",
+  "questionNumber": 13,
+  "fieldId": "s8",
+  "unitId": "応用測量",
+  "stem": "図 13 は , ある道路の縦断面を模式的に示したものである。この道路において , トータルステーション ( 以下「 TS」という。 ) を用いた縮尺 1 / 1,000 の地形図作成を行うため , 標高 86.3m の点A に TS を設置し点 B の観測を行ったところ , 高低角 -5 ° , 斜距離 72.0m の結果が得られた。また , 同じ道路上にある点 C の標高は 123.8m であった。このとき , 点 B, 点 C 間の水平距離を 500.0m とすると , 点 B と点 C を結ぶ道路上の標高 87.3 m の点 X は , この地形図上で点 B から何 cm の地点か。最も近いものを次の 1 ~ 5 の中から選べ。ただし , 点 A と点 B を結ぶ道路及び点 B と点 C を結ぶ道路は , 傾斜が一定でまっすぐな道路である。また , 点 A ~ C 及び点 X はいずれも道路中心線上にあるものとする。なお , 関数の値が必要な場合は、巻末の関数表を使用すること。",
+  "stemMode": "ocr",
+  "choices": [
+   "8.3cm",
+   "16.6cm",
+   "25.0cm",
+   "33.3cm",
+   "41.6cm"
+  ],
+  "choiceMode": "ocr",
+  "correctAnswer": 1,
+  "figures": [
+   {
+    "kind": "official_pdf_crop",
+    "file": "q063-2025-561692b95a4f-q13-p14.png",
+    "page": 14,
+    "rect": [
+     94,
+     331.7,
+     513.5,
+     480.7
+    ],
+    "zoom": 3,
+    "width": 1259,
+    "height": 448,
+    "sha256": "d4af4cb2568328176b539f39ff752d34c0fccd0d189ccd50f0e540ab9f3f0127",
+    "svgFile": "q063-2025-561692b95a4f-q13-p14.svg",
+    "svgSha256": "ff3c174f2af51e1e6c52abbee255ff6ccfa0045106718f27273bd8e7013f8571"
+   }
+  ],
+  "questionPdfUrl": "https://www.gsi.go.jp/common/000270177.pdf",
+  "questionPdfSha256": "561692b95a4ffb22c5571d24ba3d9938fe2c2eb582e454908f3524180266501c",
+  "evidence": {
+   "questionPdfPages": [
+    14
+   ],
+   "questionRect": [
+    75.8,
+    578.2
+   ],
+   "field": "rule:stem",
+   "fieldEvidence": "縦断",
+   "notes": []
+  }
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "questionId": "q063:2026:main:19",
+  "questionNumber": 19,
+  "fieldId": "s6",
+  "unitId": "写真測量",
+  "stem": "次のa～cの文は，公共測量におけるUAVレーザ測量について述べたものである。\nア～ウに入る語句の組合せとして最も適当なものはどれか。次の1～5の中から選べ。\na.グラウンドデータ，グリッドデータ，等高線データを成果品とする場合，植生の影響が大きい箇所におけるオリジナルデータの点密度は，植生の影響が小さい箇所と比較してアとする。\nb.「フィルタリング」とは，オリジナルデータに含まれる建物や植生など地表面以外のデータをイする作業をいう。\nc.使用するUAVには，自動飛行機能及び異常時の自動ウ機能の装備が必要である。",
+  "stemMode": "ocr",
+  "choices": [
+   "ア：半分、イ：色調補正、ウ：充電",
+   "ア：半分、イ：除去、ウ：帰還",
+   "ア：2倍、イ：色調補正、ウ：充電",
+   "ア：2倍、イ：除去、ウ：充電",
+   "ア：2倍、イ：除去、ウ：帰還"
+  ],
+  "choiceMode": "ocr",
+  "correctAnswer": 5,
+  "figures": [],
+  "questionPdfUrl": "https://www.gsi.go.jp/common/000278974.pdf",
+  "questionPdfSha256": "3b797566e6fbcfbf0fedc5a88e5983b82ac7b6676eceb2240043e43b283a60ac",
+  "evidence": {
+   "questionPdfPages": [
+    21
+   ],
+   "questionRect": [
+    76,
+    427.2
+   ],
+   "field": "rule:topic",
+   "fieldEvidence": "UAV",
+   "notes": [
+    "ocr"
+   ]
+  }
+ }
+]

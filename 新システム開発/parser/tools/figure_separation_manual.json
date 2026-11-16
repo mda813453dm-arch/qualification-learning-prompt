@@ -1,0 +1,66 @@
+{
+  "_説明": "図表分離の目視確認の結果（Claude が公式PDFを画像にして目視で確認した）。build_figure_registry.py が監査結果と合わせて engine/data/figure-separation.json を作る。座標は公式PDFのポイント（72dpi）。",
+  "visualQualifications": {
+    "q063": "測量士補：全問の切り出し候補・既存の図・選択肢の範囲・文字だけの切り出しを目視で確認済み（2026-11-16）"
+  },
+  "approveCandidates": [
+    { "q": "fe", "year": 2017, "sha": "31e5", "n": 74 },
+    { "q": "fe", "year": 2017, "sha": "03c2", "n": 44 },
+    { "q": "fe", "year": 2018, "sha": "75ed", "n": 4 },
+    { "q": "fe", "year": 2018, "sha": "75ed", "n": 24 },
+    { "q": "fe", "year": 2018, "sha": "15c0", "n": 14 },
+    { "q": "fe", "year": 2018, "sha": "15c0", "n": 16 },
+    { "q": "fe", "year": 2018, "sha": "15c0", "n": 69 },
+    { "q": "fe", "year": 2019, "sha": "5521", "n": 14 },
+    { "q": "fe", "year": 2019, "sha": "5521", "n": 64 },
+    { "q": "fe", "year": 2019, "sha": "4cd4", "n": 9 },
+    { "q": "fe", "year": 2019, "sha": "4cd4", "n": 13 },
+    { "q": "fe", "year": 2019, "sha": "4cd4", "n": 17 },
+    { "q": "fe", "year": 2019, "sha": "4cd4", "n": 33 },
+    { "q": "fe", "year": 2023, "sha": "a381", "n": 2 },
+    { "q": "fe", "year": 2023, "sha": "a381", "n": 11 },
+    { "q": "fe", "year": 2023, "sha": "a381", "n": 13 },
+    { "q": "fe", "year": 2024, "sha": "c8a4", "n": 3 },
+    { "q": "fe", "year": 2024, "sha": "c8a4", "n": 13 },
+    { "q": "fe", "year": 2024, "sha": "c8a4", "n": 19 },
+    { "q": "fe", "year": 2025, "sha": "3c33", "n": 3 },
+    { "q": "fe", "year": 2025, "sha": "3c33", "n": 14 },
+    { "q": "fe", "year": 2025, "sha": "3c33", "n": 19 },
+    { "q": "fe", "year": 2026, "sha": "7fb3", "n": 1 },
+    { "q": "fe", "year": 2026, "sha": "7fb3", "n": 7 },
+    { "q": "fe", "year": 2026, "sha": "7fb3", "n": 17 },
+    { "q": "q002", "year": 2025, "sha": "6a33", "n": 10 },
+    { "q": "q002", "year": 2026, "sha": "525d", "n": 14 }
+  ],
+  "questions": [
+    { "q": "q063", "year": 2022, "sha": "647c", "n": 3, "status": "verified", "existing": "source",
+      "add": [{ "page": 5, "rect": [90, 365, 168, 507], "role": "figure" }], "why": "表3だけを切り出す（本文の空欄枠は本文側）" },
+    { "q": "q063", "year": 2022, "sha": "647c", "n": 6, "status": "not_needed", "existing": "source", "why": "図表なし（空欄の枠は本文中）" },
+    { "q": "q063", "year": 2022, "sha": "647c", "n": 8, "status": "not_needed", "existing": "source", "why": "図表なし（空欄の枠は本文中）" },
+    { "q": "q063", "year": 2025, "sha": "5616", "n": 13, "status": "verified", "existing": "figure", "why": "既存の切り出しは図13だけ（図中の文字が本文の語と一致しただけ）" },
+    { "q": "q063", "year": 2025, "sha": "b39f", "n": 13, "status": "verified", "existing": "figure", "why": "既存の切り出しは図13だけ" },
+    { "q": "q063", "year": 2025, "sha": "8203", "n": 27, "status": "verified", "existing": "figure", "why": "既存の切り出しは図27と表27だけ" },
+    { "q": "q063", "year": 2025, "sha": "b39f", "n": 27, "status": "verified", "existing": "figure", "why": "既存の切り出しは図27と表27だけ" },
+    { "q": "q063", "year": 2026, "sha": "3b79", "n": 3, "status": "verified", "existing": "figure", "why": "既存の切り出しは図3だけ" },
+    { "q": "q063", "year": 2026, "sha": "3b79", "n": 19, "status": "not_needed", "existing": "source", "why": "図表なし" },
+    { "q": "q063", "year": 2023, "sha": "3513", "n": 21, "status": "verified", "existing": "source",
+      "add": [{ "page": 20, "rect": [86, 195.4, 511, 743.4], "role": "figure" }, { "page": 21, "rect": [87.2, 72.1, 290.2, 168.4], "role": "choice_image" }],
+      "why": "図21（地図）と表21を1枚、選択肢（次のページ）を1枚。本文は含まない" },
+    { "q": "q063", "year": 2025, "sha": "5616", "n": 6, "status": "verified", "existing": "source",
+      "add": [{ "page": 7, "rect": [86.5, 230.0, 373.5, 499.3], "role": "figure" }],
+      "overrides": "q063-2025-no6",
+      "why": "表6だけを切り出す。本文の OCR の誤り（抜枠→抜粋、緯及び経度→緯度及び経度）と抜けた行（北緯・東経）を原本どおりに直し、選択肢（記号は OCR で読めない）を原本どおりの文字にした" },
+    { "q": "q063", "year": 2025, "sha": "b39f", "n": 6, "status": "verified", "existing": "source",
+      "add": [{ "page": 7, "rect": [86.5, 230.0, 373.5, 499.3], "role": "figure" }],
+      "overrides": "q063-2025-no6", "why": "同上（同じ試験の添付PDF）" }
+  ],
+  "overrides": {
+    "q063-2025-no6": {
+      "stem": "表6は，基準点成果などの情報の抜粋である。ア及びイに入るべき符号とウに入るべき数値の組合せとして最も適当なものはどれか。次の1～5の中から選べ。\nただし，平面直角座標系（平成14年国土交通省告示第9号）の11系における座標系原点の緯度及び経度は，次のとおりである。\n北緯44° 00′ 00″.0000　東経140° 15′ 00″.0000",
+      "stemMode": "text",
+      "choices": ["ア：−　イ：＋　ウ：0.999901", "ア：＋　イ：−　ウ：0.999901", "ア：−　イ：＋　ウ：1.000001", "ア：＋　イ：−　ウ：1.000001", "ア：＋　イ：＋　ウ：1.000001"],
+      "choiceMode": "text",
+      "verifiedBy": "公式PDF 7ページを画像にして目視で照合（2026-11-16）"
+    }
+  }
+}

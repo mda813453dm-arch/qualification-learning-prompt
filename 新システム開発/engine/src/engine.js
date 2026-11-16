@@ -8,6 +8,7 @@
  * - 通常採点で再検索しない：採点時に公式PDFや保存データを読み直さない。
  */
 import { readResult } from './cache.js';
+import { separateFigures, SEPARATION_LABELS } from './figure-separation.js';
 import { selectDueReviews, updateReviewItem } from './review.js';
 import { learningPolicy, learningPhase, orderDueByContrast } from './learning-policy.js';
 
@@ -343,24 +344,39 @@ export function questionScreen(q, display, { fieldName = null, fieldNotice = nul
 export function present(item, kind, figureBase = '/v1/figure') {
   const p = item.packet;
   const notices = [];
-  if (p.stemMode === 'ocr' || p.choiceMode === 'ocr') notices.push(OCR_NOTICE);
+  const urlOf = (file, owner, parserVersion) => {
+    const who = owner ?? item.keyParts.owner;
+    return `${figureBase}${who ? `/own/${encodeURIComponent(who)}` : ''}/${p.questionPdfSha256}/${encodeURIComponent(parserVersion ?? item.keyParts.parserVersion)}/${encodeURIComponent(file)}`;
+  };
+  // 図表だけの画像を本文と選択肢の間に出し、問題1問分の切り出しは原本照合用にする（figure-separation.js）
+  const sep = separateFigures(p, urlOf);
+  const o = sep.overrides ?? {};
+  const stemMode = o.stemMode ?? p.stemMode ?? 'text';
+  const choiceMode = o.choiceMode ?? p.choiceMode ?? 'text';
+  if (stemMode === 'ocr' || choiceMode === 'ocr') notices.push(OCR_NOTICE);
+  notices.push(...sep.notices);
   return {
     questionId: p.questionId,
     kind,
     year: p.year,
     section: p.section,
     questionNumber: p.questionNumber,
-    stem: p.stem,
-    stemMode: p.stemMode ?? 'text',
-    choices: p.choices,
-    choiceMode: p.choiceMode ?? 'text',
-    figures: (p.figures ?? []).map((f) => ({
-      url: `${figureBase}${item.keyParts.owner ? `/own/${encodeURIComponent(item.keyParts.owner)}` : ''}/${p.questionPdfSha256}/${encodeURIComponent(item.keyParts.parserVersion)}/${encodeURIComponent(f.file)}`,
+    questionPdfSha256: p.questionPdfSha256,
+    stem: o.stem ?? p.stem,
+    stemMode,
+    choices: o.choices ?? p.choices,
+    choiceMode,
+    figures: sep.figures.map((f) => ({
+      url: f.url,
       width: f.width,
       height: f.height,
       sha256: f.sha256,
+      role: f.role,
       ...(f.svgFile ? { svgFile: f.svgFile } : {}),
     })),
+    sourceImageUrls: sep.sources.map((s) => s.url),
+    figureSeparation: { status: sep.status, label: SEPARATION_LABELS[sep.status] ?? sep.status, check: sep.check,
+      ...(o.stem || o.choices ? { textVerified: o.verifiedBy ?? 'manual_visual' } : {}) },
     questionPdfUrl: p.questionPdfUrl,
     questionPdfPages: p.evidence?.questionPdfPages ?? [],
     learning: { ...learningPolicy(p), phase: 'closed_book_recall' },

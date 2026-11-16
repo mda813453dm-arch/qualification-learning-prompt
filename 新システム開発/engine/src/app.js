@@ -17,6 +17,7 @@ import { FIXED_UI_CHOICES } from './fixed-ui.js';
 import https from 'node:https';
 import { constants as cryptoConstants, createHmac, randomBytes } from 'node:crypto';
 import { readFigure } from './cache.js';
+import { inlineFigureUrls } from './figure-separation.js';
 import { PlanError, SET_SIZE, fieldPracticeTarget, updatePlan, availablePackets, findWanted, findVerifiedTopic, grade, jstToday, newState, pickNext, pin, present, questionDisplay, questionScreen } from './engine.js';
 import { explainHow, stageNumber, weakFields } from './explain.js';
 import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './study.js';
@@ -1099,6 +1100,8 @@ async function diagStep(env, id, state0, now, b) {
       stem: shown.stem, stemMode: shown.stemMode, choices: shown.choices, choiceMode: shown.choiceMode,
       questionPdfUrl: shown.questionPdfUrl, questionPdfPages: shown.questionPdfPages,
       notices: shown.notices, figureUrls: shown.figures.map((f) => f.url),
+      figures: shown.figures, sourceImageUrls: shown.sourceImageUrls, figureSeparation: shown.figureSeparation,
+      questionPdfSha256: shown.questionPdfSha256,
     };
   };
   const d0 = state.aiDiag;
@@ -1605,8 +1608,9 @@ async function restoreStudyView(env, id, state, now) {
   }
   if (saved?.grade?.questionId && saved.question?.questionId === saved.grade.questionId) {
     const previous = saved.question;
-    const figureUrls = (previous.figures ?? []).map((f) => f.url?.startsWith('/')
-      ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean);
+    // 採点前に保存した表示に問題1問分の切り出しが含まれていても、図として出し直さない
+    const figureUrls = inlineFigureUrls({ ...previous, figureUrls: (previous.figures ?? []).map((f) => f.url?.startsWith('/')
+      ? `${env.PUBLIC_BASE_URL ?? ''}${f.url}` : f.url).filter(Boolean) });
     const savedTarget = saved.fieldTarget || state.set?.target || SET_SIZE;
     const question = { ...previous, figureUrls,
       fieldName: cat?.fields?.[saved.fieldId] ?? null,

@@ -1,0 +1,50 @@
+name: 図表だけの切り出し画像を Cloud Storage に置く
+# 合図：新システム開発/deploy/figure-crops-request.txt を更新して push する。
+# figure-crops ブランチの画像（目視確認した範囲を公式PDFから切り出したもの）を、manifest.json の SHA-256 を確かめてから
+# gs://qualification-learning-qlp-figures/fig/own/_shared/<PDFのSHA>/<版>/<ファイル> に置く。
+# 既にある画像は上書きしない（-n）。Firestore の問題データ・学習履歴には触れない。有料APIは呼ばない。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/figure-crops-request.txt'
+permissions:
+  contents: read
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: figure-crops, path: crops }
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: SHA-256 を確かめる
+        run: |
+          cd crops
+          python3 - <<'PY'
+          import hashlib, json
+          m = json.load(open('manifest.json'))
+          for x in m:
+              assert hashlib.sha256(open(x['path'], 'rb').read()).hexdigest() == x['sha256'], x['path']
+              assert x['key'].startswith('fig/own/_shared/') and x['key'].endswith('/' + x['path'].split('/')[-1]), x['key']
+          print('OK', len(m))
+          PY
+      - name: 置く（上書きしない）
+        run: |
+          cd crops
+          python3 -c "import json;[print(x['path'], x['key']) for x in json.load(open('manifest.json'))]" | while read path key; do
+            gsutil -q -h "Content-Type:image/png" cp -n "$path" "gs://qualification-learning-qlp-figures/$key"
+          done
+      - name: 置いた画像を確かめる
+        run: |
+          cd crops
+          python3 -c "import json;[print(x['key'], x['sha256']) for x in json.load(open('manifest.json'))]" | while read key sha; do
+            got=$(gsutil cat "gs://qualification-learning-qlp-figures/$key" | sha256sum | cut -d' ' -f1)
+            if [ "$got" != "$sha" ]; then echo "MISMATCH $key"; exit 1; fi
+          done
+          echo ALL_UPLOADED_AND_VERIFIED

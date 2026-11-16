@@ -217,9 +217,11 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.doesNotMatch(html, /<button id=\\"explanationRetry\\">/);
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
-  // 検査したHTMLの版＝公開する版（v195：v194のOCR小問整形を維持し、AI確認問題・補強問題も対象にする）。
-  assert.match(WIDGET_URI, /question-v195\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-16.195');
+  // 検査したHTMLの版＝公開する版（v196：v195の整形を維持し、図表だけを本文と選択肢の間に出す）。
+  assert.match(WIDGET_URI, /question-v196\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-16.196');
+  assert.match(html, /all-question-modes-v195/);
+  assert.match(html, /qlp-figure-separation/);
   assert.match(html, /inline-statement-paragraphs-v194/);
   assert.match(html, /qlp-v192-natural-height/);
   assert.match(html, /qlp-v193-no-scroll-diag/);
