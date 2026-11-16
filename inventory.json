@@ -1,0 +1,2182 @@
+[
+ {
+  "qualificationId": "q041",
+  "year": 2008,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4263,
+  "packetsWithFigures": 4263
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2009,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3915,
+  "packetsWithFigures": 3915
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2010,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 86,
+  "packets": 4042,
+  "packetsWithFigures": 4042
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2011,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 85,
+  "packets": 3060,
+  "packetsWithFigures": 3060
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2012,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 86,
+  "packets": 3182,
+  "packetsWithFigures": 3182
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2013,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3915,
+  "packetsWithFigures": 3915
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2014,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3828,
+  "packetsWithFigures": 3828
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2015,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3828,
+  "packetsWithFigures": 3828
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3741,
+  "packetsWithFigures": 3741
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2017,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4089,
+  "packetsWithFigures": 4089
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2018,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4002,
+  "packetsWithFigures": 4002
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2019,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3915,
+  "packetsWithFigures": 3915
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "10月",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3843,
+  "packetsWithFigures": 3843
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "12月",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4155,
+  "packetsWithFigures": 4155
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "10月",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3882,
+  "packetsWithFigures": 3882
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "12月",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 3882,
+  "packetsWithFigures": 3882
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 2958,
+  "packetsWithFigures": 2958
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4350,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4350,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 87,
+  "packets": 4350,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 216,
+  "packets": 5961,
+  "packetsWithFigures": 3182
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 216,
+  "packets": 5961,
+  "packetsWithFigures": 5468
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 216,
+  "packets": 5903,
+  "packetsWithFigures": 5352
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 431,
+  "packets": 6048,
+  "packetsWithFigures": 2592
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 216,
+  "packets": 6048,
+  "packetsWithFigures": 1728
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2023,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 528,
+  "packetsWithFigures": 22
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 12,
+  "packets": 564,
+  "packetsWithFigures": 72
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2025,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 550,
+  "packetsWithFigures": 11
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 14,
+  "packets": 644,
+  "packetsWithFigures": 644
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2017,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 15,
+  "packets": 570,
+  "packetsWithFigures": 570
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2018,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 14,
+  "packets": 700,
+  "packetsWithFigures": 700
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2019,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 15,
+  "packets": 645,
+  "packetsWithFigures": 645
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "10月",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 15,
+  "packets": 465,
+  "packetsWithFigures": 465
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "12月",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 15,
+  "packets": 675,
+  "packetsWithFigures": 675
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "10月",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 16,
+  "packets": 160,
+  "packetsWithFigures": 160
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "12月",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 16,
+  "packets": 640,
+  "packetsWithFigures": 640
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 17,
+  "packets": 425,
+  "packetsWithFigures": 425
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 16,
+  "packets": 800,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 17,
+  "packets": 850,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.5.0",
+  "owner": "private",
+  "records": 20,
+  "packets": 1000,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 8,
+  "packets": 184,
+  "packetsWithFigures": 184
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 16,
+  "packets": 448,
+  "packetsWithFigures": 128
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "通関実務",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 8,
+  "packets": 40,
+  "packetsWithFigures": 28
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "通関業法",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 8,
+  "packets": 72,
+  "packetsWithFigures": 36
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "関税法等",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 8,
+  "packets": 120,
+  "packetsWithFigures": 60
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2020,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 9,
+  "packets": 441,
+  "packetsWithFigures": 18
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 7,
+  "packets": 350,
+  "packetsWithFigures": 49
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2021,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 7,
+  "packets": 343,
+  "packetsWithFigures": 28
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.6.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 275,
+  "packetsWithFigures": 143
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.6.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 253,
+  "packetsWithFigures": 88
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.6.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 253,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.6.2",
+  "owner": "private",
+  "records": 22,
+  "packets": 275,
+  "packetsWithFigures": 99
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.6.2",
+  "owner": "private",
+  "records": 11,
+  "packets": 308,
+  "packetsWithFigures": 88
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2019,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 150,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2020,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 148,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2021,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 149,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 146,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 150,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 148,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 3,
+  "packets": 150,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2017,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 52,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2017,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 44,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2018,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 49
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2018,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 44,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2019,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 52,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2019,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 45,
+  "packetsWithFigures": 45
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2020,
+  "section": "10月午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 42,
+  "packetsWithFigures": 42
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2021,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 47
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2021,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 51,
+  "packetsWithFigures": 51
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2022,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 39,
+  "packetsWithFigures": 39
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2023,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 55,
+  "packetsWithFigures": 55
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2023,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 47
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2024,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 51,
+  "packetsWithFigures": 51
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2024,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 48,
+  "packetsWithFigures": 48
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2025,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 44,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "ap",
+  "year": 2025,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 52,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2017,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 52,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2017,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 51,
+  "packetsWithFigures": 51
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2018,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 41,
+  "packetsWithFigures": 41
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2018,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 52,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2019,
+  "section": "春期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 47
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2019,
+  "section": "秋期午前",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2023,
+  "section": "科目A",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2023,
+  "section": "科目B",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 6,
+  "packetsWithFigures": 6
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2024,
+  "section": "科目A",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2024,
+  "section": "科目B",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 6,
+  "packetsWithFigures": 6
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2025,
+  "section": "科目A",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2025,
+  "section": "科目B",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 6,
+  "packetsWithFigures": 6
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2026,
+  "section": "科目A",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "fe",
+  "year": 2026,
+  "section": "科目B",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 6,
+  "packetsWithFigures": 6
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2015,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2015,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2016,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2016,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2017,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2017,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2018,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2018,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2019,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 7
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2019,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 3
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2020,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 9
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2020,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2021,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 7
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2021,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2022,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2022,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2023,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 10
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2023,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 20
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2024,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 8
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2024,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2025,
+  "section": "午前の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 10,
+  "packetsWithFigures": 9
+ },
+ {
+  "qualificationId": "land_surveyor",
+  "year": 2025,
+  "section": "午後の部",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 20,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2024,
+  "section": "2024年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 3
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2024,
+  "section": "2024年9月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 4
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2024,
+  "section": "202405学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 3
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2024,
+  "section": "202409学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 4
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2025,
+  "section": "2025年1月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2025,
+  "section": "2025年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2025,
+  "section": "202501学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2025,
+  "section": "202505学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2026,
+  "section": "2026年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 3
+ },
+ {
+  "qualificationId": "q002",
+  "year": 2026,
+  "section": "202605学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 3
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2024,
+  "section": "2024年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2024,
+  "section": "202405学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2025,
+  "section": "2025年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2025,
+  "section": "202505学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2026,
+  "section": "2026年5月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q003",
+  "year": 2026,
+  "section": "202605学科",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 60,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2016,
+  "section": "春期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2016,
+  "section": "秋期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2017,
+  "section": "春期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2017,
+  "section": "秋期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2018,
+  "section": "春期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2018,
+  "section": "秋期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2019,
+  "section": "春期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2019,
+  "section": "秋期",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2020,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2021,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2022,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2023,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2024,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2025,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2026,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2019,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2020,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2021,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q018",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2008,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 49
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2009,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 45,
+  "packetsWithFigures": 45
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2010,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 47
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2011,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 36,
+  "packetsWithFigures": 36
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2012,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 37,
+  "packetsWithFigures": 37
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2013,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 45,
+  "packetsWithFigures": 45
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2014,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 44,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2015,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 44,
+  "packetsWithFigures": 44
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2016,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 43,
+  "packetsWithFigures": 43
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2017,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2017,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 47
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2018,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2018,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 46,
+  "packetsWithFigures": 46
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2019,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2019,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 45,
+  "packetsWithFigures": 45
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "10月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2020,
+  "section": "12月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "10月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2021,
+  "section": "12月",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2022,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 50
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 34,
+  "packetsWithFigures": 34
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2023,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2024,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2025,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q041",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 28,
+  "packetsWithFigures": 15
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 28,
+  "packetsWithFigures": 28
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 28,
+  "packetsWithFigures": 28
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 3,
+  "packets": 56,
+  "packetsWithFigures": 40
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 28,
+  "packetsWithFigures": 8
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2020,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2021,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 4
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2022,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 7
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2023,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 48,
+  "packetsWithFigures": 2
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2024,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 47,
+  "packetsWithFigures": 6
+ },
+ {
+  "qualificationId": "q090",
+  "year": 2025,
+  "section": "年度共通",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 1
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "通関実務",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 2,
+  "packets": 10,
+  "packetsWithFigures": 7
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "通関業法",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 2,
+  "packets": 18,
+  "packetsWithFigures": 9
+ },
+ {
+  "qualificationId": "q098",
+  "year": 2025,
+  "section": "関税法等",
+  "parserVersion": "0.8.2",
+  "owner": "shared",
+  "records": 2,
+  "packets": 30,
+  "packetsWithFigures": 15
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main1",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 3,
+  "packets": 39,
+  "packetsWithFigures": 39
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main2",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 3,
+  "packets": 36,
+  "packetsWithFigures": 36
+ },
+ {
+  "qualificationId": "q097",
+  "year": 2021,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 1,
+  "packets": 50,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q097",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q097",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 1,
+  "packets": 49,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q097",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 2,
+  "packets": 100,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q097",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 2,
+  "packets": 98,
+  "packetsWithFigures": 0
+ },
+ {
+  "qualificationId": "q006",
+  "year": 2026,
+  "section": "公開問題",
+  "parserVersion": "0.8.2",
+  "owner": "private",
+  "records": 1,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.6.1",
+  "owner": "private",
+  "records": 4,
+  "packets": 100,
+  "packetsWithFigures": 52
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.6.1",
+  "owner": "private",
+  "records": 4,
+  "packets": 92,
+  "packetsWithFigures": 92
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.6.1",
+  "owner": "private",
+  "records": 4,
+  "packets": 92,
+  "packetsWithFigures": 92
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.6.1",
+  "owner": "private",
+  "records": 8,
+  "packets": 100,
+  "packetsWithFigures": 100
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.6.1",
+  "owner": "private",
+  "records": 4,
+  "packets": 112,
+  "packetsWithFigures": 32
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.0",
+  "owner": "private",
+  "records": 2,
+  "packets": 50,
+  "packetsWithFigures": 26
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.8.1",
+  "owner": "private",
+  "records": 1,
+  "packets": 25,
+  "packetsWithFigures": 13
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.0",
+  "owner": "private",
+  "records": 2,
+  "packets": 50,
+  "packetsWithFigures": 16
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.8.1",
+  "owner": "private",
+  "records": 1,
+  "packets": 25,
+  "packetsWithFigures": 8
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.0",
+  "owner": "private",
+  "records": 2,
+  "packets": 46,
+  "packetsWithFigures": 8
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2024,
+  "section": "main",
+  "parserVersion": "0.8.1",
+  "owner": "private",
+  "records": 1,
+  "packets": 23,
+  "packetsWithFigures": 4
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.0",
+  "owner": "private",
+  "records": 4,
+  "packets": 56,
+  "packetsWithFigures": 24
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.8.1",
+  "owner": "private",
+  "records": 2,
+  "packets": 28,
+  "packetsWithFigures": 12
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.8.0",
+  "owner": "private",
+  "records": 2,
+  "packets": 56,
+  "packetsWithFigures": 16
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2026,
+  "section": "main",
+  "parserVersion": "0.8.1",
+  "owner": "private",
+  "records": 1,
+  "packets": 28,
+  "packetsWithFigures": 8
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2022,
+  "section": "main",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 1,
+  "packets": 25,
+  "packetsWithFigures": 13
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2023,
+  "section": "main",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 1,
+  "packets": 22,
+  "packetsWithFigures": 22
+ },
+ {
+  "qualificationId": "q063",
+  "year": 2025,
+  "section": "main",
+  "parserVersion": "0.6.0",
+  "owner": "private",
+  "records": 4,
+  "packets": 51,
+  "packetsWithFigures": 51
+ }
+]
