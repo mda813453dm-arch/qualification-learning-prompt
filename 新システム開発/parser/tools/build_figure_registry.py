@@ -189,6 +189,13 @@ def main():
                         entry['status'] = 'unverified'
                         if appr:
                             raise SystemExit(f'目視で承認した候補が使えない {key} {st}')
+                # 図の扱いは変えず、本文・選択肢の文字だけを原本どおりに戻す（目視で照合した記録付き）
+                tov = next((r for r in manual.get('textOverrides', []) if match(r, row, q)), None)
+                if tov:
+                    used_rules.add(id(tov))
+                    if entry.get('overrides'):
+                        raise SystemExit(f'本文・選択肢の上書きが二重 {key}')
+                    entry['overrides'] = manual['overrides'][tov['overrides']]
                 if not entry['add']:
                     del entry['add']
                 # 同じPDFでも区分（section）ごとに分解結果が違うことがある（例：本文が画像か文字か）
@@ -214,7 +221,7 @@ def main():
                 registry[f'{key}@{sec}'] = v
     skipped = [r for r in manual.get('approveChoices', []) if id(r) not in used_rules]
     print('選択肢だけ承認したが図が要るため見送り', len(skipped), [(r['q'], r['year'], r['sha'], r['n']) for r in skipped])
-    unused = [r for r in manual['questions'] + manual['approveCandidates'] if id(r) not in used_rules]
+    unused = [r for r in manual['questions'] + manual['approveCandidates'] + manual.get('textOverrides', []) if id(r) not in used_rules]
     if unused:
         raise SystemExit(f'使われなかった目視確認の行 {unused}')
     os.makedirs(os.path.dirname(os.path.abspath(a.out)), exist_ok=True)
