@@ -115,6 +115,10 @@ async function fetchAll(qq) {
   const l20 = await open('土地家屋調査士', 2023, 20, '午後の部');
   assert.equal(l20.stemMode, 'text'); assert.equal(l20.figureSeparation?.status, 'not_needed'); assert.equal(roles(l20).length, 0);
   console.log('PASS 土地家屋調査士 2023 午後 問20 図表なし・文字だけ（第7回）');
+  const i72 = await open('ITパスポート', 2020, 72, '公開問題');
+  assert.equal(i72.stemMode, 'text'); assert.deepEqual(roles(i72), ['figure']); assert.deepEqual(i72.choices, ['5', '10', '12', '17']);
+  await fetchAll(i72);
+  console.log('PASS ITパスポート 2020 公開問題 問72 走査PDFの本文を目視で文字に・図だけの画像（第7回）');
 }
 
 let n = 0;
