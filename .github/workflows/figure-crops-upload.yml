@@ -13,7 +13,7 @@ permissions:
 jobs:
   upload:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 40
     env:
       GOOGLE_CLOUD_PROJECT: qualification-learning
     steps:
@@ -34,17 +34,36 @@ jobs:
               assert x['key'].startswith('fig/own/_shared/') and x['key'].endswith('/' + x['path'].split('/')[-1]), x['key']
           print('OK', len(m))
           PY
-      - name: 置く（上書きしない）
+      - name: 置く（上書きしない・並列）
         run: |
           cd crops
-          python3 -c "import json;[print(x['path'], x['key']) for x in json.load(open('manifest.json'))]" | while read path key; do
-            gsutil -q -h "Content-Type:image/png" cp -n "$path" "gs://qualification-learning-qlp-figures/$key"
-          done
+          # バケット上の配置どおりのフォルダを作って一度に送る（1枚ずつだと時間切れになるため）
+          python3 - <<'PY'
+          import json, os, shutil
+          for x in json.load(open('manifest.json')):
+              dst = os.path.join('../stage', x['key'])
+              os.makedirs(os.path.dirname(dst), exist_ok=True)
+              shutil.copyfile(x['path'], dst)
+          PY
+          cd ../stage
+          gsutil -m -q -h "Content-Type:image/png" cp -n -r fig gs://qualification-learning-qlp-figures/
       - name: 置いた画像を確かめる
         run: |
+          mkdir back
+          gsutil -m -q cp -r gs://qualification-learning-qlp-figures/fig/own/_shared back/
           cd crops
-          python3 -c "import json;[print(x['key'], x['sha256']) for x in json.load(open('manifest.json'))]" | while read key sha; do
-            got=$(gsutil cat "gs://qualification-learning-qlp-figures/$key" | sha256sum | cut -d' ' -f1)
-            if [ "$got" != "$sha" ]; then echo "MISMATCH $key"; exit 1; fi
-          done
-          echo ALL_UPLOADED_AND_VERIFIED
+          python3 - <<'PY'
+          import hashlib, json, sys
+          bad = 0
+          m = json.load(open('manifest.json'))
+          for x in m:
+              p = '../back/' + x['key'][len('fig/own/'):]
+              try:
+                  got = hashlib.sha256(open(p, 'rb').read()).hexdigest()
+              except FileNotFoundError:
+                  got = None
+              if got != x['sha256']:
+                  print('MISMATCH', x['key']); bad += 1
+          if bad: sys.exit(1)
+          print('ALL_UPLOADED_AND_VERIFIED', len(m))
+          PY
