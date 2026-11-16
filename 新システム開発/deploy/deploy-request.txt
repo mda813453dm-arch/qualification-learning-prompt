@@ -570,3 +570,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-16T05:51:08Z figure separation round 2 (466 crops, IT Passport)
 2026-11-16T09:33:50Z figure separation round 3 (764 crops; 339 unverified questions visually checked; remaining 296 kept unverified)
 2026-11-16T12:11:36Z figure separation follow-up: restore OCR stems (IT Passport 2016 spring Q60, 2017 Q72), collapse 4 partial land_surveyor figures, auto-figure notice for unregistered uploads, representative production checks
+2026-11-16T19:36:47Z figure separation rounds 4-6 (all 294 remaining questions visually decided; unverified 0; 1042 crops)
