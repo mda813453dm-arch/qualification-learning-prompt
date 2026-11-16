@@ -572,3 +572,4 @@ cd7132b 解説後の確認問題・問題文の改行・URLリンク・古い画
 2026-11-16T12:11:36Z figure separation follow-up: restore OCR stems (IT Passport 2016 spring Q60, 2017 Q72), collapse 4 partial land_surveyor figures, auto-figure notice for unregistered uploads, representative production checks
 2026-11-16T19:36:47Z figure separation rounds 4-6 (all 294 remaining questions visually decided; unverified 0; 1042 crops)
 2026-11-16T19:45:29Z figure separation rounds 4-6 + exact section match for requested questions (2016 秋期 問80 etc.)
+2026-11-17 第7回：土地家屋調査士の角度記号6問の訂正、学習画面 v197（図を取得できないときの代わりの表示）
