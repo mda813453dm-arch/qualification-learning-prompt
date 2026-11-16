@@ -1,0 +1,42 @@
+name: 図表分離監査用に保管済みの原本PDFを書き出す（読み取りのみ）
+# 合図：新システム開発/deploy/figure-audit-att-request.txt（問題PDFのSHA-256を1行に1つ）を更新して push する。
+# 運営者が添付して保管した原本（att/<SHA>.pdf。ITパスポートなど公式サイトがクラウドからの取得を断る資格）を
+# SHA-256 を確かめて diag-figure-audit-att ブランチに置く。Firestore・Cloud Storage には書き込まない。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/figure-audit-att-request.txt'
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 原本PDFを取ってくる
+        run: |
+          mkdir -p out/pdf
+          miss=0
+          for sha in $(grep -E '^[0-9a-f]{64}$' 新システム開発/deploy/figure-audit-att-request.txt); do
+            if gsutil -q cp "gs://qualification-learning-qlp-figures/att/$sha.pdf" "out/pdf/$sha.pdf" && [ "$(sha256sum out/pdf/$sha.pdf | cut -d' ' -f1)" = "$sha" ]; then
+              echo "OK $sha"
+            else
+              echo "PDF_MISSING $sha"; rm -f "out/pdf/$sha.pdf"; miss=$((miss+1))
+            fi
+          done
+          echo "MISSING $miss"; du -sh out/pdf
+      - name: 結果を diag-figure-audit-att に置く
+        run: |
+          cd out
+          git init -q -b diag-figure-audit-att
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "attached source PDFs for figure separation audit"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-figure-audit-att
