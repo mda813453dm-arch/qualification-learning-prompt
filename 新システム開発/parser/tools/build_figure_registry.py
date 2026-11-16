@@ -35,11 +35,26 @@ def match(rule, row, q):
             and row['questionPdfSha256'].startswith(rule['sha']) and int(rule['n']) == int(q['questionNumber']))
 
 
-def render(pdf_dir, qsha, page, rect):
+def trim_blank(pg, clip, pad=4.0):
+    """範囲の上下の余白（何も描かれていない行）だけを詰める。描かれたものは削らない。"""
+    import fitz
+    pix = pg.get_pixmap(matrix=fitz.Matrix(1, 1), clip=clip, alpha=False, colorspace=fitz.csGRAY)
+    w, h, data = pix.width, pix.height, pix.samples
+    rows = [y for y in range(h) if sum(1 for x in range(w) if data[y * w + x] < 200) >= 2]
+    if not rows:
+        return clip
+    y0 = max(clip.y0, clip.y0 + rows[0] - pad)
+    y1 = min(clip.y1, clip.y0 + rows[-1] + 1 + pad)
+    return fitz.Rect(clip.x0, y0, clip.x1, y1)
+
+
+def render(pdf_dir, qsha, page, rect, trim=False):
     import fitz
     doc = fitz.open(os.path.join(pdf_dir, f'{qsha}.pdf'))
     pg = doc[page - 1]
     clip = fitz.Rect(rect) & pg.rect
+    if trim:
+        clip = trim_blank(pg, clip)
     pix = pg.get_pixmap(matrix=fitz.Matrix(CROP_ZOOM, CROP_ZOOM), clip=clip, alpha=False)
     if pix.is_unicolor:
         raise SystemExit(f'空の切り出し {qsha} p{page} {rect}')
@@ -54,8 +69,19 @@ def main():
     ap.add_argument('--out', required=True)
     ap.add_argument('--crops', required=True)
     ap.add_argument('--report', required=True)
+    ap.add_argument('--refined', default=os.path.join(HERE, 'figure_candidates_refined.json'))
+    ap.add_argument('--choices', default=os.path.join(HERE, 'choice_region_candidates.json'))
     a = ap.parse_args()
     manual = json.load(open(a.manual, encoding='utf-8'))
+    # 上下の選択肢・本文末尾の行を外した候補（refine_figure_candidates.py）。目視で承認した番号だけ使う
+    refined = {}
+    choice_cands = {}
+    if os.path.exists(a.choices):
+        for x in json.load(open(a.choices, encoding='utf-8')):
+            choice_cands[(x['questionPdfSha256'], x['section'], x['questionNumber'])] = x
+    if os.path.exists(a.refined):
+        for x in json.load(open(a.refined, encoding='utf-8')):
+            refined[(x['questionPdfSha256'], x['section'], x['questionNumber'])] = x['candidates']
     visual_quals = set(manual.get('visualQualifications', {}))
     registry, manifest = {}, []
     report = defaultdict(lambda: defaultdict(int))
@@ -66,7 +92,7 @@ def main():
         qsha = row['questionPdfSha256']
         prefix = f"{row['qualificationId']}-{row['year']}-{qsha[:12]}-q{q['questionNumber']}-p{spec['page']}"
         name = f"{prefix}-{'c' if spec['role'] == 'choice_image' else 's'}{k}.png"
-        data, w, h, clip = render(a.pdf, qsha, spec['page'], spec['rect'])
+        data, w, h, clip = render(a.pdf, qsha, spec['page'], spec['rect'], trim=spec.get('trim', False))
         os.makedirs(os.path.join(a.crops, qsha), exist_ok=True)
         with open(os.path.join(a.crops, qsha, name), 'wb') as f:
             f.write(data)
@@ -96,6 +122,7 @@ def main():
                 entry = {'figures': {}, 'add': [], 'check': 'pdf_audit+visual' if visual else 'pdf_audit', 'audit': st}
                 man = next((r for r in manual['questions'] if match(r, row, q)), None)
                 appr = next((r for r in manual['approveCandidates'] if match(r, row, q)), None)
+                apch = next((r for r in manual.get('approveChoices', []) if match(r, row, q)), None)
                 if man:
                     used_rules.add(id(man))
                     for f in figs:
@@ -120,6 +147,25 @@ def main():
                     elif st == 'image_question':
                         entry['figures'] = {f['file']: 'question_image' for f in figs}
                         entry['status'] = 'image_question'
+                    elif apch and st == 'choice_image' and (apch['f'] or not q.get('stemRefersFigure')):
+                        used_rules.add(id(apch))
+                        cc = choice_cands[(qsha, section, n)]
+                        for k, i in enumerate(apch['f']):
+                            f = cc['figures'][i]
+                            entry['add'].append(add_crop(row, q, k, {'page': f['page'], 'rect': f['rect'], 'role': 'figure', 'trim': True}))
+                        ch = cc['choice']
+                        entry['add'].append(add_crop(row, q, 0, {'page': ch['page'], 'rect': ch['rect'], 'role': 'choice_image', 'trim': True}))
+                        entry['figures'] = {f['file']: 'source' for f in figs}
+                        entry['status'] = 'verified'
+                        entry['check'] = 'pdf_audit+visual'
+                    elif appr and appr.get('refined') and st in ('fixable', 'unverified') and q.get('stemCoverage', 0) >= 0.6:
+                        cands = refined[(qsha, section, n)]
+                        for k, i in enumerate(appr['c']):
+                            c = cands[i]
+                            entry['add'].append(add_crop(row, q, k, {'page': c['page'], 'rect': c['rect'], 'role': 'figure'}))
+                        entry['figures'] = {f['file']: 'source' for f in figs}
+                        entry['status'] = 'verified'
+                        entry['check'] = 'pdf_audit+visual'
                     elif st == 'fixable' and (visual or appr) and clean and len(clean) == len(q['candidates']) \
                             and q.get('stemCoverage', 0) >= 0.85:
                         for k, c in enumerate(clean):
@@ -157,6 +203,8 @@ def main():
         else:
             for sec, v in secs.items():
                 registry[f'{key}@{sec}'] = v
+    skipped = [r for r in manual.get('approveChoices', []) if id(r) not in used_rules]
+    print('選択肢だけ承認したが図が要るため見送り', len(skipped), [(r['q'], r['year'], r['sha'], r['n']) for r in skipped])
     unused = [r for r in manual['questions'] + manual['approveCandidates'] if id(r) not in used_rules]
     if unused:
         raise SystemExit(f'使われなかった目視確認の行 {unused}')

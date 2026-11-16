@@ -208,3 +208,27 @@ test('判定表：全ての「確認済み」は図だけの画像を持ち、�
   }
   assert.ok(verified > 100);
 });
+
+test('ITパスポート（2016 春期）：図は図だけ、選択肢が原本画像の問は選択肢だけ、切り出しが不完全な問は確認済みにしない', () => {
+  const sha = '776343b7960b460f6bf9cec41f939f81e9338dd0d77cffdc2389f838ec97d1dc';
+  const urlOf = (file, owner, ver) => `https://qlp.test/v1/figure/${owner ? `own/${owner}/${sha}/${ver}/` : ''}${encodeURIComponent(file)}`;
+  const packet = (n, choiceMode = 'ocr') => ({ qualificationId: 'q006', year: 2016, section: '春期', questionPdfSha256: sha, questionNumber: n,
+    stemMode: 'ocr', choiceMode, stem: '次の表', figures: [{ file: `q006-2016-776343b7960b-q${n}-p${n === 12 ? 6 : n === 2 ? 2 : 28}.png`, width: 900, height: 600 }] });
+  // 問12：表だけの画像を出し、問題全体の画像は照合用に畳む
+  const q12 = separateFigures(packet(12), urlOf);
+  assert.equal(q12.status, 'verified');
+  assert.deepEqual(q12.figures.map((f) => [f.file, f.role]), [['q006-2016-776343b7960b-q12-p6-s0.png', 'figure']]);
+  assert.deepEqual(q12.sources.map((s) => s.file), ['q006-2016-776343b7960b-q12-p6.png']);
+  // 問2：選択肢が原本画像。選択肢の行だけの画像を出す（問題全体を選択肢として出さない）
+  const q2 = separateFigures(packet(2, 'official_image'), urlOf);
+  assert.equal(q2.status, 'verified');
+  assert.deepEqual(q2.figures.map((f) => [f.file, f.role]), [['q006-2016-776343b7960b-q2-p2-c0.png', 'choice_image']]);
+  // 問60：候補の図が右端で切れていたため承認していない。確認済みにも、図だけの画像にもしない
+  const e60 = REGISTRY.questions[`${sha}:60`];
+  assert.equal(e60.status, 'unverified');
+  assert.equal((e60.add ?? []).length, 0);
+  // ITパスポートは15回分すべてに図だけ・選択肢だけの画像がある
+  const q006Adds = Object.values(REGISTRY.questions).flatMap((e) => e.add ?? []).filter((a) => a.file.startsWith('q006-'));
+  assert.ok(q006Adds.length >= 150);
+  assert.equal(new Set(q006Adds.map((a) => a.file.split('-')[2])).size, 15);
+});
