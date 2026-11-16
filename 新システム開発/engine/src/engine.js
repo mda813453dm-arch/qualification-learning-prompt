@@ -430,10 +430,16 @@ export function findWanted(state, items, want, fields = {}) {
   const year = reiwa ? 2018 + Number(reiwa) : Number(/(20\d{2})/.exec(t)?.[1] ?? 0) || null;
   const requestedSection = /午前/.test(t) ? '午前の部' : /午後/.test(t) ? '午後の部' :
     /10月/.test(t) ? 'october' : /12月/.test(t) ? 'december' : null;
-  const hits = items.filter((x) => x.packet.questionNumber === Number(num) && (!year || x.packet.year === year) &&
+  let hits = items.filter((x) => x.packet.questionNumber === Number(num) && (!year || x.packet.year === year) &&
     (!requestedSection || x.packet.section === requestedSection ||
       (requestedSection === 'october' && /10月|oct/i.test(x.packet.section)) ||
       (requestedSection === 'december' && /12月|dec/i.test(x.packet.section))));
+  // 「2016年度 秋期 問80」のように正式な区分名が書かれていれば、その区分の問だけにする（春期の同じ番号にすり替えない）
+  if (!requestedSection) {
+    const known = new Set(items.filter((x) => x.packet.section && (!year || x.packet.year === year))
+      .map((x) => String(x.packet.section).normalize('NFKC')).filter((s) => t.includes(s)));
+    if (known.size) hits = hits.filter((x) => known.has(String(x.packet.section ?? '').normalize('NFKC')));
+  }
   if (!hits.length) return null;
   const item = hits.find((x) => !state.history[x.packet.questionId]) ?? hits[0];
   return { item, kind: state.history[item.packet.questionId] ? 'review' : 'new' };

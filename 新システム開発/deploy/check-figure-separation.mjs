@@ -53,6 +53,7 @@ async function open(qualificationId, year, questionNumber, section) {
   assert.ok(!res.isError, `${qualificationId} ${year} ${section ?? ''} 問${questionNumber}: ` + JSON.stringify(res.structuredContent ?? res.content).slice(0, 300));
   const qq = (res._meta?.qlp ?? res.structuredContent).question;
   assert.equal(qq.questionNumber, questionNumber);
+  if (section) assert.equal(qq.section, section, '指定した区分の問を開く（同じ年度の別区分にすり替えない）');
   assert.equal(qq.correctAnswer, undefined, '回答前に正答を出さない');
   return qq;
 }

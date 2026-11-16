@@ -68,3 +68,13 @@ test('重みの高い分野で登録済み50%を終えたら、学習計画の�
   const p = pickNext({ ...state, history, set: { fieldId: 'a', count: 2, target: 2, years: [2025, 2024] } }, items, { today: '2026-10-19', job: null });
   assert.equal(p.item.packet.fieldId, 'b');
 });
+
+test('「2016年度 秋期 問80」は秋期の問80を出し、同じ年度の春期の問80にすり替えない', () => {
+  const mk = (section, n) => ({ packet: { questionId: `q006:2016:${section}:${n}`, year: 2016, section, questionNumber: n, fieldId: 'f', choices: ['1', '2'] } });
+  const items = [mk('春期', 80), mk('秋期', 80), mk('春期', 50)];
+  const state = newState({ qualificationId: 'q006', now: 0 });
+  assert.equal(findWanted(state, items, '2016年度 秋期 問80', {}).item.packet.section, '秋期');
+  assert.equal(findWanted(state, items, '2016年度 春期 問80', {}).item.packet.section, '春期');
+  assert.equal(findWanted(state, items, '2016年度 問80', {}).item.packet.section, '春期', '区分の指定が無ければ従来どおり');
+  assert.equal(findWanted(state, items, '2016年度 秋期 問50', {}), null, '指定の区分に無い問は別区分の問を出さない');
+});
