@@ -1,0 +1,81 @@
+name: 図表分離監査の入力を書き出す（読み取りのみ）
+# 合図：新システム開発/deploy/figure-separation-audit-request.txt を更新して push する。
+# 共有の分解結果・学習者ごとの保存件数（IDなし）・公式PDF・OCRの控えを diag-figure-audit ブランチに置く。
+# Firestore・Cloud Storage には書き込まない。Vision は呼ばない（控えを読むだけ）。
+on:
+  push:
+    branches: [ai-learning-system]
+    paths:
+      - '新システム開発/deploy/figure-separation-audit-request.txt'
+permissions:
+  contents: write
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GOOGLE_CLOUD_PROJECT: qualification-learning
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - run: npm ci --prefix 新システム開発/engine
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: 共有の分解結果と保存件数を書き出す
+        run: node 新システム開発/engine/scripts/dump-figure-separation-inputs.mjs "$PWD/out"
+      - name: 公式PDF（共有結果の出典）を取ってくる
+        run: |
+          mkdir -p out/pdf
+          python3 - <<'PY'
+          import glob, hashlib, json, os, ssl, subprocess, urllib.request
+          ctx = ssl.create_default_context(); ctx.options |= 0x4
+          seen, total, miss = {}, 0, []
+          for f in glob.glob('out/shared/*/*.json'):
+              r = json.load(open(f))['result']
+              for p in r['packets']:
+                  for kind in ('question', 'answer'):
+                      url, sha = p.get(kind + 'PdfUrl'), p.get(kind + 'PdfSha256')
+                      if url and sha and sha not in seen: seen[sha] = (url, r['qualificationId'], kind)
+          for sha, (url, q, kind) in sorted(seen.items()):
+              if kind != 'question': continue
+              dst = f'out/pdf/{sha}.pdf'
+              data = None
+              key = 'src/' + hashlib.sha256(url.encode()).hexdigest() + '.pdf'
+              if subprocess.run(['gsutil', '-q', 'cp', f'gs://qualification-learning-qlp-figures/{key}', dst]).returncode == 0:
+                  data = open(dst, 'rb').read()
+              if data is None or hashlib.sha256(data).hexdigest() != sha:
+                  try:
+                      req = urllib.request.Request(url, headers={'user-agent': 'qualification-learning-system'})
+                      data = urllib.request.urlopen(req, context=ctx, timeout=60).read()
+                  except Exception as e:
+                      data = None
+              if data is None or hashlib.sha256(data).hexdigest() != sha:
+                  miss.append((q, url)); 
+                  if os.path.exists(dst): os.remove(dst)
+                  continue
+              open(dst, 'wb').write(data); total += len(data)
+          json.dump({'pdfs': {s: v[0] for s, v in seen.items()}, 'missing': miss}, open('out/pdf/index.json', 'w'), ensure_ascii=False, indent=1)
+          print('PDF_BYTES', total, 'MISSING', len(miss))
+          for m in miss: print('PDF_MISSING', m)
+          PY
+          du -sh out/pdf
+      - name: OCRの控え（Vision の応答）の件数
+        run: |
+          gsutil du -s gs://qualification-learning-qlp-figures/vision/ || true
+          gsutil ls gs://qualification-learning-qlp-figures/vision/ | wc -l || true
+      - name: OCRの控えを取ってくる（読むだけ）
+        run: |
+          mkdir -p out/vision
+          gsutil -m -q cp "gs://qualification-learning-qlp-figures/vision/*" out/vision/ || true
+          du -sh out/vision; ls out/vision | wc -l
+      - name: 結果を diag-figure-audit に置く
+        run: |
+          cd out
+          du -sh .
+          git init -q -b diag-figure-audit
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "figure separation audit inputs"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-figure-audit
