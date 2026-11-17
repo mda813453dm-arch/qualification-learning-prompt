@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import { createRequire } from 'node:module';
 import { present } from '../src/engine.js';
 import { widgetHtml } from '../src/widget-current.js';
+import { widgetHtml as v197Html } from '../src/widget-v197.js';
 import { widgetHtml as v196Html } from '../src/widget-v196.js';
 import { widgetHtml as v195Html } from '../src/widget-v195.js';
 
@@ -25,7 +26,7 @@ const tinyPng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAQ0l
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const browser = await engine.launch({ headless: true });
   try {
-    for (const [label, html] of [['v197', widgetHtml()], ['v196', v196Html()], ['v195', v195Html()]]) {
+    for (const [label, html] of [['v198', widgetHtml()], ['v197', v197Html()], ['v196', v196Html()], ['v195', v195Html()]]) {
       const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
       const errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
