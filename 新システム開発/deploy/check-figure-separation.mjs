@@ -51,7 +51,15 @@ async function open(qualificationId, year, questionNumber, section) {
   const res = await rpc('tools/call', { name: 'startSession', arguments: { qualificationId, sources: [],
     requestedQuestion: { year, questionNumber, ...(section ? { section } : {}) } } });
   assert.ok(!res.isError, `${qualificationId} ${year} ${section ?? ''} 問${questionNumber}: ` + JSON.stringify(res.structuredContent ?? res.content).slice(0, 300));
-  const body = res._meta?.qlp ?? res.structuredContent;
+  let body = res._meta?.qlp ?? res.structuredContent;
+  // 自動取り込みの資格（基本情報など）は新しい学習の直後に準備中を返す。同じ学習で同じ問を指定し直して待つ（別の問は受け取らない）。
+  for (let i = 0; i < 36 && body?.status === 'questionUnavailable' && body.preparing; i++) {
+    await new Promise((r) => setTimeout(r, 10000));
+    const again = await rpc('tools/call', { name: 'nextQuestion', arguments: { sessionId: body.sessionId, question: body.requestedQuestion } });
+    assert.ok(!again.isError, JSON.stringify(again.structuredContent ?? again.content).slice(0, 300));
+    body = { ...body, ...(again._meta?.qlp ?? again.structuredContent) };
+    if (body.status !== 'questionUnavailable') delete body.preparing;
+  }
   const qq = body?.question;
   assert.ok(qq, `${qualificationId} ${year} ${section ?? ''} 問${questionNumber}: 問題が返らない ` + JSON.stringify(body).slice(0, 900));
   assert.equal(qq.questionNumber, questionNumber);
