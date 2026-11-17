@@ -53,8 +53,8 @@ test('原文優先：小数・少数のラベル・元のMarkdown表・HTML特�
 });
 
 test('新URIと旧版の不変性：v198でv195の全出題経路の整形を維持し、v194・v193は維持', () => {
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v198.html');
-  assert.equal(WIDGET_VERSION, '2026-11-17.198');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v199.html');
+  assert.equal(WIDGET_VERSION, '2026-11-17.199');
   const current = widgetHtml(), old = old193Html(), old194 = old194Html();
   assert.match(current, /inline-statement-paragraphs-v194/);
   assert.match(current, /all-question-modes-v195/);
@@ -96,4 +96,14 @@ test('v198：「過去問の追加・登録状況」は見出しと分野の間�
   const v197 = old197Html();
   assert.match(v197, /2026-11-17\.197/);
   assert.doesNotMatch(v197, /splitInlineQuestionStatementsV198/);
+});
+
+test('v199：本文の ``` で囲んだ擬似言語は等幅・空白をそのまま保つ枠で出し、v198 の HTML は変えない', async () => {
+  const html = widgetHtml();
+  assert.match(html, /qlp-question-layout-v199/);
+  assert.match(html, /\.qlp-code\{[^}]*white-space:pre;overflow-x:auto/);
+  assert.doesNotMatch(html.match(/\.qlp-code\{[^}]*\}/)[0], /[;{](?:max-)?height:/, '高さを固定しない');
+  const { widgetHtml: v198 } = await import('../src/widget-v198.js');
+  assert.doesNotMatch(v198(), /qlp-code/);
+  assert.match(v198(), /2026-11-17\.198/);
 });

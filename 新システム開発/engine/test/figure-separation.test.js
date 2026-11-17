@@ -131,6 +131,35 @@ test('宅建の本文が原本画像だった400問：全問が目視照合の�
   assert.match(get('44baadbfaf0c', 9).stem, /\nウ　後見人は、正当な事由があるときは/);
 });
 
+test('第9回：土地家屋調査士2016年度30問・基本情報技術者 科目B 24問は、目視照合の記録付きの文字の本文（プログラムは字下げを保つ）で出す', () => {
+  const pick = (heads) => Object.entries(REGISTRY.questions).filter(([k, e]) => heads.includes(k.slice(0, 12)) && e.overrides?.fromImageQuestion);
+  const land = pick(['738df06db280', '544f9a237c24']);
+  const fe = pick(['04fc7d8dbeed', 'c82b9e6a8470', '18c43738820a', '3995e35d9ca1']);
+  assert.equal(land.length, 30); assert.equal(fe.length, 24);
+  for (const [k, e] of [...land, ...fe]) {
+    assert.equal(e.overrides.stemMode, 'text', k);
+    assert.ok(e.overrides.verifiedBy && e.overrides.choices.every((c) => c.trim()), k);
+    // 壊れた字の対応（〔が9、〕が:、制御文字）を残さない
+    assert.doesNotMatch(e.overrides.stem + e.overrides.choices.join(''), /[\u0000-\u0009\u000b-\u001f]|\(cid:|�/, k);
+    assert.ok(e.status === 'verified' ? (e.add ?? []).length > 0 : e.status === 'not_needed', k);
+  }
+  for (const [k, e] of land) assert.equal(e.overrides.choices.length, 5, k);
+  const get = (list, head, n) => list.find(([k]) => k.startsWith(head) && k.split(':')[1].split('@')[0] === String(n))[1];
+  const am2 = get(land, '738df06db280', 2);
+  assert.match(am2.overrides.stem, /^次の〔図〕において，A点及びB点の座標値が次の〔表〕のとおりである場合に/);
+  assert.equal(am2.add.length, 2);
+  assert.match(get(land, '738df06db280', 4).overrides.stem, /108\.10 m²としたとき/);
+  assert.match(get(land, '544f9a237c24', 1).overrides.stem, /その６か月以内に再び催告をしたときは/);
+  const q1 = get(fe, '04fc7d8dbeed', 1).overrides;
+  assert.match(q1.stem, /```\n○整数型の配列: findPrimeNumbers\(整数型: maxNum\)\n  整数型の配列: pnList ← \{\}  \/\/ 要素数0の配列\n/);
+  assert.match(q1.stem, /\n  for \(i を 2 から ［a］ まで 1 ずつ増やす\)\n    divideFlag ← true\n\n    \/\* iの正の平方根/);
+  assert.match(q1.stem, /\n      if \( ［b］ \)\n          divideFlag ← false\n/);
+  assert.deepEqual(q1.choices, ['a：maxNum　b：i ÷ j の余り が 0 と等しい', 'a：maxNum　b：i ÷ j の商 が 1 と等しくない', 'a：maxNum ＋ 1　b：i ÷ j の余り が 0 と等しい', 'a：maxNum ＋ 1　b：i ÷ j の商 が 1 と等しくない']);
+  assert.equal(get(fe, 'c82b9e6a8470', 3).overrides.choices[1], 'adjMatrix[u, u] ← 1\nadjMatrix[v, v] ← 1');
+  assert.match(get(fe, '3995e35d9ca1', 6).overrides.stem, /\| \(三\) \| Z サービスのログの日時は，UTC で記録されている。 \|/);
+  assert.equal(get(fe, '18c43738820a', 6).overrides.choices.length, 10);
+});
+
 test('複数の表（測量士補 2024 問8）：表8-1・8-2（9ページ）、表8-3（10ページ）の順に出す', () => {
   const p = find('q063', '7da3c3792182', 8);
   const shown = present(item(p), 'new');

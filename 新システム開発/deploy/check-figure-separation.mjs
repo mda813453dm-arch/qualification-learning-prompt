@@ -1,7 +1,7 @@
 // Cloud Run 公開後の図表分離の検証（学習記録・採点には触れない。独立した検査用セッションだけを作る）。
 // 1) 2025年度測量士補・問6：本文（文字・北緯東経の行あり）→ 表6の画像だけ → 選択肢5つ（文字）。問題全体は照合用。
 // 2) 判定表で新しく切り出した全画像が公開経路から取れ、SHA-256 が一致する。
-// 3) 新版 v198 と旧版 v197・v196・v195 の画面がそれぞれの URI で取れる。
+// 3) 新版 v199 と旧版 v198・v197・v196 の画面がそれぞれの URI で取れる。
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
@@ -127,6 +127,20 @@ async function fetchAll(qq) {
   const t30 = await open('宅建', 2022, 30, '年度共通');
   assert.deepEqual(t30.choices, ['一つ', '二つ', '三つ', 'なし']);
   console.log('PASS 宅建 2022 問30 つながっていた選択肢を原本どおり4つに（第8回）');
+  const g2 = await open('土地家屋調査士', 2016, 2, '午前の部');
+  assert.equal(g2.stemMode, 'text'); assert.match(g2.stem, /^次の〔図〕において，A点及びB点の座標値が次の〔表〕/); assert.equal(roles(g2).filter((r) => r === 'figure').length, 2);
+  assert.equal(g2.choices.length, 5); await fetchAll(g2);
+  console.log('PASS 土地家屋調査士 2016 午前 問2 壊れた字の対応を直した文字の本文・図と表だけの画像（第9回）');
+  const g13 = await open('土地家屋調査士', 2016, 13, '午後の部');
+  assert.equal(g13.stemMode, 'text'); assert.equal(roles(g13).length, 0); assert.equal(g13.choices.length, 5);
+  console.log('PASS 土地家屋調査士 2016 午後 問13 文字だけ（第9回）');
+  const b1 = await open('基本情報技術者', 2023, 1, '科目B');
+  assert.equal(b1.stemMode, 'text'); assert.match(b1.stem, /```\n○整数型の配列: findPrimeNumbers\(整数型: maxNum\)\n  整数型の配列: pnList/);
+  assert.match(b1.stem, /\n  for \(i を 2 から ［a］ まで 1 ずつ増やす\)\n/); assert.equal(b1.choices.length, 4);
+  console.log('PASS 基本情報技術者 2023 科目B 問1 擬似言語を字下げごと文字に（第9回）');
+  const b3 = await open('基本情報技術者', 2024, 3, '科目B');
+  assert.deepEqual(roles(b3), ['figure', 'figure']); assert.equal(b3.choices[1], 'adjMatrix[u, u] ← 1\nadjMatrix[v, v] ← 1'); await fetchAll(b3);
+  console.log('PASS 基本情報技術者 2024 科目B 問3 図だけの画像・2行の選択肢（第9回）');
 }
 
 let n = 0;
@@ -142,15 +156,15 @@ for (const [k, e] of Object.entries(registry.questions)) {
 console.log('PASS 新しい切り出し画像', n);
 
 const cur = await rpc('resources/read', { uri: WIDGET_URI });
-assert.ok(cur.contents[0].text.includes(WIDGET_VERSION) && cur.contents[0].text.includes('qlp-figure-separation') && cur.contents[0].text.includes('qlp-figure-fallback') && cur.contents[0].text.includes('qlp-question-layout-v198'), '新版 v198（図表分離＋代わりの表示＋a〜eの段落分け）');
+assert.ok(cur.contents[0].text.includes(WIDGET_VERSION) && cur.contents[0].text.includes('qlp-figure-separation') && cur.contents[0].text.includes('qlp-question-layout-v199') && cur.contents[0].text.includes('qlp-question-layout-v198'), '新版 v199（v198＋擬似言語の整形済み表示）');
+const v198 = await rpc('resources/read', { uri: 'ui://qlp/question-v198.html' });
+assert.ok(v198.contents[0].text.includes('2026-11-17.198') && v198.contents[0].text.includes('qlp-question-layout-v198') && !v198.contents[0].text.includes('qlp-question-layout-v199'), '旧版 v198 を維持');
 const v197 = await rpc('resources/read', { uri: 'ui://qlp/question-v197.html' });
 assert.ok(v197.contents[0].text.includes('2026-11-17.197') && v197.contents[0].text.includes('qlp-figure-fallback') && !v197.contents[0].text.includes('qlp-question-layout-v198'), '旧版 v197 を維持');
 const v196 = await rpc('resources/read', { uri: 'ui://qlp/question-v196.html' });
 assert.ok(v196.contents[0].text.includes('2026-11-16.196') && v196.contents[0].text.includes('qlp-figure-separation') && !v196.contents[0].text.includes('qlp-figure-fallback'), '旧版 v196 を維持');
-const old = await rpc('resources/read', { uri: 'ui://qlp/question-v195.html' });
-assert.ok(old.contents[0].text.includes('2026-11-16.195') && !old.contents[0].text.includes('qlp-figure-separation'), '旧版 v195 を維持');
-for (const version of ['2026-11-17.197', '2026-11-16.196', '2026-11-16.195']) {
+for (const version of ['2026-11-17.198', '2026-11-17.197', '2026-11-16.196']) {
   const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version } });
   assert.equal(reported.isError, undefined, version + ' の画面も表示状況を報告できる');
 }
-console.log('PASS 画面', WIDGET_URI, 'と ui://qlp/question-v197.html・question-v196.html・question-v195.html');
+console.log('PASS 画面', WIDGET_URI, 'と ui://qlp/question-v198.html・question-v197.html・question-v196.html');
