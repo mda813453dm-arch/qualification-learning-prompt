@@ -97,9 +97,38 @@ test('本文だけの問（宅建 2016 問1）：問題全体の画像を本文�
 test('同じPDFでも区分ごとに違う分解結果（本文が原本画像）は区分ごとの判定を使う', () => {
   const p = find('q041', '87923a287018', 1, '年度共通');
   const shown = present(item(p), 'new');
-  assert.equal(shown.figureSeparation.status, 'image_question');
-  assert.equal(shown.figures.length, 1);
-  assert.equal(shown.figures[0].role, 'question_image');
+  // 第8回：本文が原本画像だった区分は、原本と目視で照合した文字の本文・選択肢を出し、問題全体の画像は照合用に残す
+  assert.equal(shown.figureSeparation.status, 'not_needed');
+  assert.equal(shown.stemMode, 'text');
+  assert.equal(shown.stem, '次の記述のうち、民法の条文に規定されているものはどれか。');
+  assert.equal(shown.choiceMode, 'text');
+  assert.equal(shown.choices.length, 4);
+  assert.match(shown.choices[1], /^賃貸人は、賃借人が賃貸借に基づく金銭債務を履行しないときは、敷金を/);
+  assert.equal(shown.figures.length, 0);
+  assert.equal(shown.sourceImageUrls.length, 1, '原本は照合用として見られる');
+  assert.ok(shown.figureSeparation.textVerified);
+  assert.equal(shown.correctAnswer, undefined, '回答前に正答を出さない');
+});
+
+test('宅建の本文が原本画像だった400問：全問が目視照合の記録付きの文字の本文・4択で、読み取り誤りは原本どおり（第8回）', () => {
+  const heads = ['87923a287018', '8dea64d2b2ee', 'c0fe7658da53', 'a6dd351660b2', '3e771375cee0', 'ad436ace2388', '88beed8b5280', '44baadbfaf0c'];
+  const ents = Object.entries(REGISTRY.questions).filter(([k, e]) => heads.includes(k.slice(0, 12)) && e.audit === 'image_question');
+  assert.equal(ents.length, 400);
+  for (const [k, e] of ents) {
+    assert.equal(e.status, 'not_needed', k);
+    assert.equal(e.overrides?.stemMode, 'text', k);
+    assert.equal(e.overrides.choices.length, 4, k);
+    assert.ok(e.overrides.choices.every((c) => c.trim()), k);
+    assert.ok(e.overrides.fromImageQuestion && e.overrides.verifiedBy, k);
+    const all = e.overrides.stem + e.overrides.choices.join('');
+    assert.doesNotMatch(all, /この間において|借貸|借質/, k);
+  }
+  const get = (head, n) => ents.find(([k]) => k.startsWith(head) && k.split(':')[1].split('@')[0] === String(n))[1].overrides;
+  assert.match(get('88beed8b5280', 26).choices[2], /借賃以外の金銭の授受/);
+  assert.match(get('3e771375cee0', 43).choices[3], /刑法第222条/);
+  assert.match(get('3e771375cee0', 48).choices[2], /約196万ha/);
+  assert.deepEqual(get('44baadbfaf0c', 30).choices, ['一つ', '二つ', '三つ', 'なし']);
+  assert.match(get('44baadbfaf0c', 9).stem, /\nウ　後見人は、正当な事由があるときは/);
 });
 
 test('複数の表（測量士補 2024 問8）：表8-1・8-2（9ページ）、表8-3（10ページ）の順に出す', () => {

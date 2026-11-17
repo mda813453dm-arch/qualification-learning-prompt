@@ -119,6 +119,14 @@ async function fetchAll(qq) {
   assert.equal(i72.stemMode, 'text'); assert.deepEqual(roles(i72), ['figure']); assert.deepEqual(i72.choices, ['5', '10', '12', '17']);
   await fetchAll(i72);
   console.log('PASS ITパスポート 2020 公開問題 問72 走査PDFの本文を目視で文字に・図だけの画像（第7回）');
+  const t26 = await open('宅建', 2021, 26, '12月');
+  assert.equal(t26.stemMode, 'text'); assert.equal(t26.choiceMode, 'text'); assert.equal(t26.figureSeparation?.status, 'not_needed');
+  assert.equal(roles(t26).length, 0); assert.equal(t26.choices.length, 4);
+  assert.match(t26.choices[2], /借賃以外の金銭の授受/); assert.ok((t26.sourceImageUrls ?? []).length >= 1, '原本は照合用に残す');
+  console.log('PASS 宅建 2021 12月 問26 走査PDFの本文を保存済みの読み取りから文字に・原本と目視照合（第8回）');
+  const t30 = await open('宅建', 2022, 30, '年度共通');
+  assert.deepEqual(t30.choices, ['一つ', '二つ', '三つ', 'なし']);
+  console.log('PASS 宅建 2022 問30 つながっていた選択肢を原本どおり4つに（第8回）');
 }
 
 let n = 0;
