@@ -8,7 +8,7 @@ on:
     paths:
       - '新システム開発/deploy/vision-quota-check-request.txt'
 permissions:
-  contents: read
+  contents: write
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -67,6 +67,7 @@ jobs:
           from qlp_parser import ocr
           m = json.load(open('../deploy/takken-upload-manifest-20261022.json'))
           total = have = 0
+          idx = []
           for i in [0, 1, 3, 4, 5, 6, 7, 8]:
               f = m['files'][i]
               local = f'/tmp/{f["sha256"]}.pdf'
@@ -76,9 +77,20 @@ jobs:
               for p in d:
                   key, png, *_ = ocr._render(p, "6")
                   k = hashlib.sha256(png).hexdigest()
-                  r = subprocess.run(['gsutil', '-q', 'stat', f'gs://{os.environ["BUCKET"]}/vision/{k}.json'])
+                  os.makedirs('/tmp/tv/vision', exist_ok=True)
+                  r = subprocess.run(['gsutil', '-q', 'cp', f'gs://{os.environ["BUCKET"]}/vision/{k}.json', f'/tmp/tv/vision/{k}.json'])
+                  idx.append({'year': f['year'], 'section': f['section'], 'sha256': f['sha256'], 'page': p.number + 1, 'key': k, 'cached': r.returncode == 0})
                   n += 1; h += r.returncode == 0
               print(f['year'], f['section'], f['sha256'][:12], 'pages', n, 'cached', h)
               total += n; have += h
           print('TAKKEN_PAGES', total, 'CACHED', have, 'NEED_VISION', total - have)
+          print('MISSING', [(x['year'], x['section'], x['page']) for x in idx if not x['cached']])
+          json.dump(idx, open('/tmp/tv/index.json', 'w'), ensure_ascii=False, indent=1)
           PY
+      - name: 控えを diag-takken-vision ブランチに置く（読むだけで得た既存の控え）
+        run: |
+          cd /tmp/tv
+          git init -q -b diag-takken-vision
+          git config user.name diag; git config user.email diag@example.invalid
+          git add -A; git commit -qm "takken vision cache copies"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" diag-takken-vision
