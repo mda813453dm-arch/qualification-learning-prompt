@@ -298,6 +298,36 @@ function studyFieldOrder(state, cat) {
     ordered.every((f) => fields.includes(f)) && new Set(ordered).size === fields.length ? ordered : fields;
 }
 
+/**
+ * 採点後の「問題分野を選択」に出す分野の一覧（全資格共通・読取専用）。
+ * studyFieldOrder（免除後の正式分野・学習計画順）に、nextView の分野指定と同じ条件
+ * （形式不明・記述式・スキップ済みを除く）で出題できる問題があるかを付ける。
+ * 出題・採点・学習記録には触れない。画面はこの一覧の fieldName を nextQuestion({fieldName}) に渡す。
+ */
+function fieldJumpChoices(state, cat, items = []) {
+  const pref = state.plan?.questionPreference ?? 'any';
+  const strict = state.plan?.questionPreferenceScope === 'all';
+  return studyFieldOrder(state, cat).map((fid) => {
+    const pool = items.filter((x) => x?.packet?.fieldId === fid &&
+      x.packet.questionType !== 'unknown' && x.packet.questionType !== 'descriptive' &&
+      !(state.skipped ?? []).some((v) => v.questionId === x.packet.questionId));
+    const available = pool.some((x) => pref === 'any' || x.packet.questionType === pref ||
+      (!strict && !!state.history?.[x.packet.questionId]));
+    return { fieldName: cat?.fields?.[fid] ?? fid, available };
+  }).filter((c) => typeof c.fieldName === 'string' && c.fieldName);
+}
+async function fieldJumpFor(env, state, now, { items = null, gradedQuestionId = null } = {}) {
+  const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
+  if (!cat?.fields) return null;
+  let pool = items;
+  if (!pool) {
+    const job = await readJob(env.STORE, sessionJobId(state)).catch(() => null);
+    pool = job ? withoutExempt(state, await availablePackets(env.STORE, job, now).catch(() => [])) : [];
+  }
+  const choices = fieldJumpChoices(state, cat, pool);
+  return choices.length ? { choices, ...(gradedQuestionId ? { gradedQuestionId } : {}) } : null;
+}
+
 /** 登録・正答検証済みの公式問題の全体進捗。セットの目標は分野の50%で別に表示する。 */
 function learningProgress(state, items = []) {
   const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
@@ -1516,8 +1546,9 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
   // figureUrls：ChatGPT アプリの画面が全部の図を公式PDFの画像で出すため（AIには渡さない。mcp.js の forModel）
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
   const howToShow = attach ? SHOW_WITH_FILES : screen.includes('<svg') ? SHOW_WITH_FIGURE : SHOW_TEXT;
+  const fieldJump = await fieldJumpFor(env, state, now, { items, gradedQuestionId: shown.questionId });
   const question = { ...shown, figures, ...(figureUrls ? { figureUrls } : {}), display, screen, howToShow, fieldName,
-    progress: learningProgress(state, items), ...(attach ? { figureCount: shown.figures.length } : {}) };
+    progress: learningProgress(state, items), ...(fieldJump ? { fieldJump } : {}), ...(attach ? { figureCount: shown.figures.length } : {}) };
   return {
     status: 'question', sessionId: id, repeated: !!pick.repeated, question,
     // 明示指定の問は学習計画の分野移行メニューを挟まず出す。分野変更の事実のみ通知してよい。
@@ -1578,6 +1609,7 @@ async function restoreStudyView(env, id, state, now) {
       position: 3, total: 3, correctCount: check.correct ?? 0,
       fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       nextFieldName: cat?.fields?.[fields[fields.indexOf(check.fieldId) + 1]] ?? null,
+      fieldJump: await fieldJumpFor(env, state, now),
       journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
   }
   if (check && check.count < 3) {
@@ -1620,7 +1652,8 @@ async function restoreStudyView(env, id, state, now) {
         fieldQuestionTotal: savedTarget } };
     const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
       ? await redisplayView(env, id, state, now) : null;
-    return { ...identity, status: 'restoredGrade', question, grade: saved.grade, next };
+    const fieldJump = saved.grade.skipped ? null : await fieldJumpFor(env, state, now, { gradedQuestionId: saved.grade.questionId });
+    return { ...identity, status: 'restoredGrade', question, grade: { ...saved.grade, ...(fieldJump ? { fieldJump } : {}) }, next };
   }
   if (cur?.questionId && !cur.grade) return { ...identity, ...await redisplayView(env, id, state, now) };
   if (cat?.overviewOnly) {
@@ -1685,9 +1718,11 @@ async function redisplayView(env, id, state, now) {
   const fieldName = cur.fieldId ? names[cur.fieldId] ?? null : null;
   const figureUrls = env.QLP_WIDGET ? shown.figures.map((f) => f.url) : undefined;
   const display = questionDisplay(shown, svgs, { attached: false });
+  const fieldJump = await fieldJumpFor(env, state, now, { items, gradedQuestionId: shown.questionId });
   return {
     status: 'question', sessionId: id, repeated: true, redisplayed: true,
-    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state, items) },
+    question: { ...shown, ...(figureUrls ? { figureUrls } : {}), display, fieldName, progress: learningProgress(state, items),
+      ...(fieldJump ? { fieldJump } : {}) },
   };
 }
 
@@ -2298,6 +2333,7 @@ async function route(request, env, url, now) {
        selectedChoice: check.challenge.choices[selected - 1],
       correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
       nextFieldName,
+      ...(count === 3 ? { fieldJump: await fieldJumpFor(env, state, now) } : {}),
       journey: { fieldIndex: fieldIds.indexOf(check.fieldId) + 1, fieldTotal: fieldIds.length } });
   }
 
@@ -2664,7 +2700,11 @@ async function route(request, env, url, now) {
     const next = await nextView(env, id, gradedState, now, { prefetched: true });
     // 次の問題の図のファイルも、この応答で付ける（利用者が次へ進んだときに、ChatGPTが添付として表示する）
     const { openaiFileResponse, ...nextBody } = next;
-    return json(200, { grade: { ...r.grade, explainHow: how }, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
+    // 採点後の「問題分野を選択」：先取りした次問と同じ問題一覧から作る（読取のみ）。
+    const fieldJump = r.grade.skipped ? null : nextBody?.status === 'question' && nextBody.question?.fieldJump
+      ? { ...nextBody.question.fieldJump, gradedQuestionId: r.grade.questionId }
+      : await fieldJumpFor(env, gradedState, now, { gradedQuestionId: r.grade.questionId });
+    return json(200, { grade: { ...r.grade, explainHow: how, ...(fieldJump ? { fieldJump } : {}) }, next: nextBody, ...(openaiFileResponse ? { openaiFileResponse } : {}) });
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'handoff' && parts.length === 4) {
@@ -2723,6 +2763,7 @@ async function route(request, env, url, now) {
         ...(fieldChange ? ['この分野の実践問題を続ける', '総復習（間違えた問題）'] : []),
         '今日はここまで（学習を終了）'],
       actions:['next', ...(fieldChange ? ['continueField','review'] : []), 'end'],
+      ...(ctx.fieldJump ? { fieldJump: ctx.fieldJump } : {}),
     };
     const changed = { ...state, publishedExplanation: { questionId:grade.questionId, markdown,
       menu, publishedAt:now } };
@@ -2772,7 +2813,9 @@ async function route(request, env, url, now) {
     const explanationRef = 'E-' + createHmac('sha256', String(env.API_TOKEN || 'test-only'))
       .update(id + ':' + grade.questionId).digest('base64url').slice(0, 16);
     await env.STORE.put(`eref/${explanationRef}`, JSON.stringify({ sessionId: id, questionId: grade.questionId }), { expirationTtl: 3600 });
+    const fieldJump = await fieldJumpFor(env, state, now, { gradedQuestionId: grade.questionId });
     return json(200, { status: 'explanationContext', explanationRef, sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
+      ...(fieldJump ? { fieldJump } : {}),
       journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length,
         stage: 'practice', fieldName },
       qualificationName: cat?.name ?? null, question: { ...question,

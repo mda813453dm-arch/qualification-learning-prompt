@@ -52,6 +52,7 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-figure-fallback-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v198-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v199-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-field-jump-browser.mjs
       # Browser regressions fail quickly; the full engine test is also run in
       # the separate AI learning engine workflow. Keep it here for completeness.
       - name: エンジン・通信の回帰試験
