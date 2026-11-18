@@ -213,3 +213,14 @@ test('学習画面 v200：採点・分からない・照合・解説後・確認
   assert.doesNotMatch(old, /fieldJump|qlp-field-jump-v200/);
   assert.match(old, /2026-11-17\.199/);
 });
+
+test('区分を付けた直接指定は、その区分の問がまだ取り込まれていない間も別区分の同じ番号で代用しない（公開後検査で見つかった準備中の競合）', async () => {
+  const { findWanted, newState } = await import('../src/engine.js');
+  const state = newState({ qualificationId: 'q999', now: 0 });
+  const pk = (section, n) => ({ packet: { questionId: `fe:2023:${section}:${n}`, year: 2023, section, questionNumber: n, fieldId: 'f1' } });
+  const onlyA = [pk('科目A', 1), pk('科目A', 2)];
+  assert.equal(findWanted(state, onlyA, '2023年度 科目B 問1', {}), null, '科目Bが未取り込みなら null（準備中として待つ）');
+  assert.equal(findWanted(state, [...onlyA, pk('科目B', 1)], '2023年度 科目B 問1', {}).item.packet.section, '科目B');
+  assert.equal(findWanted(state, onlyA, '2023年度 問1', {}).item.packet.section, '科目A', '区分を書かない指定は従来どおり');
+  assert.equal(findWanted(state, [pk('春期', 80)], '2023年度 秋期 問80', {}), null);
+});

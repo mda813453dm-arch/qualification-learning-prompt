@@ -439,6 +439,11 @@ export function findWanted(state, items, want, fields = {}) {
     const known = new Set(items.filter((x) => x.packet.section && (!year || x.packet.year === year))
       .map((x) => String(x.packet.section).normalize('NFKC')).filter((s) => t.includes(s)));
     if (known.size) hits = hits.filter((x) => known.has(String(x.packet.section ?? '').normalize('NFKC')));
+    // 指定した区分の問がまだ取り込まれていない（準備中）ときも、同じ番号の別区分（科目B→科目A、秋期→春期）で代用しない
+    else {
+      const named = t.match(/科目[A-Z]|[春秋]期/g);
+      if (named) hits = hits.filter((x) => named.some((n) => String(x.packet.section ?? '').normalize('NFKC').includes(n)));
+    }
   }
   if (!hits.length) return null;
   const item = hits.find((x) => !state.history[x.packet.questionId]) ?? hits[0];
