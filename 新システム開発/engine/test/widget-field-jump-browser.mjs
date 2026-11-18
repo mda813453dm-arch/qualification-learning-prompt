@@ -48,7 +48,8 @@ async function mount(browser, tool, frameId, payload) {
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const web = fakeWeb({ [SRC.questionUrl]: pdf('jump-q'), [SRC.answerUrl]: pdf('jump-a') });
   const parser = fakeParser(web, { src: { ...SRC, qualificationId: 'q063' }, answers: [3, 1, 4, 2], fieldIds: ['s1', 's1', 's2', 's2'], figureOn: [] });
-  const env = { STORE: new MemoryStore(), API_TOKEN: 'browser-test', fetchPdf: web.fetchPdf, clock: () => T0, PARSER_URL: 'https://parser.example' };
+  const env = { STORE: new MemoryStore(), API_TOKEN: 'browser-test', fetchPdf: web.fetchPdf, fetchText: async () => '', now: T0, PARSER_URL: 'https://parser.example' };
+  env.clock = () => env.now;
   env.parserFetch = async (_, init) => {
     const b = JSON.parse(init.body);
     const bytes = x => Uint8Array.from(atob(x.base64), c => c.charCodeAt(0));
@@ -81,7 +82,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const session = await request('/v1/sessions', { qualificationId: '測量士補', sources: [SOURCE] });
   const study = await request('/v1/study/start', { qualificationName: '測量士補', learnerId: session.learnerId });
   const first = await request(`/v1/sessions/${session.sessionId}/next`, { fieldName: S1 });
-  assert.equal(first.question?.questionNumber, 1, JSON.stringify(first).slice(0, 400));
+  assert.equal(first.question?.questionNumber, 1, JSON.stringify({ first, job: first.job, parserUrl: process.env.PARSER_URL ?? null }).slice(0, 1500));
   const jumps = () => calls.filter(c => c.name === 'nextQuestion' && c.args.fieldName);
   const browser = await engine.launch({ headless: true });
   try {
