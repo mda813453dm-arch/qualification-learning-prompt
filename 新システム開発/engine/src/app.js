@@ -3219,8 +3219,7 @@ async function route(request, env, url, now) {
     }
     return json(201, {
       ...resumeReadyView(id, state),
-      nextTool: 'openHandoffView',
-      howToProceed: '引継ぎ履歴を復元しました。必ず続けてopenHandoffView({sessionId:この応答のsessionId})を1回だけ呼び、新しい会話の学習画面に再開ボタンを出してください。初回の試験概要・免除・学習状況・計画へ戻らず、利用者の再開操作を待ちます。',
+      howToProceed: '引継ぎ履歴を復元しました。このimportHandoff応答に操作可能な学習画面と「学習を再開する」ボタンを付けました。利用者が画面そのものを見られないと明示したときだけopenHandoffView({sessionId:この応答のsessionId})を1回呼び、画面を再表示してください。初回の試験概要・免除・学習状況・計画へ戻らず、利用者の再開操作を待ちます。',
       withheld: state.withheld.map((w) => ({ ...w, message: WITHHELD_MESSAGES[w.reason] })),
       job: jobView(job),
     });
