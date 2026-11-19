@@ -7,7 +7,7 @@ import { MemoryStore } from '../src/store.js';
 import { handle } from '../src/app.js';
 import { CATALOG } from '../src/catalog.js';
 import { SRC, T0, pdf, fakeWeb, fakeParser, assetsB64 } from './helpers.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v200.js';
 import { widgetHtml as v199Html } from '../src/widget-v199.js';
 
 const TOKEN = 'field-jump-regression';
