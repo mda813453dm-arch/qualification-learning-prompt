@@ -348,7 +348,7 @@ function learningProgress(state, items = []) {
   const fieldQuestion = practice ? Math.min(state.current.setPosition ?? state.set?.count ?? 1, target) : null;
   const position = total ? Math.min(total, done + (practice && !state.history?.[state.current.questionId] ? 1 : 0)) : 0;
   return { total, done, position, percent: total ? Math.round(position * 100 / total) : 0,
-    fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length,
+    fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]),
     fieldQuestion, fieldQuestionTotal: target,
     review: !practice };
 }
@@ -1278,7 +1278,7 @@ async function nextView(env, id, state0, now, { prefetched = false, want: want0 
       return { status: 'menu', sessionId: id, menu: lesson.menu };
     const cat = Object.values(CATALOG).find((c) => c.qualificationId === state.qualificationId) ?? CATALOG[state.qualificationId];
     return { status: 'lesson_pending', sessionId: id, fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
-      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(state.set.fieldId) + 1, fieldTotal: studyFieldOrder(state, cat).length },
+      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(state.set.fieldId) + 1, fieldTotal: studyFieldOrder(state, cat).length, fieldNames: studyFieldOrder(state, cat).map((fid) => cat.fields[fid]) },
       ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: '解説を表示してから確認問題へ進みます。' };
   }
@@ -1599,7 +1599,7 @@ async function restoreStudyView(env, id, state, now) {
     if (lesson?.fieldId === state.set.fieldId && lesson.menu?.body && lesson.menu.sessionId === id)
       return { ...identity, status: 'menu', menu: lesson.menu, restored: true };
     return { ...identity, status: 'lesson_pending', fieldName: cat?.fields?.[state.set.fieldId] ?? '今の分野',
-      journey: { fieldIndex: fields.indexOf(state.set.fieldId) + 1, fieldTotal: fields.length },
+      journey: { fieldIndex: fields.indexOf(state.set.fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]) },
       ...(state.pendingLessonRef ? { lessonRef: state.pendingLessonRef } : {}),
       notice: 'この分野の解説はまだ表示されていません。解説を表示してから確認問題へ進んでください。' };
   }
@@ -1610,14 +1610,14 @@ async function restoreStudyView(env, id, state, now) {
       fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       nextFieldName: cat?.fields?.[fields[fields.indexOf(check.fieldId) + 1]] ?? null,
       fieldJump: await fieldJumpFor(env, state, now),
-      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]) } };
   }
   if (check && check.count < 3) {
     const c = check.challenge;
     if (c?.id) return { ...identity, status: 'confirmation_question', challengeId: c.id,
       question: c.question, choices: c.choices, prepared: c.prepared === true, position: check.count + 1, total: 3,
       fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
-      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length } };
+      journey: { fieldIndex: fields.indexOf(check.fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]) } };
     return { ...identity, status: 'confirmation_pending', position: check.count + 1, total: 3,
       fieldName: cat?.fields?.[check.fieldId] ?? '今の分野',
       notice: '保存した確認問題の続きです。同じ分野・同じ問数から再開してください。' };
@@ -1647,7 +1647,7 @@ async function restoreStudyView(env, id, state, now) {
     const question = { ...previous, figureUrls,
       fieldName: cat?.fields?.[saved.fieldId] ?? null,
       progress: { ...(previous.progress ?? {}),
-        fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length,
+        fieldIndex: fields.indexOf(saved.fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]),
         fieldQuestion: Math.min(savedTarget, Math.max(1, saved.fieldPosition ?? 1)),
         fieldQuestionTotal: savedTarget } };
     const next = cur?.prefetched && !cur.grade && cur.questionId !== saved.grade.questionId
@@ -2293,7 +2293,7 @@ async function route(request, env, url, now) {
     const fieldName = cat?.fields?.[check.fieldId] ?? '今の分野';
     const fieldOrder = studyFieldOrder(state, cat);
     const fieldIndex = fieldOrder.indexOf(check.fieldId) + 1;
-    const journey = { fieldIndex, fieldTotal: fieldOrder.length };
+    const journey = { fieldIndex, fieldTotal: fieldOrder.length, fieldNames: fieldOrder.map((fid) => cat.fields[fid]) };
     if (check.challenge?.id) return json(200, { status: 'confirmation_question', sessionId: id,
       challengeId: check.challenge.id, question: check.challenge.question, choices: check.challenge.choices,
       prepared: check.challenge.prepared === true, position: check.count + 1, total: 3, fieldName, journey, repeated: true });
@@ -2334,7 +2334,7 @@ async function route(request, env, url, now) {
       correctCount: (check.correct ?? 0) + Number(correct), complete: count === 3,
       nextFieldName,
       ...(count === 3 ? { fieldJump: await fieldJumpFor(env, state, now) } : {}),
-      journey: { fieldIndex: fieldIds.indexOf(check.fieldId) + 1, fieldTotal: fieldIds.length } });
+      journey: { fieldIndex: fieldIds.indexOf(check.fieldId) + 1, fieldTotal: fieldIds.length, fieldNames: fieldIds.map((fid) => cat.fields[fid]) } });
   }
 
   // AI確認問題は出題時に本文・全選択肢・正答を固定してから利用者に表示する。
@@ -2657,7 +2657,7 @@ async function route(request, env, url, now) {
       confirmation: mode === 'check' ? (existingCheck ?? { fieldId: fid, count: 0, correct: 0, challenge: null }) : null }, now);
     return json(200, { status: 'item', sessionId: id, fieldName: cat.fields[fid], mode,
       ...(lessonRef ? { lessonRef } : {}),
-      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length } });
+      journey: { fieldIndex: studyFieldOrder(state, cat).indexOf(fid) + 1, fieldTotal: studyFieldOrder(state, cat).length, fieldNames: studyFieldOrder(state, cat).map((fid) => cat.fields[fid]) } });
   }
 
   if (method === 'POST' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'answer' && parts.length === 4) {
@@ -2816,7 +2816,7 @@ async function route(request, env, url, now) {
     const fieldJump = await fieldJumpFor(env, state, now, { gradedQuestionId: grade.questionId });
     return json(200, { status: 'explanationContext', explanationRef, sessionId: id, studyId, learnerId: state.learnerId, nextChoice,
       ...(fieldJump ? { fieldJump } : {}),
-      journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length,
+      journey: { fieldIndex: fields.indexOf(fieldId) + 1, fieldTotal: fields.length, fieldNames: fields.map((fid) => cat.fields[fid]),
         stage: 'practice', fieldName },
       qualificationName: cat?.name ?? null, question: { ...question,
         figures: (question.figures ?? []).map((f) => ({ ...f, url: f.url?.startsWith('/') ? `${env.PUBLIC_BASE_URL || url.origin}${f.url}` : f.url })),
