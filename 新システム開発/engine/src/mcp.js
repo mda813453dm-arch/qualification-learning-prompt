@@ -761,7 +761,7 @@ export function forModel(body) {
   // 学習の終了：終了ログと引継ぎデータの全文は画面に出す（AIに要約・省略させない）
   if (typeof body.handoff === 'string' && typeof body.display === 'string') {
     const id = body.handoff.match(/引[継き]ぎ\s*ID\**\s*[：:]\s*\**\s*([A-Za-z0-9]+)/)?.[1];
-    return { minutes: body.minutes, totalMinutes: body.totalMinutes, ...(id ? { handoffId: id } : {}), howToShow: '終了ログと引継ぎデータの全文は、この下の画面に表示している。チャットに書き直したり、要約したり、省いたりしない。「引継ぎデータは画面のコピーボタンでコピーできます。次のチャットで貼り付けるか、引継ぎIDを伝えてください」とだけ伝える。' };
+    return { minutes: body.minutes, totalMinutes: body.totalMinutes, ...(id ? { handoffId: id } : {}), howToShow: '終了ログと引継ぎデータの全文は、この下の画面に表示している。チャットに書き直したり、要約したり、省いたりしない。「引継ぎデータは画面のコピーボタンでコピーできます。新しいチャットでは@メニューから資格学習アプリを選択して、引継ぎデータか引継ぎIDを貼り付けてください」とだけ伝える。' };
   }
   // 強制補強はAIが出題前にエンジンに正答を固定する。問題文・選択肢の再掲はせず画面へ渡す。
   if (body.status === 'confirmation_question') {
@@ -1105,6 +1105,7 @@ export async function handleRpc(msg, callApi, { widget = false, baseUrl = '' } =
         return ok(id, { content: [{ type: 'text', text: JSON.stringify(view) }],
           structuredContent: view, _meta: { qlp: { ...res.body, at: Date.now() } } });
       }
+      if (widget && tool.name === 'importHandoff') console.info(JSON.stringify({event:'widget_handoff_import_called',version:WIDGET_VERSION,status:res.status,successful:res.status < 400}));
       // アプリでは、資格名を受けたらすぐ試験概要と免除・学習状況のボタンを画面に出す（AIが次に nextQuestion を呼ぶのに頼らない）
       if (widget && tool.name === 'startSession' && res.status < 400 && res.body?.sessionId && res.body.status !== 'resumeReady') {
         // 現行エンジンは最初の応答へ導入画面を含める。余分な nextQuestion を呼ばず1回で表示する。
