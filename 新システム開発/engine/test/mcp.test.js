@@ -398,7 +398,7 @@ test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面
   env.clock = () => T0 + 10000;
   const list = (await rpc(env, 'tools/list', {}, { path: '/app' })).body.result.tools;
   const importer = list.find(x => x.name === 'importHandoff');
-  assert.equal(importer._meta, undefined, '引継ぎ受付自体は新しいUIを作らない');
+  assert.equal(importer._meta['openai/outputTemplate'], WIDGET_URI, '引継ぎ受付自体が再開ボタン付き学習枠を生成する');
   const restoreTool = list.find(x => x.name === 'restoreStudyView');
   assert.equal(restoreTool._meta['openai/outputTemplate'], undefined, '通常復元は学習枠を増やさない');
   const handoffTool = list.find(x => x.name === 'openHandoffView');
@@ -406,12 +406,14 @@ test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面
   const resumed = await callUi('importHandoff', { handoff: '引継ぎID：' + opened.learnerId });
   assert.equal(resumed.isError, false);
   assert.equal(resumed.structuredContent.status, 'resumeReady');
-  assert.equal(resumed._meta, undefined, '引継ぎの読込み自体は新しい画面ツールへの依存を追加しない');
-  assert.equal(resumed.structuredContent.nextTool, 'openHandoffView');
-  assert.match(resumed.structuredContent.howToProceed, /必ず続けてopenHandoffView/);
+  assert.equal(resumed._meta.qlp.status, 'resumeReady', '初回のimportHandoff応答が直接ウィジェットを表示できる');
+  assert.equal(resumed._meta.qlp.sessionId, resumed.structuredContent.sessionId);
+  assert.equal(resumed.structuredContent.nextTool, undefined, '二重に学習枠を開くよう誘導しない');
+  assert.match(resumed.structuredContent.howToProceed, /このimportHandoff応答に操作可能な学習画面/);
   assert.equal(resumed.structuredContent.answeredCount, 1);
   assert.equal(resumed.structuredContent.onboarding, undefined);
   assert.equal(resumed.structuredContent.overview, undefined);
+  // 以前の会話・キャッシュ済みのMCP登録用にも、旧openHandoffViewは残す。
   const current = await callUi('openHandoffView', { sessionId: resumed.structuredContent.sessionId });
   assert.equal(current.structuredContent.status, 'resumeReady');
   assert.equal(current._meta.qlp.status, 'resumeReady');
