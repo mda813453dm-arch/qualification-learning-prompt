@@ -653,7 +653,8 @@ test('通常の確認問題は1問目から全3問と全分野の位置を固定
   const app = async (name, args) => (await rpc(env, 'tools/call', { name, arguments: args }, { path: '/app' })).body.result;
   const fieldName = CATALOG[SRC.qualificationId].fields.s1;
   const choice = (await app('chooseItem', { sessionId, fieldName, mode: 'explain' })).structuredContent;
-  assert.deepEqual(choice.journey, { fieldIndex: 1, fieldTotal: Object.keys(CATALOG[SRC.qualificationId].fields).length });
+  assert.deepEqual(choice.journey, { fieldIndex: 1, fieldTotal: Object.keys(CATALOG[SRC.qualificationId].fields).length,
+    fieldNames: Object.values(CATALOG[SRC.qualificationId].fields) });
   for (let i = 1; i <= 3; i++) {
     const args = { sessionId, question: `確認問題の第${i}問の本文です。`, choices: ['A', 'B', 'C'], correctAnswer: 2, explanation: '選択肢Bが正答です。AとCは設問の条件を満たしません。' };
     const q = (await app('registerConfirmationQuestion', args))._meta.qlp;
