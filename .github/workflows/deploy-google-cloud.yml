@@ -59,7 +59,7 @@ jobs:
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
           node 新システム開発/deploy/check-figure-separation.mjs
-      - name: 解答表示後の「問題分野を選択」（v200・旧版v199）を公開版で検証（独立した検査用の学習のみ）
+      - name: 全分野の一覧表示v201・分野選択・旧版v200を公開版で検証（独立した検査用の学習のみ）
         run: |
           export QLP_BASE_URL="$(gcloud run services describe qlp-engine --project qualification-learning --region asia-northeast1 --format='value(status.url)')"
           export QLP_TEST_TOKEN="$(gcloud secrets versions access latest --secret qlp-api-token --project qualification-learning)"
