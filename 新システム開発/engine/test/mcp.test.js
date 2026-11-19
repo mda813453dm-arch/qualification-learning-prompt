@@ -409,7 +409,8 @@ test('引継ぎIDから復帰した場合は試験概要に戻らず再開画面
   assert.equal(resumed._meta.qlp.status, 'resumeReady', '初回のimportHandoff応答が直接ウィジェットを表示できる');
   assert.equal(resumed._meta.qlp.sessionId, resumed.structuredContent.sessionId);
   assert.equal(resumed.structuredContent.nextTool, undefined, '二重に学習枠を開くよう誘導しない');
-  assert.match(resumed.structuredContent.howToProceed, /このimportHandoff応答に操作可能な学習画面/);
+  assert.match(resumed.structuredContent.howToProceed, /再開用の操作ボタンを画面へ送信しました/);
+  assert.doesNotMatch(resumed.structuredContent.howToProceed, /必ず続けてopenHandoffView/, '正常復元では二重の画面生成を要求しない');
   assert.equal(resumed.structuredContent.answeredCount, 1);
   assert.equal(resumed.structuredContent.onboarding, undefined);
   assert.equal(resumed.structuredContent.overview, undefined);
