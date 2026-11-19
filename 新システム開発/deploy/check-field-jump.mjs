@@ -1,6 +1,6 @@
-// Cloud Run 公開後の検査：解答表示後の「問題分野を選択」（学習画面 v200）。
+// Cloud Run 公開後の検査：学習画面 v201 の全分野一覧と、v200からの「問題分野を選択」。
 // 独立した検査用の学習（測量士補 2026年度 問6 を直接指定）だけを使い、利用者の学習記録には触れない。トークンは出力しない。
-// 1) 現行版 v200 の画面が配信され、直前版 v199 の URI はその版の HTML のまま返り、状態報告も受け付ける。
+// 1) 現行版 v201 が配信され、直前版 v200 はその版のHTMLのままで、状態報告も可能。
 // 2) 出題・採点・保存済み画面・照合の応答に、正式分野の一覧（fieldJump）が付く。
 // 3) 採点後に選んだ別の分野へ nextQuestion({fieldName}) で直接進み、先取りした通常の次問を使い回さない。
 // 4) 出題できる問題が無い分野を選ぶと、ほかの分野へ切り替えずに案内だけを返す（一覧にその分野がある場合）。
@@ -25,16 +25,16 @@ async function tool(name, args) {
   return result._meta?.qlp ?? result.structuredContent;
 }
 
-assert.equal(WIDGET_URI, 'ui://qlp/question-v200.html');
+assert.equal(WIDGET_URI, 'ui://qlp/question-v201.html');
 const cur = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(cur.contents[0].text.includes(WIDGET_VERSION) && cur.contents[0].text.includes('qlp-field-jump-v200') &&
-  cur.contents[0].text.includes('qlp-question-layout-v199'), '現行版 v200（v199＋問題分野を選択）を配信');
-const v199 = await rpc('resources/read', { uri: 'ui://qlp/question-v199.html' });
-assert.equal(v199.contents[0].uri, 'ui://qlp/question-v199.html');
-assert.ok(v199.contents[0].text.includes('2026-11-17.199') && !v199.contents[0].text.includes('qlp-field-jump-v200'), '直前版 v199 をその版のまま維持');
-const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version: '2026-11-17.199' } });
-assert.equal(reported.isError, undefined, 'v199 の画面からの状態報告を受け付ける');
-console.log('PASS 画面', WIDGET_URI, 'と旧版 ui://qlp/question-v199.html');
+  cur.contents[0].text.includes('qlp-route-v201') && cur.contents[0].text.includes('qlp-question-layout-v199'), '現行版 v201（全分野を一覧、現在分野だけ太字）を配信');
+const v200 = await rpc('resources/read', { uri: 'ui://qlp/question-v200.html' });
+assert.equal(v200.contents[0].uri, 'ui://qlp/question-v200.html');
+assert.ok(v200.contents[0].text.includes('2026-11-18.200') && v200.contents[0].text.includes('qlp-field-jump-v200') && !v200.contents[0].text.includes('qlp-route-v201'), '直前版 v200 をその版のまま維持');
+const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version: '2026-11-18.200' } });
+assert.equal(reported.isError, undefined, 'v200 の画面からの状態報告を受け付ける');
+console.log('PASS 画面', WIDGET_URI, 'と旧版 ui://qlp/question-v200.html');
 
 const data = await tool('startSession', { qualificationId: '測量士補', sources: [], requestedQuestion: { year: 2026, questionNumber: 6 } });
 assert.equal(data.status, 'question');
@@ -42,6 +42,7 @@ const q = data.question, sid = data.sessionId;
 assert.ok(q.fieldJump && Array.isArray(q.fieldJump.choices) && q.fieldJump.choices.length >= 2, '出題の応答に分野一覧');
 assert.equal(q.fieldJump.gradedQuestionId, q.questionId);
 assert.ok(q.fieldJump.choices.some((c) => c.fieldName === q.fieldName), '出題中の分野を含む');
+assert.deepEqual(q.progress.fieldNames, q.fieldJump.choices.map(c => c.fieldName), '実践問題の全分野ルートは保存した学習計画順');
 const graded = await tool('submitAnswer', { sessionId: sid, questionId: q.questionId, value: '1' });
 assert.ok(graded.grade?.fieldJump, '採点の応答に分野一覧');
 assert.equal(graded.grade.fieldJump.gradedQuestionId, q.questionId);
@@ -52,6 +53,7 @@ if (snap.status === 'restoredGrade') assert.equal(snap.grade.fieldJump?.gradedQu
 const ctx = await tool('explainSpec', { sessionId: sid });
 assert.equal(ctx.status, 'explanationContext');
 assert.equal(ctx.fieldJump?.gradedQuestionId, q.questionId, '照合の応答にも分野一覧');
+assert.deepEqual(ctx.journey.fieldNames, ctx.fieldJump.choices.map(c => c.fieldName), '解説後も全分野の学習順が一致する');
 const empty = q.fieldJump.choices.find((c) => c.available === false);
 if (empty) {
   const none = await tool('nextQuestion', { sessionId: sid, fieldName: empty.fieldName });
@@ -68,4 +70,5 @@ assert.notEqual(moved.question.questionId, q.questionId);
 if (prefetchedId && graded.next?.question?.fieldName !== target.fieldName)
   assert.notEqual(moved.question.questionId, prefetchedId, '先取りした通常の次問を使い回さない');
 assert.ok(moved.question.fieldJump, '移動後の問題にも分野一覧');
+assert.deepEqual(moved.question.progress.fieldNames, moved.question.fieldJump.choices.map(c => c.fieldName), '分野移動後も正式なルートが一致する');
 console.log('PASS production field jump', q.fieldName, '→', target.fieldName, empty ? '(問題なし分野も確認: ' + empty.fieldName + ')' : '');
