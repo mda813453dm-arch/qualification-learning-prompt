@@ -6,7 +6,7 @@ export const WIDGET_URI = 'ui://qlp/question-v201.html';
 export const WIDGET_VERSION = '2026-11-19.201';
 export { PREPARED_LESSONS, WIDGET_MIME };
 
-const ROUTE_LIST_JS = String.raw\`
+const ROUTE_LIST_JS = String.raw`
   // Keep the server's official learning-plan order. Never infer category names in UI.
   var routeFieldNames = null, routeFieldSession = null;
   function captureRouteFields(d){
@@ -59,7 +59,7 @@ const ROUTE_LIST_JS = String.raw\`
       '<div class="qlp-route-list" role="list" aria-label="学習計画の分野一覧">' +
       list + '</div></section>';
   }
-\`;
+`;
 
 export function widgetHtml(){
   const previous = previousHtml();
