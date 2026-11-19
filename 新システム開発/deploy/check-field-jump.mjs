@@ -26,6 +26,11 @@ async function tool(name, args) {
 }
 
 assert.equal(WIDGET_URI, 'ui://qlp/question-v201.html');
+const publishedTools = (await rpc('tools/list', {})).tools;
+const importTool = publishedTools.find(t => t.name === 'importHandoff');
+const legacyOpenTool = publishedTools.find(t => t.name === 'openHandoffView');
+assert.equal(importTool?._meta?.['openai/outputTemplate'], WIDGET_URI, '引継ぎ1回目の応答に再開用学習枠を添付する');
+assert.equal(legacyOpenTool?._meta?.['openai/outputTemplate'], WIDGET_URI, '旧版の引継ぎ画面復元も保持');
 const cur = await rpc('resources/read', { uri: WIDGET_URI });
 assert.ok(cur.contents[0].text.includes(WIDGET_VERSION) && cur.contents[0].text.includes('qlp-field-jump-v200') &&
   cur.contents[0].text.includes('qlp-route-v201') && cur.contents[0].text.includes('qlp-question-layout-v199'), '現行版 v201（全分野を一覧、現在分野だけ太字）を配信');
