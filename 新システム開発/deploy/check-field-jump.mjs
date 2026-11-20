@@ -1,6 +1,6 @@
-// Cloud Run 公開後の検査：学習画面 v203 のAI解説短縮・採点直後の簡潔な訂正、旧v202・v201・v200互換性。
+// Cloud Run 公開後の検査：学習画面 v204 の解答前ヒント・採点後訂正・再想起、旧v203〜v200互換性。
 // 独立した検査用の学習（測量士補 2026年度 問6 を直接指定）だけを使い、利用者の学習記録には触れない。トークンは出力しない。
-// 1) 現行版 v203 が配信され、旧版 v202・v201・v200 は元のHTMLのままで、状態報告も可能。
+// 1) 現行版 v204 が配信され、旧版 v203・v202・v201・v200 は元のHTMLのままで、状態報告も可能。
 // 2) 出題・採点・保存済み画面・照合の応答に、正式分野の一覧（fieldJump）が付く。
 // 3) 採点後に選んだ別の分野へ nextQuestion({fieldName}) で直接進み、先取りした通常の次問を使い回さない。
 // 4) 出題できる問題が無い分野を選ぶと、ほかの分野へ切り替えずに案内だけを返す（一覧にその分野がある場合）。
@@ -25,7 +25,7 @@ async function tool(name, args) {
   return result._meta?.qlp ?? result.structuredContent;
 }
 
-assert.equal(WIDGET_URI, 'ui://qlp/question-v203.html');
+assert.equal(WIDGET_URI, 'ui://qlp/question-v204.html');
 const publishedTools = (await rpc('tools/list', {})).tools;
 const importTool = publishedTools.find(t => t.name === 'importHandoff');
 const legacyOpenTool = publishedTools.find(t => t.name === 'openHandoffView');
@@ -36,8 +36,18 @@ assert.ok(cur.contents[0].text.includes(WIDGET_VERSION) && cur.contents[0].text.
   cur.contents[0].text.includes('qlp-route-v201') && cur.contents[0].text.includes('qlp-question-layout-v199') &&
   cur.contents[0].text.includes('qlp-feedback-v202') && cur.contents[0].text.includes('qlp-ai-latency-v203') &&
   cur.contents[0].text.includes('正解理由と私が選んだ回答の誤り・混同点') &&
+  cur.contents[0].text.includes('qlp-study-stages-v204') &&
+  cur.contents[0].text.includes('ヒントを見る（任意・正答は非表示）') &&
+  cur.contents[0].text.includes('再想起の答え合わせ：') &&
   cur.contents[0].text.includes('判断理由は、この正答表だけでは確認できません'),
-  '現行版 v203（AI解説の並行監視・短い解説・採点直後の訂正）を配信');
+  '現行版 v204（解答前の任意ヒント・解答後の訂正・再想起）を配信');
+const v203 = await rpc('resources/read', { uri: 'ui://qlp/question-v203.html' });
+assert.equal(v203.contents[0].uri,'ui://qlp/question-v203.html');
+assert.ok(v203.contents[0].text.includes('2026-11-20.203') &&
+  v203.contents[0].text.includes('qlp-ai-latency-v203') &&
+  !v203.contents[0].text.includes('qlp-study-stages-v204'), '直前版v203のHTMLを変更せず維持');
+const legacy203Report = await rpc('tools/call', {name:'reportUiEvent',arguments:{stage:'render_other',version:'2026-11-20.203'}});
+assert.equal(legacy203Report.isError,undefined,'v203からの状態報告も維持');
 const v202 = await rpc('resources/read', { uri: 'ui://qlp/question-v202.html' });
 assert.equal(v202.contents[0].uri,'ui://qlp/question-v202.html');
 assert.ok(v202.contents[0].text.includes('2026-11-20.202') &&
@@ -56,7 +66,7 @@ assert.equal(v200.contents[0].uri, 'ui://qlp/question-v200.html');
 assert.ok(v200.contents[0].text.includes('2026-11-18.200') && v200.contents[0].text.includes('qlp-field-jump-v200') && !v200.contents[0].text.includes('qlp-route-v201'), '直前版 v200 をその版のまま維持');
 const reported = await rpc('tools/call', { name: 'reportUiEvent', arguments: { stage: 'render_other', version: '2026-11-18.200' } });
 assert.equal(reported.isError, undefined, 'v200 の画面からの状態報告を受け付ける');
-console.log('PASS 画面', WIDGET_URI, 'と旧版 v202/v201/v200（AI解説の照合・短縮）');
+console.log('PASS 画面', WIDGET_URI, 'と旧版 v203/v202/v201/v200（段階別の学習と正答非表示）');
 
 const data = await tool('startSession', { qualificationId: '測量士補', sources: [], requestedQuestion: { year: 2026, questionNumber: 6 } });
 assert.equal(data.status, 'question');
