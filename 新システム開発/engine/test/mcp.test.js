@@ -273,7 +273,9 @@ test('分野の基礎解説はチャットではなく同じ学習枠に表示�
 
 test('回答と同時に公式正答・簡易解説を表示し、AIボタンは追加の詳しい解説だけを依頼する', () => {
   const html = widgetHtml();
-  assert.match(html, /・簡易解説（採点と同時に表示）/);
+  assert.match(html, /採点直後の確認（AIの生成待ちなし）/);
+  assert.match(html, /判断理由は、この正答表だけでは確認できません/);
+  assert.match(html, /正答番号の出典/);
   assert.match(html, /answerStatusName\(g\)/, '通常の公式正答と民間サイト掲載の解答はラベルを区別する');
   assert.match(html, /confirmation-summary/);
   assert.match(html, /d\.explanation/);
