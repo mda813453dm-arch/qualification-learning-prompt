@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
 import { readFileSync } from 'node:fs';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v203.js';
 import { widgetHtml as priorWidget, WIDGET_URI as priorUri } from '../src/widget-v202.js';
 
 function waitSource(html) {
