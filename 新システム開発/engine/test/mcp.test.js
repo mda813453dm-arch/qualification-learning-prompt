@@ -218,8 +218,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
-  assert.match(WIDGET_URI, /question-v202\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-20.202');
+  assert.match(WIDGET_URI, /question-v203\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-20.203');
   assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
@@ -308,7 +308,7 @@ test('学習枠の二重縦スクロールを廃止して自然高さにし、�
 
 test('解説の依頼文は資格共通の判断根拠とし、計算の有無は問題の内容で決める', () => {
   const html = widgetHtml();
-  assert.match(html, /各選択肢の判断根拠を、公式資料に基づいて解説してください。/);
+  assert.match(html, /正解理由と私が選んだ回答の誤り・混同点を、照合済みの公式問題と正答に基づいて簡潔に説明してください。/);
   assert.doesNotMatch(html, /各選択肢の理由と計算手順を、公式資料に基づいて解説してください。/);
   const legal = explainHow({stage:4,fieldName:'宅地建物取引業法と関係法令'});
   assert.match(legal, /計算を要しない設問では、条文・判例・定義・要件・例外・判断過程/);
@@ -1593,8 +1593,9 @@ test('資格別の共有年度・試験区分の表示とAI個別解説の起動
   assert.match(html, /利用可能（/, '本当に利用できる年度だけを表示する');
   assert.match(html, /async function loadExplanation\(questionId, requestAi\)/);
   assert.match(html, /await callTool\('explainSpec', args\)/, '採点済み問題をエンジンから確認する');
-  assert.match(html, /await requestAdaptiveExplanation\(ctx\)/, 'AIの理解度別解説を初回も呼び出す');
-  assert.match(html, /await waitForPublishedExplanation\(ctx.sessionId, ctx.question.questionId\)/, '解説の保存完了まで追跡する');
+  assert.match(html, /var sending = requestAdaptiveExplanation\(ctx\)/, 'AIへの依頼を早く開始する');
+  assert.match(html, /var publication = waitForPublishedExplanation\(ctx.sessionId, ctx.question.questionId,/, '送信ACKを待たず解説登録を監視する');
+  assert.match(html, /await publication/, '同じ採点済み問の保存完了を待つ');
   assert.match(html, /loadExplanation\(q.questionId, true\)/, '解説ボタンは本人の問題IDを渡す');
 });
 
