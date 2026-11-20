@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
 import { instantFeedbackModel } from '../src/instant-feedback.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v202.js';
 import { WIDGET_URI as OLD_URI, WIDGET_VERSION as OLD_VERSION, widgetHtml as oldWidgetHtml } from '../src/widget-v201.js';
 
 const q = { questionId:'official-q-2025-17', choices:['正しくない説明','正答の選択肢','別の説明'], year:2025, questionNumber:17 };
