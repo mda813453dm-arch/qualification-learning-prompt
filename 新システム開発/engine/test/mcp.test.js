@@ -283,7 +283,7 @@ test('回答と同時に公式正答・簡易解説を表示し、AIボタンは
   assert.ok(html.includes('id="checkExp"'));
   assert.ok(html.includes('id="dkExp"'));
   assert.ok(html.includes('id="exp"'));
-  assert.match(html, /await requestAdaptiveExplanation\(ctx\);/);
+  assert.match(html, /var sending = requestAdaptiveExplanation\(ctx\);/, '依頼送信と公開状態の監視を並行して開始する');
   assert.match(html, /else renderVerifiedExplanation\(ctx\);/);
   assert.match(html, /同じ問題の解説を取得できませんでした|AI解説の依頼に失敗しました/);
 });
