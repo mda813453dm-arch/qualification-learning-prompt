@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { runInNewContext } from 'node:vm';
 import { readFileSync } from 'node:fs';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v201.js';
 import { widgetHtml as v200Html, WIDGET_URI as V200_URI } from '../src/widget-v200.js';
 
 const render = (data, index, total, name) => {
