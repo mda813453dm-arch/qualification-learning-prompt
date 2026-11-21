@@ -25,7 +25,7 @@ async function tool(name, args) {
   return result._meta?.qlp ?? result.structuredContent;
 }
 
-assert.equal(WIDGET_URI, 'ui://qlp/question-v204.html');
+assert.equal(WIDGET_URI, 'ui://qlp/question-v205.html');
 const publishedTools = (await rpc('tools/list', {})).tools;
 const importTool = publishedTools.find(t => t.name === 'importHandoff');
 const legacyOpenTool = publishedTools.find(t => t.name === 'openHandoffView');

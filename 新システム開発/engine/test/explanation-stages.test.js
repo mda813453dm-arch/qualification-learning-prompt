@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { preAnswerHint } from '../src/pre-answer-hint.js';
-import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
+import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-v204.js';
 import { widgetHtml as previousHtml, WIDGET_URI as PREVIOUS_URI } from '../src/widget-v203.js';
 
 const q = { questionId:'official:2025:5',kind:'new',fieldName:'民法・意思表示',

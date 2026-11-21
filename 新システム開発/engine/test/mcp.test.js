@@ -218,8 +218,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
-  assert.match(WIDGET_URI, /question-v204\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-20.204');
+  assert.match(WIDGET_URI, /question-v205\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-21.205');
   assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
@@ -296,7 +296,15 @@ test('学習枠の二重縦スクロールを廃止して自然高さにし、�
   assert.match(html, /html,body\{height:auto;min-height:0;overflow:visible\}/);
   assert.match(html, /app\.classList\.add\('study-viewport'\)/);
   assert.doesNotMatch(html, /#app\.study-viewport\{height:clamp/);
-  assert.doesNotMatch(html, /latest\.scrollIntoView\(/, 'iframeからホスト側のチャットスクロールを動かさない');
+  // v205: 会話のスクロールは「利用者が枠内で操作した直後」かつ「目印が画面外」のときだけ。
+  // 描画直後の align() では従来どおりホスト側を動かさない。
+  assert.equal(html.split('latest.scrollIntoView(').length - 1, 2, 'scrollIntoView は revealLatest 内の1か所（例外時の代替を含む）だけ');
+  const reveal = html.slice(html.indexOf('function revealLatest('), html.indexOf('MutationObserver(function(){'));
+  assert.match(reveal, /qlpUserActionAt === qlpRevealedActionAt\) return;/, '1回の操作で1回だけ');
+  assert.match(reveal, /e0\.isIntersecting && e0\.intersectionRatio > 0\.9\)\) return;/, '目印が見えていれば動かさない');
+  assert.match(reveal, /old-screen/, '古い枠は動かさない');
+  const align = html.slice(html.indexOf('function scrollUp('), html.indexOf('function revealLatest('));
+  assert.doesNotMatch(align.slice(0, align.indexOf('align();')), /\.scrollIntoView\(/, '描画直後の位置合わせはホストを動かさない');
   assert.doesNotMatch(html, /document\.addEventListener\('click', function\(\)\{ goFull\(\); \}/,
     '利用者のタップを全画面への自動切替に使わない');
   assert.match(html, /if \(turn === latestFocusTurn\) \{ fit\(\); align\(\); \}/);
