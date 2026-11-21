@@ -116,7 +116,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             } else reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
               ? { skipped: true } : m.params.arguments.value === '分からない'
               ? { dontKnow: true, questionId:m.params.arguments.questionId, correctAnswer:3, acceptedAnswers:[3], answerPdfUrl:'https://qlp.test/answers.pdf' }
-              : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+              : { questionId:m.params.arguments.questionId, correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           }
           else if (op === 'openDescriptiveQuestion') {
             const args = m.params.arguments;
@@ -358,8 +358,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(gradedLayout.scrollTop,0);
     assert.ok(gradedLayout.height < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、枠高も縮む');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /公式正答・簡易解説/);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /各選択肢と正答の位置/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /採点直後の確認/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /全選択肢と正答の位置を確認する/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 0,
       '回答時にAI解説取得を起動しない');
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
@@ -371,13 +371,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.deepEqual(await page.evaluate(() => window.followups),
-      ['2025年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）'],
+      ['2025年度 問1の正解理由と私が選んだ回答の誤り・混同点を、照合済みの公式問題と正答に基づいて簡潔に説明してください。必要な法令条件や計算過程は省略しないでください。（照合番号：E-abcdefghABCDEFGH）'],
       '会話には照合番号と解説依頼だけを送る');
     assert.deepEqual(await page.evaluate(() => window.internal), [], '不安定な遅延モデル文脈更新に依存しない');
     const full = await page.evaluate(() => window.fullMessages[0]);
     assert.equal(full.length,1,'内部資料のJSONやPNGはiPhoneの会話に送らない');
     assert.equal(full[0].type,'text');
-    assert.equal(full[0].text, '2025年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）');
+    assert.equal(full[0].text, '2025年度 問1の正解理由と私が選んだ回答の誤り・混同点を、照合済みの公式問題と正答に基づいて簡潔に説明してください。必要な法令条件や計算過程は省略しないでください。（照合番号：E-abcdefghABCDEFGH）');
     assert.doesNotMatch(full[0].text,/verifiedOfficialExplanation|MCP app context|correctAnswer|\\?stem/);
     assert.equal(full[0].annotations,undefined,'非表示指定が無視されても原本データが露出しない');
     assert.equal(await ui.getByRole('button', { name: '公式正答を再表示' }).count(), 0, '表示済み正答の再表示ボタンは不要');
