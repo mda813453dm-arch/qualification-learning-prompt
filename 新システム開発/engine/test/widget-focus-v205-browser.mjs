@@ -20,7 +20,7 @@ const diagScript = `window.__diag={siv:[],io:[]};(function(){var o=Element.proto
 const makeWidget = extra => widgetHtml().replace('<script>','<script>'+extra+diagScript+'window.openai={toolOutput:'+JSON.stringify(one)+',toolInput:{sessionId:'+JSON.stringify(sid)+'}};<\/script><script>');
 // WebKit（iPhone）と同じく、枠の scrollIntoView が ChatGPT 側へ届かない状態を Chromium でも再現する。
 const noHostScroll = 'Element.prototype.scrollIntoView=function(){};';
-const hostHtml = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+const hostHtml = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0"><div style="height:700px;background:#eee">chat above</div>
 <iframe id="study" src="https://widget.test/w.html" style="width:100%;height:400px;border:0;display:block"></iframe>
 <div style="height:900px;background:#ddd">chat below</div>
