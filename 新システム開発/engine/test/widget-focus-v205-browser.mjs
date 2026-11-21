@@ -16,7 +16,8 @@ const one = {status:'question',sessionId:sid,at:100,question:{
 const two = {status:'question',sessionId:sid,at:200,question:{...one.question,questionId:'takken:2025:main:11',questionNumber:11,stem:'問11の本文',
   progress:{...one.question.progress,fieldQuestion:2,done:1}}};
 const grade={questionId:one.question.questionId,correct:true,selected:'3',correctAnswer:3,acceptedAnswers:[3]};
-const widget = widgetHtml().replace('<script>','<script>window.openai={toolOutput:'+JSON.stringify(one)+',toolInput:{sessionId:'+JSON.stringify(sid)+'}};<\/script><script>');
+const diagScript = `window.__diag={siv:[],io:[]};(function(){var o=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){window.__diag.siv.push(JSON.stringify(a));return o.apply(this,arguments)};var IO=window.IntersectionObserver;if(IO)window.IntersectionObserver=function(cb,opt){return new IO(function(es,ob){es.forEach(function(e){window.__diag.io.push({i:e.isIntersecting,r:e.intersectionRatio,top:e.boundingClientRect.top,rb:e.rootBounds&&e.rootBounds.bottom})});return cb(es,ob)},opt)}})();`;
+const widget = widgetHtml().replace('<script>','<script>'+diagScript+'window.openai={toolOutput:'+JSON.stringify(one)+',toolInput:{sessionId:'+JSON.stringify(sid)+'}};<\/script><script>');
 const hostHtml = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0"><div style="height:700px;background:#eee">chat above</div>
 <iframe id="study" src="https://widget.test/w.html" style="width:100%;height:1600px;border:0;display:block"></iframe>
@@ -69,6 +70,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     });
     const markerTop = await ui.locator('.latest').evaluate(el => el.getBoundingClientRect().top);
     const shown = top.frameTop + markerTop;
+    if (!(shown >= 0 && shown < 200)) {
+      const diag = await ui.locator('.latest').evaluate(el => window.__diag);
+      const y0 = await page.evaluate(() => scrollY);
+      await ui.locator('.latest').evaluate(el => el.focus());
+      const yFocus = await page.evaluate(() => scrollY);
+      await page.evaluate(() => scrollTo(0, 1800));
+      await ui.locator('.latest').evaluate(el => el.scrollIntoView({ block: 'start' }));
+      const ySiv = await page.evaluate(() => scrollY);
+      await page.evaluate(() => scrollTo(0, 1800));
+      await ui.locator('.latest').evaluate(el => el.scrollIntoView(true));
+      const ySivTrue = await page.evaluate(() => scrollY);
+      console.log(name, 'DIAG', JSON.stringify({ diag, y0, yFocus, ySiv, ySivTrue }));
+    }
     assert.ok(shown >= 0 && shown < 200, name + ': 切替後の先頭（目印）が画面上部に見える ' + JSON.stringify({ ...top, markerTop }));
     assert.equal(await ui.locator('.latest').evaluate(el => document.activeElement === el), true, name + ': 目印に focus');
 
