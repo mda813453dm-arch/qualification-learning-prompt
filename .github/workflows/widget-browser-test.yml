@@ -36,6 +36,9 @@ jobs:
           # The container already includes the exact browser engines and system libraries.
           # Verify installation without installing ubuntu apt packages.
           PLAYWRIGHT_BROWSERS_PATH=/ms-playwright node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
+      - name: 画面切替後に枠の先頭へfocus・操作直後だけ先頭を表示（v205、Chromium/WebKit）
+        run: |
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-focus-v205-browser.mjs
       - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
         run: |
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-brave-next-browser.mjs
@@ -53,7 +56,6 @@ jobs:
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v198-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v199-browser.mjs
           PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-field-jump-browser.mjs
-          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-focus-v205-browser.mjs
       # Browser regressions fail quickly; the full engine test is also run in
       # the separate AI learning engine workflow. Keep it here for completeness.
       - name: エンジン・通信の回帰試験
