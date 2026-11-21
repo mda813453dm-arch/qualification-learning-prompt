@@ -15,7 +15,14 @@ concurrency:
   group: deploy-google-cloud
   cancel-in-progress: false
 jobs:
+  widget-preflight:
+    # Block deployment if the 375px Chromium/WebKit interaction checks fail.
+    uses: ./.github/workflows/widget-browser-test.yml
+    permissions:
+      contents: read
+      statuses: write
   deploy:
+    needs: widget-preflight
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
