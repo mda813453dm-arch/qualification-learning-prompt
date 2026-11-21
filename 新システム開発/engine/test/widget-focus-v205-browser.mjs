@@ -1,5 +1,5 @@
-// v205: 画面切替後、枠の先頭（最新の目印）に focus し、操作直後に先頭が画面外なら
-// ChatGPT 側（親ページ）を先頭までスクロールする。先頭が見えている時・操作していない時は動かさない。
+// v205: 画面切替後、枠の先頭（最新の目印）に focus し、操作した時に見ていた位置へ新しい内容の先頭を出す。
+// 親ページ（ChatGPT 側）はスクロールしない。先頭が見えている時・操作していない時は位置を変えない。
 // 親ページと学習枠は別オリジン（ChatGPT と同じ構成）。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -17,10 +17,12 @@ const two = {status:'question',sessionId:sid,at:200,question:{...one.question,qu
   progress:{...one.question.progress,fieldQuestion:2,done:1}}};
 const grade={questionId:one.question.questionId,correct:true,selected:'3',correctAnswer:3,acceptedAnswers:[3]};
 const diagScript = `window.__diag={siv:[],io:[]};(function(){var o=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(a){window.__diag.siv.push(JSON.stringify(a));return o.apply(this,arguments)};var IO=window.IntersectionObserver;if(IO)window.IntersectionObserver=function(cb,opt){return new IO(function(es,ob){es.forEach(function(e){window.__diag.io.push({i:e.isIntersecting,r:e.intersectionRatio,top:e.boundingClientRect.top,rb:e.rootBounds&&e.rootBounds.bottom})});return cb(es,ob)},opt)}})();`;
-const widget = widgetHtml().replace('<script>','<script>'+diagScript+'window.openai={toolOutput:'+JSON.stringify(one)+',toolInput:{sessionId:'+JSON.stringify(sid)+'}};<\/script><script>');
+const makeWidget = extra => widgetHtml().replace('<script>','<script>'+extra+diagScript+'window.openai={toolOutput:'+JSON.stringify(one)+',toolInput:{sessionId:'+JSON.stringify(sid)+'}};<\/script><script>');
+// WebKit（iPhone）と同じく、枠の scrollIntoView が ChatGPT 側へ届かない状態を Chromium でも再現する。
+const noHostScroll = 'Element.prototype.scrollIntoView=function(){};';
 const hostHtml = `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0"><div style="height:700px;background:#eee">chat above</div>
-<iframe id="study" src="https://widget.test/w.html" style="width:100%;height:1600px;border:0;display:block"></iframe>
+<iframe id="study" src="https://widget.test/w.html" style="width:100%;height:400px;border:0;display:block"></iframe>
 <div style="height:900px;background:#ddd">chat below</div>
 <script>
 window.calls=[];
@@ -30,7 +32,8 @@ window.deliver=view=>iframe.contentWindow.postMessage({jsonrpc:'2.0',method:'ui/
 window.addEventListener('message',e=>{
   if(e.source!==iframe.contentWindow||!e.data||e.data.jsonrpc!=='2.0')return;
   const m=e.data;
-  if(m.method==='ui/initialize')reply(m.id,{protocolVersion:'2026-01-26',hostCapabilities:{}});
+  if(m.method==='ui/notifications/size-changed'&&m.params&&m.params.height)iframe.style.height=Math.ceil(m.params.height)+'px';
+  else if(m.method==='ui/initialize')reply(m.id,{protocolVersion:'2026-01-26',hostCapabilities:{}});
   else if(m.method==='ui/notifications/initialized')window.deliver(${JSON.stringify(one)});
   else if(m.method==='tools/call'){
     window.calls.push(m.params.name);
@@ -42,7 +45,8 @@ window.addEventListener('message',e=>{
 });
 </script></body></html>`;
 
-for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
+for (const [name, engine, extra] of [['chromium', chromium, ''], ['chromium-no-host-scroll', chromium, noHostScroll], ['webkit', webkit, '']]) {
+  const widget = makeWidget(extra);
   const browser = await engine.launch({ headless: true });
   try {
     const page = await browser.newPage({ viewport: { width: 375, height: 667 } });
@@ -57,7 +61,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => scrollY), 0, name + ': 初回表示で会話をスクロールしない');
 
     // 利用者は長い問題を読み進め、枠の下の方（解答ボタン付近）を見ている。
-    await page.evaluate(() => scrollTo(0, 1500));
+    // ChatGPT と同じく、枠は内容の高さ（自然高さ）で表示される。
+    const frameHeight = await page.evaluate(() => document.getElementById('study').offsetHeight);
+    assert.ok(frameHeight > 1500, name + ': 長い問題の枠 ' + frameHeight);
+    await page.evaluate(h => scrollTo(0, 700 + h - 600), frameHeight);
     await ui.locator('input[name=ans][value="3"]').check({ force: true });
     const before = await page.evaluate(() => scrollY);
     assert.ok(before > 900, name + ': 枠の先頭が画面外にある前提 ' + before);
@@ -88,10 +95,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
 
     // 先頭が見えている状態で次へ進んでも、会話は動かさない。
     const y1 = await page.evaluate(() => scrollY);
-    await ui.locator('#next').click();
+    // 画面を動かさずにボタンを押す（Playwright の click は押す前に会話をスクロールするため）。
+    await ui.locator('#next').evaluate(el => el.click());
     await ui.getByText('問11の本文', { exact: true }).waitFor({ timeout: 8000 }).catch(async e => { throw new Error('NEXT ' + (await ui.locator('body').innerText()).slice(0, 1500) + ' calls=' + JSON.stringify(await page.evaluate(() => window.calls))); });
     await page.waitForTimeout(900);
     assert.equal(await page.evaluate(() => scrollY), y1, name + ': 先頭が見えていればスクロールしない');
+    const shown2 = await page.evaluate(() => document.getElementById('study').getBoundingClientRect().top) + await ui.locator('.latest').evaluate(el => el.getBoundingClientRect().top);
+    assert.ok(shown2 >= 0 && shown2 < 200, name + ': 次の問題の先頭も見ている位置に出る ' + shown2);
     assert.equal(await ui.locator('.latest').evaluate(el => document.activeElement === el), true, name + ': 次の問題でも目印に focus');
 
     // 操作していない更新（ホストからの結果通知）では、先頭が画面外でも動かさない。
