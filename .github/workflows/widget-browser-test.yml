@@ -1,5 +1,6 @@
 name: 学習画面の通信・ボタン試験
 on:
+  workflow_call:
   push:
     branches: [ai-learning-system]
     paths:
