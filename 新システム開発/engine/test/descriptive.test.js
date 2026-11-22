@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation,
+import { descriptiveSpec, descriptiveYearSupported, requestedDescriptive, descriptiveView, validateDescriptiveExplanation,
   descriptiveProvidedReference, validateDescriptiveProvidedReference,
   cleanDescriptivePageFolios, cleanDescriptiveLayout, SCANNED_DESCRIPTIVE_FILES } from '../src/descriptive.js';
 import { LAND_SURVEYOR_AM_REFERENCES } from '../src/land-surveyor-am-references.js';
@@ -111,16 +111,34 @@ test('2007〜2014年はSHA固定の原本画像専用記述式24問を出題で�
 });
 
 test('第11問と問11、令和7年、午前午後の組合せを誤認しない', () => {
-  assert.deepEqual(requestedDescriptive('2025年度 午前の部 第11問を出題'), { year:2025,section:'午前の部',number:11 });
-  assert.deepEqual(requestedDescriptive('令和7年度 午後の部 問21を表示'), { year:2025,section:'午後の部',number:21 });
-  assert.deepEqual(requestedDescriptive('2024年度 午後の部 第22問'), { year:2024,section:'午後の部',number:22 });
-  assert.deepEqual(requestedDescriptive('平成28年度 午前の部 第11問'), { year:2016,section:'午前の部',number:11 });
-  assert.deepEqual(requestedDescriptive('令和2年度 午後の部 第22問'), { year:2020,section:'午後の部',number:22 });
-  assert.deepEqual(requestedDescriptive('平成19年度 午前の部 第11問'), { year:2007,section:'午前の部',number:11 });
-  assert.deepEqual(requestedDescriptive('2008年度 午後の部 第22問'), { year:2008,section:'午後の部',number:22 });
+  assert.deepEqual(requestedDescriptive('2025年度 午前の部 第11問を出題'), { year:2025,section:'午前の部',number:11,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('令和7年度 午後の部 問21を表示'), { year:2025,section:'午後の部',number:21,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('2024年度 午後の部 第22問'), { year:2024,section:'午後の部',number:22,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('平成28年度 午前の部 第11問'), { year:2016,section:'午前の部',number:11,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('令和2年度 午後の部 第22問'), { year:2020,section:'午後の部',number:22,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('平成19年度 午前の部 第11問'), { year:2007,section:'午前の部',number:11,yearExplicit:true });
+  assert.deepEqual(requestedDescriptive('2008年度 午後の部 第22問'), { year:2008,section:'午後の部',number:22,yearExplicit:true });
   assert.equal(requestedDescriptive('2025年度 午前の部 第21問'), null);
   assert.equal(requestedDescriptive('2025年度 午後の部 第11問'), null);
   assert.equal(requestedDescriptive('2025年度 問10'), null);
+});
+
+test('明示した2026年度・令和8年度などを2025年度に置き換えない（Issue #5）', () => {
+  for (const text of ['2026年度 午後の部 第21問', '令和8年度 午後の部 問21', '２０２６年度 午後の部 第２１問'])
+    assert.deepEqual(requestedDescriptive(text), { year:2026,section:'午後の部',number:21,yearExplicit:true }, text);
+  assert.equal(requestedDescriptive('令和9年度 午前の部 第11問').year, 2027);
+  assert.equal(requestedDescriptive('2030年度 午後の部 第22問').year, 2030);
+  assert.equal(requestedDescriptive('2006年度 午後の部 第22問').year, 2006);
+  assert.deepEqual(requestedDescriptive('平成31年度 午前の部 第11問'), { year:2019,section:'午前の部',number:11,yearExplicit:true });
+  // 年度を書かないときだけ従来どおり2025年度（明示ではない印を付ける）
+  assert.deepEqual(requestedDescriptive('午後の部 第21問'), { year:2025,section:'午後の部',number:21,yearExplicit:false });
+  // 原本が無い年度は出題対象にならない（別の年度に読み替えない）
+  for (const year of [2006, 2026, 2027]) {
+    assert.equal(descriptiveSpec(year,'午後の部',21,pins), null);
+    assert.equal(descriptiveYearSupported(year), false);
+  }
+  assert.equal(descriptiveYearSupported(2019), true);
+  assert.equal(descriptiveYearSupported(2007), true);
 });
 
 test('記述式の画面・解答表示には正答番号・正誤・自動採点が存在しない', () => {

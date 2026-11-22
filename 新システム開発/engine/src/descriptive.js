@@ -25,6 +25,10 @@ export const DESCRIPTIVE_FILES = Object.freeze({
   2024: { '午前の部': '001427201', '午後の部': '001427202' },
   2025: { '午前の部': '001450010', '午後の部': '001450011' },
 });
+/** その年度の記述式の原本を持っているか（問・区分の組合せは見ない） */
+export function descriptiveYearSupported(year) {
+  return Number.isInteger(year) && !!(DESCRIPTIVE_FILES[year] || SCANNED_DESCRIPTIVE_FILES[year]);
+}
 export function descriptiveSpec(year, section, number, pins) {
   if (!Number.isInteger(year) || !(DESCRIPTIVE_FILES[year] || SCANNED_DESCRIPTIVE_FILES[year]) ||
       !['午前の部', '午後の部'].includes(section) ||
@@ -42,14 +46,18 @@ export function requestedDescriptive(text) {
   const q = /(?:第\s*(11|21|22)\s*問|問\s*(11|21|22))/.exec(t);
   if (!q) return null;
   const number = Number(q[1] || q[2]);
-  const y = /\b20(?:0[7-9]|1\d|2[0-5])\b/.exec(t)?.[0] ?? null;
-  const r = /(?:令和|R)\s*(元|[1-7])/.exec(t)?.[1] ?? null;
-  const h = /(?:平成|H)\s*(1[9]|2\d|30)/.exec(t)?.[1] ?? null;
+  // 年度は書かれたとおりに読む（対応しているかどうかは descriptiveSpec が決める）。
+  // 読めない年度を別の年度に置き換えない（Issue #5：2026年度が2025年度に置き換わっていた）。
+  const y = /\b(?:19|20)\d{2}\b/.exec(t)?.[0] ?? null;
+  const r = /(?:令和|R)\s*(元|[1-9]\d?)/.exec(t)?.[1] ?? null;
+  const h = /(?:平成|H)\s*(1[9]|2\d|3[01])/.exec(t)?.[1] ?? null;
+  const yearExplicit = y !== null || r !== null || h !== null;
+  // 年度が書かれていないときだけ、最新の対応年度（2025）を使う
   const year = y ? Number(y) : r ? (r === '元' ? 2019 : Number(r) + 2018) : h ? Number(h) + 1988 : 2025;
   const section = number === 11 ? '午前の部' : '午後の部';
   if (t.includes('午前') && section !== '午前の部') return null;
   if (t.includes('午後') && section !== '午後の部') return null;
-  return { year, section, number };
+  return { year, section, number, yearExplicit };
 }
 
 // User-provided answer-sheet evidence (AGAROOT, 2022 / R4, morning Q11).

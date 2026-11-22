@@ -24,7 +24,7 @@ import { DIAG_PER_FIELD, REVIEW_PATTERNS, diagnosisOrder, fieldCounts } from './
 import { exportHandoff, importHandoff, WITHHELD_MESSAGES } from './handoff.js';
 import { IngestError, ingestOne, readJob, staleSources, startJob, stepJob, withNotice, importHistoryView } from './ingest.js';
 import { awaitUpload, httpParser, renderPages, renderDescriptive, uploadedParse } from './parser-client.js';
-import { descriptiveSpec, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, validateDescriptiveAnswerSummary,
+import { descriptiveSpec, descriptiveYearSupported, requestedDescriptive, descriptiveView, validateDescriptiveExplanation, validateDescriptiveAnswerSummary,
   validateDescriptiveProvidedReference, descriptiveProvidedReference, hasPublishableDescriptiveExplanation,
   cleanDescriptivePageFolios, cleanDescriptiveLayout } from './descriptive.js';
 import { handleRpc } from './mcp.js';
@@ -489,7 +489,13 @@ async function openDescriptive(env, id, state, now, requested) {
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
     throw new HttpError(409, 'STUDY_NOT_STARTED');
   const spec = descriptiveSpec(requested.year, requested.section, requested.number, catalogFor(state.qualificationId)?.officialPdfPins);
-  if (!spec) throw new HttpError(422, 'DESCRIPTIVE_QUESTION_UNSUPPORTED');
+  if (!spec) {
+    // 書かれた年度の原本が無いときは、別の年度の問題を出さずに「未対応の年度」と伝える（PDFは取りに行かない）
+    if (requested?.yearExplicit !== false && Number.isInteger(requested?.year) && !descriptiveYearSupported(requested.year))
+      throw new HttpError(422, 'DESCRIPTIVE_YEAR_UNSUPPORTED',
+        `指定年度は未対応です。${requested.year}年度の記述式は検証済みの原本がないため出題できません。別年度の問題は取得しません。`);
+    throw new HttpError(422, 'DESCRIPTIVE_QUESTION_UNSUPPORTED');
+  }
   if (!env.PARSER_URL) throw new HttpError(503, 'DESCRIPTIVE_PARSER_UNAVAILABLE');
   let bytes;
   try {
