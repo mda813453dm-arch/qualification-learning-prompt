@@ -480,6 +480,26 @@ async function createSession(env, { qualificationId, learnerId, plan, sources },
   return { id, state };
 }
 
+/** 出題できない記述式の指定に返す422（PDFは取りに行かない。別年度の問題に置き換えない） */
+function descriptiveRequestError(requested) {
+  // 記述式と択一の両方を指定されたときは、推測で出題せずにどちらか一方の指定を求める（PDFは取りに行かない）
+  if (requested?.formIssue)
+    return new HttpError(422, 'QUESTION_FORM_AMBIGUOUS',
+      '記述式と択一の両方が指定されています。どちらか一方を指定してください（例：「2025年度 午後の部 択一の問21」または「2025年度 午後の部 記述式 第21問」）。推測では出題しません。');
+  // 記述式は午前の部 第11問・午後の部 第21問／第22問だけ。ほかの問番号を別の問に置き換えない
+  if (requested?.numberIssue)
+    return new HttpError(422, 'DESCRIPTIVE_NUMBER_UNSUPPORTED',
+      '指定の問番号は記述式にありません。記述式は午前の部 第11問、午後の部 第21問・第22問です。別の問題は出題しません。');
+  // 書かれた年度が読めない・食い違うときは、推測で一方を選ばずに確認を求める（PDFは取りに行かない）
+  if (requested?.yearIssue)
+    return new HttpError(422, 'DESCRIPTIVE_YEAR_UNREADABLE',
+      '指定年度を解釈できません。年度を「2025年度」や「令和7年度」のように一つだけ指定してください。別年度の問題は取得しません。');
+  // 書かれた年度の原本が無いときは、別の年度の問題を出さずに「未対応の年度」と伝える（PDFは取りに行かない）
+  if (requested?.yearExplicit !== false && Number.isInteger(requested?.year) && !descriptiveYearSupported(requested.year))
+    return new HttpError(422, 'DESCRIPTIVE_YEAR_UNSUPPORTED',
+      `指定年度は未対応です。${requested.year}年度の記述式は検証済みの原本がないため出題できません。別年度の問題は取得しません。`);
+  return new HttpError(422, 'DESCRIPTIVE_QUESTION_UNSUPPORTED');
+}
 /** 記述式は択一120問と別系統で出題する。公式問題原本をSHAで検証する。 */
 async function openDescriptive(env, id, state, now, requested) {
   if (state.qualificationId !== 'land_surveyor' || (requested?.qualificationId != null && catalogQid(requested.qualificationId) !== state.qualificationId))
@@ -489,17 +509,7 @@ async function openDescriptive(env, id, state, now, requested) {
   if (env.QLP_WIDGET && state.learnerId && !(await studyStartedInThisChat(env, state.learnerId)))
     throw new HttpError(409, 'STUDY_NOT_STARTED');
   const spec = descriptiveSpec(requested.year, requested.section, requested.number, catalogFor(state.qualificationId)?.officialPdfPins);
-  if (!spec) {
-    // 書かれた年度が読めない・食い違うときは、推測で一方を選ばずに確認を求める（PDFは取りに行かない）
-    if (requested?.yearIssue)
-      throw new HttpError(422, 'DESCRIPTIVE_YEAR_UNREADABLE',
-        '指定年度を解釈できません。年度を「2025年度」や「令和7年度」のように一つだけ指定してください。別年度の問題は取得しません。');
-    // 書かれた年度の原本が無いときは、別の年度の問題を出さずに「未対応の年度」と伝える（PDFは取りに行かない）
-    if (requested?.yearExplicit !== false && Number.isInteger(requested?.year) && !descriptiveYearSupported(requested.year))
-      throw new HttpError(422, 'DESCRIPTIVE_YEAR_UNSUPPORTED',
-        `指定年度は未対応です。${requested.year}年度の記述式は検証済みの原本がないため出題できません。別年度の問題は取得しません。`);
-    throw new HttpError(422, 'DESCRIPTIVE_QUESTION_UNSUPPORTED');
-  }
+  if (!spec) throw descriptiveRequestError(requested);
   if (!env.PARSER_URL) throw new HttpError(503, 'DESCRIPTIVE_PARSER_UNAVAILABLE');
   let bytes;
   try {
@@ -2212,6 +2222,10 @@ async function route(request, env, url, now) {
     if ((selectedFieldId && want) || (requestedTopic && (selectedFieldId || want || clearTopic)) ||
         (selectedFieldId && clearTopic))
       throw new HttpError(400, 'FIELD_QUESTION_CONFLICT');
+    // 出題できない記述式の指定は、学習開始記録・開始時刻を作る前に断る（Issue #5）
+    const descWanted = state.qualificationId === 'land_surveyor' ? requestedDescriptive(want) : null;
+    if (descWanted && !descriptiveSpec(descWanted.year, descWanted.section, descWanted.number, catalogFor(state.qualificationId)?.officialPdfPins))
+      throw descriptiveRequestError(descWanted);
     if (isExactQuestionRequest(want)) {
       const directStudyId = await startDirectStudy(env, state, now);
       await activateChatStudy(env, state.learnerId, state.qualificationId, directStudyId);

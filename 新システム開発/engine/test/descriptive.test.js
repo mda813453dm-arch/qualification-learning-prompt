@@ -161,6 +161,33 @@ test('年度の数字を一部だけ読まず、読めない・食い違う年�
     assert.equal(r.year, null, text);
     assert.equal(r.yearIssue, 'unreadable', text);
   }
+  // 読める年と読めない年が混ざっていても、読める方を推測で選ばない（48986a4 再レビュー）
+  for (const text of ['2025年度か26年度 午後 問21', '2025年度か元年度 午後の部 第21問', '26年度か2025年度 午後の部 第21問']) {
+    const r = requestedDescriptive(text);
+    assert.equal(r.year, null, text);
+    assert.equal(r.yearIssue, 'unreadable', text);
+  }
+  // 年号付き・西暦4桁だけなら従来どおり読む
+  assert.equal(requestedDescriptive('令和元年度 午前の部 第11問').year, 2019);
+  assert.equal(requestedDescriptive('R7年度 午後の部 問21').year, 2025);
+  assert.equal(requestedDescriptive('2026年度（令和8年度） 午後の部 第21問').year, 2026);
+  // 問番号は数字を最後まで読む（問210を問21、問221を問22、問111を問11と読まない）
+  for (const text of ['2025年度 午後の部 問210', '2025年度 午後の部 問221', '2025年度 午前の部 問111', '2025年度 午後の部 問２１０',
+    '2025年度 午後の部 第210問', '2025年度 午後の部 問2', '2025年度 午後の部 第2問', '2025年度 午後の部 問1'])
+    assert.equal(requestedDescriptive(text), null, text);
+  for (const [text, number] of [['2025年度 午後の部 問21', 21], ['2025年度 午後の部 問 21', 21], ['2025年度 午後の部 問21を出して', 21],
+    ['2025年度 午後の部 問２２', 22], ['2025年度 午前の部 第11問', 11], ['2025年度 午後の部 第 22 問', 22]])
+    assert.equal(requestedDescriptive(text)?.number, number, text);
+  // 「記述式」と書いて11・21・22以外の問番号を指定したら、択一に流さず未対応の問番号として返す
+  for (const text of ['記述式 2025年度 午後 問210', '記述式 2025年度 午後 問２１０', '記述式 2025年度 午後の部 第210問', '記述式 問2'])
+    assert.equal(requestedDescriptive(text)?.numberIssue, 'unsupported', text);
+  assert.equal(requestedDescriptive('記述式 2025年度 午後 問21').number, 21);
+  // 「築26年」は年度ではない。年度の付かない「26年」だけのときは推測しない
+  assert.deepEqual(requestedDescriptive('2025年度 午後 問21（築26年の建物）'), { year:2025,section:'午後の部',number:21,yearExplicit:true });
+  assert.equal(requestedDescriptive('問21（築26年の建物）').year, 2025);
+  assert.equal(requestedDescriptive('26年 午後 問21').yearIssue, 'unreadable');
+  assert.equal(requestedDescriptive('2025年度か令和 午後 問21').yearIssue, 'unreadable');
+  assert.equal(requestedDescriptive('2025年 午後 問21').year, 2025);
   // 英字の一部（PDFのHなど）を平成・令和と読まない
   assert.deepEqual(requestedDescriptive('SHA 午後の部 第21問'), { year:2025,section:'午後の部',number:21,yearExplicit:false });
 });
@@ -271,4 +298,24 @@ test('完成した記述式の解説を復元すると操作ボタンと同じ�
   assert.equal(restored.question.pages,undefined);
   assert.equal(descriptiveView(saved,'study-session',false).status,'descriptiveQuestion');
   assert.equal(descriptiveView(saved,'study-session',false).explanationMarkdown,undefined);
+});
+
+test('否定された「記述式」は指定として扱わず、明示した択一は問11・21・22でも記述式にしない（Issue #5 v3レビュー）', () => {
+  for (const s of ['記述式ではなく択一の問3', '記述式ではなく択一の問21', '記述式じゃなくて択一の第22問', '記述式以外の択一 午前 問11',
+    '択一の問21', '2025年度 択一 午後の部 問21', '記述式ではなく問21']) assert.equal(requestedDescriptive(s), null, s);
+  // 択一を否定して記述式を明示したときは、従来どおり記述式として読む（未対応の問番号は拒否）
+  assert.equal(requestedDescriptive('択一ではなく記述式の問21')?.number, 21);
+  assert.equal(requestedDescriptive('択一ではなく記述式の問210')?.numberIssue, 'unsupported');
+  // 否定のない記述式の指定は変わらない
+  assert.equal(requestedDescriptive('記述式 問210')?.numberIssue, 'unsupported');
+  assert.equal(requestedDescriptive('記述式 2025年度 午後 問21（築26年の建物）')?.year, 2025);
+});
+
+test('「記述式は不要」は記述式の否定、記述式と択一の両方の指定は ambiguous（Issue #5 v4レビュー）', () => {
+  for (const s of ['2025年度 午後の部 択一の問21（記述式は不要）', '択一 問22 記述式いらない', '記述式なし 問21'])
+    assert.equal(requestedDescriptive(s), null, s);
+  for (const s of ['記述式と択一の問21', '択一と記述式 第22問', '記述式・択一 午前 問11'])
+    assert.equal(requestedDescriptive(s)?.formIssue, 'ambiguous', s);
+  // 問番号のない話題（「記述式と択一を学びたい」）は出題指定ではないので従来どおり
+  assert.equal(requestedDescriptive('記述式と択一を学びたい'), null);
 });
