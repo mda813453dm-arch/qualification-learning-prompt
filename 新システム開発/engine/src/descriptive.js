@@ -47,17 +47,40 @@ export function requestedDescriptive(text) {
   if (!q) return null;
   const number = Number(q[1] || q[2]);
   // 年度は書かれたとおりに読む（対応しているかどうかは descriptiveSpec が決める）。
-  // 読めない年度を別の年度に置き換えない（Issue #5：2026年度が2025年度に置き換わっていた）。
-  const y = /\b(?:19|20)\d{2}\b/.exec(t)?.[0] ?? null;
-  const r = /(?:令和|R)\s*(元|[1-9]\d?)/.exec(t)?.[1] ?? null;
-  const h = /(?:平成|H)\s*(1[9]|2\d|3[01])/.exec(t)?.[1] ?? null;
-  const yearExplicit = y !== null || r !== null || h !== null;
+  // 読めない年度・食い違う年度を別の年度に置き換えない（Issue #5：2026年度が2025年度に置き換わっていた）。
+  const { years, unreadable } = explicitYears(t);
+  const distinct = [...new Set(years)];
+  const yearExplicit = years.length > 0 || unreadable;
+  const yearIssue = unreadable ? 'unreadable' : distinct.length > 1 ? 'ambiguous' : null;
   // 年度が書かれていないときだけ、最新の対応年度（2025）を使う
-  const year = y ? Number(y) : r ? (r === '元' ? 2019 : Number(r) + 2018) : h ? Number(h) + 1988 : 2025;
+  const year = yearIssue ? null : distinct.length ? distinct[0] : 2025;
   const section = number === 11 ? '午前の部' : '午後の部';
   if (t.includes('午前') && section !== '午前の部') return null;
   if (t.includes('午後') && section !== '午後の部') return null;
-  return { year, section, number, yearExplicit };
+  return { year, section, number, yearExplicit, ...(yearIssue ? { yearIssue } : {}) };
+}
+
+/**
+ * 文中に書かれた年度をすべて西暦で返す。数字は前後の数字まで含めて読み、
+ * 「令和100年度」を「令和10年度」のように一部だけ読まない。
+ * unreadable：年度らしい書き方（令和・平成・昭和・「〇年」）があるのに、有効な年度として読めない。
+ */
+function explicitYears(t) {
+  const years = [];
+  let unreadable = false;
+  for (const m of t.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) years.push(Number(m[1]));
+  for (const m of t.matchAll(/(?:令和|(?<![A-Za-z])R)\s*(元|\d+)(?!\d)/g)) {
+    const n = m[1] === '元' ? 1 : Number(m[1]);
+    if (n >= 1) years.push(2018 + n); else unreadable = true;
+  }
+  for (const m of t.matchAll(/(?:平成|(?<![A-Za-z])H)\s*(元|\d+)(?!\d)/g)) {
+    const n = m[1] === '元' ? 1 : Number(m[1]);
+    if (n >= 1 && n <= 31) years.push(1988 + n); else unreadable = true;
+  }
+  // 年号だけ・昭和・2桁の「26年度」など、年度を書いたのに上で読めなかった
+  if (!years.length && /令和|平成|昭和|\d+\s*年/.test(t)) unreadable = true;
+  if (/昭和/.test(t)) unreadable = true;
+  return { years, unreadable };
 }
 
 // User-provided answer-sheet evidence (AGAROOT, 2022 / R4, morning Q11).

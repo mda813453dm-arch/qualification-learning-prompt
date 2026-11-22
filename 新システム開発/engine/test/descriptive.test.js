@@ -141,6 +141,30 @@ test('明示した2026年度・令和8年度などを2025年度に置き換え�
   assert.equal(descriptiveYearSupported(2007), true);
 });
 
+test('年度の数字を一部だけ読まず、読めない・食い違う年度は推測しない（Issue #5 ChatGPTレビュー条件）', () => {
+  // 令和100年度を令和10年度（2028）と読まない
+  assert.equal(requestedDescriptive('令和100年度 午後の部 第21問').year, 2118);
+  assert.equal(requestedDescriptive('R10年度 午後の部 第21問').year, 2028);
+  assert.equal(requestedDescriptive('2100年度 午後の部 第21問').year, 2100);
+  assert.equal(requestedDescriptive('平成18年度 午後の部 第21問').year, 2006);
+  // 年号と西暦が同じ年なら受け付け、食い違えばどちらも選ばない
+  assert.equal(requestedDescriptive('2026年度（令和8年度） 午後の部 第21問').year, 2026);
+  for (const text of ['2026年度（令和7年度） 午後の部 第21問', '2024年度と2025年度 午後の部 第21問']) {
+    const r = requestedDescriptive(text);
+    assert.equal(r.year, null, text);
+    assert.equal(r.yearIssue, 'ambiguous', text);
+    assert.equal(r.yearExplicit, true, text);
+  }
+  // 年度を書いたのに有効な年度として読めない
+  for (const text of ['令和0年度 午後の部 第21問', '平成32年度 午後の部 第21問', '26年度 午後の部 第21問', '昭和60年度 午後の部 第21問', '令和年度 午後の部 第21問']) {
+    const r = requestedDescriptive(text);
+    assert.equal(r.year, null, text);
+    assert.equal(r.yearIssue, 'unreadable', text);
+  }
+  // 英字の一部（PDFのHなど）を平成・令和と読まない
+  assert.deepEqual(requestedDescriptive('SHA 午後の部 第21問'), { year:2025,section:'午後の部',number:21,yearExplicit:false });
+});
+
 test('記述式の画面・解答表示には正答番号・正誤・自動採点が存在しない', () => {
   const spec = descriptiveSpec(2025,'午後の部',21,pins);
   const saved = { ...spec, text:'公式の問題条件と登記情報',

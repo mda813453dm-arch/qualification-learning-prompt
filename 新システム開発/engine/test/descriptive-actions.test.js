@@ -330,6 +330,7 @@ test('2018午前11の参照解答は学習セッションに提供され、誤�
 
 test('明示した2026年度の記述式は422で未対応を返し、別年度を出さず現在の問も変えない（Issue #5）',async()=>{
   const e=env();await store(e,Q2,T0,null);
+  const before=JSON.parse(await e.STORE.get('ses/'+SID)).state;
   const route='/v1/sessions/'+SID+'/next';
   for (const question of ['2026年度 午後の部 第21問','令和8年度 午後の部 問22','２０２６年度 午前の部 第１１問']) {
     const r=await send(e,'POST',route,{question});
@@ -339,8 +340,17 @@ test('明示した2026年度の記述式は422で未対応を返し、別年度�
     assert.match(r.body.hint,/2026年度/);
     assert.match(r.body.hint,/別年度の問題は取得しません/);
   }
+  // 令和100年度（令和10年度と読まない）・食い違い・読めない年度も、別年度を出さずに拒否する
+  for (const [question, error] of [['令和100年度 午後の部 第21問','DESCRIPTIVE_YEAR_UNSUPPORTED'],
+    ['2026年度（令和7年度） 午後の部 第21問','DESCRIPTIVE_YEAR_UNREADABLE'], ['26年度 午後の部 第21問','DESCRIPTIVE_YEAR_UNREADABLE']]) {
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,422,question);
+    assert.equal(r.body.error,error,question);
+    assert.match(r.body.hint,/別年度の問題は取得しません/,question);
+  }
   const saved=JSON.parse(await e.STORE.get('ses/'+SID));
   assert.equal(saved.state.descriptiveCurrent.questionId,Q2,'現在の問はそのまま');
+  assert.deepEqual(saved.state,before,'拒否しても学習状態（現在の問・履歴）は変わらない');
   assert.equal((await send(e,'GET','/v1/sessions/'+SID+'/descriptive/status?questionId='+encodeURIComponent(Q2)+'&shownAt='+T0)).status,200);
   // 対応年度の明示は年度の判定を通り、次の段階（原本の分解）へ進む
   const ok=await send(e,'POST',route,{question:'2025年度 午後の部 第21問'});
