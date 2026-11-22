@@ -1,0 +1,37 @@
+name: PR6 premerge widget verification
+
+on:
+  push:
+    branches:
+      - ci/issue-3-pr6-03bc2b9f
+    paths:
+      - .github/workflows/pr6-premerge-ci.yml
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Verify tested source
+        shell: bash
+        run: |
+          EXPECTED=03bc2b9f60958f014825ac0c1564ec4172602f13
+          test "$(git rev-parse HEAD^)" = "$EXPECTED"
+          test "$(git diff --name-only HEAD^ HEAD)" = \
+            ".github/workflows/pr6-premerge-ci.yml"
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = \
+            "b4dd616bf7e5eaac92c893d5e632770af5070b42"
+
+  widget-regression:
+    needs: verify-source
+    uses: ./.github/workflows/widget-browser-test.yml
+    permissions:
+      contents: read
+      statuses: write
