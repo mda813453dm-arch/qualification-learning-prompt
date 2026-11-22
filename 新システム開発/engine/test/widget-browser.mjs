@@ -356,7 +356,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(gradedLayout.overflowY,'visible','採点・解説画面も内部縦スクロールしない');
     assert.ok(Math.abs(gradedLayout.scrollHeight-gradedLayout.height)<4);
     assert.equal(gradedLayout.scrollTop,0);
-    assert.ok(gradedLayout.height < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、枠高も縮む');
+    const gradedPadTop = await ui.locator('#app').evaluate(el => parseFloat(getComputedStyle(el).paddingTop) || 0);
+    assert.ok(gradedLayout.height - gradedPadTop < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、内容が縮む（v205の配置余白を除く）');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /採点直後の確認/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /全選択肢と正答の位置を確認する/);
@@ -482,8 +483,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
     await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 375), '図を画面幅より大きくできる');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '拡大', exact: true }).click();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '閉じる' }).click();
     // A long iPhone question must return to the result's top after "分からない".
     const beforeDontKnow = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
@@ -496,7 +501,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '「分からない」後も最新の採点結果の先頭をフォーカス');
     assert.equal(await ui.locator('.latest').count(), 1);
     assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答は\s*3\s*です/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答：\s*3/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length),beforeDontKnow+1);
     await page.evaluate(r => window.deliver(r), result(question));
     await ui.getByRole('button', { name: '分からない', exact: true }).waitFor();
@@ -748,6 +753,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('#descriptiveSource .descriptive-page').count(), 0, 'PDFのページ全体は画像として表示しない');
     await ui.locator('#descriptiveSource .fig-open').click();
     assert.equal(await ui.locator('.fig-overlay').count(), 1, '図をタップすると拡大');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '閉じる' }).click();
     assert.doesNotMatch(await ui.locator('#app').innerText(), /器械点  視準点|見取図\s+A\s+B/, '表や図をPDFテキスト層から偽の文章にしない');
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
