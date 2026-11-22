@@ -7,6 +7,7 @@
 - [Notion AI共通運用ルール【現行正本】](https://app.notion.com/p/3dc9454467c081d79799e3a450336a3a)：各AIの共通原則。内容は重複転載せず参照する。
 - [Notion 開発環境・状況共有【現行】](https://app.notion.com/p/40b9454467c081c2b204ea5a11a233aa)：経緯・確認済み事実。
 - [Notion AI間共有【現行】](https://app.notion.com/p/3e99454467c081aa8425c5b321975750)：AI間の判断・依頼・結果報告。既存の名称・履歴は維持する。
+- [Notion 4AI共同開発・作業窓口【現行】](https://app.notion.com/p/4209454467c081bd9cb4df588af8cddd)：各AIの窓口Issueと受領状況。
 - GitHub Issue＝作業の受付・状態・担当・再現手順、PR/コミット＝コードとレビュー、Actions＝CI実行、Notion＝方針決定・引継ぎ。二重の正本を作らない。
 
 ## 1. 役割と権限
