@@ -566,10 +566,20 @@ function sourceOf(p) {
  * AIアプリが questionId を書き崩して送ったとき（「3」「2026年 問3」「q063-2026-3」など）に、出題中の問と同じかを見る。
  * 数字の並びが「（年度）…問番号」で出題中の問と合うときだけ同じとみなす（別の問の採点にはしない）。
  */
+const SECTION_WORDS = [/午前|\bam\b/i, /午後|\bpm\b/i];
 function sameQuestion(given, current) {
   if (typeof given !== 'string' || !given.trim()) return false;
-  const [, year, , number] = current.split(':');
-  const nums = given.normalize('NFKC').match(/\d+/g) ?? [];
+  const [, year, section = '', number] = current.split(':');
+  const g = given.normalize('NFKC').trim();
+  // 正式な形（資格:年度:区分:問）で届いたときは、完全に同じときだけ同じ問とみなす（別区分・別資格の問を採点しない）
+  if (/^[^:\s]+:\d{4}:[^:]+:\d+$/.test(g)) return g === current.normalize('NFKC');
+  // 「午前」「午後」（am/pm）が書かれていれば、出題中の問の区分と同じときだけ同じ問とみなす
+  const said = SECTION_WORDS.map((re) => re.test(g));
+  if (said.some(Boolean)) {
+    const cur = SECTION_WORDS.map((re) => re.test(section.normalize('NFKC')));
+    if (said.filter(Boolean).length > 1 || said.some((s, i) => s !== cur[i])) return false;
+  }
+  const nums = g.match(/\d+/g) ?? [];
   if (!nums.length || nums.at(-1) !== String(Number(number))) return false;
   const years = nums.slice(0, -1).filter((n) => n.length === 4 && !/^0/.test(n));
   return years.every((y) => y === year);
