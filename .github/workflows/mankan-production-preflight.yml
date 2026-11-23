@@ -15,16 +15,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
-      - name: Verify production base, exact runtime contents and only permitted CI additions
+      - name: Verify immutable production and candidate bases, source diff and reviewed test fixture
         shell: bash
         run: |
           set -eu
           base=96f7cd0fa6abab2fb8e659a4939ed41c7b51a803
-          test "$(git rev-parse HEAD^^)" = "$base"
-          diff -u <(printf '%s\n'             '新システム開発/engine/src/app.js'             '新システム開発/engine/src/explain.js'             '新システム開発/engine/src/mcp.js')             <(git -c core.quotePath=false diff --name-only "$base" HEAD^)
-          diff -u <(printf '%s\n'             '.github/workflows/mankan-production-preflight.yml'             'ci/mankan-ai-explanation.test.mjs')             <(git -c core.quotePath=false diff --name-only HEAD^ HEAD)
+          candidate=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
+          test "$(git rev-parse HEAD^)" = e976bc70350eee72480ef0a4a49e022c4a609521
+          test "$(git rev-parse HEAD^^)" = "$candidate"
+          test "$(git rev-parse HEAD^^^)" = "$base"
+          diff -u <(printf '%s\n' \
+            '新システム開発/engine/src/app.js' \
+            '新システム開発/engine/src/explain.js' \
+            '新システム開発/engine/src/mcp.js') \
+            <(git -c core.quotePath=false diff --name-only "$base" "$candidate")
+          diff -u <(printf '%s\n' \
+            '.github/workflows/mankan-production-preflight.yml' \
+            'ci/mankan-ai-explanation.test.mjs' \
+            '新システム開発/engine/test/widget-browser.mjs') \
+            <(git -c core.quotePath=false diff --name-only "$candidate" HEAD)
+          test "$(git hash-object 新システム開発/engine/test/widget-browser.mjs)" = b4dd616bf7e5eaac92c893d5e632770af5070b42
           cd 新システム開発/engine/src
           test "$(git hash-object app.js)" = 98328729bbb7689496c26663fe2d1190dbcfd364
           test "$(git hash-object explain.js)" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
