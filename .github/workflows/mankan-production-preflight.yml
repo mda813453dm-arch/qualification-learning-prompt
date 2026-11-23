@@ -1,0 +1,42 @@
+name: Mankan AI explanation production-base preflight
+
+on:
+  push:
+    branches: [ci/mankan-ai-explanation-prod-96f7cd0f]
+    paths: [.github/workflows/mankan-production-preflight.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Verify production base, exact runtime contents and only permitted CI additions
+        shell: bash
+        run: |
+          set -eu
+          base=96f7cd0fa6abab2fb8e659a4939ed41c7b51a803
+          test "$(git rev-parse HEAD^^)" = "$base"
+          diff -u <(printf '%s\n'             '新システム開発/engine/src/app.js'             '新システム開発/engine/src/explain.js'             '新システム開発/engine/src/mcp.js')             <(git -c core.quotePath=false diff --name-only "$base" HEAD^)
+          diff -u <(printf '%s\n'             '.github/workflows/mankan-production-preflight.yml'             'ci/mankan-ai-explanation.test.mjs')             <(git -c core.quotePath=false diff --name-only HEAD^ HEAD)
+          cd 新システム開発/engine/src
+          test "$(git hash-object app.js)" = 98328729bbb7689496c26663fe2d1190dbcfd364
+          test "$(git hash-object explain.js)" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
+          test "$(git hash-object mcp.js)" = 63c68a5f8c4c8345784a6e66ea3332de9cc54af8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Regress official scoring nuances and both E-reference routes
+        run: node --test ci/mankan-ai-explanation.test.mjs
+  widget-parser-preflight:
+    needs: verify-candidate
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
