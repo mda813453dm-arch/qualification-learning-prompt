@@ -1,0 +1,53 @@
+name: Mankan AI explanation isolated CI
+
+on:
+  push:
+    branches: [ci/mankan-ai-explanation-48986a4]
+    paths: [.github/workflows/mankan-explanation-isolated-ci.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 3
+          persist-credentials: false
+      - name: Verify exact isolated source
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^^)" = 48986a4620373e90aef47c4151925b062a6e3dfa
+          cd 新システム開発/engine/src
+          test "$(git hash-object explain.js)" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
+          test "$(git hash-object app.js)" = 99f7a84d878890bb0bbd11f303d73340a6706ecf
+          test "$(git hash-object mcp.js)" = 63c68a5f8c4c8345784a6e66ea3332de9cc54af8
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test q018 official scoring nuances and both E-reference routes
+        run: node --test ci/mankan-ai-explanation.test.mjs
+      - name: Run engine regression tests
+        working-directory: 新システム開発/engine
+        run: npm test
+  widget-explanation:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run existing explanation Widget regression (Chromium/WebKit)
+        shell: bash
+        run: |
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" --ignore-scripts --no-audit --no-fund playwright@1.51.1
+          PLAYWRIGHT_BROWSERS_PATH=/ms-playwright PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
