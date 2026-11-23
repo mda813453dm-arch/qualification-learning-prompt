@@ -1,0 +1,58 @@
+name: Mankan q018 engine-only production release
+on:
+  push:
+    branches: [release/mankan-q018-4e3fb751]
+    paths: [ci/mankan-q018-release-request.txt]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-google-cloud
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check exact base, release authorization marker and gate success
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base=96f7cd0fa6abab2fb8e659a4939ed41c7b51a803
+          cand=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
+          test "$GITHUB_REF" = refs/heads/release/mankan-q018-4e3fb751
+          test "$(git rev-parse "$cand^")" = "$base"
+          test "$(git rev-parse HEAD^)" = "$cand"
+          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/explain.js' '新システム開発/engine/src/mcp.js') <(git -c core.quotePath=false diff --name-only "$base" "$cand")
+          diff -u <(printf '%s\n' '.github/workflows/mankan-q018-release.yml' 'ci/mankan-q018-deploy.sh' 'ci/mankan-q018-release-request.txt') <(git -c core.quotePath=false diff --name-only "$cand" HEAD)
+          test "$(git rev-parse "$cand:新システム開発/engine/src/app.js")" = 98328729bbb7689496c26663fe2d1190dbcfd364
+          test "$(git rev-parse "$cand:新システム開発/engine/src/explain.js")" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
+          test "$(git rev-parse "$cand:新システム開発/engine/src/mcp.js")" = 63c68a5f8c4c8345784a6e66ea3332de9cc54af8
+          test "$(cat ci/mankan-q018-release-request.txt)" = "DEPLOY q018 $cand gate 45203219982"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45203219982" | jq -e '
+            .head_sha == "5899494ecd2feb0be8d827c1ecfc095aa17e84dd"
+            and .head_branch == "ci/mankan-ai-explanation-prod-96f7cd0f"
+            and .path == ".github/workflows/mankan-production-preflight.yml"
+            and .status == "completed" and .conclusion == "success"'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45203219982/jobs" | jq -e '
+            [.jobs[].name]|index("verify-candidate") != null'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45203219982/jobs" | jq -e '
+            (.jobs | length) == 3 and all(.jobs[]; .conclusion=="success") and
+            any(.jobs[]; .name|endswith(" / widget")) and any(.jobs[]; .name|endswith(" / parser"))'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Deploy only the tested qlp-engine digest and verify
+        shell: bash
+        run: bash ci/mankan-q018-deploy.sh
