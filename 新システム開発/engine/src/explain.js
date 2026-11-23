@@ -45,6 +45,37 @@ const ALWAYS = [
   '解説内容は資格名で一律に決めず、取得した問題文・選択肢・図表から判断する。計算を要する設問では使用する式・数値の代入・途中過程・単位・検算を丁寧に示す。座標・面積等の計算では、その問題に適切な関数電卓の操作方法も示す。計算を要しない設問では、条文・判例・定義・要件・例外・判断過程などの根拠に集中し、「計算はありません」「計算手順は不要」などの不要な断り書きを付けない。',
 ].join('\n');
 
+export const OFFICIAL_GRADE_POLICY = [
+  '【公式採点区分の詳説】同じ questionId の保存済み grade.correct・grade.result に従い、再採点しない。',
+  '公式の採点上の扱いは grade.correctAnswerLabel・grade.acceptedAnswers を優先する。',
+  '正解肢なしの場合は全解答が採点上正解と伝え、選択した肢や全肢を内容上の正解と説明しない。',
+  '複数正解の場合は公式に採点上正解とされた番号を示す。各肢が内容上正しいと断定しない。',
+  '公式表示と正答集合が欠落・不一致で要再照合の場合は、単一番号や矛盾した集合を正解として示さず、確認できない正解理由は説明しない。',
+  '通常の単一正解で正答集合がない場合だけ grade.correctAnswer を使う。公式資料にない理由は推測しない。',
+].join('');
+
+// パーサーの複数正解ラベルは「2または3」のように「または」区切り。
+function officialAnswerGuide(grade) {
+  const label = String(grade.correctAnswerLabel ?? '').normalize('NFKC').trim();
+  if (/^正解(?:肢)?(?:が)?(?:ない|なし|無し)(?:$|[ (])/.test(label.replace(/\s+/g, ''))) {
+    return { kind: 'noOption' };
+  }
+  const supplied = grade.acceptedAnswers;
+  const valid = Array.isArray(supplied) && supplied.every(n => Number.isSafeInteger(n) && n > 0);
+  const accepted = valid ? [...new Set(supplied)].sort((a, b) => a - b) : [];
+  const labelsMultiple = /または|又は|複数|\d\s*[,、・/]\s*\d/.test(label);
+  if (labelsMultiple) {
+    const canonical = /^\d+(?:\s*(?:または|又は|[,、・/])\s*\d+)+$/.test(label);
+    const expected = canonical ? [...new Set(label.match(/\d+/g).map(Number))] : [];
+    if (expected.length < 2 || expected.length !== accepted.length ||
+        !expected.every(n => accepted.includes(n))) return { kind: 'recheck' };
+  } else if (supplied != null && (!valid || (supplied.length > 0 && accepted.length === 0))) {
+    return { kind: 'recheck' };
+  }
+  if (accepted.length > 1) return { kind: 'multiple', accepted };
+  return { kind: 'single', answer: accepted[0] ?? grade.correctAnswer };
+}
+
 /**
  * 解説の書き方（AIに渡す。利用者には見せない）。
  * stage：学習段階（分からなければ、会話で利用者が答えた段階に合わせるよう書く）
@@ -65,9 +96,19 @@ export function explainHow({ stage = null, weak = [], grade = null, fieldName = 
   if (learning?.phase === 'closed_book_recall' && grade?.result !== 'wrong') lines.push('理解済みまたは期限復習の論点は例題から毎回やり直さず、想起と必要な補足を優先する。');
   if (weak.length) lines.push(`苦手な分野（エンジンの採点記録）：${weak.join('、')}。この分野の解説では、基礎の振り返りを1つ足す。`);
   if (grade && !grade.skipped) {
-    if (grade.result === 'wrong') lines.push(`今回は不正解（選んだのは${grade.selected}、正答は${grade.correctAnswer}）。最初に、選んだ選択肢がなぜ誤りかを示してから、正答の根拠を説明する。`);
-    else if (grade.result === 'guess_correct') lines.push('今回は勘で正解。正答の根拠を確かめ、ほかの選択肢がなぜ誤りかも表で示す。');
-    else if (grade.result === 'confident_correct') lines.push('今回は自信をもって正解。説明は短めにし、関連して出やすい論点を1つ足す。');
+    const guide = officialAnswerGuide(grade);
+    if (guide.kind === 'noOption') {
+      lines.push('公式発表は「正解肢なし」。全解答を採点上正解と扱うが、選んだ肢を内容上の正解とは説明しない。公式資料にない理由は推測しない。');
+    } else if (guide.kind === 'recheck') {
+      lines.push('公式の正答表示と保存済みの正答集合は要再照合。単一番号や矛盾した正答集合を正解と断定せず、確認できない正解理由は説明しない。');
+    } else if (guide.kind === 'multiple') {
+      lines.push(`公式に採点上正解とされた選択肢は${guide.accepted.join('・')}。各肢が内容上正しいとは断定せず、公式資料にない理由は推測しない。`);
+      if (grade.result === 'wrong') lines.push(`保存済み採点では選んだ${grade.selected}は不正解。確認できる根拠があれば説明する。`);
+    } else {
+      if (grade.result === 'wrong') lines.push(`今回は不正解（選んだのは${grade.selected}、正答は${guide.answer}）。最初に、選んだ選択肢がなぜ誤りかを示してから、正答の根拠を説明する。`);
+      else if (grade.result === 'guess_correct') lines.push('今回は勘で正解。正答の根拠を確かめ、ほかの選択肢がなぜ誤りかも表で示す。');
+      else if (grade.result === 'confident_correct') lines.push('今回は自信をもって正解。説明は短めにし、関連して出やすい論点を1つ足す。');
+    }
     if (fieldName) lines.push(`分野：${fieldName}`);
   }
   return lines.join('\n');
