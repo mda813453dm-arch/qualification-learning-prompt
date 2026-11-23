@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# DRAFT ONLY: must be reviewed in context of current Cloud Run config and approved CI.
+# DRAFT RETRY ONLY: preserve the successful prior build; no rebuild or infrastructure creation.
 set -eEuo pipefail
 umask 077
 export CLOUDSDK_CORE_DISABLE_PROMPTS=1
@@ -16,46 +16,96 @@ TMP="$(mktemp -d)"
 TAG="q018-$(openssl rand -hex 5)"
 REV="$SERVICE-$TAG"
 STATE=untouched
+HTTP_STATUS=0
+PROJECT_NUMBER=774945236720
+BUILD_ID=64c534bb-a2ee-43b2-bf58-05931915a999
+BUILD_TAG=q018-f078998de3
+CANDIDATE_DIGEST=sha256:321703e1c5a11188e6e1d395888a3871cf196fc6655687750109f1b52e65a16d
+PRIOR_DIGEST=sha256:9cb695a613e60e7e9716f9b90d00792858236a56dd1c857a8440aaabcfaddf84
 
 say() { printf '%s\n' "$*"; }
 die() { say "STOP: $*" >&2; exit 1; }
+# Only log machine-readable status labels and numeric codes; never raw API payloads.
+brief_op() {
+  jq -c 'if type!="object" then {invalid:true}
+    else {done: (if (.done|type)=="boolean" then .done else null end),
+      name_present: ((.name|type)=="string"),
+      error_code: (if (.error.code|type)=="number" then .error.code else null end),
+      error_status: (if ((.error.status|type)=="string") and (.error.status|test("^[A-Z_]{1,48}$")) then .error.status else null end)}
+    end' "$1" 2>/dev/null || printf '{"invalid_json":true}\n'
+}
 http() {
-  local method="$1" url="$2" dst="$3" body="${4:-}" auth code
-  auth="$(gcloud auth print-access-token)"
+  local method="$1" url="$2" dst="$3" body="${4:-}" label="${5:-service/read}" auth code
+  HTTP_STATUS=0
+  auth="$(gcloud auth print-access-token)" || return 1
   local args=(--silent --show-error --max-time 35 -X "$method" -o "$dst" -w '%{http_code}' "$url")
   if [[ -n "$body" ]]; then args+=(-H 'Content-Type: application/json' --data-binary "@$body"); fi
-  code="$(printf 'header = "Authorization: Bearer %s"\n' "$auth" | curl --config - "${args[@]}")"
+  code="$(printf 'header = "Authorization: Bearer %s"\n' "$auth" | curl --config - "${args[@]}")" || {
+    say "Cloud Run [$label] transport failure" >&2
+    return 1
+  }
   unset auth
+  HTTP_STATUS="$code"
   if ! [[ "$code" =~ ^2[0-9][0-9]$ ]]; then
-    say "Cloud Run API $method failed HTTP $code (response suppressed)" >&2
+    say "Cloud Run [$label] HTTP $code $(brief_op "$dst")" >&2
     return 1
   fi
 }
-read_svc() { http GET "$API/$RESOURCE" "$1"; }
+read_svc() { http GET "$API/$RESOURCE" "$1" '' "${2:-service/read}"; }
+op_success() {
+  jq -e 'type=="object" and (.error? == null)' "$1" >/dev/null
+}
 wait_op() {
-  local p="$1" name
-  if jq -e '.done == true' "$p" >/dev/null; then
-    jq -e 'has("error")|not' "$p" >/dev/null
-    return
+  local p="$1" label="$2" name op_prefix call_status i
+  op_success "$p" || { say "Cloud Run [$label] invalid/error operation $(brief_op "$p")" >&2; return 1; }
+  if jq -e '.done == true' "$p" >/dev/null; then return 0; fi
+  name="$(jq -er '.name' "$p")" || return 1
+  if [[ "$name" == "projects/$PROJECT/locations/$REGION/operations/"* ]]; then
+    op_prefix="projects/$PROJECT/locations/$REGION/operations/"
+  elif [[ "$name" == "projects/$PROJECT_NUMBER/locations/$REGION/operations/"* ]]; then
+    op_prefix="projects/$PROJECT_NUMBER/locations/$REGION/operations/"
+  else
+    say "Cloud Run [$label] unexpected operation resource scope" >&2
+    return 1
   fi
-  name="$(jq -er '.name' "$p")"
-  [[ "$name" == "projects/$PROJECT/locations/$REGION/operations/"* ]] || return 1
+  [[ "${name#"$op_prefix"}" =~ ^[A-Za-z0-9_-]+$ ]] || return 1
   for ((i=0;i<120;i++)); do
-    http GET "$API/$name" "$TMP/op-result.json" || return 1
-    if jq -e '.done == true' "$TMP/op-result.json" >/dev/null; then
-      jq -e 'has("error")|not' "$TMP/op-result.json" >/dev/null
-      return
+    if http GET "$API/$name" "$TMP/op-result.json" '' "$label/operation-poll"; then
+      op_success "$TMP/op-result.json" || {
+        say "Cloud Run [$label] operation failed $(brief_op "$TMP/op-result.json")" >&2
+        return 1
+      }
+      if jq -e '.done == true' "$TMP/op-result.json" >/dev/null; then return 0; fi
+    else
+      call_status="$HTTP_STATUS"
+      # Only repeat read-only polling. Initial replication may delay operation lookup.
+      if [[ "$call_status" == 404 && $i -lt 6 || "$call_status" == 429 || "$call_status" == 503 ]]; then
+        sleep 5
+        continue
+      fi
+      return 1
     fi
     sleep 5
   done
+  say "Cloud Run [$label] operation poll timed out; no PATCH retry." >&2
   return 1
 }
 patch() {
-  local mask="$1" body="$2"
-  http PATCH "$API/$RESOURCE?updateMask=$mask&allowMissing=false&validateOnly=true" "$TMP/op-validate.json" "$body" &&
-    wait_op "$TMP/op-validate.json" &&
-    http PATCH "$API/$RESOURCE?updateMask=$mask&allowMissing=false" "$TMP/op.json" "$body" &&
-    wait_op "$TMP/op.json"
+  local mask="$1" body="$2" label="$3"
+  say "Cloud Run [$label] request validation (read-only)"
+  http PATCH "$API/$RESOURCE?updateMask=$mask&allowMissing=false&validateOnly=true" "$TMP/op-validate.json" "$body" "$label/validate" ||
+    return 1
+  op_success "$TMP/op-validate.json" || {
+    say "Cloud Run [$label] validation rejected $(brief_op "$TMP/op-validate.json")" >&2
+    return 1
+  }
+  # validateOnly is expressly non-persisting. A returned Operation-shaped validation
+  # acknowledgement is not necessarily a retrievable long-running operation.
+  say "Cloud Run [$label] validation accepted $(brief_op "$TMP/op-validate.json"); no operation GET for validation"
+  say "Cloud Run [$label] applying one etag-guarded PATCH"
+  http PATCH "$API/$RESOURCE?updateMask=$mask&allowMissing=false" "$TMP/op.json" "$body" "$label/apply" ||
+    return 1
+  wait_op "$TMP/op.json" "$label/apply"
 }
 # Positive traffic must be exactly one explicit prior/current revision. Understand only the
 # already-confirmed untagged production shape; stop on concurrent change or unexpected tags.
@@ -84,7 +134,7 @@ normal_config() {
 traffic() {
   jq -n --arg etag "$(jq -er '.etag' "$1")" --arg service "$RESOURCE" --arg target "$2" '
     {name:$service,etag:$etag,traffic:[{type:"TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION",revision:$target,percent:100}]}' > "$TMP/traffic.json"
-  patch traffic "$TMP/traffic.json"
+  patch traffic "$TMP/traffic.json" "${3:-traffic-change}"
 }
 assert_current_config() {
   test "$(normal_config "$1")" = "$(cat "$TMP/prior-config.json")"
@@ -100,13 +150,13 @@ cleanup_or_rollback() {
          assert_state "$TMP/failure.json" "$REV" yes "$REV" &&
          assert_current_config "$TMP/failure.json"; then
         say "Post-promotion check failed; rolling back to $PRIOR and removing candidate tag"
-        traffic "$TMP/failure.json" "$PRIOR" && read_svc "$TMP/rolledback.json" &&
+        traffic "$TMP/failure.json" "$PRIOR" rollback-and-untag && read_svc "$TMP/rolledback.json" &&
           assert_state "$TMP/rolledback.json" "$PRIOR" no "$REV" ||
           say "MANUAL CHECK REQUIRED: rollback was not verified" >&2
       elif assert_state "$TMP/failure.json" "$PRIOR" yes "$REV" &&
            assert_current_config "$TMP/failure.json"; then
         say "Production traffic stayed on $PRIOR; removing candidate tag"
-        traffic "$TMP/failure.json" "$PRIOR" && read_svc "$TMP/rolledback.json" &&
+        traffic "$TMP/failure.json" "$PRIOR" rollback-and-untag && read_svc "$TMP/rolledback.json" &&
           assert_state "$TMP/rolledback.json" "$PRIOR" no "$REV" ||
           say "MANUAL CHECK REQUIRED: tag cleanup was not verified" >&2
       elif ! assert_state "$TMP/failure.json" "$PRIOR" no "$PRIOR"; then
@@ -122,10 +172,12 @@ cleanup_or_rollback() {
 trap cleanup_or_rollback EXIT
 
 [[ -n "${GITHUB_RUN_ID:-}" ]] || die 'run only in the reviewed workflow'
-read_svc "$TMP/prior.json"
+say "Retry release: verifying prior production revision before any write"
+read_svc "$TMP/prior.json" initial-production-state
 assert_state "$TMP/prior.json" "$PRIOR" no "$PRIOR" || die 'prior ready revision/traffic/tag invariant not met'
 jq -e '(.template.containers|length)==1' "$TMP/prior.json" >/dev/null || die 'expected one engine container'
 normal_config "$TMP/prior.json" > "$TMP/prior-config.json"
+say "Verified prior: $PRIOR serves 100%; no traffic tags; current ready/created revision unchanged."
 
 # Preserve the established parser endpoint and authentication gate, without its secret
 # or any parser deployment. No successful parse or data mutation is requested.
@@ -145,49 +197,29 @@ parser_smoke() {
 parser_smoke || die 'existing parser status/auth check failed'
 parser_version="$(jq -er '.parserVersion' "$TMP/parser-status.json")"
 
-# Check-explanation imports the exact candidate Widget implementation locally.
-# This archive is NOT the build context; the cloud build receives only the changed files.
+# Use the immutable successful overlay; do not rebuild, retag or change the registry.
 git archive "$CANDIDATE" -- "$PREFIX/src" "$PREFIX/data" \
   "$PREFIX/package.json" "新システム開発/deploy/check-explanation.mjs" | tar -xf - -C "$TMP"
+project_number="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
+[[ "$project_number" == "$PROJECT_NUMBER" ]] || die 'unexpected project number'
 gcloud run revisions describe "$PRIOR" --project "$PROJECT" --region "$REGION" --format=json > "$TMP/prior-revision.json"
 current_image="$(jq -er '.status.imageDigest' "$TMP/prior-revision.json")"
-expected_repo="$REGION-docker.pkg.dev/$PROJECT/cloud-run-source-deploy"
-[[ "$current_image" == "$expected_repo/"*'@sha256:'* ]] || die 'unexpected current image/repository'
-image_path="${current_image%@*}"
-[[ "$image_path" == "$expected_repo/$SERVICE" ]] || die 'unexpected engine image name'
-gcloud artifacts repositories describe cloud-run-source-deploy --project "$PROJECT" --location "$REGION" \
-  --format='value(name)' >/dev/null
-# Build an overlay on the currently serving digest, not a fresh npm/base image.
-# Thus the three validated source files are the only changed container filesystem inputs.
-[[ "$current_image" =~ @sha256:[0-9a-f]{64}$ ]] || die 'current image digest is not immutable'
-mkdir "$TMP/build"
-for n in app.js explain.js mcp.js; do
-  git show "$CANDIDATE:$PREFIX/src/$n" > "$TMP/build/$n"
-done
-printf 'FROM %s\nCOPY ["app.js","/app/src/app.js"]\nCOPY ["explain.js","/app/src/explain.js"]\nCOPY ["mcp.js","/app/src/mcp.js"]\n' \
-  "$current_image" > "$TMP/build/Dockerfile"
-build_tag="$image_path:$TAG"
-# Existing Cloud Run source deployment bucket only; fail before staging rather
-# than let Cloud Build implicitly create default staging/log buckets.
-build_bucket="run-sources-$PROJECT-$REGION"
-project_number="$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')"
-[[ "$project_number" =~ ^[0-9]+$ ]] || die 'cannot confirm project number'
-gcloud storage buckets describe "gs://$build_bucket" --raw --project "$PROJECT" --format=json > "$TMP/build-bucket.json"
-jq -e --arg n "$project_number" --arg region "$REGION" '
-  ((.project_number // .projectNumber)|tostring)==$n and (.location|ascii_downcase)==$region' \
-  "$TMP/build-bucket.json" >/dev/null || die 'existing staging bucket ownership/region not verified'
-gcloud builds submit "$TMP/build" --project "$PROJECT" --region "$REGION" \
-  --gcs-source-staging-dir "gs://$build_bucket/ci-q018/source" \
-  --gcs-log-dir "gs://$build_bucket/ci-q018/logs" --tag "$build_tag" --quiet
-digest="$(gcloud artifacts docker images describe "$build_tag" --project "$PROJECT" --format='value(image_summary.digest)')"
-[[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || die 'cannot pin built image digest'
-image="$image_path@$digest"
-[[ "$image" != "$current_image" ]] || die 'candidate image digest unexpectedly equals existing release'
-
+image_path="$REGION-docker.pkg.dev/$PROJECT/cloud-run-source-deploy/$SERVICE"
+[[ "$current_image" == "$image_path@$PRIOR_DIGEST" ]] || die 'serving image differs from the overlay parent digest'
+image="$image_path@$CANDIDATE_DIGEST"
+gcloud builds describe "$BUILD_ID" --project "$PROJECT" --region "$REGION" --format=json > "$TMP/build-evidence.json"
+jq -e --arg id "$BUILD_ID" --arg name "$image_path:$BUILD_TAG" --arg digest "$CANDIDATE_DIGEST" '
+  .id==$id and .status=="SUCCESS" and (.images|index($name)!=null) and
+  any(.results.images[]; .name==$name and .digest==$digest)' "$TMP/build-evidence.json" >/dev/null ||
+  die 'successful q018 build metadata does not prove the exact immutable digest'
+resolved="$(gcloud artifacts docker images describe "$image" --project "$PROJECT" --format='value(image_summary.digest)')"
+[[ "$resolved" == "$CANDIDATE_DIGEST" ]] || die 'exact reviewed candidate digest unavailable in existing registry'
+digest="$CANDIDATE_DIGEST"
+say "Verified prior image $PRIOR_DIGEST, successful q018 build $BUILD_ID and existing candidate $digest. No rebuild."
 # Single CAS operation pins all normal traffic to the prior revision while creating the tagged revision.
 read_svc "$TMP/before-create.json"
-assert_state "$TMP/before-create.json" "$PRIOR" no "$PRIOR" || die 'production state changed during build'
-assert_current_config "$TMP/before-create.json" || die 'service configuration changed during build'
+assert_state "$TMP/before-create.json" "$PRIOR" no "$PRIOR" || die 'production state changed during verification'
+assert_current_config "$TMP/before-create.json" || die 'service configuration changed during verification'
 jq -n --slurpfile current "$TMP/before-create.json" --arg name "$RESOURCE" \
   --arg prior "$PRIOR" --arg rev "$REV" --arg tag "$TAG" --arg image "$image" '
   { name:$name, etag:$current[0].etag,
@@ -195,7 +227,7 @@ jq -n --slurpfile current "$TMP/before-create.json" --arg name "$RESOURCE" \
     traffic:[{type:"TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION",revision:$prior,percent:100},
       {type:"TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION",revision:$rev,percent:0,tag:$tag}]}' > "$TMP/create.json"
 STATE=creating
-patch template,traffic "$TMP/create.json"
+patch template,traffic "$TMP/create.json" staged-revision
 read_svc "$TMP/staged.json"
 assert_state "$TMP/staged.json" "$PRIOR" yes "$REV" || die 'staged revision not ready with prior still serving'
 assert_current_config "$TMP/staged.json" || die 'unapproved template/service configuration change'
@@ -248,7 +280,7 @@ jq -n --arg name "$RESOURCE" --arg etag "$(jq -er '.etag' "$TMP/before-promotion
   --arg target "$REV" --arg tag "$TAG" '
   {name:$name,etag:$etag,traffic:[{type:"TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION",revision:$target,percent:100,tag:$tag}]}' > "$TMP/promote.json"
 STATE=promoting
-patch traffic "$TMP/promote.json"
+patch traffic "$TMP/promote.json" promote-exact-revision
 read_svc "$TMP/promoted.json"
 assert_state "$TMP/promoted.json" "$REV" yes "$REV" || die 'promotion is not confirmed'
 assert_current_config "$TMP/promoted.json" || die 'configuration changed during promotion'
@@ -258,7 +290,7 @@ parser_smoke && [[ "$(jq -er '.parserVersion' "$TMP/parser-status.json")" == "$p
 read_svc "$TMP/before-cleanup.json"
 assert_state "$TMP/before-cleanup.json" "$REV" yes "$REV" || die 'unexpected traffic/tag before cleanup'
 assert_current_config "$TMP/before-cleanup.json" || die 'unexpected configuration before cleanup'
-traffic "$TMP/before-cleanup.json" "$REV"
+traffic "$TMP/before-cleanup.json" "$REV" cleanup-preview-tag
 read_svc "$TMP/final.json"
 assert_state "$TMP/final.json" "$REV" no "$REV" || die 'cleanup or final routing not verified'
 assert_current_config "$TMP/final.json" || die 'final configuration changed'

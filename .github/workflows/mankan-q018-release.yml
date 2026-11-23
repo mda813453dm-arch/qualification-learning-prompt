@@ -29,13 +29,19 @@ jobs:
           cand=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
           test "$GITHUB_REF" = refs/heads/release/mankan-q018-4e3fb751
           test "$(git rev-parse "$cand^")" = "$base"
-          test "$(git rev-parse HEAD^)" = "$cand"
+          git merge-base --is-ancestor "$cand" HEAD
           diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/explain.js' '新システム開発/engine/src/mcp.js') <(git -c core.quotePath=false diff --name-only "$base" "$cand")
           diff -u <(printf '%s\n' '.github/workflows/mankan-q018-release.yml' 'ci/mankan-q018-deploy.sh' 'ci/mankan-q018-release-request.txt') <(git -c core.quotePath=false diff --name-only "$cand" HEAD)
           test "$(git rev-parse "$cand:新システム開発/engine/src/app.js")" = 98328729bbb7689496c26663fe2d1190dbcfd364
           test "$(git rev-parse "$cand:新システム開発/engine/src/explain.js")" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
           test "$(git rev-parse "$cand:新システム開発/engine/src/mcp.js")" = 63c68a5f8c4c8345784a6e66ea3332de9cc54af8
-          test "$(cat ci/mankan-q018-release-request.txt)" = "DEPLOY q018 $cand gate 45203219982"
+          test "$(cat ci/mankan-q018-release-request.txt)" = "RETRY q018 $cand gate 45203219982 image sha256:321703e1c5a11188e6e1d395888a3871cf196fc6655687750109f1b52e65a16d"
+          test "$(git rev-parse HEAD^)" = a71b04680edf289699469d4a40ee9eaf3e21e1b2
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45204972911" | jq -e '
+            .head_sha=="a71b04680edf289699469d4a40ee9eaf3e21e1b2"
+            and .head_branch=="release/mankan-q018-4e3fb751"
+            and .path==".github/workflows/mankan-q018-release.yml"
+            and .status=="completed" and .conclusion=="failure" and .run_attempt==1' 
           gh api "repos/$GITHUB_REPOSITORY/actions/runs/45203219982" | jq -e '
             .head_sha == "5899494ecd2feb0be8d827c1ecfc095aa17e84dd"
             and .head_branch == "ci/mankan-ai-explanation-prod-96f7cd0f"
