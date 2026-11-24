@@ -1,0 +1,38 @@
+name: Issue 5 Widget v206 r2 gate readiness
+on:
+  push:
+    branches: ['ci/issue-5-v206-r2-gate-readiness']
+    paths: ['.github/workflows/issue-5-widget-v206-r2-verify.yml']
+permissions:
+  contents: read
+  statuses: write
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Verify immutable r2 candidate
+        run: |
+          test "$(git rev-parse HEAD^)" = 'bcf5f32d6d897d78ba45508fab7d79a5e941bbd8'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-widget-v206-r2-verify.yml'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = 'ec93c2050124d877d79626626be976a8b6da16e8'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = 'c319ef2040deaca766da40934c40a51e59ba5b33'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'e10ac9f7085a0a92d896874b3538d0921824aad5'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = '708d81fda6288bb44a763d4737fc1011aa456802'
+  mandatory-gate:
+    needs: verify-source
+    uses: ./.github/workflows/widget-browser-test.yml
+  engine:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
