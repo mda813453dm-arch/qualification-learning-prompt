@@ -12,11 +12,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 3
       - name: Verify immutable r2 candidate
         run: |
-          test "$(git rev-parse HEAD^)" = '18ea8637c2cfcf6acb4c0d835a36a16e24b1f53c'
-          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-widget-v206-r2-verify.yml'
+          test "$(git rev-parse HEAD~2)" = '18ea8637c2cfcf6acb4c0d835a36a16e24b1f53c'
+          test "$(git diff --name-only HEAD~2 HEAD)" = '.github/workflows/issue-5-widget-v206-r2-verify.yml'
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = 'ec93c2050124d877d79626626be976a8b6da16e8'
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = 'c319ef2040deaca766da40934c40a51e59ba5b33'
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = '543f5cdca150ae3faed3b257a3c50ca5c0572ba7'
