@@ -2,11 +2,55 @@
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { widgetHtml } from '../src/widget-current.js';
-import { overviewFor } from '../src/app.js';
+import { handle, overviewFor } from '../src/app.js';
+import { handleRpc } from '../src/mcp.js';
+import { MemoryStore } from '../src/store.js';
+import { T0 } from './helpers.js';
 const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
 const learnerId = 'testlearner';
-const sessionId = 'test-session';
+// Fresh Widgets are backed by a real UUID. Exercise the production MCP and
+// read-only route once in memory and replay that exact response in the browser fixture.
+async function prepareFreshFixture() {
+  const STORE = new MemoryStore(), token = 'strict-browser-fixture';
+  const env = { STORE, API_TOKEN: token, QLP_WIDGET: true, clock: () => T0 };
+  const origin = 'https://qlp.fixture.invalid';
+  const headers = { authorization: 'Bearer ' + token, 'content-type': 'application/json' };
+  const create = async () => {
+    const res = await handle(new Request(origin+'/v1/sessions', {
+      method:'POST', headers, body:JSON.stringify({qualificationId:'宅建',sources:[]}),
+    }),env);
+    assert.equal(res.status,201);
+    const fresh = await res.json();
+    assert.equal(fresh.status,'needPlan');
+    assert.match(fresh.sessionId,/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/);
+    assert.deepEqual(fresh.onboarding.map(step=>step.kind),['exempt','status']);
+    return fresh.sessionId;
+  };
+  const sessionId = await create(), retrySessionId = await create();
+  assert.notEqual(sessionId,retrySessionId);
+  const writes = [];
+  for (const name of ['put','delete']) {
+    const original = STORE[name].bind(STORE);
+    STORE[name] = (...args) => { writes.push([name,args[0]]); return original(...args); };
+  }
+  const before = await STORE.get('ses/'+sessionId);
+  const backend = [];
+  const { result:strictSnapshot } = await handleRpc({
+    jsonrpc:'2.0', id:1, method:'tools/call',
+    params:{name:'getStudySnapshot',arguments:{sessionId,publishedExplanationOnly:true}},
+  }, async (method,path) => {
+    backend.push([method,path]);
+    const res=await handle(new Request(origin+path,{method,headers}),env);
+    return {status:res.status,body:await res.json()};
+  },{widget:true});
+  assert.deepEqual(backend,[['GET','/v1/sessions/'+sessionId+'/restore?publishedExplanationOnly=1']]);
+  assert.deepEqual(strictSnapshot.structuredContent,{status:'noPublishedExplanation',sessionId});
+  assert.deepEqual(writes,[],'strict fresh lookup must not write to storage');
+  assert.equal(await STORE.get('ses/'+sessionId),before);
+  return {sessionId,retrySessionId,strictSnapshot};
+}
+const {sessionId,retrySessionId,strictSnapshot} = await prepareFreshFixture();
 const onboarding = { status: 'needPlan', learnerId, sessionId,
   overview: { name: '測量士補', title: '測量士補', fields: ['測量に関する法規'] },
   onboarding: [
@@ -25,6 +69,36 @@ const result = (body) => ({ _meta: { qlp: body }, structuredContent: { status: b
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
   const browser = await engine.launch({ headless: true });
   try {
+    // The old artificial ID is now an explicit negative control, not a
+    // successful session. It must never read, start, or write a session.
+    const invalid = await browser.newPage({viewport:{width:375,height:667},isMobile:true,hasTouch:true});
+    try {
+      await invalid.route('https://qlp.test/**',route=>route.fulfill({
+        contentType:'text/html',body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body></body>',
+      }));
+      await invalid.goto('https://qlp.test/');
+      await invalid.evaluate(({html,bad})=>{
+        window.invalidCalls=[];
+        const f=document.createElement('iframe');
+        const send=(m)=>f.contentWindow.postMessage({jsonrpc:'2.0',...m},'*');
+        addEventListener('message',e=>{
+          if(e.source!==f.contentWindow||!e.data||e.data.jsonrpc!=='2.0')return;
+          const m=e.data;
+          if(m.method==='ui/initialize')send({id:m.id,result:{protocolVersion:'2026-01-26',hostCapabilities:{}}});
+          else if(m.method==='ui/notifications/initialized')send({method:'ui/notifications/tool-result',params:bad});
+          else if(m.method==='tools/call'){
+            if(m.params.name!=='reportUiEvent')window.invalidCalls.push(m.params.name);
+            send({id:m.id,result:{}});
+          }
+        });
+        f.srcdoc=html;
+        document.body.appendChild(f);
+      },{html:widgetHtml(),bad:result({...onboarding,sessionId:'test-session'})});
+      const badUi=invalid.frameLocator('iframe');
+      await badUi.getByRole('alert').filter({hasText:'学習記録を変更せず、表示を止めています。'}).waitFor();
+      assert.equal(await badUi.getByRole('button',{name:'2 免除を利用しない'}).count(),0);
+      assert.deepEqual(await invalid.evaluate(()=>window.invalidCalls),[]);
+    } finally { await invalid.close(); }
     const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -38,7 +112,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAQ0lEQVR42u3PMQ0AAAgDIG1g/5Y20sQDGtA5VXWVJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk1aZcsBDhYqnkMAAAAASUVORK5CYII=', 'base64'),
     }));
     await page.goto('https://qlp.test/');
-    await page.evaluate(({ html, first, question, nextQuestion }) => {
+    await page.evaluate(({ html, first, question, nextQuestion, startup }) => {
+      window.fixtureSessions = startup.sessionIds;
       window.calls = []; window.followups = []; window.fullMessages = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
       let ready = false;
       const iframe = document.createElement('iframe');
@@ -60,7 +135,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           if (op === 'startSession') {
             const q = String(m.params.arguments.qualificationId || '');
             if (!q.includes('宅建')) reply({ isError: true, structuredContent: { error: 'QUALIFICATION_NOT_SUPPORTED' } });
-            else reply({ structuredContent: { ...first._meta.qlp, sessionId: 'test-session-startup-recovered' } });
+            else reply({ structuredContent: { ...first._meta.qlp, sessionId: window.fixtureSessions.retry } });
           }
           else if (op === 'chooseItem') reply({ structuredContent: { status: 'item',
             mode: m.params.arguments.mode, fieldName: m.params.arguments.fieldName,
@@ -108,7 +183,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
               reply({structuredContent:{grade:{
                 questionId:m.params.arguments.questionId,selected:1,correctAnswer:3,
                 correct:false,checkSuggested:true
-              },next:{status:'remediation',sessionId:'test-session',fieldName:'宅地建物取引業法と関係法令'}}});
+              },next:{status:'remediation',sessionId:window.fixtureSessions.primary,fieldName:'宅地建物取引業法と関係法令'}}});
             } else if (m.params.arguments.value === 'スキップ' && window.dropSkipResponseOnce) {
               window.dropSkipResponseOnce = false;
               window.recoverSkipped = true;
@@ -159,7 +234,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             const q=window.lastDescriptive?.question;
             if (!window.publishedDescriptive || m.params.arguments.questionId !== q?.questionId)
               reply({ structuredContent:{ error:'DESCRIPTIVE_ACTIONS_STALE' } });
-            else reply({ structuredContent:{ status:'descriptiveActions', sessionId:'test-session',
+            else reply({ structuredContent:{ status:'descriptiveActions', sessionId:window.fixtureSessions.primary,
               explanationMarkdown:window.publishedDescriptive,
               question:{ questionId:q.questionId,year:q.year,section:q.section,
                 number:q.number,shownAt:q.shownAt } } });
@@ -167,23 +242,32 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
           else if (op === 'endStudy') reply({ structuredContent: { log: '試験用の終了ログ', handoff: '引継ぎID：test-id\n省略しない全文', display: '終了' } });
           else if (op === 'redisplayQuestion') reply({ structuredContent: nextQuestion });
           else if (op === 'explainSpec') reply({ structuredContent: {
-            status: 'explanationContext', explanationRef: 'E-abcdefghABCDEFGH', sessionId: 'test-session', question: question.question,
+            status: 'explanationContext', explanationRef: 'E-abcdefghABCDEFGH', sessionId: window.fixtureSessions.primary, question: question.question,
             grade: { questionId: question.question.questionId, correct: true, selected: '3', correctAnswer: '3' }
           } });
-          else if (op === 'getStudySnapshot') reply({ structuredContent: window.restorePayload || window.lastDescriptive || nextQuestion });
+          else if (op === 'getStudySnapshot') {
+            const args=m.params.arguments;
+            if (args?.publishedExplanationOnly === true) {
+              if (args.sessionId !== startup.sessionIds.primary ||
+                  Object.keys(args).sort().join(',') !== 'publishedExplanationOnly,sessionId') {
+                window.protocolErrors.push('invalid strict snapshot ' + JSON.stringify(args));
+                reply({isError:true,structuredContent:{error:'UNEXPECTED_STRICT_SNAPSHOT'}});
+              } else reply(startup.strictSnapshot);
+            } else reply({ structuredContent: window.restorePayload || window.lastDescriptive || nextQuestion });
+          }
            else if (op === 'getOfficialLibrary') reply({ _meta: { qlp: window.privateLibrary || {
-             status: 'officialLibrary', sessionId: 'test-session', sharedLibrary: window.sharedLibrary,
+             status: 'officialLibrary', sessionId: window.fixtureSessions.primary, sharedLibrary: window.sharedLibrary,
            } } });
            else if (op === 'confirmUploadRights') reply({ structuredContent: {
-             status: 'uploadPermissionConfirmed', sessionId: 'test-session', year: m.params.arguments.year, allYears: m.params.arguments.year === 0, maxBatchFiles: 10,
+             status: 'uploadPermissionConfirmed', sessionId: window.fixtureSessions.primary, year: m.params.arguments.year, allYears: m.params.arguments.year === 0, maxBatchFiles: 10,
            } });
           else if (op === 'completeRemediation') {
             const answer = m.params.arguments.selected;
             const expected = m.params.arguments.challengeId === 'mandatory-prepared-1'
               ? String(window.registeredRemediationArgs.correctAnswer) : '2';
             reply({ structuredContent: answer === expected
-              ? { status: 'remediation_complete', sessionId: 'test-session', notice: '正解。実践問題へ戻れます。' }
-              : { status: 'remediation_retry', sessionId: 'test-session', correctAnswer: expected, notice: '不正解。再確認してください。' } });
+              ? { status: 'remediation_complete', sessionId: window.fixtureSessions.primary, notice: '正解。実践問題へ戻れます。' }
+              : { status: 'remediation_retry', sessionId: window.fixtureSessions.primary, correctAnswer: expected, notice: '不正解。再確認してください。' } });
           }
           else window.protocolErrors.push('unexpected tool ' + op);
         } else if (m.method === 'ui/update-model-context') {
@@ -202,7 +286,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       window.descriptiveCounter = 0;
       iframe.srcdoc = html.replace('<script>', '<script>window.openai={toolOutput:{status:"needPlan"},displayMode:"inline",notifyIntrinsicHeight(h){if(window.frameElement)window.frameElement.style.height=Math.ceil(h)+"px";}};<\/script><script>');
       document.body.appendChild(iframe);
-    }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
+    }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion,
+      startup:{sessionIds:{primary:sessionId,retry:retrySessionId},strictSnapshot} });
     const ui = page.frameLocator('iframe');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
     // iPhone表示で長い免除条件の選択肢が右端からはみ出さない。
@@ -229,10 +314,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('.ov-r.full').last().evaluate(el=>getComputedStyle(el).display),'block');
     assert.ok(await ui.locator('.ov-r.full').last().evaluate(el=>el.querySelector('.ov-v').getBoundingClientRect().width > 220),
       '概要のラベルなし行を細い列へ押し込まない');
-    // 新規資格の導入画面を、起動直後に旧セッションのrestoreIdleで上書きしない。
+    // 新規資格の導入画面は同じUUIDの読取専用照合を行う。総合復元・採点・出題は行わない。
     await page.waitForTimeout(300);
-    assert.equal(await page.evaluate(() => window.calls.filter(c => c.params?.name === 'getStudySnapshot').length), 0,
-      '新規の資格／初回学習では自動復元APIを呼ばない');
+    assert.deepEqual(await page.evaluate(() => window.calls
+      .filter(c=>c.method==='tools/call'&&c.params.name!=='reportUiEvent')
+      .map(c=>[c.params.name,c.params.arguments])),
+      [['getStudySnapshot',{sessionId,publishedExplanationOnly:true}]],
+      '初回は厳密な同一セッション読取を1回のみ。総合復元や書き込みツールは呼ばない');
     assert.equal(await ui.getByRole('button', { name: '2 免除を利用しない' }).count(), 1,
       '初回用の免除・学習状況確認画面を維持する');
     await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
@@ -614,7 +702,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.deepEqual(confirmed.at(-1), { sessionId, year: 0, confirmed: true });
     await page.evaluate(() => {
       window.privateLibrary = {
-        status: 'officialLibrary', permissionedUpload: true, sessionId: 'test-session',
+        status: 'officialLibrary', permissionedUpload: true, sessionId: window.fixtureSessions.primary,
         qualificationName: '賃貸不動産経営管理士', officialUrl: 'https://www.chintaikanrishi.jp/exam/past/',
         personalUploadedYears: [2023], maxBatchFiles:10,
         uploadPermissionConfirmed:true, remainingUploadFiles:9,
@@ -646,7 +734,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
 
     // 未対応状態を正当な待機・終了と混同せず、出題画面へ復旧する。
     await page.evaluate(() => window.deliver({ structuredContent: {
-      status: 'unhandled', sessionId: 'test-session-startup-recovered', display: 'incomplete view',
+      status: 'unhandled', sessionId: window.fixtureSessions.retry, display: 'incomplete view',
     } }));
     await ui.getByRole('button', { name: '現在の学習画面を再取得する' }).waitFor();
     assert.doesNotMatch(await ui.locator('#app').innerText(), /問題を準備しています/);
@@ -659,7 +747,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       window.failNextCalls = 0;
       window.recoverSkipped = true;
       window.deliver({ structuredContent: {
-        status: 'resumeReady', learnerId: 'testlearner', sessionId: 'test-session',
+        status: 'resumeReady', learnerId: 'testlearner', sessionId: window.fixtureSessions.primary,
         qualificationName: '宅地建物取引士（宅建）', answeredCount: 4, wrongCount: 2,
         pendingQuestion: null,
       } });
@@ -737,7 +825,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
 
     // 土地家屋調査士の記述式は午前11/午後21/22を画像・本文で表示し、採点しない。
     await page.evaluate(() => window.deliver({ structuredContent: {
-      status: 'question', sessionId: 'test-session', question: {
+      status: 'question', sessionId: window.fixtureSessions.primary, question: {
         questionId: 'land_surveyor:2025:午後の部:20', year: 2025,
         section: '午後の部', questionNumber: 20, stem: '択一式の本文',
         choices: ['一', '二', '三', '四', '五'], fieldName: '不動産登記',

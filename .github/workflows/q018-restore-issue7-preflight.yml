@@ -15,19 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 3
+          fetch-depth: 4
           persist-credentials: false
       - name: Verify exact candidate and CI-only harness blobs
         shell: bash
         run: |
           set -euo pipefail
           base=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
-          previous=7cc525e7c7c04da3458947740476302b77decbec
+          previous=8f7f24fc48cf261c74d1728a09e5e548612879e3
+          initial=7cc525e7c7c04da3458947740476302b77decbec
           test "$(git rev-parse HEAD^)" = "$previous"
-          test "$(git rev-parse HEAD^^)" = "$base"
+          test "$(git rev-parse HEAD^^)" = "$initial"
+          test "$(git rev-parse HEAD^^^)" = "$base"
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
-            '新システム開発/engine/test/widget-no-option-answer-browser.mjs') \
+            '新システム開発/engine/test/widget-browser.mjs') \
             <(git -c core.quotePath=false diff --name-only "$previous" HEAD | LC_ALL=C sort)
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
@@ -52,7 +54,10 @@ jobs:
           test "$(git hash-object '新システム開発/engine/src/widget-v208.js')" = 7bc6d327d235981faa0c19ffd644d77febcbcda2
           test "$(git hash-object '新システム開発/engine/test/mcp.test.js')" = f898c12d08e167b1ac2f84aad5b36e024c601976
           test "$(git hash-object '新システム開発/engine/test/question-layout.test.js')" = 8f57784b6861ea49e1478dd0170747b222c8c574
-          test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = b4dd616bf7e5eaac92c893d5e632770af5070b42
+          # The earlier exact fixture remains the negative control; only its
+          # incompatible fresh-session harness is changed in this CI follow-up.
+          test "$(git rev-parse "$previous:新システム開発/engine/test/widget-browser.mjs")" = b4dd616bf7e5eaac92c893d5e632770af5070b42
+          test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = 7937d47d3b100bfe239a19e672038da4f49ab27d
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer-browser.mjs')" = 13f9a78c739b89dbd908e4c73b27646dac2ce65e
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer.test.js')" = 6e346885ef2907c53cf852c25afd2eb5631e5a91
           test "$(git hash-object '新システム開発/engine/test/widget-restore-v207.test.js')" = b8da34afcd81634261acc8bb2cca015b709e295e
