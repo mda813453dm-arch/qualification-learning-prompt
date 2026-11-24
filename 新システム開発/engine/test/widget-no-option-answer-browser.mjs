@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import { widgetHtml } from '../src/widget-v205.js';
 import { grade as programGrade } from '../src/engine.js';
 import { widgetHtml as currentWidgetHtml } from '../src/widget-current.js';
@@ -8,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { chromium, webkit } = require(process.env.PLAYWRIGHT_MODULE_PATH || 'playwright');
 const base = process.env.ISSUE7_BASE === '1';
 const html = base ? widgetHtml() : currentWidgetHtml();
-const dir = new URL('./evidence/', import.meta.url).pathname;
+const dir = fileURLToPath(new URL('./evidence/', import.meta.url));
 await mkdir(dir,{recursive:true});
 const sid = '11111111-1111-1111-1111-111111111111';
 const next = {status:'finished',sessionId:sid,reason:'完了'};
