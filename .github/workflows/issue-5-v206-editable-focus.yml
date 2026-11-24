@@ -1,7 +1,7 @@
 name: Issue 5 v206 editable-focus production-base preflight
 on:
   push:
-    branches: ['ci/ci/issue-5-v206-editable-focus']
+    branches: ['ci/issue-5-v206-editable-focus']
     paths: ['.github/workflows/issue-5-v206-editable-focus.yml']
 permissions:
   contents: read
@@ -11,19 +11,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 5
+          fetch-depth: 6
           persist-credentials: false
       - name: Verify exact production base, runtime-only candidate and validation-only files
         shell: bash
         run: |
           set -eu
-          test "$(git rev-parse HEAD^)" = 'f6e087e563a6d6946e3ac2f16611a27a91d32ac7'
-          test "$(git rev-parse HEAD^^)" = 'f35b436edd29d8150d386f4f82bc2c41811ba8a4'
-          test "$(git rev-parse HEAD^^^)" = '76b618046f899201cbfcee1acbcaa5af1b58ff36'
-          test "$(git rev-parse HEAD^^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
-          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-editable-focus.yml'
-          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/descriptive.js' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v206.js') <(git -c core.quotePath=false diff --name-only HEAD^^^^ HEAD^^)
-          diff -u <(printf '%s\n' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-focus-v206-editable-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)
+          test "$(git rev-parse HEAD^)" = 'cb12adc85da3549c32b3042f531753a1a1e6060f'
+          test "$(git rev-parse HEAD^^)" = 'f6e087e563a6d6946e3ac2f16611a27a91d32ac7'
+          test "$(git rev-parse HEAD^^^)" = 'f35b436edd29d8150d386f4f82bc2c41811ba8a4'
+          test "$(git rev-parse HEAD^^^^)" = '76b618046f899201cbfcee1acbcaa5af1b58ff36'
+          test "$(git rev-parse HEAD^^^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          test "$(git diff --name-only HEAD^^ HEAD)" = '.github/workflows/issue-5-v206-editable-focus.yml'
+          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/descriptive.js' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v206.js') <(git -c core.quotePath=false diff --name-only HEAD^^^^^ HEAD^^^)
+          diff -u <(printf '%s\n' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-focus-v206-editable-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^^^ HEAD^^)
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/app.js')" = '31c2b8d3da65d19cf8115f3eb6eb1d102293f6de'
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/descriptive.js')" = '79bca8ca9350d552e7d0295b2b19717080bfbb4a'
           test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = 'f2241ffe8a5efedfbe1597673fc636688884337a'
