@@ -1,0 +1,63 @@
+name: v211 engine-only production release
+on:
+  push:
+    branches: [release/engine-v211-ec31376]
+    paths: [ci/v211-production-release-request.txt]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-google-cloud
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact runtime, authorized marker, and all five gates before using deploy credentials
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base=12e0c3bb1f1b1acfffbdb2b5ef55872692a37d2b
+          cand=ec31376be3fbf93418b348670441164491a27b95
+          test "$GITHUB_REF" = refs/heads/release/engine-v211-ec31376
+          test "$(git rev-parse "$cand^")" = "$base"
+          test "$(git rev-parse HEAD^^)" = "$cand"
+          test "$(git diff --name-only HEAD^ HEAD)" = 'ci/v211-production-release-request.txt'
+          diff -u <(printf '%s\n' '.github/workflows/engine-v211-release.yml' 'ci/v211-deploy.sh') <(git diff --name-only "$cand" HEAD^)
+          test "$(git hash-object ci/v211-deploy.sh)" = 00581b87cfcded80fb1099f10bafa458e34f9a11
+          prefix='新システム開発/engine/src'
+          diff -u <(printf '%s\n' "$prefix"/{mcp,widget-current,widget-v211}.js) <(git -c core.quotePath=false diff --name-only "$base" "$cand")
+          while read -r file blob; do
+            test "$(git rev-parse "$cand:$prefix/$file")" = "$blob"
+          done <<'BLOBS'
+          mcp.js 8065cecfdf363e787aeba1825d72af3a6b9fa847
+          widget-current.js 6cafd5fb78867b360b47685bca853e3f264c38e7
+          widget-v211.js 35a6b3b8e478321ea3e16a39a5916a2dc420350b
+          BLOBS
+          test "$(cat ci/v211-production-release-request.txt)" = "DEPLOY v211 $cand gate 45439950408"
+          gate=994cfd8848589154946424d79cd9f8888078ec79
+          test "$(git rev-parse "$gate^^")" = "$cand"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45439950408" | jq -e --arg sha "$gate" '
+            .head_sha==$sha and .head_branch=="ci/v211-handoff-display"
+            and .path==".github/workflows/v211-handoff-preflight.yml"
+            and .run_attempt==1 and .status=="completed" and .conclusion=="success"'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45439950408/jobs" | jq -e '
+            (.jobs|length)==5 and all(.jobs[];.conclusion=="success") and
+            ([.jobs[].id]|sort)==[138607961830,138608040926,138608040956,138608041072,138608041243]'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Stage engine image without traffic, smoke, promote exact revision and verify rollback guard
+        shell: bash
+        run: bash ci/v211-deploy.sh
