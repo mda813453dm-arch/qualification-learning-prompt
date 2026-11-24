@@ -1,0 +1,91 @@
+name: v211 handoff display isolated preflight
+on:
+  push:
+    branches: ['ci/v211-handoff-display']
+    paths: ['.github/workflows/v211-handoff-preflight.yml']
+permissions:
+  contents: read
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          persist-credentials: false
+      - name: Verify exact live v210, v211 runtime and validation separation
+        shell: bash
+        run: |
+          set -eu
+          test "$GITHUB_REF" = 'refs/heads/ci/v211-handoff-display'
+          test "$(git rev-parse HEAD^)" = '94f336a061750f30a1bfe6d313b229b4064474cf'
+          test "$(git rev-parse HEAD^^)" = 'ec31376be3fbf93418b348670441164491a27b95'
+          test "$(git rev-parse HEAD^^^)" = '12e0c3bb1f1b1acfffbdb2b5ef55872692a37d2b'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/v211-handoff-preflight.yml'
+          diff -u <(printf '%s\n' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v211.js') <(git -c core.quotePath=false diff --name-only HEAD^^^ HEAD^^)
+          diff -u <(printf '%s\n' 'ci/issue-5-year-guard.test.mjs' 'ci/mankan-ai-explanation.test.mjs' 'ci/v210-compatibility.test.mjs' 'ci/v211-handoff-resource.test.mjs' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-focus-v206-editable-browser.mjs' '新システム開発/engine/test/widget-handoff-display-browser.mjs' '新システム開発/engine/test/widget-no-option-answer-browser.mjs' '新システム開発/engine/test/widget-no-option-answer.test.js' '新システム開発/engine/test/widget-partial-needplan-browser.mjs' '新システム開発/engine/test/widget-restore-v207.test.js') <(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = '8065cecfdf363e787aeba1825d72af3a6b9fa847'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = '6cafd5fb78867b360b47685bca853e3f264c38e7'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v211.js')" = '35a6b3b8e478321ea3e16a39a5916a2dc420350b'
+          test "$(git rev-parse 'HEAD:ci/v211-handoff-resource.test.mjs')" = '12f694f1f752cb8d5ee9e23e7c4c7ae660160837'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/mcp.test.js')" = '44481aaaaf45c0f87423e3c1dcfffaaa1ea943e6'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/question-layout.test.js')" = 'f99f05d64ef31b4364625c1bbaba234d7b70f3dd'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = '3dcb2a53f8d2138cd4a697dcc78e7b648a5c8ce0'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-handoff-display-browser.mjs')" = '494ce9beab082e0a69029f05390abcd19d25aafd'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-partial-needplan-browser.mjs')" = '46273ff6e5cc710ae674b5183b196afc49467cd2'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-restore-v207.test.js')" = '698d26df9bdd2bf8e293b7075a644f8948021805'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v210.js')" = 'd38bb6bbc5b2da39cb627051c149c2ead239e85b'
+  engine-and-compatibility:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Official grade, unchanged year support, and all exact previous resources
+        shell: bash
+        run: |
+          set -eu
+          git worktree add --detach "$RUNNER_TEMP/v210-live" '12e0c3bb1f1b1acfffbdb2b5ef55872692a37d2b'
+          V210_BASE_ROOT="$RUNNER_TEMP/v210-live" ISSUE5_WIDGET='新システム開発/engine/src/widget-v211.js' node --test ci/issue-5-year-guard.test.mjs ci/mankan-ai-explanation.test.mjs ci/v211-handoff-resource.test.mjs
+      - name: Full engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
+  mandatory-gate:
+    needs: verify-source
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
+  focused-browser:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Handoff and preserved v210 restore, answer display, focus and placement
+        shell: bash
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          node 新システム開発/engine/test/widget-handoff-display-browser.mjs
+          node 新システム開発/engine/test/widget-partial-needplan-browser.mjs
+          node 新システム開発/engine/test/widget-no-option-answer-browser.mjs
+          ISSUE7_WEBKIT=1 node 新システム開発/engine/test/widget-no-option-answer-browser.mjs
+          node 新システム開発/engine/test/widget-focus-v206-editable-browser.mjs
+          sed 's@../src/widget-v205.js@../src/widget-current.js@' 新システム開発/engine/test/widget-focus-v205-browser.mjs > 新システム開発/engine/test/.v211-focus-ci.mjs
+          node 新システム開発/engine/test/.v211-focus-ci.mjs
