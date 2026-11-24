@@ -222,5 +222,15 @@ export function widgetHtml(){
         }
         isResuming = true;
 `, 'V206_RESUME_GUARD_ANCHOR_MISSING');
+  // Keep the normal placement/scroll behavior, but deferred alignment must not take
+  // the keyboard away from a live editable. A new view still focuses its marker.
+  replaceOnce(String.raw`      try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
+`, String.raw`      var active = document.activeElement;
+      var editing = active && app.contains(active) &&
+        (active.isContentEditable || active.matches('textarea, input:not([type]), input[type="text"], input[type="search"], input[type="number"], input[type="email"], input[type="tel"], input[type="url"], input[type="password"]'));
+      if (!editing) {
+        try { latest.focus({ preventScroll: true }); } catch(e) { try { latest.focus(); } catch(x) {} }
+      }
+`, 'V206_EDITABLE_FOCUS_ANCHOR_MISSING');
   return html;
 }
