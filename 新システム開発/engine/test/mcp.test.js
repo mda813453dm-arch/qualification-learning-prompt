@@ -219,8 +219,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
-  assert.match(WIDGET_URI, /question-v208\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-24.208');
+  assert.match(WIDGET_URI, /question-v209\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-24.209');
   assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
@@ -801,7 +801,7 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(res[0].mimeType, 'text/html;profile=mcp-app');
   const html = (await app('resources/read', { uri: res[0].uri })).contents[0];
   assert.match(html.text, /submitAnswer/);
-  assert.equal(res[0].uri, 'ui://qlp/question-v208.html');
+  assert.equal(res[0].uri, 'ui://qlp/question-v209.html');
   assert.match(html.text, /function hasNoCorrectOption/);
   assert.ok(res.some(r => r.uri === V205_URI), 'v205 remains listed with its original URI');
   const legacy205 = (await app('resources/read', { uri: V205_URI })).contents[0];

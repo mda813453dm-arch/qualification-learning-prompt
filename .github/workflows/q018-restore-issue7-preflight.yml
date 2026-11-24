@@ -15,21 +15,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 4
+          fetch-depth: 5
           persist-credentials: false
       - name: Verify exact candidate and CI-only harness blobs
         shell: bash
         run: |
           set -euo pipefail
           base=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
-          previous=8f7f24fc48cf261c74d1728a09e5e548612879e3
-          initial=7cc525e7c7c04da3458947740476302b77decbec
+          previous=1b9f03271d96dad5e251ae0faa7b238c93c5979e
           test "$(git rev-parse HEAD^)" = "$previous"
-          test "$(git rev-parse HEAD^^)" = "$initial"
-          test "$(git rev-parse HEAD^^^)" = "$base"
+          test "$(git rev-parse HEAD^^^^)" = "$base"
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
-            '新システム開発/engine/test/widget-browser.mjs') \
+            '新システム開発/engine/src/mcp.js' \
+            '新システム開発/engine/src/widget-current.js' \
+            '新システム開発/engine/src/widget-v209.js' \
+            '新システム開発/engine/test/mcp.test.js' \
+            '新システム開発/engine/test/question-layout.test.js' \
+            '新システム開発/engine/test/widget-partial-needplan-browser.mjs' \
+            '新システム開発/engine/test/widget-restore-v207.test.js') \
             <(git -c core.quotePath=false diff --name-only "$previous" HEAD | LC_ALL=C sort)
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
@@ -39,29 +43,33 @@ jobs:
             '新システム開発/engine/src/widget-current.js' \
             '新システム開発/engine/src/widget-v207.js' \
             '新システム開発/engine/src/widget-v208.js' \
+            '新システム開発/engine/src/widget-v209.js' \
             '新システム開発/engine/test/mcp.test.js' \
             '新システム開発/engine/test/question-layout.test.js' \
             '新システム開発/engine/test/widget-browser.mjs' \
             '新システム開発/engine/test/widget-no-option-answer-browser.mjs' \
             '新システム開発/engine/test/widget-no-option-answer.test.js' \
+            '新システム開発/engine/test/widget-partial-needplan-browser.mjs' \
             '新システム開発/engine/test/widget-restore-v207.test.js') \
             <(git -c core.quotePath=false diff --name-only "$base" HEAD | LC_ALL=C sort)
           test "$(git hash-object 'ci/mankan-ai-explanation.test.mjs')" = a262916f89ef5030d38bf84f3f87504699f2ba7c
           test "$(git hash-object '新システム開発/engine/src/app.js')" = 88c7fbc5c955f179ba382f7e3328e131e7ccc1c1
-          test "$(git hash-object '新システム開発/engine/src/mcp.js')" = d32af597a9a12ebfb8b91c880cd2b82e62296718
-          test "$(git hash-object '新システム開発/engine/src/widget-current.js')" = db3fe09ef57844edd33f0baecb0c426161d95e75
+          test "$(git hash-object '新システム開発/engine/src/mcp.js')" = 8df42ae89aa468923e1912e55b1a5af4521b0083
+          test "$(git hash-object '新システム開発/engine/src/widget-current.js')" = c8663aab5b02363d7f72308ae81f55548770a6bb
           test "$(git hash-object '新システム開発/engine/src/widget-v207.js')" = bf597864398b7907e71731893c2dca83fe15cc87
           test "$(git hash-object '新システム開発/engine/src/widget-v208.js')" = 7bc6d327d235981faa0c19ffd644d77febcbcda2
-          test "$(git hash-object '新システム開発/engine/test/mcp.test.js')" = f898c12d08e167b1ac2f84aad5b36e024c601976
-          test "$(git hash-object '新システム開発/engine/test/question-layout.test.js')" = 8f57784b6861ea49e1478dd0170747b222c8c574
-          # The earlier exact fixture remains the negative control; only its
-          # incompatible fresh-session harness is changed in this CI follow-up.
-          test "$(git rev-parse "$previous:新システム開発/engine/test/widget-browser.mjs")" = b4dd616bf7e5eaac92c893d5e632770af5070b42
+          test "$(git hash-object '新システム開発/engine/src/widget-v209.js')" = 6c19cd09a14f22e9d55413be89243088805e6deb
+          test "$(git hash-object '新システム開発/engine/test/mcp.test.js')" = 8c1211cb3c8df687df07641d65ab4c6072a6c774
+          test "$(git hash-object '新システム開発/engine/test/question-layout.test.js')" = 53838c212651e515dccf73064d1c63b3ea12efde
           test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = 7937d47d3b100bfe239a19e672038da4f49ab27d
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer-browser.mjs')" = 13f9a78c739b89dbd908e4c73b27646dac2ce65e
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer.test.js')" = 6e346885ef2907c53cf852c25afd2eb5631e5a91
-          test "$(git hash-object '新システム開発/engine/test/widget-restore-v207.test.js')" = b8da34afcd81634261acc8bb2cca015b709e295e
+          test "$(git hash-object '新システム開発/engine/test/widget-partial-needplan-browser.mjs')" = d49dca690097f0fe45231595546922fe97ece2d8
+          test "$(git hash-object '新システム開発/engine/test/widget-restore-v207.test.js')" = dbcd1bbe54b764cf4989f77fdc498709b3dae6bc
+          test "$(git rev-parse "$previous:新システム開発/engine/src/widget-v208.js")" = 7bc6d327d235981faa0c19ffd644d77febcbcda2
           test "$(git hash-object '新システム開発/engine/src/widget-v205.js')" = 259291a143350fb9f3214c4ee141038a71df32ec
+          test "$(git hash-object '新システム開発/engine/src/widget-v207.js')" = bf597864398b7907e71731893c2dca83fe15cc87
+          test "$(git hash-object '新システム開発/engine/src/widget-v208.js')" = 7bc6d327d235981faa0c19ffd644d77febcbcda2
           test "$(git hash-object '新システム開発/engine/src/explain.js')" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
       - uses: actions/setup-node@v4
         with:
@@ -108,8 +116,9 @@ jobs:
           ISSUE7_WEBKIT=1 ISSUE7_BASE=1 node widget-no-option-answer-browser.mjs
           ISSUE7_WEBKIT=1 node widget-no-option-answer-browser.mjs
           cp evidence/*.png "$GITHUB_WORKSPACE/browser-evidence/webkit/"
+          node widget-partial-needplan-browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: q018-v208-375px-browser
+          name: q018-v209-375px-browser
           path: browser-evidence/

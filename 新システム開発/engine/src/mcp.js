@@ -8,6 +8,7 @@ import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-current.js';
 import { widgetHtml as stable205Html, WIDGET_URI as stable205Uri, WIDGET_VERSION as stable205Version } from './widget-v205.js';
 import { WIDGET_URI as STABLE_207_URI, WIDGET_VERSION as STABLE_207_VERSION, widgetHtml as stable207Html } from './widget-v207.js';
+import { WIDGET_URI as STABLE_208_URI, WIDGET_VERSION as STABLE_208_VERSION, widgetHtml as stable208Html } from './widget-v208.js';
 import { widgetHtml as stable204Html } from './widget-v204.js';
 import { widgetHtml as stable203Html } from './widget-v203.js';
 import { widgetHtml as stable202Html } from './widget-v202.js';
@@ -104,6 +105,7 @@ ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.202');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.203');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.204', stable205Version);
 ACCEPTED_WIDGET_VERSIONS.push(STABLE_207_VERSION);
+ACCEPTED_WIDGET_VERSIONS.push(STABLE_208_VERSION);
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -765,6 +767,7 @@ LEGACY_WIDGET_URIS.push('ui://qlp/question-v202.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v203.html');
 LEGACY_WIDGET_URIS.push('ui://qlp/question-v204.html', stable205Uri);
 LEGACY_WIDGET_URIS.push(STABLE_207_URI);
+LEGACY_WIDGET_URIS.push(STABLE_208_URI);
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['importHandoff', 'attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -901,6 +904,7 @@ function legacyWidgetHtml(uri) {
   if (uri === WIDGET_URI) return widgetHtml();
   if (uri === stable205Uri) return stable205Html();
   if (uri === STABLE_207_URI) return stable207Html();
+  if (uri === STABLE_208_URI) return stable208Html();
   if (uri.endsWith('/question-v204.html')) return stable204Html();
   if (uri.endsWith('/question-v203.html')) return stable203Html();
   if (uri.endsWith('/question-v202.html')) return stable202Html();
