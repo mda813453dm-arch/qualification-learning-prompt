@@ -1,0 +1,69 @@
+name: v210 engine-only production release
+on:
+  push:
+    branches: [release/engine-v210-12e0c3b]
+    paths: [ci/v210-production-release-request.txt]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-google-cloud
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 52
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact runtime, authorized marker, and all five gates before using deploy credentials
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
+          cand=12e0c3bb1f1b1acfffbdb2b5ef55872692a37d2b
+          test "$GITHUB_REF" = refs/heads/release/engine-v210-12e0c3b
+          test "$(git rev-parse "$cand^")" = "$base"
+          test "$(git rev-parse HEAD^^)" = "$cand"
+          test "$(git diff --name-only HEAD^ HEAD)" = 'ci/v210-production-release-request.txt'
+          diff -u <(printf '%s\n' '.github/workflows/engine-v210-release.yml' 'ci/v210-deploy.sh') <(git diff --name-only "$cand" HEAD^)
+          test "$(git hash-object ci/v210-deploy.sh)" = 5e34f9e97a28f6ea1b7cea6a24977f6dc3e95741
+          prefix='新システム開発/engine/src'
+          diff -u <(printf '%s\n' "$prefix"/{app,descriptive,mcp,widget-current,widget-v206,widget-v207,widget-v208,widget-v209,widget-v210}.js) <(git -c core.quotePath=false diff --name-only "$base" "$cand")
+          while read -r file blob; do
+            test "$(git rev-parse "$cand:$prefix/$file")" = "$blob"
+          done <<'BLOBS'
+          app.js 2254ab5b4c5d682f7219a382157e362f3271255f
+          descriptive.js 79bca8ca9350d552e7d0295b2b19717080bfbb4a
+          mcp.js 75ba6049f75637f3dc12b91ee49fa6fb2055a470
+          widget-current.js 37dd88e04a827965067d405658b8fd8d0a5eb4c0
+          widget-v206.js dac55cf72f14743988cc1d351caa153f5ca4f093
+          widget-v207.js bf597864398b7907e71731893c2dca83fe15cc87
+          widget-v208.js 7bc6d327d235981faa0c19ffd644d77febcbcda2
+          widget-v209.js 6c19cd09a14f22e9d55413be89243088805e6deb
+          widget-v210.js d38bb6bbc5b2da39cb627051c149c2ead239e85b
+          BLOBS
+          test "$(cat ci/v210-production-release-request.txt)" = "DEPLOY v210 $cand gate 45379916726"
+          gate=c63647a95624350b236e8136a1cd321086b57017
+          test "$(git rev-parse "$gate^^")" = "$cand"
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45379916726" | jq -e --arg sha "$gate" '
+            .head_sha==$sha and .head_branch=="ci/issue-5-v210-compatibility"
+            and .path==".github/workflows/issue-5-v210-compatibility.yml"
+            and .run_attempt==1 and .status=="completed" and .conclusion=="success"'
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/45379916726/jobs" | jq -e '
+            (.jobs|length)==5 and all(.jobs[];.conclusion=="success") and
+            ([.jobs[].id]|sort)==[138395967099,138396020988,138396021074,138396021202,138396021255]'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Stage engine image without traffic, smoke, promote exact revision and verify rollback guard
+        shell: bash
+        run: bash ci/v210-deploy.sh
