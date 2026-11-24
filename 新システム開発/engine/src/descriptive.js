@@ -25,6 +25,10 @@ export const DESCRIPTIVE_FILES = Object.freeze({
   2024: { '午前の部': '001427201', '午後の部': '001427202' },
   2025: { '午前の部': '001450010', '午後の部': '001450011' },
 });
+/** その年度の記述式の原本を持っているか（問・区分の組合せは見ない） */
+export function descriptiveYearSupported(year) {
+  return Number.isInteger(year) && !!(DESCRIPTIVE_FILES[year] || SCANNED_DESCRIPTIVE_FILES[year]);
+}
 export function descriptiveSpec(year, section, number, pins) {
   if (!Number.isInteger(year) || !(DESCRIPTIVE_FILES[year] || SCANNED_DESCRIPTIVE_FILES[year]) ||
       !['午前の部', '午後の部'].includes(section) ||
@@ -37,19 +41,68 @@ export function descriptiveSpec(year, section, number, pins) {
     url: file.startsWith('https://') ? file : `https://www.moj.go.jp/content/${file}.pdf`,
     questionId: `land_surveyor:${year}:${section}:${number}` };
 }
+// 「記述式ではなく」「記述式じゃない」「記述式以外」「記述式は不要」のように否定された形式名。否定された側は指定として扱わない。
+const negatedForm = (word) => new RegExp(`${word}(?:式)?(?:の問題)?\\s*(?:(?:では|じゃ|で)\\s*(?:は)?\\s*な(?:く|い)|以外|(?:は|が|も)?\\s*(?:不要|いらな[いく]|要らな[いく]|なし|無し))`, 'g');
 export function requestedDescriptive(text) {
-  const t = String(text ?? '').normalize('NFKC');
-  const q = /(?:第\s*(11|21|22)\s*問|問\s*(11|21|22))/.exec(t);
-  if (!q) return null;
+  const raw = String(text ?? '').normalize('NFKC');
+  // 否定された「記述式」「択一」を取り除いてから、明示された形式を読む（Issue #5：「記述式ではなく択一の問3」）
+  const t = raw.replace(negatedForm('記述'), ' ').replace(negatedForm('択一'), ' ');
+  // 記述式を否定した、または記述式を指定せずに択一を明示したときは、問番号が11・21・22でも記述式として扱わない
+  if (!/記述/.test(t) && (/択一/.test(t) || /記述/.test(raw))) return null;
+  // 記述式と択一の両方を指定して問番号を書いたときは、推測でどちらかを出さずに一方の指定を求める
+  if (/記述/.test(t) && /択一/.test(t) && /(?:問\s*\d|第\s*\d+\s*問)/.test(t))
+    return { year: null, section: null, number: null, yearExplicit: false, formIssue: 'ambiguous' };
+  // 問番号は数字を最後まで読む（「問210」を問21、「問221」を問22と読まない）
+  const q = /(?:第\s*(11|21|22)\s*問|問\s*(11|21|22)(?!\d))/.exec(t);
+  if (!q) {
+    // 「記述式」と書いて11・21・22以外の問番号を指定したとき（問210など）は、択一の出題に流さずに断る
+    const other = /記述/.test(t) ? /(?:第\s*(\d+)\s*問|問\s*(\d+))/.exec(t) : null;
+    return other ? { year: null, section: null, number: Number(other[1] || other[2]), yearExplicit: false, numberIssue: 'unsupported' } : null;
+  }
   const number = Number(q[1] || q[2]);
-  const y = /\b20(?:0[7-9]|1\d|2[0-5])\b/.exec(t)?.[0] ?? null;
-  const r = /(?:令和|R)\s*(元|[1-7])/.exec(t)?.[1] ?? null;
-  const h = /(?:平成|H)\s*(1[9]|2\d|30)/.exec(t)?.[1] ?? null;
-  const year = y ? Number(y) : r ? (r === '元' ? 2019 : Number(r) + 2018) : h ? Number(h) + 1988 : 2025;
+  // 年度は書かれたとおりに読む（対応しているかどうかは descriptiveSpec が決める）。
+  // 読めない年度・食い違う年度を別の年度に置き換えない（Issue #5：2026年度が2025年度に置き換わっていた）。
+  const { years, unreadable } = explicitYears(t);
+  const distinct = [...new Set(years)];
+  const yearExplicit = years.length > 0 || unreadable;
+  const yearIssue = unreadable ? 'unreadable' : distinct.length > 1 ? 'ambiguous' : null;
+  // 年度が書かれていないときだけ、最新の対応年度（2025）を使う
+  const year = yearIssue ? null : distinct.length ? distinct[0] : 2025;
   const section = number === 11 ? '午前の部' : '午後の部';
   if (t.includes('午前') && section !== '午前の部') return null;
   if (t.includes('午後') && section !== '午後の部') return null;
-  return { year, section, number };
+  return { year, section, number, yearExplicit, ...(yearIssue ? { yearIssue } : {}) };
+}
+
+/**
+ * 文中に書かれた年度をすべて西暦で返す。数字は前後の数字まで含めて読み、
+ * 「令和100年度」を「令和10年度」のように一部だけ読まない。
+ * unreadable：年度らしい書き方（令和・平成・昭和・「〇年」）があるのに、有効な年度として読めない。
+ */
+function explicitYears(t) {
+  const years = [];
+  let unreadable = false;
+  for (const m of t.matchAll(/(?<!\d)(\d{4})(?!\d)/g)) years.push(Number(m[1]));
+  for (const m of t.matchAll(/(?:令和|(?<=^|[^A-Za-z])R)\s*(元|\d+)(?!\d)/g)) {
+    const n = m[1] === '元' ? 1 : Number(m[1]);
+    if (n >= 1) years.push(2018 + n); else unreadable = true;
+  }
+  for (const m of t.matchAll(/(?:平成|(?<=^|[^A-Za-z])H)\s*(元|\d+)(?!\d)/g)) {
+    const n = m[1] === '元' ? 1 : Number(m[1]);
+    if (n >= 1 && n <= 31) years.push(1988 + n); else unreadable = true;
+  }
+  // 「〇年度」の数字は、西暦4桁か年号付きのときだけ読める。「26年度」「元年度」などが一つでもあれば、
+  // ほかに読める年度があっても推測で選ばない（例：「2025年度か26年度」）。
+  // 「築26年」のように「年度」でない「〇年」は年度の指定として扱わない。
+  for (const m of t.matchAll(/(令和|平成|昭和|(?<=^|[^A-Za-z])[RH])?\s*(?<!\d)(元|\d+)\s*年度/g))
+    if (!m[1] && m[2].length !== 4) unreadable = true;
+  // 「年度」の付かない「26年」だけで年度が一つも読めないときは、年度の指定かどうか分からないので推測しない
+  // （「築26年」は建物の年数なので除く）
+  if (!years.length && [...t.matchAll(/(?<!築\s*)(?<!\d|和|成|R|H)\s*(\d+)\s*年(?!度)/g)].some((m) => m[1].length !== 4)) unreadable = true;
+  // 年号のあとに数字が無い（「令和年度」「2025年度か令和」）
+  if (/(令和|平成)(?!\s*(元|\d))/.test(t)) unreadable = true;
+  if (/昭和/.test(t)) unreadable = true;
+  return { years, unreadable };
 }
 
 // User-provided answer-sheet evidence (AGAROOT, 2022 / R4, morning Q11).

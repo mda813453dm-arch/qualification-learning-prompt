@@ -7,6 +7,7 @@ import { explainHow, OFFICIAL_GRADE_POLICY } from './explain.js';
 import { INSTRUCTIONS } from './instructions.js';
 import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-current.js';
 import { widgetHtml as stable204Html } from './widget-v204.js';
+import { widgetHtml as stable205Html } from './widget-v205.js';
 import { widgetHtml as stable203Html } from './widget-v203.js';
 import { widgetHtml as stable202Html } from './widget-v202.js';
 import { widgetHtml as stable201Html } from './widget-v201.js';
@@ -101,6 +102,7 @@ ACCEPTED_WIDGET_VERSIONS.push('2026-11-19.201');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.202');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.203');
 ACCEPTED_WIDGET_VERSIONS.push('2026-11-20.204');
+ACCEPTED_WIDGET_VERSIONS.push('2026-11-21.205');
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -895,6 +897,7 @@ function legacyWidgetHtml(uri) {
   // stable HTML for that URI rather than delivering newer Android code under
   // an old URI. The latest v170 remains the default for refreshed connections.
   if (uri === WIDGET_URI) return widgetHtml();
+  if (uri.endsWith('/question-v205.html')) return stable205Html();
   if (uri.endsWith('/question-v204.html')) return stable204Html();
   if (uri.endsWith('/question-v203.html')) return stable203Html();
   if (uri.endsWith('/question-v202.html')) return stable202Html();
