@@ -116,10 +116,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
             } else reply({ structuredContent: { grade: m.params.arguments.value === 'スキップ'
               ? { skipped: true } : m.params.arguments.value === '分からない'
               ? { dontKnow: true, questionId:m.params.arguments.questionId, correctAnswer:3, acceptedAnswers:[3], answerPdfUrl:'https://qlp.test/answers.pdf' }
-              : { correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
+              : { questionId:m.params.arguments.questionId, correct: true, selected: '3', correctAnswer: '3' }, next: nextQuestion } });
           }
           else if (op === 'openDescriptiveQuestion') {
             const args = m.params.arguments;
+            // Issue #5 回帰用：1回だけエンジン側の 422 拒否を返す。
+            // hint はエンジンと同じ形で、要求された年度を入れる。
+            if (window.failDescriptiveOpenOnce) {
+              window.failDescriptiveOpenOnce = false;
+              reply({ structuredContent: { error: 'DESCRIPTIVE_YEAR_UNSUPPORTED',
+                hint: '指定年度は未対応です。' + args.year + '年度の記述式は検証済みの原本がないため出題できません。別年度の問題は取得しません。' } });
+              return;
+            }
             window.restorePayload = null; // 新しい記述式を開いた後は旧択一の復元状態で上書きしない
             window.publishedDescriptive = null;
             window.lastDescriptive = { status: 'descriptiveQuestion', sessionId: args.sessionId,
@@ -356,10 +364,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(gradedLayout.overflowY,'visible','採点・解説画面も内部縦スクロールしない');
     assert.ok(Math.abs(gradedLayout.scrollHeight-gradedLayout.height)<4);
     assert.equal(gradedLayout.scrollTop,0);
-    assert.ok(gradedLayout.height < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、枠高も縮む');
+    const gradedPadTop = await ui.locator('#app').evaluate(el => parseFloat(getComputedStyle(el).paddingTop) || 0);
+    assert.ok(gradedLayout.height - gradedPadTop < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、内容が縮む（v205の配置余白を除く）');
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /公式正答・簡易解説/);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /各選択肢と正答の位置/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /採点直後の確認/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /全選択肢と正答の位置を確認する/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'explainSpec').length), 0,
       '回答時にAI解説取得を起動しない');
     const answer = await page.evaluate(() => window.calls.find(m => m.params?.name === 'submitAnswer').params.arguments);
@@ -371,13 +380,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length), 1, '解説で再採点しない');
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'nextQuestion').length), 3, '解説の再表示で次問へ進めない');
     assert.deepEqual(await page.evaluate(() => window.followups),
-      ['2025年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）'],
+      ['2025年度 問1の正解理由と私が選んだ回答の誤り・混同点を、照合済みの公式問題と正答に基づいて簡潔に説明してください。必要な法令条件や計算過程は省略しないでください。（照合番号：E-abcdefghABCDEFGH）'],
       '会話には照合番号と解説依頼だけを送る');
     assert.deepEqual(await page.evaluate(() => window.internal), [], '不安定な遅延モデル文脈更新に依存しない');
     const full = await page.evaluate(() => window.fullMessages[0]);
     assert.equal(full.length,1,'内部資料のJSONやPNGはiPhoneの会話に送らない');
     assert.equal(full[0].type,'text');
-    assert.equal(full[0].text, '2025年度 問1の各選択肢の判断根拠を、公式資料に基づいて解説してください。（照合番号：E-abcdefghABCDEFGH）');
+    assert.equal(full[0].text, '2025年度 問1の正解理由と私が選んだ回答の誤り・混同点を、照合済みの公式問題と正答に基づいて簡潔に説明してください。必要な法令条件や計算過程は省略しないでください。（照合番号：E-abcdefghABCDEFGH）');
     assert.doesNotMatch(full[0].text,/verifiedOfficialExplanation|MCP app context|correctAnswer|\\?stem/);
     assert.equal(full[0].annotations,undefined,'非表示指定が無視されても原本データが露出しない');
     assert.equal(await ui.getByRole('button', { name: '公式正答を再表示' }).count(), 0, '表示済み正答の再表示ボタンは不要');
@@ -482,8 +491,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button', { name: '公式の問題の図1を拡大' }).click();
     await ui.getByRole('dialog', { name: '公式の問題の図1を拡大' }).waitFor();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 375), '図を画面幅より大きくできる');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '拡大', exact: true }).click();
     assert.ok(await ui.locator('.fig-scroll img').evaluate(x => x.getBoundingClientRect().width > 750), 'さらに拡大できる');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '閉じる' }).click();
     // A long iPhone question must return to the result's top after "分からない".
     const beforeDontKnow = await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length);
@@ -496,7 +509,7 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       '「分からない」後も最新の採点結果の先頭をフォーカス');
     assert.equal(await ui.locator('.latest').count(), 1);
     assert.equal(await ui.locator('#app').evaluate(el => el.scrollTop), 0);
-    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答は\s*3\s*です/);
+    assert.match(await ui.locator('.official-answer-summary').innerText(), /正答：\s*3/);
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'submitAnswer').length),beforeDontKnow+1);
     await page.evaluate(r => window.deliver(r), result(question));
     await ui.getByRole('button', { name: '分からない', exact: true }).waitFor();
@@ -748,6 +761,8 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('#descriptiveSource .descriptive-page').count(), 0, 'PDFのページ全体は画像として表示しない');
     await ui.locator('#descriptiveSource .fig-open').click();
     assert.equal(await ui.locator('.fig-overlay').count(), 1, '図をタップすると拡大');
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await page.waitForTimeout(300);
     await ui.getByRole('button', { name: '閉じる' }).click();
     assert.doesNotMatch(await ui.locator('#app').innerText(), /器械点  視準点|見取図\s+A\s+B/, '表や図をPDFテキスト層から偽の文章にしない');
     assert.equal(await ui.locator('input[name=ans]').count(), 0, '記述式には択一式の回答ラジオボタンを出さない');
@@ -1069,6 +1084,187 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('button[data-desc="21"]').isVisible(),false);
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startedBeforeTopic+1);
     assert.equal(await ui.locator('#studyScopeFreeField').count(),0,'開始を承認した後は元の分野入力へ戻さない');
+    // Issue #5 回帰（r2）：記述式メニューで明示した年度を 2025年度へ置き換えない。
+    // 拒否判定は初回の saveStudyPlan／startStudy と再開の startStudy より前に行う。
+    // 拒否した操作は計画保存・学習開始・出題・PDF取得を行わない。
+    const countCalls = (name) => page.evaluate(n => window.calls.filter(m => m.params?.name === n).length, name);
+    const toolArgsSince = (from, name) => page.evaluate(([f, n]) => window.calls.slice(f)
+      .filter(m => m.params?.name === n).map(m => m.params.arguments), [from, name]);
+    async function countsSnapshot() {
+      return {
+        saveStudyPlan: await countCalls('saveStudyPlan'),
+        startStudy: await countCalls('startStudy'),
+        openDescriptiveQuestion: await countCalls('openDescriptiveQuestion'),
+      };
+    }
+    // 指定した3つの呼び出しが増えていないことを検証する。
+    const noNewCalls = async (before, label) => {
+      for (const name of ['saveStudyPlan', 'startStudy', 'openDescriptiveQuestion']) {
+        assert.equal(await countCalls(name), before[name], label + '：' + name + ' を呼ばない');
+      }
+    };
+    // 記述式の希望で分野の選択画面まで進む（自由入力の送信はまだ行わない）。
+    async function goToScopeMenuForDescriptive() {
+      await page.evaluate(r => window.deliver(r), result({
+        status:'needPlan',planReady:true,learnerId,sessionId,
+        overview:overviewFor('land_surveyor'),
+        plan:{fields:['午前の部（測量・記述）','午後の部（土地の記述）','午後の部（建物の記述）']},
+      }));
+      await ui.getByRole('button',{name:/学習計画を見直す/}).click();
+      await ui.getByRole('button',{name:'4 その他'}).click();
+      await ui.locator('#otherText').fill('記述式から始める');
+      await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+      await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+      await ui.getByRole('button',{name:/特定の分野・間違えた問題から始める/}).click();
+      await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
+    }
+    // 自由入力を送信し、拒否されて分野の選択画面へ戻ることを確認する。
+    async function submitTopicExpectBlock(topic, noticePattern, label) {
+      await ui.locator('#studyScopeFreeField').fill(topic);
+      const before = await countsSnapshot();
+      await ui.locator('#studyScopeFreeStart').click();
+      await ui.getByText(noticePattern).waitFor({ timeout: 12000 });
+      await noNewCalls(before, label);
+      assert.equal(await ui.getByRole('heading',{name:'学習する分野を選択'}).count(), 1, label + '：分野の選択画面へ戻る');
+      assert.equal(await ui.locator('#studyScopeFreeField').inputValue(), topic, label + '：希望を保持する');
+      return before;
+    }
+    // 自由入力を送信し、記述式メニューが開くことを確認する。
+    async function submitTopicExpectMenu(topic) {
+      await ui.locator('#studyScopeFreeField').fill(topic);
+      await ui.locator('#studyScopeFreeStart').click();
+      await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor({timeout:12000});
+    }
+
+    // （A）初回・未対応：2026年度を指定すると、saveStudyPlan／startStudy より前に拒否される。
+    await goToScopeMenuForDescriptive();
+    await submitTopicExpectBlock('2026年度 午後の部 第21問', /指定年度は未対応です/, '初回・未対応2026年度');
+    assert.match(await ui.locator('#app').innerText(), /2026年度/);
+    // 対応年度を明示的に選ぶと、計画保存・学習開始が行われ、メニューが開く。
+    const beforeCorrectA = await countsSnapshot();
+    await submitTopicExpectMenu('2025年度 午後の部 第21問');
+    assert.equal(await countCalls('saveStudyPlan'), beforeCorrectA.saveStudyPlan + 1, '対応年度を選ぶと計画保存を行う');
+    assert.equal(await countCalls('startStudy'), beforeCorrectA.startStudy + 1, '対応年度を選ぶと学習開始を行う');
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2025', '明示的に選んだ2025年度でメニューを開く');
+    // エンジンが 422 で拒否した場合は、その hint をそのまま出す。
+    const callsBeforeA = await page.evaluate(() => window.calls.length);
+    await page.evaluate(() => { window.failDescriptiveOpenOnce = true; });
+    await ui.getByRole('button',{name:/午後の部・問21/}).click();
+    await ui.getByText(/指定年度は未対応です。2025年度の記述式は検証済みの原本がないため出題できません。/).waitFor();
+    assert.equal(await ui.getByRole('heading',{name:/2025年度.*問21/}).count(), 0, 'エンジンが拒否した問題を開かない');
+    // 対応年度を明示的に選んだ場合は問題を開ける。
+    await ui.getByRole('button',{name:/午後の部・問21/}).click();
+    await ui.getByRole('heading',{name:/2025年度.*問21/}).waitFor();
+    const openArgsA = await toolArgsSince(callsBeforeA, 'openDescriptiveQuestion');
+    assert.equal(openArgsA.filter(a => a.year === 2025).length, 2,
+      '明示的に選んだ2025年度の出題は2件（422で拒否された1件と、開いた1件）');
+    assert.equal(openArgsA.filter(a => a.year !== 2025).length, 0,
+      '明示的に選んだ2025年度以外の年度は出題しない');
+
+    // Explicit extreme years must not behave like an omitted year.
+    await goToScopeMenuForDescriptive();
+    await submitTopicExpectBlock('2100年度 午後の部 第21問', /2100年度の記述式/, '初回・未対応2100年度');
+    await submitTopicExpectBlock('1899年度 午後の部 第21問', /1899年度の記述式/, '初回・未対応1899年度');
+    await submitTopicExpectBlock('10000年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・桁数不正');
+    await submitTopicExpectBlock('2025年度かR8年度 午後の部 第21問', /年度を一つだけ指定してください/, '初回・西暦とR表記の矛盾');
+    await submitTopicExpectMenu('2022年度 午後の部 第21問（築26年の建物）');
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2022', '築年数ではなく明示された2022年度を選ぶ');
+
+    // （B）初回・未対応：令和8年度（＝2026年度）も同じく saveStudyPlan／startStudy より前に拒否される。
+    await goToScopeMenuForDescriptive();
+    await submitTopicExpectBlock('令和8年度 午後の部 問22', /指定年度は未対応です/, '初回・未対応令和8年度');
+    assert.match(await ui.locator('#app').innerText(), /2026年度/);
+
+    // Bの拒否直後も分野選択は有効。同じ画面上で一件ずつ再入力し、
+    // 各ケースで計画保存・開始・出題がないことと、再入力可能なことを確認する。
+    // （C）初回・未対応：全角の２０２６年度も同じく saveStudyPlan／startStudy より前に拒否される。
+    await submitTopicExpectBlock('２０２６年度 午前の部 第１１問', /指定年度は未対応です/, '初回・未対応２０２６年度');
+    assert.match(await ui.locator('#app').innerText(), /2026年度/);
+
+    // （D）初回・未対応：平成18年度（2006年度）は未対応として拒否される。
+    await submitTopicExpectBlock('平成18年度 午後の部 第21問', /指定年度は未対応です/, '初回・未対応平成18年度');
+    assert.match(await ui.locator('#app').innerText(), /2006年度/);
+
+    // （E）初回・解釈不能：26年度は西暦4桁での再指定を案内し、呼び出しを行わない。
+    await submitTopicExpectBlock('26年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・解釈不能26年度');
+
+    // （F）初回・解釈不能：昭和50年度は西暦4桁での再指定を案内し、呼び出しを行わない。
+    await submitTopicExpectBlock('昭和50年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・解釈不能昭和50年度');
+
+    // （G）初回・矛盾：複数年度の指定は「年度を一つだけ指定してください」と案内し、呼び出しを行わない。
+    await submitTopicExpectBlock('2025年度と2026年度 午後の部 第21問', /年度を一つだけ指定してください/, '初回・矛盾する年度');
+
+    // （H）再開・未対応：2026年度を指定しても、再開の startStudy より前に拒否される。
+    await page.evaluate(() => {
+      window.failNextCalls = 0;
+      window.recoverSkipped = true;
+      window.savedPlanStartMode = 'descriptive';
+      window.deliver({ structuredContent: {
+        status: 'resumeReady', learnerId: 'testlearner', sessionId: 'test-session',
+        qualificationName: '土地家屋調査士', answeredCount: 4, wrongCount: 2,
+        startMode: 'descriptive',
+        fields: ['午前の部（測量・記述）','午後の部（土地の記述）','午後の部（建物の記述）'],
+        pendingQuestion: null,
+      } });
+    });
+    await ui.getByRole('heading', { name: '土地家屋調査士｜続きから再開' }).waitFor();
+    await ui.getByRole('button', { name: '学習を再開する' }).click();
+    await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
+    await submitTopicExpectBlock('2026年度 午後の部 第21問', /指定年度は未対応です/, '再開・未対応2026年度');
+    // 対応年度を明示的に選ぶと、再開の学習開始が1回だけ呼ばれ、メニューが開く。
+    const startBeforeH = await countCalls('startStudy');
+    await submitTopicExpectMenu('2025年度 午後の部 第21問');
+    assert.equal(await countCalls('startStudy'), startBeforeH + 1, '再開の学習開始は対応年度を選んだ明示操作で1回だけ');
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2025', '再開時も明示的に選んだ2025年度でメニューを開く');
+
+    // （I）再開・解釈不能：26年度は西暦4桁での再指定を案内し、呼び出しを行わない。
+    await page.evaluate(() => {
+      window.failNextCalls = 0;
+      window.recoverSkipped = true;
+      window.savedPlanStartMode = 'descriptive';
+      window.deliver({ structuredContent: {
+        status: 'resumeReady', learnerId: 'testlearner', sessionId: 'test-session',
+        qualificationName: '土地家屋調査士', answeredCount: 4, wrongCount: 2,
+        startMode: 'descriptive',
+        fields: ['午前の部（測量・記述）','午後の部（土地の記述）','午後の部（建物の記述）'],
+        pendingQuestion: null,
+      } });
+    });
+    await ui.getByRole('heading', { name: '土地家屋調査士｜続きから再開' }).waitFor();
+    await ui.getByRole('button', { name: '学習を再開する' }).click();
+    await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
+    await submitTopicExpectBlock('26年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '再開・解釈不能26年度');
+
+    // （J）再開・矛盾：複数年度の指定は「年度を一つだけ指定してください」と案内し、呼び出しを行わない。
+    await page.evaluate(() => {
+      window.failNextCalls = 0;
+      window.recoverSkipped = true;
+      window.savedPlanStartMode = 'descriptive';
+      window.deliver({ structuredContent: {
+        status: 'resumeReady', learnerId: 'testlearner', sessionId: 'test-session',
+        qualificationName: '土地家屋調査士', answeredCount: 4, wrongCount: 2,
+        startMode: 'descriptive',
+        fields: ['午前の部（測量・記述）','午後の部（土地の記述）','午後の部（建物の記述）'],
+        pendingQuestion: null,
+      } });
+    });
+    await ui.getByRole('heading', { name: '土地家屋調査士｜続きから再開' }).waitFor();
+    await ui.getByRole('button', { name: '学習を再開する' }).click();
+    await ui.getByRole('heading', { name: '学習する分野を選択' }).waitFor();
+    await submitTopicExpectBlock('2025年度と2026年度 午後の部 第21問', /年度を一つだけ指定してください/, '再開・矛盾する年度');
+
+    // （K）従来動作：2022年度と年度省略時は従来どおりメニューが開き、計画保存・学習開始が行われる。
+    await goToScopeMenuForDescriptive();
+    const beforeK2022 = await countsSnapshot();
+    await submitTopicExpectMenu('2022年度 午前の部 座標');
+    assert.match(await ui.locator('#app').innerText(), /2022年度 午前の部 座標/);
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2022', '対応済み2022年度は従来どおり開く');
+    assert.equal(await countCalls('saveStudyPlan'), beforeK2022.saveStudyPlan + 1, '対応年度では計画保存を行う');
+    assert.equal(await countCalls('startStudy'), beforeK2022.startStudy + 1, '対応年度では学習開始を行う');
+    await goToScopeMenuForDescriptive();
+    await submitTopicExpectMenu('午後の部 第21問');
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2025', '年度省略時は従来どおり2025年度を既定表示する');
+    assert.equal(await ui.locator('#descriptiveYear option').count(), 19, '年度省略時は19個の選択肢');
 
     // 自由入力がなくても土地家屋調査士では択一式用の3択をいきなり出さない。
     // 記述式・択一式を明示的に選ぶ専用入口で誤出題を防ぐ。
