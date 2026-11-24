@@ -212,6 +212,56 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       document.body.appendChild(iframe);
     }, { html: widgetHtml(), first: result(onboarding), question, nextQuestion });
     const ui = page.frameLocator('iframe');
+    // Failure-only diagnostics for an otherwise unchanged real input + assertion.
+    async function diagnosticTransition(label, expectedBtn, act) {
+      const probe = ui.locator('#app');
+      const baseline = await page.evaluate(() => window.calls.length);
+      const errorBaseline = errors.length;
+      await probe.evaluate((root, button) => {
+        const doc = root.ownerDocument, win = doc.defaultView;
+        const abort = new AbortController(), events = [];
+        function brief(node) {
+          return node ? { tag: node.tagName, id: node.id || '', cls: String(node.className || '').slice(0, 80) } : null;
+        }
+        function snapshot() {
+          const btn = doc.querySelector(button), rect = btn?.getBoundingClientRect();
+          return { heading: root.querySelector('h2')?.textContent?.slice(0, 100),
+            active: brief(doc.activeElement), button: brief(btn), disabled: btn?.disabled ?? null,
+            rect: rect ? [rect.x, rect.y, rect.width, rect.height].map(Math.round) : null,
+            notice: [...root.querySelectorAll('[role="alert"],[aria-live]')].slice(0,4).map(n => n.textContent.trim().slice(0, 120)),
+            scroll: [win.scrollX, win.scrollY], padding: doc.body.style.paddingTop };
+        }
+        for (const type of ['pointerdown','pointerup','click']) {
+          doc.addEventListener(type, event => {
+            events.push({ type, path: event.composedPath().slice(0,4).filter(n=>n.nodeType===1).map(brief),
+              xy:[event.clientX,event.clientY], status:snapshot() });
+            if(events.length>9) events.shift();
+          }, {capture:true, signal:abort.signal});
+        }
+        win.__qlpTransitionProbe = { abort, events, snapshot };
+      }, expectedBtn);
+      try { return await act(); }
+      catch(e) {
+        try {
+          const [dom,host] = await Promise.all([
+            probe.evaluate(root => {
+              const {events,snapshot} = root.ownerDocument.defaultView.__qlpTransitionProbe;
+              return { events, after:snapshot() };
+            }),
+            page.evaluate(n => window.calls.slice(n).map(c=>c.params?.name).filter(Boolean), baseline),
+          ]);
+          console.error('ISSUE5_PENDING_TRANSITION', JSON.stringify({name,label,dom,toolNames:host,pageErrorCount:errors.length-errorBaseline}));
+        } catch { console.error('ISSUE5_PENDING_TRANSITION_CAPTURE_UNAVAILABLE', name, label); }
+        throw e;
+      } finally {
+        await probe.evaluate(root => {
+          const win = root.ownerDocument.defaultView;
+          win.__qlpTransitionProbe?.abort.abort();
+          delete win.__qlpTransitionProbe;
+        }).catch(()=>{});
+      }
+    }
+
     await ui.getByRole('button', { name: '2 免除を利用しない' }).waitFor();
     // iPhone表示で長い免除条件の選択肢が右端からはみ出さない。
     const longExemption=await ui.locator('.choices button').first().evaluate(b=>{
@@ -1023,8 +1073,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#otherText').fill('記述式から始める');
     const startCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
     const descCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='openDescriptiveQuestion').length);
-    await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
-    await ui.getByRole('heading',{name:'希望を反映しました｜学習開始の確認'}).waitFor();
+    await diagnosticTransition('preexisting-confirm-wish', '#otherOk', async () => {
+      await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+      await ui.getByRole('heading',{name:'希望を反映しました｜学習開始の確認'}).waitFor();
+    });
     assert.match(await ui.locator('#app').innerText(), /記述式から始める/);
     assert.equal(await ui.getByRole('button',{name:/この学習計画で始める/}).count(),0,
       '希望の確定後に元の計画画面へ勝手に戻らない');
@@ -1076,8 +1128,12 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     await ui.locator('#studyScopeFreeField').fill('2022年度 午前の部 座標');
     const startedBeforeTopic=await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
-    await ui.locator('#studyScopeFreeStart').click();
-    await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor({timeout:12000});
+    await diagnosticTransition('preexisting-2022-positive', '#studyScopeFreeStart', async () => {
+      await diagnosticTransition('r2-scope-positive', '#studyScopeFreeStart', async () => {
+        await ui.locator('#studyScopeFreeStart').click();
+        await ui.getByRole('heading',{name:'土地家屋調査士｜記述式問題'}).waitFor({timeout:12000});
+      });
+    });
     assert.match(await ui.locator('#app').innerText(),/2022年度 午前の部 座標/);
     assert.equal(await ui.locator('#descriptiveYear').inputValue(),'2022');
     assert.equal(await ui.locator('button[data-desc="11"]').isVisible(),true);
@@ -1113,8 +1169,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await ui.getByRole('button',{name:/学習計画を見直す/}).click();
       await ui.getByRole('button',{name:'4 その他'}).click();
       await ui.locator('#otherText').fill('記述式から始める');
-      await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
-      await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+      await diagnosticTransition('r2-scope-setup', '#otherOk', async () => {
+        await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
+        await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+      });
       await ui.getByRole('button',{name:/特定の分野・間違えた問題から始める/}).click();
       await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     }
@@ -1122,8 +1180,10 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     async function submitTopicExpectBlock(topic, noticePattern, label) {
       await ui.locator('#studyScopeFreeField').fill(topic);
       const before = await countsSnapshot();
-      await ui.locator('#studyScopeFreeStart').click();
-      await ui.getByText(noticePattern).waitFor({ timeout: 12000 });
+      await diagnosticTransition('r2-scope-rejection', '#studyScopeFreeStart', async () => {
+        await ui.locator('#studyScopeFreeStart').click();
+        await ui.getByText(noticePattern).waitFor({ timeout: 12000 });
+      });
       await noNewCalls(before, label);
       assert.equal(await ui.getByRole('heading',{name:'学習する分野を選択'}).count(), 1, label + '：分野の選択画面へ戻る');
       assert.equal(await ui.locator('#studyScopeFreeField').inputValue(), topic, label + '：希望を保持する');
