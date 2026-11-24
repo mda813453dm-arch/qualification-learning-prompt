@@ -1,0 +1,76 @@
+name: Issue 5 v206 editable-focus production-base preflight
+on:
+  push:
+    branches: ['ci/ci/issue-5-v206-editable-focus']
+    paths: ['.github/workflows/issue-5-v206-editable-focus.yml']
+permissions:
+  contents: read
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          persist-credentials: false
+      - name: Verify exact production base, runtime-only candidate and validation-only files
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = 'f6e087e563a6d6946e3ac2f16611a27a91d32ac7'
+          test "$(git rev-parse HEAD^^)" = 'f35b436edd29d8150d386f4f82bc2c41811ba8a4'
+          test "$(git rev-parse HEAD^^^)" = '76b618046f899201cbfcee1acbcaa5af1b58ff36'
+          test "$(git rev-parse HEAD^^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-editable-focus.yml'
+          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/descriptive.js' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v206.js') <(git -c core.quotePath=false diff --name-only HEAD^^^^ HEAD^^)
+          diff -u <(printf '%s\n' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-focus-v206-editable-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/app.js')" = '31c2b8d3da65d19cf8115f3eb6eb1d102293f6de'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/descriptive.js')" = '79bca8ca9350d552e7d0295b2b19717080bfbb4a'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = 'f2241ffe8a5efedfbe1597673fc636688884337a'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = 'c319ef2040deaca766da40934c40a51e59ba5b33'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'dac55cf72f14743988cc1d351caa153f5ca4f093'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive-actions.test.js')" = '00562434a491cec1103c0503353ee682f42819b7'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive.test.js')" = '6efc0068ef41d6ac899a5db17e92cf0e78636165'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/mcp.test.js')" = 'eb42416cbc5a036c4facaabda6ae8c714ad03bcb'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/question-layout.test.js')" = '93d7d15f94ad66190a5ec2465575c2be471fee7f'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = '708d81fda6288bb44a763d4737fc1011aa456802'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-focus-v206-editable-browser.mjs')" = 'cfd2b0875a7ed26485b1d19a805f36fba3fa1729'
+  mandatory-gate:
+    needs: verify-source
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
+  engine:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
+  editable-focus-regression:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Replay scheduled focus and verify normal v206 placement
+        shell: bash
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          node 新システム開発/engine/test/widget-focus-v206-editable-browser.mjs
+          sed 's@../src/widget-v205.js@../src/widget-current.js@' 新システム開発/engine/test/widget-focus-v205-browser.mjs > 新システム開発/engine/test/.v206-focus-ci.mjs
+          node 新システム開発/engine/test/.v206-focus-ci.mjs
