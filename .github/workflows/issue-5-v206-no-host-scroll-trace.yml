@@ -6,7 +6,32 @@ on:
 permissions:
   contents: read
 jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify runtime and attest previously successful mandatory gate
+        shell: bash
+        run: |
+          set -eu
+          test "$GITHUB_REF" = 'refs/heads/ci/issue-5-v206-no-host-scroll-trace'
+          test "$(git rev-parse HEAD^)" = '42abf6bf85d1510edebaefaab4320c4a97b7702c'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-no-host-scroll-trace.yml'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v205.js')" = "$(git rev-parse '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81:新システム開発/engine/src/widget-v205.js')"
+          test "$(git rev-parse HEAD^^)" = '7ca5573200256cd45a129733de81f3b230025fb2'
+          test "$(git rev-parse HEAD^^^)" = '1b8d88695a989ee216ed669d7755a412ce223d88'
+          test "$(git rev-parse HEAD^^^^)" = 'cb12adc85da3549c32b3042f531753a1a1e6060f'
+          test "$(git -c core.quotePath=false diff --name-only HEAD^^^ HEAD^^)" = '新システム開発/engine/test/widget-no-host-scroll-trace.mjs'
+          test "$(git diff --name-only HEAD^^ HEAD)" = '.github/workflows/issue-5-v206-no-host-scroll-trace.yml'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-no-host-scroll-trace.mjs')" = '2192b61977205f49a125a4aab29f1b924d061739'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'dac55cf72f14743988cc1d351caa153f5ca4f093'
+          git diff --exit-code 'f35b436edd29d8150d386f4f82bc2c41811ba8a4' HEAD -- '新システム開発/engine/src' '新システム開発/parser'
+          echo 'Same runtime as prior mandatory Widget and Parser succeeded: https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/45362410239'
   trace:
+    needs: verify-source
     name: Chromium no-host-scroll (${{ matrix.widget }})
     strategy:
       fail-fast: false
@@ -19,21 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 5
           persist-credentials: false
-      - name: Verify runtime and attest previously successful mandatory gate
-        shell: bash
-        run: |
-          set -eu
-          test "$(git rev-parse HEAD^)" = '7ca5573200256cd45a129733de81f3b230025fb2'
-          test "$(git rev-parse HEAD^^)" = '1b8d88695a989ee216ed669d7755a412ce223d88'
-          test "$(git rev-parse HEAD^^^)" = 'cb12adc85da3549c32b3042f531753a1a1e6060f'
-          test "$(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)" = '新システム開発/engine/test/widget-no-host-scroll-trace.mjs'
-          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-no-host-scroll-trace.yml'
-          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-no-host-scroll-trace.mjs')" = '2192b61977205f49a125a4aab29f1b924d061739'
-          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'dac55cf72f14743988cc1d351caa153f5ca4f093'
-          git diff --exit-code 'f35b436edd29d8150d386f4f82bc2c41811ba8a4' HEAD -- '新システム開発/engine/src' '新システム開発/parser'
-          echo 'Same runtime as prior mandatory Widget and Parser succeeded: https://github.com/mda813453dm-arch/qualification-learning-prompt/actions/runs/45362410239'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
