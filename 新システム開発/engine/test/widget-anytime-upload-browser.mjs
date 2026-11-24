@@ -6,6 +6,21 @@ import {widgetHtml} from '../src/widget.js';
 const require=createRequire(import.meta.url);
 const {chromium,webkit}=require(process.env.PLAYWRIGHT_MODULE_PATH||'playwright');
 
+// Fail-only evidence: never emit session IDs, PDF contents, URLs or raw args.
+function uploadDiagnostic(browserName,spec,calls,timeline){
+  const safeYear=value=>Number.isInteger(value)&&value>=1900&&value<=2200?value:null;
+  const safeFile=name=>typeof name==='string'&&/^[A-Za-z0-9_.-]{1,90}\.pdf$/.test(name)?name:'<omitted>';
+  const normalizeFiles=xs=>Array.isArray(xs)?xs.map(x=>safeFile(x?.file_name)):[];
+  const years=value=>Array.isArray(value)?value.map(safeYear):null;
+  const matching=calls.filter(c=>c.name==='attachPdfBatchFromPicker');
+  const sanitize=c=>({name:c.name,questionYears:years(c.args?.years),answerYears:years(c.args?.answerYears),
+    questionFiles:normalizeFiles(c.args?.questionPdfs),answerFiles:normalizeFiles(c.args?.answerPdfs)});
+  console.error('ANYTIME_UPLOAD_DIAGNOSTIC',JSON.stringify({browser:browserName,spec:spec.qualificationName,
+    expectedYear:spec.year||2024,timeline,selected:matching[0]?sanitize(matching[0]):null,
+    matching:matching.map(sanitize)}));
+}
+
+
 for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
   const browser=await engine.launch({headless:true});
   try{
@@ -70,11 +85,7 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       const ui=page.frameLocator('iframe');
       try { await ui.getByRole('heading',{name:'2025年度 問1'}).waitFor({timeout:8000}); }
       catch(e){
-        console.error('ANYTIME_INITIAL',browserName,spec.qualificationName,
-          'APP=',(await ui.locator('#app').innerText().catch(()=>'<no app>')).slice(0,1200),
-          'ERRORS=',errors,
-          'CALLS=',JSON.stringify(await page.evaluate(()=>window.calls)).slice(0,1100),
-          'FRAME=',(await ui.locator('body').innerHTML().catch(()=>'<no body>')).slice(0,700));
+        uploadDiagnostic(browserName,spec,await page.evaluate(()=>window.calls),[]);
         throw e;
       }
       await ui.locator('input[name="ans"][value="2"]').check();
@@ -82,29 +93,57 @@ for(const [browserName,engine] of [['chromium',chromium],['webkit',webkit]]){
       await ui.getByRole('heading',{name:'過去問の追加・登録状況'}).waitFor();
       assert.match(await ui.locator('#app').innerText(),/2025年度/);
       if(spec.permissionedUpload)await ui.locator('#sourceManageRights').check();
-      await ui.getByText('ファイル名から年度・試験区分が分からないとき').click();
-      await ui.locator('#sourceManageYearHint').fill(String(spec.year||2024));
-      const files=[{name:spec.questionFile||'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
-        ...(spec.answerFormat==='html'?[]:[{name:spec.answerFile||'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
-      await ui.locator('#sourceManageUpload').setInputFiles(files);
-      try {
+      await ui.locator('body').evaluate(()=>{
+        const trace=[],nodes=new WeakMap();
+        let nextNode=1;
+        const currentYear=()=>document.getElementById('sourceManageYearHint');
+        let previous=currentYear();
+        const identify=n=>{
+          if(!n)return null;
+          if(!nodes.has(n))nodes.set(n,nextNode++);
+          return nodes.get(n);
+        };
+        const record=event=>{
+          const n=currentYear(),raw=n?.value;
+          const value=typeof raw==='string'&&/^\d{0,4}$/.test(raw)?raw:raw==null?null:'<non-year>';
+          trace.push({event,value,node:identify(n),detailsOpen:!!n?.closest('details')?.open});
+          if(trace.length>24)trace.shift();
+        };
+        window.uploadYearTrace=trace;
+        window.uploadYearCheckpoint=record;
+        for(const event of ['focusin','input','change','blur']){
+          document.addEventListener(event,e=>{
+            if(e.target?.id==='sourceManageYearHint')record(event+':year');
+            if(e.target?.id==='sourceManageUpload')record(event+':file');
+          },true);
+        }
+        new MutationObserver(()=>{
+          const n=currentYear();
+          if(n!==previous){record('year-node-replaced');previous=n;}
+        }).observe(document.getElementById('app'),{childList:true,subtree:true});
+      });
+      let calls;
+      try{
+        await ui.getByText('ファイル名から年度・試験区分が分からないとき').click();
+        await ui.locator('body').evaluate(()=>window.uploadYearCheckpoint('before-fill'));
+        await ui.locator('#sourceManageYearHint').fill(String(spec.year||2024));
+        await ui.locator('body').evaluate(()=>window.uploadYearCheckpoint('after-fill'));
+        const files=[{name:spec.questionFile||'exam.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 exam')},
+          ...(spec.answerFormat==='html'?[]:[{name:spec.answerFile||'correct.pdf',mimeType:'application/pdf',buffer:Buffer.from('%PDF-1.7 answer')}])];
+        await ui.locator('#sourceManageUpload').setInputFiles(files);
         await page.waitForFunction(()=>window.calls.some(c=>c.name==='attachPdfBatchFromPicker'),{},{timeout:12000});
         await ui.locator('#sourceManageUploadStatus').filter({hasText:'出題可能：'}).waitFor({timeout:12000});
-      }
-      catch(e){
-        console.error('ANYTIME_UPLOAD',browserName,spec.qualificationName,
-          'STATUS=',(await ui.locator('#sourceManageUploadStatus').innerText().catch(()=>'<missing>')),
-          'ERRORS=',errors,
-          'CALLS=',JSON.stringify(await page.evaluate(()=>window.calls)).slice(0,1300),
-          'FILES=',JSON.stringify(await page.evaluate(()=>window.uploads)));
+        calls=await page.evaluate(()=>window.calls);
+        const batch=calls.find(c=>c.name==='attachPdfBatchFromPicker');
+        assert.ok(batch,browserName+': '+spec.qualificationName+' missing upload call');
+        assert.deepEqual(batch.args.years,[spec.year||2024]);
+        assert.equal(batch.args.answerPdfs.length,spec.answerFormat==='html'?0:1);
+        if(spec.answerFormat==='pdf')assert.deepEqual(batch.args.answerYears,[spec.year||2024]);
+      }catch(e){
+        const timeline=await ui.locator('body').evaluate(()=>window.uploadYearTrace||[]).catch(()=>[]);
+        uploadDiagnostic(browserName,spec,calls||await page.evaluate(()=>window.calls),timeline);
         throw e;
       }
-      const calls=await page.evaluate(()=>window.calls);
-      const batch=calls.find(c=>c.name==='attachPdfBatchFromPicker');
-      assert.ok(batch,browserName+': '+spec.qualificationName+' missing upload call');
-      assert.deepEqual(batch.args.years,[spec.year||2024]);
-      assert.equal(batch.args.answerPdfs.length,spec.answerFormat==='html'?0:1);
-      if(spec.answerFormat==='pdf')assert.deepEqual(batch.args.answerYears,[spec.year||2024]);
       if(spec.permissionedUpload)assert.ok(calls.some(c=>c.name==='confirmUploadRights'));
       assert.equal(calls.filter(c=>c.name==='submitAnswer'||c.name==='nextQuestion').length,0,
         'import must not grade or advance current question');
