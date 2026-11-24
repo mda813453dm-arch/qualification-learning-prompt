@@ -1161,6 +1161,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(openArgsA.filter(a => a.year !== 2025).length, 0,
       '明示的に選んだ2025年度以外の年度は出題しない');
 
+    // Explicit extreme years must not behave like an omitted year.
+    await goToScopeMenuForDescriptive();
+    await submitTopicExpectBlock('2100年度 午後の部 第21問', /2100年度の記述式/, '初回・未対応2100年度');
+    await submitTopicExpectBlock('1899年度 午後の部 第21問', /1899年度の記述式/, '初回・未対応1899年度');
+    await submitTopicExpectBlock('10000年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・桁数不正');
+    await submitTopicExpectBlock('2025年度かR8年度 午後の部 第21問', /年度を一つだけ指定してください/, '初回・西暦とR表記の矛盾');
+    await submitTopicExpectMenu('2022年度 午後の部 第21問（築26年の建物）');
+    assert.equal(await ui.locator('#descriptiveYear').inputValue(), '2022', '築年数ではなく明示された2022年度を選ぶ');
+
     // （B）初回・未対応：令和8年度（＝2026年度）も同じく saveStudyPlan／startStudy より前に拒否される。
     await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('令和8年度 午後の部 問22', /指定年度は未対応です/, '初回・未対応令和8年度');

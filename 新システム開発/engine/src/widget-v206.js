@@ -47,33 +47,27 @@ export function widgetHtml(){
   // 年度を書いていない場合は {year:null, issue:null} を返し、2025へ既定値付けしない。
   // 平成18年度（2006年）は読める年度として未対応、26年度と昭和表記は解釈不能とする（Issue #5 r2）。
   function descriptiveTopicYearInfo(topic){
-    var t = String(topic || '').normalize('NFKC');
+    // Building age is not part of an exam-year request.
+    var t = String(topic || '').normalize('NFKC').replace(/築\s*\d+\s*年(?!度)/g, ' ');
     var years = [];
     var unreadable = false;
-    var re = /(?:^|[^0-9])((?:20\d\d)|(?:19\d\d)|(?:令和\s*元)|(?:令和\s*\d+)|(?:平成\s*元)|(?:平成\s*\d+))(?=$|[^0-9])/g;
-    var m;
-    while ((m = re.exec(t)) !== null) {
-      var y = null;
-      if (m[1].indexOf('令和') === 0) {
-        var r = m[1].indexOf('元') >= 0 ? 1 : Number(m[1].replace(/[^0-9]/g, ''));
-        if (r >= 1 && r <= 999) y = 2018 + r; else unreadable = true;
-      } else if (m[1].indexOf('平成') === 0) {
-        var h = m[1].indexOf('元') >= 0 ? 1 : Number(m[1].replace(/[^0-9]/g, ''));
-        if (h >= 1 && h <= 31) y = 1988 + h; else unreadable = true;
+    function addYear(y) { if (years.indexOf(y) === -1) years.push(y); }
+    var rest = t.replace(/(令和|平成|(?<![A-Za-z])[RH])\s*(元|\d+)(?:\s*年度?)?/g, function(_, era, value){
+      var n = value === '元' ? 1 : Number(value);
+      if (era === '令和' || era === 'R') {
+        if (n >= 1 && n <= 999) addYear(2018 + n); else unreadable = true;
       } else {
-        y = Number(m[1]);
+        if (n >= 1 && n <= 31) addYear(1988 + n); else unreadable = true;
       }
-      if (y !== null && years.indexOf(y) === -1) years.push(y);
-    }
-    // 読める年度の表現を除いた残りで、年度らしいのに読めない表現を探す。
-    // （「令和8年度」の「8年」を2桁年度と誤読しないための手順。）
-    var rest = t.replace(/(?:20\d\d|19\d\d|令和\s*(?:元|\d+)|平成\s*(?:元|\d+))(?:年度|年)?/g, ' ');
-    // 昭和の表記は西暦への換算をしない（解釈不能）。
-    if (/昭和/.test(rest)) unreadable = true;
-    // 2桁・3桁の年度（「26年度」「999年度」など）は西暦4桁ではないため解釈不能。
-    if (/(?:^|[^0-9])\d{1,3}(?:年度|年)/.test(rest)) unreadable = true;
-    // 元号のあとに数値がない場合（「令和年度」「令和」「平成」など）は解釈不能。
-    if (/令和(?!\s*(?:元|\d))/.test(rest) || /平成(?!\s*\d)/.test(rest)) unreadable = true;
+      return ' ';
+    });
+    // Read every complete four-digit western year, not just 19xx/20xx.
+    rest = rest.replace(/(?<!\d)(\d{4})(?!\d)(?:\s*年度?)?/g, function(_, digits){
+      addYear(Number(digits));
+      return ' ';
+    });
+    // Explicit but malformed years cannot be substituted by the default.
+    if (/昭和|令和|平成|(?<![A-Za-z])[RH]\s*年度?|(?:元|\d+)\s*年度|\b\d+\s*年(?!度)/.test(rest)) unreadable = true;
     if (years.length > 1) return { year: null, issue: 'ambiguous' };
     if (unreadable) return { year: null, issue: 'unreadable' };
     if (years.length === 1 && !descriptiveSupportedYear(years[0])) return { year: years[0], issue: 'unsupported' };
@@ -109,9 +103,9 @@ export function widgetHtml(){
   // （C）年度セレクト：未対応年度は「（未対応）」付きで選択表示し、解釈不能・矛盾する年度は未選択の案内を表示する。
   // 2025年度の選択肢は残すが、未対応・解釈不能・矛盾のときは selected にしない。
   replaceOnce(String.raw`      Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
-`, String.raw`      (unsupportedYear ? '<option value="' + unsupportedYear + '" selected>' + unsupportedYear + '年度（未対応）</option>' : '') +
+`, String.raw`      (unsupportedYear !== null ? '<option value="' + unsupportedYear + '" selected>' + unsupportedYear + '年度（未対応）</option>' : '') +
       (needsYearChoice ? '<option value="" selected>年度を選んでください</option>' : '') +
-      Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y && !unsupportedYear && !needsYearChoice ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
+      Array.from({length:19},function(_,i){return 2025-i;}).map(function(y){return '<option value="' + y + '"' + (year === y && unsupportedYear === null && !needsYearChoice ? ' selected' : '') + '>' + y + '年度</option>';}).join('') + '</select>' +
 `, 'V206_MENU_SELECT_ANCHOR_MISSING');
   // （D）案内文の表示：希望の表示の直下と、エラー表示欄の初期値に menuNotice を出す。
   replaceOnce(String.raw`      (requestedTopic ? '<div class="stage-arrived" role="status">✓ 入力した希望「' + esc(requestedTopic) + '」を保持しました。関連する記述式の年度・問題を選んでください。対象問題が一致するかは公式原本で確認します。</div>' : '') +
