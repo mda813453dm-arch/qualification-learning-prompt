@@ -327,3 +327,158 @@ test('2018午前11の参照解答は学習セッションに提供され、誤�
   assert.equal(correct.status,200,JSON.stringify(correct.body));
   assert.equal(correct.body.status,'descriptiveActions');
 });
+
+test('明示した2026年度の記述式は422で未対応を返し、別年度を出さず現在の問も変えない（Issue #5）',async()=>{
+  const e=env();await store(e,Q2,T0,null);
+  const before=JSON.parse(await e.STORE.get('ses/'+SID)).state;
+  const route='/v1/sessions/'+SID+'/next';
+  for (const question of ['2026年度 午後の部 第21問','令和8年度 午後の部 問22','２０２６年度 午前の部 第１１問']) {
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,422,question);
+    assert.equal(r.body.error,'DESCRIPTIVE_YEAR_UNSUPPORTED',question);
+    assert.match(r.body.hint,/指定年度は未対応/);
+    assert.match(r.body.hint,/2026年度/);
+    assert.match(r.body.hint,/別年度の問題は取得しません/);
+  }
+  // 令和100年度（令和10年度と読まない）・食い違い・読めない年度も、別年度を出さずに拒否する
+  for (const [question, error] of [['令和100年度 午後の部 第21問','DESCRIPTIVE_YEAR_UNSUPPORTED'],
+    ['2026年度（令和7年度） 午後の部 第21問','DESCRIPTIVE_YEAR_UNREADABLE'], ['26年度 午後の部 第21問','DESCRIPTIVE_YEAR_UNREADABLE']]) {
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,422,question);
+    assert.equal(r.body.error,error,question);
+    assert.match(r.body.hint,/別年度の問題は取得しません/,question);
+  }
+  const saved=JSON.parse(await e.STORE.get('ses/'+SID));
+  assert.equal(saved.state.descriptiveCurrent.questionId,Q2,'現在の問はそのまま');
+  assert.deepEqual(saved.state,before,'拒否しても学習状態（現在の問・履歴）は変わらない');
+  assert.equal((await send(e,'GET','/v1/sessions/'+SID+'/descriptive/status?questionId='+encodeURIComponent(Q2)+'&shownAt='+T0)).status,200);
+  // 対応年度の明示は年度の判定を通り、次の段階（原本の分解）へ進む
+  const ok=await send(e,'POST',route,{question:'2025年度 午後の部 第21問'});
+  assert.equal(ok.status,503);
+  assert.equal(ok.body.error,'DESCRIPTIVE_PARSER_UNAVAILABLE');
+});
+
+test('学習開始前に出題できない記述式を指定しても、学習開始記録・開始時刻・セッションを一切作らない（Issue #5 再レビュー）',async()=>{
+  const LID='learner-issue5';
+  const fresh=async()=>{
+    const e=env();
+    e.pdfFetches=0; e.fetchPdf=async()=>{ e.pdfFetches+=1; throw new Error('PDF must not be fetched'); };
+    await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0, state:{ qualificationId:'land_surveyor', learnerId:LID, history:{} }}));
+    return e;
+  };
+  const snapshot=(e)=>JSON.stringify([...e.STORE.map.entries()].sort());
+  const route='/v1/sessions/'+SID+'/next';
+  for (const [question,error] of [['2026年度 午後の部 第21問','DESCRIPTIVE_YEAR_UNSUPPORTED'],
+    ['令和8年度 午後の部 問22','DESCRIPTIVE_YEAR_UNSUPPORTED'],['2025年度か26年度 午後 問21','DESCRIPTIVE_YEAR_UNREADABLE'],
+    ['2026年度（令和7年度） 午後の部 第21問','DESCRIPTIVE_YEAR_UNREADABLE'],['2025年度か令和 午後 問21','DESCRIPTIVE_YEAR_UNREADABLE'],
+    ['記述式 2025年度 午後 問210','DESCRIPTIVE_NUMBER_UNSUPPORTED'],['記述式 2025年度 午後 問２１０','DESCRIPTIVE_NUMBER_UNSUPPORTED'],
+    ['記述式 2025年度 午後の部 第210問','DESCRIPTIVE_NUMBER_UNSUPPORTED']]) {
+    const e=await fresh();const before=snapshot(e);
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,422,question);
+    assert.equal(r.body.error,error,question);
+    assert.match(r.body.hint,/別年度の問題は取得しません|別の問題は出題しません/,question);
+    assert.equal(snapshot(e),before,question+'：保存データは何も変わらない');
+    assert.equal(await e.STORE.get('lrnstart/'+LID),null,question+'：開始時刻を作らない');
+    assert.equal(e.pdfFetches,0,question+'：PDFを取りに行かない');
+  }
+  // 対応済みの年度と、年度を省略した指定は従来どおり判定を通り、原本の分解の段階（503）まで進む
+  for (const question of ['2025年度 午後の部 第21問','令和元年度 午前の部 第11問','午後の部 第21問','2025年度 午後 問21（築26年の建物）','記述式 2025年度 午後 問21']) {
+    const e=await fresh();
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,503,question);
+    assert.equal(r.body.error,'DESCRIPTIVE_PARSER_UNAVAILABLE',question);
+  }
+});
+
+test('「問210」を記述式の問21として出さない（Issue #5 問番号の部分一致）',async()=>{
+  const route='/v1/sessions/'+SID+'/next';
+  for (const question of ['2025年度 午後の部 問210','2025年度 午後の部 問221','2025年度 午前の部 問111']) {
+    const e=env();
+    await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0, state:{ qualificationId:'land_surveyor', learnerId:'learner-q210', history:{} }}));
+    const r=await send(e,'POST',route,{question});
+    assert.notEqual(r.status,503,question+'：記述式の原本の分解へ進まない');
+    assert.doesNotMatch(String(r.body.error ?? ''),/^DESCRIPTIVE_/,question);
+    assert.equal(JSON.parse(await e.STORE.get('ses/'+SID)).state.descriptiveCurrent ?? null,null,question+'：記述式の問を開かない');
+  }
+  // 境界の正常系：問21・第22問は従来どおり記述式として判定を通る
+  for (const question of ['2025年度 午後の部 問21','2025年度 午後の部 第22問']) {
+    const e=env();
+    await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0, state:{ qualificationId:'land_surveyor', learnerId:'learner-q210', history:{} }}));
+    const r=await send(e,'POST',route,{question});
+    assert.equal(r.status,503,question);
+    assert.equal(r.body.error,'DESCRIPTIVE_PARSER_UNAVAILABLE',question);
+  }
+});
+
+test('「記述式ではなく択一の問3／問21」は明示した択一として、直接の択一指定と同じ処理に進む（Issue #5 v3レビュー）',async()=>{
+  const route='/v1/sessions/'+SID+'/next';
+  const run=async(question)=>{
+    const e=env();
+    e.pdfFetches=0; e.fetchPdf=async()=>{ e.pdfFetches+=1; throw new Error('descriptive PDF must not be fetched'); };
+    await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0, state:{ qualificationId:'land_surveyor', learnerId:'learner-choice', history:{} }}));
+    const r=await send(e,'POST',route,{question});
+    // 学習記録のIDは毎回の乱数なので、比較のときだけ伏せる
+    const snapshot=JSON.stringify([...e.STORE.map.entries()].sort()).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,'(id)');
+    return { e, r, snapshot };
+  };
+  for (const [negated,direct] of [['記述式ではなく択一の問3','択一の問3'],['記述式ではなく択一の問21','択一の問21'],
+    ['2025年度 記述式ではなく択一の午後の部 問21','2025年度 択一の午後の部 問21']]) {
+    const a=await run(negated), b=await run(direct);
+    assert.equal(a.r.status,b.r.status,negated);
+    assert.deepEqual(a.r.body,b.r.body,negated+'：直接の択一指定と同じ応答');
+    assert.equal(a.snapshot,b.snapshot,negated+'：直接の択一指定と同じ保存データ');
+    for (const { e, r } of [a,b]) {
+      assert.doesNotMatch(String(r.body.error ?? ''),/^DESCRIPTIVE_/,negated);
+      assert.doesNotMatch(String(r.body.status ?? ''),/^descriptive/,negated+'：記述式の表示に進まない');
+      assert.equal(e.pdfFetches,0,negated+'：記述式のPDFを取りに行かない');
+      assert.equal(JSON.parse(await e.STORE.get('ses/'+SID)).state.descriptiveCurrent ?? null,null,negated+'：記述式の問を開かない');
+    }
+  }
+  // 否定ではなく明示した記述式は、従来どおり記述式として扱う
+  for (const question of ['択一ではなく記述式の2025年度 午後の部 問21']) {
+    const { r }=await run(question);
+    assert.equal(r.status,503,question);
+    assert.equal(r.body.error,'DESCRIPTIVE_PARSER_UNAVAILABLE',question);
+  }
+  const { r }=await run('択一ではなく記述式の2025年度 午後の部 問210');
+  assert.equal(r.status,422);
+  assert.equal(r.body.error,'DESCRIPTIVE_NUMBER_UNSUPPORTED');
+});
+
+test('「択一の問21（記述式は不要）」は括弧なしの択一指定と同じ処理、記述式と択一の両方の指定は推測で出さずに案内する（Issue #5 v4レビュー）',async()=>{
+  const route='/v1/sessions/'+SID+'/next';
+  const mask=(e)=>JSON.stringify([...e.STORE.map.entries()].sort()).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,'(id)');
+  const run=async(question,state)=>{
+    const e=env();
+    e.pdfFetches=0; e.fetchPdf=async()=>{ e.pdfFetches+=1; throw new Error('PDF must not be fetched'); };
+    await e.STORE.put('ses/'+SID, JSON.stringify({savedAt:T0, state:state ?? { qualificationId:'land_surveyor', learnerId:'learner-form', history:{} }}));
+    const before=mask(e);
+    const r=await send(e,'POST',route,{question});
+    return { e, r, before, after:mask(e) };
+  };
+  // (1) 「記述式は不要」と括弧で添えても、括弧なしの同じ択一指定と同じ応答・同じ保存データ
+  const a=await run('2025年度 午後の部 択一の問21（記述式は不要）'), b=await run('2025年度 午後の部 択一の問21');
+  assert.equal(a.r.status,b.r.status);
+  assert.deepEqual(a.r.body,b.r.body,'括弧なしの択一指定と同じ応答');
+  assert.equal(a.after,b.after,'括弧なしの択一指定と同じ保存データ');
+  assert.doesNotMatch(String(a.r.body.error ?? ''),/^DESCRIPTIVE_|^QUESTION_FORM_/);
+  assert.equal(a.e.pdfFetches,0,'記述式のPDFを取りに行かない');
+  assert.equal(JSON.parse(await a.e.STORE.get('ses/'+SID)).state.descriptiveCurrent ?? null,null,'記述式の問を開かない');
+  // (2) 両方の指定：学習開始前でも、出題中・履歴ありでも、422で一方の指定を求め、何も変えない
+  const midStudy={ qualificationId:'land_surveyor', learnerId:'learner-form',
+    history:{ 'land_surveyor:2025:午後の部:3':{ attempts:1, correct:1 } },
+    current:{ questionId:'land_surveyor:2025:午後の部:3', kind:'new', choiceCount:5, correctAnswer:2 } };
+  for (const question of ['記述式と択一の問21','2025年度 午後の部 記述式と択一の第21問','択一と記述式 問22']) {
+    for (const state of [undefined, midStudy]) {
+      const { e, r, before, after }=await run(question,state);
+      const label=question+(state?'（出題中）':'（学習開始前）');
+      assert.equal(r.status,422,label);
+      assert.equal(r.body.error,'QUESTION_FORM_AMBIGUOUS',label);
+      assert.match(r.body.hint,/どちらか一方を指定してください/,label);
+      assert.equal(after,before,label+'：学習開始記録・現在問・履歴を含め保存データは何も変わらない');
+      assert.equal(await e.STORE.get('lrnstart/learner-form'),null,label+'：開始時刻を作らない');
+      assert.equal(e.pdfFetches,0,label+'：PDFを取りに行かない');
+    }
+  }
+});
