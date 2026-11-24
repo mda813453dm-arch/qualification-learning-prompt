@@ -15,25 +15,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 5
+          fetch-depth: 6
           persist-credentials: false
       - name: Verify exact candidate and CI-only harness blobs
         shell: bash
         run: |
           set -euo pipefail
           base=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
-          previous=1b9f03271d96dad5e251ae0faa7b238c93c5979e
+          previous=e51a9a82e71fc11921574cc948b92f3d969a95ef
           test "$(git rev-parse HEAD^)" = "$previous"
-          test "$(git rev-parse HEAD^^^^)" = "$base"
+          test "$(git rev-parse HEAD^^^^^)" = "$base"
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
-            '新システム開発/engine/src/mcp.js' \
-            '新システム開発/engine/src/widget-current.js' \
-            '新システム開発/engine/src/widget-v209.js' \
-            '新システム開発/engine/test/mcp.test.js' \
-            '新システム開発/engine/test/question-layout.test.js' \
-            '新システム開発/engine/test/widget-partial-needplan-browser.mjs' \
-            '新システム開発/engine/test/widget-restore-v207.test.js') \
+            '新システム開発/engine/test/widget-browser.mjs') \
             <(git -c core.quotePath=false diff --name-only "$previous" HEAD | LC_ALL=C sort)
           diff -u <(printf '%s\n' \
             '.github/workflows/q018-restore-issue7-preflight.yml' \
@@ -61,7 +55,7 @@ jobs:
           test "$(git hash-object '新システム開発/engine/src/widget-v209.js')" = 6c19cd09a14f22e9d55413be89243088805e6deb
           test "$(git hash-object '新システム開発/engine/test/mcp.test.js')" = 8c1211cb3c8df687df07641d65ab4c6072a6c774
           test "$(git hash-object '新システム開発/engine/test/question-layout.test.js')" = 53838c212651e515dccf73064d1c63b3ea12efde
-          test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = 7937d47d3b100bfe239a19e672038da4f49ab27d
+          test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = 8c90d15161761eea165c33acbd44a558e753915a
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer-browser.mjs')" = 13f9a78c739b89dbd908e4c73b27646dac2ce65e
           test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer.test.js')" = 6e346885ef2907c53cf852c25afd2eb5631e5a91
           test "$(git hash-object '新システム開発/engine/test/widget-partial-needplan-browser.mjs')" = d49dca690097f0fe45231595546922fe97ece2d8

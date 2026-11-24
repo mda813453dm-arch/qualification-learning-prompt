@@ -29,28 +29,49 @@ async function prepareFreshFixture() {
   };
   const sessionId = await create(), retrySessionId = await create();
   assert.notEqual(sessionId,retrySessionId);
+  // A deliberate new study is a new MCP startSession operation and a new
+  // session-backed Widget, never a raw replay of ended onboarding.
+  const startPaths=[];
+  const {result:cancelStart}=await handleRpc({
+    jsonrpc:'2.0',id:1,method:'tools/call',
+    params:{name:'startSession',arguments:{qualificationId:'宅建',sources:[]}},
+  },async(method,path,body)=>{
+    startPaths.push([method,path]);
+    const res=await handle(new Request(origin+path,{method,headers,body:JSON.stringify(body)}),env);
+    return {status:res.status,body:await res.json()};
+  },{widget:true});
+  assert.deepEqual(startPaths,[['POST','/v1/sessions']]);
+  const cancelSessionId=cancelStart._meta?.qlp?.sessionId;
+  assert.equal(cancelStart._meta?.qlp?.status,'needPlan');
+  assert.match(cancelSessionId,/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/);
+  assert.ok(![sessionId,retrySessionId].includes(cancelSessionId));
+  assert.deepEqual(cancelStart._meta.qlp.onboarding.map(step=>step.kind),['exempt','status']);
   const writes = [];
   for (const name of ['put','delete']) {
     const original = STORE[name].bind(STORE);
     STORE[name] = (...args) => { writes.push([name,args[0]]); return original(...args); };
   }
-  const before = await STORE.get('ses/'+sessionId);
-  const backend = [];
-  const { result:strictSnapshot } = await handleRpc({
-    jsonrpc:'2.0', id:1, method:'tools/call',
-    params:{name:'getStudySnapshot',arguments:{sessionId,publishedExplanationOnly:true}},
-  }, async (method,path) => {
-    backend.push([method,path]);
-    const res=await handle(new Request(origin+path,{method,headers}),env);
-    return {status:res.status,body:await res.json()};
-  },{widget:true});
-  assert.deepEqual(backend,[['GET','/v1/sessions/'+sessionId+'/restore?publishedExplanationOnly=1']]);
-  assert.deepEqual(strictSnapshot.structuredContent,{status:'noPublishedExplanation',sessionId});
-  assert.deepEqual(writes,[],'strict fresh lookup must not write to storage');
-  assert.equal(await STORE.get('ses/'+sessionId),before);
-  return {sessionId,retrySessionId,strictSnapshot};
+  const snapshot = async id => {
+    const before = await STORE.get('ses/'+id);
+    const backend = [];
+    const { result } = await handleRpc({
+      jsonrpc:'2.0',id:1,method:'tools/call',
+      params:{name:'getStudySnapshot',arguments:{sessionId:id,publishedExplanationOnly:true}},
+    }, async (method,path) => {
+      backend.push([method,path]);
+      const res=await handle(new Request(origin+path,{method,headers}),env);
+      return {status:res.status,body:await res.json()};
+    },{widget:true});
+    assert.deepEqual(backend,[['GET','/v1/sessions/'+id+'/restore?publishedExplanationOnly=1']]);
+    assert.deepEqual(result.structuredContent,{status:'noPublishedExplanation',sessionId:id});
+    assert.deepEqual(writes,[],'strict fresh lookup must not write to storage');
+    assert.equal(await STORE.get('ses/'+id),before);
+    return result;
+  };
+  const strictSnapshot=await snapshot(sessionId), cancelSnapshot=await snapshot(cancelSessionId);
+  return {sessionId,retrySessionId,strictSnapshot,cancelSessionId,cancelStart,cancelSnapshot};
 }
-const {sessionId,retrySessionId,strictSnapshot} = await prepareFreshFixture();
+const {sessionId,retrySessionId,strictSnapshot,cancelSessionId,cancelStart,cancelSnapshot} = await prepareFreshFixture();
 const onboarding = { status: 'needPlan', learnerId, sessionId,
   overview: { name: '測量士補', title: '測量士補', fields: ['測量に関する法規'] },
   onboarding: [
@@ -99,6 +120,56 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.equal(await badUi.getByRole('button',{name:'2 免除を利用しない'}).count(),0);
       assert.deepEqual(await invalid.evaluate(()=>window.invalidCalls),[]);
     } finally { await invalid.close(); }
+    // 「今は学習しない」の全操作は、本物の開始結果を受け取る別の新規UUID/枠で検証する。
+    const cancelPage=await browser.newPage({viewport:{width:375,height:667},isMobile:true,hasTouch:true});
+    try {
+      await cancelPage.route('https://qlp.test/**',route=>route.fulfill({
+        contentType:'text/html',body:'<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><body></body>',
+      }));
+      await cancelPage.goto('https://qlp.test/');
+      await cancelPage.evaluate(({html,start,snapshot})=>{
+        window.cancelCalls=[];
+        const f=document.createElement('iframe');
+        f.style.cssText='width:100%;height:600px;border:0';
+        const send=(m)=>f.contentWindow.postMessage({jsonrpc:'2.0',...m},'*');
+        addEventListener('message',e=>{
+          if(e.source!==f.contentWindow||!e.data||e.data.jsonrpc!=='2.0')return;
+          const m=e.data;
+          if(m.method==='ui/initialize')send({id:m.id,result:{protocolVersion:'2026-01-26',hostCapabilities:{}}});
+          else if(m.method==='ui/notifications/initialized')send({method:'ui/notifications/tool-result',params:start});
+          else if(m.method==='tools/call'){
+            const {name,arguments:args}=m.params;
+            if(name==='reportUiEvent'){send({id:m.id,result:{}});return;}
+            window.cancelCalls.push([name,args]);
+            const expected=name==='getStudySnapshot'&&args.sessionId===start._meta.qlp.sessionId&&
+              args.publishedExplanationOnly===true&&Object.keys(args).sort().join(',')==='publishedExplanationOnly,sessionId';
+            const profile=name==='saveProfile'&&args.sessionId===start._meta.qlp.learnerId&&
+              args.exemption==='no'&&args.stage===4&&Object.keys(args).sort().join(',')==='exemption,sessionId,stage';
+            send({id:m.id,result:expected?snapshot:profile?{structuredContent:{status:'recorded'}}:
+              {isError:true,structuredContent:{error:'UNEXPECTED_CALL'}}});
+          }
+        });
+        f.srcdoc=html;
+        document.body.appendChild(f);
+      },{html:widgetHtml(),start:cancelStart,snapshot:cancelSnapshot});
+      const cancelUi=cancelPage.frameLocator('iframe');
+      const exemptButton=cancelUi.getByRole('button',{name:'2 免除を利用しない'});
+      await exemptButton.waitFor();
+      const expectedRead=['getStudySnapshot',{sessionId:cancelSessionId,publishedExplanationOnly:true}];
+      assert.deepEqual(await cancelPage.evaluate(()=>window.cancelCalls),[expectedRead]);
+      await exemptButton.click();
+      await cancelUi.getByRole('button', { name: '4 過去問演習中' }).click();
+      await cancelUi.getByRole('button', { name: '4 今は学習しない' }).click();
+      assert.match(await cancelUi.locator('#app').innerText(), /学習計画の確認画面から離れますか/);
+      assert.doesNotMatch(await cancelUi.locator('#app').innerText(), /学習は開始していません。/);
+      await cancelUi.getByRole('button', { name: '1 学習計画に戻る' }).click();
+      await cancelUi.getByRole('button', { name: '4 今は学習しない' }).click();
+      await cancelUi.getByRole('button', { name: '2 今は学習しない（終了を確認）' }).click();
+      assert.match(await cancelUi.locator('#app').innerText(), /学習は開始していません。/);
+      assert.deepEqual(await cancelPage.evaluate(()=>window.cancelCalls),
+        [expectedRead,['saveProfile',{sessionId:cancelStart._meta.qlp.learnerId,exemption:'no',stage:4}]],
+        '厳密な読取と、利用者が選んだ免除・学習段階の保存のみ。取り消しで追加の書き込みや学習開始・終了なし');
+    } finally { await cancelPage.close(); }
     const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
     const errors = [];
     page.on('pageerror', e => errors.push(e.message));
@@ -636,18 +707,23 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(x => x.params?.name === 'nextQuestion').length), nextBeforeRestore, '復元で次問を出さない');
     await ui.getByRole('button', { name: '学習を終了する' }).click();
     assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文', '復元後でも学習終了できる');
-    // 「今は学習しない」を本当にタップした場合の従来動作は維持する。
-    await page.evaluate(r => window.deliver(r), result(onboarding));
-    await ui.getByRole('button', { name: '2 免除を利用しない' }).click();
-    await ui.getByRole('button', { name: '4 過去問演習中' }).click();
-    await ui.getByRole('button', { name: '4 今は学習しない' }).click();
-    // 間違えて計画の4を押しても、学習計画を即座に破棄せず戻れる。
-    assert.match(await ui.locator('#app').innerText(), /学習計画の確認画面から離れますか/);
-    assert.doesNotMatch(await ui.locator('#app').innerText(), /学習は開始していません。/);
-    await ui.getByRole('button', { name: '1 学習計画に戻る' }).click();
-    await ui.getByRole('button', { name: '4 今は学習しない' }).click();
-    await ui.getByRole('button', { name: '2 今は学習しない（終了を確認）' }).click();
-    assert.match(await ui.locator('#app').innerText(), /学習は開始していません。/);
+    // 終了済みの同一UUIDへの古い初期画面再送は、明示的な新規startSessionではない。
+    const endedCalls=await page.evaluate(()=>window.calls.filter(m=>m.method==='tools/call'&&m.params.name!=='reportUiEvent').length);
+    await page.evaluate(r=>{
+      const target=document.querySelector('iframe').contentWindow;
+      target.addEventListener('message',function observed(e){
+        if(e.source!==window||e.data?.method!=='ui/notifications/tool-result'||e.data?.params?._meta?.qlp?.status!=='needPlan')return;
+        target.removeEventListener('message',observed);
+        window.endedReplayProcessed=true;
+      });
+      window.deliver(r);
+    },result(onboarding));
+    await page.waitForFunction(()=>window.endedReplayProcessed===true);
+    assert.equal(await ui.locator('#ho').inputValue(), '引継ぎID：test-id\n省略しない全文');
+    assert.equal(await ui.getByRole('button',{name:'2 免除を利用しない'}).count(),0);
+    assert.equal(await page.evaluate(()=>window.calls.filter(m=>m.method==='tools/call'&&m.params.name!=='reportUiEvent').length),endedCalls,
+      '終了済みセッションへの再送で復元・出題・書き込みを行わない');
+
     const library = { supportedYears: [2025, 2024], stored: [],
       missing: [
         { year: 2025, section: '午前の部' }, { year: 2025, section: '午後の部' },
