@@ -1,0 +1,102 @@
+name: Issue 5 v210 compatibility preflight
+on:
+  push:
+    branches: ['ci/issue-5-v210-compatibility']
+    paths: ['.github/workflows/issue-5-v210-compatibility.yml']
+permissions:
+  contents: read
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          persist-credentials: false
+      - name: Pin source-only runtime, test-only commit and original resource bytes
+        shell: bash
+        run: |
+          set -eu
+          test "$GITHUB_REF" = 'refs/heads/ci/issue-5-v210-compatibility'
+          test "$(git rev-parse HEAD^)" = '59bf995cfb2915c13ee6178eda3cbe74b37667fb'
+          test "$(git rev-parse HEAD^^)" = '12e0c3bb1f1b1acfffbdb2b5ef55872692a37d2b'
+          test "$(git rev-parse HEAD^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v210-compatibility.yml'
+          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/descriptive.js' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v206.js' '新システム開発/engine/src/widget-v207.js' '新システム開発/engine/src/widget-v208.js' '新システム開発/engine/src/widget-v209.js' '新システム開発/engine/src/widget-v210.js') <(git -c core.quotePath=false diff --name-only HEAD^^^ HEAD^^)
+          diff -u <(printf '%s\n' 'ci/issue-5-year-guard.test.mjs' 'ci/mankan-ai-explanation.test.mjs' 'ci/v210-compatibility.test.mjs' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-focus-v206-editable-browser.mjs' '新システム開発/engine/test/widget-no-option-answer-browser.mjs' '新システム開発/engine/test/widget-no-option-answer.test.js' '新システム開発/engine/test/widget-partial-needplan-browser.mjs' '新システム開発/engine/test/widget-restore-v207.test.js') <(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/app.js')" = '2254ab5b4c5d682f7219a382157e362f3271255f'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/descriptive.js')" = '79bca8ca9350d552e7d0295b2b19717080bfbb4a'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = '75ba6049f75637f3dc12b91ee49fa6fb2055a470'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = '37dd88e04a827965067d405658b8fd8d0a5eb4c0'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'dac55cf72f14743988cc1d351caa153f5ca4f093'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v207.js')" = 'bf597864398b7907e71731893c2dca83fe15cc87'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v208.js')" = '7bc6d327d235981faa0c19ffd644d77febcbcda2'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v209.js')" = '6c19cd09a14f22e9d55413be89243088805e6deb'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v210.js')" = 'd38bb6bbc5b2da39cb627051c149c2ead239e85b'
+          test "$(git rev-parse 'HEAD:ci/issue-5-year-guard.test.mjs')" = '324cfda6f10b6457100a69d67e6ae055529c269d'
+          test "$(git rev-parse 'HEAD:ci/mankan-ai-explanation.test.mjs')" = 'a262916f89ef5030d38bf84f3f87504699f2ba7c'
+          test "$(git rev-parse 'HEAD:ci/v210-compatibility.test.mjs')" = '83684e3fb76fd575b59cba4affd9878c6ca68ed4'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive-actions.test.js')" = '00562434a491cec1103c0503353ee682f42819b7'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive.test.js')" = '6efc0068ef41d6ac899a5db17e92cf0e78636165'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/mcp.test.js')" = '8ac8e0270c074e01fb16352b057d9697dc8736ef'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/question-layout.test.js')" = '84ccfb3856c51abedd5e24b08ee8a3bd8a980af6'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = 'a37883c49b4d9560d17bd4f5f72fa80faa59ed28'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-focus-v206-editable-browser.mjs')" = 'cfd2b0875a7ed26485b1d19a805f36fba3fa1729'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-no-option-answer-browser.mjs')" = '13f9a78c739b89dbd908e4c73b27646dac2ce65e'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-no-option-answer.test.js')" = '6e346885ef2907c53cf852c25afd2eb5631e5a91'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-partial-needplan-browser.mjs')" = 'cbfc694e554dd2dfd679a5b734f5fd38e0611f6f'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-restore-v207.test.js')" = '03fc8f4c3b4124420171e0a74cf7a578e501f91e'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v205.js')" = '259291a143350fb9f3214c4ee141038a71df32ec'
+  engine-and-compatibility:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Official grading, year classification and exact legacy resource payloads
+        shell: bash
+        run: |
+          set -eu
+          git worktree add --detach "$RUNNER_TEMP/q018-original" '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          Q018_BASE_ROOT="$RUNNER_TEMP/q018-original" ISSUE5_WIDGET='新システム開発/engine/src/widget-v210.js' node --test ci/*.test.mjs
+      - name: Full engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
+  mandatory-gate:
+    needs: verify-source
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
+  focused-browser:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: v210 strict restore, official answer display, editable focus and placement
+        shell: bash
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          node 新システム開発/engine/test/widget-partial-needplan-browser.mjs
+          node 新システム開発/engine/test/widget-no-option-answer-browser.mjs
+          ISSUE7_WEBKIT=1 node 新システム開発/engine/test/widget-no-option-answer-browser.mjs
+          node 新システム開発/engine/test/widget-focus-v206-editable-browser.mjs
+          sed 's@../src/widget-v205.js@../src/widget-current.js@' 新システム開発/engine/test/widget-focus-v205-browser.mjs > 新システム開発/engine/test/.v210-focus-ci.mjs
+          node 新システム開発/engine/test/.v210-focus-ci.mjs
