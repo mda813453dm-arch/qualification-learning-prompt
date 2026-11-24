@@ -7,6 +7,7 @@ import { widgetHtml as old197Html } from '../src/widget-v197.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml } from '../src/widget-current.js';
 import { widgetHtml as old193Html } from '../src/widget-v193.js';
 import { widgetHtml as old194Html } from '../src/widget-v194.js';
+import { WIDGET_URI as old205Uri, WIDGET_VERSION as old205Version, widgetHtml as old205Html } from '../src/widget-v205.js';
 
 const surveyor = '次の a ～ e の文から誤っているものを選べ。 a. 「測量」とは土地の測量をいう。 b. 「測量作業機関」とは測量する者をいう。 c. 「測量標」とは標識をいう。 d. 承諾が必要である。 e. 公共測量は規定に従う。';
 
@@ -53,8 +54,12 @@ test('原文優先：小数・少数のラベル・元のMarkdown表・HTML特�
 });
 
 test('新URIと旧版の不変性：v198でv195の全出題経路の整形を維持し、v194・v193は維持', () => {
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v205.html');
-  assert.equal(WIDGET_VERSION, '2026-11-21.205');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v206.html');
+  assert.equal(old205Uri, 'ui://qlp/question-v205.html');
+  assert.equal(old205Version, '2026-11-21.205');
+  assert.match(old205Html(), /2026-11-21\.205/);
+  assert.doesNotMatch(old205Html(), /function descriptiveTopicYearInfo/);
+  assert.equal(WIDGET_VERSION, '2026-11-22.206');
   const current = widgetHtml(), old = old193Html(), old194 = old194Html();
   assert.match(current, /inline-statement-paragraphs-v194/);
   assert.match(current, /all-question-modes-v195/);

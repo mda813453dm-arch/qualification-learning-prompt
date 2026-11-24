@@ -1175,26 +1175,23 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await submitTopicExpectBlock('令和8年度 午後の部 問22', /指定年度は未対応です/, '初回・未対応令和8年度');
     assert.match(await ui.locator('#app').innerText(), /2026年度/);
 
+    // Bの拒否直後も分野選択は有効。同じ画面上で一件ずつ再入力し、
+    // 各ケースで計画保存・開始・出題がないことと、再入力可能なことを確認する。
     // （C）初回・未対応：全角の２０２６年度も同じく saveStudyPlan／startStudy より前に拒否される。
-    await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('２０２６年度 午前の部 第１１問', /指定年度は未対応です/, '初回・未対応２０２６年度');
     assert.match(await ui.locator('#app').innerText(), /2026年度/);
 
     // （D）初回・未対応：平成18年度（2006年度）は未対応として拒否される。
-    await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('平成18年度 午後の部 第21問', /指定年度は未対応です/, '初回・未対応平成18年度');
     assert.match(await ui.locator('#app').innerText(), /2006年度/);
 
     // （E）初回・解釈不能：26年度は西暦4桁での再指定を案内し、呼び出しを行わない。
-    await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('26年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・解釈不能26年度');
 
     // （F）初回・解釈不能：昭和50年度は西暦4桁での再指定を案内し、呼び出しを行わない。
-    await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('昭和50年度 午後の部 第21問', /年度を西暦4桁で指定してください/, '初回・解釈不能昭和50年度');
 
     // （G）初回・矛盾：複数年度の指定は「年度を一つだけ指定してください」と案内し、呼び出しを行わない。
-    await goToScopeMenuForDescriptive();
     await submitTopicExpectBlock('2025年度と2026年度 午後の部 第21問', /年度を一つだけ指定してください/, '初回・矛盾する年度');
 
     // （H）再開・未対応：2026年度を指定しても、再開の startStudy より前に拒否される。
