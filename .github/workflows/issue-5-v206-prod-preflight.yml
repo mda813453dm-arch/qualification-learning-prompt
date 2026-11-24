@@ -1,0 +1,53 @@
+name: Issue 5 v206 production-base preflight
+on:
+  push:
+    branches: ['ci/issue-5-v206-production-base']
+    paths: ['.github/workflows/issue-5-v206-prod-preflight.yml']
+permissions:
+  contents: read
+jobs:
+  verify-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 4
+          persist-credentials: false
+      - name: Verify exact production base, runtime-only candidate and validation-only files
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = '0a350128a15ad390b5df706394597b017292f886'
+          test "$(git rev-parse HEAD^^)" = '76b618046f899201cbfcee1acbcaa5af1b58ff36'
+          test "$(git rev-parse HEAD^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-prod-preflight.yml'
+          diff -u <(printf '%s\n' '新システム開発/engine/src/app.js' '新システム開発/engine/src/descriptive.js' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v206.js') <(git -c core.quotePath=false diff --name-only HEAD^^^ HEAD^^)
+          diff -u <(printf '%s\n' '新システム開発/engine/test/descriptive-actions.test.js' '新システム開発/engine/test/descriptive.test.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/app.js')" = '31c2b8d3da65d19cf8115f3eb6eb1d102293f6de'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/descriptive.js')" = '79bca8ca9350d552e7d0295b2b19717080bfbb4a'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/mcp.js')" = 'f2241ffe8a5efedfbe1597673fc636688884337a'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-current.js')" = 'c319ef2040deaca766da40934c40a51e59ba5b33'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v206.js')" = 'e10ac9f7085a0a92d896874b3538d0921824aad5'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive-actions.test.js')" = '00562434a491cec1103c0503353ee682f42819b7'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/descriptive.test.js')" = '6efc0068ef41d6ac899a5db17e92cf0e78636165'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/mcp.test.js')" = 'eb42416cbc5a036c4facaabda6ae8c714ad03bcb'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/question-layout.test.js')" = '93d7d15f94ad66190a5ec2465575c2be471fee7f'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = '708d81fda6288bb44a763d4737fc1011aa456802'
+  mandatory-gate:
+    needs: verify-source
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
+  engine:
+    needs: verify-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
