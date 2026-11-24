@@ -53,8 +53,8 @@ test('原文優先：小数・少数のラベル・元のMarkdown表・HTML特�
 });
 
 test('新URIと旧版の不変性：v198でv195の全出題経路の整形を維持し、v194・v193は維持', () => {
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v205.html');
-  assert.equal(WIDGET_VERSION, '2026-11-21.205');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v208.html');
+  assert.equal(WIDGET_VERSION, '2026-11-24.208');
   const current = widgetHtml(), old = old193Html(), old194 = old194Html();
   assert.match(current, /inline-statement-paragraphs-v194/);
   assert.match(current, /all-question-modes-v195/);

@@ -2239,6 +2239,31 @@ async function route(request, env, url, now) {
   }
 
   if (method === 'GET' && parts[0] === 'v1' && parts[1] === 'sessions' && parts[3] === 'restore' && parts.length === 4) {
+    // Bootstrap can receive an old needPlan after the same study published AI details.
+    // This narrowly scoped read never follows learner/latest pointers, opens a session,
+    // advances an ingest job, or writes to the learner/session store.
+    if (url.searchParams.get('publishedExplanationOnly') === '1') {
+      const id = parts[2];
+      const savedState = await loadSession(env, id, now);
+      const p = savedState.publishedExplanation;
+      const cur = savedState.current;
+      const stillCurrent = !cur?.questionId ||
+        (cur.questionId === p?.questionId && cur.grade?.questionId === p?.questionId) ||
+        (cur.prefetched === true && !cur.grade);
+      if (!savedState.resumePending && !savedState.remediation?.required && !savedState.descriptiveCurrent && stillCurrent &&
+          p?.questionId && savedState.lastExplanation?.questionId === p.questionId &&
+          savedState.lastExplanation.grade?.questionId === p.questionId && !savedState.lastExplanation.grade.skipped &&
+          p.menu?.kind === 'next' && p.menu.body && p.menu.sessionId === id) {
+        return json(200, { status:'menu', sessionId:id, menu:p.menu, explanationQuestionId:p.questionId, restored:true });
+      }
+      // Only a genuinely fresh session may reuse the hosted onboarding payload.
+      // An active/advanced session without a current detail must never rewind.
+      const started = savedState.learnerId && await env.STORE.get(studySessionKey(savedState.learnerId)) === id;
+      const progressed = started || savedState.resumePending || cur?.questionId || savedState.lastExplanation ||
+        savedState.publishedExplanation || savedState.descriptiveCurrent || savedState.remediation?.required ||
+        savedState.confirmation || savedState.itemMode || savedState.aiDiag || Object.keys(savedState.history ?? {}).length > 0;
+      return json(200, { status: progressed ? 'restoreNotCurrent' : 'noPublishedExplanation', sessionId:id });
+    }
     let { id, state } = await resolveSession(env, parts[2], now);
     // 古い画面のIDで戻ってきても、同じ学習者の最新の進行位置を優先する。
     const latestId = state.learnerId ? await env.STORE.get(lastSessionKey(state.learnerId)) : null;

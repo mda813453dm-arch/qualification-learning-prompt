@@ -1,0 +1,104 @@
+name: q018 v207 + v208 isolated release preflight
+
+on:
+  push:
+    branches: [ci/q018-restore-issue7-v207-v208]
+    paths: [.github/workflows/q018-restore-issue7-preflight.yml]
+
+permissions:
+  contents: read
+
+jobs:
+  verify-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact candidate and CI-only harness blobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81
+          test "$(git rev-parse HEAD^)" = "$base"
+          diff -u <(printf '%s\n' \
+            '.github/workflows/q018-restore-issue7-preflight.yml' \
+            'ci/mankan-ai-explanation.test.mjs' \
+            '新システム開発/engine/src/app.js' \
+            '新システム開発/engine/src/mcp.js' \
+            '新システム開発/engine/src/widget-current.js' \
+            '新システム開発/engine/src/widget-v207.js' \
+            '新システム開発/engine/src/widget-v208.js' \
+            '新システム開発/engine/test/mcp.test.js' \
+            '新システム開発/engine/test/question-layout.test.js' \
+            '新システム開発/engine/test/widget-browser.mjs' \
+            '新システム開発/engine/test/widget-no-option-answer-browser.mjs' \
+            '新システム開発/engine/test/widget-no-option-answer.test.js' \
+            '新システム開発/engine/test/widget-restore-v207.test.js') \
+            <(git -c core.quotePath=false diff --name-only "$base" HEAD | LC_ALL=C sort)
+          test "$(git hash-object 'ci/mankan-ai-explanation.test.mjs')" = a262916f89ef5030d38bf84f3f87504699f2ba7c
+          test "$(git hash-object '新システム開発/engine/src/app.js')" = 88c7fbc5c955f179ba382f7e3328e131e7ccc1c1
+          test "$(git hash-object '新システム開発/engine/src/mcp.js')" = d32af597a9a12ebfb8b91c880cd2b82e62296718
+          test "$(git hash-object '新システム開発/engine/src/widget-current.js')" = db3fe09ef57844edd33f0baecb0c426161d95e75
+          test "$(git hash-object '新システム開発/engine/src/widget-v207.js')" = bf597864398b7907e71731893c2dca83fe15cc87
+          test "$(git hash-object '新システム開発/engine/src/widget-v208.js')" = 7bc6d327d235981faa0c19ffd644d77febcbcda2
+          test "$(git hash-object '新システム開発/engine/test/mcp.test.js')" = f898c12d08e167b1ac2f84aad5b36e024c601976
+          test "$(git hash-object '新システム開発/engine/test/question-layout.test.js')" = 8f57784b6861ea49e1478dd0170747b222c8c574
+          test "$(git hash-object '新システム開発/engine/test/widget-browser.mjs')" = b4dd616bf7e5eaac92c893d5e632770af5070b42
+          test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer-browser.mjs')" = 69164444f7c8f9899ef6994df76162a0581a8fa8
+          test "$(git hash-object '新システム開発/engine/test/widget-no-option-answer.test.js')" = 6e346885ef2907c53cf852c25afd2eb5631e5a91
+          test "$(git hash-object '新システム開発/engine/test/widget-restore-v207.test.js')" = b8da34afcd81634261acc8bb2cca015b709e295e
+          test "$(git hash-object '新システム開発/engine/src/widget-v205.js')" = 259291a143350fb9f3214c4ee141038a71df32ec
+          test "$(git hash-object '新システム開発/engine/src/explain.js')" = 403aec69ff3a5d42ebe35f47b8174005f250bb4d
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Official scoring and both E-reference routes
+        run: node --test ci/mankan-ai-explanation.test.mjs
+      - name: Full standalone engine regression
+        working-directory: 新システム開発/engine
+        run: npm test
+  widget-parser-preflight:
+    needs: verify-candidate
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
+  issue7-browser-evidence:
+    needs: verify-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 375px Chromium and WebKit scoring and restoration
+        shell: bash
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        run: |
+          set -euo pipefail
+          npm install --prefix "$RUNNER_TEMP/q018-browser" playwright@1.51.1
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/q018-browser/node_modules/playwright"
+          cd 新システム開発/engine/test
+          ISSUE7_BASE=1 node widget-no-option-answer-browser.mjs
+          mkdir -p "$GITHUB_WORKSPACE/browser-evidence"/{chromium,webkit}
+          cp evidence/v205-q4-before.png "$GITHUB_WORKSPACE/browser-evidence/chromium/"
+          node widget-no-option-answer-browser.mjs
+          cp evidence/candidate-*.png "$GITHUB_WORKSPACE/browser-evidence/chromium/"
+          rm evidence/*.png
+          ISSUE7_WEBKIT=1 ISSUE7_BASE=1 node widget-no-option-answer-browser.mjs
+          ISSUE7_WEBKIT=1 node widget-no-option-answer-browser.mjs
+          cp evidence/*.png "$GITHUB_WORKSPACE/browser-evidence/webkit/"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: q018-v208-375px-browser
+          path: browser-evidence/

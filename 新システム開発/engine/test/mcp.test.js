@@ -11,6 +11,7 @@ import { INSTRUCTIONS } from '../src/instructions.js';
 import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-current.js';
+import { WIDGET_URI as V205_URI, WIDGET_VERSION as V205_VERSION, widgetHtml as v205Html } from '../src/widget-v205.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -218,8 +219,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
-  assert.match(WIDGET_URI, /question-v205\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-21.205');
+  assert.match(WIDGET_URI, /question-v208\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-24.208');
   assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
@@ -800,6 +801,14 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(res[0].mimeType, 'text/html;profile=mcp-app');
   const html = (await app('resources/read', { uri: res[0].uri })).contents[0];
   assert.match(html.text, /submitAnswer/);
+  assert.equal(res[0].uri, 'ui://qlp/question-v208.html');
+  assert.match(html.text, /function hasNoCorrectOption/);
+  assert.ok(res.some(r => r.uri === V205_URI), 'v205 remains listed with its original URI');
+  const legacy205 = (await app('resources/read', { uri: V205_URI })).contents[0];
+  assert.equal(legacy205.uri, V205_URI);
+  assert.equal(legacy205.text, v205Html(), 'v205 payload is byte-for-byte unchanged');
+  assert.ok(TOOLS.find(t => t.name === 'reportUiEvent').inputSchema.properties.version.enum.includes(V205_VERSION),
+    'previous widgets remain valid clients');
   assert.deepEqual(html._meta.ui.csp.resourceDomains, ['https://engine.example']);
   assert.equal(html._meta.ui.domain, 'https://engine.example');
   assert.equal(html._meta['openai/widgetDomain'], 'https://engine.example');
