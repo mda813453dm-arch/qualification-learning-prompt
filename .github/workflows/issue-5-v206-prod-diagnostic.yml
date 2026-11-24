@@ -1,0 +1,33 @@
+name: Issue 5 v206 production-base browser diagnostics
+on:
+  push:
+    branches: ['ci/issue-5-v206-production-diagnostic']
+    paths: ['.github/workflows/issue-5-v206-prod-diagnostic.yml']
+permissions:
+  contents: read
+jobs:
+  verify-diagnostic-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          persist-credentials: false
+      - name: Ensure only diagnostics were added on the same runtime
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = 'bb80ef2b3b440fd442a5695615462058f4c5aa28'
+          test "$(git rev-parse HEAD^^)" = '0a350128a15ad390b5df706394597b017292f886'
+          test "$(git rev-parse HEAD^^^)" = '76b618046f899201cbfcee1acbcaa5af1b58ff36'
+          test "$(git rev-parse HEAD^^^^)" = '4e3fb751c1a88ad2fd50aecd9b3e940e0903cc81'
+          test "$(git diff --name-only HEAD^ HEAD)" = '.github/workflows/issue-5-v206-prod-diagnostic.yml'
+          test "$(git -c core.quotePath=false diff --name-only HEAD^^ HEAD^)" = '新システム開発/engine/test/widget-browser.mjs'
+          test "$(git rev-parse 'HEAD:新システム開発/engine/test/widget-browser.mjs')" = 'bb9a3389a137d9102b8e12dd81a7e171335b8f53'
+          git diff --exit-code HEAD^^^ HEAD -- '新システム開発/engine/src' '新システム開発/parser'
+  mandatory-gate:
+    needs: verify-diagnostic-source
+    uses: mda813453dm-arch/qualification-learning-prompt/.github/workflows/widget-browser-test.yml@48986a4620373e90aef47c4151925b062a6e3dfa
+    permissions:
+      contents: read
+      statuses: write
