@@ -1,0 +1,59 @@
+name: v211 isolated browser follow-up
+on:
+  push:
+    branches: ['ci/v211-browser-followup']
+    paths: ['.github/workflows/v211-browser-followup.yml']
+permissions:
+  contents: read
+jobs:
+  verify-test-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact previously passing baseline and test-only scope
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = '994cfd8848589154946424d79cd9f8888078ec79'
+          diff -u <(printf '%s\n' '.github/workflows/v211-browser-followup.yml' '.github/workflows/widget-browser-evidence.yml' '新システム開発/engine/test/widget-browser.mjs' '新システム開発/engine/test/widget-handoff-real-engine.mjs' '新システム開発/engine/test/widget-qualification-onboarding-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^ HEAD)
+          test "$(git rev-parse 'HEAD:新システム開発/engine/src/widget-v211.js')" = '35a6b3b8e478321ea3e16a39a5916a2dc420350b'
+  focused:
+    needs: verify-test-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: handoff
+            script: widget-handoff-real-engine.mjs
+          - name: catalog
+            script: widget-qualification-onboarding-browser.mjs
+    name: focused ${{ matrix.name }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run browser integration against synthetic data
+        shell: bash
+        env:
+          QLP_TEST: ${{ matrix.script }}
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          node "新システム開発/engine/test/$QLP_TEST"
+  observed-regression:
+    needs: verify-test-only
+    uses: ./.github/workflows/widget-browser-evidence.yml
+    permissions:
+      contents: read

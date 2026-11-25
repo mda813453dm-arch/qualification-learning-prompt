@@ -1,6 +1,8 @@
 // 375px の実DOM回帰。ホストは模擬であり ChatGPT iOS 実機の合格を意味しない。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { mkdir, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { widgetHtml } from '../src/widget-current.js';
 import { handle, overviewFor } from '../src/app.js';
 import { handleRpc } from '../src/mcp.js';
@@ -87,11 +89,80 @@ const nextQuestion = { status: 'question', sessionId, question: {
   ...question.question, questionId: 'test:2025:main:2', questionNumber: 2,
 } };
 const result = (body) => ({ _meta: { qlp: body }, structuredContent: { status: body.status } });
+const evidenceDir = process.env.QLP_WIDGET_FAILURE_DIR;
+async function beginConfirmationEvidence(frame) {
+  if (!evidenceDir) return;
+  await frame.locator('#app').evaluate(app => {
+    const host = app.ownerDocument.defaultView.parent;
+    const trace = host.qlpWidgetConfirmationEvidence;
+    trace.observer?.disconnect();
+    const add = (event, heading) => {
+      trace.events.push({ event, heading, ms: Math.round(host.performance.now()) });
+      if (trace.events.length > 60) trace.events.shift();
+    };
+    const category = text => /学習開始の確認/.test(text) ? 'start-confirmation'
+      : /学習計画/.test(text) ? 'study-plan' : 'other';
+    const headings = 'h1,h2,h3,[role=heading]';
+    add('before-click', category(app.querySelector(headings)?.textContent || ''));
+    trace.observer = new MutationObserver(records => {
+      // Record added and removed headings, including transient views in one batch.
+      for (const record of records) {
+        for (const [event, nodes] of [['heading-added', record.addedNodes], ['heading-removed', record.removedNodes]]) {
+          for (const node of nodes) {
+            if (node.nodeType !== 1) continue;
+            const heading = node.matches(headings) ? node : node.querySelector(headings);
+            if (heading) add(event, category(heading.textContent || ''));
+          }
+        }
+      }
+      const now = category(app.querySelector(headings)?.textContent || '');
+      if (trace.last !== now) { trace.last = now; add('visible-heading', now); }
+    });
+    trace.last = null;
+    trace.observer.observe(app, { childList:true, subtree:true, characterData:true });
+  }, undefined, { timeout:1000 }).catch(() => {});
+}
+const saveFailureEvidence = async (name, page, stage, layout, errors, error) => {
+  if (!evidenceDir) return;
+  const basename = join(evidenceDir, 'widget-375px-' + name);
+  try { await mkdir(evidenceDir, { recursive: true }); }
+  catch { return; }
+  const details = { browser:name, stage, errorType:error?.name, pageErrorCount:errors.length, layout };
+  if (page) {
+    const inspect = page.locator('body').evaluate(body => {
+      const w = body.ownerDocument.defaultView, frame = body.querySelector('iframe');
+      const app = frame?.contentDocument?.querySelector('#app');
+      const heading = app?.querySelector('h1,h2,h3,[role=heading]')?.textContent || '';
+      return {
+        headingCategory: /学習開始の確認/.test(heading) ? 'start-confirmation' : /学習計画/.test(heading) ? 'study-plan' : 'other',
+        hostScrollY: w.scrollY,
+        frameTop: frame?.getBoundingClientRect().top,
+        frameHeight:frame?.getBoundingClientRect().height,
+        appPaddingTop:app && app.ownerDocument.defaultView.getComputedStyle(app).paddingTop,
+        events:w.qlpWidgetConfirmationEvidence?.events,
+      };
+    }, undefined, { timeout:1000 });
+    let timer;
+    try {
+      Object.assign(details, await Promise.race([inspect, new Promise(resolve => { timer = setTimeout(resolve, 1500, {}); })]));
+    } catch { /* The browser may have already closed. */ }
+    finally { clearTimeout(timer); }
+  }
+  await Promise.allSettled([
+    writeFile(basename + '.json', JSON.stringify(details, null, 2) + '\n'),
+    // The main 375px scenario uses only local synthetic fixtures, never learner sessions.
+    ...(page ? [page.screenshot({ path:basename + '.png', timeout:2000 })] : []),
+  ]);
+};
 for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
-  const browser = await engine.launch({ headless: true });
+  let browser, page, failed=false;
+  let stage='launch';
+  const errors = [], layout = {};
   try {
+    browser = await engine.launch({ headless: true });
     // The old artificial ID is now an explicit negative control, not a
     // successful session. It must never read, start, or write a session.
+    stage='invalid-session-control';
     const invalid = await browser.newPage({viewport:{width:375,height:667},isMobile:true,hasTouch:true});
     try {
       await invalid.route('https://qlp.test/**',route=>route.fulfill({
@@ -119,7 +190,13 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await badUi.getByRole('alert').filter({hasText:'学習記録を変更せず、表示を止めています。'}).waitFor();
       assert.equal(await badUi.getByRole('button',{name:'2 免除を利用しない'}).count(),0);
       assert.deepEqual(await invalid.evaluate(()=>window.invalidCalls),[]);
-    } finally { await invalid.close(); }
+    } catch (error) {
+      failed=true;
+      await saveFailureEvidence(name, invalid, stage, layout, errors, error).catch(() => {});
+      throw error;
+    } finally {
+      await invalid.close().catch(error => { if (!failed) throw error; });
+    }
     // 「今は学習しない」の全操作は、本物の開始結果を受け取る別の新規UUID/枠で検証する。
     const cancelPage=await browser.newPage({viewport:{width:375,height:667},isMobile:true,hasTouch:true});
     try {
@@ -169,9 +246,15 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       assert.deepEqual(await cancelPage.evaluate(()=>window.cancelCalls),
         [expectedRead,['saveProfile',{sessionId:cancelStart._meta.qlp.learnerId,exemption:'no',stage:4}]],
         '厳密な読取と、利用者が選んだ免除・学習段階の保存のみ。取り消しで追加の書き込みや学習開始・終了なし');
-    } finally { await cancelPage.close(); }
-    const page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
-    const errors = [];
+    } catch (error) {
+      failed=true;
+      await saveFailureEvidence(name, cancelPage, stage, layout, errors, error).catch(() => {});
+      throw error;
+    } finally {
+      await cancelPage.close().catch(error => { if (!failed) throw error; });
+    }
+    stage='main-375px';
+    page = await browser.newPage({ viewport: { width: 375, height: 667 }, isMobile: true, hasTouch: true });
     page.on('pageerror', e => errors.push(e.message));
     // isMobile の外枠にも viewport 指定を置く。これが無いとWebKitのCSSレイアウト
     // 幅が980pxになり、375pxのボタン改行試験を偽の広幅で実行してしまう。
@@ -183,6 +266,20 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAQ0lEQVR42u3PMQ0AAAgDIG1g/5Y20sQDGtA5VXWVJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk2aNGnSpEmTJk1aZcsBDhYqnkMAAAAASUVORK5CYII=', 'base64'),
     }));
     await page.goto('https://qlp.test/');
+    if (evidenceDir) {
+      await page.evaluate(() => {
+        const trace = window.qlpWidgetConfirmationEvidence = { events: [] };
+        window.addEventListener('message', event => {
+          if (event.source !== document.querySelector('iframe')?.contentWindow) return;
+          const data = event.data;
+          if (!data || !['tools/call','ui/notifications/size-changed'].includes(data.method)) return;
+          const tool = data.method === 'tools/call' && typeof data.params?.name === 'string'
+            ? data.params.name.replace(/[^A-Za-z0-9_]/g, '').slice(0,48) : undefined;
+          trace.events.push({ event:data.method, tool, ms:Math.round(performance.now()) });
+          if (trace.events.length > 60) trace.events.shift();
+        });
+      }).catch(() => {});
+    }
     await page.evaluate(({ html, first, question, nextQuestion, startup }) => {
       window.fixtureSessions = startup.sessionIds;
       window.calls = []; window.followups = []; window.fullMessages = []; window.internal = []; window.protocolErrors = []; window.failNextCalls = 2;
@@ -494,14 +591,19 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await page.evaluate(() => window.calls.filter(m => m.params?.name === 'redisplayQuestion').length), 0);
     assert.deepEqual(await page.evaluate(() => window.followups), [], '実践問題の出題はChatGPT依存ではない');
     // 長文は内部の縦スクロールで隠さず、ホストへ自然な高さを通知して全文を表示。
+    stage='long-question-layout';
     const longQuestionHeight = await ui.locator('#app').evaluate(el => {
       const filler = document.createElement('div');
       filler.textContent = '長文問題の画面位置テスト '.repeat(180);
       el.insertBefore(filler, el.querySelector('.choices'));
       return { clientHeight:el.clientHeight, scrollHeight:el.scrollHeight,
         overflowY:getComputedStyle(el).overflowY,
-        documentHeight:el.ownerDocument.documentElement.scrollHeight };
+        documentHeight:el.ownerDocument.documentElement.scrollHeight,
+        paddingTop:getComputedStyle(el).paddingTop, scrollTop:el.scrollTop,
+        hostScrollY:el.ownerDocument.defaultView.parent.scrollY,
+        frameHeight:el.ownerDocument.defaultView.frameElement.getBoundingClientRect().height };
     });
+    layout.beforeGrade = longQuestionHeight;
     assert.equal(longQuestionHeight.overflowY, 'visible', '長文でもアプリ要素自体は縦スクロールしない');
     assert.ok(Math.abs(longQuestionHeight.clientHeight-longQuestionHeight.scrollHeight)<4,'長い問題も全文を表示');
     await page.waitForFunction(() => {
@@ -518,13 +620,18 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.equal(await ui.locator('.latest').evaluate(el => el.ownerDocument.activeElement === el), true,
       '採点後に学習枠の先頭へフォーカスする');
     const gradedLayout=await ui.locator('#app').evaluate(el=>({
-      height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,scrollTop:el.scrollTop
+      height:el.clientHeight,scrollHeight:el.scrollHeight,overflowY:getComputedStyle(el).overflowY,scrollTop:el.scrollTop,
+      paddingTop:getComputedStyle(el).paddingTop, hostScrollY:el.ownerDocument.defaultView.parent.scrollY,
+      frameHeight:el.ownerDocument.defaultView.frameElement.getBoundingClientRect().height
     }));
+    layout.afterGrade = gradedLayout;
+    stage='graded-layout';
     assert.equal(gradedLayout.overflowY,'visible','採点・解説画面も内部縦スクロールしない');
     assert.ok(Math.abs(gradedLayout.scrollHeight-gradedLayout.height)<4);
     assert.equal(gradedLayout.scrollTop,0);
     const gradedPadTop = await ui.locator('#app').evaluate(el => parseFloat(getComputedStyle(el).paddingTop) || 0);
     assert.ok(gradedLayout.height - gradedPadTop < longQuestionHeight.clientHeight,'採点後は古い長い問題が消え、内容が縮む（v205の配置余白を除く）');
+    stage='post-grade-375px';
     assert.match(await ui.locator('#app').innerText(), /正解です。/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /採点直後の確認/);
     assert.match(await ui.locator('.official-answer-summary').innerText(), /全選択肢と正答の位置を確認する/);
@@ -1211,8 +1318,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:/学習計画を見直す/}).click();
     await ui.getByRole('button',{name:'4 その他'}).click();
     await ui.locator('#otherText').fill('8種制限');
+    stage='start-confirmation-1';
+    await beginConfirmationEvidence(ui);
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
     await ui.getByRole('button',{name:/この希望の過去問から学習を開始する/}).click();
+    stage='after-confirmation-1';
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor({state:'detached'});
     assert.equal(await ui.locator('#studyScopeFreeField').count(),0,'通常希望の承認で空欄の分野選択に戻らない');
     assert.ok(await page.evaluate(() => window.calls.some(m=>m.params?.name==='nextQuestion' && m.params?.arguments?.topic==='8種制限')),
@@ -1229,16 +1339,22 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.locator('#otherText').fill('記述式から始める');
     const startCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length);
     const descCallsBeforeWish = await page.evaluate(() => window.calls.filter(m=>m.params?.name==='openDescriptiveQuestion').length);
+    stage='start-confirmation-2';
+    await beginConfirmationEvidence(ui);
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
     await ui.getByRole('heading',{name:'希望を反映しました｜学習開始の確認'}).waitFor();
+    stage='after-confirmation-2';
     assert.match(await ui.locator('#app').innerText(), /記述式から始める/);
     assert.equal(await ui.getByRole('button',{name:/この学習計画で始める/}).count(),0,
       '希望の確定後に元の計画画面へ勝手に戻らない');
     await ui.getByRole('button',{name:/希望を入力し直す/}).click();
     assert.equal(await ui.locator('#otherText').inputValue(),'記述式から始める',
       '入力し直す場合も希望を保持');
+    stage='start-confirmation-3';
+    await beginConfirmationEvidence(ui);
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
     await ui.getByRole('button',{name:/この希望で学習を開始し記述式の年度・問題を選ぶ/}).waitFor();
+    stage='after-confirmation-3';
     assert.equal(await page.evaluate(() => window.calls.filter(m=>m.params?.name==='startStudy').length),startCallsBeforeWish,
       '希望の保存だけでは学習を開始しない');
     // サーバーが記述式モードを確定できなかった場合、択一に切り替えずエラーを出す。
@@ -1276,8 +1392,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     await ui.getByRole('button',{name:/学習計画を見直す/}).click();
     await ui.getByRole('button',{name:'4 その他'}).click();
     await ui.locator('#otherText').fill('記述式から始める');
+    stage='start-confirmation-4';
+    await beginConfirmationEvidence(ui);
     await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
     await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+    stage='after-confirmation-4';
     await ui.getByRole('button',{name:/特定の分野・間違えた問題から始める/}).click();
     await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     await ui.locator('#studyScopeFreeField').fill('2022年度 午前の部 座標');
@@ -1319,8 +1438,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
       await ui.getByRole('button',{name:/学習計画を見直す/}).click();
       await ui.getByRole('button',{name:'4 その他'}).click();
       await ui.locator('#otherText').fill('記述式から始める');
+      stage='start-confirmation-5';
+      await beginConfirmationEvidence(ui);
       await ui.getByRole('button',{name:/希望を確定して開始確認へ/}).click();
       await ui.getByRole('button',{name:/学習計画に戻る/}).click();
+      stage='after-confirmation-5';
       await ui.getByRole('button',{name:/特定の分野・間違えた問題から始める/}).click();
       await ui.getByRole('heading',{name:'学習する分野を選択'}).waitFor();
     }
@@ -1522,5 +1644,11 @@ for (const [name, engine] of [['chromium', chromium], ['webkit', webkit]]) {
     assert.deepEqual(await page.evaluate(() => window.protocolErrors), []);
     assert.deepEqual(errors, []);
     console.log(`${name}: PASS onboarding, exact answer, retry, private model context, full handoff, locked AI confirmation (375px)`);
-  } finally { await browser.close(); }
+  } catch (error) {
+    if (!failed) await saveFailureEvidence(name, page, stage, layout, errors, error).catch(() => {});
+    failed=true;
+    throw error;
+  } finally {
+    if (browser) await browser.close().catch(error => { if (!failed) throw error; });
+  }
 }

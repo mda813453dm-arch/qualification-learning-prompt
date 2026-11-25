@@ -1,0 +1,80 @@
+name: 学習画面の通信・ボタン試験（失敗時の証跡付き・隔離呼び出し専用）
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  widget:
+    runs-on: ubuntu-latest
+    # Official Playwright image carries matching Chromium/WebKit shared libraries.
+    # Runner libraries alone are insufficient, and apt mirrors can exceed CI timeout.
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: 配置スクリプトの構文検査
+        run: bash -n 新システム開発/deploy/cloudshell-deploy.sh
+      - name: 試験専用ブラウザを準備（本番依存には追加しない）
+        run: |
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          # The container already includes the exact browser engines and system libraries.
+          # Verify installation without installing ubuntu apt packages.
+          PLAYWRIGHT_BROWSERS_PATH=/ms-playwright node "$RUNNER_TEMP/qlp-browser/node_modules/playwright/cli.js" install chromium webkit
+      - name: 画面切替後に枠の先頭へfocus・操作直後だけ先頭を表示（v205、Chromium/WebKit）
+        run: |
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-focus-v205-browser.mjs
+      - name: 375pxで免除・学習状況・回答・採点・引継ぎを操作
+        id: browser_375px
+        run: |
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-brave-next-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-android-scroll-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-android-scroll-diag-browser.mjs
+          QLP_WIDGET_FAILURE_DIR="$RUNNER_TEMP/qlp-widget-375px-failure" PLAYWRIGHT_BROWSERS_PATH=/ms-playwright PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-explanation-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-confirmation-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-instant-gyosei-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-upload-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-anytime-upload-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-fast-resume-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-figure-separation-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-figure-fallback-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v198-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-layout-v199-browser.mjs
+          PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright" node 新システム開発/engine/test/widget-field-jump-browser.mjs
+      - name: 375px画面試験の失敗証跡を保存
+        if: ${{ failure() && steps.browser_375px.outcome == 'failure' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-375px-failure-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/qlp-widget-375px-failure/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Browser regressions fail quickly; the full engine test is also run in
+      # the separate AI learning engine workflow. Keep it here for completeness.
+      - name: エンジン・通信の回帰試験
+        working-directory: 新システム開発/engine
+        run: npm test
+  parser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: 土地家屋調査士 午前・午後のPDFパーサー単体テスト（合成ページ）
+        run: |
+          python -m pip install -r 新システム開発/parser/requirements.txt
+          PYTHONPATH=新システム開発/parser python -m unittest discover -s 新システム開発/parser -p 'test_*.py' -v
+# 2026-10-20T08:44:38Z rerun: the app showed no buttons after the 行政書士 deploy
+
+# 2026-11-02 mandatory remediation button: session-pinned registration, answer/complete regression, iOS+Android
