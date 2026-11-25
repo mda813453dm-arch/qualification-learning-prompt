@@ -12,6 +12,7 @@ import { explainHow } from '../src/explain.js';
 import { TOOLS, forModel, handleRpc, appInstructions } from '../src/mcp.js';
 import { WIDGET_URI, WIDGET_VERSION, widgetHtml, PREPARED_LESSONS } from '../src/widget-current.js';
 import { WIDGET_URI as V205_URI, WIDGET_VERSION as V205_VERSION, widgetHtml as v205Html } from '../src/widget-v205.js';
+import { WIDGET_URI as V211_URI, WIDGET_VERSION as V211_VERSION, widgetHtml as v211Html } from '../src/widget-v211.js';
 import { PNG, SRC, T0, assetsB64, fakeParser, fakeResult, fakeWeb, pdf } from './helpers.js';
 
 const TOKEN = 'mcp-token';
@@ -219,8 +220,8 @@ test('解説依頼は照合番号を可視メッセージに必ず含み、ChatG
   assert.match(html, /学習画面を復元/);
   assert.doesNotMatch(html, /AI解説をもう一度表示/);
   // 検査したHTMLの版＝公開する版（v197：v196の図表分離を維持し、図を取得できないときの代わりの表示を足す）。
-  assert.match(WIDGET_URI, /question-v211\.html/);
-  assert.equal(WIDGET_VERSION, '2026-11-25.211');
+  assert.match(WIDGET_URI, /question-v212\.html/);
+  assert.equal(WIDGET_VERSION, '2026-11-25.212');
   assert.match(html, /qlp-figure-fallback/);
   assert.match(html, /all-question-modes-v195/);
   assert.match(html, /qlp-figure-separation/);
@@ -801,8 +802,15 @@ test('ChatGPT アプリ（/app/<トークン>）：問題はエンジンの画�
   assert.equal(res[0].mimeType, 'text/html;profile=mcp-app');
   const html = (await app('resources/read', { uri: res[0].uri })).contents[0];
   assert.match(html.text, /submitAnswer/);
-  assert.equal(res[0].uri, 'ui://qlp/question-v211.html');
+  assert.equal(res[0].uri, 'ui://qlp/question-v212.html');
   assert.match(html.text, /function hasNoCorrectOption/);
+  assert.match(html.text, /actionTurn !== qlpUserActionTurn/, 'new widget ignores stale alignment after interaction');
+  assert.ok(res.some(r => r.uri === V211_URI), 'v211 remains listed with its original URI');
+  const legacy211 = (await app('resources/read', { uri: V211_URI })).contents[0];
+  assert.equal(legacy211.uri, V211_URI);
+  assert.equal(legacy211.text, v211Html(), 'v211 payload is byte-for-byte unchanged');
+  assert.doesNotMatch(legacy211.text, /actionTurn !== qlpUserActionTurn/);
+  assert.ok(TOOLS.find(t => t.name === 'reportUiEvent').inputSchema.properties.version.enum.includes(V211_VERSION));
   assert.ok(res.some(r => r.uri === V205_URI), 'v205 remains listed with its original URI');
   const legacy205 = (await app('resources/read', { uri: V205_URI })).contents[0];
   assert.equal(legacy205.uri, V205_URI);

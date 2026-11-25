@@ -1,0 +1,84 @@
+name: v212 alignment candidate verification
+on:
+  push:
+    branches: ['ci/v212-answer-alignment']
+    paths: ['.github/workflows/v212-answer-alignment.yml']
+permissions:
+  contents: read
+jobs:
+  scope:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Check candidate scope and legacy source unchanged
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = '458e12701c95fdffef722f0efcd2a839c92c0523'
+          git diff --exit-code HEAD^ HEAD -- '新システム開発/engine/src/widget-v211.js' '新システム開発/engine/src/app.js' '新システム開発/engine/src/engine.js' '新システム開発/deploy'
+          diff -u <(printf '%s\n' '.github/workflows/v212-answer-alignment.yml' '新システム開発/engine/src/mcp.js' '新システム開発/engine/src/widget-current.js' '新システム開発/engine/src/widget-v212.js' '新システム開発/engine/test/mcp.test.js' '新システム開発/engine/test/question-layout.test.js' '新システム開発/engine/test/widget-land-answer-alignment.mjs' '新システム開発/engine/test/widget-partial-needplan-browser.mjs' '新システム開発/engine/test/widget-restore-v207.test.js') <(git -c core.quotePath=false diff --name-only HEAD^ HEAD)
+  engine:
+    needs: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci && npm test
+        working-directory: '新システム開発/engine'
+  browser:
+    needs: scope
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      matrix:
+        check: [alignment, practice, current-focus, main-375px, handoff, restore]
+    name: ${{ matrix.check }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run independent checks against the candidate
+        shell: bash
+        env:
+          QLP_SCENARIO: ${{ matrix.check }}
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          export QLP_WIDGET_FAILURE_DIR="$RUNNER_TEMP/qlp-widget-375px-failure"
+          cd 新システム開発/engine/test
+          case "$QLP_SCENARIO" in
+            alignment) node widget-land-answer-alignment.mjs ;;
+            practice) node widget-qualification-practice-browser.mjs ;;
+            current-focus)
+              sed 's@../src/widget-v205.js@../src/widget-current.js@' widget-focus-v205-browser.mjs > .candidate-focus.mjs
+              node .candidate-focus.mjs ;;
+            main-375px) node widget-browser.mjs ;;
+            handoff) node widget-handoff-real-engine.mjs ;;
+            restore) node widget-partial-needplan-browser.mjs ;;
+            *) exit 2 ;;
+          esac
+      - name: Retain failure evidence from main 375px
+        if: ${{ failure() && matrix.check == 'main-375px' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-375px-failure-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/qlp-widget-375px-failure/
+          if-no-files-found: ignore
+          retention-days: 7

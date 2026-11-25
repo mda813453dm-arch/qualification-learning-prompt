@@ -33,7 +33,7 @@ async function rpc(method,params,call=()=>{throw Error('Unexpected API call');})
   return res.result;
 }
 const html=(await rpc('resources/read',{uri:WIDGET_URI})).contents[0].text;
-assert.equal(WIDGET_URI,'ui://qlp/question-v211.html');
+assert.equal(WIDGET_URI,'ui://qlp/question-v212.html');
 async function classify(state){
   const STORE=new MemoryStore();
   const raw=JSON.stringify({savedAt:now,state});

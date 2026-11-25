@@ -9,6 +9,7 @@ import { WIDGET_URI, WIDGET_MIME, WIDGET_VERSION, widgetHtml } from './widget-cu
 import { widgetHtml as stable205Html, WIDGET_URI as stable205Uri, WIDGET_VERSION as stable205Version } from './widget-v205.js';
 import { WIDGET_URI as STABLE_206_URI, WIDGET_VERSION as STABLE_206_VERSION, widgetHtml as stable206Html } from './widget-v206.js';
 import { WIDGET_URI as STABLE_210_URI, WIDGET_VERSION as STABLE_210_VERSION, widgetHtml as stable210Html } from './widget-v210.js';
+import { WIDGET_URI as STABLE_211_URI, WIDGET_VERSION as STABLE_211_VERSION, widgetHtml as stable211Html } from './widget-v211.js';
 import { WIDGET_URI as STABLE_209_URI, WIDGET_VERSION as STABLE_209_VERSION, widgetHtml as stable209Html } from './widget-v209.js';
 import { WIDGET_URI as STABLE_207_URI, WIDGET_VERSION as STABLE_207_VERSION, widgetHtml as stable207Html } from './widget-v207.js';
 import { WIDGET_URI as STABLE_208_URI, WIDGET_VERSION as STABLE_208_VERSION, widgetHtml as stable208Html } from './widget-v208.js';
@@ -112,6 +113,7 @@ ACCEPTED_WIDGET_VERSIONS.push(STABLE_207_VERSION);
 ACCEPTED_WIDGET_VERSIONS.push(STABLE_208_VERSION);
 ACCEPTED_WIDGET_VERSIONS.push(STABLE_209_VERSION);
 ACCEPTED_WIDGET_VERSIONS.push(STABLE_210_VERSION);
+ACCEPTED_WIDGET_VERSIONS.push(STABLE_211_VERSION);
 
 /** name, description, inputSchema, そのツールが呼ぶ API（method, path, body） */
 export const TOOLS = [
@@ -777,6 +779,7 @@ LEGACY_WIDGET_URIS.push(STABLE_207_URI);
 LEGACY_WIDGET_URIS.push(STABLE_208_URI);
 LEGACY_WIDGET_URIS.push(STABLE_209_URI);
 LEGACY_WIDGET_URIS.push(STABLE_210_URI);
+LEGACY_WIDGET_URIS.push(STABLE_211_URI);
 const LEGACY_WIDGET_URI = LEGACY_WIDGET_URIS[0];
 const WIDGET_TOOLS = new Set(['importHandoff', 'attachPdfBatch', 'attachPdf', 'showDescriptiveActions', 'getDescriptiveActions', 'openDescriptiveQuestion', 'revealDescriptiveAnswer', 'startSession', 'nextQuestion', 'submitAnswer', 'showMenu', 'endStudy', 'startStudy', 'registerRemediationQuestion', 'registerConfirmationQuestion', 'restoreStudyView', 'openHandoffView', 'reopenMissingWidget']);
 const ANDROID_UI_FALLBACK = 'iPhone・Android版ChatGPTアプリで学習枠そのものが見えないと利用者が明示した場合だけ、reopenMissingWidgetを最大1回呼ぶ。ボタンが見えているが反応しないときは別枠の復元を呼ばず、元の枠と学習状態を保持し、ボタン直下の通信・失敗表示を確認してもらう。利用者の「反応しません」を「新しい学習を再開して」と解釈しない。実sessionIdが不明な画面消失に限り引数なし（旧定義ならcurrent-chat）。枠が消失したままならブラウザ https://chatgpt.com/ で同じ会話を開く案内をする。新規startSessionは禁止。サーバー応答だけで実機操作成功を断定しない。';
@@ -915,6 +918,7 @@ function legacyWidgetHtml(uri) {
   if (uri === STABLE_206_URI) return stable206Html();
   if (uri === STABLE_209_URI) return stable209Html();
   if (uri === STABLE_210_URI) return stable210Html();
+  if (uri === STABLE_211_URI) return stable211Html();
   if (uri === STABLE_207_URI) return stable207Html();
   if (uri === STABLE_208_URI) return stable208Html();
   if (uri.endsWith('/question-v204.html')) return stable204Html();

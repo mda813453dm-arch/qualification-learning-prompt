@@ -6,12 +6,12 @@ import { WIDGET_URI as v205Uri, WIDGET_VERSION as v205Version, widgetHtml as v20
 import { WIDGET_URI as v207Uri, WIDGET_VERSION as v207Version, widgetHtml as v207Html } from '../src/widget-v207.js';
 import { WIDGET_URI as v208Uri, WIDGET_VERSION as v208Version, widgetHtml as v208Html } from '../src/widget-v208.js';
 
-test('v211 composes the v207 restore behavior and previous v205/v207/v208 resources stay byte-for-byte unchanged', async()=>{
+test('v212 composes the v207 restore behavior and previous v205/v207/v208 resources stay byte-for-byte unchanged', async()=>{
   const unexpectedRequest = (...args)=>{ throw Error('Unexpected backend request: ' + JSON.stringify(args)); };
   const rpc = (method,params={}) => handleRpc({jsonrpc:'2.0',id:1,method,params},unexpectedRequest,{widget:true});
   const listed=(await rpc('resources/list')).result.resources;
-  assert.equal(WIDGET_URI, 'ui://qlp/question-v211.html');
-  assert.equal(WIDGET_VERSION, '2026-11-25.211');
+  assert.equal(WIDGET_URI, 'ui://qlp/question-v212.html');
+  assert.equal(WIDGET_VERSION, '2026-11-25.212');
   assert.equal(listed[0].uri,WIDGET_URI);
   assert.ok(listed.some(r=>r.uri===v205Uri));
   assert.ok(listed.some(r=>r.uri===v207Uri));
@@ -28,7 +28,7 @@ test('v211 composes the v207 restore behavior and previous v205/v207/v208 resour
   assert.match(latest,/isPartialStartupNeedPlan/);
   assert.match(latest,/function hasNoCorrectOption/);
   assert.doesNotMatch(latest,/2026-11-24\.207/);
-  assert.match(latest,/2026-11-25\.211/);
+  assert.match(latest,/2026-11-25\.212/);
   assert.doesNotMatch(latest,/2026-11-21\.205/);
   assert.doesNotMatch(v205Html(),/publishedExplanationOnly:true/);
   const tools=(await rpc('tools/list')).result.tools;
