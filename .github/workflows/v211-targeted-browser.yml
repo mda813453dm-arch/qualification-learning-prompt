@@ -1,0 +1,67 @@
+name: v211 targeted browser diagnostics
+on:
+  push:
+    branches: ['ci/v211-targeted-browser']
+    paths: ['.github/workflows/v211-targeted-browser.yml']
+permissions:
+  contents: read
+jobs:
+  verify-test-only:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Verify exact baseline and no product changes
+        shell: bash
+        run: |
+          set -eu
+          test "$(git rev-parse HEAD^)" = 'e75719b64ddaec878cc3102ce8642ea2906da439'
+          diff -u <(printf '%s\n' '.github/workflows/v211-targeted-browser.yml' '新システム開発/engine/test/widget-qualification-practice-browser.mjs') <(git -c core.quotePath=false diff --name-only HEAD^ HEAD)
+  test:
+    needs: verify-test-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [main-375px, current-focus, practice]
+    name: ${{ matrix.scenario }}
+    container:
+      image: mcr.microsoft.com/playwright:v1.51.1-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run independent browser check
+        shell: bash
+        env:
+          QLP_SCENARIO: ${{ matrix.scenario }}
+          PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+        run: |
+          set -eu
+          npm install --prefix "$RUNNER_TEMP/qlp-browser" playwright@1.51.1
+          export PLAYWRIGHT_MODULE_PATH="$RUNNER_TEMP/qlp-browser/node_modules/playwright"
+          export QLP_WIDGET_FAILURE_DIR="$RUNNER_TEMP/qlp-widget-375px-failure"
+          cd 新システム開発/engine/test
+          case "$QLP_SCENARIO" in
+            main-375px) node widget-browser.mjs ;;
+            current-focus)
+              sed 's@../src/widget-v205.js@../src/widget-current.js@' widget-focus-v205-browser.mjs > .v211-focus-ci.mjs
+              node .v211-focus-ci.mjs ;;
+            practice) node widget-qualification-practice-browser.mjs ;;
+            *) exit 2 ;;
+          esac
+      - name: Retain failure evidence from main 375px
+        if: ${{ failure() && matrix.scenario == 'main-375px' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: widget-375px-failure-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/qlp-widget-375px-failure/
+          if-no-files-found: ignore
+          retention-days: 7
